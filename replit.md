@@ -16,6 +16,19 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Artifacts
+
+### Stride App (artifacts/stride-app)
+Italian-language mobile app (Expo) for dance school management.
+- **Brand**: Navy Blue (#1E3A8A) + Goldenrod (#FBBF24)
+- **Auth Roles**: parent → /(parent)/home, operator → /(operator)/dashboard, admin → /(admin)/setup
+- **Test credentials**: genitore@test.com, operatore@test.com, admin@test.com (any password)
+- **Storage**: AsyncStorage only (no backend)
+- **Parent screens**: home, children (Smart Pick-Up), courses (booking), wallet (payments), documents (signing)
+- **Operator screens**: dashboard (QR scanner + SOS), calendar, students (presence), invoicing (payroll), support (protocols)
+- **Admin screens**: setup (white-label), users, communications, stats, settings
+- **Key packages**: expo-camera, expo-haptics, expo-blur, @expo-google-fonts/montserrat
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages

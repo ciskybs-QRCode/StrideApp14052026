@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "mMw8ugwwzrQphWgIaqbd8"
+uri = "file://artifacts/stride-app/assets/images/icon.png"
+type = "image"
+title = "stride app icon"
+
+[[generated]]
+id = "Lt5o7KZnMtzmLL7sD-z7X"
+uri = "file://artifacts/stride-app/assets/images/splash.png"
+type = "image"
+title = "stride splash background"
