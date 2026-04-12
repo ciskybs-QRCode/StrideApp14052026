@@ -1,16 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { Image } from "expo-image";
 import React, { useState } from "react";
 import {
   Alert,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,12 +18,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 
+const LOGO = require("@/assets/images/stride-logo.png");
+
 export default function ParentHome() {
   const { user } = useAuth();
   const { children, courses, lessons } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const [showQR, setShowQR] = useState(false);
   const [showAbsence, setShowAbsence] = useState(false);
   const [absenceType, setAbsenceType] = useState<"absent" | "late15" | "late30">("absent");
@@ -33,15 +34,7 @@ export default function ParentHome() {
   const nextCourse = courses.find(c => c.id === nextLesson?.courseId);
   const childForLesson = children[0];
 
-  const handleNavigate = () => {
-    Linking.openURL("https://maps.google.com/?q=Dance+Village+School");
-  };
-
-  const handleContact = (method: "call" | "whatsapp" | "email") => {
-    if (method === "call") Linking.openURL("tel:+390212345678");
-    else if (method === "whatsapp") Linking.openURL("https://wa.me/390212345678");
-    else Linking.openURL("mailto:segreteria@dancevillage.it");
-  };
+  const handleNavigate = () => Linking.openURL("https://maps.google.com/?q=Bayswater+Studio");
 
   const handleSendAbsence = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -49,41 +42,63 @@ export default function ParentHome() {
     Alert.alert("Inviato", "La segnalazione è stata inviata alla segreteria.");
   };
 
+  const firstName = user?.name?.split(" ")[0] || "Utente";
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + (Platform.OS === "web" ? 72 : 20), paddingBottom: insets.bottom + 100 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header with Logo */}
         <View style={styles.header}>
-          <View>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Buongiorno,</Text>
-            <Text style={[styles.userName, { color: colors.primary }]}>{user?.name?.split(" ")[0]} 👋</Text>
+          <View style={styles.headerLeft}>
+            <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
           </View>
-          <View style={[styles.avatarCircle, { backgroundColor: colors.primary }]}>
+          <View style={styles.headerCenter}>
+            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Ciao,</Text>
+            <Text style={[styles.userName, { color: colors.primary }]}>{firstName}</Text>
+          </View>
+          <Pressable style={[styles.avatarCircle, { backgroundColor: colors.primary }]}>
             <Text style={styles.avatarText}>{user?.name?.charAt(0)}</Text>
-          </View>
+          </Pressable>
         </View>
 
-        {/* Next Lesson */}
-        <View style={[styles.card, { backgroundColor: colors.primary }]}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="time-outline" size={18} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.cardLabel}>PROSSIMA LEZIONE</Text>
+        {/* Next Lesson Card */}
+        <View style={[styles.lessonCard, { backgroundColor: colors.primary }]}>
+          <View style={styles.lessonCardTop}>
+            <View style={styles.lessonBadge}>
+              <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.lessonBadgeText}>PROSSIMA LEZIONE:</Text>
+            </View>
           </View>
           {nextLesson && nextCourse ? (
             <>
               <Text style={styles.lessonChild}>{childForLesson?.name}</Text>
-              <Text style={styles.lessonCourse}>{nextCourse.name}</Text>
-              <Text style={styles.lessonTime}>{nextLesson.startTime} – {nextLesson.endTime} | {nextLesson.location}</Text>
-              <Pressable style={styles.navigateBtn} onPress={handleNavigate}>
-                <Ionicons name="navigate" size={16} color="#1E3A8A" />
+              <Text style={styles.lessonCourseName}>{nextCourse.name}</Text>
+              <View style={styles.lessonMeta}>
+                <View style={styles.lessonMetaItem}>
+                  <Ionicons name="time-outline" size={14} color="#FBBF24" />
+                  <Text style={styles.lessonMetaText}>{nextLesson.startTime} – {nextLesson.endTime}</Text>
+                </View>
+                <View style={styles.lessonMetaItem}>
+                  <Ionicons name="location-outline" size={14} color="#FBBF24" />
+                  <Text style={styles.lessonMetaText}>{nextLesson.room || nextLesson.location}</Text>
+                </View>
+              </View>
+              <Pressable
+                style={({ pressed }) => [styles.navigateBtn, pressed && { opacity: 0.85 }]}
+                onPress={handleNavigate}
+              >
+                <Ionicons name="navigate" size={14} color="#1E3A8A" />
                 <Text style={styles.navigateBtnText}>NAVIGA</Text>
               </Pressable>
             </>
           ) : (
-            <Text style={styles.lessonCourse}>Nessuna lezione programmata oggi</Text>
+            <Text style={styles.lessonCourseName}>Nessuna lezione oggi</Text>
           )}
         </View>
 
@@ -91,54 +106,61 @@ export default function ParentHome() {
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Azioni Rapide</Text>
         <View style={styles.quickActions}>
           <Pressable
-            style={({ pressed }) => [styles.qrBtn, { backgroundColor: colors.secondary, transform: pressed ? [{ scale: 0.97 }] : [] }]}
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowQR(true); }}
           >
             <Ionicons name="qr-code" size={28} color={colors.primary} />
-            <Text style={[styles.qrBtnText, { color: colors.primary }]}>MOSTRA QR CODE</Text>
+            <Text style={[styles.quickBtnText, { color: colors.primary }]}>MOSTRA QR{"\n"}INGRESSO</Text>
           </Pressable>
-
           <Pressable
-            style={({ pressed }) => [styles.absenceBtn, { borderColor: colors.primary, transform: pressed ? [{ scale: 0.97 }] : [] }]}
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => setShowAbsence(true)}
           >
-            <Ionicons name="alert-circle-outline" size={22} color={colors.primary} />
-            <Text style={[styles.absenceBtnText, { color: colors.primary }]}>SEGNALA RITARDO/ASSENZA</Text>
+            <Ionicons name="alert-circle-outline" size={28} color="#F59E0B" />
+            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>SEGNALA{"\n"}ASSENZA/RITARDO</Text>
           </Pressable>
         </View>
 
         {/* Notifications */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifiche</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifiche & Avvisi</Text>
         {[
-          { id: "1", icon: "megaphone-outline" as const, text: "Saggio di fine anno: 15 Giugno 2026", time: "2 ore fa", color: colors.secondary },
-          { id: "2", icon: "document-outline" as const, text: "Nuovo documento da firmare: Liberatoria Foto/Video", time: "1 giorno fa", color: "#FEF3C7" },
-          { id: "3", icon: "checkmark-circle-outline" as const, text: "Pagamento di Aprile confermato", time: "3 giorni fa", color: "#D1FAE5" },
+          { id: "1", icon: "star-outline" as const, text: "Sofia: ★ Stelle d'Oro per la coreografia!", time: "Oggi", accent: "#FBBF24" },
+          { id: "2", icon: "document-outline" as const, text: "Nuovo Documento: Policy Privacy WA da Firmare", time: "Ieri", accent: colors.primary },
+          { id: "3", icon: "time-outline" as const, text: "Lezione di domani: Anticipata alle 15:30", time: "2 ore fa", accent: "#7C3AED" },
         ].map(item => (
-          <View key={item.id} style={[styles.notifCard, { backgroundColor: colors.card, borderLeftColor: item.color, borderLeftWidth: 4 }]}>
-            <Ionicons name={item.icon} size={20} color={colors.primary} />
-            <View style={styles.notifContent}>
-              <Text style={[styles.notifText, { color: colors.foreground }]}>{item.text}</Text>
-              <Text style={[styles.notifTime, { color: colors.mutedForeground }]}>{item.time}</Text>
+          <Pressable key={item.id} style={[styles.notifCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.notifIcon, { backgroundColor: `${item.accent}20` }]}>
+              <Ionicons name={item.icon} size={18} color={item.accent} />
             </View>
-          </View>
+            <Text style={[styles.notifText, { color: colors.foreground }]}>{item.text}</Text>
+            <Text style={[styles.notifTime, { color: colors.mutedForeground }]}>{item.time}</Text>
+          </Pressable>
         ))}
 
         {/* Contact */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Supporto</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contatta la Segreteria</Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.contactTitle, { color: colors.primary }]}>Contatta la Segreteria</Text>
-          <View style={styles.contactBtns}>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => handleContact("call")}>
-              <Ionicons name="call" size={20} color="#10B981" />
-              <Text style={[styles.contactBtnText, { color: "#10B981" }]}>Chiama</Text>
-            </Pressable>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => handleContact("whatsapp")}>
-              <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+          <View style={styles.contactRow}>
+            <Pressable
+              style={[styles.contactBtn, { backgroundColor: "#D1FAE5" }]}
+              onPress={() => Linking.openURL("https://wa.me/390212345678")}
+            >
+              <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
               <Text style={[styles.contactBtnText, { color: "#25D366" }]}>WhatsApp</Text>
             </Pressable>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "#EDE9FE" }]} onPress={() => handleContact("email")}>
-              <Ionicons name="mail" size={20} color="#7C3AED" />
+            <Pressable
+              style={[styles.contactBtn, { backgroundColor: "#EDE9FE" }]}
+              onPress={() => Linking.openURL("mailto:segreteria@dancevillage.it")}
+            >
+              <Ionicons name="mail" size={22} color="#7C3AED" />
               <Text style={[styles.contactBtnText, { color: "#7C3AED" }]}>Email</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.contactBtn, { backgroundColor: "#DBEAFE" }]}
+              onPress={() => Linking.openURL("tel:+390212345678")}
+            >
+              <Ionicons name="call" size={22} color="#1E3A8A" />
+              <Text style={[styles.contactBtnText, { color: "#1E3A8A" }]}>Chiama</Text>
             </Pressable>
           </View>
         </View>
@@ -148,11 +170,12 @@ export default function ParentHome() {
       <Modal visible={showQR} transparent animationType="fade" onRequestClose={() => setShowQR(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
+            <Image source={LOGO} style={styles.modalLogo} contentFit="contain" />
             <Text style={[styles.modalTitle, { color: colors.primary }]}>QR Code Check-In</Text>
             <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>{childForLesson?.name}</Text>
-            <View style={styles.qrPlaceholder}>
-              <Ionicons name="qr-code" size={120} color={colors.primary} />
-              <Text style={[styles.qrId, { color: colors.mutedForeground }]}>ID: {childForLesson?.id}</Text>
+            <View style={[styles.qrBox, { backgroundColor: "#F0F4FF" }]}>
+              <Ionicons name="qr-code" size={140} color={colors.primary} />
+              <Text style={[styles.qrId, { color: colors.mutedForeground }]}>ID: {childForLesson?.id?.toUpperCase()}</Text>
             </View>
             <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setShowQR(false)}>
               <Text style={styles.closeBtnText}>Chiudi</Text>
@@ -165,9 +188,9 @@ export default function ParentHome() {
       <Modal visible={showAbsence} transparent animationType="slide" onRequestClose={() => setShowAbsence(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Segnala Ritardo/Assenza</Text>
-            <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>Seleziona un bambino</Text>
-            <View style={styles.childSelector}>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Segnala Assenza / Ritardo</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Bambino</Text>
+            <View style={styles.childRow}>
               {children.map(child => (
                 <Pressable
                   key={child.id}
@@ -178,11 +201,11 @@ export default function ParentHome() {
                 </Pressable>
               ))}
             </View>
-            <Text style={[styles.modalSubtitle, { color: colors.mutedForeground, marginTop: 12 }]}>Tipo di segnalazione</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Tipo di segnalazione</Text>
             {(["absent", "late15", "late30"] as const).map(type => (
               <Pressable
                 key={type}
-                style={[styles.absenceOption, absenceType === type && { backgroundColor: colors.primary }]}
+                style={[styles.absenceOption, absenceType === type && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                 onPress={() => setAbsenceType(type)}
               >
                 <Ionicons name={absenceType === type ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === type ? "#FFF" : colors.primary} />
@@ -192,7 +215,7 @@ export default function ParentHome() {
               </Pressable>
             ))}
             <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowAbsence(false)}>
+              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
                 <Text style={[styles.closeBtnText, { color: colors.primary }]}>Annulla</Text>
               </Pressable>
               <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSendAbsence}>
@@ -206,50 +229,53 @@ export default function ParentHome() {
   );
 }
 
-import { Platform } from "react-native";
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  headerLeft: { width: 56 },
+  headerLogo: { width: 52, height: 36 },
+  headerCenter: { flex: 1, alignItems: "center" },
   greeting: { fontSize: 14, fontWeight: "500" },
-  userName: { fontSize: 26, fontWeight: "800" },
+  userName: { fontSize: 24, fontWeight: "800" },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: "#FFFFFF", fontWeight: "700", fontSize: 18 },
-  card: { borderRadius: 20, padding: 20, marginBottom: 24, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 },
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
-  cardLabel: { fontSize: 11, color: "rgba(255,255,255,0.7)", letterSpacing: 1.5, fontWeight: "700", textTransform: "uppercase" },
-  lessonChild: { fontSize: 14, color: "rgba(255,255,255,0.8)", marginBottom: 4 },
-  lessonCourse: { fontSize: 22, fontWeight: "700", color: "#FFFFFF", marginBottom: 6 },
-  lessonTime: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 16 },
+  avatarText: { color: "#FFF", fontWeight: "700", fontSize: 18 },
+  lessonCard: { borderRadius: 20, padding: 18, marginBottom: 24, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 },
+  lessonCardTop: { marginBottom: 8 },
+  lessonBadge: { flexDirection: "row", alignItems: "center", gap: 5 },
+  lessonBadgeText: { fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: "700", letterSpacing: 0.5 },
+  lessonChild: { fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 2 },
+  lessonCourseName: { fontSize: 22, fontWeight: "800", color: "#FFF", marginBottom: 10 },
+  lessonMeta: { gap: 6, marginBottom: 16 },
+  lessonMetaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  lessonMetaText: { fontSize: 13, color: "rgba(255,255,255,0.85)" },
   navigateBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10, alignSelf: "flex-start" },
-  navigateBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 13 },
+  navigateBtnText: { color: "#1E3A8A", fontWeight: "800", fontSize: 13 },
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
-  quickActions: { gap: 12, marginBottom: 24 },
-  qrBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, borderRadius: 16, paddingVertical: 18 },
-  qrBtnText: { fontSize: 15, fontWeight: "700", letterSpacing: 1 },
-  absenceBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, borderRadius: 16, paddingVertical: 16, borderWidth: 2 },
-  absenceBtnText: { fontSize: 14, fontWeight: "700" },
-  notifCard: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: "#FFF", borderRadius: 14, padding: 14, marginBottom: 10 },
-  notifContent: { flex: 1 },
-  notifText: { fontSize: 14, fontWeight: "500", marginBottom: 4 },
-  notifTime: { fontSize: 12 },
-  contactCard: { borderRadius: 16, padding: 16, marginBottom: 20 },
-  contactTitle: { fontSize: 15, fontWeight: "700", marginBottom: 12 },
-  contactBtns: { flexDirection: "row", gap: 10 },
+  quickActions: { flexDirection: "row", gap: 12, marginBottom: 24 },
+  quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 20, gap: 8, borderWidth: 2 },
+  quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
+  notifCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  notifIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  notifText: { flex: 1, fontSize: 14, fontWeight: "500" },
+  notifTime: { fontSize: 11 },
+  contactCard: { borderRadius: 16, padding: 14, marginBottom: 20 },
+  contactRow: { flexDirection: "row", gap: 10 },
   contactBtn: { flex: 1, alignItems: "center", borderRadius: 12, padding: 12, gap: 6 },
   contactBtnText: { fontSize: 12, fontWeight: "600" },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", padding: 24 },
-  modalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, width: "100%" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 },
+  modalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, width: "100%", alignItems: "center" },
+  modalLogo: { width: 80, height: 44, marginBottom: 8 },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
   modalSubtitle: { fontSize: 13, marginBottom: 16 },
-  qrPlaceholder: { alignItems: "center", padding: 24, backgroundColor: "#F0F4FF", borderRadius: 16, marginBottom: 20 },
-  qrId: { fontSize: 12, marginTop: 8 },
-  closeBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
-  childSelector: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 8 },
+  qrBox: { alignItems: "center", padding: 24, borderRadius: 18, marginBottom: 20, width: "100%" },
+  qrId: { fontSize: 12, marginTop: 10, letterSpacing: 1 },
+  fieldLabel: { fontSize: 13, fontWeight: "600", marginBottom: 8, alignSelf: "flex-start" },
+  childRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   childOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D1D9F0" },
   childOptionText: { fontSize: 13, fontWeight: "600", color: "#1E3A8A" },
-  absenceOption: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 8 },
+  absenceOption: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 8, width: "100%" },
   absenceOptionText: { fontSize: 14, fontWeight: "500", color: "#1E3A8A" },
+  closeBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
 });

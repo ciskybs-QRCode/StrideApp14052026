@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
@@ -17,14 +18,22 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 
+const LOGO = require("@/assets/images/stride-logo.png");
+
+const QUICK_ROLES = [
+  { label: "Genitore", email: "genitore@test.com", icon: "people-outline" as const, color: "#1E3A8A", bg: "#EEF2FF" },
+  { label: "Operatore", email: "operatore@test.com", icon: "briefcase-outline" as const, color: "#7C3AED", bg: "#F5F3FF" },
+  { label: "Admin", email: "admin@test.com", icon: "shield-checkmark-outline" as const, color: "#059669", bg: "#ECFDF5" },
+];
+
 export default function LoginScreen() {
   const { login } = useAuth();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [quickLoading, setQuickLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
@@ -32,49 +41,77 @@ export default function LoginScreen() {
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: -10, duration: 80, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 80, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 0, duration: 80, useNativeDriver: true }),
     ]).start();
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      setError("Inserisci email e password");
-      shake();
-      return;
-    }
-    setLoading(true);
-    setError("");
+    if (!email || !password) { setError("Inserisci email e password"); shake(); return; }
+    setLoading(true); setError("");
     try {
       await login(email, password);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: unknown) {
       const err = e as Error;
-      setError(err.message || "Errore di accesso");
+      setError(err.message || "Credenziali non valide");
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       shake();
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
+  };
+
+  const handleQuickLogin = async (roleEmail: string) => {
+    setQuickLoading(roleEmail); setError("");
+    try {
+      await login(roleEmail, "password");
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      setError("Errore di accesso");
+    } finally { setQuickLoading(null); }
   };
 
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Logo Area */}
           <View style={styles.logoArea}>
-            <View style={styles.iconContainer}>
-              <View style={styles.arcOuter} />
-              <View style={styles.arcMiddle} />
-              <View style={styles.arcInner} />
-            </View>
-            <Text style={styles.logoText}>Stride</Text>
+            <Image source={LOGO} style={styles.logoImage} contentFit="contain" />
             <Text style={styles.tagline}>DANCE SCHOOL MANAGEMENT</Text>
           </View>
 
+          {/* Quick Role Access */}
+          <View style={styles.quickSection}>
+            <Text style={styles.quickTitle}>Accesso Rapido</Text>
+            <View style={styles.quickGrid}>
+              {QUICK_ROLES.map(role => (
+                <Pressable
+                  key={role.email}
+                  style={({ pressed }) => [
+                    styles.quickCard,
+                    { backgroundColor: role.bg, borderColor: role.color, transform: pressed ? [{ scale: 0.96 }] : [] },
+                  ]}
+                  onPress={() => handleQuickLogin(role.email)}
+                  disabled={!!quickLoading}
+                >
+                  {quickLoading === role.email ? (
+                    <ActivityIndicator color={role.color} size="small" />
+                  ) : (
+                    <Ionicons name={role.icon} size={26} color={role.color} />
+                  )}
+                  <Text style={[styles.quickCardLabel, { color: role.color }]}>{role.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Manual Login */}
           <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
-            <Text style={styles.formTitle}>Accedi</Text>
-            <Text style={styles.formSubtitle}>Inserisci le tue credenziali per continuare</Text>
+            <Text style={styles.formTitle}>Oppure accedi manualmente</Text>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
@@ -124,21 +161,11 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.loginBtnText}>ACCEDI</Text>
-              )}
+              {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.loginBtnText}>ACCEDI</Text>}
             </Pressable>
-
-            <View style={styles.hints}>
-              <Text style={styles.hintTitle}>Account di prova:</Text>
-              <Text style={styles.hint}>Genitore: genitore@test.com</Text>
-              <Text style={styles.hint}>Operatore: operatore@test.com</Text>
-              <Text style={styles.hint}>Admin: admin@test.com</Text>
-              <Text style={styles.hint}>(qualsiasi password)</Text>
-            </View>
           </Animated.View>
+
+          <Text style={styles.footer}>Powered by Stride • v1.0</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -148,27 +175,25 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#1E3A8A" },
   scroll: { flexGrow: 1, paddingHorizontal: 24 },
-  logoArea: { alignItems: "center", marginBottom: 40 },
-  iconContainer: { width: 60, height: 60, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  arcOuter: { position: "absolute", width: 56, height: 56, borderRadius: 28, borderWidth: 3, borderColor: "#1E3A8A", borderTopColor: "#FBBF24", borderRightColor: "#FBBF24", backgroundColor: "transparent", transform: [{ rotate: "-30deg" }] },
-  arcMiddle: { position: "absolute", width: 38, height: 38, borderRadius: 19, borderWidth: 3, borderColor: "#1E3A8A", borderTopColor: "#FFFFFF", borderLeftColor: "#FFFFFF", backgroundColor: "transparent", transform: [{ rotate: "30deg" }] },
-  arcInner: { position: "absolute", width: 20, height: 20, borderRadius: 10, borderWidth: 3, borderColor: "#1E3A8A", borderBottomColor: "#FBBF24", borderRightColor: "#FBBF24", backgroundColor: "transparent", transform: [{ rotate: "60deg" }] },
-  logoText: { fontSize: 36, fontWeight: "800", color: "#FFFFFF", fontStyle: "italic", letterSpacing: 2 },
-  tagline: { fontSize: 11, color: "#FBBF24", letterSpacing: 3, marginTop: 4, textTransform: "uppercase" },
-  formCard: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 28, shadowColor: "#000", shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.25, shadowRadius: 40, elevation: 20 },
-  formTitle: { fontSize: 24, fontWeight: "700", color: "#1E3A8A", marginBottom: 4 },
-  formSubtitle: { fontSize: 14, color: "#6B7BA4", marginBottom: 28 },
-  inputGroup: { marginBottom: 16 },
+  logoArea: { alignItems: "center", marginBottom: 32 },
+  logoImage: { width: 180, height: 100 },
+  tagline: { fontSize: 11, color: "#FBBF24", letterSpacing: 3, marginTop: 6, textTransform: "uppercase" },
+  quickSection: { marginBottom: 20 },
+  quickTitle: { fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: "600", letterSpacing: 1, textAlign: "center", marginBottom: 14, textTransform: "uppercase" },
+  quickGrid: { flexDirection: "row", gap: 12 },
+  quickCard: { flex: 1, alignItems: "center", borderRadius: 16, paddingVertical: 18, paddingHorizontal: 8, gap: 8, borderWidth: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  quickCardLabel: { fontSize: 13, fontWeight: "700" },
+  formCard: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.25, shadowRadius: 40, elevation: 20 },
+  formTitle: { fontSize: 16, fontWeight: "700", color: "#6B7BA4", marginBottom: 18, textAlign: "center" },
+  inputGroup: { marginBottom: 14 },
   label: { fontSize: 13, fontWeight: "600", color: "#1E3A8A", marginBottom: 8 },
-  inputWrapper: { flexDirection: "row", alignItems: "center", backgroundColor: "#F0F4FF", borderRadius: 12, paddingHorizontal: 14, height: 52, borderWidth: 1, borderColor: "#D1D9F0" },
+  inputWrapper: { flexDirection: "row", alignItems: "center", backgroundColor: "#F0F4FF", borderRadius: 12, paddingHorizontal: 14, height: 50, borderWidth: 1, borderColor: "#D1D9F0" },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, fontSize: 15, color: "#1E3A8A" },
   eyeBtn: { padding: 4 },
-  errorBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, marginBottom: 16, gap: 8 },
+  errorBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, marginBottom: 12, gap: 8 },
   errorText: { color: "#EF4444", fontSize: 13, flex: 1 },
-  loginBtn: { backgroundColor: "#1E3A8A", borderRadius: 14, height: 54, alignItems: "center", justifyContent: "center", marginTop: 8, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 },
+  loginBtn: { backgroundColor: "#1E3A8A", borderRadius: 14, height: 52, alignItems: "center", justifyContent: "center", marginTop: 4, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 },
   loginBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15, letterSpacing: 1.5 },
-  hints: { marginTop: 24, backgroundColor: "#F0F4FF", borderRadius: 10, padding: 14 },
-  hintTitle: { fontSize: 12, fontWeight: "700", color: "#1E3A8A", marginBottom: 6 },
-  hint: { fontSize: 11, color: "#6B7BA4", marginTop: 2 },
+  footer: { color: "rgba(255,255,255,0.35)", fontSize: 12, textAlign: "center", marginTop: 24 },
 });
