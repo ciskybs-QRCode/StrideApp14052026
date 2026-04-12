@@ -18,6 +18,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 
+type ScanResult = {
+  type: "success" | "warning" | "error";
+  name: string;
+  subscription: "active" | "expired" | "none";
+  medical: "valid" | "expiring" | "expired";
+  payment: "paid" | "overdue" | "pending";
+};
+
+type SubPhase = 1 | 2 | 3;
+
 export default function OperatorDashboard() {
   const { lessons, students, updateStudentPresence } = useAppData();
   const colors = useColors();
@@ -25,8 +35,12 @@ export default function OperatorDashboard() {
   const [showScanner, setShowScanner] = useState(false);
   const [showSOS, setShowSOS] = useState(false);
   const [sosCount, setSosCount] = useState(0);
-  const [scanResult, setScanResult] = useState<{ type: "success" | "warning" | "error"; message: string } | null>(null);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [showSubAlgo, setShowSubAlgo] = useState(false);
+  const [subPhase, setSubPhase] = useState<SubPhase>(1);
+  const [subCountdown, setSubCountdown] = useState(30);
+  const subTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const isGPS = true;
 
@@ -43,6 +57,22 @@ export default function OperatorDashboard() {
     ).start();
   }, []);
 
+  useEffect(() => {
+    if (!showSubAlgo) return;
+    setSubCountdown(30);
+    subTimer.current = setInterval(() => {
+      setSubCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(subTimer.current!);
+          setSubPhase(p => Math.min(p + 1, 3) as SubPhase);
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(subTimer.current!);
+  }, [showSubAlgo, subPhase]);
+
   const handleScan = async () => {
     if (!permission?.granted) {
       const result = await requestPermission();
@@ -52,10 +82,10 @@ export default function OperatorDashboard() {
   };
 
   const simulateScan = () => {
-    const outcomes = [
-      { type: "success" as const, message: "Check-in riuscito!\nSofia Rossi" },
-      { type: "warning" as const, message: "Delegato autorizzato\nMaria Ferrari" },
-      { type: "error" as const, message: "Errore: Pagamento scaduto\nStudente non abilitato" },
+    const outcomes: ScanResult[] = [
+      { type: "success", name: "Sofia Rossi", subscription: "active", medical: "valid", payment: "paid" },
+      { type: "warning", name: "Luca Ferrari", subscription: "active", medical: "expiring", payment: "paid" },
+      { type: "error", name: "Marco Bianchi", subscription: "expired", medical: "expired", payment: "overdue" },
     ];
     const result = outcomes[Math.floor(Math.random() * outcomes.length)];
     setScanResult(result);
@@ -67,7 +97,7 @@ export default function OperatorDashboard() {
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-    setTimeout(() => { setScanResult(null); setShowScanner(false); }, 2000);
+    setTimeout(() => { setScanResult(null); setShowScanner(false); }, 3500);
   };
 
   const handleSOSPress = () => {
@@ -82,9 +112,43 @@ export default function OperatorDashboard() {
     }
   };
 
+  const handleAbsenceReport = () => {
+    setSubPhase(1);
+    setSubCountdown(30);
+    setShowSubAlgo(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
   const callEmergency = (number: string) => {
     Linking.openURL(`tel:${number}`);
   };
+
+  const statusColor = (s: "active" | "valid" | "paid" | "expired" | "expiring" | "overdue" | "pending" | "none") => {
+    if (s === "active" || s === "valid" || s === "paid") return "#10B981";
+    if (s === "expiring" || s === "pending") return "#F59E0B";
+    return "#EF4444";
+  };
+
+  const statusIcon = (s: string) => {
+    if (s === "active" || s === "valid" || s === "paid") return "checkmark-circle";
+    if (s === "expiring" || s === "pending") return "warning";
+    return "close-circle";
+  };
+
+  const statusLabel = (key: string, val: string) => {
+    const labels: Record<string, string> = {
+      active: "Attiva", expired: "Scaduta", none: "Assente",
+      valid: "Valido", expiring: "In Scadenza",
+      paid: "Pagato", overdue: "Arretrato", pending: "Pendente",
+    };
+    return labels[val] || val;
+  };
+
+  const phaseDetails = [
+    { icon: "person-outline" as const, label: "Fase 1", desc: "Contatta genitore iscritto nella lista d'attesa", color: "#3B82F6" },
+    { icon: "people-outline" as const, label: "Fase 2", desc: "Offri il posto a studenti dello stesso livello", color: "#8B5CF6" },
+    { icon: "mail-outline" as const, label: "Fase 3", desc: "Notifica tutti i contatti della scuola", color: "#EC4899" },
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -148,6 +212,17 @@ export default function OperatorDashboard() {
           <Text style={[styles.scannerBtnSub, { color: colors.mutedForeground }]}>Tocca per aprire la fotocamera</Text>
         </Pressable>
 
+        {/* Absence Report + Substitution Algorithm */}
+        <View style={styles.actionRow}>
+          <Pressable
+            style={({ pressed }) => [styles.absenceBtn, { opacity: pressed ? 0.85 : 1 }]}
+            onPress={handleAbsenceReport}
+          >
+            <Ionicons name="person-remove-outline" size={22} color="#FFF" />
+            <Text style={styles.absenceBtnText}>Segnala Assenza</Text>
+          </Pressable>
+        </View>
+
         {/* SOS Button */}
         <Pressable
           style={({ pressed }) => [styles.sosBtn, pressed && { transform: [{ scale: 0.96 }] }]}
@@ -185,7 +260,7 @@ export default function OperatorDashboard() {
             <Pressable onPress={() => setShowScanner(false)}>
               <Ionicons name="close" size={28} color="#FFF" />
             </Pressable>
-            <Text style={styles.scannerTitle}>Scanner QR</Text>
+            <Text style={styles.scannerTitle}>Scanner QR — Semaforo</Text>
             <View style={{ width: 28 }} />
           </View>
 
@@ -207,16 +282,45 @@ export default function OperatorDashboard() {
             </CameraView>
           )}
 
+          {/* Rich Semaphore Result */}
           {scanResult && (
-            <View style={[styles.scanResultBanner, {
+            <View style={[styles.scanResultPanel, {
               backgroundColor: scanResult.type === "success" ? "#10B981" : scanResult.type === "warning" ? "#F59E0B" : "#EF4444"
             }]}>
-              <Ionicons
-                name={scanResult.type === "success" ? "checkmark-circle" : scanResult.type === "warning" ? "warning" : "close-circle"}
-                size={24}
-                color="#FFF"
-              />
-              <Text style={styles.scanResultText}>{scanResult.message}</Text>
+              <View style={styles.scanResultHeader}>
+                <Ionicons
+                  name={scanResult.type === "success" ? "checkmark-circle" : scanResult.type === "warning" ? "warning" : "close-circle"}
+                  size={30}
+                  color="#FFF"
+                />
+                <Text style={styles.scanResultName}>{scanResult.name}</Text>
+              </View>
+              <View style={styles.semaphoreRow}>
+                {/* Subscription */}
+                <View style={styles.semaphoreItem}>
+                  <Ionicons name={statusIcon(scanResult.subscription)} size={20} color={statusColor(scanResult.subscription)} />
+                  <Text style={styles.semaphoreLabel}>Iscrizione</Text>
+                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.subscription) }]}>
+                    {statusLabel("subscription", scanResult.subscription)}
+                  </Text>
+                </View>
+                {/* Medical */}
+                <View style={styles.semaphoreItem}>
+                  <Ionicons name={statusIcon(scanResult.medical)} size={20} color={statusColor(scanResult.medical)} />
+                  <Text style={styles.semaphoreLabel}>Certificato</Text>
+                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.medical) }]}>
+                    {statusLabel("medical", scanResult.medical)}
+                  </Text>
+                </View>
+                {/* Payment */}
+                <View style={styles.semaphoreItem}>
+                  <Ionicons name={statusIcon(scanResult.payment)} size={20} color={statusColor(scanResult.payment)} />
+                  <Text style={styles.semaphoreLabel}>Pagamento</Text>
+                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.payment) }]}>
+                    {statusLabel("payment", scanResult.payment)}
+                  </Text>
+                </View>
+              </View>
             </View>
           )}
 
@@ -228,6 +332,63 @@ export default function OperatorDashboard() {
               </Pressable>
             </View>
           )}
+        </View>
+      </Modal>
+
+      {/* Substitution Algorithm Modal */}
+      <Modal visible={showSubAlgo} transparent animationType="slide" onRequestClose={() => setShowSubAlgo(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.subAlgoCard}>
+            <View style={styles.subAlgoHeader}>
+              <Text style={styles.subAlgoTitle}>Algoritmo Sostituzione</Text>
+              <Pressable onPress={() => { setShowSubAlgo(false); clearInterval(subTimer.current!); }}>
+                <Ionicons name="close" size={24} color="#6B7BA4" />
+              </Pressable>
+            </View>
+            <Text style={styles.subAlgoSubtitle}>Studente assente · Posto disponibile</Text>
+
+            <View style={styles.phasesContainer}>
+              {phaseDetails.map((p, i) => {
+                const phaseNum = (i + 1) as SubPhase;
+                const isActive = subPhase === phaseNum;
+                const isDone = subPhase > phaseNum;
+                return (
+                  <View key={i} style={[styles.phaseRow, isActive && { backgroundColor: `${p.color}15`, borderRadius: 14 }]}>
+                    <View style={[styles.phaseIconCircle, {
+                      backgroundColor: isDone ? "#D1FAE5" : isActive ? p.color : "#E8EDF8"
+                    }]}>
+                      {isDone
+                        ? <Ionicons name="checkmark" size={16} color="#10B981" />
+                        : <Ionicons name={p.icon} size={16} color={isActive ? "#FFF" : "#6B7BA4"} />
+                      }
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.phaseLabel, { color: isActive ? p.color : isDone ? "#10B981" : "#6B7BA4" }]}>
+                        {p.label} {isDone ? "✓" : ""}
+                      </Text>
+                      <Text style={[styles.phaseDesc, { color: isActive ? "#1E3A8A" : "#9CA3AF" }]}>{p.desc}</Text>
+                    </View>
+                    {isActive && (
+                      <View style={[styles.countdownBadge, { backgroundColor: p.color }]}>
+                        <Text style={styles.countdownText}>{subCountdown}s</Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+
+            {subPhase > 3 && (
+              <View style={styles.subCompleted}>
+                <Ionicons name="checkmark-circle" size={28} color="#10B981" />
+                <Text style={{ color: "#10B981", fontWeight: "700", fontSize: 15 }}>Sostituzione Completata</Text>
+              </View>
+            )}
+
+            <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => { setShowSubAlgo(false); clearInterval(subTimer.current!); }}>
+              <Text style={styles.closeBtnText}>Chiudi</Text>
+            </Pressable>
+          </View>
         </View>
       </Modal>
 
@@ -282,6 +443,9 @@ const styles = StyleSheet.create({
   scannerBtn: { backgroundColor: "#FBBF24", borderRadius: 20, padding: 24, alignItems: "center", marginBottom: 14, shadowColor: "#FBBF24", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
   scannerBtnText: { fontSize: 18, fontWeight: "800", marginTop: 10 },
   scannerBtnSub: { fontSize: 13, marginTop: 4 },
+  actionRow: { marginBottom: 14 },
+  absenceBtn: { backgroundColor: "#6366F1", borderRadius: 16, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  absenceBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
   sosBtn: { backgroundColor: "#EF4444", borderRadius: 18, padding: 20, flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 24 },
   sosBtnText: { color: "#FFF", fontSize: 17, fontWeight: "800" },
   sosBtnSub: { color: "rgba(255,255,255,0.8)", fontSize: 12 },
@@ -296,12 +460,31 @@ const styles = StyleSheet.create({
   scannerPreview: { flex: 1, backgroundColor: "#111", alignItems: "center", justifyContent: "center" },
   scannerOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   scannerFrame: { width: 260, height: 260, borderRadius: 20, borderWidth: 3, borderColor: "#FBBF24" },
-  scanResultBanner: { padding: 20, flexDirection: "row", alignItems: "center", gap: 12 },
-  scanResultText: { color: "#FFF", fontSize: 16, fontWeight: "700", flex: 1 },
+  scanResultPanel: { padding: 20, gap: 12 },
+  scanResultHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  scanResultName: { color: "#FFF", fontSize: 20, fontWeight: "800" },
+  semaphoreRow: { flexDirection: "row", justifyContent: "space-around", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 14, padding: 14 },
+  semaphoreItem: { alignItems: "center", gap: 6 },
+  semaphoreLabel: { color: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: "600" },
+  semaphoreValue: { fontSize: 13, fontWeight: "800", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
   simulateBtn: { marginTop: 20, backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   simulateBtnText: { color: "#1E3A8A", fontWeight: "700" },
   scannerFooter: { padding: 24, alignItems: "center", gap: 16 },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", alignItems: "center", justifyContent: "center", padding: 24 },
+  subAlgoCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, width: "100%", gap: 4 },
+  subAlgoHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
+  subAlgoTitle: { fontSize: 20, fontWeight: "800", color: "#1E3A8A" },
+  subAlgoSubtitle: { fontSize: 13, color: "#6B7BA4", marginBottom: 16 },
+  phasesContainer: { gap: 8, marginBottom: 16 },
+  phaseRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12 },
+  phaseIconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  phaseLabel: { fontSize: 14, fontWeight: "700" },
+  phaseDesc: { fontSize: 12, marginTop: 2 },
+  countdownBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  countdownText: { color: "#FFF", fontSize: 13, fontWeight: "800" },
+  subCompleted: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12 },
+  closeBtn: { borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
+  closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
   sosModalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 28, alignItems: "center", width: "100%", gap: 12 },
   sosModalTitle: { fontSize: 22, fontWeight: "800", color: "#EF4444" },
   sosModalDesc: { fontSize: 14, color: "#6B7BA4" },

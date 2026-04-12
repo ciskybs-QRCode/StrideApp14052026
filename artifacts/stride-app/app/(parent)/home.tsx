@@ -29,10 +29,12 @@ export default function ParentHome() {
   const [showAbsence, setShowAbsence] = useState(false);
   const [absenceType, setAbsenceType] = useState<"absent" | "late15" | "late30">("absent");
   const [selectedChild, setSelectedChild] = useState(children[0]?.id || "");
+  const [qrChildId, setQrChildId] = useState(children[0]?.id || "");
 
   const nextLesson = lessons[0];
   const nextCourse = courses.find(c => c.id === nextLesson?.courseId);
   const childForLesson = children[0];
+  const qrChild = children.find(c => c.id === qrChildId) || children[0];
 
   const handleNavigate = () => Linking.openURL("https://maps.google.com/?q=Bayswater+Studio");
 
@@ -171,12 +173,43 @@ export default function ParentHome() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Image source={LOGO} style={styles.modalLogo} contentFit="contain" />
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>QR Code Check-In</Text>
-            <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>{childForLesson?.name}</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Smart Pass — QR Check-In</Text>
+
+            {/* Child Selector Tabs */}
+            {children.length > 1 && (
+              <View style={styles.qrChildTabs}>
+                {children.map(c => (
+                  <Pressable
+                    key={c.id}
+                    style={[styles.qrChildTab, qrChildId === c.id && { backgroundColor: colors.primary }]}
+                    onPress={() => setQrChildId(c.id)}
+                  >
+                    <Text style={[styles.qrChildTabText, qrChildId === c.id && { color: "#FFF" }]}>{c.name.split(" ")[0]}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {/* Smart Pass Validity */}
+            <View style={styles.passStatusRow}>
+              <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
+                <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                <Text style={[styles.passStatusText, { color: "#10B981" }]}>Iscrizione Attiva</Text>
+              </View>
+              <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
+                <Ionicons name="shield-checkmark" size={14} color="#10B981" />
+                <Text style={[styles.passStatusText, { color: "#10B981" }]}>Certificato OK</Text>
+              </View>
+            </View>
+
             <View style={[styles.qrBox, { backgroundColor: "#F0F4FF" }]}>
               <Ionicons name="qr-code" size={140} color={colors.primary} />
-              <Text style={[styles.qrId, { color: colors.mutedForeground }]}>ID: {childForLesson?.id?.toUpperCase()}</Text>
+              <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrChild?.name}</Text>
+              <Text style={[styles.qrId, { color: colors.mutedForeground }]}>ID: {qrChild?.id?.toUpperCase()}</Text>
             </View>
+            <Text style={[styles.qrSwipeHint, { color: colors.mutedForeground }]}>
+              {children.length > 1 ? "Tocca il nome in alto per cambiare figlio" : ""}
+            </Text>
             <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setShowQR(false)}>
               <Text style={styles.closeBtnText}>Chiudi</Text>
             </Pressable>
@@ -268,8 +301,16 @@ const styles = StyleSheet.create({
   modalLogo: { width: 80, height: 44, marginBottom: 8 },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
   modalSubtitle: { fontSize: 13, marginBottom: 16 },
-  qrBox: { alignItems: "center", padding: 24, borderRadius: 18, marginBottom: 20, width: "100%" },
-  qrId: { fontSize: 12, marginTop: 10, letterSpacing: 1 },
+  qrBox: { alignItems: "center", padding: 24, borderRadius: 18, marginBottom: 8, width: "100%" },
+  qrId: { fontSize: 12, marginTop: 6, letterSpacing: 1 },
+  qrChildName: { fontSize: 16, fontWeight: "700", marginTop: 10 },
+  qrChildTabs: { flexDirection: "row", gap: 8, marginBottom: 14, flexWrap: "wrap", justifyContent: "center" },
+  qrChildTab: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 50, backgroundColor: "#E8EDF8", borderWidth: 2, borderColor: "#D1D9F0" },
+  qrChildTabText: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },
+  passStatusRow: { flexDirection: "row", gap: 10, marginBottom: 12, justifyContent: "center" },
+  passStatusBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  passStatusText: { fontSize: 12, fontWeight: "700" },
+  qrSwipeHint: { fontSize: 11, textAlign: "center", marginBottom: 12 },
   fieldLabel: { fontSize: 13, fontWeight: "600", marginBottom: 8, alignSelf: "flex-start" },
   childRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   childOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D1D9F0" },

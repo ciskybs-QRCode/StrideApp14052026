@@ -34,7 +34,7 @@ const MOCK_USERS: UserRecord[] = [
 export default function AdminUsers() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [users] = useState<UserRecord[]>(MOCK_USERS);
+  const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "parent" | "operator">("all");
   const [selected, setSelected] = useState<UserRecord | null>(null);
@@ -143,6 +143,34 @@ export default function AdminUsers() {
                     <Text style={[styles.modalActionText, { color: "#10B981" }]}>Contatta</Text>
                   </Pressable>
                 </View>
+
+                {/* Promote / Demote */}
+                {selected.role === "parent" ? (
+                  <Pressable
+                    style={[styles.promoteBtn, { backgroundColor: "#EDE9FE" }]}
+                    onPress={() => {
+                      setUsers(prev => prev.map(u => u.id === selected.id ? { ...u, role: "operator" } : u));
+                      setSelected(prev => prev ? { ...prev, role: "operator" } : null);
+                      Alert.alert("Ruolo Aggiornato", `${selected.name} è ora Operatore`);
+                    }}
+                  >
+                    <Ionicons name="arrow-up-circle" size={20} color="#7C3AED" />
+                    <Text style={[styles.promoteBtnText, { color: "#7C3AED" }]}>Promuovi a Operatore</Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    style={[styles.promoteBtn, { backgroundColor: "#DBEAFE" }]}
+                    onPress={() => {
+                      setUsers(prev => prev.map(u => u.id === selected.id ? { ...u, role: "parent" } : u));
+                      setSelected(prev => prev ? { ...prev, role: "parent" } : null);
+                      Alert.alert("Ruolo Aggiornato", `${selected.name} è ora Genitore`);
+                    }}
+                  >
+                    <Ionicons name="arrow-down-circle" size={20} color="#1E3A8A" />
+                    <Text style={[styles.promoteBtnText, { color: "#1E3A8A" }]}>Demota a Genitore</Text>
+                  </Pressable>
+                )}
+
                 <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setSelected(null)}>
                   <Text style={styles.closeBtnText}>Chiudi</Text>
                 </Pressable>
@@ -190,4 +218,6 @@ const styles = StyleSheet.create({
   modalActionText: { fontWeight: "700", fontSize: 14 },
   closeBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center", width: "100%" },
   closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  promoteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 14, width: "100%", marginBottom: 12 },
+  promoteBtnText: { fontWeight: "700", fontSize: 15 },
 });

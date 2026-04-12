@@ -113,6 +113,7 @@ interface AppDataContextType {
   signDocument: (id: string) => Promise<void>;
   updateStudentPresence: (studentId: string, present: boolean) => Promise<void>;
   addDocument: (doc: Omit<Document, "id">) => Promise<void>;
+  addStars: (studentId: string, count: number) => Promise<void>;
   mediaConsent: "full" | "internal" | "none";
   setMediaConsent: (consent: "full" | "internal" | "none") => Promise<void>;
 }
@@ -258,6 +259,10 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     await saveData({ documents: updated });
   };
 
+  const addStars = async (studentId: string, count: number) => {
+    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, stars: s.stars + count } : s));
+  };
+
   const setMediaConsent = async (consent: "full" | "internal" | "none") => {
     setMediaConsentState(consent);
     await saveData({ mediaConsent: consent });
@@ -281,6 +286,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       signDocument,
       updateStudentPresence,
       addDocument,
+      addStars,
       mediaConsent,
       setMediaConsent,
     }}>

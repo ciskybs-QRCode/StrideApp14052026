@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,6 +23,19 @@ export default function AdminSettings() {
   const [autoInvoice, setAutoInvoice] = useState(true);
   const [parentAlerts, setParentAlerts] = useState(true);
   const [paymentReminders, setPaymentReminders] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [generatedPromos, setGeneratedPromos] = useState([
+    { code: "STRIDE2026", discount: "20%", uses: 12, active: true },
+    { code: "STRIVEFREE1", discount: "100% prima lezione", uses: 5, active: true },
+    { code: "WELCOME10", discount: "10%", uses: 34, active: false },
+  ]);
+
+  const handleGeneratePromo = () => {
+    const code = promoInput.trim().toUpperCase() || `STRIDE${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    setGeneratedPromos(prev => [{ code, discount: "15%", uses: 0, active: true }, ...prev]);
+    setPromoInput("");
+    Alert.alert("Codice Creato", `Il codice "${code}" è stato generato e attivato.`);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -113,6 +127,35 @@ export default function AdminSettings() {
           </Pressable>
         </View>
 
+        {/* Promo Codes */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Codici Promozionali</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={styles.promoGeneratorRow}>
+            <TextInput
+              style={[styles.promoInput, { borderColor: colors.primary, color: colors.foreground }]}
+              placeholder="Nuovo codice (es. STRIDE2026)"
+              value={promoInput}
+              onChangeText={setPromoInput}
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="characters"
+            />
+            <Pressable style={[styles.promoGenBtn, { backgroundColor: colors.secondary }]} onPress={handleGeneratePromo}>
+              <Ionicons name="add-circle" size={20} color={colors.primary} />
+            </Pressable>
+          </View>
+          {generatedPromos.map((p, i) => (
+            <View key={p.code} style={[styles.promoRow, i < generatedPromos.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.promoCode, { color: colors.primary }]}>{p.code}</Text>
+                <Text style={[styles.promoMeta, { color: colors.mutedForeground }]}>{p.discount} · {p.uses} utilizzi</Text>
+              </View>
+              <View style={[styles.promoStatusBadge, { backgroundColor: p.active ? "#D1FAE5" : "#FEE2E2" }]}>
+                <Text style={[styles.promoStatusText, { color: p.active ? "#10B981" : "#EF4444" }]}>{p.active ? "Attivo" : "Scaduto"}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
         <Text style={[styles.version, { color: colors.mutedForeground }]}>Stride App v1.0.0 — Dance Village</Text>
       </ScrollView>
     </View>
@@ -141,4 +184,12 @@ const styles = StyleSheet.create({
   infoValue: { flex: 1, fontSize: 13, fontWeight: "600" },
   settingsNavItem: { flexDirection: "row", alignItems: "center", padding: 16, gap: 12 },
   version: { fontSize: 12, textAlign: "center", marginBottom: 20 },
+  promoGeneratorRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderBottomWidth: 1, borderBottomColor: "#E8EDF8" },
+  promoInput: { flex: 1, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14 },
+  promoGenBtn: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  promoRow: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+  promoCode: { fontSize: 14, fontWeight: "700", letterSpacing: 0.5 },
+  promoMeta: { fontSize: 12, marginTop: 2 },
+  promoStatusBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  promoStatusText: { fontSize: 12, fontWeight: "700" },
 });

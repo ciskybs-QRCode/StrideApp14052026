@@ -16,7 +16,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function OperatorStudents() {
-  const { students, updateStudentPresence } = useAppData();
+  const { students, updateStudentPresence, addStars } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
@@ -29,11 +29,19 @@ export default function OperatorStudents() {
     return matchSearch && matchFilter;
   });
 
+  const [showStarNotif, setShowStarNotif] = useState(false);
   const student = students.find(s => s.id === selectedStudent);
 
   const handleTogglePresence = async (id: string, current: boolean) => {
     await updateStudentPresence(id, !current);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleAssignStar = async (studentId: string) => {
+    await addStars(studentId, 1);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowStarNotif(true);
+    setTimeout(() => setShowStarNotif(false), 2500);
   };
 
   return (
@@ -121,6 +129,17 @@ export default function OperatorStudents() {
         ))}
       </ScrollView>
 
+      {/* Star Notification Toast */}
+      {showStarNotif && (
+        <View style={styles.starToast}>
+          <Ionicons name="star" size={20} color="#FFF" />
+          <View>
+            <Text style={styles.starToastTitle}>⭐ Stella Assegnata!</Text>
+            <Text style={styles.starToastSub}>Notifica inviata al genitore</Text>
+          </View>
+        </View>
+      )}
+
       {/* Student Detail Modal */}
       <Modal visible={!!selectedStudent} transparent animationType="slide" onRequestClose={() => setSelectedStudent(null)}>
         <View style={styles.modalOverlay}>
@@ -165,6 +184,15 @@ export default function OperatorStudents() {
                     </Text>
                   </View>
                 </View>
+
+                {/* Gold Star Assignment */}
+                <Pressable
+                  style={[styles.starBtn, { backgroundColor: "#FEF3C7" }]}
+                  onPress={() => handleAssignStar(student.id)}
+                >
+                  <Ionicons name="star" size={22} color="#F59E0B" />
+                  <Text style={[styles.starBtnText, { color: "#F59E0B" }]}>Assegna Stella d'Oro</Text>
+                </Pressable>
 
                 <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setSelectedStudent(null)}>
                   <Text style={styles.closeBtnText}>Chiudi</Text>
@@ -217,4 +245,9 @@ const styles = StyleSheet.create({
   infoValue: { flex: 1, fontSize: 13, fontWeight: "600" },
   closeBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center" },
   closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  starBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, padding: 14, width: "100%", justifyContent: "center", marginBottom: 12, borderWidth: 1.5, borderColor: "#FCD34D" },
+  starBtnText: { fontSize: 16, fontWeight: "700" },
+  starToast: { position: "absolute", bottom: 120, left: 20, right: 20, backgroundColor: "#F59E0B", borderRadius: 14, padding: 16, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 8, elevation: 8 },
+  starToastTitle: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  starToastSub: { color: "#FEF3C7", fontSize: 12 },
 });

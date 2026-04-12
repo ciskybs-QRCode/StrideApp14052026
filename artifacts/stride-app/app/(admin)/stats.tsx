@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -132,6 +133,32 @@ export default function AdminStats() {
             <Text style={styles.revenueTotalAmount}>€{courses.reduce((sum, c) => sum + c.price * c.enrolled, 0).toLocaleString()}</Text>
           </View>
         </View>
+
+        {/* Excel Export */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Esporta Dati</Text>
+        <View style={styles.exportGrid}>
+          {[
+            { label: "Presenze", icon: "people-outline" as const, color: "#3B82F6" },
+            { label: "Incassi", icon: "cash-outline" as const, color: "#10B981" },
+            { label: "Iscrizioni", icon: "school-outline" as const, color: "#7C3AED" },
+            { label: "Report Annuale", icon: "bar-chart-outline" as const, color: "#F59E0B" },
+          ].map(item => (
+            <Pressable
+              key={item.label}
+              style={[styles.exportBtn, { backgroundColor: colors.card }]}
+              onPress={() => Alert.alert("Export Excel", `Il file "${item.label}.xlsx" è stato preparato per il download.`)}
+            >
+              <View style={[styles.exportIcon, { backgroundColor: `${item.color}20` }]}>
+                <Ionicons name={item.icon} size={22} color={item.color} />
+              </View>
+              <Text style={[styles.exportLabel, { color: colors.primary }]}>{item.label}</Text>
+              <View style={styles.exportXls}>
+                <Ionicons name="download-outline" size={14} color="#10B981" />
+                <Text style={styles.exportXlsText}>.xlsx</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
@@ -171,4 +198,10 @@ const styles = StyleSheet.create({
   revenueTotalRow: { flexDirection: "row", justifyContent: "space-between", padding: 18 },
   revenueTotalLabel: { color: "#FFF", fontSize: 12, fontWeight: "700", letterSpacing: 1 },
   revenueTotalAmount: { color: "#FFF", fontSize: 20, fontWeight: "800" },
+  exportGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
+  exportBtn: { width: "47%", borderRadius: 16, padding: 16, alignItems: "center", gap: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  exportIcon: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  exportLabel: { fontSize: 14, fontWeight: "700", textAlign: "center" },
+  exportXls: { flexDirection: "row", alignItems: "center", gap: 4 },
+  exportXlsText: { fontSize: 11, fontWeight: "700", color: "#10B981" },
 });
