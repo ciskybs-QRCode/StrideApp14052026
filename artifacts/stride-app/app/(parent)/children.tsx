@@ -18,13 +18,17 @@ import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function ChildrenScreen() {
-  const { children, delegates, addDelegate, removeDelegate, updateChild } = useAppData();
+  const { children, delegates, addDelegate, removeDelegate, updateChild, addChild } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [selectedChild, setSelectedChild] = useState(children[0]?.id || "");
   const [showAddDelegate, setShowAddDelegate] = useState(false);
   const [showMedical, setShowMedical] = useState(false);
   const [showQRPass, setShowQRPass] = useState<string | null>(null);
+  const [showAddChild, setShowAddChild] = useState(false);
+  const [newChildName, setNewChildName] = useState("");
+  const [newChildSurname, setNewChildSurname] = useState("");
+  const [newChildAge, setNewChildAge] = useState("");
   const [delegateName, setDelegateName] = useState("");
   const [delegateSurname, setDelegateSurname] = useState("");
   const [delegatePhone, setDelegatePhone] = useState("");
@@ -33,6 +37,24 @@ export default function ChildrenScreen() {
 
   const child = children.find(c => c.id === selectedChild);
   const childDelegates = delegates.filter(d => d.childId === selectedChild);
+
+  const handleAddChild = async () => {
+    if (!newChildName.trim() || !newChildSurname.trim() || !newChildAge.trim()) {
+      Alert.alert("Errore", "Compila nome, cognome ed età.");
+      return;
+    }
+    const age = parseInt(newChildAge, 10);
+    if (isNaN(age) || age < 1 || age > 18) {
+      Alert.alert("Errore", "Inserisci un'età valida (1-18 anni).");
+      return;
+    }
+    await addChild({ name: `${newChildName.trim()} ${newChildSurname.trim()}`, age, allergies: "", medicalWaiver: "ambulance", stars: 0, courses: [] });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewChildName("");
+    setNewChildSurname("");
+    setNewChildAge("");
+    setShowAddChild(false);
+  };
 
   const handleSaveMedical = async () => {
     await updateChild(selectedChild, { allergies, medicalWaiver });
@@ -74,20 +96,28 @@ export default function ChildrenScreen() {
         <Text style={[styles.pageTitle, { color: colors.primary }]}>I Miei Figli</Text>
 
         {/* Child Selector */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-          {children.map(c => (
-            <Pressable
-              key={c.id}
-              style={[styles.childTab, selectedChild === c.id && { backgroundColor: colors.primary }]}
-              onPress={() => { setSelectedChild(c.id); setAllergies(c.allergies); setMedicalWaiver(c.medicalWaiver); }}
-            >
-              <View style={[styles.childAvatar, selectedChild === c.id && { backgroundColor: "rgba(255,255,255,0.3)" }]}>
-                <Text style={[styles.childAvatarText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.charAt(0)}</Text>
-              </View>
-              <Text style={[styles.childTabText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.split(" ")[0]}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <View style={styles.childSelectorRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+            {children.map(c => (
+              <Pressable
+                key={c.id}
+                style={[styles.childTab, selectedChild === c.id && { backgroundColor: colors.primary }]}
+                onPress={() => { setSelectedChild(c.id); setAllergies(c.allergies); setMedicalWaiver(c.medicalWaiver); }}
+              >
+                <View style={[styles.childAvatar, selectedChild === c.id && { backgroundColor: "rgba(255,255,255,0.3)" }]}>
+                  <Text style={[styles.childAvatarText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.charAt(0)}</Text>
+                </View>
+                <Text style={[styles.childTabText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.split(" ")[0]}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <Pressable
+            style={[styles.addChildBtn, { backgroundColor: colors.secondary }]}
+            onPress={() => { setShowAddChild(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <Ionicons name="add" size={22} color={colors.primary} />
+          </Pressable>
+        </View>
 
         {child && (
           <>
@@ -255,6 +285,62 @@ export default function ChildrenScreen() {
         </View>
       </Modal>
 
+      {/* Add Child Modal */}
+      <Modal visible={showAddChild} transparent animationType="slide" onRequestClose={() => setShowAddChild(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.addChildHeader}>
+              <View style={[styles.addChildIconCircle, { backgroundColor: colors.primary }]}>
+                <Ionicons name="person-add" size={28} color="#FFF" />
+              </View>
+              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Aggiungi Figlio</Text>
+            </View>
+            <Text style={[styles.addChildSubtitle, { color: colors.mutedForeground }]}>
+              Il bambino verrà aggiunto al tuo profilo e potrai gestire le sue iscrizioni e deleghe.
+            </Text>
+
+            <Text style={[styles.modalLabel, { color: colors.primary }]}>Nome</Text>
+            <TextInput
+              style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
+              value={newChildName}
+              onChangeText={setNewChildName}
+              placeholder="es. Sofia"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="words"
+            />
+
+            <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Cognome</Text>
+            <TextInput
+              style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
+              value={newChildSurname}
+              onChangeText={setNewChildSurname}
+              placeholder="es. Rossi"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="words"
+            />
+
+            <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Età</Text>
+            <TextInput
+              style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
+              value={newChildAge}
+              onChangeText={setNewChildAge}
+              placeholder="es. 8"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="number-pad"
+            />
+
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+              <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); setNewChildName(""); setNewChildSurname(""); setNewChildAge(""); }}>
+                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+              </Pressable>
+              <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Aggiungi</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* QR Pass Modal */}
       <Modal visible={!!showQRPass} transparent animationType="fade" onRequestClose={() => setShowQRPass(null)}>
         <View style={styles.modalOverlay}>
@@ -287,6 +373,11 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
+  childSelectorRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 },
+  addChildBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, flexShrink: 0 },
+  addChildHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 },
+  addChildIconCircle: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  addChildSubtitle: { fontSize: 13, lineHeight: 18, marginBottom: 20 },
   childTab: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 50, marginRight: 10, backgroundColor: "#E8EDF8" },
   childAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#D1D9F0", alignItems: "center", justifyContent: "center" },
   childAvatarText: { color: "#1E3A8A", fontWeight: "700", fontSize: 13 },
