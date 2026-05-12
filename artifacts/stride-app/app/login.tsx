@@ -46,12 +46,19 @@ export default function LoginScreen() {
     ]).start();
   };
 
+  const navigateAfterLogin = (roleEmail: string) => {
+    if (roleEmail === "admin@test.com") router.replace("/(admin)/setup" as never);
+    else if (roleEmail === "operatore@test.com") router.replace("/(operator)/dashboard" as never);
+    else router.replace("/(parent)/home" as never);
+  };
+
   const handleLogin = async () => {
     if (!email || !password) { setError("Inserisci email e password"); shake(); return; }
     setLoading(true); setError("");
     try {
       await login(email, password);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigateAfterLogin(email.toLowerCase());
     } catch (e: unknown) {
       const err = e as Error;
       setError(err.message || "Credenziali non valide");
@@ -65,6 +72,7 @@ export default function LoginScreen() {
     try {
       await login(roleEmail, "password");
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigateAfterLogin(roleEmail);
     } catch {
       setError("Errore di accesso");
     } finally { setQuickLoading(null); }
