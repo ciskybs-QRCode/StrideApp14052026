@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Stride App",
-    "slug": "stride-app",
+    "name": "Stride Access",
+    "slug": "strideaccess",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "stride-app",
+    "scheme": "strideaccess",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,11 +14,14 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.strideaccess.app"
     },
-    "android": {},
+    "android": {
+      "package": "com.strideaccess.app"
+    },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       [
