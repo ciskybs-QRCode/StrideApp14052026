@@ -28,6 +28,7 @@ const QUICK_ROLES = [
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
