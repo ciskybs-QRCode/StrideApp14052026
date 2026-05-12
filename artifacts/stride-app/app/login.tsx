@@ -48,7 +48,7 @@ export default function LoginScreen() {
   };
 
   const navigateAfterLogin = (roleEmail: string) => {
-    if (roleEmail === "admin@test.com") router.replace("/(admin)/setup" as never);
+    if (roleEmail === "admin@test.com") router.replace("/(admin)/stats" as never);
     else if (roleEmail === "operatore@test.com") router.replace("/(operator)/dashboard" as never);
     else router.replace("/(parent)/home" as never);
   };

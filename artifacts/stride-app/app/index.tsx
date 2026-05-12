@@ -12,7 +12,7 @@ export default function Index() {
     if (!user) {
       router.replace("/login");
     } else if (user.role === "admin") {
-      router.replace("/(admin)/setup");
+      router.replace("/(admin)/stats");
     } else if (user.role === "operator") {
       router.replace("/(operator)/dashboard");
     } else {

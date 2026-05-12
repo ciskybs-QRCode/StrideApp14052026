@@ -61,8 +61,19 @@ function isExpired(p: PromoCode): boolean {
   return !p.active || p.usedCount >= p.maxUses;
 }
 
+const PRESET_COLORS = [
+  { primary: "#1E3A8A", secondary: "#FBBF24", name: "Stride Classic" },
+  { primary: "#7C3AED", secondary: "#C4B5FD", name: "Viola" },
+  { primary: "#059669", secondary: "#6EE7B7", name: "Smeraldo" },
+  { primary: "#DC2626", secondary: "#FCA5A5", name: "Rosso" },
+  { primary: "#EA580C", secondary: "#FDBA74", name: "Arancio" },
+  { primary: "#0EA5E9", secondary: "#BAE6FD", name: "Cielo" },
+];
+
+const FONTS = ["Montserrat", "Open Sans", "Poppins", "Roboto", "Lato", "Inter"];
+
 export default function AdminSettings() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState(true);
@@ -80,6 +91,21 @@ export default function AdminSettings() {
   const [newDiscountValue, setNewDiscountValue] = useState("");
   const [newDuration, setNewDuration] = useState("");
   const [newMaxUses, setNewMaxUses] = useState("1");
+
+  // Personalizzazione
+  const [schoolName, setSchoolName] = useState(user?.schoolName || "");
+  const [selectedColors, setSelectedColors] = useState(0);
+  const [selectedFont, setSelectedFont] = useState("Montserrat");
+  const [buttonStyle, setButtonStyle] = useState<"rounded" | "square">("rounded");
+  const [skinApplied, setSkinApplied] = useState(false);
+
+  const handleApplySkin = async () => {
+    if (!schoolName.trim()) { Alert.alert("Errore", "Inserisci il nome della scuola."); return; }
+    await updateUser({ schoolName, primaryColor: PRESET_COLORS[selectedColors].primary, secondaryColor: PRESET_COLORS[selectedColors].secondary });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setSkinApplied(true);
+    Alert.alert("Skin Applicata!", `La personalizzazione per "${schoolName}" è stata salvata.`);
+  };
 
   const handleCreatePromo = () => {
     const code = newCode.trim().toUpperCase();
@@ -215,6 +241,109 @@ export default function AdminSettings() {
             <Ionicons name="log-out-outline" size={18} color="#F59E0B" />
             <Text style={[styles.settingsLabel, { color: "#F59E0B" }]}>Log Out</Text>
             <Ionicons name="chevron-forward" size={16} color="#F59E0B" />
+          </Pressable>
+        </View>
+
+        {/* ── PERSONALIZZAZIONE APP ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Personalizzazione App</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          {/* Logo + Nome */}
+          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <Pressable
+              style={[styles.logoUploadBtn, { borderColor: colors.border }]}
+              onPress={() => Alert.alert("Upload Logo", "Seleziona il logo della tua scuola dalla galleria.")}
+            >
+              <Ionicons name="cloud-upload-outline" size={28} color={colors.mutedForeground} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Logo Scuola</Text>
+                <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>PNG, JPG, SVG — max 5MB</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+            </Pressable>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginTop: 14 }]}>Nome Scuola / Associazione</Text>
+            <TextInput
+              style={[styles.skinInput, { borderColor: colors.border, color: colors.foreground }]}
+              value={schoolName}
+              onChangeText={setSchoolName}
+              placeholder="es. Dance Village"
+              placeholderTextColor={colors.mutedForeground}
+            />
+          </View>
+
+          {/* Palette Colori */}
+          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Palette Colori</Text>
+            <View style={styles.colorGrid}>
+              {PRESET_COLORS.map((preset, i) => (
+                <Pressable
+                  key={i}
+                  style={[styles.colorOption, selectedColors === i && { borderColor: colors.primary }]}
+                  onPress={() => { setSelectedColors(i); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <View style={styles.colorSwatch}>
+                    <View style={[styles.colorSwatchA, { backgroundColor: preset.primary }]} />
+                    <View style={[styles.colorSwatchB, { backgroundColor: preset.secondary }]} />
+                  </View>
+                  <Text style={[styles.colorName, { color: colors.foreground }]}>{preset.name}</Text>
+                  {selectedColors === i && <Ionicons name="checkmark-circle" size={16} color={colors.primary} />}
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Font */}
+          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Font</Text>
+            <View style={styles.fontGrid}>
+              {FONTS.map(font => (
+                <Pressable
+                  key={font}
+                  style={[styles.fontOption, selectedFont === font && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  onPress={() => { setSelectedFont(font); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <Text style={[styles.fontOptionText, { color: selectedFont === font ? "#FFF" : colors.primary }]}>{font}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Stile Pulsanti */}
+          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Stile Pulsanti</Text>
+            <View style={styles.btnStyleRow}>
+              {(["rounded", "square"] as const).map(style => (
+                <Pressable
+                  key={style}
+                  style={[styles.btnStyleOption, buttonStyle === style && { borderColor: colors.primary, backgroundColor: colors.muted }]}
+                  onPress={() => setButtonStyle(style)}
+                >
+                  <View style={[styles.btnStylePreview, { borderRadius: style === "rounded" ? 20 : 4, backgroundColor: PRESET_COLORS[selectedColors].primary }]}>
+                    <Text style={styles.btnStylePreviewText}>{style === "rounded" ? "Arrotondato" : "Squadrato"}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Anteprima */}
+          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Anteprima</Text>
+            <View style={[styles.previewBox, { backgroundColor: PRESET_COLORS[selectedColors].primary }]}>
+              <Text style={styles.previewSchoolName}>{schoolName || "Nome Scuola"}</Text>
+              <Text style={styles.previewTagline}>APP DASHBOARD</Text>
+              <View style={[styles.previewBtn, { backgroundColor: PRESET_COLORS[selectedColors].secondary, borderRadius: buttonStyle === "rounded" ? 20 : 4 }]}>
+                <Text style={[styles.previewBtnText, { color: PRESET_COLORS[selectedColors].primary }]}>PULSANTE</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Applica */}
+          <Pressable
+            style={({ pressed }) => [styles.applyBtn, { backgroundColor: skinApplied ? "#10B981" : colors.primary, opacity: pressed ? 0.85 : 1 }]}
+            onPress={handleApplySkin}
+          >
+            <Ionicons name={skinApplied ? "checkmark-circle" : "rocket"} size={20} color="#FFF" />
+            <Text style={styles.applyBtnText}>{skinApplied ? "SKIN APPLICATA!" : "APPLICA SKIN"}</Text>
           </Pressable>
         </View>
 
@@ -554,4 +683,31 @@ const styles = StyleSheet.create({
   detailUsageHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   detailActionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14 },
   detailActionText: { fontWeight: "700", fontSize: 15 },
+
+  // Personalizzazione
+  logoUploadBtn: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 1.5, borderStyle: "dashed", borderRadius: 14, padding: 14, marginBottom: 4 },
+  logoUploadTitle: { fontSize: 14, fontWeight: "700" },
+  logoUploadSub: { fontSize: 11, marginTop: 2 },
+  skinFieldLabel: { fontSize: 12, fontWeight: "600", marginBottom: 8 },
+  skinInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, marginTop: 4 },
+  colorGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  colorOption: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, padding: 8, borderWidth: 2, borderColor: "transparent", backgroundColor: "#F0F4FF" },
+  colorSwatch: { flexDirection: "row", borderRadius: 6, overflow: "hidden" },
+  colorSwatchA: { width: 16, height: 16 },
+  colorSwatchB: { width: 16, height: 16 },
+  colorName: { fontSize: 11, fontWeight: "600" },
+  fontGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  fontOption: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: "#D1D9F0", backgroundColor: "#F0F4FF" },
+  fontOptionText: { fontSize: 12, fontWeight: "600" },
+  btnStyleRow: { flexDirection: "row", gap: 12 },
+  btnStyleOption: { flex: 1, borderRadius: 12, padding: 12, alignItems: "center", borderWidth: 2, borderColor: "#D1D9F0" },
+  btnStylePreview: { paddingHorizontal: 14, paddingVertical: 9 },
+  btnStylePreviewText: { color: "#FFF", fontWeight: "700", fontSize: 11 },
+  previewBox: { borderRadius: 14, padding: 18, alignItems: "center", gap: 8 },
+  previewSchoolName: { color: "#FFF", fontSize: 18, fontWeight: "800" },
+  previewTagline: { color: "rgba(255,255,255,0.6)", fontSize: 10, letterSpacing: 2 },
+  previewBtn: { paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },
+  previewBtnText: { fontWeight: "700", fontSize: 12 },
+  applyBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, margin: 16, borderRadius: 14, paddingVertical: 16 },
+  applyBtnText: { color: "#FFF", fontWeight: "800", fontSize: 15, letterSpacing: 0.5 },
 });
