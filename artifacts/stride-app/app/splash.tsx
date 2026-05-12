@@ -41,7 +41,6 @@ export default function SplashScreen() {
           <View style={styles.arcInner} />
         </Animated.View>
         <Text style={styles.title}>Stride</Text>
-        <Text style={styles.subtitle}>Dance School Management</Text>
       </Animated.View>
       <Text style={styles.footer}>Powered by Stride Platform</Text>
     </View>
@@ -51,7 +50,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1E3A8A",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -71,7 +70,7 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 36,
     borderWidth: 4,
-    borderColor: "#1E3A8A",
+    borderColor: "#E5E7EB",
     borderTopColor: "#FBBF24",
     borderRightColor: "#FBBF24",
     backgroundColor: "transparent",
@@ -83,9 +82,9 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     borderWidth: 4,
-    borderColor: "#1E3A8A",
-    borderTopColor: "#FFFFFF",
-    borderLeftColor: "#FFFFFF",
+    borderColor: "#E5E7EB",
+    borderTopColor: "#1E3A8A",
+    borderLeftColor: "#1E3A8A",
     backgroundColor: "transparent",
     transform: [{ rotate: "30deg" }],
   },
@@ -95,7 +94,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 4,
-    borderColor: "#1E3A8A",
+    borderColor: "#E5E7EB",
     borderBottomColor: "#FBBF24",
     borderRightColor: "#FBBF24",
     backgroundColor: "transparent",
@@ -104,21 +103,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: "#1E3A8A",
     fontStyle: "italic",
     letterSpacing: 2,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#FBBF24",
-    letterSpacing: 4,
-    marginTop: 8,
-    textTransform: "uppercase",
   },
   footer: {
     position: "absolute",
     bottom: 50,
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(30,58,138,0.3)",
     fontSize: 12,
   },
 });

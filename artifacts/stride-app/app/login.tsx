@@ -81,7 +81,6 @@ export default function LoginScreen() {
           {/* Logo Area */}
           <View style={styles.logoArea}>
             <Image source={LOGO} style={styles.logoImage} contentFit="contain" />
-            <Text style={styles.tagline}>DANCE SCHOOL MANAGEMENT</Text>
           </View>
 
           {/* Quick Role Access */}
@@ -173,13 +172,12 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#1E3A8A" },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
   scroll: { flexGrow: 1, paddingHorizontal: 24 },
   logoArea: { alignItems: "center", marginBottom: 32 },
   logoImage: { width: 180, height: 100 },
-  tagline: { fontSize: 11, color: "#FBBF24", letterSpacing: 3, marginTop: 6, textTransform: "uppercase" },
   quickSection: { marginBottom: 20 },
-  quickTitle: { fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: "600", letterSpacing: 1, textAlign: "center", marginBottom: 14, textTransform: "uppercase" },
+  quickTitle: { fontSize: 13, color: "#6B7BA4", fontWeight: "600", letterSpacing: 1, textAlign: "center", marginBottom: 14, textTransform: "uppercase" },
   quickGrid: { flexDirection: "row", gap: 12 },
   quickCard: { flex: 1, alignItems: "center", borderRadius: 16, paddingVertical: 18, paddingHorizontal: 8, gap: 8, borderWidth: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
   quickCardLabel: { fontSize: 13, fontWeight: "700" },
@@ -195,5 +193,5 @@ const styles = StyleSheet.create({
   errorText: { color: "#EF4444", fontSize: 13, flex: 1 },
   loginBtn: { backgroundColor: "#1E3A8A", borderRadius: 14, height: 52, alignItems: "center", justifyContent: "center", marginTop: 4, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 },
   loginBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15, letterSpacing: 1.5 },
-  footer: { color: "rgba(255,255,255,0.35)", fontSize: 12, textAlign: "center", marginTop: 24 },
+  footer: { color: "rgba(30,58,138,0.35)", fontSize: 12, textAlign: "center", marginTop: 24 },
 });
