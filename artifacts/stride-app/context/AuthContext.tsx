@@ -22,7 +22,7 @@ interface AuthContextType {
   updateUser: (updates: Partial<User>) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 const MOCK_USERS: User[] = [
   { id: "1", name: "Marco Rossi", email: "genitore@test.com", role: "parent" },
@@ -47,9 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, _password: string) => {
     const found = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!found) throw new Error("Credenziali non valide");
+    if (!found) throw new Error("Invalid credentials");
     await AsyncStorage.setItem("stride_user", JSON.stringify(found));
     setUser(found);
   };

@@ -68,6 +68,17 @@ export interface Document {
   sentAt?: string;
 }
 
+export interface LegalAdminDoc {
+  id: string;
+  title: string;
+  type: "terms" | "privacy" | "cookies" | "waiver" | "other";
+  highPriority: boolean;
+  mandatorySignature: boolean;
+  fileUri?: string;
+  createdAt: string;
+  description?: string;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -103,6 +114,8 @@ interface AppDataContextType {
   bookings: Booking[];
   payments: Payment[];
   documents: Document[];
+  legalAdminDocs: LegalAdminDoc[];
+  signedAdminDocIds: string[];
   students: Student[];
   lessons: Lesson[];
   addChild: (child: Omit<Child, "id">) => Promise<void>;
@@ -114,6 +127,10 @@ interface AppDataContextType {
   updateStudentPresence: (studentId: string, present: boolean) => Promise<void>;
   addDocument: (doc: Omit<Document, "id">) => Promise<void>;
   addStars: (studentId: string, count: number) => Promise<void>;
+  addLegalDoc: (doc: Omit<LegalAdminDoc, "id">) => Promise<void>;
+  updateLegalDoc: (id: string, updates: Partial<LegalAdminDoc>) => Promise<void>;
+  deleteLegalDoc: (id: string) => Promise<void>;
+  signAdminDoc: (id: string) => Promise<void>;
   mediaConsent: "full" | "internal" | "none";
   setMediaConsent: (consent: "full" | "internal" | "none") => Promise<void>;
 }
@@ -121,19 +138,19 @@ interface AppDataContextType {
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
 const INITIAL_CHILDREN: Child[] = [
-  { id: "c1", name: "Sofia Rossi", age: 8, stars: 12, allergies: "Nessuna", medicalWaiver: "ambulance", courses: ["course1", "course2"] },
-  { id: "c2", name: "Luca Rossi", age: 11, stars: 7, allergies: "Penicillina", medicalWaiver: "call_parent", courses: ["course3"] },
+  { id: "c1", name: "Sofia Rossi", age: 8, stars: 12, allergies: "None", medicalWaiver: "ambulance", courses: ["course1", "course2"] },
+  { id: "c2", name: "Luca Rossi", age: 11, stars: 7, allergies: "Penicillin", medicalWaiver: "call_parent", courses: ["course3"] },
 ];
 
 const INITIAL_DELEGATES: Delegate[] = [
-  { id: "d1", childId: "c1", name: "Maria", surname: "Ferrari", phone: "+39 333 1234567", pin: "482931", approved: true },
+  { id: "d1", childId: "c1", name: "Maria", surname: "Ferrari", phone: "+61 400 111 222", pin: "482931", approved: true },
 ];
 
 const INITIAL_COURSES: Course[] = [
-  { id: "course1", name: "Danza Classica", instructor: "Sara Bianchi", schedule: "Lun/Mer 15:30-17:00", location: "Sede Principale", capacity: 15, enrolled: 12, ageMin: 6, ageMax: 12, level: "Base", price: 120, description: "Corso base di danza classica per bambini.", hasPrivate: true },
-  { id: "course2", name: "Hip Hop Junior", instructor: "Marco Verdi", schedule: "Mar/Gio 16:00-17:30", location: "Sede Principale", capacity: 12, enrolled: 10, ageMin: 7, ageMax: 14, level: "Intermedio", price: 110, description: "Corso di hip hop per ragazzi.", hasPrivate: true },
-  { id: "course3", name: "Danza Contemporanea", instructor: "Elena Russo", schedule: "Mer/Ven 17:00-18:30", location: "Sede Principale", capacity: 10, enrolled: 8, ageMin: 10, ageMax: 16, level: "Avanzato", price: 130, description: "Corso di danza contemporanea.", hasPrivate: true },
-  { id: "course4", name: "Yoga Kids", instructor: "Giulia Moro", schedule: "Sab 10:00-11:00", location: "Sala B", capacity: 15, enrolled: 6, ageMin: 5, ageMax: 10, level: "Base", price: 80, description: "Yoga per bambini.", hasPrivate: false },
+  { id: "course1", name: "Classical Ballet", instructor: "Sara Bianchi", schedule: "Mon/Wed 3:30–5:00 PM", location: "Main Studio", capacity: 15, enrolled: 12, ageMin: 6, ageMax: 12, level: "Beginner", price: 120, description: "Foundation ballet for children.", hasPrivate: true },
+  { id: "course2", name: "Hip Hop Junior", instructor: "Marco Verdi", schedule: "Tue/Thu 4:00–5:30 PM", location: "Main Studio", capacity: 12, enrolled: 10, ageMin: 7, ageMax: 14, level: "Intermediate", price: 110, description: "Hip hop for kids.", hasPrivate: true },
+  { id: "course3", name: "Contemporary Dance", instructor: "Elena Russo", schedule: "Wed/Fri 5:00–6:30 PM", location: "Main Studio", capacity: 10, enrolled: 8, ageMin: 10, ageMax: 16, level: "Advanced", price: 130, description: "Contemporary dance.", hasPrivate: true },
+  { id: "course4", name: "Yoga Kids", instructor: "Giulia Moro", schedule: "Sat 10:00–11:00 AM", location: "Sala B", capacity: 15, enrolled: 6, ageMin: 5, ageMax: 10, level: "Beginner", price: 80, description: "Yoga for children.", hasPrivate: false },
 ];
 
 const INITIAL_BOOKINGS: Booking[] = [
@@ -143,32 +160,38 @@ const INITIAL_BOOKINGS: Booking[] = [
 ];
 
 const INITIAL_PAYMENTS: Payment[] = [
-  { id: "p1", amount: 120, date: "2026-04-01", description: "Danza Classica - Aprile 2026", status: "paid" },
-  { id: "p2", amount: 110, date: "2026-04-01", description: "Hip Hop Junior - Aprile 2026", status: "paid" },
-  { id: "p3", amount: 130, date: "2026-04-01", description: "Danza Contemporanea - Aprile 2026", status: "paid" },
-  { id: "p4", amount: 120, date: "2026-05-01", description: "Danza Classica - Maggio 2026", status: "pending" },
+  { id: "p1", amount: 120, date: "2026-04-01", description: "Classical Ballet – April 2026", status: "paid" },
+  { id: "p2", amount: 110, date: "2026-04-01", description: "Hip Hop Junior – April 2026", status: "paid" },
+  { id: "p3", amount: 130, date: "2026-04-01", description: "Contemporary Dance – April 2026", status: "paid" },
+  { id: "p4", amount: 120, date: "2026-05-01", description: "Classical Ballet – May 2026", status: "pending" },
 ];
 
 const INITIAL_DOCUMENTS: Document[] = [
-  { id: "doc1", title: "Termini & Condizioni", type: "tc", signed: true, signedDate: "2026-01-15", required: true },
+  { id: "doc1", title: "Terms & Conditions", type: "tc", signed: true, signedDate: "2026-01-15", required: true },
   { id: "doc2", title: "Privacy Policy", type: "privacy", signed: true, signedDate: "2026-01-15", required: true },
   { id: "doc3", title: "Medical Waiver", type: "waiver", signed: true, signedDate: "2026-01-15", required: true },
-  { id: "doc4", title: "Liberatoria Foto/Video", type: "media_release", signed: false, required: true },
-  { id: "doc5", title: "Newsletter Aprile 2026", type: "communication", signed: false, required: false, sentBy: "admin", sentAt: "2026-04-01" },
-  { id: "doc6", title: "Copione Saggio Fine Anno", type: "material", signed: false, required: false, sentBy: "operator", sentAt: "2026-04-05" },
+  { id: "doc4", title: "Photo & Video Release", type: "media_release", signed: false, required: true },
+  { id: "doc5", title: "April 2026 Newsletter", type: "communication", signed: false, required: false, sentBy: "admin", sentAt: "2026-04-01" },
+  { id: "doc6", title: "End-of-Year Recital Script", type: "material", signed: false, required: false, sentBy: "operator", sentAt: "2026-04-05" },
+];
+
+const INITIAL_LEGAL_ADMIN_DOCS: LegalAdminDoc[] = [
+  { id: "ld1", title: "Terms & Conditions", type: "terms", highPriority: false, mandatorySignature: true, createdAt: "01/01/2026", description: "General terms and conditions for use of the Stride platform and dance school services." },
+  { id: "ld2", title: "Privacy Policy", type: "privacy", highPriority: false, mandatorySignature: true, createdAt: "01/01/2026", description: "How we collect, store, and use your personal information in accordance with applicable law." },
+  { id: "ld3", title: "Cookie Policy", type: "cookies", highPriority: false, mandatorySignature: false, createdAt: "01/01/2026", description: "How we use cookies and similar tracking technologies on our platforms." },
 ];
 
 const INITIAL_STUDENTS: Student[] = [
-  { id: "s1", name: "Sofia Rossi", age: 8, parentName: "Marco Rossi", parentPhone: "+39 333 1111111", courses: ["Danza Classica"], allergies: "Nessuna", medicalWaiver: "ambulance", stars: 12, present: false, checkedIn: false },
-  { id: "s2", name: "Emma Ferrari", age: 9, parentName: "Luigi Ferrari", parentPhone: "+39 333 2222222", courses: ["Danza Classica"], allergies: "Lattosio", medicalWaiver: "call_parent", stars: 8, present: false, checkedIn: true },
-  { id: "s3", name: "Giulia Mancini", age: 8, parentName: "Anna Mancini", parentPhone: "+39 333 3333333", courses: ["Danza Classica", "Hip Hop"], allergies: "Nessuna", medicalWaiver: "ambulance", stars: 15, present: false, checkedIn: false },
-  { id: "s4", name: "Martina Costa", age: 10, parentName: "Roberto Costa", parentPhone: "+39 333 4444444", courses: ["Hip Hop"], allergies: "Penicillina", medicalWaiver: "call_parent", stars: 5, present: false, checkedIn: false },
-  { id: "s5", name: "Luca Rossi", age: 11, parentName: "Marco Rossi", parentPhone: "+39 333 1111111", courses: ["Danza Contemporanea"], allergies: "Penicillina", medicalWaiver: "call_parent", stars: 7, present: false, checkedIn: true },
+  { id: "s1", name: "Sofia Rossi", age: 8, parentName: "Marco Rossi", parentPhone: "+61 400 111 111", courses: ["Classical Ballet", "Hip Hop Junior"], allergies: "None", medicalWaiver: "ambulance", stars: 12, present: false, checkedIn: false },
+  { id: "s2", name: "Emma Ferrari", age: 9, parentName: "Luigi Ferrari", parentPhone: "+61 400 222 222", courses: ["Classical Ballet"], allergies: "Lactose", medicalWaiver: "call_parent", stars: 8, present: false, checkedIn: true },
+  { id: "s3", name: "Giulia Mancini", age: 8, parentName: "Anna Mancini", parentPhone: "+61 400 333 333", courses: ["Classical Ballet", "Hip Hop Junior"], allergies: "None", medicalWaiver: "ambulance", stars: 15, present: false, checkedIn: false },
+  { id: "s4", name: "Martina Costa", age: 10, parentName: "Roberto Costa", parentPhone: "+61 400 444 444", courses: ["Hip Hop Junior"], allergies: "Penicillin", medicalWaiver: "call_parent", stars: 5, present: false, checkedIn: false },
+  { id: "s5", name: "Luca Rossi", age: 11, parentName: "Marco Rossi", parentPhone: "+61 400 111 111", courses: ["Contemporary Dance"], allergies: "Penicillin", medicalWaiver: "call_parent", stars: 7, present: false, checkedIn: true },
 ];
 
 const INITIAL_LESSONS: Lesson[] = [
-  { id: "l1", courseId: "course1", courseName: "Danza Classica", date: "2026-04-09", startTime: "15:30", endTime: "17:00", location: "Sede Principale", room: "Sala A", enrolled: 12, present: 2, operatorId: "2" },
-  { id: "l2", courseId: "course2", courseName: "Hip Hop Junior", date: "2026-04-09", startTime: "17:00", endTime: "18:30", location: "Sede Principale", room: "Sala B", enrolled: 10, present: 0, operatorId: "2" },
+  { id: "l1", courseId: "course1", courseName: "Classical Ballet", date: "2026-04-09", startTime: "15:30", endTime: "17:00", location: "Main Studio", room: "Sala A", enrolled: 12, present: 2, operatorId: "2" },
+  { id: "l2", courseId: "course2", courseName: "Hip Hop Junior", date: "2026-04-09", startTime: "17:00", endTime: "18:30", location: "Main Studio", room: "Sala B", enrolled: 10, present: 0, operatorId: "2" },
 ];
 
 export function AppDataProvider({ children: childrenProp }: { children: React.ReactNode }) {
@@ -178,6 +201,8 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
   const [bookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [payments, setPayments] = useState<Payment[]>(INITIAL_PAYMENTS);
   const [documents, setDocuments] = useState<Document[]>(INITIAL_DOCUMENTS);
+  const [legalAdminDocs, setLegalAdminDocs] = useState<LegalAdminDoc[]>(INITIAL_LEGAL_ADMIN_DOCS);
+  const [signedAdminDocIds, setSignedAdminDocIds] = useState<string[]>([]);
   const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
   const [lessons] = useState<Lesson[]>(INITIAL_LESSONS);
   const [mediaConsent, setMediaConsentState] = useState<"full" | "internal" | "none">("none");
@@ -195,6 +220,8 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
         if (data.delegates) setDelegates(data.delegates);
         if (data.payments) setPayments(data.payments);
         if (data.documents) setDocuments(data.documents);
+        if (data.legalAdminDocs) setLegalAdminDocs(data.legalAdminDocs);
+        if (data.signedAdminDocIds) setSignedAdminDocIds(data.signedAdminDocIds);
         if (data.mediaConsent) setMediaConsentState(data.mediaConsent);
       }
     } catch {}
@@ -263,6 +290,31 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     setStudents(prev => prev.map(s => s.id === studentId ? { ...s, stars: s.stars + count } : s));
   };
 
+  const addLegalDoc = async (doc: Omit<LegalAdminDoc, "id">) => {
+    const newDoc: LegalAdminDoc = { ...doc, id: Date.now().toString() };
+    const updated = [...legalAdminDocs, newDoc];
+    setLegalAdminDocs(updated);
+    await saveData({ legalAdminDocs: updated });
+  };
+
+  const updateLegalDoc = async (id: string, updates: Partial<LegalAdminDoc>) => {
+    const updated = legalAdminDocs.map(d => d.id === id ? { ...d, ...updates } : d);
+    setLegalAdminDocs(updated);
+    await saveData({ legalAdminDocs: updated });
+  };
+
+  const deleteLegalDoc = async (id: string) => {
+    const updated = legalAdminDocs.filter(d => d.id !== id);
+    setLegalAdminDocs(updated);
+    await saveData({ legalAdminDocs: updated });
+  };
+
+  const signAdminDoc = async (id: string) => {
+    const updated = [...signedAdminDocIds, id];
+    setSignedAdminDocIds(updated);
+    await saveData({ signedAdminDocIds: updated });
+  };
+
   const setMediaConsent = async (consent: "full" | "internal" | "none") => {
     setMediaConsentState(consent);
     await saveData({ mediaConsent: consent });
@@ -276,6 +328,8 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       bookings,
       payments,
       documents,
+      legalAdminDocs,
+      signedAdminDocIds,
       students,
       lessons,
       addChild,
@@ -287,6 +341,10 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       updateStudentPresence,
       addDocument,
       addStars,
+      addLegalDoc,
+      updateLegalDoc,
+      deleteLegalDoc,
+      signAdminDoc,
       mediaConsent,
       setMediaConsent,
     }}>
