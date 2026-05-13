@@ -33,10 +33,10 @@ export default function AdminTabLayout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
       }}
     >
-      <Tabs.Screen name="stats" options={{ title: "Statistiche", tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart" size={size} color={color} /> }} />
-      <Tabs.Screen name="users" options={{ title: "Utenti", tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
-      <Tabs.Screen name="communications" options={{ title: "Comunicazioni", tabBarIcon: ({ color, size }) => <Ionicons name="megaphone" size={size} color={color} /> }} />
-      <Tabs.Screen name="settings" options={{ title: "Impostazioni", tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} /> }} />
+      <Tabs.Screen name="stats" options={{ title: "Statistics", tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart" size={size} color={color} /> }} />
+      <Tabs.Screen name="users" options={{ title: "Users", tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
+      <Tabs.Screen name="communications" options={{ title: "Communications", tabBarIcon: ({ color, size }) => <Ionicons name="megaphone" size={size} color={color} /> }} />
+      <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} /> }} />
       <Tabs.Screen name="setup" options={{ href: null }} />
     </Tabs>
   );

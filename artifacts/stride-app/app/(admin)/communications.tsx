@@ -27,13 +27,13 @@ export default function AdminCommunications() {
   const [recipients, setRecipients] = useState<"all" | "parents" | "operators">("all");
 
   const sent = [
-    { id: "1", title: "Newsletter Aprile 2026", date: "01 Apr", recipients: 45, read: 38, type: "newsletter" },
-    { id: "2", title: "Reminder Saggio Fine Anno", date: "28 Mar", recipients: 45, read: 42, type: "reminder" },
-    { id: "3", title: "Chiusura Pasquale", date: "20 Mar", recipients: 45, read: 45, type: "info" },
+    { id: "1", title: "April 2026 Newsletter", date: "01 Apr", recipients: 45, read: 38, type: "newsletter" },
+    { id: "2", title: "End-of-Year Recital Reminder", date: "28 Mar", recipients: 45, read: 42, type: "reminder" },
+    { id: "3", title: "Easter Holiday Closure", date: "20 Mar", recipients: 45, read: 45, type: "info" },
   ];
 
   const handleSend = async () => {
-    if (!title || !message) { Alert.alert("Compila tutti i campi"); return; }
+    if (!title || !message) { Alert.alert("Please fill all fields"); return; }
     await addDocument({
       title,
       type: docType,
@@ -46,7 +46,7 @@ export default function AdminCommunications() {
     setShowCompose(false);
     setTitle("");
     setMessage("");
-    Alert.alert("Inviato!", `Comunicazione inviata a ${recipients === "all" ? "tutti gli utenti" : recipients}.`);
+    Alert.alert("Sent!", `Communication sent to ${recipients === "all" ? "all users" : recipients}.`);
   };
 
   return (
@@ -56,21 +56,20 @@ export default function AdminCommunications() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Text style={[styles.pageTitle, { color: colors.primary }]}>Comunicazioni</Text>
+          <Text style={[styles.pageTitle, { color: colors.primary }]}>Communications</Text>
           <Pressable style={[styles.composeBtn, { backgroundColor: colors.primary }]} onPress={() => setShowCompose(true)}>
             <Ionicons name="add" size={18} color="#FFF" />
-            <Text style={styles.composeBtnText}>Nuova</Text>
+            <Text style={styles.composeBtnText}>New</Text>
           </Pressable>
         </View>
 
-        {/* Quick Send Templates */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Template Rapidi</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Templates</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
           {[
-            { label: "Newsletter", icon: "newspaper-outline" as const },
-            { label: "Reminder", icon: "alarm-outline" as const },
-            { label: "Urgente", icon: "warning-outline" as const },
-            { label: "Materiale", icon: "musical-notes-outline" as const },
+            { label: "Newsletter", icon: "newspaper-outline"    as const },
+            { label: "Reminder",   icon: "alarm-outline"        as const },
+            { label: "Urgent",     icon: "warning-outline"      as const },
+            { label: "Material",   icon: "musical-notes-outline" as const },
           ].map(t => (
             <Pressable
               key={t.label}
@@ -83,24 +82,22 @@ export default function AdminCommunications() {
           ))}
         </ScrollView>
 
-        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
             <Text style={styles.statNum}>{sent.length}</Text>
-            <Text style={styles.statLabel}>Inviate</Text>
+            <Text style={styles.statLabel}>Sent</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: "#10B981" }]}>
             <Text style={styles.statNum}>45</Text>
-            <Text style={styles.statLabel}>Destinatari</Text>
+            <Text style={styles.statLabel}>Recipients</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.secondary }]}>
             <Text style={[styles.statNum, { color: colors.primary }]}>92%</Text>
-            <Text style={[styles.statLabel, { color: colors.primary }]}>Tasso lettura</Text>
+            <Text style={[styles.statLabel, { color: colors.primary }]}>Read Rate</Text>
           </View>
         </View>
 
-        {/* Sent History */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Storico Invii</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Send History</Text>
         {sent.map(item => (
           <View key={item.id} style={[styles.commCard, { backgroundColor: colors.card }]}>
             <View style={styles.commHeader}>
@@ -110,11 +107,11 @@ export default function AdminCommunications() {
             <View style={styles.commStats}>
               <View style={styles.commStat}>
                 <Ionicons name="people-outline" size={14} color={colors.mutedForeground} />
-                <Text style={[styles.commStatText, { color: colors.mutedForeground }]}>{item.recipients} inviati</Text>
+                <Text style={[styles.commStatText, { color: colors.mutedForeground }]}>{item.recipients} sent</Text>
               </View>
               <View style={styles.commStat}>
                 <Ionicons name="eye-outline" size={14} color="#10B981" />
-                <Text style={[styles.commStatText, { color: "#10B981" }]}>{item.read} letti</Text>
+                <Text style={[styles.commStatText, { color: "#10B981" }]}>{item.read} read</Text>
               </View>
             </View>
             <View style={[styles.readBar, { backgroundColor: colors.muted }]}>
@@ -124,15 +121,14 @@ export default function AdminCommunications() {
         ))}
       </ScrollView>
 
-      {/* Compose Modal */}
       <Modal visible={showCompose} transparent animationType="slide" onRequestClose={() => setShowCompose(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Nuova Comunicazione</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>New Communication</Text>
 
-            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Tipo</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Type</Text>
             <View style={styles.typeSelector}>
-              {([["communication", "Comunicazione"], ["material", "Materiale"]] as const).map(([type, label]) => (
+              {([["communication", "Communication"], ["material", "Material"]] as const).map(([type, label]) => (
                 <Pressable
                   key={type}
                   style={[styles.typeBtn, docType === type && { backgroundColor: colors.primary }]}
@@ -143,9 +139,9 @@ export default function AdminCommunications() {
               ))}
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Destinatari</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Recipients</Text>
             <View style={styles.typeSelector}>
-              {([["all", "Tutti"], ["parents", "Genitori"], ["operators", "Operatori"]] as const).map(([type, label]) => (
+              {([["all", "All"], ["parents", "Parents"], ["operators", "Operators"]] as const).map(([type, label]) => (
                 <Pressable
                   key={type}
                   style={[styles.typeBtn, recipients === type && { backgroundColor: colors.primary }]}
@@ -156,21 +152,21 @@ export default function AdminCommunications() {
               ))}
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Titolo</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Title</Text>
             <TextInput
               style={[styles.fieldInput, { borderColor: colors.border }]}
               value={title}
               onChangeText={setTitle}
-              placeholder="es. Newsletter Maggio 2026"
+              placeholder="e.g. May 2026 Newsletter"
               placeholderTextColor={colors.mutedForeground}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Messaggio</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Message</Text>
             <TextInput
               style={[styles.fieldInput, { borderColor: colors.border, height: 100, textAlignVertical: "top" }]}
               value={message}
               onChangeText={setMessage}
-              placeholder="Scrivi il messaggio..."
+              placeholder="Write your message..."
               placeholderTextColor={colors.mutedForeground}
               multiline
               numberOfLines={4}
@@ -178,10 +174,10 @@ export default function AdminCommunications() {
 
             <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
               <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowCompose(false)}>
-                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSend}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Invia</Text>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Send</Text>
               </Pressable>
             </View>
           </View>

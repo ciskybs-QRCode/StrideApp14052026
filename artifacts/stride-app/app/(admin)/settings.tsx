@@ -33,28 +33,28 @@ interface PromoCode {
 }
 
 const INITIAL_PROMOS: PromoCode[] = [
-  { id: "p1", code: "STRIDE2026", discountType: "percent", discountValue: 20, durationMonths: 3, maxUses: 50, usedCount: 12, active: true, createdAt: "01/01/2026", expiresAt: "31/03/2026" },
-  { id: "p2", code: "STRIVEFREE1", discountType: "lessons", discountValue: 1, durationMonths: null, maxUses: 1, usedCount: 0, active: true, createdAt: "15/02/2026", expiresAt: null },
-  { id: "p3", code: "ASSOC3MESI", discountType: "months_free", discountValue: 3, durationMonths: null, maxUses: 1, usedCount: 1, active: false, createdAt: "10/03/2026", expiresAt: null },
-  { id: "p4", code: "WELCOME10", discountType: "percent", discountValue: 10, durationMonths: 12, maxUses: 200, usedCount: 134, active: false, createdAt: "01/01/2026", expiresAt: "31/12/2026" },
+  { id: "p1", code: "STRIDE2026",  discountType: "percent",     discountValue: 20, durationMonths: 3,    maxUses: 50,  usedCount: 12,  active: true,  createdAt: "01/01/2026", expiresAt: "31/03/2026" },
+  { id: "p2", code: "STRIVEFREE1", discountType: "lessons",     discountValue: 1,  durationMonths: null, maxUses: 1,   usedCount: 0,   active: true,  createdAt: "15/02/2026", expiresAt: null },
+  { id: "p3", code: "ASSOC3MESI",  discountType: "months_free", discountValue: 3,  durationMonths: null, maxUses: 1,   usedCount: 1,   active: false, createdAt: "10/03/2026", expiresAt: null },
+  { id: "p4", code: "WELCOME10",   discountType: "percent",     discountValue: 10, durationMonths: 12,   maxUses: 200, usedCount: 134, active: false, createdAt: "01/01/2026", expiresAt: "31/12/2026" },
 ];
 
 const discountTypeLabel: Record<DiscountType, string> = {
-  percent: "% Sconto",
-  lessons: "Lezioni Gratis",
-  months_free: "Mesi Gratis",
+  percent:     "% Discount",
+  lessons:     "Free Lessons",
+  months_free: "Free Months",
 };
 
 const discountTypeIcon: Record<DiscountType, keyof typeof Ionicons.glyphMap> = {
-  percent: "pricetag-outline",
-  lessons: "musical-notes-outline",
+  percent:     "pricetag-outline",
+  lessons:     "musical-notes-outline",
   months_free: "calendar-outline",
 };
 
 function formatDiscount(p: PromoCode): string {
-  if (p.discountType === "percent") return `${p.discountValue}% di sconto`;
-  if (p.discountType === "lessons") return `${p.discountValue} lezione${p.discountValue > 1 ? "i" : ""} gratuita`;
-  return `${p.discountValue} mes${p.discountValue > 1 ? "i" : "e"} gratis`;
+  if (p.discountType === "percent")     return `${p.discountValue}% off`;
+  if (p.discountType === "lessons")     return `${p.discountValue} free lesson${p.discountValue > 1 ? "s" : ""}`;
+  return `${p.discountValue} free month${p.discountValue > 1 ? "s" : ""}`;
 }
 
 function isExpired(p: PromoCode): boolean {
@@ -63,11 +63,11 @@ function isExpired(p: PromoCode): boolean {
 
 const PRESET_COLORS = [
   { primary: "#1E3A8A", secondary: "#FBBF24", name: "Stride Classic" },
-  { primary: "#7C3AED", secondary: "#C4B5FD", name: "Viola" },
-  { primary: "#059669", secondary: "#6EE7B7", name: "Smeraldo" },
-  { primary: "#DC2626", secondary: "#FCA5A5", name: "Rosso" },
-  { primary: "#EA580C", secondary: "#FDBA74", name: "Arancio" },
-  { primary: "#0EA5E9", secondary: "#BAE6FD", name: "Cielo" },
+  { primary: "#7C3AED", secondary: "#C4B5FD", name: "Purple" },
+  { primary: "#059669", secondary: "#6EE7B7", name: "Emerald" },
+  { primary: "#DC2626", secondary: "#FCA5A5", name: "Red" },
+  { primary: "#EA580C", secondary: "#FDBA74", name: "Orange" },
+  { primary: "#0EA5E9", secondary: "#BAE6FD", name: "Sky Blue" },
 ];
 
 const FONTS = ["Montserrat", "Open Sans", "Poppins", "Roboto", "Lato", "Inter"];
@@ -85,14 +85,12 @@ export default function AdminSettings() {
   const [showCreatePromo, setShowCreatePromo] = useState(false);
   const [showPromoDetail, setShowPromoDetail] = useState<PromoCode | null>(null);
 
-  // Create form state
   const [newCode, setNewCode] = useState("");
   const [newDiscountType, setNewDiscountType] = useState<DiscountType>("percent");
   const [newDiscountValue, setNewDiscountValue] = useState("");
   const [newDuration, setNewDuration] = useState("");
   const [newMaxUses, setNewMaxUses] = useState("1");
 
-  // Personalizzazione
   const [schoolName, setSchoolName] = useState(user?.schoolName || "");
   const [selectedColors, setSelectedColors] = useState(0);
   const [selectedFont, setSelectedFont] = useState("Montserrat");
@@ -100,21 +98,21 @@ export default function AdminSettings() {
   const [skinApplied, setSkinApplied] = useState(false);
 
   const handleApplySkin = async () => {
-    if (!schoolName.trim()) { Alert.alert("Errore", "Inserisci il nome della scuola."); return; }
+    if (!schoolName.trim()) { Alert.alert("Error", "Please enter the school name."); return; }
     await updateUser({ schoolName, primaryColor: PRESET_COLORS[selectedColors].primary, secondaryColor: PRESET_COLORS[selectedColors].secondary });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSkinApplied(true);
-    Alert.alert("Skin Applicata!", `La personalizzazione per "${schoolName}" è stata salvata.`);
+    Alert.alert("Skin Applied!", `Customisation for "${schoolName}" has been saved.`);
   };
 
   const handleCreatePromo = () => {
     const code = newCode.trim().toUpperCase();
-    if (!code) { Alert.alert("Errore", "Inserisci il nome del codice."); return; }
-    if (promos.some(p => p.code === code)) { Alert.alert("Errore", "Questo codice esiste già."); return; }
+    if (!code) { Alert.alert("Error", "Please enter a code name."); return; }
+    if (promos.some(p => p.code === code)) { Alert.alert("Error", "This code already exists."); return; }
     const discountValue = parseFloat(newDiscountValue);
-    if (isNaN(discountValue) || discountValue <= 0) { Alert.alert("Errore", "Inserisci un valore di sconto valido."); return; }
+    if (isNaN(discountValue) || discountValue <= 0) { Alert.alert("Error", "Please enter a valid discount value."); return; }
     const maxUses = parseInt(newMaxUses, 10);
-    if (isNaN(maxUses) || maxUses < 1) { Alert.alert("Errore", "Il numero massimo di utilizzi deve essere almeno 1."); return; }
+    if (isNaN(maxUses) || maxUses < 1) { Alert.alert("Error", "Maximum uses must be at least 1."); return; }
     const durationMonths = newDuration.trim() ? parseInt(newDuration, 10) : null;
 
     const today = new Date();
@@ -146,9 +144,9 @@ export default function AdminSettings() {
   };
 
   const handleDeletePromo = (id: string) => {
-    Alert.alert("Elimina Codice", "Sei sicuro? L'operazione non può essere annullata.", [
-      { text: "Annulla", style: "cancel" },
-      { text: "Elimina", style: "destructive", onPress: () => { setPromos(prev => prev.filter(p => p.id !== id)); setShowPromoDetail(null); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } },
+    Alert.alert("Delete Code", "Are you sure? This action cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => { setPromos(prev => prev.filter(p => p.id !== id)); setShowPromoDetail(null); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } },
     ]);
   };
 
@@ -160,7 +158,7 @@ export default function AdminSettings() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Impostazioni</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Settings</Text>
 
         {/* Profile */}
         <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
@@ -169,19 +167,19 @@ export default function AdminSettings() {
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name}</Text>
-            <Text style={styles.profileRole}>Amministratore</Text>
+            <Text style={styles.profileRole}>Administrator</Text>
             <Text style={styles.profileSchool}>{user?.schoolName || "Dance Village"}</Text>
           </View>
         </View>
 
         {/* App Configuration */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Configurazione App</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>App Configuration</Text>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           {[
-            { label: "Notifiche Push", desc: "Ricevi notifiche per nuovi utenti e attività", value: notifications, setter: setNotifications },
-            { label: "Fatturazione Automatica", desc: "Genera fatture automaticamente ogni mese", value: autoInvoice, setter: setAutoInvoice },
-            { label: "Allerte Genitori", desc: "Notifica in caso di ritardo o assenza", value: parentAlerts, setter: setParentAlerts },
-            { label: "Reminder Pagamenti", desc: "Invia promemoria ai genitori in ritardo", value: paymentReminders, setter: setPaymentReminders },
+            { label: "Push Notifications",  desc: "Receive notifications for new users and activity",  value: notifications,    setter: setNotifications },
+            { label: "Auto Invoicing",       desc: "Automatically generate invoices each month",        value: autoInvoice,      setter: setAutoInvoice },
+            { label: "Parent Alerts",        desc: "Notify on late arrivals or absences",               value: parentAlerts,     setter: setParentAlerts },
+            { label: "Payment Reminders",    desc: "Send reminders to parents with overdue payments",   value: paymentReminders, setter: setPaymentReminders },
           ].map((item, i, arr) => (
             <View key={item.label} style={[styles.settingsItem, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
               <View style={styles.settingsItemText}>
@@ -199,13 +197,13 @@ export default function AdminSettings() {
         </View>
 
         {/* School Info */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Informazioni Scuola</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>School Info</Text>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           {[
-            { icon: "school-outline" as const, label: "Nome", value: user?.schoolName || "Dance Village" },
-            { icon: "location-outline" as const, label: "Sede", value: "Via Roma 1, Milano" },
-            { icon: "call-outline" as const, label: "Telefono", value: "+39 02 1234567" },
-            { icon: "mail-outline" as const, label: "Email", value: "info@dancevillage.it" },
+            { icon: "school-outline"   as const, label: "Name",     value: user?.schoolName || "Dance Village" },
+            { icon: "location-outline" as const, label: "Location", value: "1 Main Street, Sydney" },
+            { icon: "call-outline"     as const, label: "Phone",    value: "+61 2 1234 5678" },
+            { icon: "mail-outline"     as const, label: "Email",    value: "info@dancevillage.com.au" },
           ].map((item, i, arr) => (
             <View key={item.label} style={[styles.infoItem, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
               <Ionicons name={item.icon} size={18} color={colors.mutedForeground} />
@@ -215,13 +213,13 @@ export default function AdminSettings() {
           ))}
         </View>
 
-        {/* Legal */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Legale & Privacy</Text>
+        {/* Legal & Privacy */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Legal & Privacy</Text>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           {[
-            { label: "Termini & Condizioni", onPress: () => Alert.alert("T&C", "Documento disponibile in formato PDF.") },
-            { label: "Privacy Policy", onPress: () => Alert.alert("Privacy", "Documento disponibile in formato PDF.") },
-            { label: "Cookie Policy", onPress: () => Alert.alert("Cookies", "Documento disponibile.") },
+            { label: "Terms & Conditions", onPress: () => Alert.alert("T&C",     "Document available in PDF format.") },
+            { label: "Privacy Policy",     onPress: () => Alert.alert("Privacy", "Document available in PDF format.") },
+            { label: "Cookie Policy",      onPress: () => Alert.alert("Cookies", "Document available.") },
           ].map((item, i, arr) => (
             <Pressable key={item.label} style={[styles.settingsNavItem, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]} onPress={item.onPress}>
               <Text style={[styles.settingsLabel, { color: colors.foreground }]}>{item.label}</Text>
@@ -230,11 +228,11 @@ export default function AdminSettings() {
           ))}
         </View>
 
-        {/* Danger Zone */}
+        {/* Account */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Pressable style={[styles.settingsNavItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]} onPress={() => Alert.alert("Password", "Link di reset inviato.")}>
+          <Pressable style={[styles.settingsNavItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]} onPress={() => Alert.alert("Password", "Reset link sent.")}>
             <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
-            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Cambia Password</Text>
+            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Change Password</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
           </Pressable>
           <Pressable style={styles.settingsNavItem} onPress={logout}>
@@ -244,35 +242,35 @@ export default function AdminSettings() {
           </Pressable>
         </View>
 
-        {/* ── PERSONALIZZAZIONE APP ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Personalizzazione App</Text>
+        {/* ── APP CUSTOMISATION ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>App Customisation</Text>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          {/* Logo + Nome */}
+          {/* Logo + Name */}
           <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
             <Pressable
               style={[styles.logoUploadBtn, { borderColor: colors.border }]}
-              onPress={() => Alert.alert("Upload Logo", "Seleziona il logo della tua scuola dalla galleria.")}
+              onPress={() => Alert.alert("Upload Logo", "Select your school logo from the gallery.")}
             >
               <Ionicons name="cloud-upload-outline" size={28} color={colors.mutedForeground} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Logo Scuola</Text>
-                <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>PNG, JPG, SVG — max 5MB</Text>
+                <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>School Logo</Text>
+                <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>PNG, JPG, SVG — max 5 MB</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
             </Pressable>
-            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginTop: 14 }]}>Nome Scuola / Associazione</Text>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginTop: 14 }]}>School / Association Name</Text>
             <TextInput
               style={[styles.skinInput, { borderColor: colors.border, color: colors.foreground }]}
               value={schoolName}
               onChangeText={setSchoolName}
-              placeholder="es. Dance Village"
+              placeholder="e.g. Dance Village"
               placeholderTextColor={colors.mutedForeground}
             />
           </View>
 
-          {/* Palette Colori */}
+          {/* Colour Palette */}
           <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Palette Colori</Text>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Colour Palette</Text>
             <View style={styles.colorGrid}>
               {PRESET_COLORS.map((preset, i) => (
                 <Pressable
@@ -307,9 +305,9 @@ export default function AdminSettings() {
             </View>
           </View>
 
-          {/* Stile Pulsanti */}
+          {/* Button Style */}
           <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Stile Pulsanti</Text>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Button Style</Text>
             <View style={styles.btnStyleRow}>
               {(["rounded", "square"] as const).map(style => (
                 <Pressable
@@ -318,47 +316,47 @@ export default function AdminSettings() {
                   onPress={() => setButtonStyle(style)}
                 >
                   <View style={[styles.btnStylePreview, { borderRadius: style === "rounded" ? 20 : 4, backgroundColor: PRESET_COLORS[selectedColors].primary }]}>
-                    <Text style={styles.btnStylePreviewText}>{style === "rounded" ? "Arrotondato" : "Squadrato"}</Text>
+                    <Text style={styles.btnStylePreviewText}>{style === "rounded" ? "Rounded" : "Square"}</Text>
                   </View>
                 </Pressable>
               ))}
             </View>
           </View>
 
-          {/* Anteprima */}
+          {/* Preview */}
           <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Anteprima</Text>
+            <Text style={[styles.skinFieldLabel, { color: colors.mutedForeground, marginBottom: 12 }]}>Preview</Text>
             <View style={[styles.previewBox, { backgroundColor: PRESET_COLORS[selectedColors].primary }]}>
-              <Text style={styles.previewSchoolName}>{schoolName || "Nome Scuola"}</Text>
+              <Text style={styles.previewSchoolName}>{schoolName || "School Name"}</Text>
               <Text style={styles.previewTagline}>APP DASHBOARD</Text>
               <View style={[styles.previewBtn, { backgroundColor: PRESET_COLORS[selectedColors].secondary, borderRadius: buttonStyle === "rounded" ? 20 : 4 }]}>
-                <Text style={[styles.previewBtnText, { color: PRESET_COLORS[selectedColors].primary }]}>PULSANTE</Text>
+                <Text style={[styles.previewBtnText, { color: PRESET_COLORS[selectedColors].primary }]}>BUTTON</Text>
               </View>
             </View>
           </View>
 
-          {/* Applica */}
+          {/* Apply */}
           <Pressable
             style={({ pressed }) => [styles.applyBtn, { backgroundColor: skinApplied ? "#10B981" : colors.primary, opacity: pressed ? 0.85 : 1 }]}
             onPress={handleApplySkin}
           >
             <Ionicons name={skinApplied ? "checkmark-circle" : "rocket"} size={20} color="#FFF" />
-            <Text style={styles.applyBtnText}>{skinApplied ? "SKIN APPLICATA!" : "APPLICA SKIN"}</Text>
+            <Text style={styles.applyBtnText}>{skinApplied ? "SKIN APPLIED!" : "APPLY SKIN"}</Text>
           </Pressable>
         </View>
 
-        {/* ── CODICI PROMOZIONALI ── */}
+        {/* ── PROMO CODES ── */}
         <View style={styles.promoHeader}>
           <View>
-            <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 2 }]}>Codici Promozionali</Text>
-            <Text style={[styles.promoSummary, { color: colors.mutedForeground }]}>{activePromos} attivi · {promos.length} totali</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 2 }]}>Promo Codes</Text>
+            <Text style={[styles.promoSummary, { color: colors.mutedForeground }]}>{activePromos} active · {promos.length} total</Text>
           </View>
           <Pressable
             style={[styles.createPromoBtn, { backgroundColor: colors.primary }]}
             onPress={() => { setShowCreatePromo(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
             <Ionicons name="add" size={18} color="#FFF" />
-            <Text style={styles.createPromoBtnText}>Crea Codice</Text>
+            <Text style={styles.createPromoBtnText}>Create Code</Text>
           </Pressable>
         </View>
 
@@ -382,12 +380,11 @@ export default function AdminSettings() {
                 <View style={[styles.promoStatusBadge, { backgroundColor: expired ? "#FEE2E2" : "#D1FAE5" }]}>
                   <View style={[styles.promoStatusDot, { backgroundColor: expired ? "#EF4444" : "#10B981" }]} />
                   <Text style={[styles.promoStatusText, { color: expired ? "#EF4444" : "#10B981" }]}>
-                    {expired ? "Scaduto" : "Attivo"}
+                    {expired ? "Expired" : "Active"}
                   </Text>
                 </View>
               </View>
 
-              {/* Usage Bar */}
               <View style={styles.promoUsageRow}>
                 <View style={[styles.promoUsageBarBg, { backgroundColor: colors.muted }]}>
                   <View style={[styles.promoUsageBarFill, {
@@ -396,7 +393,7 @@ export default function AdminSettings() {
                   }]} />
                 </View>
                 <Text style={[styles.promoUsageText, { color: colors.mutedForeground }]}>
-                  {p.usedCount}/{p.maxUses} utilizzi
+                  {p.usedCount}/{p.maxUses} uses
                 </Text>
               </View>
 
@@ -404,19 +401,19 @@ export default function AdminSettings() {
                 {p.durationMonths && (
                   <View style={styles.promoMetaTag}>
                     <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
-                    <Text style={[styles.promoMetaTagText, { color: colors.mutedForeground }]}>{p.durationMonths} mesi</Text>
+                    <Text style={[styles.promoMetaTagText, { color: colors.mutedForeground }]}>{p.durationMonths} months</Text>
                   </View>
                 )}
                 {p.maxUses === 1 && (
                   <View style={[styles.promoMetaTag, { backgroundColor: "#FEF3C7" }]}>
                     <Ionicons name="lock-closed-outline" size={12} color="#F59E0B" />
-                    <Text style={[styles.promoMetaTagText, { color: "#F59E0B" }]}>Uso singolo</Text>
+                    <Text style={[styles.promoMetaTagText, { color: "#F59E0B" }]}>Single use</Text>
                   </View>
                 )}
                 {p.expiresAt && (
                   <View style={styles.promoMetaTag}>
                     <Ionicons name="calendar-outline" size={12} color={colors.mutedForeground} />
-                    <Text style={[styles.promoMetaTagText, { color: colors.mutedForeground }]}>Scade {p.expiresAt}</Text>
+                    <Text style={[styles.promoMetaTagText, { color: colors.mutedForeground }]}>Expires {p.expiresAt}</Text>
                   </View>
                 )}
               </View>
@@ -431,28 +428,26 @@ export default function AdminSettings() {
       <Modal visible={showCreatePromo} transparent animationType="slide" onRequestClose={() => setShowCreatePromo(false)}>
         <View style={styles.modalOverlay}>
           <ScrollView style={styles.modalSheet} contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Nuovo Codice Promo</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>New Promo Code</Text>
 
-            {/* Code Name */}
-            <Text style={styles.fieldLabel}>Codice</Text>
+            <Text style={styles.fieldLabel}>Code</Text>
             <TextInput
               style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-              placeholder="es. ASSOC3MESI"
+              placeholder="e.g. WELCOME20"
               value={newCode}
               onChangeText={t => setNewCode(t.toUpperCase())}
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="characters"
               autoCorrect={false}
             />
-            <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>Il codice verrà automaticamente maiuscolo.</Text>
+            <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>The code will be automatically uppercased.</Text>
 
-            {/* Discount Type */}
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Tipo di Sconto</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Discount Type</Text>
             <View style={styles.typeRow}>
               {([
-                { type: "percent" as DiscountType, label: "% Sconto", icon: "pricetag-outline" as const, color: "#1E3A8A", bg: "#DBEAFE" },
-                { type: "lessons" as DiscountType, label: "Lezioni Gratis", icon: "musical-notes-outline" as const, color: "#10B981", bg: "#D1FAE5" },
-                { type: "months_free" as DiscountType, label: "Mesi Gratis", icon: "calendar-outline" as const, color: "#F59E0B", bg: "#FEF3C7" },
+                { type: "percent"     as DiscountType, label: "% Discount",  icon: "pricetag-outline"      as const, color: "#1E3A8A", bg: "#DBEAFE" },
+                { type: "lessons"     as DiscountType, label: "Free Lessons", icon: "musical-notes-outline" as const, color: "#10B981", bg: "#D1FAE5" },
+                { type: "months_free" as DiscountType, label: "Free Months",  icon: "calendar-outline"      as const, color: "#F59E0B", bg: "#FEF3C7" },
               ]).map(opt => (
                 <Pressable
                   key={opt.type}
@@ -465,9 +460,8 @@ export default function AdminSettings() {
               ))}
             </View>
 
-            {/* Discount Value */}
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
-              Valore {newDiscountType === "percent" ? "(es. 20 per 20%)" : newDiscountType === "lessons" ? "(numero di lezioni)" : "(numero di mesi)"}
+              Value {newDiscountType === "percent" ? "(e.g. 20 for 20%)" : newDiscountType === "lessons" ? "(number of lessons)" : "(number of months)"}
             </Text>
             <TextInput
               style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
@@ -478,19 +472,17 @@ export default function AdminSettings() {
               keyboardType="numeric"
             />
 
-            {/* Duration */}
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Durata Validità (mesi) — opzionale</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Validity Duration (months) — optional</Text>
             <TextInput
               style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-              placeholder="es. 3  (lascia vuoto = nessuna scadenza)"
+              placeholder="e.g. 3  (leave blank = no expiry)"
               value={newDuration}
               onChangeText={setNewDuration}
               placeholderTextColor={colors.mutedForeground}
               keyboardType="numeric"
             />
 
-            {/* Max Uses */}
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Numero Massimo di Utilizzi</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Maximum Number of Uses</Text>
             <TextInput
               style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
               placeholder="1"
@@ -502,17 +494,17 @@ export default function AdminSettings() {
             <View style={[styles.infoBox, { backgroundColor: "#FEF3C7" }]}>
               <Ionicons name="information-circle-outline" size={18} color="#F59E0B" />
               <Text style={[styles.infoBoxText, { color: "#92400E" }]}>
-                Impostando <Text style={{ fontWeight: "800" }}>1 utilizzo</Text>, il codice scade dopo il primo uso — ideale per codici riservati a una singola scuola o associazione.
+                Setting <Text style={{ fontWeight: "800" }}>1 use</Text> means the code expires after the first redemption — ideal for codes reserved for a single school or association.
               </Text>
             </View>
 
             <View style={styles.modalBtns}>
               <Pressable style={[styles.modalBtnSecondary, { borderColor: colors.primary }]} onPress={() => setShowCreatePromo(false)}>
-                <Text style={[styles.modalBtnSecondaryText, { color: colors.primary }]}>Annulla</Text>
+                <Text style={[styles.modalBtnSecondaryText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.modalBtnPrimary, { backgroundColor: colors.primary }]} onPress={handleCreatePromo}>
                 <Ionicons name="checkmark-circle" size={18} color="#FFF" />
-                <Text style={styles.modalBtnPrimaryText}>Crea Codice</Text>
+                <Text style={styles.modalBtnPrimaryText}>Create Code</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -546,26 +538,24 @@ export default function AdminSettings() {
                     </Pressable>
                   </View>
 
-                  {/* Detail Rows */}
                   {[
-                    { label: "Tipo Sconto", value: discountTypeLabel[p.discountType] },
-                    { label: "Valore", value: formatDiscount(p) },
-                    { label: "Durata", value: p.durationMonths ? `${p.durationMonths} mesi` : "Senza scadenza temporale" },
-                    { label: "Max Utilizzi", value: p.maxUses === 1 ? "1 (uso singolo)" : `${p.maxUses}` },
-                    { label: "Utilizzi", value: `${p.usedCount} / ${p.maxUses}` },
-                    { label: "Creato il", value: p.createdAt },
-                    { label: "Scade il", value: p.expiresAt || "—" },
-                  ].map((row, i) => (
+                    { label: "Discount Type", value: discountTypeLabel[p.discountType] },
+                    { label: "Value",         value: formatDiscount(p) },
+                    { label: "Duration",      value: p.durationMonths ? `${p.durationMonths} months` : "No expiry date" },
+                    { label: "Max Uses",      value: p.maxUses === 1 ? "1 (single use)" : `${p.maxUses}` },
+                    { label: "Uses",          value: `${p.usedCount} / ${p.maxUses}` },
+                    { label: "Created",       value: p.createdAt },
+                    { label: "Expires",       value: p.expiresAt || "—" },
+                  ].map((row) => (
                     <View key={row.label} style={[styles.detailRow, { borderBottomColor: colors.border }]}>
                       <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
                       <Text style={[styles.detailValue, { color: colors.primary }]}>{row.value}</Text>
                     </View>
                   ))}
 
-                  {/* Usage Bar */}
                   <View style={{ marginTop: 16, marginBottom: 20 }}>
                     <View style={styles.detailUsageHeader}>
-                      <Text style={[styles.fieldLabel, { marginTop: 0 }]}>Utilizzi</Text>
+                      <Text style={[styles.fieldLabel, { marginTop: 0 }]}>Uses</Text>
                       <Text style={[styles.promoUsageText, { color: usagePercent >= 100 ? "#EF4444" : "#10B981" }]}>
                         {p.usedCount}/{p.maxUses}
                       </Text>
@@ -579,7 +569,6 @@ export default function AdminSettings() {
                     </View>
                   </View>
 
-                  {/* Actions */}
                   <View style={styles.modalBtns}>
                     <Pressable
                       style={[styles.detailActionBtn, { backgroundColor: expired ? "#D1FAE5" : "#FEF3C7" }]}
@@ -587,7 +576,7 @@ export default function AdminSettings() {
                     >
                       <Ionicons name={p.active ? "pause-circle-outline" : "play-circle-outline"} size={20} color={p.active ? "#F59E0B" : "#10B981"} />
                       <Text style={[styles.detailActionText, { color: p.active ? "#F59E0B" : "#10B981" }]}>
-                        {p.active ? "Disattiva" : "Riattiva"}
+                        {p.active ? "Deactivate" : "Reactivate"}
                       </Text>
                     </Pressable>
                     <Pressable
@@ -595,7 +584,7 @@ export default function AdminSettings() {
                       onPress={() => handleDeletePromo(p.id)}
                     >
                       <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                      <Text style={[styles.detailActionText, { color: "#EF4444" }]}>Elimina</Text>
+                      <Text style={[styles.detailActionText, { color: "#EF4444" }]}>Delete</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -630,14 +619,10 @@ const styles = StyleSheet.create({
   infoValue: { flex: 1, fontSize: 13, fontWeight: "600" },
   settingsNavItem: { flexDirection: "row", alignItems: "center", padding: 16, gap: 12 },
   version: { fontSize: 12, textAlign: "center", marginBottom: 20, marginTop: 8 },
-
-  // Promo header
   promoHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   promoSummary: { fontSize: 13 },
   createPromoBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
   createPromoBtnText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
-
-  // Promo Card
   promoCard: { borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 3 },
   promoCardTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   promoTypeIcon: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -653,8 +638,6 @@ const styles = StyleSheet.create({
   promoCardMeta: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   promoMetaTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F3F4F6", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   promoMetaTagText: { fontSize: 11, fontWeight: "600" },
-
-  // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: "#FFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%" },
   modalTitle: { fontSize: 22, fontWeight: "800", marginBottom: 20 },
@@ -671,8 +654,6 @@ const styles = StyleSheet.create({
   modalBtnSecondaryText: { fontWeight: "700", fontSize: 15 },
   modalBtnPrimary: { flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 },
   modalBtnPrimaryText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
-
-  // Detail Modal
   detailHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 20 },
   detailTypeIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   detailCode: { fontSize: 20, fontWeight: "800", letterSpacing: 0.5 },
@@ -683,8 +664,6 @@ const styles = StyleSheet.create({
   detailUsageHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   detailActionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14 },
   detailActionText: { fontWeight: "700", fontSize: 15 },
-
-  // Personalizzazione
   logoUploadBtn: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 1.5, borderStyle: "dashed", borderRadius: 14, padding: 14, marginBottom: 4 },
   logoUploadTitle: { fontSize: 14, fontWeight: "700" },
   logoUploadSub: { fontSize: 11, marginTop: 2 },

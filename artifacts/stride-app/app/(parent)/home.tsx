@@ -41,10 +41,10 @@ export default function ParentHome() {
   const handleSendAbsence = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowAbsence(false);
-    Alert.alert("Inviato", "La segnalazione è stata inviata alla segreteria.");
+    Alert.alert("Sent", "Your report has been sent to the office.");
   };
 
-  const firstName = user?.name?.split(" ")[0] || "Utente";
+  const firstName = user?.name?.split(" ")[0] || "User";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -61,7 +61,7 @@ export default function ParentHome() {
             <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
           </View>
           <View style={styles.headerCenter}>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Ciao,</Text>
+            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Hi,</Text>
             <Text style={[styles.userName, { color: colors.primary }]}>{firstName}</Text>
           </View>
           <Pressable style={[styles.avatarCircle, { backgroundColor: colors.primary }]}>
@@ -74,7 +74,7 @@ export default function ParentHome() {
           <View style={styles.lessonCardTop}>
             <View style={styles.lessonBadge}>
               <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.lessonBadgeText}>PROSSIMA LEZIONE:</Text>
+              <Text style={styles.lessonBadgeText}>NEXT LESSON:</Text>
             </View>
           </View>
           {nextLesson && nextCourse ? (
@@ -96,39 +96,39 @@ export default function ParentHome() {
                 onPress={handleNavigate}
               >
                 <Ionicons name="navigate" size={14} color="#1E3A8A" />
-                <Text style={styles.navigateBtnText}>NAVIGA</Text>
+                <Text style={styles.navigateBtnText}>NAVIGATE</Text>
               </Pressable>
             </>
           ) : (
-            <Text style={styles.lessonCourseName}>Nessuna lezione oggi</Text>
+            <Text style={styles.lessonCourseName}>No lessons today</Text>
           )}
         </View>
 
         {/* Quick Actions */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Azioni Rapide</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
         <View style={styles.quickActions}>
           <Pressable
             style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowQR(true); }}
           >
             <Ionicons name="qr-code" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>MOSTRA QR{"\n"}INGRESSO</Text>
+            <Text style={[styles.quickBtnText, { color: colors.primary }]}>SHOW QR{"\n"}PASS</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => setShowAbsence(true)}
           >
             <Ionicons name="alert-circle-outline" size={28} color="#F59E0B" />
-            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>SEGNALA{"\n"}ASSENZA/RITARDO</Text>
+            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>REPORT{"\n"}ABSENCE/DELAY</Text>
           </Pressable>
         </View>
 
         {/* Notifications */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifiche & Avvisi</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>
         {[
-          { id: "1", icon: "star-outline" as const, text: "Sofia: ★ Stelle d'Oro per la coreografia!", time: "Oggi", accent: "#FBBF24" },
-          { id: "2", icon: "document-outline" as const, text: "Nuovo Documento: Policy Privacy WA da Firmare", time: "Ieri", accent: colors.primary },
-          { id: "3", icon: "time-outline" as const, text: "Lezione di domani: Anticipata alle 15:30", time: "2 ore fa", accent: "#7C3AED" },
+          { id: "1", icon: "star-outline"     as const, text: "Sofia: ★ Gold Stars for the choreography!", time: "Today",     accent: "#FBBF24" },
+          { id: "2", icon: "document-outline" as const, text: "New Document: WA Privacy Policy to Sign",    time: "Yesterday", accent: colors.primary },
+          { id: "3", icon: "time-outline"     as const, text: "Tomorrow's lesson: Moved to 15:30",          time: "2 hrs ago", accent: "#7C3AED" },
         ].map(item => (
           <Pressable key={item.id} style={[styles.notifCard, { backgroundColor: colors.card }]}>
             <View style={[styles.notifIcon, { backgroundColor: `${item.accent}20` }]}>
@@ -140,29 +140,20 @@ export default function ParentHome() {
         ))}
 
         {/* Contact */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contatta la Segreteria</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact Office</Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
           <View style={styles.contactRow}>
-            <Pressable
-              style={[styles.contactBtn, { backgroundColor: "#D1FAE5" }]}
-              onPress={() => Linking.openURL("https://wa.me/390212345678")}
-            >
+            <Pressable style={[styles.contactBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => Linking.openURL("https://wa.me/390212345678")}>
               <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
               <Text style={[styles.contactBtnText, { color: "#25D366" }]}>WhatsApp</Text>
             </Pressable>
-            <Pressable
-              style={[styles.contactBtn, { backgroundColor: "#EDE9FE" }]}
-              onPress={() => Linking.openURL("mailto:segreteria@dancevillage.it")}
-            >
+            <Pressable style={[styles.contactBtn, { backgroundColor: "#EDE9FE" }]} onPress={() => Linking.openURL("mailto:office@dancevillage.com")}>
               <Ionicons name="mail" size={22} color="#7C3AED" />
               <Text style={[styles.contactBtnText, { color: "#7C3AED" }]}>Email</Text>
             </Pressable>
-            <Pressable
-              style={[styles.contactBtn, { backgroundColor: "#DBEAFE" }]}
-              onPress={() => Linking.openURL("tel:+390212345678")}
-            >
+            <Pressable style={[styles.contactBtn, { backgroundColor: "#DBEAFE" }]} onPress={() => Linking.openURL("tel:+390212345678")}>
               <Ionicons name="call" size={22} color="#1E3A8A" />
-              <Text style={[styles.contactBtnText, { color: "#1E3A8A" }]}>Chiama</Text>
+              <Text style={[styles.contactBtnText, { color: "#1E3A8A" }]}>Call</Text>
             </Pressable>
           </View>
         </View>
@@ -175,7 +166,6 @@ export default function ParentHome() {
             <Image source={LOGO} style={styles.modalLogo} contentFit="contain" />
             <Text style={[styles.modalTitle, { color: colors.primary }]}>Smart Pass — QR Check-In</Text>
 
-            {/* Child Selector Tabs */}
             {children.length > 1 && (
               <View style={styles.qrChildTabs}>
                 {children.map(c => (
@@ -190,15 +180,14 @@ export default function ParentHome() {
               </View>
             )}
 
-            {/* Smart Pass Validity */}
             <View style={styles.passStatusRow}>
               <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
                 <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                <Text style={[styles.passStatusText, { color: "#10B981" }]}>Iscrizione Attiva</Text>
+                <Text style={[styles.passStatusText, { color: "#10B981" }]}>Active Subscription</Text>
               </View>
               <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
                 <Ionicons name="shield-checkmark" size={14} color="#10B981" />
-                <Text style={[styles.passStatusText, { color: "#10B981" }]}>Certificato OK</Text>
+                <Text style={[styles.passStatusText, { color: "#10B981" }]}>Certificate OK</Text>
               </View>
             </View>
 
@@ -208,10 +197,10 @@ export default function ParentHome() {
               <Text style={[styles.qrId, { color: colors.mutedForeground }]}>ID: {qrChild?.id?.toUpperCase()}</Text>
             </View>
             <Text style={[styles.qrSwipeHint, { color: colors.mutedForeground }]}>
-              {children.length > 1 ? "Tocca il nome in alto per cambiare figlio" : ""}
+              {children.length > 1 ? "Tap name above to switch child" : ""}
             </Text>
             <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setShowQR(false)}>
-              <Text style={styles.closeBtnText}>Chiudi</Text>
+              <Text style={styles.closeBtnText}>Close</Text>
             </Pressable>
           </View>
         </View>
@@ -221,8 +210,8 @@ export default function ParentHome() {
       <Modal visible={showAbsence} transparent animationType="slide" onRequestClose={() => setShowAbsence(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Segnala Assenza / Ritardo</Text>
-            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Bambino</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Report Absence / Delay</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary }]}>Child</Text>
             <View style={styles.childRow}>
               {children.map(child => (
                 <Pressable
@@ -234,7 +223,7 @@ export default function ParentHome() {
                 </Pressable>
               ))}
             </View>
-            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Tipo di segnalazione</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Type of report</Text>
             {(["absent", "late15", "late30"] as const).map(type => (
               <Pressable
                 key={type}
@@ -243,16 +232,16 @@ export default function ParentHome() {
               >
                 <Ionicons name={absenceType === type ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === type ? "#FFF" : colors.primary} />
                 <Text style={[styles.absenceOptionText, absenceType === type && { color: "#FFF" }]}>
-                  {type === "absent" ? "Assente oggi" : type === "late15" ? "In ritardo di 15 min" : "In ritardo di 30 min"}
+                  {type === "absent" ? "Absent today" : type === "late15" ? "15 min late" : "30 min late"}
                 </Text>
               </Pressable>
             ))}
             <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
               <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
-                <Text style={[styles.closeBtnText, { color: colors.primary }]}>Annulla</Text>
+                <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSendAbsence}>
-                <Text style={styles.closeBtnText}>Invia</Text>
+                <Text style={styles.closeBtnText}>Send</Text>
               </Pressable>
             </View>
           </View>

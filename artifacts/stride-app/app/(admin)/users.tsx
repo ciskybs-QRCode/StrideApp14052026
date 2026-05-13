@@ -24,11 +24,11 @@ interface UserRecord {
 }
 
 const MOCK_USERS: UserRecord[] = [
-  { id: "u1", name: "Marco Rossi", email: "genitore@test.com", role: "parent", status: "active", joinDate: "01/01/2026" },
-  { id: "u2", name: "Sara Bianchi", email: "operatore@test.com", role: "operator", status: "active", joinDate: "15/01/2026" },
-  { id: "u3", name: "Luigi Ferrari", email: "luigi@test.com", role: "parent", status: "active", joinDate: "10/02/2026" },
-  { id: "u4", name: "Elena Russo", email: "elena@test.com", role: "operator", status: "pending", joinDate: "05/04/2026" },
-  { id: "u5", name: "Anna Mancini", email: "anna@test.com", role: "parent", status: "active", joinDate: "20/03/2026" },
+  { id: "u1", name: "Marco Rossi",    email: "genitore@test.com",  role: "parent",   status: "active",  joinDate: "01/01/2026" },
+  { id: "u2", name: "Sara Bianchi",   email: "operatore@test.com", role: "operator", status: "active",  joinDate: "15/01/2026" },
+  { id: "u3", name: "Luigi Ferrari",  email: "luigi@test.com",     role: "parent",   status: "active",  joinDate: "10/02/2026" },
+  { id: "u4", name: "Elena Russo",    email: "elena@test.com",     role: "operator", status: "pending", joinDate: "05/04/2026" },
+  { id: "u5", name: "Anna Mancini",   email: "anna@test.com",      role: "parent",   status: "active",  joinDate: "20/03/2026" },
 ];
 
 export default function AdminUsers() {
@@ -54,48 +54,44 @@ export default function AdminUsers() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Gestione Utenti</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>User Management</Text>
 
-        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
             <Text style={styles.statNum}>{users.length}</Text>
-            <Text style={styles.statLabel}>Totale</Text>
+            <Text style={styles.statLabel}>Total</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: "#10B981" }]}>
             <Text style={styles.statNum}>{parents}</Text>
-            <Text style={styles.statLabel}>Genitori</Text>
+            <Text style={styles.statLabel}>Parents</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: "#7C3AED" }]}>
             <Text style={styles.statNum}>{operators}</Text>
-            <Text style={styles.statLabel}>Operatori</Text>
+            <Text style={styles.statLabel}>Operators</Text>
           </View>
         </View>
 
-        {/* Search */}
         <View style={[styles.searchBar, { backgroundColor: colors.card }]}>
           <Ionicons name="search" size={18} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.foreground }]}
             value={search}
             onChangeText={setSearch}
-            placeholder="Cerca utente..."
+            placeholder="Search user..."
             placeholderTextColor={colors.mutedForeground}
           />
         </View>
 
-        {/* Filter */}
         <View style={[styles.filterBar, { backgroundColor: colors.muted }]}>
           {(["all", "parent", "operator"] as const).map(f => (
             <Pressable key={f} style={[styles.filterBtn, filter === f && { backgroundColor: colors.primary }]} onPress={() => setFilter(f)}>
               <Text style={[styles.filterText, filter === f && { color: "#FFF" }]}>
-                {f === "all" ? "Tutti" : f === "parent" ? "Genitori" : "Operatori"}
+                {f === "all" ? "All" : f === "parent" ? "Parents" : "Operators"}
               </Text>
             </Pressable>
           ))}
         </View>
 
-        {/* Users */}
         {filtered.map(user => (
           <Pressable key={user.id} style={[styles.userCard, { backgroundColor: colors.card }]} onPress={() => setSelected(user)}>
             <View style={[styles.userAvatar, { backgroundColor: user.role === "parent" ? "#DBEAFE" : "#EDE9FE" }]}>
@@ -107,12 +103,12 @@ export default function AdminUsers() {
               <View style={styles.userMeta}>
                 <View style={[styles.roleBadge, { backgroundColor: user.role === "parent" ? "#DBEAFE" : "#EDE9FE" }]}>
                   <Text style={[styles.roleText, { color: user.role === "parent" ? "#1E3A8A" : "#7C3AED" }]}>
-                    {user.role === "parent" ? "Genitore" : "Operatore"}
+                    {user.role === "parent" ? "Parent" : "Operator"}
                   </Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: user.status === "active" ? "#D1FAE5" : "#FEF3C7" }]}>
                   <Text style={[styles.statusText, { color: user.status === "active" ? "#10B981" : "#F59E0B" }]}>
-                    {user.status === "active" ? "Attivo" : "In attesa"}
+                    {user.status === "active" ? "Active" : "Pending"}
                   </Text>
                 </View>
               </View>
@@ -122,7 +118,6 @@ export default function AdminUsers() {
         ))}
       </ScrollView>
 
-      {/* User Detail Modal */}
       <Modal visible={!!selected} transparent animationType="slide" onRequestClose={() => setSelected(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -134,28 +129,27 @@ export default function AdminUsers() {
                 <Text style={[styles.modalName, { color: colors.primary }]}>{selected.name}</Text>
                 <Text style={[styles.modalEmail, { color: colors.mutedForeground }]}>{selected.email}</Text>
                 <View style={styles.modalActions}>
-                  <Pressable style={[styles.modalActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => { setSelected(null); Alert.alert("Utente sospeso"); }}>
+                  <Pressable style={[styles.modalActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => { setSelected(null); Alert.alert("User suspended"); }}>
                     <Ionicons name="ban" size={18} color="#EF4444" />
-                    <Text style={[styles.modalActionText, { color: "#EF4444" }]}>Sospendi</Text>
+                    <Text style={[styles.modalActionText, { color: "#EF4444" }]}>Suspend</Text>
                   </Pressable>
-                  <Pressable style={[styles.modalActionBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => { setSelected(null); Alert.alert("Messaggio inviato"); }}>
+                  <Pressable style={[styles.modalActionBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => { setSelected(null); Alert.alert("Message sent"); }}>
                     <Ionicons name="mail" size={18} color="#10B981" />
-                    <Text style={[styles.modalActionText, { color: "#10B981" }]}>Contatta</Text>
+                    <Text style={[styles.modalActionText, { color: "#10B981" }]}>Contact</Text>
                   </Pressable>
                 </View>
 
-                {/* Promote / Demote */}
                 {selected.role === "parent" ? (
                   <Pressable
                     style={[styles.promoteBtn, { backgroundColor: "#EDE9FE" }]}
                     onPress={() => {
                       setUsers(prev => prev.map(u => u.id === selected.id ? { ...u, role: "operator" } : u));
                       setSelected(prev => prev ? { ...prev, role: "operator" } : null);
-                      Alert.alert("Ruolo Aggiornato", `${selected.name} è ora Operatore`);
+                      Alert.alert("Role Updated", `${selected.name} is now an Operator`);
                     }}
                   >
                     <Ionicons name="arrow-up-circle" size={20} color="#7C3AED" />
-                    <Text style={[styles.promoteBtnText, { color: "#7C3AED" }]}>Promuovi a Operatore</Text>
+                    <Text style={[styles.promoteBtnText, { color: "#7C3AED" }]}>Promote to Operator</Text>
                   </Pressable>
                 ) : (
                   <Pressable
@@ -163,16 +157,16 @@ export default function AdminUsers() {
                     onPress={() => {
                       setUsers(prev => prev.map(u => u.id === selected.id ? { ...u, role: "parent" } : u));
                       setSelected(prev => prev ? { ...prev, role: "parent" } : null);
-                      Alert.alert("Ruolo Aggiornato", `${selected.name} è ora Genitore`);
+                      Alert.alert("Role Updated", `${selected.name} is now a Parent`);
                     }}
                   >
                     <Ionicons name="arrow-down-circle" size={20} color="#1E3A8A" />
-                    <Text style={[styles.promoteBtnText, { color: "#1E3A8A" }]}>Demota a Genitore</Text>
+                    <Text style={[styles.promoteBtnText, { color: "#1E3A8A" }]}>Demote to Parent</Text>
                   </Pressable>
                 )}
 
                 <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setSelected(null)}>
-                  <Text style={styles.closeBtnText}>Chiudi</Text>
+                  <Text style={styles.closeBtnText}>Close</Text>
                 </Pressable>
               </>
             )}

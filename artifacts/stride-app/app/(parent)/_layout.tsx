@@ -43,14 +43,14 @@ export default function ParentTabLayout() {
       <Tabs.Screen
         name="children"
         options={{
-          title: "I Miei Figli",
+          title: "My Children",
           tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="courses"
         options={{
-          title: "Corsi",
+          title: "Courses",
           tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes" size={size} color={color} />,
         }}
       />
@@ -64,7 +64,7 @@ export default function ParentTabLayout() {
       <Tabs.Screen
         name="documents"
         options={{
-          title: "Documenti",
+          title: "Documents",
           tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />,
           tabBarBadge: undefined,
         }}

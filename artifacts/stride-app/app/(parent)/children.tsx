@@ -40,12 +40,12 @@ export default function ChildrenScreen() {
 
   const handleAddChild = async () => {
     if (!newChildName.trim() || !newChildSurname.trim() || !newChildAge.trim()) {
-      Alert.alert("Errore", "Compila nome, cognome ed età.");
+      Alert.alert("Error", "Please enter name, surname and age.");
       return;
     }
     const age = parseInt(newChildAge, 10);
     if (isNaN(age) || age < 1 || age > 18) {
-      Alert.alert("Errore", "Inserisci un'età valida (1-18 anni).");
+      Alert.alert("Error", "Please enter a valid age (1–18).");
       return;
     }
     await addChild({ name: `${newChildName.trim()} ${newChildSurname.trim()}`, age, allergies: "", medicalWaiver: "ambulance", stars: 0, courses: [] });
@@ -64,7 +64,7 @@ export default function ChildrenScreen() {
 
   const handleAddDelegate = async () => {
     if (!delegateName || !delegateSurname || !delegatePhone) {
-      Alert.alert("Errore", "Compila tutti i campi.");
+      Alert.alert("Error", "Please fill all fields.");
       return;
     }
     await addDelegate({ childId: selectedChild, name: delegateName, surname: delegateSurname, phone: delegatePhone, approved: true });
@@ -78,8 +78,8 @@ export default function ChildrenScreen() {
   const handleSharePass = async (delegate: typeof delegates[0]) => {
     try {
       await Share.share({
-        message: `Pass Ritiro - ${delegate.name} ${delegate.surname}\nQR Code ID: ${delegate.id}\nPIN: ${delegate.pin}\nValido per: ${child?.name}`,
-        title: "Pass Ritiro",
+        message: `Collection Pass — ${delegate.name} ${delegate.surname}\nQR Code ID: ${delegate.id}\nPIN: ${delegate.pin}\nValid for: ${child?.name}`,
+        title: "Collection Pass",
       });
     } catch {}
   };
@@ -93,9 +93,8 @@ export default function ChildrenScreen() {
         }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>I Miei Figli</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>My Children</Text>
 
-        {/* Child Selector */}
         <View style={styles.childSelectorRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
             {children.map(c => (
@@ -121,7 +120,6 @@ export default function ChildrenScreen() {
 
         {child && (
           <>
-            {/* Child Card */}
             <View style={[styles.childCard, { backgroundColor: colors.card }]}>
               <View style={styles.childCardHeader}>
                 <View style={[styles.childBigAvatar, { backgroundColor: colors.primary }]}>
@@ -129,10 +127,10 @@ export default function ChildrenScreen() {
                 </View>
                 <View style={styles.childCardInfo}>
                   <Text style={[styles.childName, { color: colors.primary }]}>{child.name}</Text>
-                  <Text style={[styles.childAge, { color: colors.mutedForeground }]}>{child.age} anni</Text>
+                  <Text style={[styles.childAge, { color: colors.mutedForeground }]}>{child.age} yrs</Text>
                   <View style={styles.starsRow}>
                     <Ionicons name="star" size={16} color="#FBBF24" />
-                    <Text style={[styles.starsCount, { color: colors.primary }]}>{child.stars} Stelle d'Oro</Text>
+                    <Text style={[styles.starsCount, { color: colors.primary }]}>{child.stars} Gold Stars</Text>
                   </View>
                 </View>
               </View>
@@ -142,23 +140,22 @@ export default function ChildrenScreen() {
                 onPress={() => setShowMedical(true)}
               >
                 <Ionicons name="medical-outline" size={18} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Modifica Info Mediche</Text>
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Edit Medical Info</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
               <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Allergie:</Text>
-                <Text style={[styles.infoValue, { color: colors.foreground }]}>{child.allergies || "Nessuna"}</Text>
+                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Allergies:</Text>
+                <Text style={[styles.infoValue, { color: colors.foreground }]}>{child.allergies || "None"}</Text>
               </View>
               <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Emergenza:</Text>
+                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Emergency:</Text>
                 <Text style={[styles.infoValue, { color: colors.foreground }]}>
-                  {child.medicalWaiver === "ambulance" ? "Chiama ambulanza" : "Chiama genitore prima"}
+                  {child.medicalWaiver === "ambulance" ? "Call Ambulance" : "Call Parent First"}
                 </Text>
               </View>
             </View>
 
-            {/* Smart Pick-Up */}
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.primary }]}>Smart Pick-Up</Text>
               <Pressable
@@ -166,14 +163,14 @@ export default function ChildrenScreen() {
                 onPress={() => setShowAddDelegate(true)}
               >
                 <Ionicons name="add" size={18} color="#FFF" />
-                <Text style={styles.addBtnText}>Aggiungi</Text>
+                <Text style={styles.addBtnText}>Add</Text>
               </Pressable>
             </View>
 
             {childDelegates.length === 0 ? (
               <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
                 <Ionicons name="people-outline" size={36} color={colors.mutedForeground} />
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Nessun delegato aggiunto</Text>
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No delegates added yet</Text>
               </View>
             ) : (
               childDelegates.map(delegate => (
@@ -187,7 +184,7 @@ export default function ChildrenScreen() {
                     {delegate.approved && (
                       <View style={styles.approvedBadge}>
                         <Ionicons name="checkmark-circle" size={12} color="#10B981" />
-                        <Text style={styles.approvedText}>Approvato</Text>
+                        <Text style={styles.approvedText}>Approved</Text>
                       </View>
                     )}
                   </View>
@@ -213,38 +210,38 @@ export default function ChildrenScreen() {
       <Modal visible={showMedical} transparent animationType="slide" onRequestClose={() => setShowMedical(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Info Mediche</Text>
-            <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergie / Note</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Medical Info</Text>
+            <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergies / Notes</Text>
             <TextInput
               style={[styles.modalInput, { borderColor: colors.border }]}
               value={allergies}
               onChangeText={setAllergies}
-              placeholder="Es. Penicillina, Lattosio..."
+              placeholder="e.g. Penicillin, Lactose..."
               placeholderTextColor={colors.mutedForeground}
               multiline
               numberOfLines={3}
             />
-            <Text style={[styles.modalLabel, { color: colors.primary }]}>Protocollo Emergenza</Text>
+            <Text style={[styles.modalLabel, { color: colors.primary }]}>Emergency Protocol</Text>
             <Pressable
               style={[styles.waiverOption, medicalWaiver === "ambulance" && { backgroundColor: colors.primary }]}
               onPress={() => setMedicalWaiver("ambulance")}
             >
               <Ionicons name={medicalWaiver === "ambulance" ? "radio-button-on" : "radio-button-off"} size={18} color={medicalWaiver === "ambulance" ? "#FFF" : colors.primary} />
-              <Text style={[styles.waiverText, medicalWaiver === "ambulance" && { color: "#FFF" }]}>Autorizzo chiamata Ambulanza (costi a mio carico)</Text>
+              <Text style={[styles.waiverText, medicalWaiver === "ambulance" && { color: "#FFF" }]}>Authorise Ambulance (costs at my expense)</Text>
             </Pressable>
             <Pressable
               style={[styles.waiverOption, medicalWaiver === "call_parent" && { backgroundColor: colors.primary }]}
               onPress={() => setMedicalWaiver("call_parent")}
             >
               <Ionicons name={medicalWaiver === "call_parent" ? "radio-button-on" : "radio-button-off"} size={18} color={medicalWaiver === "call_parent" ? "#FFF" : colors.primary} />
-              <Text style={[styles.waiverText, medicalWaiver === "call_parent" && { color: "#FFF" }]}>Chiamare prima il genitore</Text>
+              <Text style={[styles.waiverText, medicalWaiver === "call_parent" && { color: "#FFF" }]}>Call parent first</Text>
             </Pressable>
             <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
               <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowMedical(false)}>
-                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleSaveMedical}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Salva</Text>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -255,11 +252,11 @@ export default function ChildrenScreen() {
       <Modal visible={showAddDelegate} transparent animationType="slide" onRequestClose={() => setShowAddDelegate(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Aggiungi Delegato</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Add Delegate</Text>
             {[
-              { label: "Nome", value: delegateName, setter: setDelegateName, placeholder: "Marco" },
-              { label: "Cognome", value: delegateSurname, setter: setDelegateSurname, placeholder: "Bianchi" },
-              { label: "Telefono", value: delegatePhone, setter: setDelegatePhone, placeholder: "+39 333 0000000", keyboard: "phone-pad" as const },
+              { label: "First Name", value: delegateName,    setter: setDelegateName,    placeholder: "Marco" },
+              { label: "Last Name",  value: delegateSurname, setter: setDelegateSurname, placeholder: "Bianchi" },
+              { label: "Phone",      value: delegatePhone,   setter: setDelegatePhone,   placeholder: "+61 4xx xxx xxx", keyboard: "phone-pad" as const },
             ].map(field => (
               <View key={field.label} style={{ marginBottom: 12 }}>
                 <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
@@ -275,10 +272,10 @@ export default function ChildrenScreen() {
             ))}
             <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
               <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowAddDelegate(false)}>
-                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddDelegate}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Aggiungi</Text>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
               </Pressable>
             </View>
           </View>
@@ -293,48 +290,23 @@ export default function ChildrenScreen() {
               <View style={[styles.addChildIconCircle, { backgroundColor: colors.primary }]}>
                 <Ionicons name="person-add" size={28} color="#FFF" />
               </View>
-              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Aggiungi Figlio</Text>
+              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add Child</Text>
             </View>
             <Text style={[styles.addChildSubtitle, { color: colors.mutedForeground }]}>
-              Il bambino verrà aggiunto al tuo profilo e potrai gestire le sue iscrizioni e deleghe.
+              The child will be added to your profile and you'll be able to manage enrolments and delegates.
             </Text>
-
-            <Text style={[styles.modalLabel, { color: colors.primary }]}>Nome</Text>
-            <TextInput
-              style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
-              value={newChildName}
-              onChangeText={setNewChildName}
-              placeholder="es. Sofia"
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="words"
-            />
-
-            <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Cognome</Text>
-            <TextInput
-              style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
-              value={newChildSurname}
-              onChangeText={setNewChildSurname}
-              placeholder="es. Rossi"
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="words"
-            />
-
-            <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Età</Text>
-            <TextInput
-              style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
-              value={newChildAge}
-              onChangeText={setNewChildAge}
-              placeholder="es. 8"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="number-pad"
-            />
-
+            <Text style={[styles.modalLabel, { color: colors.primary }]}>First Name</Text>
+            <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildName} onChangeText={setNewChildName} placeholder="e.g. Sofia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+            <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Last Name</Text>
+            <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Rossi" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+            <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Age</Text>
+            <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildAge} onChangeText={setNewChildAge} placeholder="e.g. 8" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
             <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
               <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); setNewChildName(""); setNewChildSurname(""); setNewChildAge(""); }}>
-                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Aggiungi</Text>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
               </Pressable>
             </View>
           </View>
@@ -345,7 +317,7 @@ export default function ChildrenScreen() {
       <Modal visible={!!showQRPass} transparent animationType="fade" onRequestClose={() => setShowQRPass(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Pass Ritiro</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Collection Pass</Text>
             {showQRPass && (() => {
               const del = delegates.find(d => d.id === showQRPass);
               return del ? (
@@ -354,13 +326,13 @@ export default function ChildrenScreen() {
                   <View style={{ alignItems: "center", padding: 20, backgroundColor: colors.muted, borderRadius: 16, marginVertical: 16 }}>
                     <Ionicons name="qr-code" size={100} color={colors.primary} />
                     <Text style={{ marginTop: 12, fontSize: 24, fontWeight: "800", letterSpacing: 8, color: colors.primary }}>{del.pin}</Text>
-                    <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>PIN di 6 cifre</Text>
+                    <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>6-digit PIN</Text>
                   </View>
                 </>
               ) : null;
             })()}
             <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary }]} onPress={() => setShowQRPass(null)}>
-              <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Chiudi</Text>
+              <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Close</Text>
             </Pressable>
           </View>
         </View>

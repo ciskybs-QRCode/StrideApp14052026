@@ -21,9 +21,9 @@ import { useAuth } from "@/context/AuthContext";
 const LOGO = require("@/assets/images/stride-logo.png");
 
 const QUICK_ROLES = [
-  { label: "Genitore", email: "genitore@test.com", icon: "people-outline" as const, color: "#1E3A8A", bg: "#EEF2FF" },
-  { label: "Operatore", email: "operatore@test.com", icon: "briefcase-outline" as const, color: "#7C3AED", bg: "#F5F3FF" },
-  { label: "Admin", email: "admin@test.com", icon: "shield-checkmark-outline" as const, color: "#059669", bg: "#ECFDF5" },
+  { label: "Parent",   email: "genitore@test.com",  icon: "people-outline"           as const, color: "#1E3A8A", bg: "#EEF2FF" },
+  { label: "Operator", email: "operatore@test.com", icon: "briefcase-outline"        as const, color: "#7C3AED", bg: "#F5F3FF" },
+  { label: "Admin",    email: "admin@test.com",     icon: "shield-checkmark-outline" as const, color: "#059669", bg: "#ECFDF5" },
 ];
 
 export default function LoginScreen() {
@@ -54,7 +54,7 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) { setError("Inserisci email e password"); shake(); return; }
+    if (!email || !password) { setError("Enter email and password"); shake(); return; }
     setLoading(true); setError("");
     try {
       await login(email, password);
@@ -62,7 +62,7 @@ export default function LoginScreen() {
       navigateAfterLogin(email.toLowerCase());
     } catch (e: unknown) {
       const err = e as Error;
-      setError(err.message || "Credenziali non valide");
+      setError(err.message || "Invalid credentials");
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       shake();
     } finally { setLoading(false); }
@@ -75,7 +75,7 @@ export default function LoginScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigateAfterLogin(roleEmail);
     } catch {
-      setError("Errore di accesso");
+      setError("Access error");
     } finally { setQuickLoading(null); }
   };
 
@@ -94,7 +94,7 @@ export default function LoginScreen() {
 
           {/* Quick Role Access */}
           <View style={styles.quickSection}>
-            <Text style={styles.quickTitle}>Accesso Rapido</Text>
+            <Text style={styles.quickTitle}>Quick Access</Text>
             <View style={styles.quickGrid}>
               {QUICK_ROLES.map(role => (
                 <Pressable
@@ -119,7 +119,7 @@ export default function LoginScreen() {
 
           {/* Manual Login */}
           <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
-            <Text style={styles.formTitle}>Oppure accedi manualmente</Text>
+            <Text style={styles.formTitle}>Or sign in manually</Text>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
@@ -129,7 +129,7 @@ export default function LoginScreen() {
                   style={styles.input}
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="tuaemail@esempio.com"
+                  placeholder="youremail@example.com"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -169,7 +169,7 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.loginBtnText}>ACCEDI</Text>}
+              {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.loginBtnText}>SIGN IN</Text>}
             </Pressable>
           </Animated.View>
 

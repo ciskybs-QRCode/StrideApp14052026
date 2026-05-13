@@ -22,6 +22,7 @@ export default function OperatorStudents() {
   const [search, setSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "present" | "absent">("all");
+  const [showStarNotif, setShowStarNotif] = useState(false);
 
   const filtered = students.filter(s => {
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase());
@@ -29,7 +30,6 @@ export default function OperatorStudents() {
     return matchSearch && matchFilter;
   });
 
-  const [showStarNotif, setShowStarNotif] = useState(false);
   const student = students.find(s => s.id === selectedStudent);
 
   const handleTogglePresence = async (id: string, current: boolean) => {
@@ -50,52 +50,44 @@ export default function OperatorStudents() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Studenti</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Students</Text>
 
-        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
             <Text style={styles.statNumber}>{students.length}</Text>
-            <Text style={styles.statLabel}>Totale</Text>
+            <Text style={styles.statLabel}>Total</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: "#10B981" }]}>
             <Text style={styles.statNumber}>{students.filter(s => s.checkedIn).length}</Text>
-            <Text style={styles.statLabel}>Presenti</Text>
+            <Text style={styles.statLabel}>Present</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: "#F59E0B" }]}>
             <Text style={styles.statNumber}>{students.filter(s => !s.checkedIn).length}</Text>
-            <Text style={styles.statLabel}>Assenti</Text>
+            <Text style={styles.statLabel}>Absent</Text>
           </View>
         </View>
 
-        {/* Search */}
         <View style={[styles.searchBar, { backgroundColor: colors.card }]}>
           <Ionicons name="search" size={18} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.foreground }]}
             value={search}
             onChangeText={setSearch}
-            placeholder="Cerca studente..."
+            placeholder="Search student..."
             placeholderTextColor={colors.mutedForeground}
           />
         </View>
 
-        {/* Filter */}
         <View style={[styles.filterBar, { backgroundColor: colors.muted }]}>
           {(["all", "present", "absent"] as const).map(f => (
-            <Pressable
-              key={f}
-              style={[styles.filterBtn, filter === f && { backgroundColor: colors.primary }]}
-              onPress={() => setFilter(f)}
-            >
+            <Pressable key={f} style={[styles.filterBtn, filter === f && { backgroundColor: colors.primary }]} onPress={() => setFilter(f)}>
               <Text style={[styles.filterText, filter === f && { color: "#FFF" }]}>
-                {f === "all" ? "Tutti" : f === "present" ? "Presenti" : "Assenti"}
+                {f === "all" ? "All" : f === "present" ? "Present" : "Absent"}
               </Text>
             </Pressable>
           ))}
         </View>
 
-        {/* Student List */}
         {filtered.map(s => (
           <Pressable key={s.id} style={[styles.studentCard, { backgroundColor: colors.card }]} onPress={() => setSelectedStudent(s.id)}>
             <View style={[styles.studentAvatar, { backgroundColor: s.checkedIn ? "#D1FAE5" : colors.muted }]}>
@@ -109,10 +101,10 @@ export default function OperatorStudents() {
               <View style={styles.studentMeta}>
                 <Ionicons name="star" size={12} color="#FBBF24" />
                 <Text style={[styles.studentStars, { color: colors.mutedForeground }]}>{s.stars}</Text>
-                {s.allergies !== "Nessuna" && (
+                {s.allergies !== "None" && s.allergies !== "Nessuna" && (
                   <>
                     <Ionicons name="medkit" size={12} color="#EF4444" />
-                    <Text style={{ fontSize: 11, color: "#EF4444" }}>Allergie</Text>
+                    <Text style={{ fontSize: 11, color: "#EF4444" }}>Allergies</Text>
                   </>
                 )}
               </View>
@@ -129,18 +121,16 @@ export default function OperatorStudents() {
         ))}
       </ScrollView>
 
-      {/* Star Notification Toast */}
       {showStarNotif && (
         <View style={styles.starToast}>
           <Ionicons name="star" size={20} color="#FFF" />
           <View>
-            <Text style={styles.starToastTitle}>⭐ Stella Assegnata!</Text>
-            <Text style={styles.starToastSub}>Notifica inviata al genitore</Text>
+            <Text style={styles.starToastTitle}>⭐ Star Awarded!</Text>
+            <Text style={styles.starToastSub}>Parent has been notified</Text>
           </View>
         </View>
       )}
 
-      {/* Student Detail Modal */}
       <Modal visible={!!selectedStudent} transparent animationType="slide" onRequestClose={() => setSelectedStudent(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -152,10 +142,10 @@ export default function OperatorStudents() {
                   </View>
                   <View style={styles.modalHeaderInfo}>
                     <Text style={[styles.modalName, { color: colors.primary }]}>{student.name}</Text>
-                    <Text style={[styles.modalAge, { color: colors.mutedForeground }]}>{student.age} anni</Text>
+                    <Text style={[styles.modalAge, { color: colors.mutedForeground }]}>{student.age} yrs</Text>
                     <View style={styles.starsRow}>
                       <Ionicons name="star" size={14} color="#FBBF24" />
-                      <Text style={[styles.starsText, { color: colors.primary }]}>{student.stars} stelle</Text>
+                      <Text style={[styles.starsText, { color: colors.primary }]}>{student.stars} stars</Text>
                     </View>
                   </View>
                 </View>
@@ -163,39 +153,35 @@ export default function OperatorStudents() {
                 <View style={[styles.infoSection, { backgroundColor: colors.muted }]}>
                   <View style={styles.infoRow}>
                     <Ionicons name="person-outline" size={16} color={colors.primary} />
-                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Genitore</Text>
+                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Parent</Text>
                     <Text style={[styles.infoValue, { color: colors.primary }]}>{student.parentName}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Ionicons name="call-outline" size={16} color={colors.primary} />
-                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Tel</Text>
+                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Phone</Text>
                     <Text style={[styles.infoValue, { color: colors.primary }]}>{student.parentPhone}</Text>
                   </View>
                   <View style={styles.infoRow}>
-                    <Ionicons name="medkit-outline" size={16} color={student.allergies !== "Nessuna" ? "#EF4444" : "#10B981"} />
-                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Allergie</Text>
-                    <Text style={[styles.infoValue, { color: student.allergies !== "Nessuna" ? "#EF4444" : "#10B981" }]}>{student.allergies}</Text>
+                    <Ionicons name="medkit-outline" size={16} color={student.allergies !== "None" && student.allergies !== "Nessuna" ? "#EF4444" : "#10B981"} />
+                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Allergies</Text>
+                    <Text style={[styles.infoValue, { color: student.allergies !== "None" && student.allergies !== "Nessuna" ? "#EF4444" : "#10B981" }]}>{student.allergies}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Ionicons name="shield-outline" size={16} color={colors.primary} />
-                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Emergenza</Text>
+                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Emergency</Text>
                     <Text style={[styles.infoValue, { color: colors.primary }]}>
-                      {student.medicalWaiver === "ambulance" ? "Ambulanza" : "Chiama genitore"}
+                      {student.medicalWaiver === "ambulance" ? "Call Ambulance" : "Call Parent"}
                     </Text>
                   </View>
                 </View>
 
-                {/* Gold Star Assignment */}
-                <Pressable
-                  style={[styles.starBtn, { backgroundColor: "#FEF3C7" }]}
-                  onPress={() => handleAssignStar(student.id)}
-                >
+                <Pressable style={[styles.starBtn, { backgroundColor: "#FEF3C7" }]} onPress={() => handleAssignStar(student.id)}>
                   <Ionicons name="star" size={22} color="#F59E0B" />
-                  <Text style={[styles.starBtnText, { color: "#F59E0B" }]}>Assegna Stella d'Oro</Text>
+                  <Text style={[styles.starBtnText, { color: "#F59E0B" }]}>Award Gold Star</Text>
                 </Pressable>
 
                 <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setSelectedStudent(null)}>
-                  <Text style={styles.closeBtnText}>Chiudi</Text>
+                  <Text style={styles.closeBtnText}>Close</Text>
                 </Pressable>
               </>
             )}

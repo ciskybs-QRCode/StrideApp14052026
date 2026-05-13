@@ -45,7 +45,6 @@ export default function OperatorDashboard() {
   const isGPS = true;
 
   const currentLesson = lessons[0];
-  const lessonStudents = students;
   const checkedIn = students.filter(s => s.checkedIn).length;
 
   useEffect(() => {
@@ -76,16 +75,16 @@ export default function OperatorDashboard() {
   const handleScan = async () => {
     if (!permission?.granted) {
       const result = await requestPermission();
-      if (!result.granted) { Alert.alert("Permesso fotocamera richiesto"); return; }
+      if (!result.granted) { Alert.alert("Camera permission required"); return; }
     }
     setShowScanner(true);
   };
 
   const simulateScan = () => {
     const outcomes: ScanResult[] = [
-      { type: "success", name: "Sofia Rossi", subscription: "active", medical: "valid", payment: "paid" },
-      { type: "warning", name: "Luca Ferrari", subscription: "active", medical: "expiring", payment: "paid" },
-      { type: "error", name: "Marco Bianchi", subscription: "expired", medical: "expired", payment: "overdue" },
+      { type: "success", name: "Sofia Rossi",   subscription: "active",  medical: "valid",    payment: "paid" },
+      { type: "warning", name: "Luca Ferrari",  subscription: "active",  medical: "expiring", payment: "paid" },
+      { type: "error",   name: "Marco Bianchi", subscription: "expired", medical: "expired",  payment: "overdue" },
     ];
     const result = outcomes[Math.floor(Math.random() * outcomes.length)];
     setScanResult(result);
@@ -108,7 +107,7 @@ export default function OperatorDashboard() {
       setShowSOS(true);
       setSosCount(0);
     } else {
-      Alert.alert("SOS", "Premi di nuovo per confermare l'emergenza.");
+      Alert.alert("SOS", "Press again to confirm the emergency.");
     }
   };
 
@@ -119,9 +118,7 @@ export default function OperatorDashboard() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const callEmergency = (number: string) => {
-    Linking.openURL(`tel:${number}`);
-  };
+  const callEmergency = (number: string) => { Linking.openURL(`tel:${number}`); };
 
   const statusColor = (s: "active" | "valid" | "paid" | "expired" | "expiring" | "overdue" | "pending" | "none") => {
     if (s === "active" || s === "valid" || s === "paid") return "#10B981";
@@ -135,19 +132,19 @@ export default function OperatorDashboard() {
     return "close-circle";
   };
 
-  const statusLabel = (key: string, val: string) => {
+  const statusLabel = (_key: string, val: string) => {
     const labels: Record<string, string> = {
-      active: "Attiva", expired: "Scaduta", none: "Assente",
-      valid: "Valido", expiring: "In Scadenza",
-      paid: "Pagato", overdue: "Arretrato", pending: "Pendente",
+      active: "Active", expired: "Expired", none: "None",
+      valid: "Valid", expiring: "Expiring",
+      paid: "Paid", overdue: "Overdue", pending: "Pending",
     };
     return labels[val] || val;
   };
 
   const phaseDetails = [
-    { icon: "person-outline" as const, label: "Fase 1", desc: "Contatta genitore iscritto nella lista d'attesa", color: "#3B82F6" },
-    { icon: "people-outline" as const, label: "Fase 2", desc: "Offri il posto a studenti dello stesso livello", color: "#8B5CF6" },
-    { icon: "mail-outline" as const, label: "Fase 3", desc: "Notifica tutti i contatti della scuola", color: "#EC4899" },
+    { icon: "person-outline" as const, label: "Phase 1", desc: "Contact parent on the waitlist",           color: "#3B82F6" },
+    { icon: "people-outline" as const, label: "Phase 2", desc: "Offer spot to students at the same level", color: "#8B5CF6" },
+    { icon: "mail-outline"   as const, label: "Phase 3", desc: "Notify all school contacts",               color: "#EC4899" },
   ];
 
   return (
@@ -160,12 +157,12 @@ export default function OperatorDashboard() {
         <View style={styles.header}>
           <View>
             <Text style={[styles.title, { color: colors.primary }]}>Dashboard</Text>
-            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Operatore</Text>
+            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Operator</Text>
           </View>
           <View style={[styles.gpsBadge, { backgroundColor: isGPS ? "#D1FAE5" : "#FEE2E2" }]}>
             <Ionicons name="location" size={14} color={isGPS ? "#10B981" : "#EF4444"} />
             <Text style={[styles.gpsText, { color: isGPS ? "#10B981" : "#EF4444" }]}>
-              {isGPS ? "In Sede" : "Fuori Sede"}
+              {isGPS ? "On Site" : "Off Site"}
             </Text>
           </View>
         </View>
@@ -174,7 +171,7 @@ export default function OperatorDashboard() {
         {currentLesson && (
           <View style={[styles.lessonCard, { backgroundColor: colors.primary }]}>
             <View style={styles.lessonHeader}>
-              <Text style={styles.lessonLabel}>LEZIONE IN CORSO</Text>
+              <Text style={styles.lessonLabel}>LESSON IN PROGRESS</Text>
               <View style={styles.liveIndicator}>
                 <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
                 <Text style={styles.liveText}>LIVE</Text>
@@ -186,17 +183,17 @@ export default function OperatorDashboard() {
             <View style={styles.lessonStats}>
               <View style={styles.lessonStat}>
                 <Text style={styles.lessonStatNumber}>{checkedIn}</Text>
-                <Text style={styles.lessonStatLabel}>Presenti</Text>
+                <Text style={styles.lessonStatLabel}>Present</Text>
               </View>
               <View style={styles.lessonStatDivider} />
               <View style={styles.lessonStat}>
                 <Text style={styles.lessonStatNumber}>{currentLesson.enrolled}</Text>
-                <Text style={styles.lessonStatLabel}>Iscritti</Text>
+                <Text style={styles.lessonStatLabel}>Enrolled</Text>
               </View>
               <View style={styles.lessonStatDivider} />
               <View style={styles.lessonStat}>
                 <Text style={styles.lessonStatNumber}>{currentLesson.enrolled - checkedIn}</Text>
-                <Text style={styles.lessonStatLabel}>Assenti</Text>
+                <Text style={styles.lessonStatLabel}>Absent</Text>
               </View>
             </View>
           </View>
@@ -208,18 +205,18 @@ export default function OperatorDashboard() {
           onPress={handleScan}
         >
           <Ionicons name="qr-code-outline" size={32} color={colors.primary} />
-          <Text style={[styles.scannerBtnText, { color: colors.primary }]}>AVVIA SCANNER QR</Text>
-          <Text style={[styles.scannerBtnSub, { color: colors.mutedForeground }]}>Tocca per aprire la fotocamera</Text>
+          <Text style={[styles.scannerBtnText, { color: colors.primary }]}>START QR SCANNER</Text>
+          <Text style={[styles.scannerBtnSub, { color: colors.mutedForeground }]}>Tap to open camera</Text>
         </Pressable>
 
-        {/* Absence Report + Substitution Algorithm */}
+        {/* Absence Report */}
         <View style={styles.actionRow}>
           <Pressable
             style={({ pressed }) => [styles.absenceBtn, { opacity: pressed ? 0.85 : 1 }]}
             onPress={handleAbsenceReport}
           >
             <Ionicons name="person-remove-outline" size={22} color="#FFF" />
-            <Text style={styles.absenceBtnText}>Segnala Assenza</Text>
+            <Text style={styles.absenceBtnText}>Report Absence</Text>
           </Pressable>
         </View>
 
@@ -230,18 +227,18 @@ export default function OperatorDashboard() {
         >
           <Ionicons name="warning" size={28} color="#FFFFFF" />
           <View>
-            <Text style={styles.sosBtnText}>SOS EMERGENZA</Text>
-            <Text style={styles.sosBtnSub}>Doppia pressione per attivare</Text>
+            <Text style={styles.sosBtnText}>SOS EMERGENCY</Text>
+            <Text style={styles.sosBtnSub}>Double press to activate</Text>
           </View>
         </Pressable>
 
         {/* Activity Log */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Log Attività</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Activity Log</Text>
         {[
-          { time: "15:48", action: "Check-in: Emma Ferrari", type: "success" as const },
-          { time: "15:35", action: "Check-in: Luca Rossi", type: "success" as const },
-          { time: "15:32", action: "Delegato: Maria Ferrari per Sofia", type: "warning" as const },
-          { time: "15:20", action: "Corso avviato: Danza Classica", type: "info" as const },
+          { time: "15:48", action: "Check-in: Emma Ferrari",            type: "success" as const },
+          { time: "15:35", action: "Check-in: Luca Rossi",              type: "success" as const },
+          { time: "15:32", action: "Delegated: Maria Ferrari for Sofia", type: "warning" as const },
+          { time: "15:20", action: "Course started: Classical Dance",    type: "info"    as const },
         ].map((log, i) => (
           <View key={i} style={[styles.logItem, { backgroundColor: colors.card }]}>
             <View style={[styles.logDot, {
@@ -256,11 +253,11 @@ export default function OperatorDashboard() {
       {/* QR Scanner Modal */}
       <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
         <View style={styles.scannerModal}>
-          <View style={styles.scannerHeader}>
+          <View style={[styles.scannerHeader, { paddingTop: insets.top + 16 }]}>
             <Pressable onPress={() => setShowScanner(false)}>
               <Ionicons name="close" size={28} color="#FFF" />
             </Pressable>
-            <Text style={styles.scannerTitle}>Scanner QR — Semaforo</Text>
+            <Text style={styles.scannerTitle}>QR Scanner — Semaphore</Text>
             <View style={{ width: 28 }} />
           </View>
 
@@ -268,10 +265,10 @@ export default function OperatorDashboard() {
             <View style={styles.scannerPreview}>
               <Ionicons name="qr-code-outline" size={80} color="rgba(255,255,255,0.5)" />
               <Text style={{ color: "rgba(255,255,255,0.7)", marginTop: 16, textAlign: "center" }}>
-                Scanner QR non disponibile nel preview web.{"\n"}Simula una scansione:
+                QR Scanner unavailable in web preview.{"\n"}Simulate a scan:
               </Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>
-                <Text style={styles.simulateBtnText}>Simula Scansione</Text>
+                <Text style={styles.simulateBtnText}>Simulate Scan</Text>
               </Pressable>
             </View>
           ) : (
@@ -282,7 +279,6 @@ export default function OperatorDashboard() {
             </CameraView>
           )}
 
-          {/* Rich Semaphore Result */}
           {scanResult && (
             <View style={[styles.scanResultPanel, {
               backgroundColor: scanResult.type === "success" ? "#10B981" : scanResult.type === "warning" ? "#F59E0B" : "#EF4444"
@@ -290,35 +286,25 @@ export default function OperatorDashboard() {
               <View style={styles.scanResultHeader}>
                 <Ionicons
                   name={scanResult.type === "success" ? "checkmark-circle" : scanResult.type === "warning" ? "warning" : "close-circle"}
-                  size={30}
-                  color="#FFF"
+                  size={30} color="#FFF"
                 />
                 <Text style={styles.scanResultName}>{scanResult.name}</Text>
               </View>
               <View style={styles.semaphoreRow}>
-                {/* Subscription */}
                 <View style={styles.semaphoreItem}>
                   <Ionicons name={statusIcon(scanResult.subscription)} size={20} color={statusColor(scanResult.subscription)} />
-                  <Text style={styles.semaphoreLabel}>Iscrizione</Text>
-                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.subscription) }]}>
-                    {statusLabel("subscription", scanResult.subscription)}
-                  </Text>
+                  <Text style={styles.semaphoreLabel}>Subscription</Text>
+                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.subscription) }]}>{statusLabel("subscription", scanResult.subscription)}</Text>
                 </View>
-                {/* Medical */}
                 <View style={styles.semaphoreItem}>
                   <Ionicons name={statusIcon(scanResult.medical)} size={20} color={statusColor(scanResult.medical)} />
-                  <Text style={styles.semaphoreLabel}>Certificato</Text>
-                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.medical) }]}>
-                    {statusLabel("medical", scanResult.medical)}
-                  </Text>
+                  <Text style={styles.semaphoreLabel}>Certificate</Text>
+                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.medical) }]}>{statusLabel("medical", scanResult.medical)}</Text>
                 </View>
-                {/* Payment */}
                 <View style={styles.semaphoreItem}>
                   <Ionicons name={statusIcon(scanResult.payment)} size={20} color={statusColor(scanResult.payment)} />
-                  <Text style={styles.semaphoreLabel}>Pagamento</Text>
-                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.payment) }]}>
-                    {statusLabel("payment", scanResult.payment)}
-                  </Text>
+                  <Text style={styles.semaphoreLabel}>Payment</Text>
+                  <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.payment) }]}>{statusLabel("payment", scanResult.payment)}</Text>
                 </View>
               </View>
             </View>
@@ -326,9 +312,9 @@ export default function OperatorDashboard() {
 
           {!scanResult && Platform.OS !== "web" && (
             <View style={styles.scannerFooter}>
-              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center" }}>Inquadra il QR Code dello studente</Text>
+              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center" }}>Point at student's QR Code</Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>
-                <Text style={styles.simulateBtnText}>Simula Scansione</Text>
+                <Text style={styles.simulateBtnText}>Simulate Scan</Text>
               </Pressable>
             </View>
           )}
@@ -340,13 +326,12 @@ export default function OperatorDashboard() {
         <View style={styles.modalOverlay}>
           <View style={styles.subAlgoCard}>
             <View style={styles.subAlgoHeader}>
-              <Text style={styles.subAlgoTitle}>Algoritmo Sostituzione</Text>
+              <Text style={styles.subAlgoTitle}>Substitution Algorithm</Text>
               <Pressable onPress={() => { setShowSubAlgo(false); clearInterval(subTimer.current!); }}>
                 <Ionicons name="close" size={24} color="#6B7BA4" />
               </Pressable>
             </View>
-            <Text style={styles.subAlgoSubtitle}>Studente assente · Posto disponibile</Text>
-
+            <Text style={styles.subAlgoSubtitle}>Absent student · Seat available</Text>
             <View style={styles.phasesContainer}>
               {phaseDetails.map((p, i) => {
                 const phaseNum = (i + 1) as SubPhase;
@@ -354,13 +339,10 @@ export default function OperatorDashboard() {
                 const isDone = subPhase > phaseNum;
                 return (
                   <View key={i} style={[styles.phaseRow, isActive && { backgroundColor: `${p.color}15`, borderRadius: 14 }]}>
-                    <View style={[styles.phaseIconCircle, {
-                      backgroundColor: isDone ? "#D1FAE5" : isActive ? p.color : "#E8EDF8"
-                    }]}>
+                    <View style={[styles.phaseIconCircle, { backgroundColor: isDone ? "#D1FAE5" : isActive ? p.color : "#E8EDF8" }]}>
                       {isDone
                         ? <Ionicons name="checkmark" size={16} color="#10B981" />
-                        : <Ionicons name={p.icon} size={16} color={isActive ? "#FFF" : "#6B7BA4"} />
-                      }
+                        : <Ionicons name={p.icon} size={16} color={isActive ? "#FFF" : "#6B7BA4"} />}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.phaseLabel, { color: isActive ? p.color : isDone ? "#10B981" : "#6B7BA4" }]}>
@@ -377,16 +359,14 @@ export default function OperatorDashboard() {
                 );
               })}
             </View>
-
             {subPhase > 3 && (
               <View style={styles.subCompleted}>
                 <Ionicons name="checkmark-circle" size={28} color="#10B981" />
-                <Text style={{ color: "#10B981", fontWeight: "700", fontSize: 15 }}>Sostituzione Completata</Text>
+                <Text style={{ color: "#10B981", fontWeight: "700", fontSize: 15 }}>Substitution Complete</Text>
               </View>
             )}
-
             <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => { setShowSubAlgo(false); clearInterval(subTimer.current!); }}>
-              <Text style={styles.closeBtnText}>Chiudi</Text>
+              <Text style={styles.closeBtnText}>Close</Text>
             </Pressable>
           </View>
         </View>
@@ -397,9 +377,9 @@ export default function OperatorDashboard() {
         <View style={styles.modalOverlay}>
           <View style={styles.sosModalCard}>
             <Ionicons name="warning" size={48} color="#EF4444" />
-            <Text style={styles.sosModalTitle}>EMERGENZA ATTIVATA</Text>
-            <Text style={styles.sosModalDesc}>Notifica inviata all'Amministratore</Text>
-            <Text style={styles.sosModalLabel}>Numeri di Emergenza:</Text>
+            <Text style={styles.sosModalTitle}>EMERGENCY ACTIVATED</Text>
+            <Text style={styles.sosModalDesc}>Notification sent to Administrator</Text>
+            <Text style={styles.sosModalLabel}>Emergency Numbers:</Text>
             <Pressable style={[styles.emergencyBtn, { backgroundColor: "#EF4444" }]} onPress={() => callEmergency("000")}>
               <Ionicons name="call" size={20} color="#FFF" />
               <Text style={styles.emergencyBtnText}>000 – Australia</Text>
@@ -409,7 +389,7 @@ export default function OperatorDashboard() {
               <Text style={styles.emergencyBtnText}>995 – Singapore</Text>
             </Pressable>
             <Pressable style={[styles.emergencyBtn, { backgroundColor: "#10B981" }]} onPress={() => setShowSOS(false)}>
-              <Text style={styles.emergencyBtnText}>Situazione Risolta</Text>
+              <Text style={styles.emergencyBtnText}>Situation Resolved</Text>
             </Pressable>
           </View>
         </View>
@@ -455,7 +435,7 @@ const styles = StyleSheet.create({
   logTime: { fontSize: 12, width: 40 },
   logAction: { flex: 1, fontSize: 13 },
   scannerModal: { flex: 1, backgroundColor: "#000" },
-  scannerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 20, paddingTop: 60 },
+  scannerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 16 },
   scannerTitle: { color: "#FFF", fontSize: 18, fontWeight: "700" },
   scannerPreview: { flex: 1, backgroundColor: "#111", alignItems: "center", justifyContent: "center" },
   scannerOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
@@ -481,14 +461,14 @@ const styles = StyleSheet.create({
   phaseLabel: { fontSize: 14, fontWeight: "700" },
   phaseDesc: { fontSize: 12, marginTop: 2 },
   countdownBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  countdownText: { color: "#FFF", fontSize: 13, fontWeight: "800" },
-  subCompleted: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12 },
-  closeBtn: { borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
+  countdownText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  subCompleted: { flexDirection: "row", alignItems: "center", gap: 10, justifyContent: "center", paddingVertical: 8 },
+  closeBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 8 },
   closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
-  sosModalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 28, alignItems: "center", width: "100%", gap: 12 },
-  sosModalTitle: { fontSize: 22, fontWeight: "800", color: "#EF4444" },
-  sosModalDesc: { fontSize: 14, color: "#6B7BA4" },
-  sosModalLabel: { fontSize: 14, fontWeight: "700", color: "#1E3A8A", marginTop: 8 },
-  emergencyBtn: { width: "100%", borderRadius: 12, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
-  emergencyBtnText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
+  sosModalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 28, width: "100%", alignItems: "center", gap: 14 },
+  sosModalTitle: { fontSize: 22, fontWeight: "800", color: "#EF4444", textAlign: "center" },
+  sosModalDesc: { fontSize: 14, color: "#6B7BA4", textAlign: "center" },
+  sosModalLabel: { fontSize: 13, fontWeight: "600", color: "#1E3A8A", alignSelf: "flex-start" },
+  emergencyBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, padding: 14, width: "100%", justifyContent: "center" },
+  emergencyBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
 });

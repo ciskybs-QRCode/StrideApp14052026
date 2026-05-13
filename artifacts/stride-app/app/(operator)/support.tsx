@@ -23,38 +23,62 @@ export default function OperatorSupport() {
   const protocols = [
     {
       id: "fire",
-      title: "Protocollo Incendio",
+      title: "Fire Protocol",
       icon: "flame" as const,
       color: "#EF4444",
-      steps: ["1. Attivare allarme antincendio", "2. Evacuare la sala ordinatamente", "3. Accompagnare gli studenti al punto di raccolta", "4. Chiamare i pompieri: 115", "5. Notificare l'amministrazione"],
+      steps: [
+        "Activate the fire alarm",
+        "Evacuate the room in an orderly fashion",
+        "Escort students to the assembly point",
+        "Call fire brigade: 000 / 995",
+        "Notify school administration",
+      ],
     },
     {
       id: "medical",
-      title: "Emergenza Medica",
+      title: "Medical Emergency",
       icon: "medkit" as const,
       color: "#F59E0B",
-      steps: ["1. Valutare la gravità della situazione", "2. Controllare il waiver medico dello studente", "3. Se waiver ambulanza: chiamare 118/000", "4. Se waiver genitori: chiamare prima il genitore", "5. Rimanere con lo studente fino all'arrivo dei soccorsi"],
+      steps: [
+        "Assess the severity of the situation",
+        "Check the student's medical waiver",
+        "If waiver is 'ambulance': call 000 / 118",
+        "If waiver is 'parent': call parent first",
+        "Stay with the student until help arrives",
+      ],
     },
     {
       id: "missing",
-      title: "Bambino Non Ritirato",
+      title: "Child Not Collected",
       icon: "person-remove" as const,
       color: "#7C3AED",
-      steps: ["1. Attendere 15 minuti oltre l'orario", "2. Contattare il genitore primario", "3. Contattare i delegati autorizzati", "4. Dopo 30 min: notificare l'amministrazione", "5. Non lasciare il bambino da solo"],
+      steps: [
+        "Wait 15 minutes past the scheduled time",
+        "Contact the primary parent",
+        "Contact authorised delegates",
+        "After 30 min: notify school administration",
+        "Do not leave the child unattended",
+      ],
     },
     {
       id: "unauthorized",
-      title: "Ritiro Non Autorizzato",
+      title: "Unauthorised Collection",
       icon: "shield-half" as const,
       color: "#1E3A8A",
-      steps: ["1. Verificare il QR Code del delegato", "2. Richiedere documento d'identità", "3. Chiamare il genitore per conferma", "4. In caso di dubbio: NON consegnare il bambino", "5. Notificare immediatamente l'amministrazione"],
+      steps: [
+        "Verify the delegate's QR Code",
+        "Request photo ID",
+        "Call the parent for confirmation",
+        "If in doubt: DO NOT release the child",
+        "Immediately notify school administration",
+      ],
     },
   ];
 
   const faqs = [
-    { q: "Come segnalo un'assenza non prevista?", a: "Accedi alla Dashboard e usa la sezione Log Attività per registrare le presenze manualmente." },
-    { q: "Cosa faccio se lo scanner QR non funziona?", a: "Verifica manualmente l'identità con documento d'identità e segna la presenza nel sistema." },
-    { q: "Come carico materiale didattico?", a: "Vai in Admin & Fatturazione > Materiale Didattico e carica i tuoi file." },
+    { q: "How do I report an unexpected absence?", a: "Go to the Dashboard and use the Activity Log section to manually record attendance." },
+    { q: "What if the QR scanner isn't working?", a: "Manually verify identity with photo ID and mark attendance in the system." },
+    { q: "How do I upload teaching materials?", a: "Go to Admin & Payroll > Teaching Materials and upload your files." },
   ];
 
   return (
@@ -63,11 +87,10 @@ export default function OperatorSupport() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Protocolli & Supporto</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Protocols & Support</Text>
 
-        {/* Emergency Contacts */}
         <View style={[styles.emergencyCard, { backgroundColor: "#FEF2F2" }]}>
-          <Text style={[styles.emergencyTitle, { color: "#EF4444" }]}>Numeri di Emergenza</Text>
+          <Text style={[styles.emergencyTitle, { color: "#EF4444" }]}>Emergency Numbers</Text>
           <View style={styles.emergencyRow}>
             <Pressable style={[styles.emergencyBtn, { backgroundColor: "#EF4444" }]} onPress={() => Linking.openURL("tel:000")}>
               <Ionicons name="call" size={18} color="#FFF" />
@@ -82,13 +105,12 @@ export default function OperatorSupport() {
             <Pressable style={[styles.emergencyBtn, { backgroundColor: "#F59E0B" }]} onPress={() => Linking.openURL("tel:+390212345678")}>
               <Ionicons name="call" size={18} color="#FFF" />
               <Text style={styles.emergencyBtnText}>Admin</Text>
-              <Text style={styles.emergencyBtnSub}>Sede</Text>
+              <Text style={styles.emergencyBtnSub}>Office</Text>
             </Pressable>
           </View>
         </View>
 
-        {/* SOS Protocols */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Protocolli SOS</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>SOS Protocols</Text>
         <View style={styles.protocolGrid}>
           {protocols.map(protocol => (
             <Pressable
@@ -105,8 +127,7 @@ export default function OperatorSupport() {
           ))}
         </View>
 
-        {/* FAQ */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Domande Frequenti</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>FAQs</Text>
         {faqs.map((faq, i) => (
           <View key={i} style={[styles.faqCard, { backgroundColor: colors.card }]}>
             <Text style={[styles.faqQ, { color: colors.primary }]}>{faq.q}</Text>
@@ -114,13 +135,12 @@ export default function OperatorSupport() {
           </View>
         ))}
 
-        {/* Contact Admin */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contatta Amministrazione</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact Administration</Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
           {[
-            { icon: "call" as const, label: "Chiama", color: "#10B981", onPress: () => Linking.openURL("tel:+390212345678") },
-            { icon: "logo-whatsapp" as const, label: "WhatsApp", color: "#25D366", onPress: () => Linking.openURL("https://wa.me/390212345678") },
-            { icon: "mail" as const, label: "Email", color: "#7C3AED", onPress: () => Linking.openURL("mailto:admin@dancevillage.it") },
+            { icon: "call"          as const, label: "Call",      color: "#10B981", onPress: () => Linking.openURL("tel:+390212345678") },
+            { icon: "logo-whatsapp" as const, label: "WhatsApp",  color: "#25D366", onPress: () => Linking.openURL("https://wa.me/390212345678") },
+            { icon: "mail"          as const, label: "Email",     color: "#7C3AED", onPress: () => Linking.openURL("mailto:admin@dancevillage.it") },
           ].map(item => (
             <Pressable key={item.label} style={styles.contactItem} onPress={item.onPress}>
               <View style={[styles.contactIcon, { backgroundColor: `${item.color}20` }]}>
@@ -133,7 +153,6 @@ export default function OperatorSupport() {
         </View>
       </ScrollView>
 
-      {/* Protocol Detail Modal */}
       <Modal visible={!!showProtocol} transparent animationType="slide" onRequestClose={() => setShowProtocol(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -152,11 +171,11 @@ export default function OperatorSupport() {
                       <View style={[styles.stepNumber, { backgroundColor: protocol.color }]}>
                         <Text style={styles.stepNumberText}>{i + 1}</Text>
                       </View>
-                      <Text style={[styles.stepText, { color: colors.foreground }]}>{step.substring(3)}</Text>
+                      <Text style={[styles.stepText, { color: colors.foreground }]}>{step}</Text>
                     </View>
                   ))}
                   <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setShowProtocol(null)}>
-                    <Text style={styles.closeBtnText}>Chiudi</Text>
+                    <Text style={styles.closeBtnText}>Close</Text>
                   </Pressable>
                 </>
               ) : null;

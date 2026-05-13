@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 
-const DAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 type LessonItem = { course: string; start: string; end: string; room: string; students: number; cancelled?: boolean };
 
@@ -31,22 +31,22 @@ export default function OperatorCalendar() {
   const [newCourseName, setNewCourseName] = useState("");
   const [newStart, setNewStart] = useState("16:00");
   const [newEnd, setNewEnd] = useState("17:30");
-  const [newRoom, setNewRoom] = useState("Sala A");
+  const [newRoom, setNewRoom] = useState("Room A");
 
   const [schedule, setSchedule] = useState<LessonItem[][]>([
-    [{ course: "Danza Classica", start: "15:30", end: "17:00", room: "Sala A", students: 12 }],
-    [{ course: "Hip Hop Junior", start: "16:00", end: "17:30", room: "Sala B", students: 10 }],
-    [{ course: "Danza Classica", start: "15:30", end: "17:00", room: "Sala A", students: 12 }, { course: "Danza Contemporanea", start: "17:00", end: "18:30", room: "Sala C", students: 8 }],
-    [{ course: "Hip Hop Junior", start: "16:00", end: "17:30", room: "Sala B", students: 10 }],
-    [{ course: "Danza Contemporanea", start: "17:00", end: "18:30", room: "Sala C", students: 8 }],
-    [{ course: "Yoga Kids", start: "10:00", end: "11:00", room: "Sala D", students: 6 }],
+    [{ course: "Classical Dance",      start: "15:30", end: "17:00", room: "Room A", students: 12 }],
+    [{ course: "Hip Hop Junior",       start: "16:00", end: "17:30", room: "Room B", students: 10 }],
+    [{ course: "Classical Dance",      start: "15:30", end: "17:00", room: "Room A", students: 12 }, { course: "Contemporary Dance", start: "17:00", end: "18:30", room: "Room C", students: 8 }],
+    [{ course: "Hip Hop Junior",       start: "16:00", end: "17:30", room: "Room B", students: 10 }],
+    [{ course: "Contemporary Dance",   start: "17:00", end: "18:30", room: "Room C", students: 8 }],
+    [{ course: "Kids Yoga",            start: "10:00", end: "11:00", room: "Room D", students: 6 }],
     [],
   ]);
 
   const todayLessons = schedule[selectedDay] || [];
 
   const handleCreateLesson = () => {
-    if (!newCourseName.trim()) { Alert.alert("Inserisci il nome del corso"); return; }
+    if (!newCourseName.trim()) { Alert.alert("Enter course name"); return; }
     const updated = [...schedule];
     updated[selectedDay] = [...(updated[selectedDay] || []), { course: newCourseName, start: newStart, end: newEnd, room: newRoom, students: 0 }];
     setSchedule(updated);
@@ -63,8 +63,8 @@ export default function OperatorCalendar() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const handlePostpone = (dayIdx: number, lessonIdx: number) => {
-    Alert.alert("Lezione Rinviata", "La lezione è stata spostata. Notifica inviata ai genitori iscritti.");
+  const handlePostpone = (_dayIdx: number, _lessonIdx: number) => {
+    Alert.alert("Lesson Postponed", "The lesson has been rescheduled. Parents have been notified.");
     setShowOptions(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -78,7 +78,7 @@ export default function OperatorCalendar() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Text style={[styles.pageTitle, { color: colors.primary }]}>Calendario</Text>
+          <Text style={[styles.pageTitle, { color: colors.primary }]}>Calendar</Text>
           <View style={[styles.viewToggle, { backgroundColor: colors.muted }]}>
             <Pressable style={[styles.toggleBtn, view === "list" && { backgroundColor: colors.primary }]} onPress={() => setView("list")}>
               <Ionicons name="list" size={16} color={view === "list" ? "#FFF" : colors.mutedForeground} />
@@ -89,7 +89,6 @@ export default function OperatorCalendar() {
           </View>
         </View>
 
-        {/* Day Selector */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
           {DAYS.map((day, index) => {
             const hasLessons = (schedule[index]?.length || 0) > 0;
@@ -106,15 +105,14 @@ export default function OperatorCalendar() {
           })}
         </ScrollView>
 
-        {/* Lessons for selected day */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>
-          {DAYS[selectedDay]} — {todayLessons.length} lezioni
+          {DAYS[selectedDay]} — {todayLessons.length} {todayLessons.length === 1 ? "lesson" : "lessons"}
         </Text>
 
         {todayLessons.length === 0 ? (
           <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
             <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Nessuna lezione</Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No lessons</Text>
           </View>
         ) : (
           todayLessons.map((lesson, i) => (
@@ -124,9 +122,7 @@ export default function OperatorCalendar() {
                 <View style={styles.lessonTop}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.lessonName, { color: colors.primary }]}>{lesson.course}</Text>
-                    {lesson.cancelled && (
-                      <Text style={styles.cancelledBadge}>ANNULLATA</Text>
-                    )}
+                    {lesson.cancelled && <Text style={styles.cancelledBadge}>CANCELLED</Text>}
                   </View>
                   <View style={styles.lessonTopRight}>
                     <View style={[styles.studentsBadge, { backgroundColor: colors.muted }]}>
@@ -154,8 +150,7 @@ export default function OperatorCalendar() {
           ))
         )}
 
-        {/* Weekly Overview */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Questa Settimana</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>This Week</Text>
         <View style={[styles.weekOverview, { backgroundColor: colors.card }]}>
           {schedule.map((day, i) => (
             <View key={i} style={styles.weekDay}>
@@ -170,12 +165,11 @@ export default function OperatorCalendar() {
           ))}
         </View>
 
-        {/* Upcoming */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Prossimi Eventi</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Upcoming Events</Text>
         {[
-          { title: "Saggio Fine Anno", date: "15 Giugno 2026", type: "event" },
-          { title: "Riunione Staff", date: "20 Aprile 2026", type: "meeting" },
-          { title: "Corso Workshop", date: "25 Aprile 2026", type: "workshop" },
+          { title: "End-of-Year Recital",  date: "June 15, 2026",  type: "event" },
+          { title: "Staff Meeting",         date: "April 20, 2026", type: "meeting" },
+          { title: "Workshop Course",       date: "April 25, 2026", type: "workshop" },
         ].map((ev, i) => (
           <View key={i} style={[styles.eventCard, { backgroundColor: colors.card }]}>
             <View style={[styles.eventIcon, {
@@ -195,7 +189,6 @@ export default function OperatorCalendar() {
         ))}
       </ScrollView>
 
-      {/* FAB — Create new lesson */}
       <Pressable
         style={[styles.fab, { backgroundColor: colors.secondary, bottom: insets.bottom + 100 }]}
         onPress={() => { setShowCreate(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
@@ -203,54 +196,40 @@ export default function OperatorCalendar() {
         <Ionicons name="add" size={28} color={colors.primary} />
       </Pressable>
 
-      {/* Create Lesson Modal */}
       <Modal visible={showCreate} transparent animationType="slide" onRequestClose={() => setShowCreate(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Nuova Lezione / Workshop</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>New Lesson / Workshop</Text>
             <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>{DAYS[selectedDay]}</Text>
 
-            <Text style={styles.fieldLabel}>Nome Corso</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-              placeholder="es. Danza Classica"
-              value={newCourseName}
-              onChangeText={setNewCourseName}
-              placeholderTextColor={colors.mutedForeground}
-            />
+            <Text style={styles.fieldLabel}>Course Name</Text>
+            <TextInput style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]} placeholder="e.g. Classical Dance" value={newCourseName} onChangeText={setNewCourseName} placeholderTextColor={colors.mutedForeground} />
             <View style={styles.timeRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Inizio</Text>
+                <Text style={styles.fieldLabel}>Start</Text>
                 <TextInput style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]} value={newStart} onChangeText={setNewStart} placeholderTextColor={colors.mutedForeground} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Fine</Text>
+                <Text style={styles.fieldLabel}>End</Text>
                 <TextInput style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]} value={newEnd} onChangeText={setNewEnd} placeholderTextColor={colors.mutedForeground} />
               </View>
             </View>
-            <Text style={styles.fieldLabel}>Sala</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-              placeholder="es. Sala A"
-              value={newRoom}
-              onChangeText={setNewRoom}
-              placeholderTextColor={colors.mutedForeground}
-            />
+            <Text style={styles.fieldLabel}>Room</Text>
+            <TextInput style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]} placeholder="e.g. Room A" value={newRoom} onChangeText={setNewRoom} placeholderTextColor={colors.mutedForeground} />
 
             <View style={styles.modalBtns}>
               <Pressable style={[styles.modalBtnSecondary, { borderColor: colors.primary }]} onPress={() => setShowCreate(false)}>
-                <Text style={[styles.modalBtnSecondaryText, { color: colors.primary }]}>Annulla</Text>
+                <Text style={[styles.modalBtnSecondaryText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.modalBtnPrimary, { backgroundColor: colors.primary }]} onPress={handleCreateLesson}>
                 <Ionicons name="checkmark" size={18} color="#FFF" />
-                <Text style={styles.modalBtnPrimaryText}>Crea</Text>
+                <Text style={styles.modalBtnPrimaryText}>Create</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Lesson Options Modal */}
       <Modal visible={!!showOptions} transparent animationType="fade" onRequestClose={() => setShowOptions(null)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowOptions(null)}>
           <View style={styles.optionsCard}>
@@ -261,7 +240,7 @@ export default function OperatorCalendar() {
               <View style={[styles.optionIcon, { backgroundColor: "#FEF3C7" }]}>
                 <Ionicons name="calendar-outline" size={20} color="#F59E0B" />
               </View>
-              <Text style={styles.optionText}>Rinvia Lezione</Text>
+              <Text style={styles.optionText}>Postpone Lesson</Text>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </Pressable>
 
@@ -269,7 +248,7 @@ export default function OperatorCalendar() {
               <View style={[styles.optionIcon, { backgroundColor: "#FEE2E2" }]}>
                 <Ionicons name="close-circle-outline" size={20} color="#EF4444" />
               </View>
-              <Text style={[styles.optionText, { color: "#EF4444" }]}>Annulla Lezione</Text>
+              <Text style={[styles.optionText, { color: "#EF4444" }]}>Cancel Lesson</Text>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </Pressable>
 
@@ -277,7 +256,7 @@ export default function OperatorCalendar() {
               <View style={[styles.optionIcon, { backgroundColor: "#E8EDF8" }]}>
                 <Ionicons name="close" size={20} color="#6B7BA4" />
               </View>
-              <Text style={styles.optionText}>Chiudi</Text>
+              <Text style={styles.optionText}>Close</Text>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </Pressable>
           </View>

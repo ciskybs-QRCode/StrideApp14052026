@@ -23,17 +23,17 @@ export default function OperatorInvoicing() {
 
   const invoiceData = {
     april: { hours: 32, rate: 35, total: 1120, lessons: 22, students: 35 },
-    march: { hours: 28, rate: 35, total: 980, lessons: 19, students: 32 },
+    march: { hours: 28, rate: 35, total: 980,  lessons: 19, students: 32 },
   };
 
   const current = invoiceData[selectedPeriod];
 
   const handleGenerateInvoice = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const month = selectedPeriod === "april" ? "Aprile" : "Marzo";
+    const month = selectedPeriod === "april" ? "April" : "March";
     await Share.share({
-      message: `FATTURA - ${user?.name}\nMese: ${month} 2026\nOre lavorate: ${current.hours}h\nTarifa: €${current.rate}/h\nTotale: €${current.total}\nLezioni tenute: ${current.lessons}\nStudenti: ${current.students}`,
-      title: `Fattura ${month} 2026`,
+      message: `INVOICE - ${user?.name}\nMonth: ${month} 2026\nHours worked: ${current.hours}h\nRate: €${current.rate}/h\nTotal: €${current.total}\nLessons taught: ${current.lessons}\nStudents: ${current.students}`,
+      title: `Invoice ${month} 2026`,
     });
   };
 
@@ -43,9 +43,8 @@ export default function OperatorInvoicing() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Admin & Fatturazione</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Admin & Payroll</Text>
 
-        {/* Contractor Profile */}
         <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
           <View style={styles.profileTop}>
             <View style={styles.profileAvatar}>
@@ -53,85 +52,73 @@ export default function OperatorInvoicing() {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{user?.name}</Text>
-              <Text style={styles.profileRole}>Operatore / Insegnante</Text>
+              <Text style={styles.profileRole}>Operator / Teacher</Text>
               <Text style={styles.profileSchool}>Dance Village</Text>
             </View>
           </View>
           <View style={styles.profileStats}>
             <View style={styles.profileStat}>
               <Text style={styles.profileStatNumber}>{current.lessons}</Text>
-              <Text style={styles.profileStatLabel}>Lezioni</Text>
+              <Text style={styles.profileStatLabel}>Lessons</Text>
             </View>
             <View style={styles.profileStatDivider} />
             <View style={styles.profileStat}>
               <Text style={styles.profileStatNumber}>{current.students}</Text>
-              <Text style={styles.profileStatLabel}>Studenti</Text>
+              <Text style={styles.profileStatLabel}>Students</Text>
             </View>
             <View style={styles.profileStatDivider} />
             <View style={styles.profileStat}>
               <Text style={styles.profileStatNumber}>{current.hours}h</Text>
-              <Text style={styles.profileStatLabel}>Ore</Text>
+              <Text style={styles.profileStatLabel}>Hours</Text>
             </View>
           </View>
         </View>
 
-        {/* Period Selector */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Periodo</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Period</Text>
         <View style={[styles.periodSelector, { backgroundColor: colors.muted }]}>
-          <Pressable
-            style={[styles.periodBtn, selectedPeriod === "april" && { backgroundColor: colors.primary }]}
-            onPress={() => setSelectedPeriod("april")}
-          >
-            <Text style={[styles.periodBtnText, selectedPeriod === "april" && { color: "#FFF" }]}>Aprile 2026</Text>
+          <Pressable style={[styles.periodBtn, selectedPeriod === "april" && { backgroundColor: colors.primary }]} onPress={() => setSelectedPeriod("april")}>
+            <Text style={[styles.periodBtnText, selectedPeriod === "april" && { color: "#FFF" }]}>April 2026</Text>
           </Pressable>
-          <Pressable
-            style={[styles.periodBtn, selectedPeriod === "march" && { backgroundColor: colors.primary }]}
-            onPress={() => setSelectedPeriod("march")}
-          >
-            <Text style={[styles.periodBtnText, selectedPeriod === "march" && { color: "#FFF" }]}>Marzo 2026</Text>
+          <Pressable style={[styles.periodBtn, selectedPeriod === "march" && { backgroundColor: colors.primary }]} onPress={() => setSelectedPeriod("march")}>
+            <Text style={[styles.periodBtnText, selectedPeriod === "march" && { color: "#FFF" }]}>March 2026</Text>
           </Pressable>
         </View>
 
-        {/* Invoice Summary */}
         <View style={[styles.invoiceCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.invoiceTitle, { color: colors.primary }]}>Riepilogo Compenso</Text>
+          <Text style={[styles.invoiceTitle, { color: colors.primary }]}>Compensation Summary</Text>
           <View style={styles.invoiceRows}>
             <View style={[styles.invoiceRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.invoiceLabel, { color: colors.mutedForeground }]}>Ore lavorate</Text>
-              <Text style={[styles.invoiceValue, { color: colors.primary }]}>{current.hours} ore</Text>
+              <Text style={[styles.invoiceLabel, { color: colors.mutedForeground }]}>Hours worked</Text>
+              <Text style={[styles.invoiceValue, { color: colors.primary }]}>{current.hours} hrs</Text>
             </View>
             <View style={[styles.invoiceRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.invoiceLabel, { color: colors.mutedForeground }]}>Tariffa oraria</Text>
+              <Text style={[styles.invoiceLabel, { color: colors.mutedForeground }]}>Hourly rate</Text>
               <Text style={[styles.invoiceValue, { color: colors.primary }]}>€{current.rate}/h</Text>
             </View>
             <View style={[styles.invoiceRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.invoiceLabel, { color: colors.mutedForeground }]}>Lezioni tenute</Text>
+              <Text style={[styles.invoiceLabel, { color: colors.mutedForeground }]}>Lessons taught</Text>
               <Text style={[styles.invoiceValue, { color: colors.primary }]}>{current.lessons}</Text>
             </View>
           </View>
           <View style={[styles.totalRow, { backgroundColor: colors.primary }]}>
-            <Text style={styles.totalLabel}>TOTALE DOVUTO</Text>
+            <Text style={styles.totalLabel}>TOTAL DUE</Text>
             <Text style={styles.totalAmount}>€{current.total}</Text>
           </View>
           <Pressable style={[styles.generateBtn, { borderColor: colors.primary }]} onPress={handleGenerateInvoice}>
             <Ionicons name="document-outline" size={18} color={colors.primary} />
-            <Text style={[styles.generateBtnText, { color: colors.primary }]}>GENERA FATTURA PDF</Text>
+            <Text style={[styles.generateBtnText, { color: colors.primary }]}>GENERATE INVOICE PDF</Text>
           </Pressable>
         </View>
 
-        {/* Teaching Materials */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Materiale Didattico</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Teaching Materials</Text>
         <View style={[styles.materialCard, { backgroundColor: colors.card }]}>
-          <Pressable
-            style={[styles.uploadBtn, { backgroundColor: colors.muted }]}
-            onPress={() => Alert.alert("Upload", "Seleziona un file da caricare per i tuoi studenti.")}
-          >
+          <Pressable style={[styles.uploadBtn, { backgroundColor: colors.muted }]} onPress={() => Alert.alert("Upload", "Select a file to share with your students.")}>
             <Ionicons name="cloud-upload-outline" size={24} color={colors.primary} />
-            <Text style={[styles.uploadBtnText, { color: colors.primary }]}>Carica MP3 / PDF / Copione</Text>
+            <Text style={[styles.uploadBtnText, { color: colors.primary }]}>Upload MP3 / PDF / Script</Text>
           </Pressable>
           {[
-            { name: "Copione Saggio 2026.pdf", date: "05 Apr", type: "pdf" },
-            { name: "Base musicale Danza.mp3", date: "02 Apr", type: "mp3" },
+            { name: "Recital Script 2026.pdf",  date: "05 Apr", type: "pdf" },
+            { name: "Dance Music Base.mp3",      date: "02 Apr", type: "mp3" },
           ].map((file, i) => (
             <View key={i} style={[styles.fileRow, { borderTopColor: colors.border }]}>
               <Ionicons name={file.type === "pdf" ? "document-text" : "musical-notes"} size={18} color={colors.primary} />
@@ -141,11 +128,10 @@ export default function OperatorInvoicing() {
           ))}
         </View>
 
-        {/* Settings */}
         <View style={[styles.settingsCard, { backgroundColor: colors.card }]}>
-          <Pressable style={styles.settingsItem} onPress={() => Alert.alert("Password", "Link di reset inviato.")}>
+          <Pressable style={styles.settingsItem} onPress={() => Alert.alert("Password", "Reset link sent.")}>
             <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
-            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Cambia Password</Text>
+            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Change Password</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
           </Pressable>
           <Pressable style={[styles.settingsItem, { borderTopWidth: 1, borderTopColor: colors.border }]} onPress={logout}>

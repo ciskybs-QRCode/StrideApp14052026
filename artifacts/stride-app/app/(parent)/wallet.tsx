@@ -27,7 +27,7 @@ export default function WalletScreen() {
   const pending = payments.filter(p => p.status === "pending");
 
   const handleDownloadReceipt = async (payment: typeof payments[0]) => {
-    await Share.share({ message: `Ricevuta: ${payment.description}\nImporto: €${payment.amount}\nData: ${payment.date}\nStato: Pagato` });
+    await Share.share({ message: `Receipt: ${payment.description}\nAmount: €${payment.amount}\nDate: ${payment.date}\nStatus: Paid` });
   };
 
   const handleCancel = (id: string) => {
@@ -43,7 +43,6 @@ export default function WalletScreen() {
       >
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Wallet</Text>
 
-        {/* Payment Method */}
         <View style={[styles.cardVisual, { backgroundColor: colors.primary }]}>
           <View style={styles.cardTop}>
             <Ionicons name="card" size={24} color="rgba(255,255,255,0.7)" />
@@ -54,13 +53,12 @@ export default function WalletScreen() {
             <Text style={styles.cardLabel}>Marco Rossi</Text>
             <Text style={styles.cardExpiry}>09/28</Text>
           </View>
-          <Pressable style={styles.updateCardBtn} onPress={() => Alert.alert("Aggiorna Carta", "Questa funzione richiede Stripe nella versione di produzione.")}>
-            <Text style={styles.updateCardText}>Aggiorna Carta</Text>
+          <Pressable style={styles.updateCardBtn} onPress={() => Alert.alert("Update Card", "This feature requires Stripe in production.")}>
+            <Text style={styles.updateCardText}>Update Card</Text>
           </Pressable>
         </View>
 
-        {/* Active Subscriptions */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Abbonamenti Attivi</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Active Subscriptions</Text>
         {activeSubscriptions.map(booking => {
           const course = courses.find(c => c.id === booking.courseId);
           return course ? (
@@ -71,8 +69,8 @@ export default function WalletScreen() {
                 </View>
                 <View>
                   <Text style={[styles.subName, { color: colors.primary }]}>{course.name}</Text>
-                  <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>Rinnovo il 01/05/2026</Text>
-                  <Text style={[styles.subPrice, { color: colors.secondary }]}>€{course.price}/mese</Text>
+                  <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>Renews on 01/05/2026</Text>
+                  <Text style={[styles.subPrice, { color: colors.secondary }]}>€{course.price}/mo</Text>
                 </View>
               </View>
               <Pressable style={styles.cancelBtn} onPress={() => handleCancel(booking.id)}>
@@ -82,10 +80,9 @@ export default function WalletScreen() {
           ) : null;
         })}
 
-        {/* Pending Payments */}
         {pending.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.primary }]}>In Attesa</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Pending</Text>
             {pending.map(payment => (
               <View key={payment.id} style={[styles.transactionCard, { backgroundColor: "#FFF7ED", borderLeftColor: "#F59E0B", borderLeftWidth: 4 }]}>
                 <View style={styles.transactionLeft}>
@@ -101,8 +98,7 @@ export default function WalletScreen() {
           </>
         )}
 
-        {/* Transaction History */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Storico Transazioni</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Transaction History</Text>
         {paid.map(payment => (
           <View key={payment.id} style={[styles.transactionCard, { backgroundColor: colors.card }]}>
             <View style={styles.transactionLeft}>
@@ -122,28 +118,27 @@ export default function WalletScreen() {
         ))}
       </ScrollView>
 
-      {/* Cancel Confirmation Modal */}
       <Modal visible={!!showCancelConfirm} transparent animationType="fade" onRequestClose={() => setShowCancelConfirm(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Ionicons name="warning" size={40} color="#F59E0B" />
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Disdici Abbonamento?</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Cancel Subscription?</Text>
             <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-              Attenzione: è richiesto un preavviso di 14 giorni. Confermi la cancellazione?
+              Note: 14 days notice is required. Confirm cancellation?
             </Text>
             <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
               <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowCancelConfirm(null)}>
-                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Go Back</Text>
               </Pressable>
               <Pressable
                 style={[styles.modalBtn, { flex: 1, backgroundColor: "#EF4444" }]}
                 onPress={() => {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   setShowCancelConfirm(null);
-                  Alert.alert("Disdetta inviata", "Riceverai conferma via email entro 24 ore.");
+                  Alert.alert("Cancellation sent", "You'll receive confirmation by email within 24 hours.");
                 }}
               >
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Conferma</Text>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm</Text>
               </Pressable>
             </View>
           </View>
