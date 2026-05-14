@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -116,6 +117,9 @@ export default function SchoolInformationPage() {
     await updateUser({ schoolName: draftInfo.name });
     setInfo(draftInfo);
     setEditingInfo(false);
+    if (draftInfo.address.trim()) {
+      await AsyncStorage.setItem("stride_campus_address", draftInfo.address.trim());
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Saved", "School information updated.");
   };
@@ -134,7 +138,7 @@ export default function SchoolInformationPage() {
     setShowCampusModal(true);
   };
 
-  const handleSaveCampus = () => {
+  const handleSaveCampus = async () => {
     if (!campusDraft.name.trim()) { Alert.alert("Error", "Please enter a campus name."); return; }
     if (!campusDraft.address.trim()) { Alert.alert("Error", "Please enter an address."); return; }
 
@@ -150,6 +154,9 @@ export default function SchoolInformationPage() {
         const updated = campusDraft.isMain ? prev.map(c => ({ ...c, isMain: false })) : prev;
         return [...updated, newC];
       });
+    }
+    if (campusDraft.isMain && campusDraft.address.trim()) {
+      await AsyncStorage.setItem("stride_campus_address", campusDraft.address.trim());
     }
     setShowCampusModal(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

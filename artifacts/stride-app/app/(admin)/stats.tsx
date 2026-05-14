@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   Linking,
   Modal,
   Platform,
@@ -18,6 +20,27 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+
+// ── Emergency number detection ────────────────────────────────────────────────
+
+interface EmergencyInfo { number: string; country: string; flag: string; description: string; }
+
+function detectEmergencyInfo(address: string): EmergencyInfo {
+  const a = address.toLowerCase();
+  if (/\b(nsw|vic|qld|wa|sa|tas|act|nt)\b|australia/.test(a))
+    return { number: "000", country: "Australia",     flag: "🇦🇺", description: "Police · Fire · Ambulance" };
+  if (/singapore/.test(a))
+    return { number: "995", country: "Singapore",     flag: "🇸🇬", description: "Emergency Services" };
+  if (/new zealand|nz 0/.test(a))
+    return { number: "111", country: "New Zealand",   flag: "🇳🇿", description: "Police · Fire · Ambulance" };
+  if (/\b(england|scotland|wales|london|birmingham|manchester|united kingdom)\b/.test(a))
+    return { number: "999", country: "United Kingdom",flag: "🇬🇧", description: "Police · Fire · Ambulance" };
+  if (/\b(usa|united states|canada)\b/.test(a))
+    return { number: "911", country: "US / Canada",   flag: "🇺🇸", description: "Police · Fire · Ambulance" };
+  if (/\b(italia|italy)\b/.test(a))
+    return { number: "112", country: "Italy",         flag: "🇮🇹", description: "Numero di emergenza europeo" };
+  return   { number: "112", country: "International", flag: "🌍", description: "European Emergency Number" };
+}
 
 const MONTHLY = [
   { month: "Jan", revenue: 2800, students: 28 },
@@ -78,9 +101,27 @@ export default function AdminStats() {
   const [activeSection, setActiveSection] = useState<SectionKey | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [scanned, setScanned] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [showSOS, setShowSOS] = useState(false);
   const [sosCount, setSosCount] = useState(0);
+  const [showQRFullscreen, setShowQRFullscreen] = useState(false);
+  const [campusAddress, setCampusAddress] = useState("1 Main Street, Sydney NSW 2000");
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    AsyncStorage.getItem("stride_campus_address").then(addr => {
+      if (addr) setCampusAddress(addr);
+    });
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.08, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 600, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  const emergency = detectEmergencyInfo(campusAddress);
 
   const totalRevenue  = payments.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const pendingRevenue = payments.filter(p => p.status === "pending").reduce((s, p) => s + p.amount, 0);
@@ -105,20 +146,35 @@ export default function AdminStats() {
     setShowScanner(true);
   };
 
-  const simulateScan = () => {
-    const outcomes: ScanResult[] = [
-      { type: "success", name: "Sofia Rossi",   subscription: "active",  medical: "valid",    payment: "paid" },
-      { type: "warning", name: "Luca Ferrari",  subscription: "active",  medical: "expiring", payment: "paid" },
-      { type: "error",   name: "Marco Bianchi", subscription: "expired", medical: "expired",  payment: "overdue" },
-    ];
-    const r = outcomes[Math.floor(Math.random() * outcomes.length)];
+  const MOCK_OUTCOMES: ScanResult[] = [
+    { type: "success", name: "Sofia Rossi",   subscription: "active",  medical: "valid",    payment: "paid" },
+    { type: "warning", name: "Luca Ferrari",  subscription: "active",  medical: "expiring", payment: "paid" },
+    { type: "error",   name: "Marco Bianchi", subscription: "expired", medical: "expired",  payment: "overdue" },
+  ];
+
+  const showScanResult = (r: ScanResult) => {
     setScanResult(r);
+    setScanned(true);
     Haptics.notificationAsync(
       r.type === "success" ? Haptics.NotificationFeedbackType.Success :
       r.type === "warning" ? Haptics.NotificationFeedbackType.Warning :
       Haptics.NotificationFeedbackType.Error
     );
-    setTimeout(() => { setScanResult(null); setShowScanner(false); }, 3500);
+    setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 3500);
+  };
+
+  const simulateScan = () => showScanResult(MOCK_OUTCOMES[Math.floor(Math.random() * MOCK_OUTCOMES.length)]);
+
+  const handleBarcodeScan = ({ data }: { data: string }) => {
+    if (scanned) return;
+    if (data.startsWith("STRIDE:")) {
+      const parts = data.split(":");
+      const role = parts[1] || "MEMBER";
+      const name = parts[3] || "Unknown Member";
+      showScanResult({ type: "success", name, subscription: "active", medical: "valid", payment: "paid" });
+    } else {
+      showScanResult(MOCK_OUTCOMES[Math.floor(Math.random() * MOCK_OUTCOMES.length)]);
+    }
   };
 
   const handleSOSPress = () => {
@@ -394,7 +450,10 @@ export default function AdminStats() {
         </View>
 
         {/* ── ADMIN QR CODE ── */}
-        <View style={[styles.qrCard, { backgroundColor: colors.card }]}>
+        <Pressable
+          style={({ pressed }) => [styles.qrCard, { backgroundColor: colors.card, transform: pressed ? [{ scale: 0.98 }] : [] }]}
+          onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        >
           <View style={styles.qrCardLeft}>
             <Text style={[styles.qrCardTitle, { color: colors.primary }]}>Your QR Code</Text>
             <Text style={[styles.qrCardName, { color: colors.foreground }]}>{user?.name}</Text>
@@ -402,12 +461,15 @@ export default function AdminStats() {
               <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
               <Text style={[styles.qrRoleText, { color: colors.primary }]}>Administrator</Text>
             </View>
-            <Text style={[styles.qrCardHint, { color: colors.mutedForeground }]}>Show this to operators for access</Text>
+            <View style={styles.qrExpandHint}>
+              <Ionicons name="expand-outline" size={11} color={colors.mutedForeground} />
+              <Text style={[styles.qrCardHint, { color: colors.mutedForeground }]}>Tap to expand full-screen</Text>
+            </View>
           </View>
           <View style={[styles.qrCodeBox, { backgroundColor: "#F0F4FF" }]}>
             <QRCode value={qrValue} size={90} color="#1E3A8A" backgroundColor="#F0F4FF" />
           </View>
-        </View>
+        </Pressable>
 
         {/* ── SECTION NAV GRID ── */}
         <Text style={[styles.sectionNavLabel, { color: colors.mutedForeground }]}>ANALYTICS SECTIONS</Text>
@@ -515,9 +577,17 @@ export default function AdminStats() {
               </Pressable>
             </View>
           ) : (
-            <CameraView style={styles.scannerPreview} facing="back">
+            <CameraView
+              style={styles.scannerPreview}
+              facing="back"
+              barcodeScannerSettings={{ barcodeTypes: ["qr", "ean13", "code128"] }}
+              onBarcodeScanned={scanned ? undefined : handleBarcodeScan}
+            >
               <View style={styles.scannerOverlay}>
                 <View style={styles.scannerFrame} />
+                {!scanned && (
+                  <Text style={styles.scannerHintText}>Point at a member's QR Code</Text>
+                )}
               </View>
             </CameraView>
           )}
@@ -557,27 +627,66 @@ export default function AdminStats() {
         </View>
       </Modal>
 
-      {/* ── SOS MODAL ── */}
+      {/* ── SOS / EMERGENCY MODE MODAL ── */}
       <Modal visible={showSOS} transparent animationType="fade" onRequestClose={() => setShowSOS(false)}>
-        <View style={styles.modalOverlay}>
+        <View style={styles.sosOverlay}>
           <View style={styles.sosModalCard}>
-            <Ionicons name="warning" size={52} color="#EF4444" />
-            <Text style={styles.sosModalTitle}>EMERGENCY ACTIVATED</Text>
-            <Text style={styles.sosModalDesc}>Notification sent to all operators</Text>
-            <Text style={[styles.sosModalLabel, { color: colors.primary }]}>Emergency Numbers:</Text>
-            <Pressable style={[styles.emergencyBtn, { backgroundColor: "#EF4444" }]} onPress={() => Linking.openURL("tel:000")}>
-              <Ionicons name="call" size={20} color="#FFF" />
-              <Text style={styles.emergencyBtnText}>000 – Australia</Text>
-            </Pressable>
-            <Pressable style={[styles.emergencyBtn, { backgroundColor: "#EF4444" }]} onPress={() => Linking.openURL("tel:995")}>
-              <Ionicons name="call" size={20} color="#FFF" />
-              <Text style={styles.emergencyBtnText}>995 – Singapore</Text>
-            </Pressable>
-            <Pressable style={[styles.emergencyBtn, { backgroundColor: "#10B981" }]} onPress={() => setShowSOS(false)}>
-              <Text style={styles.emergencyBtnText}>Situation Resolved</Text>
+            <View style={styles.sosTopRow}>
+              <Ionicons name="warning" size={28} color="#FFF" />
+              <Text style={styles.sosModalTitle}>EMERGENCY MODE</Text>
+              <Ionicons name="warning" size={28} color="#FFF" />
+            </View>
+            <Text style={styles.sosModalDesc}>All operators have been notified</Text>
+
+            <View style={styles.sosDivider} />
+
+            <Text style={styles.sosFlagLabel}>{emergency.flag}  {emergency.country}</Text>
+            <Text style={styles.sosSubDesc}>{emergency.description}</Text>
+
+            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+              <Pressable
+                style={styles.sosCallBtn}
+                onPress={() => Linking.openURL(`tel:${emergency.number}`)}
+              >
+                <Ionicons name="call" size={32} color="#FFF" />
+                <Text style={styles.sosCallNumber}>{emergency.number}</Text>
+                <Text style={styles.sosCallLabel}>TAP TO CALL</Text>
+              </Pressable>
+            </Animated.View>
+
+            <View style={styles.sosDivider} />
+
+            <Pressable style={styles.sosResolveBtn} onPress={() => { setShowSOS(false); setSosCount(0); }}>
+              <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+              <Text style={styles.sosResolveBtnText}>Situation Resolved</Text>
             </Pressable>
           </View>
         </View>
+      </Modal>
+
+      {/* ── FULLSCREEN QR CODE MODAL ── */}
+      <Modal visible={showQRFullscreen} animationType="fade" transparent onRequestClose={() => setShowQRFullscreen(false)}>
+        <Pressable style={styles.qrFullscreenOverlay} onPress={() => setShowQRFullscreen(false)}>
+          <View style={styles.qrFullscreenCard}>
+            <View style={styles.qrFullscreenHeader}>
+              <Text style={styles.qrFullscreenTitle}>Your QR Code</Text>
+              <Pressable onPress={() => setShowQRFullscreen(false)} style={styles.qrCloseBtn}>
+                <Ionicons name="close" size={22} color="#6B7BA4" />
+              </Pressable>
+            </View>
+            <View style={styles.qrFullscreenBox}>
+              <QRCode value={qrValue} size={260} color="#1E3A8A" backgroundColor="#FFFFFF" />
+            </View>
+            <View style={styles.qrFullscreenInfo}>
+              <Text style={styles.qrFullscreenName}>{user?.name}</Text>
+              <View style={[styles.qrRoleBadge, { backgroundColor: "#DBEAFE", alignSelf: "center" }]}>
+                <Ionicons name="shield-checkmark" size={13} color="#1E3A8A" />
+                <Text style={[styles.qrRoleText, { color: "#1E3A8A" }]}>Administrator</Text>
+              </View>
+              <Text style={styles.qrFullscreenHint}>Show this QR code to operators for access verification</Text>
+            </View>
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -723,10 +832,34 @@ const styles = StyleSheet.create({
   scannerFooter: { padding: 24, alignItems: "center", gap: 16 },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", alignItems: "center", justifyContent: "center", padding: 24 },
-  sosModalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 28, width: "100%", alignItems: "center", gap: 12 },
-  sosModalTitle: { fontSize: 22, fontWeight: "800", color: "#EF4444", textAlign: "center" },
-  sosModalDesc: { fontSize: 14, color: "#6B7BA4", textAlign: "center" },
-  sosModalLabel: { fontSize: 13, fontWeight: "600", alignSelf: "flex-start" },
-  emergencyBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, padding: 14, width: "100%", justifyContent: "center" },
-  emergencyBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+
+  // ── SOS Emergency Mode ──
+  sosOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.88)", alignItems: "center", justifyContent: "center", padding: 24 },
+  sosModalCard: { backgroundColor: "#1A1A2E", borderRadius: 28, padding: 28, width: "100%", alignItems: "center", gap: 10, borderWidth: 2, borderColor: "#EF4444" },
+  sosTopRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  sosModalTitle: { fontSize: 20, fontWeight: "900", color: "#EF4444", letterSpacing: 2, textAlign: "center" },
+  sosModalDesc: { fontSize: 13, color: "rgba(255,255,255,0.65)", textAlign: "center" },
+  sosDivider: { height: 1, backgroundColor: "rgba(239,68,68,0.25)", width: "100%", marginVertical: 4 },
+  sosFlagLabel: { fontSize: 22, fontWeight: "700", color: "#FFF", textAlign: "center" },
+  sosSubDesc: { fontSize: 12, color: "rgba(255,255,255,0.55)", textAlign: "center", marginTop: -4 },
+  sosCallBtn: { backgroundColor: "#EF4444", borderRadius: 24, width: 180, height: 180, alignItems: "center", justifyContent: "center", gap: 4, shadowColor: "#EF4444", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 24, elevation: 12, marginVertical: 6 },
+  sosCallNumber: { fontSize: 52, fontWeight: "900", color: "#FFF", letterSpacing: 2 },
+  sosCallLabel: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.8)", letterSpacing: 2 },
+  sosResolveBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(16,185,129,0.12)", borderRadius: 14, paddingHorizontal: 20, paddingVertical: 12, borderWidth: 1, borderColor: "#10B981", width: "100%", justifyContent: "center" },
+  sosResolveBtnText: { color: "#10B981", fontWeight: "700", fontSize: 15 },
+
+  // ── QR Fullscreen ──
+  qrExpandHint: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  qrFullscreenOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.75)", alignItems: "center", justifyContent: "center", padding: 24 },
+  qrFullscreenCard: { backgroundColor: "#FFF", borderRadius: 28, padding: 24, width: "100%", alignItems: "center", gap: 0 },
+  qrFullscreenHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%", marginBottom: 20 },
+  qrFullscreenTitle: { fontSize: 18, fontWeight: "800", color: "#1E3A8A" },
+  qrCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
+  qrFullscreenBox: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#E5E7EB", marginBottom: 20 },
+  qrFullscreenInfo: { alignItems: "center", gap: 8, width: "100%" },
+  qrFullscreenName: { fontSize: 18, fontWeight: "700", color: "#1E3A8A" },
+  qrFullscreenHint: { fontSize: 12, color: "#6B7BA4", textAlign: "center", marginTop: 4 },
+
+  // ── Scanner hint ──
+  scannerHintText: { color: "rgba(255,255,255,0.75)", fontSize: 13, textAlign: "center", marginTop: 16 },
 });
