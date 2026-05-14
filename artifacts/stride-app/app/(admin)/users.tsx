@@ -68,6 +68,11 @@ export default function AdminUsers() {
   const [filter, setFilter] = useState<"all" | UserRole>("all");
   const [selected, setSelected] = useState<UserRecord | null>(null);
   const [showContact, setShowContact] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "suspend" | "reactivate" | "approve" | "role_change";
+    user: UserRecord;
+    newRole?: UserRole;
+  } | null>(null);
 
   const filtered = users.filter(u => {
     const matchSearch =
@@ -113,62 +118,36 @@ export default function AdminUsers() {
     setSelected(prev => prev?.id === id ? { ...prev, status } : prev);
   };
 
-  const handleSuspend = (user: UserRecord) => {
-    Alert.alert(
-      "Suspend User",
-      `Suspend ${user.name}? They will immediately lose access to the app.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Suspend",
-          style: "destructive",
-          onPress: () => {
-            updateUserStatus(user.id, "suspended");
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            Alert.alert("Suspended", `${user.name}'s access has been disabled.`);
-          },
-        },
-      ]
-    );
-  };
+  const handleSuspend    = (user: UserRecord) => setConfirmAction({ type: "suspend",    user });
+  const handleReactivate = (user: UserRecord) => setConfirmAction({ type: "reactivate", user });
+  const handleApprove    = (user: UserRecord) => setConfirmAction({ type: "approve",    user });
 
-  const handleReactivate = (user: UserRecord) => {
-    Alert.alert(
-      "Reactivate User",
-      `Restore access for ${user.name}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reactivate",
-          style: "default",
-          onPress: () => {
-            updateUserStatus(user.id, "active");
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert("Reactivated", `${user.name} can now access the app again.`);
-          },
-        },
-      ]
-    );
-  };
-
-  const handleApprove = (user: UserRecord) => {
-    Alert.alert("Approve User", `Approve ${user.name} and give them full access?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Approve",
-        onPress: () => {
-          updateUserStatus(user.id, "active");
+  const executeConfirmAction = () => {
+    if (!confirmAction) return;
+    const { type, user, newRole } = confirmAction;
+    setConfirmAction(null);
+    switch (type) {
+      case "suspend":
+        updateUserStatus(user.id, "suspended");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        break;
+      case "reactivate":
+      case "approve":
+        updateUserStatus(user.id, "active");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        break;
+      case "role_change":
+        if (newRole) {
+          setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u));
+          setSelected(prev => prev?.id === user.id ? { ...prev, role: newRole } : prev);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        },
-      },
-    ]);
+        }
+        break;
+    }
   };
 
   const handleRoleChange = (user: UserRecord, newRole: "parent" | "operator") => {
-    const label = newRole === "operator" ? "Operator" : "Parent";
-    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u));
-    setSelected(prev => prev?.id === user.id ? { ...prev, role: newRole } : prev);
-    Alert.alert("Role Updated", `${user.name} is now a ${label}`);
+    setConfirmAction({ type: "role_change", user, newRole });
   };
 
   // ── Grouped list ──────────────────────────────────────────────────────────
@@ -363,7 +342,32 @@ export default function AdminUsers() {
                     )}
                   </View>
 
-                  <Pressable style={[styles.closeBtn, { backgroundColor: colors.muted }]} onPress={() => setSelected(null)}>
+                  {/* Inline confirmation panel */}
+                  {confirmAction && confirmAction.user.id === user.id && (() => {
+                    const msgs: Record<string, { title: string; body: string; confirmLabel: string; confirmColor: string }> = {
+                      suspend:     { title: "Suspend User",    body: `Suspend ${user.name}? They will immediately lose app access.`, confirmLabel: "Suspend",    confirmColor: "#EF4444" },
+                      reactivate:  { title: "Reactivate User", body: `Restore full access for ${user.name}?`,                        confirmLabel: "Reactivate", confirmColor: "#10B981" },
+                      approve:     { title: "Approve User",    body: `Approve ${user.name} and grant full access?`,                  confirmLabel: "Approve",    confirmColor: "#10B981" },
+                      role_change: { title: "Change Role",     body: `Change ${user.name}'s role to ${confirmAction.newRole}?`,      confirmLabel: "Confirm",    confirmColor: "#1E3A8A" },
+                    };
+                    const m = msgs[confirmAction.type];
+                    return (
+                      <View style={styles.confirmPanel}>
+                        <Text style={styles.confirmTitle}>{m.title}</Text>
+                        <Text style={styles.confirmBody}>{m.body}</Text>
+                        <View style={styles.confirmButtons}>
+                          <Pressable style={[styles.confirmBtn, { backgroundColor: colors.muted }]} onPress={() => setConfirmAction(null)}>
+                            <Text style={[styles.confirmBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
+                          </Pressable>
+                          <Pressable style={[styles.confirmBtn, { backgroundColor: m.confirmColor }]} onPress={executeConfirmAction}>
+                            <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>{m.confirmLabel}</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })()}
+
+                  <Pressable style={[styles.closeBtn, { backgroundColor: colors.muted }]} onPress={() => { setConfirmAction(null); setSelected(null); }}>
                     <Text style={[styles.closeBtnText, { color: colors.primary }]}>Close</Text>
                   </Pressable>
                 </>
@@ -496,6 +500,12 @@ const styles = StyleSheet.create({
   modalActionText: { fontWeight: "700", fontSize: 13 },
   closeBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center", width: "85%" },
   closeBtnText: { fontWeight: "700", fontSize: 15 },
+  confirmPanel: { width: "85%", backgroundColor: "#FFF8F0", borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#FDE8C8", gap: 10 },
+  confirmTitle: { fontWeight: "700", fontSize: 15, color: "#111827" },
+  confirmBody: { fontSize: 13, color: "#6B7280", lineHeight: 18 },
+  confirmButtons: { flexDirection: "row", gap: 10 },
+  confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: "center" },
+  confirmBtnText: { fontWeight: "700", fontSize: 14 },
   contactOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   contactSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 36 },
   contactHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB", alignSelf: "center", marginBottom: 20 },
