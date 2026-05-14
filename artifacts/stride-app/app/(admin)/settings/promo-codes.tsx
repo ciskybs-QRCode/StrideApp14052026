@@ -82,6 +82,7 @@ export default function PromoCodesPage() {
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<PromoCode | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const [newCode, setNewCode] = useState("");
   const [newDiscountType, setNewDiscountType] = useState<DiscountType>("percent");
@@ -143,11 +144,14 @@ export default function PromoCodesPage() {
     setPromos(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert("Delete", "This cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => { setPromos(prev => prev.filter(p => p.id !== id)); setShowDetail(null); } },
-    ]);
+  const handleDelete = (id: string) => setConfirmDelete(id);
+
+  const executeDelete = () => {
+    if (!confirmDelete) return;
+    setPromos(prev => prev.filter(p => p.id !== confirmDelete));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setConfirmDelete(null);
+    setShowDetail(null);
   };
 
   return (
@@ -401,16 +405,31 @@ export default function PromoCodesPage() {
                   <View style={[styles.usageBarBg, { backgroundColor: colors.muted, height: 10, borderRadius: 5, marginTop: 14, marginBottom: 16 }]}>
                     <View style={[styles.usageBarFill, { width: `${pct}%` as `${number}%`, backgroundColor: pct >= 100 ? "#EF4444" : pct > 70 ? "#F59E0B" : "#10B981", height: 10, borderRadius: 5 }]} />
                   </View>
-                  <View style={{ flexDirection: "row", gap: 10 }}>
-                    <Pressable style={[styles.detailActionBtn, { backgroundColor: expired ? "#D1FAE5" : "#FEF3C7" }]} onPress={() => { handleToggle(p.id); setShowDetail({ ...p, active: !p.active }); }}>
-                      <Ionicons name={p.active ? "pause-circle-outline" : "play-circle-outline"} size={18} color={p.active ? "#F59E0B" : "#10B981"} />
-                      <Text style={[styles.detailActionText, { color: p.active ? "#F59E0B" : "#10B981" }]}>{p.active ? "Deactivate" : "Reactivate"}</Text>
-                    </Pressable>
-                    <Pressable style={[styles.detailActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => handleDelete(p.id)}>
-                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                      <Text style={[styles.detailActionText, { color: "#EF4444" }]}>Delete</Text>
-                    </Pressable>
-                  </View>
+                  {confirmDelete === p.id ? (
+                    <View style={styles.confirmPanel}>
+                      <Text style={styles.confirmTitle}>Delete Promo Code?</Text>
+                      <Text style={styles.confirmBody}>"{p.code}" will be permanently removed. This cannot be undone.</Text>
+                      <View style={styles.confirmButtons}>
+                        <Pressable style={[styles.confirmBtn, { backgroundColor: "#F3F4F6" }]} onPress={() => setConfirmDelete(null)}>
+                          <Text style={[styles.confirmBtnText, { color: "#374151" }]}>Cancel</Text>
+                        </Pressable>
+                        <Pressable style={[styles.confirmBtn, { backgroundColor: "#EF4444" }]} onPress={executeDelete}>
+                          <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Delete</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      <Pressable style={[styles.detailActionBtn, { backgroundColor: expired ? "#D1FAE5" : "#FEF3C7" }]} onPress={() => { handleToggle(p.id); setShowDetail({ ...p, active: !p.active }); }}>
+                        <Ionicons name={p.active ? "pause-circle-outline" : "play-circle-outline"} size={18} color={p.active ? "#F59E0B" : "#10B981"} />
+                        <Text style={[styles.detailActionText, { color: p.active ? "#F59E0B" : "#10B981" }]}>{p.active ? "Deactivate" : "Reactivate"}</Text>
+                      </Pressable>
+                      <Pressable style={[styles.detailActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => handleDelete(p.id)}>
+                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                        <Text style={[styles.detailActionText, { color: "#EF4444" }]}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
               </View>
             );
@@ -487,4 +506,10 @@ const styles = StyleSheet.create({
   copyChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
   detailActionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 12, paddingVertical: 12 },
   detailActionText: { fontWeight: "700", fontSize: 14 },
+  confirmPanel: { borderRadius: 14, padding: 14, backgroundColor: "#FFF5F5", borderWidth: 1, borderColor: "#FECACA", gap: 8, marginTop: 4 },
+  confirmTitle: { fontWeight: "700", fontSize: 14, color: "#111827" },
+  confirmBody: { fontSize: 13, color: "#6B7280", lineHeight: 18 },
+  confirmButtons: { flexDirection: "row", gap: 10, marginTop: 2 },
+  confirmBtn: { flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: "center" },
+  confirmBtnText: { fontWeight: "700", fontSize: 14 },
 });
