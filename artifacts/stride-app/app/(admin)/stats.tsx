@@ -139,10 +139,12 @@ export default function AdminStats() {
   const qrValue = `STRIDE:ADMIN:${user?.id || "admin"}:${user?.email || "admin@test.com"}`;
 
   const handleScan = async () => {
-    if (!permission?.granted) {
+    if (Platform.OS !== "web" && !permission?.granted) {
       const res = await requestPermission();
-      if (!res.granted) { Alert.alert("Camera permission required"); return; }
+      if (!res.granted) { Alert.alert("Camera Permission", "Enable camera access in Settings to scan QR codes."); return; }
     }
+    setScanResult(null);
+    setScanned(false);
     setShowScanner(true);
   };
 

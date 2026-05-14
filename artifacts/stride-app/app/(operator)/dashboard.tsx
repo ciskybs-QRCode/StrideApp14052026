@@ -100,10 +100,12 @@ export default function OperatorDashboard() {
   }, [showSubAlgo, subPhase]);
 
   const handleScan = async () => {
-    if (!permission?.granted) {
+    if (Platform.OS !== "web" && !permission?.granted) {
       const result = await requestPermission();
-      if (!result.granted) { Alert.alert("Camera permission required"); return; }
+      if (!result.granted) { Alert.alert("Camera Permission", "Enable camera access in Settings to scan QR codes."); return; }
     }
+    setScanResult(null);
+    setScanned(false);
     setShowScanner(true);
   };
 
