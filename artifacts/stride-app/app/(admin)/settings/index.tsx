@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Platform,
@@ -57,15 +57,11 @@ export default function SettingsIndex() {
   const { legalAdminDocs } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const unsignedCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
 
-  const handleLogout = () => {
-    Alert.alert("Log Out", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Log Out", style: "destructive", onPress: logout },
-    ]);
-  };
+  const handleLogout = () => setConfirmLogout(true);
 
   const navigate = (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -211,6 +207,21 @@ export default function SettingsIndex() {
           ))}
         </View>
 
+        {confirmLogout && (
+          <View style={styles.confirmPanel}>
+            <Text style={styles.confirmTitle}>Log Out?</Text>
+            <Text style={[styles.confirmBody, { color: colors.mutedForeground }]}>You'll be returned to the login screen.</Text>
+            <View style={styles.confirmButtons}>
+              <Pressable style={[styles.confirmBtn, { backgroundColor: colors.muted }]} onPress={() => setConfirmLogout(false)}>
+                <Text style={[styles.confirmBtnText, { color: colors.foreground }]}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[styles.confirmBtn, { backgroundColor: "#F59E0B" }]} onPress={logout}>
+                <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Log Out</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0 · {user?.schoolName || "Dance Village"}
         </Text>
@@ -326,4 +337,10 @@ const styles = StyleSheet.create({
   accountLabel: { fontSize: 15, fontWeight: "500" },
   accountSub: { fontSize: 12, marginTop: 1 },
   version: { fontSize: 12, textAlign: "center", marginBottom: 20, marginTop: 4 },
+  confirmPanel: { borderRadius: 16, padding: 16, backgroundColor: "#FFFBEB", borderWidth: 1, borderColor: "#FDE68A", gap: 8, marginBottom: 16 },
+  confirmTitle: { fontWeight: "700", fontSize: 15, color: "#111827" },
+  confirmBody: { fontSize: 13, lineHeight: 18 },
+  confirmButtons: { flexDirection: "row", gap: 10, marginTop: 4 },
+  confirmBtn: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: "center" },
+  confirmBtnText: { fontWeight: "700", fontSize: 14 },
 });
