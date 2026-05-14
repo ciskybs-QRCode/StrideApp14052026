@@ -75,6 +75,9 @@ export interface LegalAdminDoc {
   highPriority: boolean;
   mandatorySignature: boolean;
   fileUri?: string;
+  fileName?: string;
+  fileSize?: string;
+  linkUrl?: string;
   createdAt: string;
   description?: string;
 }
