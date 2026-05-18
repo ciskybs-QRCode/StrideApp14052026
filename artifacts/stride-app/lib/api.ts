@@ -51,6 +51,7 @@ export const api = {
   getChildren: () => request<ApiChild[]>("GET", "/children"),
   addChild: (data: Partial<ApiChild>) => request<ApiChild>("POST", "/children", data),
   updateChild: (id: string, data: Partial<ApiChild>) => request<ApiChild>("PATCH", `/children/${id}`, data),
+  deleteChild: (id: string) => request<void>("DELETE", `/children/${id}`),
 
   // Courses & Enrollments
   getCourses: () => request<ApiCourse[]>("GET", "/courses"),
@@ -141,6 +142,7 @@ export interface ApiChild {
   allergies_list?: string;
   ambulance_consent?: boolean;
   medical_notes?: string;
+  media_consent?: string;
   photo_url?: string;
   qr_payload?: string;
 }

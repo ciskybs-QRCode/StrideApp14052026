@@ -13,6 +13,7 @@ export interface Child {
   stars: number;
   allergies: string;
   medicalWaiver: "ambulance" | "call_parent";
+  mediaConsent: "full" | "internal" | "none";
   courses: string[];
   photoUrl?: string;
   qrPayload?: string;
@@ -132,6 +133,7 @@ interface AppDataContextType {
   isLoadingData: boolean;
   addChild: (child: Omit<Child, "id">) => Promise<void>;
   updateChild: (id: string, updates: Partial<Child>) => Promise<void>;
+  removeChild: (id: string) => Promise<void>;
   addDelegate: (delegate: Omit<Delegate, "id" | "pin">) => Promise<void>;
   removeDelegate: (id: string) => Promise<void>;
   addPayment: (payment: Omit<Payment, "id">) => Promise<void>;
@@ -158,6 +160,7 @@ function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
     stars: c.gold_stars ?? 0,
     allergies: c.allergies_list || c.allergies || "None",
     medicalWaiver: c.ambulance_consent ? "ambulance" : "call_parent",
+    mediaConsent: (c.media_consent as "full" | "internal" | "none") ?? "none",
     courses: childEnrollments.map(e => String(e.course_id)),
     photoUrl: c.photo_url,
     qrPayload: c.qr_payload,
@@ -335,9 +338,15 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       gold_stars: child.stars ?? 0,
       allergies: child.allergies,
       ambulance_consent: child.medicalWaiver === "ambulance",
+      media_consent: child.mediaConsent,
     });
     const newChild = mapChild(res as ApiChild, []);
     setChildrenData(prev => [...prev, newChild]);
+  };
+
+  const removeChild = async (id: string) => {
+    try { await api.deleteChild(id); } catch {}
+    setChildrenData(prev => prev.filter(c => c.id !== id));
   };
 
   const updateChild = async (id: string, updates: Partial<Child>) => {
@@ -460,6 +469,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       isLoadingData,
       addChild,
       updateChild,
+      removeChild,
       addDelegate,
       removeDelegate,
       addPayment,

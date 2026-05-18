@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
-  Alert,
+  Animated,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -13,32 +14,286 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function buildMapsUrl(location: string): string {
+  const encoded = encodeURIComponent(location);
+  if (Platform.OS === "ios") return `maps://?q=${encoded}`;
+  if (Platform.OS === "android") return `geo:0,0?q=${encoded}`;
+  return `https://maps.google.com/?q=${encoded}`;
+}
+
+async function openNavigate(location: string | undefined) {
+  if (!location) return;
+  const url = buildMapsUrl(location);
+  const canOpen = await Linking.canOpenURL(url).catch(() => false);
+  if (canOpen) {
+    Linking.openURL(url);
+  } else {
+    Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(location)}`);
+  }
+}
+
+// ─── Availability Data ───────────────────────────────────────────────────────
+
+const OFFICE_REASONS = [
+  "General Enquiry",
+  "Fee Discussion",
+  "Medical / Health Concern",
+  "Enrollment Change",
+  "Complaint / Feedback",
+  "Other",
+];
+
+const OFFICE_TIMES = ["09:00 – 09:45", "10:00 – 10:45", "11:00 – 11:45", "14:00 – 14:45", "15:00 – 15:45", "16:00 – 16:45"];
+
+function getUpcomingWeekdays(count: number): string[] {
+  const dates: string[] = [];
+  const d = new Date();
+  while (dates.length < count) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0 && d.getDay() !== 6) {
+      dates.push(d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" }));
+    }
+  }
+  return dates;
+}
+
+function getInstructorDates(instructorName: string): string[] {
+  const hash = instructorName.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  const allOptions: number[][] = [[1, 3, 5], [2, 4, 6], [1, 4], [2, 5], [3, 6]];
+  const dayOptions = allOptions[hash % allOptions.length];
+  const dates: string[] = [];
+  const d = new Date();
+  let checked = 0;
+  while (dates.length < 6 && checked < 60) {
+    d.setDate(d.getDate() + 1);
+    checked++;
+    if (dayOptions.includes(d.getDay())) {
+      dates.push(d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" }));
+    }
+  }
+  return dates;
+}
+
+function getInstructorSlots(instructorName: string, date: string): string[] {
+  const hash = (instructorName + date).split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  const allSlots = ["09:00 – 10:00", "10:30 – 11:30", "12:00 – 13:00", "14:00 – 15:00", "15:30 – 16:30", "17:00 – 18:00"];
+  const start = hash % 4;
+  const count = 2 + (hash % 3);
+  return allSlots.slice(start, start + count);
+}
+
+// ─── Snack Bar ───────────────────────────────────────────────────────────────
+
+function useSnackBar() {
+  const [snackMsg, setSnackMsg] = useState("");
+  const [snackVisible, setSnackVisible] = useState(false);
+  const anim = useRef(new Animated.Value(0)).current;
+
+  const show = (msg: string) => {
+    setSnackMsg(msg);
+    setSnackVisible(true);
+    anim.setValue(0);
+    Animated.sequence([
+      Animated.timing(anim, { toValue: 1, duration: 280, useNativeDriver: true }),
+      Animated.delay(2600),
+      Animated.timing(anim, { toValue: 0, duration: 280, useNativeDriver: true }),
+    ]).start(() => setSnackVisible(false));
+  };
+
+  const SnackBar = ({ insets }: { insets: { bottom: number } }) =>
+    snackVisible ? (
+      <Animated.View
+        style={[
+          snackStyles.snack,
+          {
+            bottom: insets.bottom + 90,
+            opacity: anim,
+            transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+          },
+        ]}
+      >
+        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+        <Text style={snackStyles.snackText}>{snackMsg}</Text>
+      </Animated.View>
+    ) : null;
+
+  return { show, SnackBar };
+}
+
+const snackStyles = StyleSheet.create({
+  snack: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    backgroundColor: "#10B981",
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 8,
+    zIndex: 999,
+  },
+  snackText: { color: "#FFF", fontWeight: "700", fontSize: 14, flex: 1 },
+});
+
+// ─── Dropdown ────────────────────────────────────────────────────────────────
+
+function Dropdown({
+  label,
+  placeholder,
+  value,
+  options,
+  onSelect,
+  colors,
+  disabled,
+}: {
+  label: string;
+  placeholder: string;
+  value: string | null;
+  options: string[];
+  onSelect: (v: string) => void;
+  colors: ReturnType<typeof useColors>;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={[ddStyles.label, { color: colors.primary }]}>{label}</Text>
+      <Pressable
+        style={[ddStyles.trigger, { borderColor: disabled ? colors.border : colors.primary, backgroundColor: disabled ? colors.muted : "#FFF", opacity: disabled ? 0.6 : 1 }]}
+        onPress={() => { if (!disabled) setOpen(true); }}
+      >
+        <Text style={[ddStyles.triggerText, { color: value ? colors.primary : colors.mutedForeground }]}>
+          {value || placeholder}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={ddStyles.overlay} onPress={() => setOpen(false)}>
+          <View style={[ddStyles.sheet, { backgroundColor: "#FFF" }]}>
+            <Text style={[ddStyles.sheetTitle, { color: colors.primary }]}>{label}</Text>
+            <ScrollView>
+              {options.map(opt => (
+                <Pressable
+                  key={opt}
+                  style={[ddStyles.option, value === opt && { backgroundColor: `${colors.primary}15` }]}
+                  onPress={() => { onSelect(opt); setOpen(false); }}
+                >
+                  <Text style={[ddStyles.optionText, { color: colors.primary }, value === opt && { fontWeight: "700" }]}>{opt}</Text>
+                  {value === opt && <Ionicons name="checkmark" size={16} color={colors.primary} />}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+const ddStyles = StyleSheet.create({
+  label: { fontSize: 12, fontWeight: "700", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  trigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13 },
+  triggerText: { fontSize: 14, flex: 1 },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: 400 },
+  sheetTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
+  option: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10, marginBottom: 4 },
+  optionText: { fontSize: 15 },
+});
+
+// ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function CoursesScreen() {
   const { courses, children, bookings } = useAppData();
+  const { user } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { show: showSnack, SnackBar } = useSnackBar();
+
   const [selectedTab, setSelectedTab] = useState<"courses" | "private">("courses");
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
-  const [showBooking, setShowBooking] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+
+  // Private lesson booking state
+  const [showPrivateModal, setShowPrivateModal] = useState(false);
+  const [privParticipant, setPrivParticipant] = useState<string | null>(null);
+  const [privInstructor, setPrivInstructor] = useState<string | null>(null);
+  const [privActivity, setPrivActivity] = useState<string | null>(null);
+  const [privDate, setPrivDate] = useState<string | null>(null);
+  const [privSlot, setPrivSlot] = useState<string | null>(null);
+
+  // Office meeting booking state
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [meetReason, setMeetReason] = useState<string | null>(null);
+  const [meetDate, setMeetDate] = useState<string | null>(null);
+  const [meetSlot, setMeetSlot] = useState<string | null>(null);
 
   const course = courses.find(c => c.id === selectedCourse);
   const isEnrolled = (courseId: string) => bookings.some(b => b.courseId === courseId);
+  const enrolledCourses = courses.filter(c => isEnrolled(c.id));
+  const availableCourses = courses.filter(c => !isEnrolled(c.id));
 
-  const privateSlots = [
-    { id: "s1", day: "Monday, April 13", time: "14:00 – 15:00" },
-    { id: "s2", day: "Wednesday, April 15", time: "10:00 – 11:00" },
-    { id: "s3", day: "Friday, April 17", time: "16:00 – 17:00" },
+  // Derived child name for enrolled courses
+  const getParticipantForCourse = (courseId: string): string => {
+    const booking = bookings.find(b => b.courseId === courseId);
+    if (!booking) return user?.name || "You";
+    const ch = children.find(c => c.id === booking.childId);
+    return ch?.name || user?.name || "You";
+  };
+
+  // Smart booking derived options
+  const uniqueInstructors = Array.from(new Set(courses.map(c => c.instructor).filter(Boolean)));
+  const activitiesForInstructor = (instructor: string | null): string[] => {
+    if (!instructor) return [];
+    return Array.from(new Set(courses.filter(c => c.instructor === instructor).map(c => c.name)));
+  };
+  const participantOptions = [
+    ...(user?.name ? [user.name] : []),
+    ...children.map(c => c.name),
   ];
 
-  const handleBook = () => {
-    if (!selectedSlot) { Alert.alert("Select a slot"); return; }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowBooking(false);
-    Alert.alert("Request sent", "Your private lesson request is pending confirmation.");
+  const resetPrivate = () => {
+    setPrivParticipant(null);
+    setPrivInstructor(null);
+    setPrivActivity(null);
+    setPrivDate(null);
+    setPrivSlot(null);
   };
+
+  const resetMeeting = () => {
+    setMeetReason(null);
+    setMeetDate(null);
+    setMeetSlot(null);
+  };
+
+  const handleSendPrivate = () => {
+    if (!privParticipant || !privInstructor || !privActivity || !privDate || !privSlot) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowPrivateModal(false);
+    resetPrivate();
+    showSnack("Private lesson request sent! We'll confirm shortly.");
+  };
+
+  const handleSendMeeting = () => {
+    if (!meetReason || !meetDate || !meetSlot) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowMeetingModal(false);
+    resetMeeting();
+    showSnack("Meeting request sent! Our team will be in touch.");
+  };
+
+  const privCanSend = !!(privParticipant && privInstructor && privActivity && privDate && privSlot);
+  const meetCanSend = !!(meetReason && meetDate && meetSlot);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -64,82 +319,151 @@ export default function CoursesScreen() {
 
         {selectedTab === "courses" ? (
           <>
-            {courses.map(c => {
-              const enrolled = isEnrolled(c.id);
-              return (
-                <View key={c.id} style={[styles.courseCard, { backgroundColor: colors.card }]}>
-                  <View style={styles.courseTop}>
-                    <View style={[styles.levelBadge, { backgroundColor: enrolled ? colors.secondary : colors.muted }]}>
-                      <Text style={[styles.levelText, { color: colors.primary }]}>{c.level}</Text>
-                    </View>
-                    {enrolled && (
-                      <View style={styles.enrolledBadge}>
-                        <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                        <Text style={styles.enrolledText}>Enrolled</Text>
+            {/* Enrolled courses — prominent with full details */}
+            {enrolledCourses.length > 0 && (
+              <>
+                <Text style={[styles.sectionHeading, { color: colors.primary }]}>Your Upcoming Sessions</Text>
+                {enrolledCourses.map(c => {
+                  const participant = getParticipantForCourse(c.id);
+                  return (
+                    <View key={c.id} style={[styles.enrolledCard, { backgroundColor: colors.card, borderColor: colors.secondary }]}>
+                      <View style={styles.enrolledCardTop}>
+                        <View style={[styles.enrolledBadge, { backgroundColor: colors.secondary }]}>
+                          <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
+                          <Text style={[styles.enrolledBadgeText, { color: colors.primary }]}>Enrolled</Text>
+                        </View>
+                        <View style={[styles.levelBadge, { backgroundColor: colors.muted }]}>
+                          <Text style={[styles.levelText, { color: colors.primary }]}>{c.level}</Text>
+                        </View>
                       </View>
-                    )}
-                  </View>
-                  <Text style={[styles.courseName, { color: colors.primary }]}>{c.name}</Text>
-                  <Text style={[styles.courseInstructor, { color: colors.mutedForeground }]}>
-                    <Ionicons name="person" size={13} /> {c.instructor}
-                  </Text>
-                  <Text style={[styles.courseSchedule, { color: colors.mutedForeground }]}>
-                    <Ionicons name="time" size={13} /> {c.schedule}
-                  </Text>
-                  <View style={styles.courseStats}>
-                    <View style={styles.statItem}>
-                      <Ionicons name="people" size={14} color={colors.mutedForeground} />
-                      <Text style={[styles.statText, { color: colors.mutedForeground }]}>{c.enrolled}/{c.capacity}</Text>
+
+                      <Text style={[styles.courseName, { color: colors.primary }]}>{c.name}</Text>
+
+                      <View style={styles.detailList}>
+                        <View style={styles.detailItem}>
+                          <Ionicons name="person-circle-outline" size={15} color={colors.primary} />
+                          <Text style={[styles.detailItemLabel, { color: colors.mutedForeground }]}>Participant</Text>
+                          <Text style={[styles.detailItemValue, { color: colors.primary }]}>{participant}</Text>
+                        </View>
+                        <View style={styles.detailItem}>
+                          <Ionicons name="person-outline" size={15} color={colors.mutedForeground} />
+                          <Text style={[styles.detailItemLabel, { color: colors.mutedForeground }]}>Instructor</Text>
+                          <Text style={[styles.detailItemValue, { color: colors.foreground }]}>{c.instructor}</Text>
+                        </View>
+                        <View style={styles.detailItem}>
+                          <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
+                          <Text style={[styles.detailItemLabel, { color: colors.mutedForeground }]}>Schedule</Text>
+                          <Text style={[styles.detailItemValue, { color: colors.foreground }]}>{c.schedule}</Text>
+                        </View>
+                        {c.location ? (
+                          <View style={styles.detailItem}>
+                            <Ionicons name="location-outline" size={15} color={colors.mutedForeground} />
+                            <Text style={[styles.detailItemLabel, { color: colors.mutedForeground }]}>Location</Text>
+                            <Text style={[styles.detailItemValue, { color: colors.foreground }]}>{c.location}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+
+                      <View style={styles.enrolledActions}>
+                        {c.location ? (
+                          <Pressable
+                            style={[styles.navigateBtn, { backgroundColor: colors.primary }]}
+                            onPress={() => openNavigate(c.location)}
+                          >
+                            <Ionicons name="navigate" size={16} color="#FFF" />
+                            <Text style={styles.navigateBtnText}>Navigate</Text>
+                          </Pressable>
+                        ) : null}
+                        <Pressable
+                          style={[styles.materialsBtn, { backgroundColor: colors.secondary, flex: c.location ? 1 : undefined }]}
+                          onPress={() => setSelectedCourse(c.id)}
+                        >
+                          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+                          <Text style={[styles.materialsBtnText, { color: colors.primary }]}>Details</Text>
+                        </Pressable>
+                      </View>
                     </View>
-                    <View style={styles.statItem}>
-                      <Ionicons name="cash" size={14} color={colors.mutedForeground} />
-                      <Text style={[styles.statText, { color: colors.mutedForeground }]}>€{c.price}/mo</Text>
+                  );
+                })}
+              </>
+            )}
+
+            {/* Available courses */}
+            {availableCourses.length > 0 && (
+              <>
+                <Text style={[styles.sectionHeading, { color: colors.primary, marginTop: enrolledCourses.length > 0 ? 8 : 0 }]}>Available Courses</Text>
+                {availableCourses.map(c => (
+                  <View key={c.id} style={[styles.courseCard, { backgroundColor: colors.card }]}>
+                    <View style={styles.courseTop}>
+                      <View style={[styles.levelBadge, { backgroundColor: colors.muted }]}>
+                        <Text style={[styles.levelText, { color: colors.primary }]}>{c.level}</Text>
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.courseActions}>
-                    <Pressable style={[styles.infoBtn, { borderColor: colors.border }]} onPress={() => setSelectedCourse(c.id)}>
-                      <Text style={[styles.infoBtnText, { color: colors.primary }]}>COURSE INFO</Text>
-                    </Pressable>
-                    {enrolled ? (
-                      <Pressable style={[styles.materialBtn, { backgroundColor: colors.secondary }]}>
-                        <Ionicons name="download" size={16} color={colors.primary} />
-                        <Text style={[styles.materialBtnText, { color: colors.primary }]}>MATERIALS</Text>
+                    <Text style={[styles.courseName, { color: colors.primary }]}>{c.name}</Text>
+                    <Text style={[styles.courseInstructor, { color: colors.mutedForeground }]}>
+                      <Ionicons name="person" size={13} /> {c.instructor}
+                    </Text>
+                    <Text style={[styles.courseSchedule, { color: colors.mutedForeground }]}>
+                      <Ionicons name="time" size={13} /> {c.schedule}
+                    </Text>
+                    <View style={styles.courseStats}>
+                      <View style={styles.statItem}>
+                        <Ionicons name="people" size={14} color={colors.mutedForeground} />
+                        <Text style={[styles.statText, { color: colors.mutedForeground }]}>{c.enrolled}/{c.capacity}</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Ionicons name="cash" size={14} color={colors.mutedForeground} />
+                        <Text style={[styles.statText, { color: colors.mutedForeground }]}>€{c.price}/mo</Text>
+                      </View>
+                    </View>
+                    <View style={styles.courseActions}>
+                      <Pressable style={[styles.infoBtn, { borderColor: colors.border }]} onPress={() => setSelectedCourse(c.id)}>
+                        <Text style={[styles.infoBtnText, { color: colors.primary }]}>COURSE INFO</Text>
                       </Pressable>
-                    ) : (
                       <Pressable style={[styles.enrollBtn, { backgroundColor: colors.primary }]}>
                         <Text style={styles.enrollBtnText}>ENROLL</Text>
                       </Pressable>
-                    )}
+                    </View>
                   </View>
-                </View>
-              );
-            })}
+                ))}
+              </>
+            )}
+
+            {courses.length === 0 && (
+              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                <Ionicons name="school-outline" size={36} color={colors.mutedForeground} />
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No courses available yet</Text>
+              </View>
+            )}
           </>
         ) : (
           <View style={styles.privateSection}>
+            {/* Private Lessons Card */}
             <View style={[styles.privateCard, { backgroundColor: colors.card }]}>
               <Ionicons name="star" size={32} color={colors.secondary} />
               <Text style={[styles.privateTitle, { color: colors.primary }]}>Private Lessons</Text>
               <Text style={[styles.privateDesc, { color: colors.mutedForeground }]}>
-                Choose your instructor and book a personalised one-on-one session.
+                Choose your instructor and book a personalised one-on-one session. Availability is filtered in real time.
               </Text>
               <Pressable
                 style={[styles.bookPrivateBtn, { backgroundColor: colors.primary }]}
-                onPress={() => setShowBooking(true)}
+                onPress={() => { setShowPrivateModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               >
                 <Ionicons name="calendar" size={18} color="#FFF" />
                 <Text style={styles.bookPrivateBtnText}>BOOK PRIVATE LESSON</Text>
               </Pressable>
             </View>
+
+            {/* Office Meeting Card */}
             <View style={[styles.privateCard, { backgroundColor: colors.card, marginTop: 12 }]}>
               <Ionicons name="briefcase-outline" size={32} color={colors.primary} />
               <Text style={[styles.privateTitle, { color: colors.primary }]}>Office Meeting</Text>
               <Text style={[styles.privateDesc, { color: colors.mutedForeground }]}>
-                Book an appointment with our staff for any enquiries.
+                Book an appointment with our admin team for any enquiry — fees, enrollment changes and more.
               </Text>
               <Pressable
                 style={[styles.bookPrivateBtn, { backgroundColor: colors.muted }]}
-                onPress={() => Alert.alert("Meeting", "Request sent to the office. We'll contact you shortly.")}
+                onPress={() => { setShowMeetingModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               >
                 <Ionicons name="calendar-outline" size={18} color={colors.primary} />
                 <Text style={[styles.bookPrivateBtnText, { color: colors.primary }]}>BOOK MEETING</Text>
@@ -148,6 +472,9 @@ export default function CoursesScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Snack Bar */}
+      <SnackBar insets={insets} />
 
       {/* Course Detail Modal */}
       <Modal visible={!!selectedCourse} transparent animationType="slide" onRequestClose={() => setSelectedCourse(null)}>
@@ -161,7 +488,7 @@ export default function CoursesScreen() {
                   {[
                     { icon: "person",   label: "Instructor", value: course.instructor },
                     { icon: "time",     label: "Schedule",   value: course.schedule },
-                    { icon: "location", label: "Location",   value: course.location },
+                    { icon: "location", label: "Location",   value: course.location || "TBA" },
                     { icon: "people",   label: "Spots",      value: `${course.enrolled}/${course.capacity}` },
                     { icon: "fitness",  label: "Age",        value: `${course.ageMin}–${course.ageMax} yrs` },
                   ].map(row => (
@@ -172,6 +499,15 @@ export default function CoursesScreen() {
                     </View>
                   ))}
                 </View>
+                {course.location ? (
+                  <Pressable
+                    style={[styles.navigateFullBtn, { backgroundColor: colors.secondary, marginBottom: 10 }]}
+                    onPress={() => openNavigate(course.location)}
+                  >
+                    <Ionicons name="navigate" size={16} color={colors.primary} />
+                    <Text style={[styles.navigateFullBtnText, { color: colors.primary }]}>Navigate to Studio</Text>
+                  </Pressable>
+                ) : null}
                 <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setSelectedCourse(null)}>
                   <Text style={styles.closeBtnText}>Close</Text>
                 </Pressable>
@@ -181,34 +517,134 @@ export default function CoursesScreen() {
         </View>
       </Modal>
 
-      {/* Booking Modal */}
-      <Modal visible={showBooking} transparent animationType="slide" onRequestClose={() => setShowBooking(false)}>
+      {/* Private Lesson Booking Modal */}
+      <Modal visible={showPrivateModal} transparent animationType="slide" onRequestClose={() => { setShowPrivateModal(false); resetPrivate(); }}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Book Private Lesson</Text>
-            <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>Select an available slot:</Text>
-            {privateSlots.map(slot => (
-              <Pressable
-                key={slot.id}
-                style={[styles.slotOption, selectedSlot === slot.id && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                onPress={() => setSelectedSlot(slot.id)}
-              >
-                <Ionicons name="calendar-outline" size={18} color={selectedSlot === slot.id ? "#FFF" : colors.primary} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.slotDay, selectedSlot === slot.id && { color: "#FFF" }]}>{slot.day}</Text>
-                  <Text style={[styles.slotTime, selectedSlot === slot.id && { color: "rgba(255,255,255,0.8)" }]}>{slot.time}</Text>
-                </View>
-              </Pressable>
-            ))}
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowBooking(false)}>
-                <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleBook}>
-                <Text style={styles.closeBtnText}>Send Request</Text>
-              </Pressable>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <View style={styles.modalTitleRow}>
+                <Ionicons name="star" size={22} color="#FBBF24" />
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Book Private Lesson</Text>
+              </View>
+              <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
+                Select your preferences — available slots update as you choose.
+              </Text>
+
+              <Dropdown
+                label="Participant"
+                placeholder="Who is this lesson for?"
+                value={privParticipant}
+                options={participantOptions}
+                onSelect={setPrivParticipant}
+                colors={colors}
+              />
+              <Dropdown
+                label="Instructor"
+                placeholder="Choose an instructor"
+                value={privInstructor}
+                options={uniqueInstructors}
+                onSelect={v => { setPrivInstructor(v); setPrivActivity(null); setPrivDate(null); setPrivSlot(null); }}
+                colors={colors}
+              />
+              <Dropdown
+                label="Activity / Style"
+                placeholder={privInstructor ? "Choose activity" : "Select instructor first"}
+                value={privActivity}
+                options={activitiesForInstructor(privInstructor)}
+                onSelect={v => { setPrivActivity(v); setPrivDate(null); setPrivSlot(null); }}
+                colors={colors}
+                disabled={!privInstructor}
+              />
+              <Dropdown
+                label="Preferred Date"
+                placeholder={privActivity ? "Choose a date" : "Select activity first"}
+                value={privDate}
+                options={privInstructor ? getInstructorDates(privInstructor) : []}
+                onSelect={v => { setPrivDate(v); setPrivSlot(null); }}
+                colors={colors}
+                disabled={!privActivity}
+              />
+              <Dropdown
+                label="Time Slot"
+                placeholder={privDate ? "Choose a time" : "Select date first"}
+                value={privSlot}
+                options={privInstructor && privDate ? getInstructorSlots(privInstructor, privDate) : []}
+                onSelect={setPrivSlot}
+                colors={colors}
+                disabled={!privDate}
+              />
+
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => { setShowPrivateModal(false); resetPrivate(); }}>
+                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.closeBtn, { flex: 1, backgroundColor: privCanSend ? colors.primary : colors.border }]}
+                  onPress={handleSendPrivate}
+                  disabled={!privCanSend}
+                >
+                  <Text style={[styles.closeBtnText, { color: privCanSend ? "#FFF" : colors.mutedForeground }]}>Send Request</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Office Meeting Booking Modal */}
+      <Modal visible={showMeetingModal} transparent animationType="slide" onRequestClose={() => { setShowMeetingModal(false); resetMeeting(); }}>
+        <View style={styles.modalOverlay}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <View style={styles.modalTitleRow}>
+                <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Book Office Meeting</Text>
+              </View>
+              <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
+                Tell us the reason for your visit and choose a time that suits you.
+              </Text>
+
+              <Dropdown
+                label="Reason for Meeting"
+                placeholder="Select a topic"
+                value={meetReason}
+                options={OFFICE_REASONS}
+                onSelect={v => { setMeetReason(v); setMeetDate(null); setMeetSlot(null); }}
+                colors={colors}
+              />
+              <Dropdown
+                label="Preferred Date"
+                placeholder={meetReason ? "Choose a date" : "Select reason first"}
+                value={meetDate}
+                options={getUpcomingWeekdays(8)}
+                onSelect={v => { setMeetDate(v); setMeetSlot(null); }}
+                colors={colors}
+                disabled={!meetReason}
+              />
+              <Dropdown
+                label="Time Slot"
+                placeholder={meetDate ? "Choose a time" : "Select date first"}
+                value={meetSlot}
+                options={OFFICE_TIMES}
+                onSelect={setMeetSlot}
+                colors={colors}
+                disabled={!meetDate}
+              />
+
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => { setShowMeetingModal(false); resetMeeting(); }}>
+                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.closeBtn, { flex: 1, backgroundColor: meetCanSend ? colors.primary : colors.border }]}
+                  onPress={handleSendMeeting}
+                  disabled={!meetCanSend}
+                >
+                  <Text style={[styles.closeBtnText, { color: meetCanSend ? "#FFF" : colors.mutedForeground }]}>Send Request</Text>
+                </Pressable>
+              </View>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -222,12 +658,28 @@ const styles = StyleSheet.create({
   tabBar: { flexDirection: "row", borderRadius: 12, padding: 4, marginBottom: 20 },
   tabItem: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
   tabText: { fontWeight: "600", fontSize: 13, color: "#6B7BA4" },
+  sectionHeading: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
+
+  // Enrolled course card
+  enrolledCard: { borderRadius: 18, padding: 18, marginBottom: 14, borderWidth: 1.5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 },
+  enrolledCardTop: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  enrolledBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  enrolledBadgeText: { fontSize: 11, fontWeight: "700" },
+  detailList: { gap: 8, marginBottom: 14 },
+  detailItem: { flexDirection: "row", alignItems: "center", gap: 8 },
+  detailItemLabel: { fontSize: 12, width: 72 },
+  detailItemValue: { fontSize: 13, fontWeight: "600", flex: 1 },
+  enrolledActions: { flexDirection: "row", gap: 10 },
+  navigateBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  navigateBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  materialsBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  materialsBtnText: { fontWeight: "700", fontSize: 13 },
+
+  // Available course card
   courseCard: { borderRadius: 18, padding: 18, marginBottom: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },
   courseTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
   levelBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   levelText: { fontSize: 11, fontWeight: "700" },
-  enrolledBadge: { flexDirection: "row", alignItems: "center", gap: 4 },
-  enrolledText: { fontSize: 12, color: "#10B981", fontWeight: "600" },
   courseName: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
   courseInstructor: { fontSize: 13, marginBottom: 3 },
   courseSchedule: { fontSize: 13, marginBottom: 12 },
@@ -239,25 +691,31 @@ const styles = StyleSheet.create({
   infoBtnText: { fontSize: 12, fontWeight: "700" },
   enrollBtn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
   enrollBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
-  materialBtn: { flex: 1, borderRadius: 10, paddingVertical: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
-  materialBtnText: { fontSize: 12, fontWeight: "700" },
+
+  // Empty
+  emptyState: { borderRadius: 16, padding: 32, alignItems: "center", gap: 10 },
+  emptyText: { fontSize: 14 },
+
+  // Private section
   privateSection: { gap: 0 },
   privateCard: { borderRadius: 18, padding: 24, alignItems: "center" },
   privateTitle: { fontSize: 20, fontWeight: "700", marginTop: 12, marginBottom: 8 },
   privateDesc: { fontSize: 14, textAlign: "center", marginBottom: 20, lineHeight: 20 },
   bookPrivateBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 14 },
   bookPrivateBtnText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+
+  // Modals
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, margin: 16 },
+  modalTitleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
-  modalDesc: { fontSize: 14, marginBottom: 16 },
+  modalDesc: { fontSize: 14, marginBottom: 18, lineHeight: 20 },
   detailRows: { marginBottom: 20 },
   detailRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, gap: 10 },
   detailLabel: { flex: 1, fontSize: 14 },
   detailValue: { fontSize: 14, fontWeight: "600" },
   closeBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
-  slotOption: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 10 },
-  slotDay: { fontSize: 15, fontWeight: "600", color: "#1E3A8A" },
-  slotTime: { fontSize: 13, color: "#6B7BA4" },
+  navigateFullBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, paddingVertical: 13 },
+  navigateFullBtnText: { fontWeight: "700", fontSize: 14 },
 });
