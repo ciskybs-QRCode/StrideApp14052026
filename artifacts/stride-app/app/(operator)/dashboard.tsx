@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { Image } from "expo-image";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -17,7 +18,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+
+const LOGO = require("@/assets/images/stride-logo.png");
 
 type ScanResult = {
   type: "success" | "warning" | "error";
@@ -49,6 +53,7 @@ function detectEmergencyInfo(address: string): EmergencyInfo {
 }
 
 export default function OperatorDashboard() {
+  const { user } = useAuth();
   const { lessons, students, updateStudentPresence } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -198,7 +203,12 @@ export default function OperatorDashboard() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
+          {user?.logoUri ? (
+            <Image source={{ uri: user.logoUri }} style={styles.headerLogo} contentFit="contain" />
+          ) : (
+            <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
+          )}
+          <View style={{ flex: 1 }}>
             <Text style={[styles.title, { color: colors.primary }]}>Dashboard</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Operator</Text>
           </View>
@@ -468,7 +478,8 @@ export default function OperatorDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
+  headerLogo: { width: 44, height: 30 },
   title: { fontSize: 28, fontWeight: "800" },
   subtitle: { fontSize: 14 },
   gpsBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },

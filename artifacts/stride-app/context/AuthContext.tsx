@@ -14,6 +14,7 @@ export interface User {
   primaryColor?: string;
   secondaryColor?: string;
   logoUri?: string;
+  profilePhotoUri?: string;
 }
 
 interface AuthContextType {

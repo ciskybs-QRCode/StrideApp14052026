@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
   Alert,
@@ -20,14 +21,31 @@ import { useColors } from "@/hooks/useColors";
 
 const LOGO = require("@/assets/images/stride-logo.png");
 
+type AbsenceType = "absent" | "late5" | "late10" | "late15" | "late30";
+
+const ABSENCE_OPTIONS: { value: AbsenceType; label: string }[] = [
+  { value: "absent",  label: "Absent today" },
+  { value: "late5",   label: "5 min late" },
+  { value: "late10",  label: "10 min late" },
+  { value: "late15",  label: "15 min late" },
+  { value: "late30",  label: "30 min late" },
+];
+
+function buildMapsUrl(location: string): string {
+  const encoded = encodeURIComponent(location);
+  if (Platform.OS === "ios") return `maps://?q=${encoded}`;
+  if (Platform.OS === "android") return `geo:0,0?q=${encoded}`;
+  return `https://maps.google.com/?q=${encoded}`;
+}
+
 export default function ParentHome() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { children, courses, lessons } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [showQR, setShowQR] = useState(false);
   const [showAbsence, setShowAbsence] = useState(false);
-  const [absenceType, setAbsenceType] = useState<"absent" | "late15" | "late30">("absent");
+  const [absenceType, setAbsenceType] = useState<AbsenceType>("absent");
   const [selectedChild, setSelectedChild] = useState(children[0]?.id || "");
   const [qrChildId, setQrChildId] = useState(children[0]?.id || "");
 
@@ -36,7 +54,41 @@ export default function ParentHome() {
   const childForLesson = children[0];
   const qrChild = children.find(c => c.id === qrChildId) || children[0];
 
-  const handleNavigate = () => Linking.openURL("https://maps.google.com/?q=Bayswater+Studio");
+  const lessonLocation = nextLesson?.location || nextCourse?.location || "";
+
+  const handleNavigate = async () => {
+    if (!lessonLocation) {
+      Alert.alert("No location available", "This activity does not have a location set.");
+      return;
+    }
+    const url = buildMapsUrl(lessonLocation);
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      Linking.openURL(url);
+    } else {
+      Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(lessonLocation)}`);
+    }
+  };
+
+  const handlePickProfilePhoto = async () => {
+    if (Platform.OS !== "web") {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Permission Required", "Please allow access to your photo library in Settings.");
+        return;
+      }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (!result.canceled) {
+      await updateUser({ profilePhotoUri: result.assets[0].uri });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
 
   const handleSendAbsence = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -58,38 +110,54 @@ export default function ParentHome() {
         {/* Header with Logo */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
+            {user?.logoUri ? (
+              <Image source={{ uri: user.logoUri }} style={styles.headerLogo} contentFit="contain" />
+            ) : (
+              <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
+            )}
           </View>
           <View style={styles.headerCenter}>
             <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Hi,</Text>
             <Text style={[styles.userName, { color: colors.primary }]}>{firstName}</Text>
           </View>
-          <Pressable style={[styles.avatarCircle, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0)}</Text>
+          <Pressable
+            style={({ pressed }) => [styles.avatarCircle, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
+            onPress={handlePickProfilePhoto}
+          >
+            {user?.profilePhotoUri ? (
+              <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} contentFit="cover" />
+            ) : (
+              <Text style={styles.avatarText}>{user?.name?.charAt(0)}</Text>
+            )}
           </Pressable>
         </View>
 
-        {/* Next Lesson Card */}
+        {/* Next Activity Card */}
         <View style={[styles.lessonCard, { backgroundColor: colors.primary }]}>
           <View style={styles.lessonCardTop}>
             <View style={styles.lessonBadge}>
               <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.lessonBadgeText}>NEXT LESSON:</Text>
+              <Text style={styles.lessonBadgeText}>NEXT ACTIVITY:</Text>
             </View>
           </View>
           {nextLesson && nextCourse ? (
             <>
-              <Text style={styles.lessonChild}>{childForLesson?.name}</Text>
+              <Text style={styles.lessonParticipant}>{childForLesson?.name}</Text>
               <Text style={styles.lessonCourseName}>{nextCourse.name}</Text>
               <View style={styles.lessonMeta}>
                 <View style={styles.lessonMetaItem}>
                   <Ionicons name="time-outline" size={14} color="#FBBF24" />
                   <Text style={styles.lessonMetaText}>{nextLesson.startTime} – {nextLesson.endTime}</Text>
                 </View>
-                <View style={styles.lessonMetaItem}>
-                  <Ionicons name="location-outline" size={14} color="#FBBF24" />
-                  <Text style={styles.lessonMetaText}>{nextLesson.room || nextLesson.location}</Text>
-                </View>
+                {lessonLocation ? (
+                  <View style={styles.lessonMetaItem}>
+                    <Ionicons name="location-outline" size={14} color="#FBBF24" />
+                    <Text style={styles.lessonMetaText}>
+                      {nextLesson.location}
+                      {nextLesson.room ? ` · ${nextLesson.room}` : ""}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <Pressable
                 style={({ pressed }) => [styles.navigateBtn, pressed && { opacity: 0.85 }]}
@@ -100,7 +168,7 @@ export default function ParentHome() {
               </Pressable>
             </>
           ) : (
-            <Text style={styles.lessonCourseName}>No lessons today</Text>
+            <Text style={styles.lessonCourseName}>No upcoming activities</Text>
           )}
         </View>
 
@@ -224,16 +292,14 @@ export default function ParentHome() {
               ))}
             </View>
             <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Type of report</Text>
-            {(["absent", "late15", "late30"] as const).map(type => (
+            {ABSENCE_OPTIONS.map(opt => (
               <Pressable
-                key={type}
-                style={[styles.absenceOption, absenceType === type && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                onPress={() => setAbsenceType(type)}
+                key={opt.value}
+                style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                onPress={() => setAbsenceType(opt.value)}
               >
-                <Ionicons name={absenceType === type ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === type ? "#FFF" : colors.primary} />
-                <Text style={[styles.absenceOptionText, absenceType === type && { color: "#FFF" }]}>
-                  {type === "absent" ? "Absent today" : type === "late15" ? "15 min late" : "30 min late"}
-                </Text>
+                <Ionicons name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === opt.value ? "#FFF" : colors.primary} />
+                <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
               </Pressable>
             ))}
             <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
@@ -260,13 +326,14 @@ const styles = StyleSheet.create({
   headerCenter: { flex: 1, alignItems: "center" },
   greeting: { fontSize: 14, fontWeight: "500" },
   userName: { fontSize: 24, fontWeight: "800" },
-  avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarPhoto: { width: 44, height: 44, borderRadius: 22 },
   avatarText: { color: "#FFF", fontWeight: "700", fontSize: 18 },
   lessonCard: { borderRadius: 20, padding: 18, marginBottom: 24, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 },
   lessonCardTop: { marginBottom: 8 },
   lessonBadge: { flexDirection: "row", alignItems: "center", gap: 5 },
   lessonBadgeText: { fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: "700", letterSpacing: 0.5 },
-  lessonChild: { fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 2 },
+  lessonParticipant: { fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 2 },
   lessonCourseName: { fontSize: 22, fontWeight: "800", color: "#FFF", marginBottom: 10 },
   lessonMeta: { gap: 6, marginBottom: 16 },
   lessonMetaItem: { flexDirection: "row", alignItems: "center", gap: 6 },

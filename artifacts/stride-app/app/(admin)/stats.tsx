@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -89,6 +90,8 @@ const SECTION_LABELS: Record<SectionKey, string> = {
   trends: "Trends", payments: "Payment Status", occupancy: "Course Occupancy",
   demographics: "Age Distribution", activity: "Recent Activity", export: "Data Export",
 };
+
+const LOGO = require("@/assets/images/stride-logo.png");
 
 export default function AdminStats() {
   const { user } = useAuth();
@@ -413,9 +416,16 @@ export default function AdminStats() {
       >
         {/* ── HEADER ── */}
         <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Statistics</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>Dance Village • May 2026</Text>
+          <View style={styles.headerLeft}>
+            {user?.logoUri ? (
+              <Image source={{ uri: user.logoUri }} style={styles.headerLogo} contentFit="contain" />
+            ) : (
+              <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
+            )}
+            <View>
+              <Text style={[styles.pageTitle, { color: colors.primary }]}>Statistics</Text>
+              <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>Dance Village • May 2026</Text>
+            </View>
           </View>
           <View style={[styles.periodToggle, { backgroundColor: colors.muted }]}>
             <Pressable style={[styles.periodBtn, period === "month" && { backgroundColor: colors.primary }]} onPress={() => setPeriod("month")}>
@@ -699,6 +709,8 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
 
   headerRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  headerLogo: { width: 44, height: 30 },
   pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSubtitle: { fontSize: 13, marginTop: 2 },
   periodToggle: { flexDirection: "row", borderRadius: 10, padding: 3, gap: 3, marginTop: 4 },
