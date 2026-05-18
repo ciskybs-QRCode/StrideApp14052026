@@ -194,7 +194,7 @@ export default function LegalPrivacyPage() {
     setReplaceLinkUrl(doc.linkUrl || "");
     setReplaceFileUri(doc.fileUri || null);
     setReplaceFileName(doc.fileName || null);
-    setReplaceFileSize(doc.fileSize || null);
+    setReplaceFileSize(doc.fileSize != null ? String(doc.fileSize) : null);
     setShowDetail(null);
     setTimeout(() => setShowReplace(true), 150);
   };

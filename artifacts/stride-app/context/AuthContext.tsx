@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { api, setToken, clearToken, getToken } from "../lib/api";
 
 export type UserRole = "parent" | "operator" | "admin";
 
@@ -8,6 +9,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  orgId?: number;
   schoolName?: string;
   primaryColor?: string;
   secondaryColor?: string;
@@ -24,11 +26,7 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-const MOCK_USERS: User[] = [
-  { id: "1", name: "Marco Rossi", email: "genitore@test.com", role: "parent" },
-  { id: "2", name: "Sara Bianchi", email: "operatore@test.com", role: "operator" },
-  { id: "3", name: "Admin Dance Village", email: "admin@test.com", role: "admin", schoolName: "Dance Village", primaryColor: "#1E3A8A", secondaryColor: "#FBBF24" },
-];
+const USER_KEY = "stride_user";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -40,29 +38,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadUser = async () => {
     try {
-      const stored = await AsyncStorage.getItem("stride_user");
-      if (stored) setUser(JSON.parse(stored));
+      const [stored, token] = await Promise.all([
+        AsyncStorage.getItem(USER_KEY),
+        getToken(),
+      ]);
+      if (stored && token) {
+        setUser(JSON.parse(stored) as User);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (email: string, _password: string) => {
-    const found = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!found) throw new Error("Invalid credentials");
-    await AsyncStorage.setItem("stride_user", JSON.stringify(found));
-    setUser(found);
+  const login = async (email: string, password: string) => {
+    const { token, user: apiUser } = await api.login(email, password);
+    await setToken(token);
+    const mapped: User = {
+      id: String(apiUser.id),
+      name: apiUser.name,
+      email: apiUser.email,
+      role: apiUser.role as UserRole,
+      orgId: apiUser.orgId ?? (apiUser.organization_id as number | undefined),
+    };
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped));
+    setUser(mapped);
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem("stride_user");
+    await Promise.all([
+      clearToken(),
+      AsyncStorage.removeItem(USER_KEY),
+    ]);
     setUser(null);
   };
 
   const updateUser = async (updates: Partial<User>) => {
     if (!user) return;
     const updated = { ...user, ...updates };
-    await AsyncStorage.setItem("stride_user", JSON.stringify(updated));
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
     setUser(updated);
   };
 
