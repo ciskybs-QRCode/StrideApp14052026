@@ -1,0 +1,35 @@
+CRITICAL DESIGN RULE: All visual elements, images, and text must be strictly contained within the physical preview display boundaries. No elements should overflow off-screen ("Ugly but Functional" logic). Use the Navy Blue and Gold color scheme.
+
+Please execute the following tasks:
+
+1. CRITICAL: Offline Local Caching & Supabase Sync
+Requirement: The app must not lose data if the browser connection drops. Since Supabase doesn't have native auto-sync for Flutter Web, we need a robust local-first workaround.
+
+Action: Implement a local caching mechanism (using hive, isar, or shared_preferences depending on what is already in pubspec.yaml) for user inputs when offline.
+
+Logic: Every data entry made by any user must check internet connectivity. If offline, cache the payload locally. Implement a listener or background sync routine that automatically pushes these cached rows to the respective Supabase tables as soon as the connection is restored.
+
+2. Initial Login Screen Cleanup
+Action: Refactor the main entry screen.
+
+Removal: Completely remove the "Quick access" feature and any associated shortcut buttons.
+
+Required Elements: The screen must exclusively display: The Association Logo, Association Name, and the Supabase Auth "Sign In / Sign Up" form fields.
+
+3. Association QR Code & Registration Link
+Action: Create a feature for the Admin to generate an "Association Registration QR Code" using a web-safe package (like qr_flutter).
+
+Export/Share: Provide a button to Download the QR Code image and a "Copy Registration Link" button to copy the web URL to the clipboard.
+
+Routing Logic: The URL must point to the app's root URL with a query parameter (e.g., ?route=register). When opened, the app must read this parameter and route directly to the "Sign Up" page, applying the Admin's Navy Blue & Gold branding. Default new sign-ups to "Parent" access in the Supabase profiles table until manually upgraded by an Admin.
+
+4. Settings: Legal & Privacy Fixes (Supabase Storage)
+Issue: In Settings -> Legal & Privacy, clicking on a specific document opens a view where "View", "Replace", and "Delete" buttons do nothing.
+
+Action: Bind these buttons to the correct ViewModel logic interacting with Supabase Storage and database tables.
+
+View: Must open the document URL in a new browser tab (url_launcher using web target _blank).
+
+Replace: Must trigger the Flutter web file picker to upload a new file, overwrite it in the Supabase Storage Bucket, and update the URL in the database.
+
+Delete: Must remove the object from the Supabase Storage Bucket and delete the row from the database after a confirmation dialog.
