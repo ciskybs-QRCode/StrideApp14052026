@@ -99,17 +99,23 @@ export default function LegalPrivacyPage() {
   const [newLinkUrl, setNewLinkUrl] = useState("");
 
   // ── Detail / viewer / replace state ──
-  const [showDetail, setShowDetail] = useState<LegalAdminDoc | null>(null);
-  const [showViewer, setShowViewer] = useState(false);
+  // showDetail = doc currently open in the detail bottom sheet
+  // viewerDoc  = doc carried into the viewer modal (survives showDetail being cleared)
+  // replaceDoc = doc carried into the replace modal (survives showDetail being cleared)
+  const [showDetail, setShowDetail]   = useState<LegalAdminDoc | null>(null);
+  const [showViewer, setShowViewer]   = useState(false);
+  const [viewerDoc,  setViewerDoc]    = useState<LegalAdminDoc | null>(null);
   const [showReplace, setShowReplace] = useState(false);
+  const [replaceDoc,  setReplaceDoc]  = useState<LegalAdminDoc | null>(null);
+
   const [replaceSourceType, setReplaceSourceType] = useState<SourceType>("file");
-  const [replaceFileUri, setReplaceFileUri] = useState<string | null>(null);
-  const [replaceFileName, setReplaceFileName] = useState<string | null>(null);
-  const [replaceFileSize, setReplaceFileSize] = useState<string | null>(null);
-  const [replaceLinkUrl, setReplaceLinkUrl] = useState("");
+  const [replaceFileUri,    setReplaceFileUri]     = useState<string | null>(null);
+  const [replaceFileName,   setReplaceFileName]    = useState<string | null>(null);
+  const [replaceFileSize,   setReplaceFileSize]    = useState<string | null>(null);
+  const [replaceLinkUrl,    setReplaceLinkUrl]     = useState("");
 
   const mandatoryCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
-  const priorityCount = legalAdminDocs.filter(d => d.highPriority).length;
+  const priorityCount  = legalAdminDocs.filter(d => d.highPriority).length;
 
   // ── File picker helpers ──────────────────────────────────────────────────────
 
@@ -161,10 +167,10 @@ export default function LegalPrivacyPage() {
       mandatorySignature: newMandatory,
       createdAt: todayStr(),
       description: newDescription.trim() || undefined,
-      fileUri: newSourceType === "file" ? (newFileUri ?? undefined) : undefined,
+      fileUri:  newSourceType === "file" ? (newFileUri ?? undefined)  : undefined,
       fileName: newSourceType === "file" ? (newFileName ?? undefined) : undefined,
       fileSize: newSourceType === "file" ? (newFileSize ?? undefined) : undefined,
-      linkUrl: newSourceType === "link" ? (newLinkUrl.trim() || undefined) : undefined,
+      linkUrl:  newSourceType === "link" ? (newLinkUrl.trim() || undefined) : undefined,
     });
     resetAddForm();
     setShowAdd(false);
@@ -175,8 +181,10 @@ export default function LegalPrivacyPage() {
   // ── View / Replace / Delete handlers ─────────────────────────────────────────
 
   const handleOpenView = (doc: LegalAdminDoc) => {
+    // Capture the doc into viewerDoc BEFORE clearing showDetail
+    setViewerDoc(doc);
     setShowDetail(null);
-    setTimeout(() => setShowViewer(true), 150);
+    setTimeout(() => setShowViewer(true), 200);
   };
 
   const handleOpenLink = async (url: string) => {
@@ -190,13 +198,15 @@ export default function LegalPrivacyPage() {
   };
 
   const handleOpenReplace = (doc: LegalAdminDoc) => {
+    // Capture the doc into replaceDoc BEFORE clearing showDetail
+    setReplaceDoc(doc);
     setReplaceSourceType(doc.linkUrl ? "link" : "file");
     setReplaceLinkUrl(doc.linkUrl || "");
     setReplaceFileUri(doc.fileUri || null);
     setReplaceFileName(doc.fileName || null);
     setReplaceFileSize(doc.fileSize != null ? String(doc.fileSize) : null);
     setShowDetail(null);
-    setTimeout(() => setShowReplace(true), 150);
+    setTimeout(() => setShowReplace(true), 200);
   };
 
   const handleSaveReplace = async (doc: LegalAdminDoc) => {
@@ -205,18 +215,21 @@ export default function LegalPrivacyPage() {
     }
     const updates: Partial<LegalAdminDoc> = {
       createdAt: todayStr(),
-      fileUri: replaceSourceType === "file" ? (replaceFileUri ?? doc.fileUri) : undefined,
+      fileUri:  replaceSourceType === "file" ? (replaceFileUri  ?? doc.fileUri)  : undefined,
       fileName: replaceSourceType === "file" ? (replaceFileName ?? doc.fileName) : undefined,
       fileSize: replaceSourceType === "file" ? (replaceFileSize ?? doc.fileSize) : undefined,
-      linkUrl: replaceSourceType === "link" ? (replaceLinkUrl.trim() || undefined) : undefined,
+      linkUrl:  replaceSourceType === "link" ? (replaceLinkUrl.trim() || undefined) : undefined,
     };
     await updateLegalDoc(doc.id, updates);
+    // Update replaceDoc so the detail sheet shows fresh data if user goes back
+    const updated = { ...doc, ...updates };
+    setReplaceDoc(updated);
     setShowReplace(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Replaced", "Document has been updated successfully.");
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (doc: LegalAdminDoc) => {
     Alert.alert("Delete Document", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
@@ -224,7 +237,7 @@ export default function LegalPrivacyPage() {
         style: "destructive",
         onPress: async () => {
           setShowDetail(null);
-          await deleteLegalDoc(id);
+          await deleteLegalDoc(doc.id);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         },
       },
@@ -238,16 +251,13 @@ export default function LegalPrivacyPage() {
     fileUri, fileName, fileSize,
     linkUrl, setLinkUrl,
     onPickDoc, onPickImg, onClearFile,
-    compact,
   }: {
     sourceType: SourceType; setSourceType: (s: SourceType) => void;
     fileUri: string | null; fileName: string | null; fileSize: string | null;
     linkUrl: string; setLinkUrl: (v: string) => void;
     onPickDoc: () => void; onPickImg: () => void; onClearFile: () => void;
-    compact?: boolean;
   }) => (
     <View>
-      {/* Toggle */}
       <View style={[styles.sourceToggle, { backgroundColor: colors.muted }]}>
         {(["file", "link"] as SourceType[]).map(s => (
           <Pressable
@@ -330,8 +340,6 @@ export default function LegalPrivacyPage() {
       )}
     </View>
   );
-
-  const currentDoc = showDetail;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -453,7 +461,6 @@ export default function LegalPrivacyPage() {
           </View>
         )}
 
-        {/* Consent Audit Log placeholder */}
         <View style={[styles.placeholderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="time-outline" size={24} color={colors.mutedForeground} />
           <View style={{ flex: 1 }}>
@@ -485,28 +492,28 @@ export default function LegalPrivacyPage() {
 
             <Text style={[styles.fieldLabel, { color: colors.primary }]}>Document Title</Text>
             <TextInput
-              style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
+              style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
               value={newTitle}
               onChangeText={setNewTitle}
               placeholder="e.g. Terms & Conditions 2026"
               placeholderTextColor={colors.mutedForeground}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 16 }]}>Type</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Document Type</Text>
             <View style={styles.typeRow}>
               {LEGAL_TYPES.map(t => (
                 <Pressable
                   key={t.value}
-                  style={[styles.typeBtn, newType === t.value && { borderColor: t.color, backgroundColor: t.bg }]}
+                  style={[styles.typeBtn, newType === t.value && { backgroundColor: t.bg, borderColor: t.color }]}
                   onPress={() => setNewType(t.value)}
                 >
-                  <Ionicons name={t.icon} size={16} color={newType === t.value ? t.color : "#9CA3AF"} />
-                  <Text style={[styles.typeBtnText, { color: newType === t.value ? t.color : "#9CA3AF" }]}>{t.label}</Text>
+                  <Ionicons name={t.icon} size={16} color={newType === t.value ? t.color : colors.mutedForeground} />
+                  <Text style={[styles.typeBtnText, { color: newType === t.value ? t.color : colors.mutedForeground }]}>{t.label}</Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 16 }]}>Description (optional)</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Description (optional)</Text>
             <TextInput
               style={[styles.input, { borderColor: colors.border, color: colors.foreground, height: 72 }]}
               value={newDescription}
@@ -590,8 +597,8 @@ export default function LegalPrivacyPage() {
       ════════════════════════════════════════════════════ */}
       <Modal visible={!!showDetail} transparent animationType="slide" onRequestClose={() => setShowDetail(null)}>
         <View style={styles.overlay}>
-          {currentDoc && (() => {
-            const doc = currentDoc;
+          {showDetail && (() => {
+            const doc = showDetail;
             const info = legalTypeInfo(doc.type);
             const hasFile = !!doc.fileUri || !!doc.fileName;
             const hasLink = !!doc.linkUrl;
@@ -631,7 +638,6 @@ export default function LegalPrivacyPage() {
                     )}
                   </View>
 
-                  {/* Source info */}
                   {(hasFile || hasLink) && (
                     <View style={[styles.sourceInfoBox, { backgroundColor: hasLink ? brand!.bg : "#DBEAFE", borderColor: hasLink ? brand!.color : colors.primary }]}>
                       <Ionicons
@@ -669,7 +675,7 @@ export default function LegalPrivacyPage() {
                     <Text style={[styles.metaValue, { color: colors.foreground }]}>{doc.createdAt}</Text>
                   </View>
 
-                  {/* Action buttons */}
+                  {/* Action buttons — all fully wired */}
                   <View style={styles.actionRow}>
                     <Pressable
                       style={[styles.actionBtn, { backgroundColor: "#D1FAE5" }]}
@@ -687,14 +693,13 @@ export default function LegalPrivacyPage() {
                     </Pressable>
                     <Pressable
                       style={[styles.actionBtn, { backgroundColor: "#FEE2E2" }]}
-                      onPress={() => handleDelete(doc.id)}
+                      onPress={() => handleDelete(doc)}
                     >
                       <Ionicons name="trash-outline" size={16} color="#EF4444" />
                       <Text style={[styles.actionBtnText, { color: "#EF4444" }]}>Delete</Text>
                     </Pressable>
                   </View>
 
-                  {/* Inline flag toggles */}
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
                     <Pressable
                       style={[styles.toggleSmall, { backgroundColor: doc.highPriority ? "#FEE2E2" : colors.muted }]}
@@ -724,11 +729,12 @@ export default function LegalPrivacyPage() {
 
       {/* ════════════════════════════════════════════════════
           DOCUMENT VIEWER MODAL
+          Uses viewerDoc (not showDetail) so it survives modal transition
       ════════════════════════════════════════════════════ */}
       <Modal visible={showViewer} transparent animationType="slide" onRequestClose={() => setShowViewer(false)}>
         <View style={styles.overlay}>
-          {currentDoc && (() => {
-            const doc = currentDoc;
+          {viewerDoc && (() => {
+            const doc = viewerDoc;
             const info = legalTypeInfo(doc.type);
             const hasLink = !!doc.linkUrl;
             const brand = hasLink ? linkBrand(doc.linkUrl!) : null;
@@ -739,7 +745,7 @@ export default function LegalPrivacyPage() {
                     <View style={[styles.detailIcon, { backgroundColor: info.bg }]}>
                       <Ionicons name={info.icon} size={24} color={info.color} />
                     </View>
-                    <Pressable onPress={() => { setShowViewer(false); setTimeout(() => setShowDetail(currentDoc), 150); }}>
+                    <Pressable onPress={() => { setShowViewer(false); setTimeout(() => setShowDetail(viewerDoc), 200); }}>
                       <Ionicons name="close" size={24} color={colors.mutedForeground} />
                     </Pressable>
                   </View>
@@ -792,7 +798,7 @@ export default function LegalPrivacyPage() {
                       </Text>
                       <Pressable
                         style={[styles.attachBtn, { backgroundColor: colors.primary }]}
-                        onPress={() => { setShowViewer(false); setTimeout(() => handleOpenReplace(doc), 150); }}
+                        onPress={() => { setShowViewer(false); setTimeout(() => handleOpenReplace(doc), 200); }}
                       >
                         <Ionicons name="cloud-upload-outline" size={16} color="#FFF" />
                         <Text style={styles.attachBtnText}>Attach File or Link</Text>
@@ -814,10 +820,11 @@ export default function LegalPrivacyPage() {
 
       {/* ════════════════════════════════════════════════════
           REPLACE DOCUMENT MODAL
+          Uses replaceDoc (not showDetail) so it survives modal transition
       ════════════════════════════════════════════════════ */}
       <Modal visible={showReplace} transparent animationType="slide" onRequestClose={() => setShowReplace(false)}>
         <View style={styles.overlay}>
-          {currentDoc && (
+          {replaceDoc && (
             <ScrollView
               style={[styles.sheet, { backgroundColor: colors.card }]}
               contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
@@ -826,9 +833,9 @@ export default function LegalPrivacyPage() {
               <View style={styles.sheetHeader}>
                 <View>
                   <Text style={[styles.sheetTitle, { color: colors.primary }]}>Replace Document</Text>
-                  <Text style={[styles.sheetSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>{currentDoc.title}</Text>
+                  <Text style={[styles.sheetSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>{replaceDoc.title}</Text>
                 </View>
-                <Pressable onPress={() => { setShowReplace(false); setTimeout(() => setShowDetail(currentDoc), 150); }}>
+                <Pressable onPress={() => { setShowReplace(false); setTimeout(() => setShowDetail(replaceDoc), 200); }}>
                   <Ionicons name="close" size={24} color={colors.mutedForeground} />
                 </Pressable>
               </View>
@@ -857,13 +864,13 @@ export default function LegalPrivacyPage() {
               <View style={styles.sheetBtns}>
                 <Pressable
                   style={[styles.cancelBtn, { borderColor: colors.border }]}
-                  onPress={() => { setShowReplace(false); setTimeout(() => setShowDetail(currentDoc), 150); }}
+                  onPress={() => { setShowReplace(false); setTimeout(() => setShowDetail(replaceDoc), 200); }}
                 >
                   <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.saveBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => handleSaveReplace(currentDoc)}
+                  onPress={() => handleSaveReplace(replaceDoc)}
                 >
                   <Ionicons name="cloud-upload-outline" size={16} color="#FFF" />
                   <Text style={styles.saveBtnText}>Save Replacement</Text>

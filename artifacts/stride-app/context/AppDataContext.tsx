@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
+import { useOfflineSync } from "./OfflineSyncContext";
 import { api } from "../lib/api";
 import type {
   ApiChild, ApiDelegate, ApiCourse, ApiEnrollment,
@@ -243,6 +244,8 @@ const FALLBACK_LEGAL_DOCS: LegalAdminDoc[] = [
 
 export function AppDataProvider({ children: childrenProp }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { isOnline, enqueue, getPendingQueue, dequeue } = useOfflineSync();
+
   const [childrenData, setChildrenData] = useState<Child[]>([]);
   const [delegates, setDelegates] = useState<Delegate[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -262,6 +265,59 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     loadedForUser.current = user.id;
     loadAll(user.role);
   }, [user]);
+
+  // When coming back online, process any queued actions
+  const prevOnline = useRef(true);
+  useEffect(() => {
+    if (!prevOnline.current && isOnline && user) {
+      processOfflineQueue();
+    }
+    prevOnline.current = isOnline;
+  }, [isOnline, user]);
+
+  const processOfflineQueue = async () => {
+    const queue = await getPendingQueue();
+    for (const entry of queue) {
+      try {
+        const { action } = entry;
+        switch (action.type) {
+          case "addChild":
+            await api.addChild(action.params as Parameters<typeof api.addChild>[0]);
+            break;
+          case "removeChild":
+            await api.deleteChild(action.params.id);
+            break;
+          case "updateChild":
+            await api.updateChild(action.params.id, action.params.updates as Parameters<typeof api.updateChild>[1]);
+            break;
+          case "addDelegate":
+            await api.addDelegate(action.params as Parameters<typeof api.addDelegate>[0]);
+            break;
+          case "removeDelegate":
+            await api.removeDelegate(action.params.id);
+            break;
+          case "addPayment":
+            await api.addPayment(action.params as Parameters<typeof api.addPayment>[0]);
+            break;
+          case "signDocument":
+            await api.signDocument(action.params.id);
+            break;
+          case "addDocument":
+            await api.addDocument(action.params as Parameters<typeof api.addDocument>[0]);
+            break;
+          case "addStars":
+            await api.addStars(action.params.studentId, action.params.count);
+            break;
+          case "updateStudentPresence":
+            // presence is local-only, no API call needed
+            break;
+        }
+        await dequeue(entry.id);
+      } catch {
+        // Still failing — leave in queue, will retry next time online
+      }
+    }
+  };
 
   const loadAll = async (role: string) => {
     setIsLoadingData(true);
@@ -331,106 +387,157 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     }
   };
 
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  async function withOfflineFallback<T>(
+    apiCall: () => Promise<T>,
+    offlineAction: Parameters<typeof enqueue>[0],
+  ): Promise<T | null> {
+    if (!isOnline) {
+      await enqueue(offlineAction);
+      return null;
+    }
+    try {
+      return await apiCall();
+    } catch {
+      await enqueue(offlineAction);
+      return null;
+    }
+  }
+
+  // ── Mutations ────────────────────────────────────────────────────────────────
+
   const addChild = async (child: Omit<Child, "id">) => {
-    const res = await api.addChild({
+    const payload = {
       name: child.name,
       age: child.age,
       gold_stars: child.stars ?? 0,
       allergies: child.allergies,
       ambulance_consent: child.medicalWaiver === "ambulance",
       media_consent: child.mediaConsent,
-    });
-    const newChild = mapChild(res as ApiChild, []);
-    setChildrenData(prev => [...prev, newChild]);
+    };
+    const tempId = `temp_${Date.now()}`;
+    setChildrenData(prev => [...prev, { ...child, id: tempId }]);
+    const res = await withOfflineFallback(
+      () => api.addChild(payload),
+      { type: "addChild", params: payload as Record<string, unknown> },
+    );
+    if (res) {
+      const newChild = mapChild(res as ApiChild, []);
+      setChildrenData(prev => prev.map(c => c.id === tempId ? newChild : c));
+    }
   };
 
   const removeChild = async (id: string) => {
-    try { await api.deleteChild(id); } catch {}
     setChildrenData(prev => prev.filter(c => c.id !== id));
+    await withOfflineFallback(
+      () => api.deleteChild(id),
+      { type: "removeChild", params: { id } },
+    );
   };
 
   const updateChild = async (id: string, updates: Partial<Child>) => {
+    setChildrenData(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
     const payload: Partial<ApiChild> = {};
     if (updates.name !== undefined) payload.name = updates.name;
     if (updates.age !== undefined) payload.age = updates.age;
     if (updates.stars !== undefined) payload.gold_stars = updates.stars;
     if (updates.allergies !== undefined) payload.allergies = updates.allergies;
     if (updates.medicalWaiver !== undefined) payload.ambulance_consent = updates.medicalWaiver === "ambulance";
-    const res = await api.updateChild(id, payload);
-    setChildrenData(prev => prev.map(c =>
-      c.id === id ? mapChild(res as ApiChild, bookings.map(b => ({
-        id: parseInt(b.id), child_id: parseInt(b.childId), course_id: parseInt(b.courseId), status: "active",
-      } as ApiEnrollment))) : c
-    ));
+    await withOfflineFallback(
+      () => api.updateChild(id, payload),
+      { type: "updateChild", params: { id, updates: payload as Record<string, unknown> } },
+    );
   };
 
   const addDelegate = async (delegate: Omit<Delegate, "id" | "pin">) => {
-    const res = await api.addDelegate({
+    const payload = {
       child_id: parseInt(delegate.childId),
       name: delegate.name,
       surname: delegate.surname,
       phone: delegate.phone,
       relationship: delegate.relationship,
       email: delegate.email,
-    });
-    const d = res as ApiDelegate;
-    setDelegates(prev => [...prev, {
-      id: String(d.id),
-      childId: String(d.child_id),
-      name: d.name,
-      surname: d.surname,
-      phone: d.phone,
-      pin: d.pin ?? "",
-      approved: true,
-    }]);
+    };
+    const tempId = `temp_${Date.now()}`;
+    setDelegates(prev => [...prev, { ...delegate, id: tempId, pin: "", approved: true }]);
+    const res = await withOfflineFallback(
+      () => api.addDelegate(payload),
+      { type: "addDelegate", params: payload as Record<string, unknown> },
+    );
+    if (res) {
+      const d = res as ApiDelegate;
+      setDelegates(prev => prev.map(del => del.id === tempId ? {
+        id: String(d.id), childId: String(d.child_id), name: d.name,
+        surname: d.surname, phone: d.phone, pin: d.pin ?? "", approved: true,
+      } : del));
+    }
   };
 
   const removeDelegate = async (id: string) => {
-    await api.removeDelegate(id);
     setDelegates(prev => prev.filter(d => d.id !== id));
+    await withOfflineFallback(
+      () => api.removeDelegate(id),
+      { type: "removeDelegate", params: { id } },
+    );
   };
 
   const addPayment = async (payment: Omit<Payment, "id">) => {
-    const res = await api.addPayment({
-      amount: payment.amount,
-      description: payment.description,
-      status: payment.status,
-    });
-    const p = res as ApiPayment;
-    setPayments(prev => [...prev, {
-      id: String(p.id),
-      amount: p.amount ?? payment.amount,
-      date: p.created_at?.split("T")[0] ?? payment.date,
-      description: p.description ?? payment.description,
-      status: (p.status as Payment["status"]) ?? payment.status,
-    }]);
+    const payload = { amount: payment.amount, description: payment.description, status: payment.status };
+    const tempId = `temp_${Date.now()}`;
+    setPayments(prev => [...prev, { ...payment, id: tempId }]);
+    const res = await withOfflineFallback(
+      () => api.addPayment(payload),
+      { type: "addPayment", params: payload as Record<string, unknown> },
+    );
+    if (res) {
+      const p = res as ApiPayment;
+      setPayments(prev => prev.map(pm => pm.id === tempId ? {
+        id: String(p.id), amount: p.amount ?? payment.amount,
+        date: p.created_at?.split("T")[0] ?? payment.date,
+        description: p.description ?? payment.description,
+        status: (p.status as Payment["status"]) ?? payment.status,
+      } : pm));
+    }
   };
 
   const signDocument = async (id: string) => {
-    await api.signDocument(id);
     setDocuments(prev => prev.map(d =>
       d.id === id ? { ...d, signed: true, signedDate: new Date().toISOString().split("T")[0] } : d
     ));
+    await withOfflineFallback(
+      () => api.signDocument(id),
+      { type: "signDocument", params: { id } },
+    );
   };
 
   const updateStudentPresence = async (studentId: string, present: boolean) => {
     setStudents(prev => prev.map(s => s.id === studentId ? { ...s, present } : s));
+    // Presence is tracked locally; queue for when online if needed
+    if (!isOnline) {
+      await enqueue({ type: "updateStudentPresence", params: { studentId, present } });
+    }
   };
 
   const addDocument = async (doc: Omit<Document, "id">) => {
-    const res = await api.addDocument({
-      title: doc.title,
-      type: doc.type,
-      mandatory: doc.required,
-      file_url: doc.fileUrl,
-    });
-    const d = res as ApiDocument;
-    setDocuments(prev => [...prev, mapDocument(d)]);
+    const payload = { title: doc.title, type: doc.type, mandatory: doc.required, file_url: doc.fileUrl };
+    const tempId = `temp_${Date.now()}`;
+    setDocuments(prev => [...prev, { ...doc, id: tempId }]);
+    const res = await withOfflineFallback(
+      () => api.addDocument(payload),
+      { type: "addDocument", params: payload as Record<string, unknown> },
+    );
+    if (res) {
+      setDocuments(prev => prev.map(d => d.id === tempId ? mapDocument(res as ApiDocument) : d));
+    }
   };
 
   const addStars = async (studentId: string, count: number) => {
-    await api.addStars(studentId, count);
     setStudents(prev => prev.map(s => s.id === studentId ? { ...s, stars: s.stars + count } : s));
+    await withOfflineFallback(
+      () => api.addStars(studentId, count),
+      { type: "addStars", params: { studentId, count } },
+    );
   };
 
   const addLegalDoc = async (doc: Omit<LegalAdminDoc, "id">) => {

@@ -6,11 +6,13 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -26,6 +28,10 @@ const PRESET_COLORS = [
 
 const FONTS = ["Montserrat", "Open Sans", "Poppins", "Roboto", "Lato", "Inter"];
 
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "school";
+}
+
 export default function AdminSetup() {
   const { user, updateUser } = useAuth();
   const colors = useColors();
@@ -35,9 +41,14 @@ export default function AdminSetup() {
   const [selectedFont, setSelectedFont] = useState("Montserrat");
   const [buttonStyle, setButtonStyle] = useState<"rounded" | "square">("rounded");
   const [applied, setApplied] = useState(false);
+  const [qrGenerated, setQrGenerated] = useState(false);
+
+  const orgSlug = slugify(schoolName || "school");
+  const appDomain = process.env.EXPO_PUBLIC_DOMAIN || "strideapp.io";
+  const registrationUrl = `https://${appDomain}/login?org=${orgSlug}&signin=1`;
 
   const handleApply = async () => {
-    if (!schoolName.trim()) { Alert.alert("Inserisci il nome della scuola"); return; }
+    if (!schoolName.trim()) { Alert.alert("Please enter the school name first"); return; }
     await updateUser({
       schoolName,
       primaryColor: PRESET_COLORS[selectedColors].primary,
@@ -45,7 +56,43 @@ export default function AdminSetup() {
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setApplied(true);
-    Alert.alert("Skin Applicata!", `La personalizzazione per "${schoolName}" è stata salvata con successo.`);
+    setQrGenerated(true);
+    Alert.alert("Settings Saved!", `Customization for "${schoolName}" has been saved.`);
+  };
+
+  const handleGenerateQr = () => {
+    if (!schoolName.trim()) {
+      Alert.alert("Enter School Name", "Please enter your school name before generating the QR code.");
+      return;
+    }
+    setQrGenerated(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleShareQr = async () => {
+    try {
+      await Share.share({
+        title: `Join ${schoolName || "our school"} on Stride`,
+        message: `Scan the QR code or open this link to sign in to ${schoolName || "our school"}'s Stride app:\n\n${registrationUrl}`,
+        url: registrationUrl,
+      });
+    } catch {
+      Alert.alert("Share", "Could not open share dialog.");
+    }
+  };
+
+  const handleCopyLink = () => {
+    // On web, use clipboard; on native, show the link
+    if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(registrationUrl).then(() => {
+        Alert.alert("Copied!", "Registration link copied to clipboard.");
+      });
+    } else {
+      Alert.alert("Registration Link", registrationUrl, [
+        { text: "OK" },
+      ]);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   return (
@@ -55,39 +102,38 @@ export default function AdminSetup() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.primary }]}>Benvenuto nella Tua</Text>
-          <Text style={[styles.titleBold, { color: colors.primary }]}>Piattaforma Unica</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Personalizzazione Totale Skin</Text>
+          <Text style={[styles.title, { color: colors.primary }]}>White-Label</Text>
+          <Text style={[styles.titleBold, { color: colors.primary }]}>School Setup</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Branding & Customization</Text>
         </View>
 
         {/* Logo Area */}
         <View style={[styles.logoCard, { backgroundColor: "#FFFFFF" }]}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Logo Scuola</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>School Logo</Text>
           <Pressable
             style={[styles.logoUpload, { borderColor: colors.border }]}
-            onPress={() => Alert.alert("Upload Logo", "Seleziona il logo della tua scuola dalla galleria.")}
+            onPress={() => Alert.alert("Upload Logo", "Select your school logo from the gallery.")}
           >
             <Ionicons name="cloud-upload-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>[IL TUO LOGO QUI]</Text>
-            <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>Trascina o Carica il Tuo Logo Personalizzato</Text>
+            <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>[YOUR LOGO HERE]</Text>
+            <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>Drag or upload your custom logo</Text>
             <Text style={[styles.logoUploadHint, { color: colors.mutedForeground }]}>PNG, JPG, SVG — max 5MB</Text>
           </Pressable>
 
-          {/* School Name */}
-          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Nome Scuola / Associazione</Text>
+          <Text style={[styles.fieldLabel, { color: colors.primary }]}>School / Association Name</Text>
           <TextInput
             style={[styles.fieldInput, { borderColor: colors.border }]}
             value={schoolName}
-            onChangeText={setSchoolName}
-            placeholder="es. Dance Village"
+            onChangeText={text => { setSchoolName(text); setQrGenerated(false); }}
+            placeholder="e.g. Dance Village"
             placeholderTextColor={colors.mutedForeground}
           />
         </View>
 
         {/* Color Palette */}
         <View style={[styles.sectionCard, { backgroundColor: "#FFFFFF" }]}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Palette Colori</Text>
-          <Text style={[styles.sectionDesc, { color: colors.mutedForeground }]}>Scegli la combinazione di colori del brand</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Color Palette</Text>
+          <Text style={[styles.sectionDesc, { color: colors.mutedForeground }]}>Choose your brand color combination</Text>
           <View style={styles.colorGrid}>
             {PRESET_COLORS.map((preset, i) => (
               <Pressable
@@ -105,13 +151,12 @@ export default function AdminSetup() {
             ))}
           </View>
 
-          {/* Custom Hex */}
-          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Colore Primario (Hex)</Text>
+          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Primary Color (Hex)</Text>
           <View style={[styles.hexInput, { borderColor: colors.border }]}>
             <View style={[styles.hexPreview, { backgroundColor: PRESET_COLORS[selectedColors].primary }]} />
             <Text style={{ flex: 1, color: colors.primary, fontWeight: "600" }}>{PRESET_COLORS[selectedColors].primary}</Text>
           </View>
-          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Colore Secondario (Hex)</Text>
+          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Secondary Color (Hex)</Text>
           <View style={[styles.hexInput, { borderColor: colors.border }]}>
             <View style={[styles.hexPreview, { backgroundColor: PRESET_COLORS[selectedColors].secondary }]} />
             <Text style={{ flex: 1, color: colors.primary, fontWeight: "600" }}>{PRESET_COLORS[selectedColors].secondary}</Text>
@@ -120,8 +165,8 @@ export default function AdminSetup() {
 
         {/* Font Selection */}
         <View style={[styles.sectionCard, { backgroundColor: "#FFFFFF" }]}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Selezione Font</Text>
-          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Font Titoli</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Font Selection</Text>
+          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Heading Font</Text>
           <View style={styles.fontGrid}>
             {FONTS.map(font => (
               <Pressable
@@ -137,14 +182,14 @@ export default function AdminSetup() {
 
         {/* Button Style */}
         <View style={[styles.sectionCard, { backgroundColor: "#FFFFFF" }]}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Stile Pulsanti</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Button Style</Text>
           <View style={styles.buttonStyleRow}>
             <Pressable
               style={[styles.buttonStyleOption, buttonStyle === "rounded" && { borderColor: colors.primary, backgroundColor: colors.muted }]}
               onPress={() => setButtonStyle("rounded")}
             >
               <View style={[styles.buttonPreview, { borderRadius: 20, backgroundColor: PRESET_COLORS[selectedColors].primary }]}>
-                <Text style={styles.buttonPreviewText}>Arrotondato</Text>
+                <Text style={styles.buttonPreviewText}>Rounded</Text>
               </View>
             </Pressable>
             <Pressable
@@ -152,7 +197,7 @@ export default function AdminSetup() {
               onPress={() => setButtonStyle("square")}
             >
               <View style={[styles.buttonPreview, { borderRadius: 4, backgroundColor: PRESET_COLORS[selectedColors].primary }]}>
-                <Text style={styles.buttonPreviewText}>Squadrato</Text>
+                <Text style={styles.buttonPreviewText}>Square</Text>
               </View>
             </Pressable>
           </View>
@@ -160,42 +205,120 @@ export default function AdminSetup() {
 
         {/* Live Preview */}
         <View style={[styles.previewCard, { backgroundColor: "#FFFFFF" }]}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Anteprima in Tempo Reale</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Live Preview</Text>
           <View style={[styles.previewBox, { backgroundColor: PRESET_COLORS[selectedColors].primary }]}>
-            <Text style={styles.previewSchoolName}>{schoolName || "Nome Scuola"}</Text>
-            <Text style={styles.previewTagline}>TITOLO ESEMPIO</Text>
-            <Text style={styles.previewBody}>Corpo del testo d'esempio. {selectedFont}</Text>
+            <Text style={styles.previewSchoolName}>{schoolName || "School Name"}</Text>
+            <Text style={styles.previewTagline}>STRIDE DANCE SCHOOL</Text>
+            <Text style={styles.previewBody}>Sample body text in {selectedFont}</Text>
             <View style={[styles.previewButton, { backgroundColor: PRESET_COLORS[selectedColors].secondary, borderRadius: buttonStyle === "rounded" ? 20 : 4 }]}>
-              <Text style={{ color: PRESET_COLORS[selectedColors].primary, fontWeight: "700" }}>PULSANTE</Text>
+              <Text style={{ color: PRESET_COLORS[selectedColors].primary, fontWeight: "700" }}>SIGN IN</Text>
             </View>
           </View>
         </View>
 
-        {/* Apply Button */}
+        {/* Save Button */}
         <Pressable
-          style={({ pressed }) => [styles.applyBtn, { backgroundColor: applied ? "#10B981" : "#6B7BA4", transform: pressed ? [{ scale: 0.98 }] : [] }]}
+          style={({ pressed }) => [styles.applyBtn, { backgroundColor: applied ? "#10B981" : "#1E3A8A", transform: pressed ? [{ scale: 0.98 }] : [] }]}
           onPress={handleApply}
         >
-          <Ionicons name={applied ? "checkmark-circle" : "rocket"} size={22} color="#FFF" />
+          <Ionicons name={applied ? "checkmark-circle" : "save-outline"} size={22} color="#FFF" />
           <Text style={styles.applyBtnText}>
-            {applied ? "SKIN APPLICATA!" : "APPLICA SKIN E PROCEDI"}
+            {applied ? "SAVED!" : "SAVE & APPLY"}
           </Text>
         </Pressable>
 
-        {/* QR Code for Parents */}
-        {applied && (
-          <View style={[styles.qrCard, { backgroundColor: colors.card }]}>
-            <Ionicons name="qr-code" size={64} color={colors.primary} />
-            <Text style={[styles.qrTitle, { color: colors.primary }]}>QR Code per i Genitori</Text>
-            <Text style={[styles.qrDesc, { color: colors.mutedForeground }]}>
-              Condividi o stampa questo QR Code per permettere ai genitori di scaricare e registrarsi sull'app.
-            </Text>
-            <Pressable style={[styles.qrShareBtn, { backgroundColor: colors.primary }]}>
-              <Ionicons name="share-social" size={18} color="#FFF" />
-              <Text style={styles.qrShareBtnText}>CONDIVIDI QR CODE</Text>
-            </Pressable>
+        {/* ── QR Code Section ──────────────────────────────────────────────── */}
+        <View style={[styles.qrCard, { backgroundColor: "#FFFFFF" }]}>
+          <View style={styles.qrHeaderRow}>
+            <View style={[styles.qrIconWrap, { backgroundColor: "#DBEAFE" }]}>
+              <Ionicons name="qr-code-outline" size={26} color="#1E3A8A" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.qrTitle, { color: colors.primary }]}>Registration QR Code</Text>
+              <Text style={[styles.qrDesc, { color: colors.mutedForeground }]}>
+                Display at your entrance or share digitally. Scans open your school's sign-in page.
+              </Text>
+            </View>
           </View>
-        )}
+
+          {!qrGenerated ? (
+            <Pressable
+              style={[styles.generateBtn, { backgroundColor: colors.primary }]}
+              onPress={handleGenerateQr}
+            >
+              <Ionicons name="qr-code" size={18} color="#FFF" />
+              <Text style={styles.generateBtnText}>Generate QR Code</Text>
+            </Pressable>
+          ) : (
+            <>
+              {/* Actual QR code */}
+              <View style={[styles.qrCodeWrap, { borderColor: colors.border }]}>
+                <QRCode
+                  value={registrationUrl}
+                  size={180}
+                  color={PRESET_COLORS[selectedColors].primary}
+                  backgroundColor="#FFFFFF"
+                />
+                <Text style={[styles.qrSchoolLabel, { color: colors.primary }]}>
+                  {schoolName || "Your School"}
+                </Text>
+                <Text style={[styles.qrSubLabel, { color: colors.mutedForeground }]}>
+                  Scan to Sign In
+                </Text>
+              </View>
+
+              {/* URL preview */}
+              <View style={[styles.urlBox, { backgroundColor: "#F0F4FF", borderColor: colors.border }]}>
+                <Ionicons name="link-outline" size={14} color={colors.mutedForeground} />
+                <Text style={[styles.urlText, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  {registrationUrl}
+                </Text>
+              </View>
+
+              {/* Action buttons */}
+              <View style={styles.qrActions}>
+                <Pressable
+                  style={[styles.qrActionBtn, { backgroundColor: "#DBEAFE" }]}
+                  onPress={handleCopyLink}
+                >
+                  <Ionicons name="copy-outline" size={16} color="#1E3A8A" />
+                  <Text style={[styles.qrActionText, { color: "#1E3A8A" }]}>Copy Link</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.qrActionBtn, { backgroundColor: colors.primary }]}
+                  onPress={handleShareQr}
+                >
+                  <Ionicons name="share-social-outline" size={16} color="#FFF" />
+                  <Text style={[styles.qrActionText, { color: "#FFF" }]}>Share</Text>
+                </Pressable>
+              </View>
+
+              {/* Share channel hints */}
+              <View style={styles.shareHintRow}>
+                {[
+                  { icon: "logo-whatsapp" as const, label: "WhatsApp", color: "#25D366" },
+                  { icon: "mail-outline" as const,   label: "Email",    color: "#EA4335" },
+                  { icon: "chatbubble-outline" as const, label: "SMS",  color: "#1E3A8A" },
+                  { icon: "print-outline" as const,  label: "Print",    color: "#6B7280" },
+                ].map(ch => (
+                  <View key={ch.label} style={styles.shareHintItem}>
+                    <View style={[styles.shareHintIcon, { backgroundColor: `${ch.color}20` }]}>
+                      <Ionicons name={ch.icon} size={18} color={ch.color} />
+                    </View>
+                    <Text style={[styles.shareHintLabel, { color: colors.mutedForeground }]}>{ch.label}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={[styles.qrInfoBox, { backgroundColor: "#FEF3C7" }]}>
+                <Ionicons name="information-circle-outline" size={15} color="#F59E0B" />
+                <Text style={[styles.qrInfoText, { color: "#92400E" }]}>
+                  New sign-ups default to "Parent" access. Upgrade roles manually in Users.
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -242,9 +365,25 @@ const styles = StyleSheet.create({
   previewButton: { paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
   applyBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, borderRadius: 16, paddingVertical: 18, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
   applyBtnText: { color: "#FFF", fontWeight: "800", fontSize: 16, letterSpacing: 1 },
-  qrCard: { borderRadius: 20, padding: 24, alignItems: "center", gap: 12, marginBottom: 20 },
-  qrTitle: { fontSize: 18, fontWeight: "700" },
-  qrDesc: { fontSize: 13, textAlign: "center", lineHeight: 20 },
-  qrShareBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
-  qrShareBtnText: { color: "#FFF", fontWeight: "700" },
+  qrCard: { borderRadius: 20, padding: 20, marginBottom: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
+  qrHeaderRow: { flexDirection: "row", alignItems: "flex-start", gap: 14, marginBottom: 18 },
+  qrIconWrap: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  qrTitle: { fontSize: 17, fontWeight: "700", marginBottom: 4 },
+  qrDesc: { fontSize: 12, lineHeight: 17 },
+  generateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14 },
+  generateBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  qrCodeWrap: { alignItems: "center", borderWidth: 1.5, borderRadius: 20, padding: 20, marginBottom: 14, gap: 10 },
+  qrSchoolLabel: { fontSize: 16, fontWeight: "800", marginTop: 4 },
+  qrSubLabel: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" },
+  urlBox: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 14 },
+  urlText: { flex: 1, fontSize: 11 },
+  qrActions: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  qrActionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 12, paddingVertical: 12 },
+  qrActionText: { fontWeight: "700", fontSize: 14 },
+  shareHintRow: { flexDirection: "row", justifyContent: "space-around", marginBottom: 16 },
+  shareHintItem: { alignItems: "center", gap: 6 },
+  shareHintIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  shareHintLabel: { fontSize: 10, fontWeight: "600" },
+  qrInfoBox: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 12, padding: 12 },
+  qrInfoText: { flex: 1, fontSize: 12, lineHeight: 17 },
 });
