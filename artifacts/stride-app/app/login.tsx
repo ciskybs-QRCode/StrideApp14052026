@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -45,6 +45,25 @@ export default function LoginScreen() {
     else if (roleEmail === "operatore@test.com") router.replace("/(operator)/dashboard" as never);
     else router.replace("/(parent)/home" as never);
   };
+
+  // Demo auto-login: ?demo=parent|operator|admin auto-signs in for canvas previews
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const demo = params.get("demo");
+    if (!demo) return;
+    const DEMO_CREDS: Record<string, { email: string; password: string }> = {
+      parent:   { email: "genitore@test.com",   password: "test123" },
+      operator: { email: "operatore@test.com",  password: "test123" },
+      admin:    { email: "admin@test.com",       password: "test123" },
+    };
+    const creds = DEMO_CREDS[demo];
+    if (!creds) return;
+    login(creds.email, creds.password)
+      .then(() => navigateAfterLogin(creds.email))
+      .catch(() => { /* silently fall through to manual login */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) { setError("Enter your email and password"); shake(); return; }
