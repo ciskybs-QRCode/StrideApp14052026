@@ -42,4 +42,20 @@ router.patch("/users/:id/role", requireAuth, requireRole("admin"), async (req, r
   res.json(data);
 });
 
+router.patch("/profile", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const { name, phone } = req.body as { name?: string; phone?: string };
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (name !== undefined) updates.name = name;
+  if (phone !== undefined) updates.phone = phone;
+  const { data, error } = await supabase
+    .from("users")
+    .update(updates)
+    .eq("id", parseInt(user.id))
+    .select("id, name, email, phone")
+    .single();
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  res.json(data);
+});
+
 export default router;

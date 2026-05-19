@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -14,10 +14,12 @@ import {
   Text,
   View,
 } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { api } from "@/lib/api";
 
 const LOGO = require("@/assets/images/stride-logo.png");
 
@@ -47,14 +49,30 @@ export default function ParentHome() {
   const [showAbsence, setShowAbsence] = useState(false);
   const [absenceType, setAbsenceType] = useState<AbsenceType>("absent");
   const [selectedChild, setSelectedChild] = useState(children[0]?.id || "");
-  const [qrChildId, setQrChildId] = useState(children[0]?.id || "");
+  const [qrTarget, setQrTarget] = useState<"parent" | string>("parent");
+  const [orgLogoUri, setOrgLogoUri] = useState<string | null>(null);
 
   const nextLesson = lessons[0];
   const nextCourse = courses.find(c => c.id === nextLesson?.courseId);
   const childForLesson = children[0];
-  const qrChild = children.find(c => c.id === qrChildId) || children[0];
-
   const lessonLocation = nextLesson?.location || nextCourse?.location || "";
+
+  const parentQrValue = `STRIDE:PARENT:${user?.id ?? "0"}:${user?.orgId ?? "1"}`;
+  const activeChild = children.find(c => c.id === qrTarget);
+  const qrValue = qrTarget === "parent"
+    ? parentQrValue
+    : (activeChild?.qrPayload || `STRIDE:CHILD:${qrTarget}`);
+  const qrLabel = qrTarget === "parent"
+    ? (user?.name ?? "My QR")
+    : (activeChild?.name ?? "");
+
+  const logoSource = orgLogoUri ?? (user?.logoUri ?? null);
+
+  useEffect(() => {
+    api.getOrg().then(org => {
+      if (org.logo_url) setOrgLogoUri(org.logo_url);
+    }).catch(() => {});
+  }, []);
 
   const handleNavigate = async () => {
     if (!lessonLocation) {
@@ -96,6 +114,12 @@ export default function ParentHome() {
     Alert.alert("Sent", "Your report has been sent to the office.");
   };
 
+  const openQR = (target: "parent" | string = "parent") => {
+    setQrTarget(target);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setShowQR(true);
+  };
+
   const firstName = user?.name?.split(" ")[0] || "User";
 
   return (
@@ -110,8 +134,8 @@ export default function ParentHome() {
         {/* Header with Logo */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            {user?.logoUri ? (
-              <Image source={{ uri: user.logoUri }} style={styles.headerLogo} contentFit="contain" />
+            {logoSource ? (
+              <Image source={{ uri: logoSource }} style={styles.headerLogo} contentFit="contain" />
             ) : (
               <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
             )}
@@ -177,7 +201,7 @@ export default function ParentHome() {
         <View style={styles.quickActions}>
           <Pressable
             style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowQR(true); }}
+            onPress={() => openQR("parent")}
           >
             <Ionicons name="qr-code" size={28} color={colors.primary} />
             <Text style={[styles.quickBtnText, { color: colors.primary }]}>SHOW QR{"\n"}PASS</Text>
@@ -227,26 +251,37 @@ export default function ParentHome() {
         </View>
       </ScrollView>
 
-      {/* QR Modal */}
+      {/* ── QR Modal ── */}
       <Modal visible={showQR} transparent animationType="fade" onRequestClose={() => setShowQR(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Image source={LOGO} style={styles.modalLogo} contentFit="contain" />
+            {logoSource ? (
+              <Image source={{ uri: logoSource }} style={styles.modalLogo} contentFit="contain" />
+            ) : (
+              <Image source={LOGO} style={styles.modalLogo} contentFit="contain" />
+            )}
             <Text style={[styles.modalTitle, { color: colors.primary }]}>Smart Pass — QR Check-In</Text>
 
-            {children.length > 1 && (
-              <View style={styles.qrChildTabs}>
-                {children.map(c => (
-                  <Pressable
-                    key={c.id}
-                    style={[styles.qrChildTab, qrChildId === c.id && { backgroundColor: colors.primary }]}
-                    onPress={() => setQrChildId(c.id)}
-                  >
-                    <Text style={[styles.qrChildTabText, qrChildId === c.id && { color: "#FFF" }]}>{c.name.split(" ")[0]}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
+            {/* Tab bar: My QR + one per child */}
+            <View style={styles.qrChildTabs}>
+              <Pressable
+                style={[styles.qrChildTab, qrTarget === "parent" && { backgroundColor: colors.primary }]}
+                onPress={() => setQrTarget("parent")}
+              >
+                <Text style={[styles.qrChildTabText, qrTarget === "parent" && { color: "#FFF" }]}>My QR</Text>
+              </Pressable>
+              {children.map(c => (
+                <Pressable
+                  key={c.id}
+                  style={[styles.qrChildTab, qrTarget === c.id && { backgroundColor: colors.primary }]}
+                  onPress={() => setQrTarget(c.id)}
+                >
+                  <Text style={[styles.qrChildTabText, qrTarget === c.id && { color: "#FFF" }]}>
+                    {c.name.split(" ")[0]}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
             <View style={styles.passStatusRow}>
               <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
@@ -260,12 +295,22 @@ export default function ParentHome() {
             </View>
 
             <View style={[styles.qrBox, { backgroundColor: "#F0F4FF" }]}>
-              <Ionicons name="qr-code" size={140} color={colors.primary} />
-              <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrChild?.name}</Text>
-              <Text style={[styles.qrId, { color: colors.mutedForeground }]}>ID: {qrChild?.id?.toUpperCase()}</Text>
+              <QRCode
+                value={qrValue}
+                size={160}
+                color={colors.primary}
+                backgroundColor="transparent"
+              />
+              <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrLabel}</Text>
+              <Text style={[styles.qrId, { color: colors.mutedForeground }]}>
+                {qrTarget === "parent"
+                  ? `Parent · ID: ${user?.id}`
+                  : `Student · ID: ${qrTarget}`}
+              </Text>
             </View>
+
             <Text style={[styles.qrSwipeHint, { color: colors.mutedForeground }]}>
-              {children.length > 1 ? "Tap name above to switch child" : ""}
+              Show this QR to the operator at check-in
             </Text>
             <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setShowQR(false)}>
               <Text style={styles.closeBtnText}>Close</Text>
@@ -274,7 +319,7 @@ export default function ParentHome() {
         </View>
       </Modal>
 
-      {/* Absence Modal */}
+      {/* ── Absence Modal ── */}
       <Modal visible={showAbsence} transparent animationType="slide" onRequestClose={() => setShowAbsence(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -298,7 +343,11 @@ export default function ParentHome() {
                 style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                 onPress={() => setAbsenceType(opt.value)}
               >
-                <Ionicons name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === opt.value ? "#FFF" : colors.primary} />
+                <Ionicons
+                  name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"}
+                  size={18}
+                  color={absenceType === opt.value ? "#FFF" : colors.primary}
+                />
                 <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
               </Pressable>
             ))}
@@ -359,7 +408,7 @@ const styles = StyleSheet.create({
   modalSubtitle: { fontSize: 13, marginBottom: 16 },
   qrBox: { alignItems: "center", padding: 24, borderRadius: 18, marginBottom: 8, width: "100%" },
   qrId: { fontSize: 12, marginTop: 6, letterSpacing: 1 },
-  qrChildName: { fontSize: 16, fontWeight: "700", marginTop: 10 },
+  qrChildName: { fontSize: 16, fontWeight: "700", marginTop: 12 },
   qrChildTabs: { flexDirection: "row", gap: 8, marginBottom: 14, flexWrap: "wrap", justifyContent: "center" },
   qrChildTab: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 50, backgroundColor: "#E8EDF8", borderWidth: 2, borderColor: "#D1D9F0" },
   qrChildTabText: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },

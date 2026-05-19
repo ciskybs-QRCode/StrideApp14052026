@@ -110,6 +110,10 @@ export const api = {
   // Org
   getOrg: () => request<ApiOrg>("GET", "/org"),
   updateOrg: (data: Partial<ApiOrg>) => request<ApiOrg>("PATCH", "/org", data),
+
+  // Profile (parent self-update)
+  updateProfile: (data: { name?: string; phone?: string }) =>
+    request<ApiUser>("PATCH", "/profile", data),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────

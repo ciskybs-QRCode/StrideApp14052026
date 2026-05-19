@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -20,6 +21,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { SignaturePad } from "@/components/SignaturePad";
+import { api } from "@/lib/api";
 
 const PROFILE_EXTRA_KEY = "stride_profile_extra";
 
@@ -28,15 +31,17 @@ interface ProfileExtra {
   lastName: string;
   phone: string;
   dateOfBirth: string;
+  houseNumber: string;
   addressLine1: string;
   city: string;
   postcode: string;
   state: string;
+  country: string;
 }
 
 const EMPTY_EXTRA: ProfileExtra = {
   firstName: "", lastName: "", phone: "", dateOfBirth: "",
-  addressLine1: "", city: "", postcode: "", state: "",
+  houseNumber: "", addressLine1: "", city: "", postcode: "", state: "", country: "",
 };
 
 export default function DocumentsScreen() {
@@ -62,6 +67,7 @@ export default function DocumentsScreen() {
   const [addChildName, setAddChildName] = useState("");
   const [addChildAge, setAddChildAge] = useState("");
   const [addingChild, setAddingChild] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(PROFILE_EXTRA_KEY).then(raw => {
@@ -85,7 +91,17 @@ export default function DocumentsScreen() {
   };
 
   const handleDownload = async (doc: typeof documents[0]) => {
-    await Share.share({ message: `Document: ${doc.title}\nSigned on: ${doc.signedDate}\nID: ${doc.id}` });
+    if (doc.fileUrl) {
+      await WebBrowser.openBrowserAsync(doc.fileUrl);
+    } else {
+      await Share.share({ message: `Document: ${doc.title}\nSigned on: ${doc.signedDate}\nID: ${doc.id}` });
+    }
+  };
+
+  const handlePreview = async (doc: typeof documents[0]) => {
+    if (doc.fileUrl) {
+      await WebBrowser.openBrowserAsync(doc.fileUrl);
+    }
   };
 
   const handlePickProfilePhoto = async () => {
@@ -132,6 +148,12 @@ export default function DocumentsScreen() {
     if (fullName) await updateUser({ name: fullName });
     setProfileExtra(editExtra);
     await AsyncStorage.setItem(PROFILE_EXTRA_KEY, JSON.stringify(editExtra));
+    const syncData: { name?: string; phone?: string } = {};
+    if (fullName) syncData.name = fullName;
+    if (editExtra.phone.trim()) syncData.phone = editExtra.phone.trim();
+    if (Object.keys(syncData).length > 0) {
+      api.updateProfile(syncData).catch(() => {});
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowProfile(false);
   };
@@ -216,7 +238,7 @@ export default function DocumentsScreen() {
           <>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>New Documents</Text>
             {newDocs.map(doc => (
-              <View key={doc.id} style={[styles.docCard, { backgroundColor: colors.card }]}>
+              <Pressable key={doc.id} style={[styles.docCard, { backgroundColor: colors.card }]} onPress={() => handlePreview(doc)}>
                 <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={colors.primary} />
                 <View style={styles.docInfo}>
                   <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
@@ -224,10 +246,14 @@ export default function DocumentsScreen() {
                     From {doc.sentBy === "admin" ? "Administration" : "Teacher"} · {doc.sentAt}
                   </Text>
                 </View>
-                <Pressable style={[styles.downloadBtn, { backgroundColor: colors.muted }]}>
-                  <Ionicons name="download-outline" size={16} color={colors.primary} />
+                <Pressable
+                  style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]}
+                  onPress={() => handlePreview(doc)}
+                  disabled={!doc.fileUrl}
+                >
+                  <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? colors.primary : colors.mutedForeground} />
                 </Pressable>
-              </View>
+              </Pressable>
             ))}
           </>
         )}
@@ -334,7 +360,12 @@ export default function DocumentsScreen() {
       </ScrollView>
 
       {/* ── Sign Document Modal — unchanged ── */}
-      <Modal visible={!!showSign} transparent animationType="slide" onRequestClose={() => setShowSign(null)}>
+      <Modal
+        visible={!!showSign}
+        transparent
+        animationType="slide"
+        onRequestClose={() => { setShowSign(null); setHasSignature(false); }}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             {showSign && (() => {
@@ -343,15 +374,19 @@ export default function DocumentsScreen() {
                 <>
                   <Text style={[styles.modalTitle, { color: colors.primary }]}>Sign Document</Text>
                   <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{doc.title}</Text>
-                  <View style={[styles.signatureArea, { borderColor: colors.border }]}>
-                    <Ionicons name="create-outline" size={48} color={colors.mutedForeground} />
-                    <Text style={[styles.signatureHint, { color: colors.mutedForeground }]}>Sign here with your finger</Text>
-                  </View>
-                  <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                    <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowSign(null)}>
+                  <SignaturePad onHasSignatureChange={setHasSignature} strokeColor={colors.primary} />
+                  <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                    <Pressable
+                      style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]}
+                      onPress={() => { setShowSign(null); setHasSignature(false); }}
+                    >
                       <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                     </Pressable>
-                    <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={() => handleSign(doc.id)}>
+                    <Pressable
+                      style={[styles.modalBtn, { flex: 1, backgroundColor: hasSignature ? colors.primary : colors.border }]}
+                      onPress={() => { if (hasSignature) handleSign(doc.id); }}
+                      disabled={!hasSignature}
+                    >
                       <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Signature</Text>
                     </Pressable>
                   </View>
@@ -494,8 +529,16 @@ export default function DocumentsScreen() {
             {/* Address */}
             <Text style={[styles.editSection, { color: colors.primary }]}>Address</Text>
             <View style={[styles.editCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Street Address</Text>
-              <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.addressLine1} onChangeText={v => setEditExtra(p => ({ ...p, addressLine1: v }))} placeholder="123 Main Street" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>House / Unit No.</Text>
+                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.houseNumber} onChangeText={v => setEditExtra(p => ({ ...p, houseNumber: v }))} placeholder="Apt 4B" placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" />
+                </View>
+                <View style={{ flex: 2 }}>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Street Address</Text>
+                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.addressLine1} onChangeText={v => setEditExtra(p => ({ ...p, addressLine1: v }))} placeholder="123 Main Street" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+                </View>
+              </View>
               <View style={{ flexDirection: "row", gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.fieldLabel, { color: colors.primary }]}>City</Text>
@@ -506,8 +549,16 @@ export default function DocumentsScreen() {
                   <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.postcode} onChangeText={v => setEditExtra(p => ({ ...p, postcode: v }))} placeholder="3000" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
                 </View>
               </View>
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>State / Region</Text>
-              <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.state} onChangeText={v => setEditExtra(p => ({ ...p, state: v }))} placeholder="VIC" placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" />
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>State / Region</Text>
+                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.state} onChangeText={v => setEditExtra(p => ({ ...p, state: v }))} placeholder="VIC" placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Country</Text>
+                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.country} onChangeText={v => setEditExtra(p => ({ ...p, country: v }))} placeholder="Australia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+                </View>
+              </View>
             </View>
 
             {/* Children */}
