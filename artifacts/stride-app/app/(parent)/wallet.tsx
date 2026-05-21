@@ -139,14 +139,14 @@ export default function WalletScreen() {
                 <View style={[styles.subIcon, { backgroundColor: colors.muted }]}>
                   <Ionicons name="musical-notes" size={20} color={colors.primary} />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={[styles.subName, { color: colors.primary }]}>{course.name}</Text>
                   <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>Renews on 01/06/2026</Text>
                   <Text style={[styles.subPrice, { color: colors.secondary }]}>€{course.price}/mo</Text>
                 </View>
               </View>
               <Pressable
-                style={[styles.cancelRenewalBtn, { borderColor: "#FCA5A5" }]}
+                style={[styles.cancelRenewalBtn, { borderColor: "#FCA5A5", alignSelf: "flex-end" }]}
                 onPress={() => openCancelFlow(booking.id)}
               >
                 <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
@@ -377,8 +377,8 @@ const styles = StyleSheet.create({
   successBannerText: { flex: 1, fontSize: 13, fontWeight: "600", lineHeight: 18 },
 
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
-  subCard: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 16, padding: 16, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  subCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  subCard: { flexDirection: "column", borderRadius: 16, padding: 16, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  subCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
   subIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   subName: { fontSize: 15, fontWeight: "700" },
   subRenewal: { fontSize: 12, marginTop: 2 },
