@@ -114,6 +114,12 @@ export const api = {
   // Profile (parent self-update)
   updateProfile: (data: { name?: string; phone?: string }) =>
     request<ApiUser>("PATCH", "/profile", data),
+
+  // Audit Logs
+  logPdfGeneration: (data: { period: string; month: string; total_amount: number; action: "generated" | "shared" }) =>
+    request<{ ok: boolean }>("POST", "/pdf-logs", data),
+  logEmergencyStep: (data: { protocol_id: string; protocol_title: string; step_index: number; step_text: string }) =>
+    request<{ ok: boolean }>("POST", "/emergency-logs", data),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────

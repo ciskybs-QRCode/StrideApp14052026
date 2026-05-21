@@ -12,6 +12,7 @@ import usersRouter from "./users.js";
 import attendanceRouter from "./attendance.js";
 import lessonsRouter from "./lessons.js";
 import orgRouter from "./org.js";
+import logsRouter from "./logs.js";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(usersRouter);
 router.use(attendanceRouter);
 router.use(lessonsRouter);
 router.use(orgRouter);
+router.use(logsRouter);
 
 export default router;

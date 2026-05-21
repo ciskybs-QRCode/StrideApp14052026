@@ -38,6 +38,7 @@ export default function OperatorTabLayout() {
       <Tabs.Screen name="students" options={{ title: "Students", tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
       <Tabs.Screen name="invoicing" options={{ title: "Admin", tabBarIcon: ({ color, size }) => <Ionicons name="briefcase" size={size} color={color} /> }} />
       <Tabs.Screen name="support" options={{ title: "Support", tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} /> }} />
+      <Tabs.Screen name="student-detail" options={{ href: null }} />
     </Tabs>
   );
 }
