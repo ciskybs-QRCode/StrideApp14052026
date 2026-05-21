@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   subName: { fontSize: 15, fontWeight: "700" },
   subRenewal: { fontSize: 12, marginTop: 2 },
   subPrice: { fontSize: 14, fontWeight: "700", marginTop: 4 },
-  cancelRenewalBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 },
+  cancelRenewalBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, alignSelf: "center" },
   cancelRenewalText: { color: "#EF4444", fontSize: 12, fontWeight: "600" },
 
   emptyCard: { borderRadius: 14, padding: 24, alignItems: "center", gap: 8, marginBottom: 10 },
