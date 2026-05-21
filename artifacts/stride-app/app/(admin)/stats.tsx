@@ -113,7 +113,7 @@ export default function AdminStats() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    AsyncStorage.getItem("stride_campus_address").then(addr => {
+    AsyncStorage.getItem("stride_campus_address").catch(() => null).then(addr => {
       if (addr) setCampusAddress(addr);
     });
     Animated.loop(

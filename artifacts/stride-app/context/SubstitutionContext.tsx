@@ -86,7 +86,7 @@ export function SubstitutionProvider({ children }: { children: React.ReactNode }
   // ── Persistence ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then(raw => {
+    AsyncStorage.getItem(STORAGE_KEY).catch(() => null).then(raw => {
       if (raw) {
         try { setAlerts(JSON.parse(raw) as AbsenceAlert[]); } catch {}
       }

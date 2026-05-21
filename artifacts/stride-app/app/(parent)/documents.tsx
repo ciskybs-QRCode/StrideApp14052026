@@ -70,7 +70,7 @@ export default function DocumentsScreen() {
   const [hasSignature, setHasSignature] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(PROFILE_EXTRA_KEY).then(raw => {
+    AsyncStorage.getItem(PROFILE_EXTRA_KEY).catch(() => null).then(raw => {
       if (raw) {
         try { setProfileExtra(JSON.parse(raw)); } catch {}
       } else if (user?.name) {
