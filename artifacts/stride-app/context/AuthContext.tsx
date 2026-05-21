@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadUser = async () => {
     try {
       const [stored, token] = await Promise.all([
-        AsyncStorage.getItem(USER_KEY),
+        AsyncStorage.getItem(USER_KEY).catch(() => null),
         getToken(),
       ]);
       if (stored && token) {
@@ -61,22 +61,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: apiUser.role as UserRole,
       orgId: apiUser.orgId ?? (apiUser.organization_id as number | undefined),
     };
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped));
+    try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped)); } catch { /* localStorage blocked */ }
     setUser(mapped);
   };
 
   const logout = async () => {
-    await Promise.all([
-      clearToken(),
-      AsyncStorage.removeItem(USER_KEY),
-    ]);
+    try { await Promise.all([clearToken(), AsyncStorage.removeItem(USER_KEY)]); } catch { /* ignore */ }
     setUser(null);
   };
 
   const updateUser = async (updates: Partial<User>) => {
     if (!user) return;
     const updated = { ...user, ...updates };
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
+    try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated)); } catch { /* localStorage blocked */ }
     setUser(updated);
   };
 

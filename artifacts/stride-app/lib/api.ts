@@ -8,16 +8,22 @@ const getBaseUrl = () => {
 
 const TOKEN_KEY = "stride_token";
 
+// In-memory fallback for when localStorage is blocked (e.g. cross-origin canvas iframes)
+let _memToken: string | null = null;
+
 export async function getToken(): Promise<string | null> {
-  return AsyncStorage.getItem(TOKEN_KEY);
+  try { return await AsyncStorage.getItem(TOKEN_KEY) ?? _memToken; }
+  catch { return _memToken; }
 }
 
 export async function setToken(token: string): Promise<void> {
-  await AsyncStorage.setItem(TOKEN_KEY, token);
+  _memToken = token;
+  try { await AsyncStorage.setItem(TOKEN_KEY, token); } catch { /* localStorage blocked */ }
 }
 
 export async function clearToken(): Promise<void> {
-  await AsyncStorage.removeItem(TOKEN_KEY);
+  _memToken = null;
+  try { await AsyncStorage.removeItem(TOKEN_KEY); } catch { /* localStorage blocked */ }
 }
 
 async function request<T>(
