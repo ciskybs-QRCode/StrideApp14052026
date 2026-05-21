@@ -14,7 +14,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
@@ -85,7 +84,6 @@ const MOCK_OUTCOMES: ScanResult[] = [
   { type: "error",   name: "Marco Bianchi", subscription: "expired", medical: "expired",  payment: "overdue" },
 ];
 
-// Absence/delay options — mirrors Parent's UI exactly
 type AbsenceType = "absent" | "late15" | "late30" | "late45" | "late60";
 const ABSENCE_OPTIONS: { value: AbsenceType; label: string; delayMins: number }[] = [
   { value: "absent", label: "Full absence",    delayMins: 0  },
@@ -107,22 +105,22 @@ export default function OperatorDashboard() {
   const insets = useSafeAreaInsets();
 
   // ── Core state ──────────────────────────────────────────────────────────────
-  const [showScanner, setShowScanner]   = useState(false);
-  const [showSOS, setShowSOS]           = useState(false);
-  const [showQRPanel, setShowQRPanel]   = useState(false);
-  const [sosCount, setSosCount]         = useState(0);
+  const [showScanner, setShowScanner]     = useState(false);
+  const [showSOS, setShowSOS]             = useState(false);
+  const [showQRPanel, setShowQRPanel]     = useState(false);
+  const [sosCount, setSosCount]           = useState(0);
   const [campusAddress, setCampusAddress] = useState("1 Main Street, Sydney NSW 2000");
-  const [scanned, setScanned]           = useState(false);
-  const [orgLogoUri, setOrgLogoUri]     = useState<string | null>(null);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [scanned, setScanned]             = useState(false);
+  const [orgLogoUri, setOrgLogoUri]       = useState<string | null>(null);
+  const pulseAnim  = useRef(new Animated.Value(1)).current;
   const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [activityLog, setActivityLog]   = useState<LogEntry[]>(INITIAL_LOG);
+  const [activityLog, setActivityLog]     = useState<LogEntry[]>(INITIAL_LOG);
 
   // ── Absence Report modal ────────────────────────────────────────────────────
-  const [showAbsenceModal, setShowAbsenceModal]   = useState(false);
-  const [absenceType, setAbsenceType]             = useState<AbsenceType>("absent");
-  const [selectedTeacher, setSelectedTeacher]     = useState(MOCK_TEACHERS[0]);
-  const [absenceSent, setAbsenceSent]             = useState(false);
+  const [showAbsenceModal, setShowAbsenceModal] = useState(false);
+  const [absenceType, setAbsenceType]           = useState<AbsenceType>("absent");
+  const [selectedTeacher, setSelectedTeacher]   = useState(MOCK_TEACHERS[0]);
+  const [absenceSent, setAbsenceSent]           = useState(false);
 
   // ── Cascade viewer modal ────────────────────────────────────────────────────
   const [showCascade, setShowCascade] = useState(false);
@@ -131,17 +129,17 @@ export default function OperatorDashboard() {
   const [scanResult, setScanResult]     = useState<ScanResult | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
 
-  const isGPS = true;
+  const isGPS         = true;
   const currentLesson = lessons[0];
-  const checkedIn = students.filter(s => s.checkedIn).length;
+  const checkedIn     = students.filter(s => s.checkedIn).length;
   const operatorQrValue = `STRIDE:OPERATOR:${user?.id ?? "0"}:${user?.orgId ?? "1"}`;
-  const logoSource = orgLogoUri ?? (user?.logoUri ?? null);
-  const firstName = user?.name?.split(" ")[0] || "Operator";
-  const emergency = detectEmergencyInfo(campusAddress);
+  const logoSource    = orgLogoUri ?? (user?.logoUri ?? null);
+  const firstName     = user?.name?.split(" ")[0] || "Operator";
+  const emergency     = detectEmergencyInfo(campusAddress);
 
   // ── Effects ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    AsyncStorage.getItem("stride_campus_address").then(addr => {
+    AsyncStorage.getItem("stride_campus_address").catch(() => null).then(addr => {
       if (addr) setCampusAddress(addr);
     });
     api.getOrg().then(org => {
@@ -155,19 +153,18 @@ export default function OperatorDashboard() {
     ).start();
   }, []);
 
-  // Auto-open cascade viewer when an active absent alert starts
   useEffect(() => {
     if (activeAlert && activeAlert.type === "absent" && !activeAlert.resolved) {
       setShowCascade(true);
     }
   }, [activeAlert?.id]);
 
-  // ── Log helper ───────────────────────────────────────────────────────────────
+  // ── Log helper ────────────────────────────────────────────────────────────
   const pushLog = (entry: LogEntry) => {
     setActivityLog(prev => [entry, ...prev].slice(0, 30));
   };
 
-  // ── QR Scanner ───────────────────────────────────────────────────────────────
+  // ── QR Scanner ────────────────────────────────────────────────────────────
   const handleScan = async () => {
     if (Platform.OS !== "web" && !permission?.granted) {
       const result = await requestPermission();
@@ -209,7 +206,7 @@ export default function OperatorDashboard() {
     }
   };
 
-  // ── SOS ──────────────────────────────────────────────────────────────────────
+  // ── SOS ───────────────────────────────────────────────────────────────────
   const handleSOSPress = () => {
     if (sosPressTimer.current) clearTimeout(sosPressTimer.current);
     const newCount = sosCount + 1;
@@ -225,11 +222,11 @@ export default function OperatorDashboard() {
     }
   };
 
-  // ── Absence Report ────────────────────────────────────────────────────────────
+  // ── Absence Report ────────────────────────────────────────────────────────
   const handleSendAbsenceReport = () => {
     const selected = ABSENCE_OPTIONS.find(o => o.value === absenceType)!;
     const lessonName = currentLesson?.courseName ?? "Current Lesson";
-    const lessonId = currentLesson?.id ?? "lesson_0";
+    const lessonId   = currentLesson?.id ?? "lesson_0";
 
     if (absenceType === "absent") {
       reportAbsence(lessonId, lessonName, selectedTeacher, user?.name ?? "Operator");
@@ -245,22 +242,20 @@ export default function OperatorDashboard() {
     setTimeout(() => {
       setShowAbsenceModal(false);
       setAbsenceSent(false);
-      if (absenceType === "absent") {
-        setShowCascade(true);
-      }
+      if (absenceType === "absent") setShowCascade(true);
     }, 1800);
   };
 
-  // ── Render helpers ────────────────────────────────────────────────────────────
+  // ── Render helpers ────────────────────────────────────────────────────────
   const statusColor = (s: "active" | "valid" | "paid" | "expired" | "expiring" | "overdue" | "pending" | "none") => {
     if (s === "active" || s === "valid" || s === "paid") return "#10B981";
     if (s === "expiring" || s === "pending") return "#F59E0B";
     return "#EF4444";
   };
   const statusIcon = (s: string) => {
-    if (s === "active" || s === "valid" || s === "paid") return "checkmark-circle";
-    if (s === "expiring" || s === "pending") return "warning";
-    return "close-circle";
+    if (s === "active" || s === "valid" || s === "paid") return "checkmark-circle" as const;
+    if (s === "expiring" || s === "pending") return "warning" as const;
+    return "close-circle" as const;
   };
   const statusLabel = (_key: string, val: string) => {
     const labels: Record<string, string> = { active: "Active", expired: "Expired", none: "None", valid: "Valid", expiring: "Expiring", paid: "Paid", overdue: "Overdue", pending: "Pending" };
@@ -271,6 +266,12 @@ export default function OperatorDashboard() {
     if (t === "warning") return "#F59E0B";
     if (t === "error")   return "#EF4444";
     return colors.primary;
+  };
+  const logTypeIcon = (t: LogEntry["type"]): keyof typeof Ionicons.glyphMap => {
+    if (t === "success") return "checkmark-circle-outline";
+    if (t === "warning") return "warning-outline";
+    if (t === "error")   return "close-circle-outline";
+    return "information-circle-outline";
   };
 
   const subStatusColor = (s: string) => {
@@ -294,15 +295,18 @@ export default function OperatorDashboard() {
     return "Pending";
   };
 
-  // ── Main render ───────────────────────────────────────────────────────────────
+  // ── Main render ───────────────────────────────────────────────────────────
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + (Platform.OS === "web" ? 72 : 20), paddingBottom: insets.bottom + 100 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ── */}
+        {/* ── Header — identical to Parent ── */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             {logoSource ? (
@@ -315,6 +319,7 @@ export default function OperatorDashboard() {
             <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Hi,</Text>
             <Text style={[styles.userName, { color: colors.primary }]}>{firstName}</Text>
           </View>
+          {/* GPS badge replaces avatar */}
           <View style={[styles.gpsBadge, { backgroundColor: isGPS ? "#D1FAE5" : "#FEE2E2" }]}>
             <Ionicons name="location" size={14} color={isGPS ? "#10B981" : "#EF4444"} />
             <Text style={[styles.gpsText, { color: isGPS ? "#10B981" : "#EF4444" }]}>
@@ -344,19 +349,26 @@ export default function OperatorDashboard() {
           </Pressable>
         )}
 
-        {/* ── Current Lesson Card ── */}
+        {/* ── Current Lesson Card — same style as Parent's lessonCard ── */}
         {currentLesson && (
           <View style={[styles.lessonCard, { backgroundColor: colors.primary }]}>
-            <View style={styles.lessonHeader}>
-              <Text style={styles.lessonLabel}>LESSON IN PROGRESS</Text>
-              <View style={styles.liveIndicator}>
+            <View style={styles.lessonCardTop}>
+              <View style={styles.lessonBadge}>
                 <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
-                <Text style={styles.liveText}>LIVE</Text>
+                <Text style={styles.lessonBadgeText}>LESSON IN PROGRESS</Text>
               </View>
             </View>
-            <Text style={styles.lessonName}>{currentLesson.courseName}</Text>
-            <Text style={styles.lessonTime}>{currentLesson.startTime} – {currentLesson.endTime}</Text>
-            <Text style={styles.lessonRoom}>{currentLesson.room} | {currentLesson.location}</Text>
+            <Text style={styles.lessonCourseName}>{currentLesson.courseName}</Text>
+            <View style={styles.lessonMeta}>
+              <View style={styles.lessonMetaItem}>
+                <Ionicons name="time-outline" size={14} color="#FBBF24" />
+                <Text style={styles.lessonMetaText}>{currentLesson.startTime} – {currentLesson.endTime}</Text>
+              </View>
+              <View style={styles.lessonMetaItem}>
+                <Ionicons name="location-outline" size={14} color="#FBBF24" />
+                <Text style={styles.lessonMetaText}>{currentLesson.room} · {currentLesson.location}</Text>
+              </View>
+            </View>
             <View style={styles.lessonStats}>
               <View style={styles.lessonStat}>
                 <Text style={styles.lessonStatNumber}>{checkedIn}</Text>
@@ -376,33 +388,33 @@ export default function OperatorDashboard() {
           </View>
         )}
 
-        {/* ── Quick Actions ── */}
+        {/* ── Quick Actions — identical 2-col grid as Parent ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
-        <View style={styles.quickRow}>
+        <View style={styles.quickActions}>
           <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.95 }] : [] }]}
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={handleScan}
           >
-            <Ionicons name="qr-code-outline" size={26} color={colors.primary} />
+            <Ionicons name="qr-code-outline" size={28} color={colors.primary} />
             <Text style={[styles.quickBtnText, { color: colors.primary }]}>SCAN{"\n"}QR</Text>
           </Pressable>
-
           <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEE2E2", borderColor: "#EF4444", transform: pressed ? [{ scale: 0.95 }] : [] }]}
-            onPress={handleSOSPress}
-          >
-            <Ionicons name="warning" size={26} color="#EF4444" />
-            <Text style={[styles.quickBtnText, { color: "#EF4444" }]}>SOS{"\n"}×2</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", transform: pressed ? [{ scale: 0.95 }] : [] }]}
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => { setAbsenceSent(false); setAbsenceType("absent"); setShowAbsenceModal(true); }}
           >
-            <Ionicons name="person-remove-outline" size={26} color="#F59E0B" />
+            <Ionicons name="person-remove-outline" size={28} color="#F59E0B" />
             <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>REPORT{"\n"}ABSENCE</Text>
           </Pressable>
         </View>
+
+        {/* ── SOS Button — below Quick Actions ── */}
+        <Pressable
+          style={({ pressed }) => [styles.sosStandaloneBtn, { opacity: pressed ? 0.88 : 1 }]}
+          onPress={handleSOSPress}
+        >
+          <Ionicons name="warning" size={22} color="#FFF" />
+          <Text style={styles.sosStandaloneBtnText}>SOS EMERGENCY · press twice to activate</Text>
+        </Pressable>
 
         {/* ── Operator QR Code Panel ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>My Operator QR</Text>
@@ -425,7 +437,7 @@ export default function OperatorDashboard() {
           <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
         </Pressable>
 
-        {/* ── Activity Log ── */}
+        {/* ── Activity Log — using Parent's notifCard style ── */}
         <View style={styles.logHeader}>
           <Text style={[styles.sectionTitle, { color: colors.primary }]}>Activity Log</Text>
           <View style={[styles.logCountBadge, { backgroundColor: colors.primary }]}>
@@ -433,16 +445,18 @@ export default function OperatorDashboard() {
           </View>
         </View>
         {activityLog.map((log, i) => (
-          <View key={i} style={[styles.logItem, { backgroundColor: colors.card }]}>
-            <View style={[styles.logDot, { backgroundColor: logTypeColor(log.type) }]} />
-            <Text style={[styles.logTime, { color: colors.mutedForeground }]}>{log.time}</Text>
-            <Text style={[styles.logAction, { color: colors.foreground }]} numberOfLines={1}>{log.action}</Text>
+          <View key={i} style={[styles.notifCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.notifIcon, { backgroundColor: `${logTypeColor(log.type)}20` }]}>
+              <Ionicons name={logTypeIcon(log.type)} size={18} color={logTypeColor(log.type)} />
+            </View>
+            <Text style={[styles.notifText, { color: colors.foreground }]} numberOfLines={1}>{log.action}</Text>
+            <Text style={[styles.notifTime, { color: colors.mutedForeground }]}>{log.time}</Text>
           </View>
         ))}
       </ScrollView>
 
       {/* ══════════════════════════════════════════════════
-          ABSENCE REPORT MODAL — mirrors Parent's UI
+          ABSENCE REPORT MODAL
       ══════════════════════════════════════════════════ */}
       <Modal visible={showAbsenceModal} transparent animationType="slide" onRequestClose={() => setShowAbsenceModal(false)}>
         <View style={styles.modalOverlay}>
@@ -510,11 +524,11 @@ export default function OperatorDashboard() {
                 ))}
 
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                  <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsenceModal(false)}>
-                    <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+                  <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsenceModal(false)}>
+                    <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
                   </Pressable>
-                  <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: absenceType === "absent" ? "#EF4444" : "#F59E0B" }]} onPress={handleSendAbsenceReport}>
-                    <Text style={styles.modalBtnText}>
+                  <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: absenceType === "absent" ? "#EF4444" : "#F59E0B" }]} onPress={handleSendAbsenceReport}>
+                    <Text style={styles.closeBtnText}>
                       {absenceType === "absent" ? "Report & Alert" : "Report Delay"}
                     </Text>
                   </Pressable>
@@ -555,7 +569,7 @@ export default function OperatorDashboard() {
             )}
 
             {activeAlert?.cascadeStep === 4 && (
-              <View style={[styles.redAlertBanner]}>
+              <View style={styles.redAlertBanner}>
                 <Ionicons name="warning" size={20} color="#FFF" />
                 <Text style={styles.redAlertText}>All substitutes unavailable — Admin action required</Text>
               </View>
@@ -756,10 +770,13 @@ export default function OperatorDashboard() {
   );
 }
 
+// ── Styles — identical tokens to Parent view ──────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
 
+  // Header — exact copy of Parent
   header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   headerLeft: { width: 56 },
   headerLogo: { width: 52, height: 36 },
@@ -769,30 +786,40 @@ const styles = StyleSheet.create({
   gpsBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   gpsText: { fontSize: 13, fontWeight: "700" },
 
+  // Alert banner
   alertBanner: { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 14, marginBottom: 16, gap: 10 },
   alertBannerTitle: { color: "#FFF", fontWeight: "700", fontSize: 13 },
   alertBannerSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2 },
 
-  lessonCard: { borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 },
-  lessonHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  lessonLabel: { fontSize: 11, color: "rgba(255,255,255,0.7)", letterSpacing: 1.5, fontWeight: "700" },
-  liveIndicator: { flexDirection: "row", alignItems: "center", gap: 6 },
+  // Lesson card — exact copy of Parent's lessonCard
+  lessonCard: { borderRadius: 20, padding: 18, marginBottom: 24, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 },
+  lessonCardTop: { marginBottom: 8 },
+  lessonBadge: { flexDirection: "row", alignItems: "center", gap: 5 },
+  lessonBadgeText: { fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: "700", letterSpacing: 0.5 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444" },
-  liveText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
-  lessonName: { fontSize: 22, fontWeight: "700", color: "#FFF", marginBottom: 6 },
-  lessonTime: { fontSize: 14, color: "rgba(255,255,255,0.8)", marginBottom: 4 },
-  lessonRoom: { fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 20 },
+  lessonCourseName: { fontSize: 22, fontWeight: "800", color: "#FFF", marginBottom: 10 },
+  lessonMeta: { gap: 6, marginBottom: 16 },
+  lessonMetaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  lessonMetaText: { fontSize: 13, color: "rgba(255,255,255,0.85)" },
   lessonStats: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 14, padding: 16 },
   lessonStat: { flex: 1, alignItems: "center" },
   lessonStatNumber: { fontSize: 28, fontWeight: "800", color: "#FFF" },
   lessonStatLabel: { fontSize: 12, color: "rgba(255,255,255,0.7)" },
   lessonStatDivider: { width: 1, height: 40, backgroundColor: "rgba(255,255,255,0.2)" },
 
+  // Section title — exact copy of Parent
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
-  quickRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
-  quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 16, paddingVertical: 18, gap: 6, borderWidth: 2 },
-  quickBtnText: { fontSize: 11, fontWeight: "700", textAlign: "center" },
 
+  // Quick Actions grid — exact copy of Parent
+  quickActions: { flexDirection: "row", gap: 12, marginBottom: 24 },
+  quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 20, gap: 8, borderWidth: 2 },
+  quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
+
+  // SOS standalone button — below Quick Actions
+  sosStandaloneBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#EF4444", borderRadius: 18, paddingVertical: 16, marginBottom: 24 },
+  sosStandaloneBtnText: { fontSize: 13, fontWeight: "800", color: "#FFF" },
+
+  // Operator QR panel
   qrPanel: { flexDirection: "row", alignItems: "center", borderRadius: 18, padding: 16, marginBottom: 24, gap: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
   qrMiniBox: { padding: 8, borderRadius: 12 },
   qrPanelRight: { flex: 1, gap: 3 },
@@ -802,15 +829,18 @@ const styles = StyleSheet.create({
   qrActiveBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start", marginTop: 4 },
   qrActiveBadgeText: { fontSize: 11, fontWeight: "700" },
 
+  // Activity Log header
   logHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
   logCountBadge: { paddingHorizontal: 10, paddingVertical: 2, borderRadius: 20 },
   logCountText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
-  logItem: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8 },
-  logDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-  logTime: { fontSize: 12, fontWeight: "600", width: 38, flexShrink: 0 },
-  logAction: { flex: 1, fontSize: 13, fontWeight: "500" },
 
-  // Absence modal — mirrors parent
+  // Notification / log item cards — exact copy of Parent's notifCard
+  notifCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  notifIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  notifText: { flex: 1, fontSize: 14, fontWeight: "500" },
+  notifTime: { fontSize: 11 },
+
+  // Modals — shared
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 },
   modalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, width: "100%" },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 16 },
@@ -821,14 +851,14 @@ const styles = StyleSheet.create({
   absenceOption: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 8, width: "100%" },
   absenceOptionText: { fontSize: 14, fontWeight: "600", color: "#1E3A8A" },
   absenceOptionHint: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
-  modalBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center", flex: 1 },
-  modalBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  closeBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
   sentCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },
   sentTitle: { fontSize: 18, fontWeight: "700" },
   sentSub: { fontSize: 13, textAlign: "center" },
 
   // Cascade modal
-  cascadeCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, width: "100%", maxHeight: "80%" },
+  cascadeCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, width: "100%", maxHeight: "80%" as unknown as number },
   cascadeHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 16 },
   cascadeTitle: { fontSize: 18, fontWeight: "800", color: "#1E3A8A" },
   cascadeSubtitle: { fontSize: 13, color: "#6B7BA4", marginTop: 2 },
@@ -850,46 +880,44 @@ const styles = StyleSheet.create({
   cascadeCloseBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 },
   cascadeCloseBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
 
-  // QR Modals
+  // QR modals
   qrFullCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 28, width: "100%", alignItems: "center" },
   qrFullLogo: { width: 80, height: 44, marginBottom: 12 },
   qrFullTitle: { fontSize: 20, fontWeight: "700", marginBottom: 16 },
   qrFullBox: { padding: 20, borderRadius: 18, marginBottom: 16 },
   qrFullName: { fontSize: 18, fontWeight: "700", marginBottom: 4 },
   qrFullId: { fontSize: 12, letterSpacing: 0.5, marginBottom: 20 },
-  closeBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center", width: "100%", marginTop: 4 },
-  closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
 
-  // Scanner
-  scannerModal: { flex: 1, backgroundColor: "#0A0F1E" },
+  // QR Scanner modal
+  scannerModal: { flex: 1, backgroundColor: "#000" },
   scannerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 16 },
-  scannerTitle: { color: "#FFF", fontSize: 17, fontWeight: "700" },
-  scannerPreview: { flex: 1 },
+  scannerTitle: { color: "#FFF", fontSize: 16, fontWeight: "700" },
+  scannerPreview: { flex: 1, alignItems: "center", justifyContent: "center" },
   scannerOverlay: { flex: 1, alignItems: "center", justifyContent: "center" },
-  scannerFrame: { width: 220, height: 220, borderWidth: 3, borderColor: "#FBBF24", borderRadius: 16 },
-  scannerFooter: { padding: 24, alignItems: "center", gap: 12 },
-  simulateBtn: { marginTop: 16, backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  simulateBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 15 },
-  scanResultPanel: { padding: 20, margin: 16, borderRadius: 20 },
+  scannerFrame: { width: 220, height: 220, borderWidth: 2, borderColor: "#FBBF24", borderRadius: 16 },
+  scanResultPanel: { padding: 20 },
   scanResultHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
   scanResultName: { color: "#FFF", fontSize: 20, fontWeight: "700" },
-  semaphoreRow: { flexDirection: "row", backgroundColor: "rgba(0,0,0,0.15)", borderRadius: 14, padding: 16, gap: 8 },
-  semaphoreItem: { flex: 1, alignItems: "center", gap: 4 },
-  semaphoreLabel: { color: "rgba(255,255,255,0.75)", fontSize: 11 },
-  semaphoreValue: { fontSize: 12, fontWeight: "700", backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  semaphoreRow: { flexDirection: "row", gap: 12 },
+  semaphoreItem: { flex: 1, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 12, padding: 12, alignItems: "center", gap: 4 },
+  semaphoreLabel: { color: "rgba(255,255,255,0.8)", fontSize: 11 },
+  semaphoreValue: { fontWeight: "700", fontSize: 13, backgroundColor: "#FFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, overflow: "hidden" },
+  simulateBtn: { marginTop: 20, backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  simulateBtnText: { color: "#1E3A8A", fontWeight: "700" },
+  scannerFooter: { padding: 20, alignItems: "center", gap: 12 },
 
-  // SOS
-  sosOverlay: { flex: 1, backgroundColor: "rgba(220,38,38,0.97)", alignItems: "center", justifyContent: "center", padding: 24 },
-  sosModalCard: { width: "100%", alignItems: "center" },
-  sosTopRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 8 },
-  sosModalTitle: { fontSize: 24, fontWeight: "900", color: "#FFF", letterSpacing: 2 },
-  sosModalDesc: { fontSize: 14, color: "rgba(255,255,255,0.85)", marginBottom: 24 },
-  sosDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.2)", width: "100%", marginVertical: 20 },
-  sosFlagLabel: { fontSize: 20, fontWeight: "700", color: "#FFF", marginBottom: 6 },
-  sosSubDesc: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 24 },
-  sosCallBtn: { backgroundColor: "rgba(0,0,0,0.3)", borderRadius: 24, padding: 28, alignItems: "center", gap: 8, borderWidth: 2, borderColor: "rgba(255,255,255,0.4)" },
-  sosCallNumber: { fontSize: 48, fontWeight: "900", color: "#FFF" },
-  sosCallLabel: { fontSize: 13, color: "rgba(255,255,255,0.75)", letterSpacing: 2 },
-  sosResolveBtn: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 14, paddingHorizontal: 24, paddingVertical: 14 },
-  sosResolveBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  // SOS modal
+  sosOverlay: { flex: 1, backgroundColor: "rgba(180,0,0,0.95)", alignItems: "center", justifyContent: "center", padding: 24 },
+  sosModalCard: { backgroundColor: "#7F1D1D", borderRadius: 28, padding: 28, width: "100%", alignItems: "center", gap: 12 },
+  sosTopRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  sosModalTitle: { color: "#FFF", fontSize: 22, fontWeight: "900", letterSpacing: 2 },
+  sosModalDesc: { color: "rgba(255,255,255,0.8)", fontSize: 14 },
+  sosDivider: { width: "100%", height: 1, backgroundColor: "rgba(255,255,255,0.15)" },
+  sosFlagLabel: { color: "#FFF", fontSize: 18, fontWeight: "700" },
+  sosSubDesc: { color: "rgba(255,255,255,0.7)", fontSize: 13 },
+  sosCallBtn: { backgroundColor: "#DC2626", borderRadius: 100, width: 160, height: 160, alignItems: "center", justifyContent: "center", gap: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 12 },
+  sosCallNumber: { color: "#FFF", fontSize: 36, fontWeight: "900" },
+  sosCallLabel: { color: "rgba(255,255,255,0.8)", fontSize: 11, letterSpacing: 1.5 },
+  sosResolveBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 14, paddingHorizontal: 20, paddingVertical: 12 },
+  sosResolveBtnText: { color: "#10B981", fontWeight: "700", fontSize: 15 },
 });
