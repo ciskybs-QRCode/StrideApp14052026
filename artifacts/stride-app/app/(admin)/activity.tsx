@@ -511,7 +511,12 @@ export default function ActivityScreen() {
       {tab === "courses" && (
         <>
           {/* Type filter */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterRowOuter}
+            contentContainerStyle={styles.filterRow}
+          >
             {renderPill("All", "all", typeFilter, () => setTypeFilter("all"))}
             {(Object.keys(TYPE_CONFIG) as ActivityType[]).map(t =>
               renderPill(TYPE_CONFIG[t].label, t, typeFilter, () => setTypeFilter(t), { color: TYPE_CONFIG[t].color, bg: TYPE_CONFIG[t].bg })
@@ -1149,8 +1154,9 @@ const styles = StyleSheet.create({
   tabSwitchBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9 },
   tabSwitchText: { fontSize: 13, fontWeight: "700" },
 
-  filterRow: { paddingHorizontal: 20, paddingBottom: 6, paddingTop: 2, gap: 6, flexDirection: "row" },
-  pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, backgroundColor: "transparent", borderWidth: 1, borderColor: "rgba(0,0,0,0.08)" },
+  filterRowOuter: { marginHorizontal: 20, marginBottom: 8, borderRadius: 8, overflow: "hidden", backgroundColor: "rgba(0,0,0,0.05)" },
+  filterRow: { paddingHorizontal: 4, paddingVertical: 4, gap: 3, flexDirection: "row", alignItems: "center" },
+  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
   pillText: { fontSize: 11, fontWeight: "700" },
 
   scroll: { flex: 1 },
