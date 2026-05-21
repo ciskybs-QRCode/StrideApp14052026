@@ -18,6 +18,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppDataProvider } from "@/context/AppDataContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { OfflineSyncProvider, useOfflineSync } from "@/context/OfflineSyncContext";
+import { SubstitutionProvider } from "@/context/SubstitutionContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -80,9 +81,11 @@ export default function RootLayout() {
           <OfflineSyncProvider>
             <AuthProvider>
               <AppDataProvider>
-                <GestureHandlerRootView>
-                  <RootLayoutNav />
-                </GestureHandlerRootView>
+                <SubstitutionProvider>
+                  <GestureHandlerRootView>
+                    <RootLayoutNav />
+                  </GestureHandlerRootView>
+                </SubstitutionProvider>
               </AppDataProvider>
             </AuthProvider>
           </OfflineSyncProvider>

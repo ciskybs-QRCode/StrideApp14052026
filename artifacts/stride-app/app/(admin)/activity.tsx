@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useSubstitution, type RescheduleAction, MOCK_SUBS } from "@/context/SubstitutionContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -188,6 +189,7 @@ const adminStatusConfig: Record<AdminItemStatus, { color: string; bg: string; la
 export default function ActivityScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { alerts, activeAlert, cascadeCountdown, respondToSub, rescheduleLesson, dismissAlert, clearAll } = useSubstitution();
 
   const [tab, setTab]           = useState<"courses" | "admin">("courses");
   const [typeFilter, setTypeFilter] = useState<ActivityType | "all">("all");
@@ -203,6 +205,28 @@ export default function ActivityScreen() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [editingAdminItem, setEditingAdminItem] = useState<AdminScheduleItem | null>(null);
   const [adminDraft, setAdminDraft] = useState(BLANK_ADMIN_ITEM());
+
+  // ── Smart Alerts state ──
+  const [showAlertDetail, setShowAlertDetail] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [rescheduleKind, setRescheduleKind] = useState<"shift" | "cancel" | "makeup">("shift");
+  const [shiftMinutes, setShiftMinutes] = useState("30");
+  const [makeupDate, setMakeupDate]   = useState("28/05/2026");
+  const [makeupTime, setMakeupTime]   = useState("17:00");
+  const focusedAlertId = activeAlert?.id ?? alerts[0]?.id ?? null;
+  const focusedAlert   = focusedAlertId ? (alerts.find(a => a.id === focusedAlertId) ?? null) : null;
+  const unresolved = alerts.filter(a => !a.resolved);
+
+  const doReschedule = () => {
+    if (!focusedAlert) return;
+    let action: RescheduleAction;
+    if (rescheduleKind === "shift")  action = { kind: "shift",  shiftMinutes: parseInt(shiftMinutes, 10) || 30 };
+    else if (rescheduleKind === "cancel") action = { kind: "cancel" };
+    else                             action = { kind: "makeup", makeupDate, makeupTime };
+    rescheduleLesson(focusedAlert.id, action);
+    setShowReschedule(false);
+    setShowAlertDetail(false);
+  };
 
   // ── Filtered activities ──
   const filtered = typeFilter === "all" ? activities : activities.filter(a => a.type === typeFilter);
@@ -456,6 +480,33 @@ export default function ActivityScreen() {
         </View>
       </View>
 
+      {/* ── SMART ALERTS BANNER ── */}
+      {unresolved.length > 0 && (
+        <Pressable
+          style={[
+            styles.smartAlertBanner,
+            { backgroundColor: unresolved.some(a => a.cascadeStep === 4) ? "#DC2626" : "#F59E0B" }
+          ]}
+          onPress={() => setShowAlertDetail(true)}
+        >
+          <Ionicons
+            name={unresolved.some(a => a.cascadeStep === 4) ? "warning" : "alert-circle"}
+            size={20} color="#FFF"
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.smartAlertBannerTitle}>
+              {unresolved.some(a => a.cascadeStep === 4)
+                ? `🔴 RED ALERT — ${unresolved.length} alert${unresolved.length > 1 ? "s" : ""} need attention`
+                : `⚡ ${unresolved.length} Active Substitution Alert${unresolved.length > 1 ? "s" : ""}`}
+            </Text>
+            <Text style={styles.smartAlertBannerSub}>
+              {unresolved[0]?.lessonName} · {unresolved[0]?.teacherName} · Tap to manage
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#FFF" />
+        </Pressable>
+      )}
+
       {/* ── COURSES TAB ── */}
       {tab === "courses" && (
         <>
@@ -512,6 +563,222 @@ export default function ActivityScreen() {
       >
         <Ionicons name="add" size={28} color="#FFF" />
       </Pressable>
+
+      {/* ══════════════════════════════════════════════════
+          SMART ALERT DETAIL MODAL
+      ══════════════════════════════════════════════════ */}
+      <Modal visible={showAlertDetail} transparent animationType="slide" onRequestClose={() => setShowAlertDetail(false)}>
+        <View style={styles.saOverlay}>
+          <View style={styles.saCard}>
+            <View style={styles.saCardHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.saCardTitle}>
+                  {focusedAlert?.cascadeStep === 4 ? "🔴 RED ALERT" : "⚡ Substitution Alert"}
+                </Text>
+                {focusedAlert && (
+                  <Text style={styles.saCardSub}>
+                    {focusedAlert.lessonName} · {focusedAlert.teacherName}
+                  </Text>
+                )}
+              </View>
+              <Pressable onPress={() => setShowAlertDetail(false)}>
+                <Ionicons name="close" size={24} color="#6B7BA4" />
+              </Pressable>
+            </View>
+
+            {focusedAlert && !focusedAlert.resolved && (
+              <View style={[styles.saInfoRow, { backgroundColor: focusedAlert.cascadeStep === 4 ? "#FEE2E2" : "#FEF3C7" }]}>
+                <Ionicons name={focusedAlert.cascadeStep === 4 ? "warning" : "time-outline"} size={16} color={focusedAlert.cascadeStep === 4 ? "#DC2626" : "#F59E0B"} />
+                <Text style={[styles.saInfoText, { color: focusedAlert.cascadeStep === 4 ? "#DC2626" : "#92400E" }]}>
+                  {focusedAlert.cascadeStep === 4
+                    ? "All substitutes unavailable — Admin must act now"
+                    : `Sub ${focusedAlert.cascadeStep} being contacted · Cascade active`}
+                </Text>
+              </View>
+            )}
+
+            {/* Sub responses */}
+            {focusedAlert?.type === "absent" && MOCK_SUBS.map((sub, i) => {
+              const sr = focusedAlert.subResponses[i];
+              if (!sr) return null;
+              const col = sr.status === "accepted" ? "#10B981" : sr.status === "declined" || sr.status === "timeout" ? "#EF4444" : sr.status === "notified" ? "#F59E0B" : "#9CA3AF";
+              const ic: keyof typeof Ionicons.glyphMap = sr.status === "accepted" ? "checkmark-circle" : sr.status === "declined" ? "close-circle" : sr.status === "timeout" ? "time" : sr.status === "notified" ? "notifications" : "ellipse-outline";
+              return (
+                <View key={sub.id} style={styles.saSubRow}>
+                  <View style={[styles.saSubNum, { backgroundColor: col }]}>
+                    <Text style={styles.saSubNumText}>{i + 1}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.saSubName}>{sub.name}</Text>
+                    <Text style={[styles.saSubStatus, { color: col }]}>
+                      <Ionicons name={ic} size={12} color={col} />{"  "}
+                      {sr.status === "notified" ? `Waiting · ${cascadeCountdown}s` : sr.status === "idle" ? "Pending" : sr.status.charAt(0).toUpperCase() + sr.status.slice(1)}
+                    </Text>
+                  </View>
+                  {sr.status === "notified" && (
+                    <View style={{ flexDirection: "row", gap: 6 }}>
+                      <Pressable style={[styles.saSubBtn, { backgroundColor: "#10B981" }]} onPress={() => respondToSub(focusedAlert.id, sub.id, "accepted")}>
+                        <Text style={styles.saSubBtnText}>Accept</Text>
+                      </Pressable>
+                      <Pressable style={[styles.saSubBtn, { backgroundColor: "#EF4444" }]} onPress={() => respondToSub(focusedAlert.id, sub.id, "declined")}>
+                        <Text style={styles.saSubBtnText}>Decline</Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            {focusedAlert?.type === "delay" && (
+              <View style={[styles.saInfoRow, { backgroundColor: "#FEF3C7", marginBottom: 8 }]}>
+                <Ionicons name="time-outline" size={16} color="#F59E0B" />
+                <Text style={[styles.saInfoText, { color: "#92400E" }]}>
+                  Delay of {focusedAlert.delayMinutes} min reported — Smart Rescheduling available
+                </Text>
+              </View>
+            )}
+
+            {focusedAlert?.resolved && (
+              <View style={[styles.saInfoRow, { backgroundColor: "#D1FAE5" }]}>
+                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                <Text style={[styles.saInfoText, { color: "#065F46" }]}>
+                  Resolved: {focusedAlert.resolutionNote ?? focusedAlert.resolution}
+                </Text>
+              </View>
+            )}
+
+            {/* Admin action buttons */}
+            {focusedAlert && !focusedAlert.resolved && (
+              <View style={styles.saActionRow}>
+                <Pressable style={[styles.saActionBtn, { backgroundColor: colors.primary }]} onPress={() => { setShowAlertDetail(false); setShowReschedule(true); }}>
+                  <Ionicons name="calendar" size={16} color="#FFF" />
+                  <Text style={styles.saActionBtnText}>Smart Reschedule</Text>
+                </Pressable>
+                <Pressable style={[styles.saActionBtn, { backgroundColor: "#EF4444" }]} onPress={() => { dismissAlert(focusedAlert.id); setShowAlertDetail(false); }}>
+                  <Ionicons name="close-circle" size={16} color="#FFF" />
+                  <Text style={styles.saActionBtnText}>Dismiss</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {unresolved.length > 1 && (
+              <View style={styles.saAlertCountRow}>
+                <Text style={[styles.saAlertCountText, { color: colors.mutedForeground }]}>
+                  {unresolved.length - 1} more alert{unresolved.length - 1 > 1 ? "s" : ""} pending
+                </Text>
+                <Pressable onPress={() => { clearAll(); setShowAlertDetail(false); }}>
+                  <Text style={{ color: "#EF4444", fontSize: 12, fontWeight: "700" }}>Clear All</Text>
+                </Pressable>
+              </View>
+            )}
+
+            <Pressable style={[styles.saCloseBtn, { backgroundColor: "#F0F4FF" }]} onPress={() => setShowAlertDetail(false)}>
+              <Text style={[styles.saCloseBtnText, { color: colors.primary }]}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ══════════════════════════════════════════════════
+          SMART RESCHEDULING MODAL
+      ══════════════════════════════════════════════════ */}
+      <Modal visible={showReschedule} transparent animationType="slide" onRequestClose={() => setShowReschedule(false)}>
+        <View style={styles.saOverlay}>
+          <View style={styles.saCard}>
+            <View style={styles.saCardHeader}>
+              <Text style={styles.saCardTitle}>Smart Rescheduling</Text>
+              <Pressable onPress={() => setShowReschedule(false)}>
+                <Ionicons name="close" size={24} color="#6B7BA4" />
+              </Pressable>
+            </View>
+            {focusedAlert && (
+              <Text style={[styles.saCardSub, { marginBottom: 16 }]}>
+                {focusedAlert.lessonName} · {focusedAlert.teacherName}
+              </Text>
+            )}
+
+            {/* Kind selector */}
+            {(["shift", "cancel", "makeup"] as const).map(kind => (
+              <Pressable
+                key={kind}
+                style={[styles.rsOption, rescheduleKind === kind && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                onPress={() => setRescheduleKind(kind)}
+              >
+                <Ionicons
+                  name={kind === "shift" ? "time-outline" : kind === "cancel" ? "close-circle-outline" : "calendar-outline"}
+                  size={20}
+                  color={rescheduleKind === kind ? "#FFF" : colors.primary}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rsOptionTitle, rescheduleKind === kind && { color: "#FFF" }]}>
+                    {kind === "shift" ? "Shift Lesson" : kind === "cancel" ? "Cancel Lesson" : "Set Make-Up Day"}
+                  </Text>
+                  <Text style={[styles.rsOptionSub, rescheduleKind === kind && { color: "rgba(255,255,255,0.8)" }]}>
+                    {kind === "shift" ? "Move the start time by X minutes" : kind === "cancel" ? "Cancel and notify all enrolled" : "Schedule a replacement lesson date"}
+                  </Text>
+                </View>
+                <Ionicons name={rescheduleKind === kind ? "radio-button-on" : "radio-button-off"} size={18} color={rescheduleKind === kind ? "#FFF" : colors.primary} />
+              </Pressable>
+            ))}
+
+            {/* Shift options */}
+            {rescheduleKind === "shift" && (
+              <View style={styles.rsInputRow}>
+                <Text style={[styles.rsInputLabel, { color: colors.primary }]}>Shift by (minutes)</Text>
+                <View style={styles.rsShiftBtns}>
+                  {["15", "30", "45", "60", "90"].map(v => (
+                    <Pressable key={v} style={[styles.rsShiftChip, shiftMinutes === v && { backgroundColor: colors.primary }]} onPress={() => setShiftMinutes(v)}>
+                      <Text style={[styles.rsShiftChipText, shiftMinutes === v && { color: "#FFF" }]}>{v}m</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <TextInput
+                  style={[styles.rsTextInput, { borderColor: colors.border, color: colors.foreground }]}
+                  value={shiftMinutes}
+                  onChangeText={setShiftMinutes}
+                  keyboardType="numeric"
+                  placeholder="Custom minutes"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+              </View>
+            )}
+
+            {/* Makeup options */}
+            {rescheduleKind === "makeup" && (
+              <View style={styles.rsInputRow}>
+                <Text style={[styles.rsInputLabel, { color: colors.primary }]}>Make-Up Date</Text>
+                <TextInput
+                  style={[styles.rsTextInput, { borderColor: colors.border, color: colors.foreground }]}
+                  value={makeupDate}
+                  onChangeText={setMakeupDate}
+                  placeholder="DD/MM/YYYY"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+                <Text style={[styles.rsInputLabel, { color: colors.primary, marginTop: 8 }]}>Make-Up Time</Text>
+                <TextInput
+                  style={[styles.rsTextInput, { borderColor: colors.border, color: colors.foreground }]}
+                  value={makeupTime}
+                  onChangeText={setMakeupTime}
+                  placeholder="HH:MM"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+              </View>
+            )}
+
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+              <Pressable style={[styles.saActionBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowReschedule(false)}>
+                <Text style={[styles.saActionBtnText, { color: colors.primary }]}>Back</Text>
+              </Pressable>
+              <Pressable style={[styles.saActionBtn, { flex: 1, backgroundColor: rescheduleKind === "cancel" ? "#EF4444" : colors.primary }]} onPress={doReschedule}>
+                <Ionicons name={rescheduleKind === "cancel" ? "close-circle" : "checkmark-circle"} size={16} color="#FFF" />
+                <Text style={styles.saActionBtnText}>
+                  {rescheduleKind === "cancel" ? "Cancel Lesson" : rescheduleKind === "shift" ? "Shift & Notify All" : "Save Make-Up Day"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── CREATE / EDIT ACTIVITY MODAL ── */}
       <Modal visible={showActivityModal} animationType="slide" onRequestClose={() => setShowActivityModal(false)}>
@@ -973,4 +1240,43 @@ const styles = StyleSheet.create({
   enrollPriceRow: { paddingHorizontal: 14, paddingBottom: 14, gap: 6 },
   enrollPriceLabel: { fontSize: 12, fontWeight: "600" },
   priceInput: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, fontWeight: "700", borderWidth: 1, width: 100 },
+
+  // Smart Alert banner
+  smartAlertBanner: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 14, marginHorizontal: 16, marginBottom: 10, borderRadius: 14 },
+  smartAlertBannerTitle: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  smartAlertBannerSub: { color: "rgba(255,255,255,0.85)", fontSize: 11, marginTop: 2 },
+
+  // Smart Alert modals
+  saOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 20 },
+  saCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 22, width: "100%", maxHeight: "85%" },
+  saCardHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 14 },
+  saCardTitle: { fontSize: 18, fontWeight: "800", color: "#1E3A8A" },
+  saCardSub: { fontSize: 13, color: "#6B7BA4", marginTop: 3 },
+  saInfoRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, padding: 12, marginBottom: 12 },
+  saInfoText: { fontSize: 13, fontWeight: "600", flex: 1 },
+  saSubRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#F8FAFF", borderRadius: 14, padding: 12, marginBottom: 8 },
+  saSubNum: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  saSubNumText: { color: "#FFF", fontWeight: "800", fontSize: 13 },
+  saSubName: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },
+  saSubStatus: { fontSize: 12, fontWeight: "600", marginTop: 2 },
+  saSubBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  saSubBtnText: { color: "#FFF", fontWeight: "700", fontSize: 12 },
+  saActionRow: { flexDirection: "row", gap: 10, marginTop: 16, marginBottom: 6 },
+  saActionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, paddingVertical: 13 },
+  saActionBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  saAlertCountRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8, marginBottom: 4 },
+  saAlertCountText: { fontSize: 12 },
+  saCloseBtn: { borderRadius: 12, paddingVertical: 13, alignItems: "center", marginTop: 10 },
+  saCloseBtnText: { fontWeight: "700", fontSize: 14 },
+
+  // Rescheduling modal
+  rsOption: { flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 12, borderWidth: 1.5, borderColor: "#D1D9F0", padding: 14, marginBottom: 10 },
+  rsOptionTitle: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },
+  rsOptionSub: { fontSize: 12, color: "#6B7BA4", marginTop: 2 },
+  rsInputRow: { marginTop: 10, marginBottom: 4 },
+  rsInputLabel: { fontSize: 13, fontWeight: "600", marginBottom: 8 },
+  rsShiftBtns: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 8 },
+  rsShiftChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D1D9F0" },
+  rsShiftChipText: { fontSize: 13, fontWeight: "600", color: "#1E3A8A" },
+  rsTextInput: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontWeight: "600" },
 });
