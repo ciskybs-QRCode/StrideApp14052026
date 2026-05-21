@@ -90,15 +90,9 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Logo + Org Name */}
+          {/* Logo */}
           <View style={styles.logoArea}>
             <Image source={LOGO} style={styles.logoImage} contentFit="contain" />
-            {orgName ? (
-              <Text style={styles.orgName}>{orgName}</Text>
-            ) : (
-              <Text style={styles.orgName}>Stride Dance School</Text>
-            )}
-            <Text style={styles.tagline}>School Management Platform</Text>
           </View>
 
           {/* Sign In Form */}
