@@ -18,7 +18,7 @@ import { useColors } from "@/hooks/useColors";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type UserRole = "parent" | "operator" | "student";
+type UserRole = "parent" | "operator" | "admin" | "student";
 type UserStatus = "active" | "pending" | "suspended";
 
 interface UserRecord {
@@ -49,6 +49,7 @@ const MOCK_USERS: UserRecord[] = [
 const ROLE_COLORS: Record<UserRole, { bg: string; text: string }> = {
   parent:   { bg: "#DBEAFE", text: "#1E3A8A" },
   operator: { bg: "#EDE9FE", text: "#7C3AED" },
+  admin:    { bg: "#FEF3C7", text: "#B45309" },
   student:  { bg: "#D1FAE5", text: "#059669" },
 };
 
@@ -65,7 +66,7 @@ export default function AdminUsers() {
   const insets = useSafeAreaInsets();
   const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | UserRole>("all");
+  const [filter, setFilter] = useState<"all" | "parent" | "operator" | "admin" | "student">("all");
   const [selected, setSelected] = useState<UserRecord | null>(null);
   const [showContact, setShowContact] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{
@@ -84,6 +85,7 @@ export default function AdminUsers() {
 
   const counts = {
     total:     users.length,
+    admins:    users.filter(u => u.role === "admin").length,
     parents:   users.filter(u => u.role === "parent").length,
     operators: users.filter(u => u.role === "operator").length,
     students:  users.filter(u => u.role === "student").length,
@@ -146,15 +148,16 @@ export default function AdminUsers() {
     }
   };
 
-  const handleRoleChange = (user: UserRecord, newRole: "parent" | "operator") => {
+  const handleRoleChange = (user: UserRecord, newRole: "parent" | "operator" | "admin") => {
     setConfirmAction({ type: "role_change", user, newRole });
   };
 
   // ── Grouped list ──────────────────────────────────────────────────────────
 
   const grouped: Record<string, UserRecord[]> = {
-    Parents:   filtered.filter(u => u.role === "parent"),
+    Admins:    filtered.filter(u => u.role === "admin"),
     Operators: filtered.filter(u => u.role === "operator"),
+    Parents:   filtered.filter(u => u.role === "parent"),
     Students:  filtered.filter(u => u.role === "student"),
   };
   const showGrouped = filter === "all";
@@ -173,8 +176,9 @@ export default function AdminUsers() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
           {[
             { label: "Total",     value: counts.total,     bg: colors.primary },
-            { label: "Parents",   value: counts.parents,   bg: "#10B981" },
+            ...(counts.admins > 0 ? [{ label: "Admins", value: counts.admins, bg: "#B45309" }] : []),
             { label: "Operators", value: counts.operators, bg: "#7C3AED" },
+            { label: "Parents",   value: counts.parents,   bg: "#10B981" },
             { label: "Students",  value: counts.students,  bg: "#F59E0B" },
             ...(counts.suspended > 0 ? [{ label: "Suspended", value: counts.suspended, bg: "#EF4444" }] : []),
           ].map(s => (
@@ -205,10 +209,10 @@ export default function AdminUsers() {
         {/* Filter Tabs */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
           <View style={[styles.filterBar, { backgroundColor: colors.muted }]}>
-            {(["all", "parent", "operator", "student"] as const).map(f => (
+            {(["all", "admin", "operator", "parent", "student"] as const).map(f => (
               <Pressable key={f} style={[styles.filterBtn, filter === f && { backgroundColor: colors.primary }]} onPress={() => setFilter(f)}>
                 <Text style={[styles.filterText, filter === f && { color: "#FFF" }]}>
-                  {f === "all" ? "All" : f === "parent" ? "Parents" : f === "operator" ? "Operators" : "Students"}
+                  {f === "all" ? "All" : f === "admin" ? "Admins" : f === "operator" ? "Operators" : f === "parent" ? "Parents" : "Students"}
                 </Text>
               </Pressable>
             ))}
@@ -221,7 +225,7 @@ export default function AdminUsers() {
               groupUsers.length > 0 ? (
                 <View key={groupName}>
                   <View style={styles.groupHeader}>
-                    <View style={[styles.groupDot, { backgroundColor: groupName === "Parents" ? "#10B981" : groupName === "Operators" ? "#7C3AED" : "#F59E0B" }]} />
+                    <View style={[styles.groupDot, { backgroundColor: groupName === "Admins" ? "#B45309" : groupName === "Operators" ? "#7C3AED" : groupName === "Parents" ? "#10B981" : "#F59E0B" }]} />
                     <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{groupName} ({groupUsers.length})</Text>
                   </View>
                   {groupUsers.map(user => (
@@ -332,13 +336,22 @@ export default function AdminUsers() {
                       </Pressable>
                     )}
                     {user.role === "operator" && user.status !== "suspended" && (
-                      <Pressable
-                        style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]}
-                        onPress={() => handleRoleChange(user, "parent")}
-                      >
-                        <Ionicons name="arrow-down-circle" size={16} color="#1E3A8A" />
-                        <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Parent</Text>
-                      </Pressable>
+                      <>
+                        <Pressable
+                          style={[styles.modalActionBtn, { backgroundColor: "#FEF3C7" }]}
+                          onPress={() => handleRoleChange(user, "admin")}
+                        >
+                          <Ionicons name="arrow-up-circle" size={16} color="#B45309" />
+                          <Text style={[styles.modalActionText, { color: "#B45309" }]}>→ Admin</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]}
+                          onPress={() => handleRoleChange(user, "parent")}
+                        >
+                          <Ionicons name="arrow-down-circle" size={16} color="#1E3A8A" />
+                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Parent</Text>
+                        </Pressable>
+                      </>
                     )}
                   </View>
 
