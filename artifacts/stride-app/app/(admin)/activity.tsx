@@ -1155,7 +1155,7 @@ const styles = StyleSheet.create({
   tabSwitchText: { fontSize: 13, fontWeight: "700" },
 
   filterRowOuter: { marginHorizontal: 20, marginBottom: 8, borderRadius: 8, overflow: "hidden", backgroundColor: "rgba(0,0,0,0.05)" },
-  filterRow: { paddingHorizontal: 4, paddingVertical: 4, gap: 3, flexDirection: "row", alignItems: "center" },
+  filterRow: { paddingHorizontal: 4, paddingVertical: 2, gap: 3, flexDirection: "row", alignItems: "center" },
   pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
   pillText: { fontSize: 11, fontWeight: "700" },
 
