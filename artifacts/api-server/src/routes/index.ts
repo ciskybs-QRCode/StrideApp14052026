@@ -13,6 +13,7 @@ import attendanceRouter from "./attendance.js";
 import lessonsRouter from "./lessons.js";
 import orgRouter from "./org.js";
 import logsRouter from "./logs.js";
+import enrollmentRequestsRouter from "./enrollment-requests.js";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(attendanceRouter);
 router.use(lessonsRouter);
 router.use(orgRouter);
 router.use(logsRouter);
+router.use(enrollmentRequestsRouter);
 
 export default router;

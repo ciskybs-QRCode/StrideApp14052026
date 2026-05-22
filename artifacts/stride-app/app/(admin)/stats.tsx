@@ -835,6 +835,8 @@ const styles = StyleSheet.create({
   qrFullscreenInfo: { alignItems: "center", gap: 8, width: "100%" },
   qrFullscreenName: { fontSize: 18, fontWeight: "700", color: "#1E3A8A" },
   qrFullscreenHint: { fontSize: 12, color: "#6B7BA4", textAlign: "center", marginTop: 4 },
+  qrRoleBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  qrRoleText: { fontSize: 12, fontWeight: "600" },
 
   // ── Scanner hint ──
   scannerHintText: { color: "rgba(255,255,255,0.75)", fontSize: 13, textAlign: "center", marginTop: 16 },

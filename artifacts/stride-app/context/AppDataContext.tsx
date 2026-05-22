@@ -19,6 +19,7 @@ export interface Child {
   photoUrl?: string;
   qrPayload?: string;
   dateOfBirth?: string;
+  skillLevel?: string;
 }
 
 export interface Delegate {
@@ -157,13 +158,20 @@ interface AppDataContextType {
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
 
+function inferSkillLevel(stars: number): string {
+  if (stars >= 50) return "Advanced";
+  if (stars >= 20) return "Intermediate";
+  return "Beginner";
+}
+
 function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
   const childEnrollments = enrollments.filter(e => e.child_id === c.id && e.status === "active");
+  const stars = c.gold_stars ?? 0;
   return {
     id: String(c.id),
     name: c.name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(),
     age: c.age ?? 0,
-    stars: c.gold_stars ?? 0,
+    stars,
     allergies: c.allergies_list || c.allergies || "None",
     medicalWaiver: c.ambulance_consent ? "ambulance" : "call_parent",
     mediaConsent: (c.media_consent as "full" | "internal" | "none") ?? "none",
@@ -171,6 +179,7 @@ function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
     photoUrl: c.photo_url,
     qrPayload: c.qr_payload,
     dateOfBirth: c.date_of_birth,
+    skillLevel: (c as unknown as Record<string, unknown>)["skill_level"] as string | undefined ?? inferSkillLevel(stars),
   };
 }
 

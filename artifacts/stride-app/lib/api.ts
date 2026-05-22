@@ -126,6 +126,23 @@ export const api = {
     request<{ ok: boolean }>("POST", "/pdf-logs", data),
   logEmergencyStep: (data: { protocol_id: string; protocol_title: string; step_index: number; step_text: string }) =>
     request<{ ok: boolean }>("POST", "/emergency-logs", data),
+
+  // Enrollment Requests (validation & approval flow)
+  getEnrollmentRequests: () =>
+    request<ApiEnrollmentRequest[]>("GET", "/enrollment-requests"),
+  createEnrollmentRequest: (data: {
+    courseId: string;
+    courseName: string;
+    participantName: string;
+    participantAge?: number;
+    participantSkillLevel?: string;
+    packageType: string;
+    price: number;
+    validationIssue: string;
+    cartItemId: string;
+  }) => request<ApiEnrollmentRequest>("POST", "/enrollment-requests", data),
+  reviewEnrollmentRequest: (id: string, status: "approved" | "rejected", notes?: string) =>
+    request<ApiEnrollmentRequest>("PATCH", `/enrollment-requests/${id}`, { status, notes }),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -292,4 +309,24 @@ export interface ApiOrg {
   legal_address?: string;
   region?: string;
   plan?: string;
+}
+
+export interface ApiEnrollmentRequest {
+  id: string;
+  org_id?: number;
+  course_id?: string;
+  course_name: string;
+  participant_name: string;
+  participant_age?: number;
+  participant_skill_level?: string;
+  package_type: string;
+  price: number;
+  validation_issue?: string;
+  cart_item_id?: string;
+  parent_user_id?: string;
+  reviewed_by?: string;
+  operator_notes?: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  updated_at: string;
 }
