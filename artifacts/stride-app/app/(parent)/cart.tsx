@@ -21,13 +21,6 @@ import { api } from "@/lib/api";
 import { validateEnrollment, type ParticipantInfo } from "@/utils/validateEnrollment";
 import { useColors } from "@/hooks/useColors";
 
-const PAYMENT_METHODS = [
-  { id: "card",   label: "Credit / Debit Card",  icon: "card-outline" as const,        color: "#1D4ED8", bg: "#DBEAFE" },
-  { id: "bank",   label: "Bank Transfer",         icon: "business-outline" as const,    color: "#0D9488", bg: "#CCFBF1" },
-  { id: "cash",   label: "Cash at Front Desk",    icon: "cash-outline" as const,        color: "#059669", bg: "#D1FAE5" },
-  { id: "stripe", label: "Pay via App (Stripe)",  icon: "logo-apple-appstore" as const, color: "#7C3AED", bg: "#EDE9FE" },
-];
-
 interface FlaggedItem { itemId: string; courseName: string; participantName: string; issue: string; }
 
 function StatusBadge({ status }: { status: CartItemStatus }) {
@@ -59,10 +52,6 @@ export default function CartScreen() {
   const [validatedFlagged, setValidatedFlagged] = useState<FlaggedItem[]>([]);
   const [submittingApprovals, setSubmittingApprovals] = useState(false);
   const [approvalsSubmitted, setApprovalsSubmitted] = useState(false);
-
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
 
   const [snack, setSnack] = useState<string | null>(null);
   const snackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -169,26 +158,7 @@ export default function CartScreen() {
 
   const handlePayReady = () => {
     setShowValidationModal(false);
-    setShowCheckout(true);
-    setConfirmed(false);
-    setSelectedPayment(null);
-  };
-
-  const handleCheckout = () => {
-    if (!selectedPayment) {
-      Alert.alert("Select Payment", "Please choose a payment method to continue.");
-      return;
-    }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setConfirmed(true);
-  };
-
-  const handleDone = () => {
-    payableItems.forEach(item => removeItem(item.id));
-    setShowCheckout(false);
-    setConfirmed(false);
-    setSelectedPayment(null);
-    if (items.filter(i => i.status === "pending_approval").length === 0) router.back();
+    router.push("/(parent)/checkout");
   };
 
   const handleRemove = (id: string, name: string) => {
@@ -470,87 +440,6 @@ export default function CartScreen() {
         </View>
       </Modal>
 
-      {/* ── Checkout (Payment) Modal ── */}
-      <Modal visible={showCheckout} transparent animationType="slide" onRequestClose={() => setShowCheckout(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            {confirmed ? (
-              <>
-                <View style={[styles.successCircle, { backgroundColor: "#D1FAE5" }]}>
-                  <Ionicons name="checkmark-circle" size={48} color="#10B981" />
-                </View>
-                <Text style={[styles.successTitle, { color: colors.primary }]}>Enrollment Request Sent!</Text>
-                <Text style={[styles.successDesc, { color: colors.mutedForeground }]}>
-                  Your enrollment request has been submitted. The school will confirm and send a payment reference shortly.
-                </Text>
-                <View style={[styles.summaryBox, { backgroundColor: colors.muted }]}>
-                  {payableItems.map(item => (
-                    <View key={item.id} style={styles.summaryRow}>
-                      <Text style={[styles.summaryName, { color: colors.foreground }]} numberOfLines={1}>{item.courseName}</Text>
-                      <Text style={[styles.summaryPrice, { color: colors.primary }]}>€{item.price}</Text>
-                    </View>
-                  ))}
-                  <View style={[styles.summaryRow, { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 8 }]}>
-                    <Text style={[styles.summaryName, { color: colors.primary, fontWeight: "800" }]}>Total</Text>
-                    <Text style={[styles.summaryPrice, { color: colors.primary, fontWeight: "800" }]}>€{payableTotal}</Text>
-                  </View>
-                </View>
-                <Pressable style={[styles.doneBtn, { backgroundColor: colors.primary }]} onPress={handleDone}>
-                  <Text style={styles.doneBtnText}>Done</Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text style={[styles.modalTitle, { color: colors.primary }]}>Choose Payment Method</Text>
-                <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-                  {payableItems.length} item{payableItems.length !== 1 ? "s" : ""} · Total:{" "}
-                  <Text style={{ fontWeight: "800", color: colors.primary }}>€{payableTotal}</Text>
-                </Text>
-                {hasPendingItems && (
-                  <View style={[styles.pendingNote2, { backgroundColor: "#FEF3C7" }]}>
-                    <Ionicons name="information-circle-outline" size={14} color="#92400E" />
-                    <Text style={{ fontSize: 12, color: "#92400E", flex: 1 }}>
-                      {pendingItems.length} item{pendingItems.length !== 1 ? "s" : ""} awaiting approval are excluded from this payment.
-                    </Text>
-                  </View>
-                )}
-                {PAYMENT_METHODS.map(pm => (
-                  <Pressable
-                    key={pm.id}
-                    style={[styles.payRow, {
-                      borderColor: selectedPayment === pm.id ? colors.primary : colors.border,
-                      backgroundColor: selectedPayment === pm.id ? colors.muted : colors.background,
-                    }]}
-                    onPress={() => { setSelectedPayment(pm.id); Haptics.selectionAsync(); }}
-                  >
-                    <View style={[styles.payIcon, { backgroundColor: pm.bg }]}>
-                      <Ionicons name={pm.icon} size={18} color={pm.color} />
-                    </View>
-                    <Text style={[styles.payLabel, { color: colors.foreground }]}>{pm.label}</Text>
-                    <Ionicons
-                      name={selectedPayment === pm.id ? "radio-button-on" : "radio-button-off"}
-                      size={18}
-                      color={selectedPayment === pm.id ? colors.primary : colors.mutedForeground}
-                    />
-                  </Pressable>
-                ))}
-                <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-                  <Pressable style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => setShowCheckout(false)}>
-                    <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.confirmBtn, { backgroundColor: selectedPayment ? colors.primary : colors.border }]}
-                    onPress={handleCheckout}
-                  >
-                    <Ionicons name="checkmark-circle" size={16} color="#FFF" />
-                    <Text style={styles.confirmBtnText}>Confirm</Text>
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

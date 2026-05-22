@@ -14,6 +14,7 @@ import lessonsRouter from "./lessons.js";
 import orgRouter from "./org.js";
 import logsRouter from "./logs.js";
 import enrollmentRequestsRouter from "./enrollment-requests.js";
+import checkoutRouter from "./checkout.js";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(lessonsRouter);
 router.use(orgRouter);
 router.use(logsRouter);
 router.use(enrollmentRequestsRouter);
+router.use(checkoutRouter);
 
 export default router;
