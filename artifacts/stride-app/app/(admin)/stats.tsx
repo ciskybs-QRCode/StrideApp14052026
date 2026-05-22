@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
+
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -91,7 +91,6 @@ const SECTION_LABELS: Record<SectionKey, string> = {
   demographics: "Age Distribution", activity: "Recent Activity", export: "Data Export",
 };
 
-const LOGO = require("@/assets/images/stride-logo.png");
 
 export default function AdminStats() {
   const { user } = useAuth();
@@ -416,16 +415,9 @@ export default function AdminStats() {
       >
         {/* ── HEADER ── */}
         <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            {user?.logoUri ? (
-              <Image source={{ uri: user.logoUri }} style={styles.headerLogo} contentFit="contain" />
-            ) : (
-              <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
-            )}
-            <View>
-              <Text style={[styles.pageTitle, { color: colors.primary }]}>Statistics</Text>
-              <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>Dance Village • May 2026</Text>
-            </View>
+          <View>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>Statistics</Text>
+            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>Dance Village • May 2026</Text>
           </View>
           <View style={[styles.periodToggle, { backgroundColor: colors.muted }]}>
             <Pressable style={[styles.periodBtn, period === "month" && { backgroundColor: colors.primary }]} onPress={() => setPeriod("month")}>
@@ -437,50 +429,32 @@ export default function AdminStats() {
           </View>
         </View>
 
-        {/* ── SOS + SCAN ROW ── */}
-        <View style={styles.actionRow}>
+        {/* ── Quick Actions — same 2-col grid as Operator ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
+        <View style={styles.quickActions}>
           <Pressable
-            style={({ pressed }) => [styles.sosBtn, pressed && { transform: [{ scale: 0.96 }] }]}
-            onPress={handleSOSPress}
-          >
-            <Ionicons name="warning" size={24} color="#FFF" />
-            <View>
-              <Text style={styles.sosBtnText}>SOS EMERGENCY</Text>
-              <Text style={styles.sosBtnSub}>Double press to activate</Text>
-            </View>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.secondary, transform: pressed ? [{ scale: 0.97 }] : [] }]}
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={handleScan}
           >
-            <Ionicons name="qr-code-outline" size={24} color={colors.primary} />
-            <View>
-              <Text style={[styles.scanBtnText, { color: colors.primary }]}>Scan QR</Text>
-              <Text style={[styles.scanBtnSub, { color: colors.primary }]}>Member check</Text>
-            </View>
+            <Ionicons name="qr-code-outline" size={28} color={colors.primary} />
+            <Text style={[styles.quickBtnText, { color: colors.primary }]}>SCAN{"\n"}QR</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#F0F4FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
+            onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <Ionicons name="qr-code" size={28} color={colors.primary} />
+            <Text style={[styles.quickBtnText, { color: colors.primary }]}>YOUR{"\n"}QR CODE</Text>
           </Pressable>
         </View>
 
-        {/* ── ADMIN QR CODE ── */}
+        {/* ── SOS Button — full-width below Quick Actions ── */}
         <Pressable
-          style={({ pressed }) => [styles.qrCard, { backgroundColor: colors.card, transform: pressed ? [{ scale: 0.98 }] : [] }]}
-          onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          style={({ pressed }) => [styles.sosStandaloneBtn, { opacity: pressed ? 0.88 : 1 }]}
+          onPress={handleSOSPress}
         >
-          <View style={styles.qrCardLeft}>
-            <Text style={[styles.qrCardTitle, { color: colors.primary }]}>Your QR Code</Text>
-            <Text style={[styles.qrCardName, { color: colors.foreground }]}>{user?.name}</Text>
-            <View style={[styles.qrRoleBadge, { backgroundColor: `${colors.primary}15` }]}>
-              <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
-              <Text style={[styles.qrRoleText, { color: colors.primary }]}>Administrator</Text>
-            </View>
-            <View style={styles.qrExpandHint}>
-              <Ionicons name="expand-outline" size={11} color={colors.mutedForeground} />
-              <Text style={[styles.qrCardHint, { color: colors.mutedForeground }]}>Tap to expand full-screen</Text>
-            </View>
-          </View>
-          <View style={[styles.qrCodeBox, { backgroundColor: "#F0F4FF" }]}>
-            <QRCode value={qrValue} size={90} color="#1E3A8A" backgroundColor="#F0F4FF" />
-          </View>
+          <Ionicons name="warning" size={22} color="#FFF" />
+          <Text style={styles.sosStandaloneBtnText}>SOS EMERGENCY · press twice to activate</Text>
         </Pressable>
 
         {/* ── SECTION NAV GRID ── */}
@@ -709,30 +683,18 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
 
   headerRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-  headerLogo: { width: 44, height: 30 },
   pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSubtitle: { fontSize: 13, marginTop: 2 },
   periodToggle: { flexDirection: "row", borderRadius: 10, padding: 3, gap: 3, marginTop: 4 },
   periodBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8 },
   periodBtnText: { fontSize: 13, fontWeight: "600" },
 
-  actionRow: { flexDirection: "row", gap: 12, marginBottom: 14 },
-  sosBtn: { flex: 1.3, backgroundColor: "#EF4444", borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#EF4444", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-  sosBtnText: { color: "#FFF", fontSize: 13, fontWeight: "800" },
-  sosBtnSub: { color: "rgba(255,255,255,0.8)", fontSize: 10 },
-  scanBtn: { flex: 1, borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
-  scanBtnText: { fontSize: 13, fontWeight: "800" },
-  scanBtnSub: { fontSize: 10, opacity: 0.8 },
-
-  qrCard: { flexDirection: "row", alignItems: "center", borderRadius: 20, padding: 18, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  qrCardLeft: { flex: 1, gap: 5 },
-  qrCardTitle: { fontSize: 16, fontWeight: "800" },
-  qrCardName: { fontSize: 14, fontWeight: "600" },
-  qrRoleBadge: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start" },
-  qrRoleText: { fontSize: 11, fontWeight: "700" },
-  qrCardHint: { fontSize: 11, marginTop: 2 },
-  qrCodeBox: { borderRadius: 14, padding: 10 },
+  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
+  quickActions: { flexDirection: "row", gap: 12, marginBottom: 24 },
+  quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 20, gap: 8, borderWidth: 2 },
+  quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
+  sosStandaloneBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#EF4444", borderRadius: 18, paddingVertical: 16, marginBottom: 24 },
+  sosStandaloneBtnText: { fontSize: 13, fontWeight: "800", color: "#FFF" },
 
   sectionNavLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, marginBottom: 12 },
   navGrid: { gap: 8, marginBottom: 20 },
