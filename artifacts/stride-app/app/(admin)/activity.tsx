@@ -511,17 +511,18 @@ export default function ActivityScreen() {
       {tab === "courses" && (
         <>
           {/* Type filter */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filterRowOuter}
-            contentContainerStyle={styles.filterRow}
-          >
-            {renderPill("All", "all", typeFilter, () => setTypeFilter("all"))}
-            {(Object.keys(TYPE_CONFIG) as ActivityType[]).map(t =>
-              renderPill(TYPE_CONFIG[t].label, t, typeFilter, () => setTypeFilter(t), { color: TYPE_CONFIG[t].color, bg: TYPE_CONFIG[t].bg })
-            )}
-          </ScrollView>
+          <View style={styles.filterRowOuter}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              {renderPill("All", "all", typeFilter, () => setTypeFilter("all"))}
+              {(Object.keys(TYPE_CONFIG) as ActivityType[]).map(t =>
+                renderPill(TYPE_CONFIG[t].label, t, typeFilter, () => setTypeFilter(t), { color: TYPE_CONFIG[t].color, bg: TYPE_CONFIG[t].bg })
+              )}
+            </ScrollView>
+          </View>
 
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             {filtered.length === 0 ? (
