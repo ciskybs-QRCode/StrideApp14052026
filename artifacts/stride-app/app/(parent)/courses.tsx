@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAppData } from "@/context/AppDataContext";
+import { useAppData, type Booking } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -238,8 +238,17 @@ export default function CoursesScreen() {
   const [meetDate, setMeetDate] = useState<string | null>(null);
   const [meetSlot, setMeetSlot] = useState<string | null>(null);
 
+  // Local enrollments (added in-session without backend)
+  const [localBookings, setLocalBookings] = useState<Booking[]>([]);
+  const allBookings = [...bookings, ...localBookings];
+
+  // Enroll modal state
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [enrollCourse, setEnrollCourse] = useState<(typeof courses)[0] | null>(null);
+  const [enrollParticipant, setEnrollParticipant] = useState<string | null>(null);
+
   const course = courses.find(c => c.id === selectedCourse);
-  const isEnrolled = (courseId: string) => bookings.some(b => b.courseId === courseId);
+  const isEnrolled = (courseId: string) => allBookings.some(b => b.courseId === courseId);
   const enrolledCourses = courses.filter(c => isEnrolled(c.id));
   const availableCourses = courses.filter(c => !isEnrolled(c.id));
 
@@ -261,6 +270,31 @@ export default function CoursesScreen() {
     ...(user?.name ? [user.name] : []),
     ...children.map(c => c.name),
   ];
+
+  const handleOpenEnroll = (c: (typeof courses)[0]) => {
+    setEnrollCourse(c);
+    setEnrollParticipant(participantOptions[0] ?? null);
+    setShowEnrollModal(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleConfirmEnroll = () => {
+    if (!enrollCourse) return;
+    const childId = children.find(c => c.name === enrollParticipant)?.id ?? "self";
+    const newBooking: Booking = {
+      id: `local-${Date.now()}`,
+      childId,
+      courseId: enrollCourse.id,
+      date: new Date().toISOString().split("T")[0],
+      type: "group",
+      status: "confirmed",
+    };
+    setLocalBookings(prev => [...prev, newBooking]);
+    setShowEnrollModal(false);
+    setEnrollCourse(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    showSnack(`Enrolled in ${enrollCourse.name}! Welcome aboard.`);
+  };
 
   const resetPrivate = () => {
     setPrivParticipant(null);
@@ -420,7 +454,7 @@ export default function CoursesScreen() {
                       <Pressable style={[styles.infoBtn, { borderColor: colors.border }]} onPress={() => setSelectedCourse(c.id)}>
                         <Text style={[styles.infoBtnText, { color: colors.primary }]}>COURSE INFO</Text>
                       </Pressable>
-                      <Pressable style={[styles.enrollBtn, { backgroundColor: colors.primary }]}>
+                      <Pressable style={[styles.enrollBtn, { backgroundColor: colors.primary }]} onPress={() => handleOpenEnroll(c)}>
                         <Text style={styles.enrollBtnText}>ENROLL</Text>
                       </Pressable>
                     </View>
@@ -513,6 +547,58 @@ export default function CoursesScreen() {
                 </Pressable>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Enroll Modal */}
+      <Modal visible={showEnrollModal} transparent animationType="slide" onRequestClose={() => setShowEnrollModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalTitleRow}>
+              <Ionicons name="school" size={22} color={colors.primary} />
+              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Enroll in Course</Text>
+            </View>
+            {enrollCourse && (
+              <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
+                {enrollCourse.name} · {enrollCourse.schedule}
+              </Text>
+            )}
+
+            {/* Participant selection */}
+            {participantOptions.length > 1 && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>ENROLL FOR</Text>
+                {participantOptions.map(name => (
+                  <Pressable
+                    key={name}
+                    style={[
+                      styles.participantRow,
+                      { borderColor: enrollParticipant === name ? colors.primary : colors.border,
+                        backgroundColor: enrollParticipant === name ? colors.muted : colors.background },
+                    ]}
+                    onPress={() => setEnrollParticipant(name)}
+                  >
+                    <Ionicons
+                      name={enrollParticipant === name ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={enrollParticipant === name ? colors.primary : colors.mutedForeground}
+                    />
+                    <Text style={[styles.participantName, { color: colors.foreground }]}>{name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
+              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowEnrollModal(false)}>
+                <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleConfirmEnroll}>
+                <Ionicons name="checkmark-circle" size={16} color="#FFF" />
+                <Text style={styles.closeBtnText}>Confirm</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -708,6 +794,8 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, margin: 16 },
   modalTitleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
+  participantRow: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8 },
+  participantName: { fontSize: 15, fontWeight: "500" },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
   modalDesc: { fontSize: 14, marginBottom: 18, lineHeight: 20 },
   detailRows: { marginBottom: 20 },
