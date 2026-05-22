@@ -51,6 +51,25 @@ const MAIN_FIELDS = [
 ];
 type SchoolInfo = Record<typeof MAIN_FIELDS[number]["key"], string>;
 
+const SOCIAL_FIELDS = [
+  { key: "instagram" as const, label: "Instagram",  placeholder: "instagram.com/yourschool",  icon: "logo-instagram" as const, iconBg: "#FDE8F5", iconColor: "#C026D3" },
+  { key: "facebook" as const,  label: "Facebook",   placeholder: "facebook.com/yourschool",   icon: "logo-facebook" as const,  iconBg: "#DBEAFE", iconColor: "#1D4ED8" },
+  { key: "tiktok" as const,    label: "TikTok",     placeholder: "tiktok.com/@yourschool",    icon: "musical-note-outline" as const, iconBg: "#F0FDF4", iconColor: "#16A34A" },
+  { key: "youtube" as const,   label: "YouTube",    placeholder: "youtube.com/@yourschool",   icon: "logo-youtube" as const,   iconBg: "#FEE2E2", iconColor: "#DC2626" },
+  { key: "whatsapp" as const,  label: "WhatsApp",   placeholder: "+61 4xx xxx xxx",           icon: "logo-whatsapp" as const,  iconBg: "#D1FAE5", iconColor: "#16A34A" },
+  { key: "linkedin" as const,  label: "LinkedIn",   placeholder: "linkedin.com/company/name", icon: "logo-linkedin" as const,  iconBg: "#E0F2FE", iconColor: "#0284C7" },
+];
+type SocialLinks = Record<typeof SOCIAL_FIELDS[number]["key"], string>;
+
+const DEFAULT_SOCIAL: SocialLinks = {
+  instagram: "",
+  facebook:  "",
+  tiktok:    "",
+  youtube:   "",
+  whatsapp:  "",
+  linkedin:  "",
+};
+
 const CAMPUS_TYPES: { value: CampusType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }[] = [
   { value: "studio",  label: "Studio",  icon: "musical-notes-outline", color: "#1E3A8A", bg: "#DBEAFE" },
   { value: "hall",    label: "Hall",    icon: "business-outline",       color: "#7C3AED", bg: "#EDE9FE" },
@@ -106,6 +125,11 @@ export default function SchoolInformationPage() {
   const [editingCampus, setEditingCampus] = useState<CampusLocation | null>(null);
   const [campusDraft, setCampusDraft] = useState<Omit<CampusLocation, "id">>({ name: "", address: "", type: "studio", phone: "", isMain: false });
 
+  // Social media links
+  const [social, setSocial] = useState<SocialLinks>({ ...DEFAULT_SOCIAL });
+  const [editingSocial, setEditingSocial] = useState(false);
+  const [draftSocial, setDraftSocial] = useState<SocialLinks>({ ...DEFAULT_SOCIAL });
+
   // Opening hours
   const [hours, setHours] = useState<HoursEntry[]>(DAYS_OF_WEEK);
   const [editingHours, setEditingHours] = useState(false);
@@ -122,6 +146,15 @@ export default function SchoolInformationPage() {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Saved", "School information updated.");
+  };
+
+  // ── Social media handlers ─────────────────────────────────────────────────
+
+  const handleSaveSocial = () => {
+    setSocial(draftSocial);
+    setEditingSocial(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert("Saved", "Social media links updated.");
   };
 
   // ── Campus handlers ───────────────────────────────────────────────────────
@@ -270,6 +303,65 @@ export default function SchoolInformationPage() {
               </Pressable>
             </View>
           )}
+        </View>
+
+        {/* ── Social Media ── */}
+        <View style={[styles.sectionRow, { marginTop: 8 }]}>
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Social Media</Text>
+          {!editingSocial ? (
+            <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => { setDraftSocial({ ...social }); setEditingSocial(true); }}>
+              <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+              <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit</Text>
+            </Pressable>
+          ) : (
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => { setDraftSocial({ ...social }); setEditingSocial(false); }}>
+                <Text style={[styles.editBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[styles.editBtn, { backgroundColor: colors.primary }]} onPress={handleSaveSocial}>
+                <Ionicons name="checkmark" size={14} color="#FFF" />
+                <Text style={[styles.editBtnText, { color: "#FFF" }]}>Save</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          {SOCIAL_FIELDS.map((field, i) => {
+            const value = editingSocial ? draftSocial[field.key] : social[field.key];
+            const isEmpty = !value;
+            return (
+              <View
+                key={field.key}
+                style={[
+                  editingSocial ? styles.editRow : styles.viewRow,
+                  i < SOCIAL_FIELDS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                ]}
+              >
+                <View style={[styles.fieldIcon, { backgroundColor: field.iconBg }]}>
+                  <Ionicons name={field.icon} size={16} color={field.iconColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{field.label}</Text>
+                  {editingSocial ? (
+                    <TextInput
+                      style={[styles.fieldInput, { color: colors.foreground, borderBottomColor: colors.primary }]}
+                      value={draftSocial[field.key]}
+                      onChangeText={t => setDraftSocial(prev => ({ ...prev, [field.key]: t }))}
+                      placeholder={field.placeholder}
+                      placeholderTextColor={colors.mutedForeground}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                  ) : (
+                    <Text style={[styles.fieldValue, { color: isEmpty ? colors.mutedForeground : colors.foreground }]}>
+                      {isEmpty ? "Not set" : value}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            );
+          })}
         </View>
 
         {/* ── Campus Locations ── */}
