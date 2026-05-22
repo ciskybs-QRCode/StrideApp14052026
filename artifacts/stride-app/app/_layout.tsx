@@ -17,6 +17,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-cont
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppDataProvider } from "@/context/AppDataContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
 import { OfflineSyncProvider, useOfflineSync } from "@/context/OfflineSyncContext";
 import { SubstitutionProvider } from "@/context/SubstitutionContext";
 
@@ -81,11 +82,13 @@ export default function RootLayout() {
           <OfflineSyncProvider>
             <AuthProvider>
               <AppDataProvider>
+                <CartProvider>
                 <SubstitutionProvider>
                   <GestureHandlerRootView>
                     <RootLayoutNav />
                   </GestureHandlerRootView>
                 </SubstitutionProvider>
+                </CartProvider>
               </AppDataProvider>
             </AuthProvider>
           </OfflineSyncProvider>

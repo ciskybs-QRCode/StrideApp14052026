@@ -13,8 +13,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useAppData, type Booking } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -238,6 +240,9 @@ export default function CoursesScreen() {
   const [meetDate, setMeetDate] = useState<string | null>(null);
   const [meetSlot, setMeetSlot] = useState<string | null>(null);
 
+  const router = useRouter();
+  const { addItem, items: cartItems, count: cartCount } = useCart();
+
   // Local enrollments (added in-session without backend)
   const [localBookings, setLocalBookings] = useState<Booking[]>([]);
   const allBookings = [...bookings, ...localBookings];
@@ -246,6 +251,7 @@ export default function CoursesScreen() {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrollCourse, setEnrollCourse] = useState<(typeof courses)[0] | null>(null);
   const [enrollParticipant, setEnrollParticipant] = useState<string | null>(null);
+  const [enrollPackage, setEnrollPackage] = useState<"dropIn" | "fixedBlock" | null>(null);
 
   const course = courses.find(c => c.id === selectedCourse);
   const isEnrolled = (courseId: string) => allBookings.some(b => b.courseId === courseId);
@@ -271,29 +277,37 @@ export default function CoursesScreen() {
     ...children.map(c => c.name),
   ];
 
+  const isInCart = (courseId: string) => cartItems.some(i => i.courseId === courseId);
+
   const handleOpenEnroll = (c: (typeof courses)[0]) => {
     setEnrollCourse(c);
     setEnrollParticipant(participantOptions[0] ?? null);
+    setEnrollPackage(c.fixedBlockEnabled ? "fixedBlock" : "dropIn");
     setShowEnrollModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleConfirmEnroll = () => {
-    if (!enrollCourse) return;
-    const childId = children.find(c => c.name === enrollParticipant)?.id ?? "self";
-    const newBooking: Booking = {
-      id: `local-${Date.now()}`,
-      childId,
+  const handleAddToCart = () => {
+    if (!enrollCourse || !enrollPackage) return;
+    const isDropIn = enrollPackage === "dropIn";
+    const price = isDropIn ? enrollCourse.dropInPrice : enrollCourse.fixedBlockPrice;
+    const label = isDropIn
+      ? "Single Lesson"
+      : `Full Package (${enrollCourse.fixedBlockLessons} lessons)`;
+    addItem({
       courseId: enrollCourse.id,
-      date: new Date().toISOString().split("T")[0],
-      type: "group",
-      status: "confirmed",
-    };
-    setLocalBookings(prev => [...prev, newBooking]);
+      courseName: enrollCourse.name,
+      courseSchedule: enrollCourse.schedule,
+      packageType: enrollPackage,
+      label,
+      price,
+      participantName: enrollParticipant ?? user?.name ?? "You",
+    });
     setShowEnrollModal(false);
     setEnrollCourse(null);
+    setEnrollPackage(null);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showSnack(`Enrolled in ${enrollCourse.name}! Welcome aboard.`);
+    showSnack("Added to cart! Tap the cart icon to review.");
   };
 
   const resetPrivate = () => {
@@ -335,7 +349,17 @@ export default function CoursesScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Courses & Booking</Text>
+        <View style={styles.pageTitleRow}>
+          <Text style={[styles.pageTitle, { color: colors.primary }]}>Courses & Booking</Text>
+          <Pressable style={[styles.cartIconBtn, { backgroundColor: colors.card }]} onPress={() => router.push("/(parent)/cart")}>
+            <Ionicons name="cart-outline" size={22} color={colors.primary} />
+            {cartCount > 0 && (
+              <View style={[styles.cartBadge, { backgroundColor: colors.secondary }]}>
+                <Text style={[styles.cartBadgeText, { color: colors.primary }]}>{cartCount}</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
 
         <View style={[styles.tabBar, { backgroundColor: colors.muted }]}>
           {(["courses", "private"] as const).map(tab => (
@@ -445,18 +469,36 @@ export default function CoursesScreen() {
                         <Ionicons name="people" size={14} color={colors.mutedForeground} />
                         <Text style={[styles.statText, { color: colors.mutedForeground }]}>{c.enrolled}/{c.capacity}</Text>
                       </View>
-                      <View style={styles.statItem}>
-                        <Ionicons name="cash" size={14} color={colors.mutedForeground} />
-                        <Text style={[styles.statText, { color: colors.mutedForeground }]}>€{c.price}/mo</Text>
-                      </View>
+                    </View>
+                    <View style={styles.pricingRow}>
+                      {c.dropInEnabled && (
+                        <View style={[styles.pricePill, { backgroundColor: colors.muted }]}>
+                          <Text style={[styles.pricePillLabel, { color: colors.mutedForeground }]}>Single</Text>
+                          <Text style={[styles.pricePillAmount, { color: colors.foreground }]}>€{c.dropInPrice}</Text>
+                        </View>
+                      )}
+                      {c.fixedBlockEnabled && (
+                        <View style={[styles.pricePill, { backgroundColor: colors.secondary }]}>
+                          <Text style={[styles.pricePillLabel, { color: colors.primary }]}>Package ×{c.fixedBlockLessons}</Text>
+                          <Text style={[styles.pricePillAmount, { color: colors.primary }]}>€{c.fixedBlockPrice}</Text>
+                        </View>
+                      )}
                     </View>
                     <View style={styles.courseActions}>
                       <Pressable style={[styles.infoBtn, { borderColor: colors.border }]} onPress={() => setSelectedCourse(c.id)}>
                         <Text style={[styles.infoBtnText, { color: colors.primary }]}>COURSE INFO</Text>
                       </Pressable>
-                      <Pressable style={[styles.enrollBtn, { backgroundColor: colors.primary }]} onPress={() => handleOpenEnroll(c)}>
-                        <Text style={styles.enrollBtnText}>ENROLL</Text>
-                      </Pressable>
+                      {isInCart(c.id) ? (
+                        <Pressable style={[styles.enrollBtn, { backgroundColor: colors.secondary }]} onPress={() => router.push("/(parent)/cart")}>
+                          <Ionicons name="cart" size={14} color={colors.primary} />
+                          <Text style={[styles.enrollBtnText, { color: colors.primary }]}>IN CART</Text>
+                        </Pressable>
+                      ) : (
+                        <Pressable style={[styles.enrollBtn, { backgroundColor: colors.primary }]} onPress={() => handleOpenEnroll(c)}>
+                          <Ionicons name="cart-outline" size={14} color="#FFF" />
+                          <Text style={styles.enrollBtnText}>ENROLL</Text>
+                        </Pressable>
+                      )}
                     </View>
                   </View>
                 ))}
@@ -551,13 +593,13 @@ export default function CoursesScreen() {
         </View>
       </Modal>
 
-      {/* Enroll Modal */}
+      {/* Enroll Modal — package selection + add to cart */}
       <Modal visible={showEnrollModal} transparent animationType="slide" onRequestClose={() => setShowEnrollModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalTitleRow}>
-              <Ionicons name="school" size={22} color={colors.primary} />
-              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Enroll in Course</Text>
+              <Ionicons name="cart-outline" size={22} color={colors.primary} />
+              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add to Cart</Text>
             </View>
             {enrollCourse && (
               <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
@@ -565,9 +607,59 @@ export default function CoursesScreen() {
               </Text>
             )}
 
+            {/* Package type selection */}
+            <View style={{ marginTop: 12 }}>
+              <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>SELECT PACKAGE</Text>
+              {enrollCourse?.dropInEnabled && (
+                <Pressable
+                  style={[
+                    styles.participantRow,
+                    { borderColor: enrollPackage === "dropIn" ? colors.primary : colors.border,
+                      backgroundColor: enrollPackage === "dropIn" ? colors.muted : colors.background },
+                  ]}
+                  onPress={() => setEnrollPackage("dropIn")}
+                >
+                  <Ionicons
+                    name={enrollPackage === "dropIn" ? "radio-button-on" : "radio-button-off"}
+                    size={18}
+                    color={enrollPackage === "dropIn" ? colors.primary : colors.mutedForeground}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.participantName, { color: colors.foreground }]}>Single Lesson</Text>
+                    <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginTop: 2 }]}>One class, no commitment</Text>
+                  </View>
+                  <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.dropInPrice}</Text>
+                </Pressable>
+              )}
+              {enrollCourse?.fixedBlockEnabled && (
+                <Pressable
+                  style={[
+                    styles.participantRow,
+                    { borderColor: enrollPackage === "fixedBlock" ? colors.primary : colors.border,
+                      backgroundColor: enrollPackage === "fixedBlock" ? colors.muted : colors.background,
+                      marginTop: 8 },
+                  ]}
+                  onPress={() => setEnrollPackage("fixedBlock")}
+                >
+                  <Ionicons
+                    name={enrollPackage === "fixedBlock" ? "radio-button-on" : "radio-button-off"}
+                    size={18}
+                    color={enrollPackage === "fixedBlock" ? colors.primary : colors.mutedForeground}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.participantName, { color: colors.foreground }]}>
+                      Full Package · {enrollCourse.fixedBlockLessons} lessons
+                    </Text>
+                    <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>15% discount included</Text>
+                  </View>
+                  <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.fixedBlockPrice}</Text>
+                </Pressable>
+              )}
+            </View>
+
             {/* Participant selection */}
             {participantOptions.length > 1 && (
-              <View style={{ marginTop: 12 }}>
+              <View style={{ marginTop: 14 }}>
                 <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>ENROLL FOR</Text>
                 {participantOptions.map(name => (
                   <Pressable
@@ -594,9 +686,9 @@ export default function CoursesScreen() {
               <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowEnrollModal(false)}>
                 <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleConfirmEnroll}>
-                <Ionicons name="checkmark-circle" size={16} color="#FFF" />
-                <Text style={styles.closeBtnText}>Confirm</Text>
+              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleAddToCart}>
+                <Ionicons name="cart-outline" size={16} color="#FFF" />
+                <Text style={styles.closeBtnText}>Add to Cart</Text>
               </Pressable>
             </View>
           </View>
@@ -775,8 +867,18 @@ const styles = StyleSheet.create({
   courseActions: { flexDirection: "row", gap: 10 },
   infoBtn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center", borderWidth: 1 },
   infoBtnText: { fontSize: 12, fontWeight: "700" },
-  enrollBtn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
+  enrollBtn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 5 },
   enrollBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
+
+  // Cart icon + pricing
+  pageTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
+  cartIconBtn: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+  cartBadge: { position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  cartBadgeText: { fontSize: 10, fontWeight: "800" },
+  pricingRow: { flexDirection: "row", gap: 8, marginTop: 8, marginBottom: 4 },
+  pricePill: { flex: 1, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, alignItems: "center" },
+  pricePillLabel: { fontSize: 10, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.3 },
+  pricePillAmount: { fontSize: 16, fontWeight: "800", marginTop: 1 },
 
   // Empty
   emptyState: { borderRadius: 16, padding: 32, alignItems: "center", gap: 10 },

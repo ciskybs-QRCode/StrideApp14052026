@@ -47,6 +47,11 @@ export interface Course {
   price: number;
   description: string;
   hasPrivate: boolean;
+  dropInEnabled: boolean;
+  dropInPrice: number;
+  fixedBlockEnabled: boolean;
+  fixedBlockPrice: number;
+  fixedBlockLessons: number;
 }
 
 export interface Booking {
@@ -170,6 +175,7 @@ function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
 }
 
 function mapCourse(c: ApiCourse): Course {
+  const basePrice = c.price ?? 20;
   return {
     id: String(c.id),
     name: c.name,
@@ -181,9 +187,14 @@ function mapCourse(c: ApiCourse): Course {
     ageMin: c.age_min ?? 0,
     ageMax: c.age_max ?? 99,
     level: c.level ?? "All levels",
-    price: c.price ?? 0,
+    price: basePrice,
     description: c.description ?? "",
     hasPrivate: true,
+    dropInEnabled: true,
+    dropInPrice: basePrice,
+    fixedBlockEnabled: basePrice > 0,
+    fixedBlockPrice: Math.round(basePrice * 8 * 0.85),
+    fixedBlockLessons: 8,
   };
 }
 
