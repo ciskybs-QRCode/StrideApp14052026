@@ -5,13 +5,43 @@ import React, { useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
+import { useRealtime } from "@/context/RealtimeContext";
 import { useColors } from "@/hooks/useColors";
+
+function CartTabIcon({ color, size, count }: { color: string; size: number; count: number }) {
+  return (
+    <View>
+      <Ionicons name="cart" size={size} color={color} />
+      {count > 0 && (
+        <View style={{
+          position: "absolute",
+          top: -4,
+          right: -8,
+          minWidth: 16,
+          height: 16,
+          borderRadius: 8,
+          backgroundColor: "#FBBF24",
+          borderWidth: 2,
+          borderColor: "#FFFFFF",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 2,
+        }}>
+          <Text style={{ color: "#1E3A8A", fontSize: 8, fontWeight: "800", lineHeight: 12 }}>
+            {count > 9 ? "9+" : String(count)}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function ParentTabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const { cartBadgeCount } = useRealtime();
   const { legalAdminDocs, signedAdminDocIds, signAdminDoc } = useAppData();
   const [signingDoc, setSigningDoc] = useState<string | null>(null);
 
@@ -54,8 +84,8 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="children" options={{ title: "My Children", tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
         <Tabs.Screen name="courses" options={{ title: "Courses", tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes" size={size} color={color} /> }} />
         <Tabs.Screen name="wallet" options={{ title: "Wallet", tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} /> }} />
-        <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-sharp" size={size} color={color} />, tabBarBadge: undefined }} />
-        <Tabs.Screen name="cart" options={{ href: null }} />
+        <Tabs.Screen name="cart" options={{ title: "Cart", tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
+        <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-sharp" size={size} color={color} /> }} />
         <Tabs.Screen name="checkout" options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />
       </Tabs>

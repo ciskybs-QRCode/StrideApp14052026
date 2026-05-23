@@ -20,6 +20,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { OfflineSyncProvider, useOfflineSync } from "@/context/OfflineSyncContext";
 import { PrivateLessonProvider } from "@/context/PrivateLessonContext";
+import { RealtimeProvider } from "@/context/RealtimeContext";
 import { SubstitutionProvider } from "@/context/SubstitutionContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -86,9 +87,11 @@ export default function RootLayout() {
                 <CartProvider>
                 <SubstitutionProvider>
                 <PrivateLessonProvider>
+                <RealtimeProvider>
                   <GestureHandlerRootView>
                     <RootLayoutNav />
                   </GestureHandlerRootView>
+                </RealtimeProvider>
                 </PrivateLessonProvider>
                 </SubstitutionProvider>
                 </CartProvider>

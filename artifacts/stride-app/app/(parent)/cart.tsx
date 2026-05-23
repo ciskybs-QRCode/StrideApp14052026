@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCart, type CartItem, type CartItemStatus } from "@/context/CartContext";
+import { useRealtime } from "@/context/RealtimeContext";
 import { api } from "@/lib/api";
 import { validateEnrollment, type ParticipantInfo } from "@/utils/validateEnrollment";
 import { useColors } from "@/hooks/useColors";
@@ -45,6 +46,10 @@ export default function CartScreen() {
   const { items, removeItem, clearCart, updateItemStatus, total, count } = useCart();
   const { children, courses } = useAppData();
   const { user } = useAuth();
+  const { clearCartBadge } = useRealtime();
+
+  // Clear notification badge when the cart screen is opened
+  useEffect(() => { clearCartBadge(); }, []);
 
   const [validating, setValidating] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
@@ -208,91 +213,90 @@ export default function CartScreen() {
           </Pressable>
         </View>
       ) : (
-        <>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 240 }]}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              {count} item{count !== 1 ? "s" : ""} in cart
-            </Text>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+            {count} item{count !== 1 ? "s" : ""} in cart
+          </Text>
 
-            {hasPendingItems && (
-              <View style={[styles.pendingBanner, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}>
-                <Ionicons name="time-outline" size={18} color="#92400E" />
-                <Text style={[styles.pendingBannerText, { color: "#92400E" }]}>
-                  {pendingItems.length} item{pendingItems.length !== 1 ? "s" : ""} awaiting operator approval. We'll notify you when reviewed.
-                </Text>
-              </View>
-            )}
+          {hasPendingItems && (
+            <View style={[styles.pendingBanner, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}>
+              <Ionicons name="time-outline" size={18} color="#92400E" />
+              <Text style={[styles.pendingBannerText, { color: "#92400E" }]}>
+                {pendingItems.length} item{pendingItems.length !== 1 ? "s" : ""} awaiting operator approval. You'll be notified when reviewed.
+              </Text>
+            </View>
+          )}
 
-            {items.map(item => (
-              <View key={item.id} style={[styles.itemCard, { backgroundColor: colors.card, opacity: item.status === "rejected" ? 0.7 : 1 }]}>
-                <View style={styles.itemTop}>
-                  <View style={[styles.itemTypeTag, {
-                    backgroundColor: item.packageType === "fixedBlock" ? colors.secondary : colors.muted,
-                  }]}>
-                    <Ionicons
-                      name={item.packageType === "fixedBlock" ? "layers-outline" : "ticket-outline"}
-                      size={11}
-                      color={item.packageType === "fixedBlock" ? colors.primary : colors.mutedForeground}
-                    />
-                    <Text style={[styles.itemTypeText, { color: item.packageType === "fixedBlock" ? colors.primary : colors.mutedForeground }]}>
-                      {item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson"}
-                    </Text>
-                  </View>
-                  <View style={styles.itemTopRight}>
-                    <StatusBadge status={item.status} />
-                    {item.status !== "pending_approval" && (
-                      <Pressable style={styles.removeBtn} onPress={() => handleRemove(item.id, item.courseName)}>
-                        <Ionicons name="trash-outline" size={17} color="#EF4444" />
-                      </Pressable>
-                    )}
-                  </View>
+          {items.map(item => (
+            <View key={item.id} style={[styles.itemCard, { backgroundColor: colors.card, opacity: item.status === "rejected" ? 0.7 : 1 }]}>
+              <View style={styles.itemTop}>
+                <View style={[styles.itemTypeTag, {
+                  backgroundColor: item.packageType === "fixedBlock" ? colors.secondary : colors.muted,
+                }]}>
+                  <Ionicons
+                    name={item.packageType === "fixedBlock" ? "layers-outline" : "ticket-outline"}
+                    size={11}
+                    color={item.packageType === "fixedBlock" ? colors.primary : colors.mutedForeground}
+                  />
+                  <Text style={[styles.itemTypeText, { color: item.packageType === "fixedBlock" ? colors.primary : colors.mutedForeground }]}>
+                    {item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson"}
+                  </Text>
                 </View>
-
-                <Text style={[styles.itemName, { color: colors.primary }]}>{item.courseName}</Text>
-                <Text style={[styles.itemSchedule, { color: colors.mutedForeground }]}>
-                  <Ionicons name="time-outline" size={13} /> {item.courseSchedule || "Schedule TBA"}
-                </Text>
-
-                {item.validationIssue && item.status !== "approved" && (
-                  <View style={[styles.issueRow, { backgroundColor: item.status === "rejected" ? "#FEE2E2" : "#FEF3C7" }]}>
-                    <Ionicons name="warning-outline" size={13} color={item.status === "rejected" ? "#991B1B" : "#92400E"} />
-                    <Text style={[styles.issueText, { color: item.status === "rejected" ? "#991B1B" : "#92400E" }]}>
-                      {item.validationIssue}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={[styles.itemFooter, { borderTopColor: colors.border }]}>
-                  <View style={styles.itemParticipant}>
-                    <Ionicons name="person-outline" size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.itemParticipantText, { color: colors.mutedForeground }]}>{item.participantName}</Text>
-                  </View>
-                  <Text style={[styles.itemPrice, { color: colors.primary }]}>€{item.price}</Text>
+                <View style={styles.itemTopRight}>
+                  <StatusBadge status={item.status} />
+                  {item.status !== "pending_approval" && (
+                    <Pressable style={styles.removeBtn} onPress={() => handleRemove(item.id, item.courseName)}>
+                      <Ionicons name="trash-outline" size={17} color="#EF4444" />
+                    </Pressable>
+                  )}
                 </View>
-                <Text style={[styles.itemLabel, { color: colors.mutedForeground }]}>{item.label}</Text>
               </View>
-            ))}
-          </ScrollView>
 
-          {/* Bottom Bar */}
-          <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: insets.bottom + 16 }]}>
+              <Text style={[styles.itemName, { color: colors.primary }]}>{item.courseName}</Text>
+              <Text style={[styles.itemSchedule, { color: colors.mutedForeground }]}>
+                <Ionicons name="time-outline" size={13} /> {item.courseSchedule || "Schedule TBA"}
+              </Text>
+
+              {item.validationIssue && item.status !== "approved" && (
+                <View style={[styles.issueRow, { backgroundColor: item.status === "rejected" ? "#FEE2E2" : "#FEF3C7" }]}>
+                  <Ionicons name="warning-outline" size={13} color={item.status === "rejected" ? "#991B1B" : "#92400E"} />
+                  <Text style={[styles.issueText, { color: item.status === "rejected" ? "#991B1B" : "#92400E" }]}>
+                    {item.validationIssue}
+                  </Text>
+                </View>
+              )}
+
+              <View style={[styles.itemFooter, { borderTopColor: colors.border }]}>
+                <View style={styles.itemParticipant}>
+                  <Ionicons name="person-outline" size={13} color={colors.mutedForeground} />
+                  <Text style={[styles.itemParticipantText, { color: colors.mutedForeground }]}>{item.participantName}</Text>
+                </View>
+                <Text style={[styles.itemPrice, { color: colors.primary }]}>€{item.price}</Text>
+              </View>
+              <Text style={[styles.itemLabel, { color: colors.mutedForeground }]}>{item.label}</Text>
+            </View>
+          ))}
+
+          {/* ── Checkout section ── */}
+          <View style={[styles.checkoutSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {hasPendingItems && !hasPayable && (
-              <View style={[styles.awaitingRow, { backgroundColor: "#FEF3C7" }]}>
+              <View style={[styles.awaitingRow, { backgroundColor: "#FEF3C7", borderRadius: 10, marginBottom: 12 }]}>
                 <ActivityIndicator size="small" color="#92400E" />
                 <Text style={[styles.awaitingText, { color: "#92400E" }]}>
-                  Checking for operator approval…
+                  Waiting for operator approval…
                 </Text>
               </View>
             )}
+
             {hasPayable && (
               <View style={styles.totalRow}>
                 <View>
                   <Text style={[styles.totalLabel, { color: colors.mutedForeground }]}>
-                    {allPending ? "Total" : `Payable (${payableItems.length} of ${count} items)`}
+                    {`Payable (${payableItems.length} of ${count} item${count !== 1 ? "s" : ""})`}
                   </Text>
                   {hasPendingItems && (
                     <Text style={[styles.pendingNote, { color: "#92400E" }]}>
@@ -303,34 +307,41 @@ export default function CartScreen() {
                 <Text style={[styles.totalAmount, { color: colors.primary }]}>€{payableTotal}</Text>
               </View>
             )}
+
             {!allPending && (
               <Pressable
-                style={[styles.checkoutBtn, { backgroundColor: validating ? colors.border : colors.primary, marginBottom: hasPayable ? 10 : 0 }]}
+                style={[styles.validateBtn, { backgroundColor: validating ? colors.border : colors.muted }]}
                 onPress={handleValidateAndProceed}
                 disabled={validating}
               >
                 {validating ? (
-                  <ActivityIndicator size="small" color="#FFF" />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Ionicons name="shield-checkmark-outline" size={18} color="#FFF" />
+                  <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
                 )}
-                <Text style={styles.checkoutBtnText}>
-                  {validating ? "Validating…" : "Validate & Checkout"}
+                <Text style={[styles.validateBtnText, { color: colors.primary }]}>
+                  {validating ? "Validating…" : "Validate Items"}
                 </Text>
               </Pressable>
             )}
-            {hasPayable && (
-              <Pressable
-                style={[styles.checkoutBtn, { backgroundColor: colors.secondary, borderWidth: 2, borderColor: colors.primary }]}
-                onPress={() => router.push("/(parent)/checkout")}
-              >
-                <Ionicons name="card-outline" size={18} color={colors.primary} />
-                <Text style={[styles.checkoutBtnText, { color: colors.primary }]}>Checkout</Text>
-                <Ionicons name="arrow-forward" size={16} color={colors.primary} />
-              </Pressable>
-            )}
+
+            <Pressable
+              style={[
+                styles.proceedBtn,
+                {
+                  backgroundColor: hasPayable ? colors.primary : colors.border,
+                  marginTop: allPending ? 0 : 10,
+                },
+              ]}
+              onPress={() => hasPayable ? router.push("/(parent)/checkout") : handleValidateAndProceed()}
+              disabled={!hasPayable && validating}
+            >
+              <Ionicons name="card-outline" size={20} color="#FFF" />
+              <Text style={styles.proceedBtnText}>Proceed to Checkout</Text>
+              <Ionicons name="arrow-forward" size={16} color="#FFF" />
+            </Pressable>
           </View>
-        </>
+        </ScrollView>
       )}
 
       {/* Snack */}
@@ -494,15 +505,17 @@ const styles = StyleSheet.create({
   itemPrice: { fontSize: 22, fontWeight: "800" },
   itemLabel: { fontSize: 12, marginTop: 2 },
 
-  bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 20, borderTopWidth: 1 },
-  awaitingRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, padding: 12, marginBottom: 12 },
+  checkoutSection: { borderRadius: 20, borderWidth: 1, padding: 20, marginTop: 8 },
+  awaitingRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
   awaitingText: { fontSize: 13, fontWeight: "500" },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 },
+  totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 14 },
   totalLabel: { fontSize: 14, fontWeight: "600" },
   pendingNote: { fontSize: 11, marginTop: 2 },
   totalAmount: { fontSize: 28, fontWeight: "800" },
-  checkoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 16 },
-  checkoutBtnText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
+  validateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, paddingVertical: 12 },
+  validateBtnText: { fontWeight: "700", fontSize: 14 },
+  proceedBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 17 },
+  proceedBtnText: { color: "#FFF", fontWeight: "800", fontSize: 17, flex: 1, textAlign: "center" },
 
   snack: { position: "absolute", left: 20, right: 20, padding: 14, borderRadius: 12, alignItems: "center" },
   snackText: { color: "#FFF", fontWeight: "600", fontSize: 14 },
