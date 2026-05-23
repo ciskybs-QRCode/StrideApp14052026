@@ -54,8 +54,9 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="children" options={{ title: "My Children", tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
         <Tabs.Screen name="courses" options={{ title: "Courses", tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes" size={size} color={color} /> }} />
         <Tabs.Screen name="wallet" options={{ title: "Wallet", tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} /> }} />
-        <Tabs.Screen name="documents" options={{ title: "Documents", tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />, tabBarBadge: undefined }} />
+        <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-sharp" size={size} color={color} />, tabBarBadge: undefined }} />
         <Tabs.Screen name="cart" options={{ href: null }} />
+        <Tabs.Screen name="checkout" options={{ href: null }} />
       </Tabs>
 
       {/* Mandatory signature blocking overlay */}

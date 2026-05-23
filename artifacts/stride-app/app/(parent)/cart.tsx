@@ -210,7 +210,8 @@ export default function CartScreen() {
       ) : (
         <>
           <ScrollView
-            contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 200 }]}
+            style={{ flex: 1 }}
+            contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 240 }]}
             showsVerticalScrollIndicator={false}
           >
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
@@ -304,7 +305,7 @@ export default function CartScreen() {
             )}
             {!allPending && (
               <Pressable
-                style={[styles.checkoutBtn, { backgroundColor: validating ? colors.border : colors.primary }]}
+                style={[styles.checkoutBtn, { backgroundColor: validating ? colors.border : colors.primary, marginBottom: hasPayable ? 10 : 0 }]}
                 onPress={handleValidateAndProceed}
                 disabled={validating}
               >
@@ -316,6 +317,16 @@ export default function CartScreen() {
                 <Text style={styles.checkoutBtnText}>
                   {validating ? "Validating…" : "Validate & Checkout"}
                 </Text>
+              </Pressable>
+            )}
+            {hasPayable && (
+              <Pressable
+                style={[styles.checkoutBtn, { backgroundColor: colors.secondary, borderWidth: 2, borderColor: colors.primary }]}
+                onPress={() => router.push("/(parent)/checkout")}
+              >
+                <Ionicons name="card-outline" size={18} color={colors.primary} />
+                <Text style={[styles.checkoutBtnText, { color: colors.primary }]}>Checkout</Text>
+                <Ionicons name="arrow-forward" size={16} color={colors.primary} />
               </Pressable>
             )}
           </View>

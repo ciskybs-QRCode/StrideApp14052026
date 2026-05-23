@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -67,6 +68,12 @@ export default function CheckoutScreen() {
   const [receiptUri, setReceiptUri] = useState<string | null>(null);
   const [transferRef] = useState(() => `REF-${Date.now().toString(36).toUpperCase()}`);
   const [operatorNotes, setOperatorNotes] = useState("");
+
+  // ── Australia-specific bank fields ──────────────────────────────────────
+  const [isAustralia, setIsAustralia] = useState<boolean | null>(null);
+  const [auAccountNumber, setAuAccountNumber] = useState("");
+  const [auBsb, setAuBsb] = useState("");
+  const [auAccountName, setAuAccountName] = useState("");
 
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState<{ invoiceNumber: string; invoiceId?: number | null } | null>(null);
@@ -252,6 +259,24 @@ export default function CheckoutScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.8 });
     if (!result.canceled && result.assets[0]) setReceiptUri(result.assets[0].uri);
   };
+
+  // Detect if user is in Australia when switching to bank tab
+  useEffect(() => {
+    if (tab !== "bank" || isAustralia !== null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") { if (!cancelled) setIsAustralia(false); return; }
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+        if (!cancelled) {
+          const { latitude, longitude } = loc.coords;
+          setIsAustralia(latitude >= -44 && latitude <= -10 && longitude >= 113 && longitude <= 154);
+        }
+      } catch { if (!cancelled) setIsAustralia(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [tab]);
 
   const bankDetails = orgData ? {
     holder: orgData.name,
@@ -555,22 +580,82 @@ export default function CheckoutScreen() {
         {tab === "bank" && (
           <View style={[styles.paySection, { backgroundColor: colors.card }]}>
             <Text style={[styles.bankSectionTitle, { color: colors.primary }]}>Bank Account Details</Text>
-            <View style={[styles.bankDetails, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              {[
-                { label: "Account Holder", value: bankDetails.holder, icon: "person-outline" as const },
-                { label: "Bank", value: bankDetails.bank, icon: "business-outline" as const },
-                { label: "IBAN", value: bankDetails.iban, icon: "card-outline" as const },
-                { label: "BIC / SWIFT", value: bankDetails.bic, icon: "globe-outline" as const },
-              ].map(row => (
-                <View key={row.label} style={[styles.bankRow, { borderBottomColor: colors.border }]}>
-                  <Ionicons name={row.icon} size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.bankRowLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
-                    <Text style={[styles.bankRowValue, { color: colors.foreground }]}>{row.value}</Text>
-                  </View>
+
+            {/* Location loading */}
+            {isAustralia === null && (
+              <View style={[styles.bankDetails, { backgroundColor: colors.muted, borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 10 }]}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.bankRowLabel, { color: colors.mutedForeground }]}>Detecting your location…</Text>
+              </View>
+            )}
+
+            {/* Australia — show Account Number, BSB, Account Name input fields */}
+            {isAustralia === true && (
+              <>
+                <View style={[styles.bankDetails, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                  {[
+                    { label: "Account Holder", value: bankDetails.holder, icon: "person-outline" as const },
+                    { label: "Bank", value: bankDetails.bank, icon: "business-outline" as const },
+                  ].map(row => (
+                    <View key={row.label} style={[styles.bankRow, { borderBottomColor: colors.border }]}>
+                      <Ionicons name={row.icon} size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.bankRowLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
+                        <Text style={[styles.bankRowValue, { color: colors.foreground }]}>{row.value}</Text>
+                      </View>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Account Name</Text>
+                <TextInput
+                  style={[styles.notesInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted, minHeight: undefined, paddingVertical: 10 }]}
+                  value={auAccountName}
+                  onChangeText={setAuAccountName}
+                  placeholder="e.g. Stride Dance Academy"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 12 }]}>BSB</Text>
+                <TextInput
+                  style={[styles.notesInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted, minHeight: undefined, paddingVertical: 10 }]}
+                  value={auBsb}
+                  onChangeText={setAuBsb}
+                  placeholder="e.g. 062-000"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={7}
+                />
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 12 }]}>Account Number</Text>
+                <TextInput
+                  style={[styles.notesInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted, minHeight: undefined, paddingVertical: 10 }]}
+                  value={auAccountNumber}
+                  onChangeText={setAuAccountNumber}
+                  placeholder="e.g. 12345678"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="number-pad"
+                  maxLength={10}
+                />
+              </>
+            )}
+
+            {/* Rest of world — show IBAN / BIC */}
+            {isAustralia === false && (
+              <View style={[styles.bankDetails, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                {[
+                  { label: "Account Holder", value: bankDetails.holder, icon: "person-outline" as const },
+                  { label: "Bank", value: bankDetails.bank, icon: "business-outline" as const },
+                  { label: "IBAN", value: bankDetails.iban, icon: "card-outline" as const },
+                  { label: "BIC / SWIFT", value: bankDetails.bic, icon: "globe-outline" as const },
+                ].map(row => (
+                  <View key={row.label} style={[styles.bankRow, { borderBottomColor: colors.border }]}>
+                    <Ionicons name={row.icon} size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.bankRowLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
+                      <Text style={[styles.bankRowValue, { color: colors.foreground }]}>{row.value}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <View style={[styles.refBox, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}>
               <Ionicons name="information-circle" size={16} color="#92400E" />
