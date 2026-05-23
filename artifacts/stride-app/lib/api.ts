@@ -157,6 +157,64 @@ export const api = {
   }) => request<ApiEnrollmentRequest>("POST", "/enrollment-requests", data),
   reviewEnrollmentRequest: (id: string, status: "approved" | "rejected", notes?: string) =>
     request<ApiEnrollmentRequest>("PATCH", `/enrollment-requests/${id}`, { status, notes }),
+
+  // ── Private Lessons ──────────────────────────────────────────────────────
+
+  // Disciplines
+  getDisciplines: () => request<ApiDiscipline[]>("GET", "/disciplines"),
+  createDiscipline: (data: { name: string; description?: string }) =>
+    request<ApiDiscipline>("POST", "/disciplines", data),
+  updateDiscipline: (id: number, data: Partial<{ name: string; description: string; active: boolean }>) =>
+    request<ApiDiscipline>("PATCH", `/disciplines/${id}`, data),
+  deleteDiscipline: (id: number) => request<void>("DELETE", `/disciplines/${id}`),
+
+  // Operator profiles
+  getOperatorProfiles: () => request<ApiOperatorProfile[]>("GET", "/operator-profiles"),
+  createOperatorProfile: (data: {
+    userId: number;
+    profileType: "paid" | "volunteer";
+    bio?: string;
+    rates?: Array<{ disciplineId: number; hourlyRateCents: number }>;
+  }) => request<ApiOperatorProfile>("POST", "/operator-profiles", data),
+  updateOperatorProfile: (id: number, data: Partial<{
+    profileType: "paid" | "volunteer";
+    bio: string;
+    active: boolean;
+    rates: Array<{ disciplineId: number; hourlyRateCents: number }>;
+  }>) => request<ApiOperatorProfile>("PATCH", `/operator-profiles/${id}`, data),
+
+  // Availability
+  getAvailability: () => request<ApiAvailabilitySlot[]>("GET", "/availability"),
+  submitAvailability: (data: {
+    disciplineId: number;
+    location: string;
+    slotDate: string;
+    startTime: string;
+    endTime: string;
+    notes?: string;
+  }) => request<ApiAvailabilitySlot>("POST", "/availability", data),
+  reviewAvailability: (id: number, status: "approved" | "rejected", parentPriceCents?: number) =>
+    request<ApiAvailabilitySlot>("PATCH", `/availability/${id}`, { status, parentPriceCents }),
+
+  // Private bookings
+  getPrivateBookings: () => request<ApiPrivateBooking[]>("GET", "/private-bookings"),
+  createPrivateBooking: (data: { availabilityId: number; childId: number }) =>
+    request<ApiPrivateBooking>("POST", "/private-bookings", data),
+  confirmPrivateBooking: (id: number) =>
+    request<ApiPrivateBooking>("PATCH", `/private-bookings/${id}/confirm`, {}),
+  cancelPrivateBooking: (id: number) =>
+    request<ApiPrivateBooking>("PATCH", `/private-bookings/${id}/cancel`, {}),
+  scanPrivateLesson: (qrToken: string) =>
+    request<{ ok: boolean; earnings_cents: number; invoice_number: string; attended_at: string; error?: string }>(
+      "POST", "/private-bookings/scan", { qrToken }
+    ),
+
+  // Notifications
+  getPrivateNotifications: () => request<ApiPrivateNotification[]>("GET", "/private-notifications"),
+  markNotificationRead: (id: number) =>
+    request<{ ok: boolean }>("POST", `/private-notifications/${id}/read`, {}),
+  markAllNotificationsRead: () =>
+    request<{ ok: boolean }>("POST", "/private-notifications/read-all", {}),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -343,4 +401,100 @@ export interface ApiEnrollmentRequest {
   status: "pending" | "approved" | "rejected";
   created_at: string;
   updated_at: string;
+}
+
+// ── Private Lesson Types ──────────────────────────────────────────────────────
+
+export interface ApiDiscipline {
+  id: number;
+  organization_id: number;
+  name: string;
+  description?: string;
+  active: boolean;
+  created_at: string;
+}
+
+export interface ApiDisciplineRate {
+  id: number;
+  operator_profile_id: number;
+  discipline_id: number;
+  hourly_rate_cents: number;
+  discipline?: { id: number; name: string };
+}
+
+export interface ApiOperatorProfile {
+  id: number;
+  user_id: number;
+  organization_id: number;
+  profile_type: "paid" | "volunteer";
+  bio?: string;
+  active: boolean;
+  created_at: string;
+  user?: { id: number; name: string; email: string };
+  rates?: ApiDisciplineRate[];
+}
+
+export interface ApiAvailabilitySlot {
+  id: number;
+  operator_profile_id: number;
+  organization_id: number;
+  discipline_id: number;
+  location: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  status: "pending" | "approved" | "rejected" | "booked";
+  parent_price_cents?: number;
+  notes?: string;
+  created_at: string;
+  operator_profile?: {
+    id: number;
+    profile_type: "paid" | "volunteer";
+    user?: { id: number; name: string };
+  };
+  discipline?: { id: number; name: string };
+}
+
+export interface ApiPrivateBooking {
+  id: number;
+  organization_id: number;
+  availability_id: number;
+  child_id: number;
+  parent_user_id: number;
+  operator_user_id: number;
+  discipline_id: number;
+  location: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  price_cents: number;
+  status: "pending" | "confirmed" | "cancelled" | "completed";
+  qr_token?: string;
+  attended_at?: string;
+  earnings_cents?: number;
+  operator_notes?: string;
+  created_at: string;
+  discipline?: { id: number; name: string };
+  child?: { id: number; name: string };
+  operator?: { id: number; name: string };
+}
+
+export interface ApiPrivateNotification {
+  id: number;
+  organization_id: number;
+  recipient_id: number;
+  sender_id?: number;
+  type:
+    | "booking_request"
+    | "booking_confirmed"
+    | "booking_cancelled"
+    | "availability_approved"
+    | "availability_rejected"
+    | "lesson_reminder"
+    | "payment_received";
+  title: string;
+  body: string;
+  booking_id?: number;
+  read: boolean;
+  created_at: string;
 }

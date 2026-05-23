@@ -15,6 +15,10 @@ import orgRouter from "./org.js";
 import logsRouter from "./logs.js";
 import enrollmentRequestsRouter from "./enrollment-requests.js";
 import checkoutRouter from "./checkout.js";
+import disciplinesRouter from "./disciplines.js";
+import availabilityRouter from "./availability.js";
+import privateBookingsRouter from "./private-bookings.js";
+import privateNotificationsRouter from "./private-notifications.js";
 
 const router: IRouter = Router();
 
@@ -34,5 +38,9 @@ router.use(orgRouter);
 router.use(logsRouter);
 router.use(enrollmentRequestsRouter);
 router.use(checkoutRouter);
+router.use(disciplinesRouter);
+router.use(availabilityRouter);
+router.use(privateBookingsRouter);
+router.use(privateNotificationsRouter);
 
 export default router;

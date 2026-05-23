@@ -16,8 +16,10 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
+import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 
@@ -43,8 +45,10 @@ function buildMapsUrl(location: string): string {
 export default function ParentHome() {
   const { user, updateUser } = useAuth();
   const { children, courses, lessons } = useAppData();
+  const { unreadCount } = usePrivateLessons();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [showQR, setShowQR] = useState(false);
   const [showAbsence, setShowAbsence] = useState(false);
   const [absenceType, setAbsenceType] = useState<AbsenceType>("absent");
@@ -188,6 +192,26 @@ export default function ParentHome() {
             <Text style={styles.lessonCourseName}>No upcoming activities</Text>
           )}
         </View>
+
+        {/* Private Lesson Entry Card */}
+        <Pressable
+          style={({ pressed }) => [styles.privateLessonCard, { backgroundColor: colors.primary, opacity: pressed ? 0.92 : 1 }]}
+          onPress={() => router.push("/(parent)/book-lesson")}
+        >
+          <View style={[styles.privateLessonIcon, { backgroundColor: colors.secondary }]}>
+            <Ionicons name="school-outline" size={24} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.privateLessonTitle}>Private Lessons</Text>
+            <Text style={styles.privateLessonSub}>Book a 1-on-1 session with an instructor</Text>
+          </View>
+          {unreadCount > 0 && (
+            <View style={styles.privateLessonBadge}>
+              <Text style={styles.privateLessonBadgeText}>{unreadCount}</Text>
+            </View>
+          )}
+          <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+        </Pressable>
 
         {/* Quick Actions */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
@@ -383,6 +407,12 @@ const styles = StyleSheet.create({
   navigateBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10, alignSelf: "flex-start" },
   navigateBtnText: { color: "#1E3A8A", fontWeight: "800", fontSize: 13 },
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
+  privateLessonCard: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 18, padding: 16, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
+  privateLessonIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  privateLessonTitle: { fontSize: 16, fontWeight: "800", color: "#FFF", marginBottom: 2 },
+  privateLessonSub: { fontSize: 12, color: "rgba(255,255,255,0.75)" },
+  privateLessonBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
+  privateLessonBadgeText: { fontSize: 11, fontWeight: "800", color: "#FFF" },
   quickActions: { flexDirection: "row", gap: 12, marginBottom: 24 },
   quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 20, gap: 8, borderWidth: 2 },
   quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },

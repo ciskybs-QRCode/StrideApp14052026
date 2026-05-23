@@ -57,6 +57,7 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-sharp" size={size} color={color} />, tabBarBadge: undefined }} />
         <Tabs.Screen name="cart" options={{ href: null }} />
         <Tabs.Screen name="checkout" options={{ href: null }} />
+        <Tabs.Screen name="book-lesson" options={{ href: null }} />
       </Tabs>
 
       {/* Mandatory signature blocking overlay */}
