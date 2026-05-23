@@ -523,7 +523,7 @@ export default function CoursesScreen() {
               </Text>
               <Pressable
                 style={[styles.bookPrivateBtn, { backgroundColor: colors.primary }]}
-                onPress={() => { setShowPrivateModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/book-lesson"); }}
               >
                 <Ionicons name="calendar" size={18} color="#FFF" />
                 <Text style={styles.bookPrivateBtnText}>BOOK PRIVATE LESSON</Text>

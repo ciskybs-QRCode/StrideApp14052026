@@ -1,7 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import * as Location from "expo-location";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Modal,
   Platform,
   Pressable,
@@ -15,6 +18,53 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+
+// ── Bank details helpers ──────────────────────────────────────────────────────
+
+const BANK_KEY = "stride_bank_details";
+
+type BankFormat = "au" | "it" | "other";
+
+interface BankDetails {
+  format: BankFormat;
+  // AU fields
+  bsb?: string;
+  accountNumber?: string;
+  accountName?: string;
+  // IT / other fields
+  iban?: string;
+}
+
+function isAustralia(lat: number, lng: number): boolean {
+  return lat >= -44 && lat <= -10 && lng >= 113 && lng <= 154;
+}
+function isItaly(lat: number, lng: number): boolean {
+  return lat >= 35 && lat <= 47.5 && lng >= 6.5 && lng <= 18.5;
+}
+
+function formatBSB(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 6);
+  if (digits.length <= 3) return digits;
+  return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+}
+
+function maskBSB(bsb: string): string {
+  const digits = bsb.replace(/\D/g, "");
+  if (!digits) return "—";
+  return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+}
+
+function maskAccountNumber(acc: string): string {
+  if (!acc) return "—";
+  const d = acc.replace(/\D/g, "");
+  if (d.length <= 3) return d;
+  return `${"•".repeat(d.length - 3)}${d.slice(-3)}`;
+}
+
+function maskIBAN(iban: string): string {
+  if (!iban || iban.length < 8) return iban || "—";
+  return `${iban.slice(0, 4)} •••• •••• ${iban.slice(-4)}`;
+}
 
 interface SavedCard {
   number: string;
@@ -38,6 +88,72 @@ export default function WalletScreen() {
   const { payments, bookings, courses } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+
+  // ── Bank details state ───────────────────────────────────────────────────────
+  const [bankDetails, setBankDetails] = useState<BankDetails | null>(null);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [detectedFormat, setDetectedFormat] = useState<BankFormat>("au");
+  // Draft fields
+  const [draftBSB, setDraftBSB] = useState("");
+  const [draftAccNumber, setDraftAccNumber] = useState("");
+  const [draftAccName, setDraftAccName] = useState("");
+  const [draftIBAN, setDraftIBAN] = useState("");
+  const [draftFormat, setDraftFormat] = useState<BankFormat>("au");
+
+  useEffect(() => {
+    AsyncStorage.getItem(BANK_KEY).then(raw => {
+      if (raw) {
+        try { setBankDetails(JSON.parse(raw) as BankDetails); } catch { /* malformed */ }
+      }
+    });
+  }, []);
+
+  const openBankModal = async () => {
+    setGpsLoading(true);
+    setShowBankModal(true);
+    // Pre-fill from saved
+    if (bankDetails) {
+      setDraftFormat(bankDetails.format);
+      setDraftBSB(bankDetails.bsb ?? "");
+      setDraftAccNumber(bankDetails.accountNumber ?? "");
+      setDraftAccName(bankDetails.accountName ?? "");
+      setDraftIBAN(bankDetails.iban ?? "");
+    }
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const { latitude, longitude } = pos.coords;
+        let fmt: BankFormat = "other";
+        if (isAustralia(latitude, longitude)) fmt = "au";
+        else if (isItaly(latitude, longitude)) fmt = "it";
+        setDetectedFormat(fmt);
+        if (!bankDetails) setDraftFormat(fmt);
+      }
+    } catch { /* GPS unavailable — keep default */ }
+    finally { setGpsLoading(false); }
+  };
+
+  const saveBankDetails = async () => {
+    let details: BankDetails;
+    if (draftFormat === "au") {
+      if (!draftBSB.replace(/\D/g, "") || !draftAccNumber || !draftAccName.trim()) return;
+      details = { format: "au", bsb: draftBSB.replace(/\D/g, ""), accountNumber: draftAccNumber.replace(/\D/g, ""), accountName: draftAccName.trim() };
+    } else {
+      const clean = draftIBAN.replace(/\s/g, "").toUpperCase();
+      if (clean.length < 15) return;
+      details = { format: draftFormat, iban: clean };
+    }
+    await AsyncStorage.setItem(BANK_KEY, JSON.stringify(details));
+    setBankDetails(details);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowBankModal(false);
+  };
+
+  const bankCanSave = draftFormat === "au"
+    ? !!(draftBSB.replace(/\D/g, "").length === 6 && draftAccNumber.replace(/\D/g, "").length >= 4 && draftAccName.trim())
+    : draftIBAN.replace(/\s/g, "").length >= 15;
 
   // Card state
   const [savedCard, setSavedCard] = useState<SavedCard>({
@@ -117,6 +233,62 @@ export default function WalletScreen() {
             <Ionicons name="add-circle-outline" size={15} color="#FFF" />
             <Text style={styles.updateCardText}>Upload / Update Card</Text>
           </Pressable>
+        </View>
+
+        {/* ── Bank Details Section ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Bank Details</Text>
+        <View style={[styles.bankCard, { backgroundColor: colors.card }]}>
+          {bankDetails ? (
+            <>
+              <View style={styles.bankCardTop}>
+                <View style={[styles.bankIcon, { backgroundColor: bankDetails.format === "au" ? "#EFF6FF" : "#F0FDF4" }]}>
+                  <Ionicons
+                    name={bankDetails.format === "au" ? "business-outline" : "globe-outline"}
+                    size={20}
+                    color={bankDetails.format === "au" ? "#1E3A8A" : "#16A34A"}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.bankFormatLabel, { color: colors.mutedForeground }]}>
+                    {bankDetails.format === "au" ? "Australian Bank Account" : bankDetails.format === "it" ? "Italian Bank Account (IBAN)" : "International Bank Account (IBAN)"}
+                  </Text>
+                  {bankDetails.format === "au" ? (
+                    <>
+                      <Text style={[styles.bankValue, { color: colors.foreground }]}>
+                        BSB: {maskBSB(bankDetails.bsb ?? "")}  ·  Acc: {maskAccountNumber(bankDetails.accountNumber ?? "")}
+                      </Text>
+                      <Text style={[styles.bankAccName, { color: colors.primary }]}>{bankDetails.accountName}</Text>
+                    </>
+                  ) : (
+                    <Text style={[styles.bankValue, { color: colors.foreground }]}>{maskIBAN(bankDetails.iban ?? "")}</Text>
+                  )}
+                </View>
+                <Pressable
+                  style={[styles.bankEditBtn, { backgroundColor: colors.muted }]}
+                  onPress={openBankModal}
+                >
+                  <Ionicons name="pencil" size={14} color={colors.primary} />
+                </Pressable>
+              </View>
+              <View style={[styles.bankSecureRow, { backgroundColor: "#F0FDF4" }]}>
+                <Ionicons name="lock-closed" size={12} color="#16A34A" />
+                <Text style={[styles.bankSecureText, { color: "#16A34A" }]}>Stored locally on your device · Never shared with third parties</Text>
+              </View>
+            </>
+          ) : (
+            <Pressable style={styles.bankAddRow} onPress={openBankModal}>
+              <View style={[styles.bankIcon, { backgroundColor: colors.muted }]}>
+                <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.bankAddTitle, { color: colors.primary }]}>Add Bank Details</Text>
+                <Text style={[styles.bankAddSub, { color: colors.mutedForeground }]}>
+                  Used for refunds and payouts. Automatically detects Australian or Italian format.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+            </Pressable>
+          )}
         </View>
 
         {/* Cancel success banner */}
@@ -206,6 +378,127 @@ export default function WalletScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* ── Bank Details Modal ── */}
+      <Modal visible={showBankModal} transparent animationType="slide" onRequestClose={() => setShowBankModal(false)}>
+        <View style={styles.modalOverlay}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
+            <View style={[styles.modalCard, { gap: 0 }]}>
+              <View style={styles.modalTitleRow}>
+                <Ionicons name="card-outline" size={22} color={colors.primary} />
+                <Text style={[styles.modalTitle, { color: colors.primary }]}>Bank Details</Text>
+              </View>
+
+              {/* GPS detection banner */}
+              {gpsLoading ? (
+                <View style={[styles.bankGpsBanner, { backgroundColor: "#EFF6FF" }]}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.bankGpsText, { color: colors.primary }]}>Detecting your location…</Text>
+                </View>
+              ) : (
+                <View style={[styles.bankGpsBanner, { backgroundColor: detectedFormat === "au" ? "#EFF6FF" : detectedFormat === "it" ? "#F0FDF4" : "#FFF7ED" }]}>
+                  <Ionicons
+                    name="location"
+                    size={14}
+                    color={detectedFormat === "au" ? "#1E3A8A" : detectedFormat === "it" ? "#16A34A" : "#D97706"}
+                  />
+                  <Text style={[styles.bankGpsText, { color: detectedFormat === "au" ? "#1E3A8A" : detectedFormat === "it" ? "#16A34A" : "#D97706" }]}>
+                    {detectedFormat === "au" ? "Australia detected — using BSB + Account Number format"
+                      : detectedFormat === "it" ? "Italy detected — using IBAN format"
+                      : "Location outside AU/IT — select your format below"}
+                  </Text>
+                </View>
+              )}
+
+              {/* Format toggle */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Format</Text>
+              <View style={[styles.formatToggle, { backgroundColor: colors.muted }]}>
+                {([["au", "🇦🇺 Australia"], ["it", "🇮🇹 Italy / IBAN"], ["other", "🌐 Other IBAN"]] as [BankFormat, string][]).map(([f, label]) => (
+                  <Pressable
+                    key={f}
+                    style={[styles.formatTab, draftFormat === f && { backgroundColor: colors.primary }]}
+                    onPress={() => setDraftFormat(f)}
+                  >
+                    <Text style={[styles.formatTabText, draftFormat === f && { color: "#FFF" }]}>{label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Australian fields */}
+              {draftFormat === "au" ? (
+                <>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>BSB Number</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+                    value={formatBSB(draftBSB)}
+                    onChangeText={t => setDraftBSB(t.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000-000"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    maxLength={7}
+                  />
+                  <Text style={[styles.bankHint, { color: colors.mutedForeground }]}>6-digit bank branch code (e.g. 062-000 for CBA)</Text>
+
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Account Number</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+                    value={draftAccNumber}
+                    onChangeText={t => setDraftAccNumber(t.replace(/\D/g, "").slice(0, 9))}
+                    placeholder="123456789"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    maxLength={9}
+                  />
+
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Account Name</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+                    value={draftAccName}
+                    onChangeText={setDraftAccName}
+                    placeholder="Name as it appears on account"
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="words"
+                  />
+                </>
+              ) : (
+                <>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>IBAN</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+                    value={draftIBAN}
+                    onChangeText={t => setDraftIBAN(t.replace(/[^A-Za-z0-9]/g, "").slice(0, 34))}
+                    placeholder={draftFormat === "it" ? "IT00 A000 0000 0000 000000000000" : "XX00 0000 0000 0000 0000 00"}
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="characters"
+                    maxLength={34}
+                  />
+                  <Text style={[styles.bankHint, { color: colors.mutedForeground }]}>
+                    {draftFormat === "it" ? "27-character Italian IBAN starting with IT" : "Up to 34 characters · No spaces required"}
+                  </Text>
+                </>
+              )}
+
+              <View style={[styles.secureRow, { backgroundColor: colors.muted, marginTop: 16 }]}>
+                <Ionicons name="lock-closed" size={14} color="#10B981" />
+                <Text style={[styles.secureText, { color: colors.mutedForeground }]}>Stored only on your device · Never transmitted to third parties</Text>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+                <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowBankModal(false)}>
+                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalBtn, { flex: 1, backgroundColor: bankCanSave ? colors.primary : colors.border }]}
+                  onPress={saveBankDetails}
+                  disabled={!bankCanSave}
+                >
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Save Details</Text>
+                </Pressable>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* ── Upload / Update Card Modal ── */}
       <Modal visible={showAddCard} transparent animationType="slide" onRequestClose={() => setShowAddCard(false)}>
@@ -413,4 +706,24 @@ const styles = StyleSheet.create({
   feedbackInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 90 },
   modalBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   modalBtnText: { fontWeight: "700", fontSize: 15 },
+
+  // Bank details
+  bankCard: { borderRadius: 16, padding: 16, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  bankCardTop: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 10 },
+  bankIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  bankFormatLabel: { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  bankValue: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
+  bankAccName: { fontSize: 13, fontWeight: "700" },
+  bankEditBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  bankSecureRow: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  bankSecureText: { fontSize: 11, fontWeight: "500", flex: 1 },
+  bankAddRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  bankAddTitle: { fontSize: 15, fontWeight: "700", marginBottom: 3 },
+  bankAddSub: { fontSize: 12, lineHeight: 17 },
+  bankGpsBanner: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16 },
+  bankGpsText: { fontSize: 12, fontWeight: "600", flex: 1, lineHeight: 17 },
+  bankHint: { fontSize: 11, marginTop: 4, marginBottom: 4 },
+  formatToggle: { flexDirection: "row", borderRadius: 12, padding: 4, marginBottom: 4 },
+  formatTab: { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 9 },
+  formatTabText: { fontSize: 11, fontWeight: "700" },
 });

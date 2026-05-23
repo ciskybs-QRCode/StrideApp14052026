@@ -14,6 +14,38 @@ import { useColors } from "@/hooks/useColors";
 import { api, type ApiAvailabilitySlot, type ApiDiscipline, type ApiPrivateBooking } from "@/lib/api";
 import type { Child } from "@/context/AppDataContext";
 
+// ── Mock fallback data (shown when API is unreachable / demo mode) ─────────────
+
+const TODAY = new Date();
+function futureDate(daysFromNow: number): string {
+  const d = new Date(TODAY);
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+const MOCK_DISCIPLINES: ApiDiscipline[] = [
+  { id: 1, name: "Ballet", description: "Classical ballet technique", organization_id: 1, active: true, created_at: "" },
+  { id: 2, name: "Contemporary", description: "Modern dance expression", organization_id: 1, active: true, created_at: "" },
+  { id: 3, name: "Hip Hop", description: "Urban street dance styles", organization_id: 1, active: true, created_at: "" },
+  { id: 4, name: "Jazz", description: "Syncopated rhythm & style", organization_id: 1, active: true, created_at: "" },
+];
+
+const MOCK_AVAILABILITY: ApiAvailabilitySlot[] = [
+  // Sofia — Ballet
+  { id: 1, operator_profile_id: 1, organization_id: 1, discipline_id: 1, location: "Studio A – 123 Collins St, Melbourne", slot_date: futureDate(4), start_time: "09:00:00", end_time: "10:00:00", status: "approved", parent_price_cents: 9000, operator_pay_cents: 5500, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Sofia Bianchi" } }, discipline: { id: 1, name: "Ballet" } },
+  { id: 2, operator_profile_id: 1, organization_id: 1, discipline_id: 1, location: "Studio A – 123 Collins St, Melbourne", slot_date: futureDate(6), start_time: "10:30:00", end_time: "11:30:00", status: "approved", parent_price_cents: 9000, operator_pay_cents: 5500, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Sofia Bianchi" } }, discipline: { id: 1, name: "Ballet" } },
+  { id: 3, operator_profile_id: 1, organization_id: 1, discipline_id: 1, location: "Studio B – 45 Swanston St, Melbourne", slot_date: futureDate(9), start_time: "14:00:00", end_time: "15:00:00", status: "approved", parent_price_cents: 9000, operator_pay_cents: 5500, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Sofia Bianchi" } }, discipline: { id: 1, name: "Ballet" } },
+  // Sofia — Contemporary
+  { id: 4, operator_profile_id: 1, organization_id: 1, discipline_id: 2, location: "Studio A – 123 Collins St, Melbourne", slot_date: futureDate(5), start_time: "11:00:00", end_time: "12:00:00", status: "approved", parent_price_cents: 8500, operator_pay_cents: 5000, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Sofia Bianchi" } }, discipline: { id: 2, name: "Contemporary" } },
+  { id: 5, operator_profile_id: 1, organization_id: 1, discipline_id: 2, location: "Studio A – 123 Collins St, Melbourne", slot_date: futureDate(12), start_time: "15:30:00", end_time: "16:30:00", status: "approved", parent_price_cents: 8500, operator_pay_cents: 5000, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Sofia Bianchi" } }, discipline: { id: 2, name: "Contemporary" } },
+  // Marco — Hip Hop
+  { id: 6, operator_profile_id: 2, organization_id: 1, discipline_id: 3, location: "Studio C – 88 Bourke St, Melbourne", slot_date: futureDate(3), start_time: "16:00:00", end_time: "17:00:00", status: "approved", parent_price_cents: 7500, operator_pay_cents: 0, created_at: "", operator_profile: { id: 2, profile_type: "volunteer", user: { id: 11, name: "Marco Esposito" } }, discipline: { id: 3, name: "Hip Hop" } },
+  { id: 7, operator_profile_id: 2, organization_id: 1, discipline_id: 3, location: "Studio C – 88 Bourke St, Melbourne", slot_date: futureDate(7), start_time: "17:00:00", end_time: "18:00:00", status: "approved", parent_price_cents: 7500, operator_pay_cents: 0, created_at: "", operator_profile: { id: 2, profile_type: "volunteer", user: { id: 11, name: "Marco Esposito" } }, discipline: { id: 3, name: "Hip Hop" } },
+  // Marco — Jazz
+  { id: 8, operator_profile_id: 2, organization_id: 1, discipline_id: 4, location: "Studio B – 45 Swanston St, Melbourne", slot_date: futureDate(5), start_time: "09:30:00", end_time: "10:30:00", status: "approved", parent_price_cents: 8000, operator_pay_cents: 0, created_at: "", operator_profile: { id: 2, profile_type: "volunteer", user: { id: 11, name: "Marco Esposito" } }, discipline: { id: 4, name: "Jazz" } },
+  { id: 9, operator_profile_id: 2, organization_id: 1, discipline_id: 4, location: "Studio B – 45 Swanston St, Melbourne", slot_date: futureDate(10), start_time: "13:00:00", end_time: "14:00:00", status: "approved", parent_price_cents: 8000, operator_pay_cents: 0, created_at: "", operator_profile: { id: 2, profile_type: "volunteer", user: { id: 11, name: "Marco Esposito" } }, discipline: { id: 4, name: "Jazz" } },
+];
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Step = "operator" | "style" | "location" | "time" | "student";
@@ -117,9 +149,13 @@ export default function BookLessonScreen() {
     setLoading(true);
     try {
       const [avail, disc] = await Promise.all([api.getAvailability(), api.getDisciplines()]);
-      setAvailability(avail);
-      setDisciplines(disc);
-    } catch { /* offline — empty arrays */ }
+      const approved = avail.filter(s => s.status === "approved");
+      setAvailability(approved.length > 0 ? approved : MOCK_AVAILABILITY);
+      setDisciplines(disc.length > 0 ? disc : MOCK_DISCIPLINES);
+    } catch {
+      setAvailability(MOCK_AVAILABILITY);
+      setDisciplines(MOCK_DISCIPLINES);
+    }
     finally { setLoading(false); }
   }, []);
 
@@ -462,7 +498,31 @@ export default function BookLessonScreen() {
 
             <Text style={[styles.sectionLabel, { color: colors.primary }]}>Select a student</Text>
 
-            {children.length === 0 ? (
+            {/* Parent can book for themselves */}
+            {user && (() => {
+              const selfEntry: Child = { id: `self-${user.id}`, name: `${user.name} (myself)`, age: 0, stars: 0, allergies: "", medicalWaiver: "call_parent", mediaConsent: "none", courses: [] };
+              return (
+                <Pressable
+                  key="self"
+                  style={[styles.optionCard, { backgroundColor: `${colors.secondary}18`, borderColor: selectedChild?.id === selfEntry.id ? colors.primary : colors.secondary, borderWidth: 2 }]}
+                  onPress={() => setSelectedChild(selfEntry)}
+                >
+                  <View style={[styles.avatarCircle, { backgroundColor: colors.secondary }]}>
+                    <Ionicons name="person" size={22} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.optionTitle, { color: colors.foreground }]}>{user.name}</Text>
+                    <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>Book for myself</Text>
+                  </View>
+                  {selectedChild?.id === selfEntry.id
+                    ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                    : <View style={[styles.selfBadge, { backgroundColor: colors.secondary }]}><Text style={[styles.selfBadgeText, { color: colors.primary }]}>ME</Text></View>
+                  }
+                </Pressable>
+              );
+            })()}
+
+            {children.length === 0 && !user ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="people-outline" size={44} color={colors.mutedForeground} />
                 <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Children Added</Text>
@@ -545,6 +605,8 @@ const styles = StyleSheet.create({
   emptyCard: { alignItems: "center", paddingVertical: 48, gap: 10 },
   emptyTitle: { fontSize: 17, fontWeight: "800" },
   emptySub: { fontSize: 13, textAlign: "center", lineHeight: 18, maxWidth: 280 },
+  selfBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  selfBadgeText: { fontSize: 10, fontWeight: "900", letterSpacing: 0.5 },
   // Confirmed
   confirmedScroll: { alignItems: "center", paddingHorizontal: 24 },
   confirmedIcon: { width: 96, height: 96, borderRadius: 48, alignItems: "center", justifyContent: "center", marginBottom: 20 },
