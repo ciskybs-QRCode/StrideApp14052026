@@ -1,17 +1,50 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator, Alert, Modal, Platform, Pressable, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiAvailabilitySlot, type ApiDiscipline, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Date / time helpers ───────────────────────────────────────────────────────
+
+function toISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function generateUpcomingDates(n = 28): Date[] {
+  const result: Date[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < n; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    result.push(d);
+  }
+  return result;
+}
+
+const UPCOMING_DATES = generateUpcomingDates(28);
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function generateTimeSlots(): string[] {
+  const slots: string[] = [];
+  for (let h = 6; h <= 21; h++) {
+    slots.push(`${String(h).padStart(2, "0")}:00`);
+    if (h < 21) slots.push(`${String(h).padStart(2, "0")}:30`);
+  }
+  return slots;
+}
+
+const ALL_TIME_SLOTS = generateTimeSlots();
 
 function fmt(cents: number) { return `$${(cents / 100).toFixed(2)}`; }
 function fmtTime(t: string) { return t.slice(0, 5); }
@@ -28,7 +61,6 @@ export default function OperatorPrivateLessonsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user } = useAuth();
 
   const [tab, setTab] = useState<Tab>("bookings");
   const [refreshing, setRefreshing] = useState(false);
@@ -42,13 +74,15 @@ export default function OperatorPrivateLessonsScreen() {
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [slotDisciplineId, setSlotDisciplineId] = useState<number | null>(null);
   const [slotLocation, setSlotLocation] = useState("");
-  const [slotDate, setSlotDate] = useState("");
+  const [slotDate, setSlotDate] = useState<Date | null>(null);
   const [slotStart, setSlotStart] = useState("");
   const [slotEnd, setSlotEnd] = useState("");
   const [slotNotes, setSlotNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // QR scan result
+  // QR scan
+  const [showQrEntry, setShowQrEntry] = useState(false);
+  const [qrInput, setQrInput] = useState("");
   const [scanResult, setScanResult] = useState<{ ok: boolean; earnings_cents?: number; invoice_number?: string; error?: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -58,9 +92,9 @@ export default function OperatorPrivateLessonsScreen() {
       api.getPrivateBookings(),
       api.getPrivateNotifications(),
     ]);
-    if (disc.status === "fulfilled") setDisciplines(disc.value);
-    if (avail.status === "fulfilled") setSlots(avail.value);
-    if (bk.status === "fulfilled") setBookings(bk.value);
+    if (disc.status   === "fulfilled") setDisciplines(disc.value);
+    if (avail.status  === "fulfilled") setSlots(avail.value);
+    if (bk.status     === "fulfilled") setBookings(bk.value);
     if (notifs.status === "fulfilled") setNotifications(notifs.value);
   }, []);
 
@@ -72,26 +106,36 @@ export default function OperatorPrivateLessonsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  const resetForm = () => {
+    setSlotDisciplineId(null);
+    setSlotLocation("");
+    setSlotDate(null);
+    setSlotStart("");
+    setSlotEnd("");
+    setSlotNotes("");
+  };
+
   // ── Submit availability ─────────────────────────────────────────────────────
 
   const submitSlot = async () => {
-    if (!slotDisciplineId || !slotLocation.trim() || !slotDate.trim() || !slotStart.trim() || !slotEnd.trim()) {
-      Alert.alert("Missing fields", "Please fill in all required fields."); return;
+    if (!slotDisciplineId || !slotLocation.trim() || !slotDate || !slotStart || !slotEnd) {
+      Alert.alert("Missing fields", "Please fill in all required fields.");
+      return;
     }
     setSaving(true);
     try {
       await api.submitAvailability({
         disciplineId: slotDisciplineId,
-        location: slotLocation.trim(),
-        slotDate: slotDate.trim(),
-        startTime: slotStart.trim(),
-        endTime: slotEnd.trim(),
-        notes: slotNotes.trim() || undefined,
+        location:    slotLocation.trim(),
+        slotDate:    toISODate(slotDate),
+        startTime:   slotStart + ":00",
+        endTime:     slotEnd + ":00",
+        notes:       slotNotes.trim() || undefined,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await load();
       setShowSlotModal(false);
-      setSlotDisciplineId(null); setSlotLocation(""); setSlotDate(""); setSlotStart(""); setSlotEnd(""); setSlotNotes("");
+      resetForm();
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed to submit");
     } finally { setSaving(false); }
@@ -111,9 +155,6 @@ export default function OperatorPrivateLessonsScreen() {
   };
 
   // ── QR Scan ─────────────────────────────────────────────────────────────────
-
-  const [showQrEntry, setShowQrEntry] = useState(false);
-  const [qrInput, setQrInput] = useState("");
 
   const handleQrScan = async (token: string) => {
     if (!token.trim()) return;
@@ -144,6 +185,18 @@ export default function OperatorPrivateLessonsScreen() {
   function slotStatusText(s: ApiAvailabilitySlot["status"]) {
     return { pending: "#92400E", approved: "#065F46", rejected: "#991B1B", booked: "#1E3A8A" }[s];
   }
+  function slotStatusIcon(s: ApiAvailabilitySlot["status"]): React.ComponentProps<typeof Ionicons>["name"] {
+    const map: Record<ApiAvailabilitySlot["status"], React.ComponentProps<typeof Ionicons>["name"]> = {
+      pending:  "time-outline",
+      approved: "checkmark-circle-outline",
+      rejected: "close-circle-outline",
+      booked:   "person-outline",
+    };
+    return map[s];
+  }
+  function slotBorderColor(s: ApiAvailabilitySlot["status"]) {
+    return { pending: "#F59E0B", approved: "#10B981", rejected: "#EF4444", booked: "#1E3A8A" }[s];
+  }
   function bookingStatusColor(s: ApiPrivateBooking["status"]) {
     return { pending: "#FEF9C3", confirmed: "#D1FAE5", cancelled: "#FEE2E2", completed: "#EFF6FF" }[s];
   }
@@ -151,8 +204,15 @@ export default function OperatorPrivateLessonsScreen() {
     return { pending: "#92400E", confirmed: "#065F46", cancelled: "#991B1B", completed: "#1E3A8A" }[s];
   }
 
+  // Computed for form
+  const endTimeOptions = slotStart ? ALL_TIME_SLOTS.filter(t => t > slotStart) : [];
+  const formComplete   = !!slotDisciplineId && slotLocation.trim().length > 0 && !!slotDate && !!slotStart && !!slotEnd;
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
         <View style={styles.headerRow}>
@@ -170,6 +230,7 @@ export default function OperatorPrivateLessonsScreen() {
             <Ionicons name="qr-code-outline" size={20} color={colors.primary} />
           </Pressable>
         </View>
+
         <View style={styles.tabBar}>
           {(["bookings", "availability", "notifications"] as Tab[]).map(key => {
             const cfg: Record<Tab, { label: string; icon: React.ComponentProps<typeof Ionicons>["name"] }> = {
@@ -195,6 +256,7 @@ export default function OperatorPrivateLessonsScreen() {
         </View>
       </View>
 
+      {/* Content */}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
@@ -215,7 +277,7 @@ export default function OperatorPrivateLessonsScreen() {
             {bookings.map(b => (
               <View key={b.id} style={[styles.card, { backgroundColor: colors.card }]}>
                 <View style={[styles.bookingDateBox, { backgroundColor: `${colors.secondary}50` }]}>
-                  <Text style={[styles.bookingDay, { color: colors.primary }]}>{fmtDate(b.slot_date).split(" ")[0]}</Text>
+                  <Text style={[styles.bookingDay,    { color: colors.primary }]}>{fmtDate(b.slot_date).split(" ")[0]}</Text>
                   <Text style={[styles.bookingDayNum, { color: colors.primary }]}>{fmtDate(b.slot_date).split(" ")[1]}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
@@ -247,7 +309,10 @@ export default function OperatorPrivateLessonsScreen() {
         {/* ── AVAILABILITY TAB ── */}
         {tab === "availability" && (
           <>
-            <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={() => setShowSlotModal(true)}>
+            <Pressable
+              style={[styles.addBtn, { backgroundColor: colors.primary }]}
+              onPress={() => { resetForm(); setShowSlotModal(true); }}
+            >
               <Ionicons name="add-circle-outline" size={18} color="#FFF" />
               <Text style={styles.addBtnText}>Submit Availability</Text>
             </Pressable>
@@ -256,32 +321,50 @@ export default function OperatorPrivateLessonsScreen() {
               <View style={styles.emptyCard}>
                 <Ionicons name="time-outline" size={44} color={colors.mutedForeground} />
                 <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Slots Submitted</Text>
-                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Submit your availability and the admin will review and approve your slots.</Text>
+                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+                  Submit your availability and the admin will review and approve your slots.
+                </Text>
               </View>
             )}
 
-            {slots.map(s => (
-              <View key={s.id} style={[styles.card, { backgroundColor: colors.card }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-                    {s.discipline?.name ?? "Discipline"}
-                  </Text>
-                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-                    {fmtDate(s.slot_date)} · {fmtTime(s.start_time)} – {fmtTime(s.end_time)}
-                  </Text>
-                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{s.location}</Text>
-                  {s.parent_price_cents != null && (
-                    <Text style={[styles.cardSub, { color: colors.primary, fontWeight: "700" }]}>
-                      Parent price: {fmt(s.parent_price_cents)}
+            {slots.map(s => {
+              const d = new Date(s.slot_date + "T00:00:00");
+              return (
+                <View
+                  key={s.id}
+                  style={[styles.slotCard, { backgroundColor: colors.card, borderLeftColor: slotBorderColor(s.status) }]}
+                >
+                  <View style={[styles.slotDateBox, { backgroundColor: slotStatusColor(s.status) }]}>
+                    <Text style={[styles.slotDayName,  { color: slotStatusText(s.status) }]}>{DAY_NAMES[d.getDay()]}</Text>
+                    <Text style={[styles.slotDayNum,   { color: slotStatusText(s.status) }]}>{d.getDate()}</Text>
+                    <Text style={[styles.slotMonthTxt, { color: slotStatusText(s.status) }]}>{MONTH_SHORT[d.getMonth()]}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>{s.discipline?.name ?? "Discipline"}</Text>
+                    <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                      {fmtTime(s.start_time)} – {fmtTime(s.end_time)} · {s.location}
                     </Text>
-                  )}
-                  {s.notes ? <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>"{s.notes}"</Text> : null}
+                    {s.parent_price_cents != null && (
+                      <Text style={[styles.cardSub, { color: colors.primary, fontWeight: "700" }]}>
+                        Parent price: {fmt(s.parent_price_cents)}/lesson
+                      </Text>
+                    )}
+                    {s.operator_pay_cents != null && s.operator_pay_cents > 0 && (
+                      <Text style={[styles.cardSub, { color: "#059669", fontWeight: "700" }]}>
+                        Your pay: {fmt(s.operator_pay_cents)}/lesson
+                      </Text>
+                    )}
+                    {s.notes ? (
+                      <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>"{s.notes}"</Text>
+                    ) : null}
+                  </View>
+                  <View style={[styles.statusPill, { backgroundColor: slotStatusColor(s.status) }]}>
+                    <Ionicons name={slotStatusIcon(s.status)} size={11} color={slotStatusText(s.status)} />
+                    <Text style={[styles.statusText, { color: slotStatusText(s.status) }]}>{s.status}</Text>
+                  </View>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: slotStatusColor(s.status) }]}>
-                  <Text style={[styles.statusText, { color: slotStatusText(s.status) }]}>{s.status}</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </>
         )}
 
@@ -289,10 +372,13 @@ export default function OperatorPrivateLessonsScreen() {
         {tab === "notifications" && (
           <>
             {notifications.length > 0 && (
-              <Pressable style={[styles.markAllBtn, { borderColor: colors.border }]} onPress={async () => {
-                await api.markAllNotificationsRead().catch(() => {});
-                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-              }}>
+              <Pressable
+                style={[styles.markAllBtn, { borderColor: colors.border }]}
+                onPress={async () => {
+                  await api.markAllNotificationsRead().catch(() => {});
+                  setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                }}
+              >
                 <Ionicons name="checkmark-done-outline" size={14} color={colors.primary} />
                 <Text style={[styles.markAllText, { color: colors.primary }]}>Mark all read</Text>
               </Pressable>
@@ -306,7 +392,10 @@ export default function OperatorPrivateLessonsScreen() {
             {notifications.map(n => (
               <Pressable
                 key={n.id}
-                style={[styles.notifCard, { backgroundColor: n.read ? colors.card : `${colors.secondary}40`, borderLeftColor: colors.primary }]}
+                style={[styles.notifCard, {
+                  backgroundColor: n.read ? colors.card : `${colors.secondary}40`,
+                  borderLeftColor: colors.primary,
+                }]}
                 onPress={async () => {
                   await api.markNotificationRead(n.id).catch(() => {});
                   setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
@@ -315,8 +404,8 @@ export default function OperatorPrivateLessonsScreen() {
                 {!n.read && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.notifTitle, { color: colors.foreground }]}>{n.title}</Text>
-                  <Text style={[styles.notifBody, { color: colors.mutedForeground }]}>{n.body}</Text>
-                  <Text style={[styles.notifTime, { color: colors.mutedForeground }]}>
+                  <Text style={[styles.notifBody,  { color: colors.mutedForeground }]}>{n.body}</Text>
+                  <Text style={[styles.notifTime,  { color: colors.mutedForeground }]}>
                     {new Date(n.created_at).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </Text>
                 </View>
@@ -326,53 +415,203 @@ export default function OperatorPrivateLessonsScreen() {
         )}
       </ScrollView>
 
-      {/* ── Submit Slot Modal ── */}
+      {/* ══════════════════════════════════════════════════
+          SUBMIT SLOT MODAL
+          1 — Discipline  2 — Location  3 — Date strip
+          4 — Start time grid  5 — End time grid  6 — Notes
+      ══════════════════════════════════════════════════ */}
       <Modal visible={showSlotModal} transparent animationType="slide" onRequestClose={() => setShowSlotModal(false)}>
         <View style={styles.modalOverlay}>
-          <ScrollView style={{ width: "100%" }} contentContainerStyle={{ alignItems: "center", paddingVertical: 40 }}>
+          <ScrollView
+            style={{ width: "100%" }}
+            contentContainerStyle={{ alignItems: "center", paddingVertical: 40 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.modalTitle, { color: colors.primary }]}>Submit Availability</Text>
 
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Discipline *</Text>
-              <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-                {disciplines.filter(d => d.active).map(d => (
-                  <Pressable
-                    key={d.id}
-                    style={[styles.pickerOption, slotDisciplineId === d.id && { backgroundColor: `${colors.secondary}80` }]}
-                    onPress={() => setSlotDisciplineId(d.id)}
-                  >
-                    <Ionicons name={slotDisciplineId === d.id ? "checkmark-circle" : "musical-notes-outline"} size={15} color={slotDisciplineId === d.id ? colors.primary : colors.mutedForeground} />
-                    <Text style={[styles.pickerOptionText, { color: colors.foreground }]}>{d.name}</Text>
-                  </Pressable>
-                ))}
-                {disciplines.filter(d => d.active).length === 0 && (
-                  <Text style={[styles.pickerPlaceholder, { color: colors.mutedForeground }]}>No disciplines available. Ask admin to add some.</Text>
-                )}
+              {/* Header strip */}
+              <View style={[styles.modalHeaderStrip, { backgroundColor: colors.primary }]}>
+                <View style={[styles.modalHeaderIcon, { backgroundColor: colors.secondary }]}>
+                  <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.modalHeaderTitle}>Submit Availability</Text>
+                  <Text style={styles.modalHeaderSub}>Tell us when you're available to teach</Text>
+                </View>
               </View>
 
-              {[
-                { label: "Location *", value: slotLocation, set: setSlotLocation, placeholder: "e.g. Studio A, Main Hall" },
-                { label: "Date (YYYY-MM-DD) *", value: slotDate, set: setSlotDate, placeholder: "e.g. 2026-06-15" },
-                { label: "Start Time (HH:MM) *", value: slotStart, set: setSlotStart, placeholder: "e.g. 09:00" },
-                { label: "End Time (HH:MM) *", value: slotEnd, set: setSlotEnd, placeholder: "e.g. 10:00" },
-                { label: "Notes", value: slotNotes, set: setSlotNotes, placeholder: "Optional notes..." },
-              ].map(f => (
-                <View key={f.label}>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 12 }]}>{f.label}</Text>
-                  <TextInput
-                    style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
-                    value={f.value} onChangeText={f.set} placeholder={f.placeholder}
-                    placeholderTextColor={colors.mutedForeground}
-                  />
+              <View style={styles.modalBody}>
+
+                {/* ── 1. Discipline ── */}
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Discipline *</Text>
+                <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+                  {disciplines.filter(d => d.active).map(d => (
+                    <Pressable
+                      key={d.id}
+                      style={[styles.pickerOption, slotDisciplineId === d.id && { backgroundColor: `${colors.secondary}80` }]}
+                      onPress={() => setSlotDisciplineId(d.id)}
+                    >
+                      <Ionicons
+                        name={slotDisciplineId === d.id ? "checkmark-circle" : "musical-notes-outline"}
+                        size={15}
+                        color={slotDisciplineId === d.id ? colors.primary : colors.mutedForeground}
+                      />
+                      <Text style={[styles.pickerOptionText, { color: colors.foreground }]}>{d.name}</Text>
+                    </Pressable>
+                  ))}
+                  {disciplines.filter(d => d.active).length === 0 && (
+                    <Text style={[styles.pickerPlaceholder, { color: colors.mutedForeground }]}>
+                      No disciplines available. Ask admin to add some.
+                    </Text>
+                  )}
                 </View>
-              ))}
+
+                {/* ── 2. Location ── */}
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Location *</Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
+                  value={slotLocation}
+                  onChangeText={setSlotLocation}
+                  placeholder="e.g. Studio A, Main Hall"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+
+                {/* ── 3. Date strip ── */}
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Date *</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginHorizontal: -4 }}
+                  contentContainerStyle={{ paddingHorizontal: 4, gap: 8, paddingBottom: 4 }}
+                >
+                  {UPCOMING_DATES.map((d, i) => {
+                    const isSelected = slotDate ? toISODate(d) === toISODate(slotDate) : false;
+                    return (
+                      <Pressable
+                        key={i}
+                        style={[
+                          styles.dateChip,
+                          {
+                            borderColor:      isSelected ? colors.primary : colors.border,
+                            backgroundColor:  isSelected ? colors.primary : colors.muted,
+                          },
+                        ]}
+                        onPress={() => setSlotDate(d)}
+                      >
+                        <Text style={[styles.dateChipDay, { color: isSelected ? "rgba(255,255,255,0.8)" : colors.mutedForeground }]}>
+                          {i === 0 ? "Today" : DAY_NAMES[d.getDay()]}
+                        </Text>
+                        <Text style={[styles.dateChipNum, { color: isSelected ? "#FFF" : colors.foreground }]}>
+                          {d.getDate()}
+                        </Text>
+                        <Text style={[styles.dateChipMon, { color: isSelected ? "rgba(255,255,255,0.7)" : colors.mutedForeground }]}>
+                          {MONTH_SHORT[d.getMonth()]}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* ── 4. Start time ── */}
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>Start Time *</Text>
+                <View style={styles.timeGrid}>
+                  {ALL_TIME_SLOTS.map(t => (
+                    <Pressable
+                      key={t}
+                      style={[
+                        styles.timeChip,
+                        {
+                          borderColor:     slotStart === t ? colors.primary : colors.border,
+                          backgroundColor: slotStart === t ? colors.primary : colors.muted,
+                        },
+                      ]}
+                      onPress={() => {
+                        setSlotStart(t);
+                        if (slotEnd && slotEnd <= t) setSlotEnd("");
+                      }}
+                    >
+                      <Text style={[styles.timeChipText, { color: slotStart === t ? "#FFF" : colors.foreground }]}>{t}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                {/* ── 5. End time ── */}
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>End Time *</Text>
+                {!slotStart ? (
+                  <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>Select a start time first</Text>
+                ) : (
+                  <View style={styles.timeGrid}>
+                    {endTimeOptions.map(t => (
+                      <Pressable
+                        key={t}
+                        style={[
+                          styles.timeChip,
+                          {
+                            borderColor:     slotEnd === t ? "#059669" : colors.border,
+                            backgroundColor: slotEnd === t ? "#059669" : colors.muted,
+                          },
+                        ]}
+                        onPress={() => setSlotEnd(t)}
+                      >
+                        <Text style={[styles.timeChipText, { color: slotEnd === t ? "#FFF" : colors.foreground }]}>{t}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+
+                {/* Duration indicator */}
+                {slotStart && slotEnd && (
+                  <View style={[styles.durationRow, { backgroundColor: `${colors.secondary}30`, borderColor: colors.secondary }]}>
+                    <Ionicons name="time-outline" size={14} color={colors.primary} />
+                    <Text style={[styles.durationText, { color: colors.primary }]}>
+                      {slotStart} – {slotEnd}{" · "}
+                      {(() => {
+                        const [sh, sm] = slotStart.split(":").map(Number);
+                        const [eh, em] = slotEnd.split(":").map(Number);
+                        const mins = (eh * 60 + em) - (sh * 60 + sm);
+                        return mins >= 60
+                          ? `${Math.floor(mins / 60)}h${mins % 60 > 0 ? ` ${mins % 60}m` : ""}`
+                          : `${mins}m`;
+                      })()}
+                    </Text>
+                  </View>
+                )}
+
+                {/* ── 6. Notes ── */}
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Notes (optional)</Text>
+                <TextInput
+                  style={[styles.input, styles.notesInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
+                  value={slotNotes}
+                  onChangeText={setSlotNotes}
+                  placeholder="Any notes for the admin…"
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                />
+
+              </View>
 
               <View style={styles.modalActions}>
-                <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted }]} onPress={() => setShowSlotModal(false)}>
+                <Pressable
+                  style={[styles.modalBtn, { backgroundColor: colors.muted }]}
+                  onPress={() => setShowSlotModal(false)}
+                >
                   <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                 </Pressable>
-                <Pressable style={[styles.modalBtn, { backgroundColor: saving ? colors.border : colors.primary }]} onPress={submitSlot} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.modalBtnText}>Submit</Text>}
+                <Pressable
+                  style={[styles.modalBtn, { backgroundColor: formComplete && !saving ? colors.primary : colors.border }]}
+                  onPress={submitSlot}
+                  disabled={!formComplete || saving}
+                >
+                  {saving
+                    ? <ActivityIndicator size="small" color="#FFF" />
+                    : (
+                      <>
+                        <Ionicons name="paper-plane-outline" size={15} color="#FFF" />
+                        <Text style={styles.modalBtnText}>Submit</Text>
+                      </>
+                    )
+                  }
                 </Pressable>
               </View>
             </View>
@@ -383,7 +622,7 @@ export default function OperatorPrivateLessonsScreen() {
       {/* ── QR Entry Modal ── */}
       <Modal visible={showQrEntry} transparent animationType="slide" onRequestClose={() => setShowQrEntry(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.qrModalCard, { backgroundColor: colors.card }]}>
             <View style={[styles.qrIconBox, { backgroundColor: `${colors.secondary}50` }]}>
               <Ionicons name="qr-code-outline" size={40} color={colors.primary} />
             </View>
@@ -392,8 +631,12 @@ export default function OperatorPrivateLessonsScreen() {
               Enter the QR token from the parent's booking confirmation to log attendance and record earnings.
             </Text>
             <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted, textAlign: "center", letterSpacing: 2, fontSize: 16 }]}
-              value={qrInput} onChangeText={setQrInput}
+              style={[styles.input, {
+                borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted,
+                textAlign: "center", letterSpacing: 2, fontSize: 16,
+              }]}
+              value={qrInput}
+              onChangeText={setQrInput}
               placeholder="Paste QR token here"
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="none"
@@ -407,12 +650,15 @@ export default function OperatorPrivateLessonsScreen() {
                 onPress={() => handleQrScan(qrInput)}
                 disabled={saving || !qrInput.trim()}
               >
-                {saving ? <ActivityIndicator size="small" color="#FFF" /> : (
-                  <>
-                    <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
-                    <Text style={styles.modalBtnText}>Log Attendance</Text>
-                  </>
-                )}
+                {saving
+                  ? <ActivityIndicator size="small" color="#FFF" />
+                  : (
+                    <>
+                      <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
+                      <Text style={styles.modalBtnText}>Log Attendance</Text>
+                    </>
+                  )
+                }
               </Pressable>
             </View>
           </View>
@@ -422,9 +668,13 @@ export default function OperatorPrivateLessonsScreen() {
       {/* ── Scan Result Modal ── */}
       <Modal visible={scanResult !== null} transparent animationType="fade" onRequestClose={() => setScanResult(null)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card, alignItems: "center" }]}>
+          <View style={[styles.qrModalCard, { backgroundColor: colors.card, alignItems: "center" }]}>
             <View style={[styles.resultIcon, { backgroundColor: scanResult?.ok ? "#D1FAE5" : "#FEE2E2" }]}>
-              <Ionicons name={scanResult?.ok ? "checkmark-circle" : "close-circle"} size={48} color={scanResult?.ok ? "#059669" : "#DC2626"} />
+              <Ionicons
+                name={scanResult?.ok ? "checkmark-circle" : "close-circle"}
+                size={48}
+                color={scanResult?.ok ? "#059669" : "#DC2626"}
+              />
             </View>
             <Text style={[styles.resultTitle, { color: scanResult?.ok ? "#065F46" : "#991B1B" }]}>
               {scanResult?.ok ? "Attendance Logged!" : "Scan Failed"}
@@ -439,7 +689,10 @@ export default function OperatorPrivateLessonsScreen() {
             ) : (
               <Text style={[styles.resultSub, { color: "#991B1B" }]}>{scanResult?.error ?? "Unknown error"}</Text>
             )}
-            <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, marginTop: 20, alignSelf: "stretch" }]} onPress={() => setScanResult(null)}>
+            <Pressable
+              style={[styles.modalBtn, { backgroundColor: colors.primary, marginTop: 20, alignSelf: "stretch" }]}
+              onPress={() => setScanResult(null)}
+            >
               <Text style={styles.modalBtnText}>Close</Text>
             </Pressable>
           </View>
@@ -452,60 +705,91 @@ export default function OperatorPrivateLessonsScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 4 },
-  headerRow: { flexDirection: "row", alignItems: "center", paddingBottom: 12 },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: "#FFF" },
-  headerSub: { fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 1 },
-  qrBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  tabBar: { flexDirection: "row", gap: 4, paddingBottom: 12 },
-  tabBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.12)" },
-  tabBtnActive: { backgroundColor: "#FFFFFF" },
-  tabBtnText: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.65)" },
-  tabBadge: { width: 15, height: 15, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
-  tabBadgeText: { fontSize: 8, fontWeight: "800", color: "#FFF" },
-  scroll: { padding: 16, gap: 10 },
-  addBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 14, marginBottom: 4 },
-  addBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
-  card: { borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  bookingDateBox: { width: 48, height: 52, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  bookingDay: { fontSize: 10, fontWeight: "700", textTransform: "uppercase" },
-  bookingDayNum: { fontSize: 18, fontWeight: "800" },
-  cardTitle: { fontSize: 14, fontWeight: "700", marginBottom: 2 },
-  cardSub: { fontSize: 12, lineHeight: 17 },
-  cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 },
-  statusBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
-  statusText: { fontSize: 11, fontWeight: "700" },
-  bookingPrice: { fontSize: 14, fontWeight: "800" },
-  earningsText: { fontSize: 12, fontWeight: "700", marginTop: 3 },
-  confirmBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
-  emptyCard: { alignItems: "center", paddingVertical: 48, gap: 10 },
-  emptyTitle: { fontSize: 17, fontWeight: "800" },
-  emptySub: { fontSize: 13, textAlign: "center", lineHeight: 18, maxWidth: 280 },
-  markAllBtn: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-end", borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, marginBottom: 6 },
-  markAllText: { fontSize: 12, fontWeight: "700" },
-  notifCard: { borderRadius: 14, padding: 14, borderLeftWidth: 4, flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 2 },
-  unreadDot: { width: 8, height: 8, borderRadius: 4, marginTop: 4 },
-  notifTitle: { fontSize: 13, fontWeight: "700", marginBottom: 2 },
-  notifBody: { fontSize: 12, lineHeight: 17 },
-  notifTime: { fontSize: 10, marginTop: 4 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", padding: 20 },
-  modalCard: { width: "100%", maxWidth: 420, borderRadius: 24, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
-  modalTitle: { fontSize: 18, fontWeight: "800", marginBottom: 16 },
-  fieldLabel: { fontSize: 12, fontWeight: "600", marginBottom: 6 },
-  input: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, marginBottom: 2 },
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 16 },
-  modalBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 13, borderRadius: 12 },
-  modalBtnText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
-  pickerContainer: { borderWidth: 1.5, borderRadius: 12, padding: 8, marginBottom: 4 },
-  pickerPlaceholder: { fontSize: 12, padding: 8, textAlign: "center" },
-  pickerOption: { flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 8 },
-  pickerOptionText: { fontSize: 13, fontWeight: "600" },
-  qrIconBox: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 12 },
-  qrInstructions: { fontSize: 13, textAlign: "center", lineHeight: 18, marginBottom: 16 },
-  resultIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 14 },
-  resultTitle: { fontSize: 20, fontWeight: "800", marginBottom: 6, textAlign: "center" },
-  resultSub: { fontSize: 13, textAlign: "center" },
-  earningsLarge: { fontSize: 26, fontWeight: "800", marginTop: 8 },
+  container:          { flex: 1 },
+  header:             { paddingHorizontal: 20, paddingBottom: 4 },
+  headerRow:          { flexDirection: "row", alignItems: "center", paddingBottom: 12 },
+  backBtn:            { padding: 4 },
+  headerTitle:        { fontSize: 20, fontWeight: "800", color: "#FFF" },
+  headerSub:          { fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 1 },
+  qrBtn:              { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  tabBar:             { flexDirection: "row", gap: 4, paddingBottom: 12 },
+  tabBtn:             { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.12)" },
+  tabBtnActive:       { backgroundColor: "#FFFFFF" },
+  tabBtnText:         { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.65)" },
+  tabBadge:           { width: 15, height: 15, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
+  tabBadgeText:       { fontSize: 8, fontWeight: "800", color: "#FFF" },
+  scroll:             { padding: 16, gap: 10 },
+  addBtn:             { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 14, marginBottom: 4 },
+  addBtnText:         { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  // Booking card
+  card:               { borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  bookingDateBox:     { width: 48, height: 52, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  bookingDay:         { fontSize: 10, fontWeight: "700", textTransform: "uppercase" },
+  bookingDayNum:      { fontSize: 18, fontWeight: "800" },
+  cardTitle:          { fontSize: 14, fontWeight: "700", marginBottom: 2 },
+  cardSub:            { fontSize: 12, lineHeight: 17 },
+  cardFooter:         { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 },
+  statusBadge:        { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
+  statusText:         { fontSize: 11, fontWeight: "700" },
+  bookingPrice:       { fontSize: 14, fontWeight: "800" },
+  earningsText:       { fontSize: 12, fontWeight: "700", marginTop: 3 },
+  confirmBtn:         { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
+  // Slot card (availability tab)
+  slotCard:           { borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, borderLeftWidth: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
+  slotDateBox:        { width: 48, minHeight: 64, borderRadius: 12, alignItems: "center", justifyContent: "center", padding: 6 },
+  slotDayName:        { fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  slotDayNum:         { fontSize: 20, fontWeight: "800", lineHeight: 24 },
+  slotMonthTxt:       { fontSize: 9, fontWeight: "600", textTransform: "uppercase" },
+  statusPill:         { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10, alignSelf: "flex-start" },
+  // Empty / notifications
+  emptyCard:          { alignItems: "center", paddingVertical: 48, gap: 10 },
+  emptyTitle:         { fontSize: 17, fontWeight: "800" },
+  emptySub:           { fontSize: 13, textAlign: "center", lineHeight: 18, maxWidth: 280 },
+  markAllBtn:         { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-end", borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, marginBottom: 6 },
+  markAllText:        { fontSize: 12, fontWeight: "700" },
+  notifCard:          { borderRadius: 14, padding: 14, borderLeftWidth: 4, flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 2 },
+  unreadDot:          { width: 8, height: 8, borderRadius: 4, marginTop: 4 },
+  notifTitle:         { fontSize: 13, fontWeight: "700", marginBottom: 2 },
+  notifBody:          { fontSize: 12, lineHeight: 17 },
+  notifTime:          { fontSize: 10, marginTop: 4 },
+  // Modal shell
+  modalOverlay:       { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", padding: 20 },
+  modalCard:          { width: "100%", maxWidth: 440, borderRadius: 24, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+  qrModalCard:        { width: "100%", maxWidth: 420, borderRadius: 24, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+  modalHeaderStrip:   { flexDirection: "row", alignItems: "center", gap: 12, padding: 18 },
+  modalHeaderIcon:    { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  modalHeaderTitle:   { fontSize: 16, fontWeight: "800", color: "#FFF" },
+  modalHeaderSub:     { fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 1 },
+  modalBody:          { padding: 20 },
+  modalTitle:         { fontSize: 18, fontWeight: "800", marginBottom: 16 },
+  fieldLabel:         { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  fieldHint:          { fontSize: 12, marginBottom: 8 },
+  input:              { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, marginBottom: 2 },
+  notesInput:         { height: 72, textAlignVertical: "top", paddingTop: 10 },
+  modalActions:       { flexDirection: "row", gap: 10, margin: 20, marginTop: 4 },
+  modalBtn:           { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 13, borderRadius: 12 },
+  modalBtnText:       { color: "#FFF", fontWeight: "700", fontSize: 14 },
+  pickerContainer:    { borderWidth: 1.5, borderRadius: 12, padding: 8, marginBottom: 4 },
+  pickerPlaceholder:  { fontSize: 12, padding: 8, textAlign: "center" },
+  pickerOption:       { flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 8 },
+  pickerOptionText:   { fontSize: 13, fontWeight: "600" },
+  // Date strip
+  dateChip:           { width: 54, alignItems: "center", paddingVertical: 10, borderRadius: 14, borderWidth: 1.5, gap: 2 },
+  dateChipDay:        { fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  dateChipNum:        { fontSize: 20, fontWeight: "800", lineHeight: 24 },
+  dateChipMon:        { fontSize: 9, fontWeight: "600" },
+  // Time grid
+  timeGrid:           { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  timeChip:           { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5 },
+  timeChipText:       { fontSize: 12, fontWeight: "700" },
+  // Duration indicator
+  durationRow:        { flexDirection: "row", alignItems: "center", gap: 6, padding: 10, borderRadius: 10, borderWidth: 1, marginTop: 10 },
+  durationText:       { fontSize: 13, fontWeight: "700" },
+  // QR / Scan
+  qrIconBox:          { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 12 },
+  qrInstructions:     { fontSize: 13, textAlign: "center", lineHeight: 18, marginBottom: 16 },
+  resultIcon:         { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 14 },
+  resultTitle:        { fontSize: 20, fontWeight: "800", marginBottom: 6, textAlign: "center" },
+  resultSub:          { fontSize: 13, textAlign: "center" },
+  earningsLarge:      { fontSize: 26, fontWeight: "800", marginTop: 8 },
 });

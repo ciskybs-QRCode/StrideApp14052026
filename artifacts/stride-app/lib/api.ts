@@ -193,8 +193,13 @@ export const api = {
     endTime: string;
     notes?: string;
   }) => request<ApiAvailabilitySlot>("POST", "/availability", data),
-  reviewAvailability: (id: number, status: "approved" | "rejected", parentPriceCents?: number) =>
-    request<ApiAvailabilitySlot>("PATCH", `/availability/${id}`, { status, parentPriceCents }),
+  reviewAvailability: (
+    id: number,
+    status: "approved" | "rejected",
+    parentPriceCents?: number,
+    operatorPayCents?: number,
+  ) =>
+    request<ApiAvailabilitySlot>("PATCH", `/availability/${id}`, { status, parentPriceCents, operatorPayCents }),
 
   // Private bookings
   getPrivateBookings: () => request<ApiPrivateBooking[]>("GET", "/private-bookings"),
@@ -445,6 +450,8 @@ export interface ApiAvailabilitySlot {
   end_time: string;
   status: "pending" | "approved" | "rejected" | "booked";
   parent_price_cents?: number;
+  /** Operator's hourly pay rate in cents (set by admin on approval) */
+  operator_pay_cents?: number;
   notes?: string;
   created_at: string;
   operator_profile?: {

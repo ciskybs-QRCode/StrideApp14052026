@@ -52,6 +52,8 @@ export default function AdminLessonsScreen() {
   // ── Availability review ───────────────────────────────────────────────────────
   const [reviewSlot, setReviewSlot]   = useState<ApiAvailabilitySlot | null>(null);
   const [reviewPrice, setReviewPrice] = useState("");
+  /** Operator pay rate in dollars (per lesson) — pre-filled from their discipline rate */
+  const [reviewOpPay, setReviewOpPay] = useState("");
 
   // ── Data loading ──────────────────────────────────────────────────────────────
 
@@ -135,15 +137,40 @@ export default function AdminLessonsScreen() {
 
   // ── Availability review ────────────────────────────────────────────────────────
 
+  const openReview = (s: ApiAvailabilitySlot) => {
+    setReviewSlot(s);
+    setReviewPrice("");
+    // Pre-fill operator pay from their discipline rate (if paid profile exists)
+    const profile = profiles.find(p => p.id === s.operator_profile_id);
+    if (profile?.profile_type === "paid" && profile.rates) {
+      const rate = profile.rates.find(r => r.discipline_id === s.discipline_id);
+      if (rate) {
+        // Compute duration in hours to give a per-lesson default
+        const [sh, sm] = s.start_time.split(":").map(Number);
+        const [eh, em] = s.end_time.split(":").map(Number);
+        const hours = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+        setReviewOpPay((rate.hourly_rate_cents / 100 * hours).toFixed(2));
+        return;
+      }
+    }
+    setReviewOpPay("");
+  };
+
   const approveSlot = async (status: "approved" | "rejected") => {
     if (!reviewSlot) return;
+    if (status === "approved" && !reviewPrice.trim()) {
+      Alert.alert("Parent price required", "Enter the price to charge parents before approving.");
+      return;
+    }
     setSaving(true);
     try {
-      const priceCents = reviewPrice.trim() ? Math.round(parseFloat(reviewPrice) * 100) : undefined;
-      await api.reviewAvailability(reviewSlot.id, status, priceCents);
+      const priceCents  = reviewPrice.trim()  ? Math.round(parseFloat(reviewPrice)  * 100) : undefined;
+      const opPayCents  = reviewOpPay.trim()   ? Math.round(parseFloat(reviewOpPay)  * 100) : undefined;
+      await api.reviewAvailability(reviewSlot.id, status, priceCents, opPayCents);
       await load();
       setReviewSlot(null);
       setReviewPrice("");
+      setReviewOpPay("");
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed");
     } finally { setSaving(false); }
@@ -273,7 +300,7 @@ export default function AdminLessonsScreen() {
                       <Text style={[styles.cardSub, { color: "#92400E" }]}>{s.discipline?.name} · {s.location}</Text>
                       {s.notes ? <Text style={[styles.cardSub, { color: "#B45309" }]} numberOfLines={1}>"{s.notes}"</Text> : null}
                     </View>
-                    <Pressable style={[styles.reviewBtn, { backgroundColor: colors.primary }]} onPress={() => { setReviewSlot(s); setReviewPrice(""); }}>
+                    <Pressable style={[styles.reviewBtn, { backgroundColor: colors.primary }]} onPress={() => openReview(s)}>
                       <Text style={styles.reviewBtnText}>Review</Text>
                     </Pressable>
                   </View>
@@ -291,8 +318,19 @@ export default function AdminLessonsScreen() {
                       <Text style={[styles.cardSub, { color: "#065F46" }]}>{fmtDate(s.slot_date)} · {fmtTime(s.start_time)} – {fmtTime(s.end_time)}</Text>
                       <Text style={[styles.cardSub, { color: "#065F46" }]}>
                         {s.discipline?.name} · {s.location}
-                        {s.parent_price_cents != null ? ` · ${fmt(s.parent_price_cents)}/lesson` : ""}
                       </Text>
+                      <View style={{ flexDirection: "row", gap: 12, marginTop: 2 }}>
+                        {s.parent_price_cents != null && (
+                          <Text style={[styles.cardSub, { color: "#065F46", fontWeight: "700" }]}>
+                            Parent: {fmt(s.parent_price_cents)}
+                          </Text>
+                        )}
+                        {s.operator_pay_cents != null && s.operator_pay_cents > 0 && (
+                          <Text style={[styles.cardSub, { color: "#059669", fontWeight: "700" }]}>
+                            Pay: {fmt(s.operator_pay_cents)}
+                          </Text>
+                        )}
+                      </View>
                     </View>
                     <Ionicons name="checkmark-circle" size={22} color="#059669" />
                   </View>
@@ -559,45 +597,130 @@ export default function AdminLessonsScreen() {
       </Modal>
 
       {/* ── Review Availability Modal ── */}
-      <Modal visible={reviewSlot !== null} transparent animationType="slide" onRequestClose={() => setReviewSlot(null)}>
+      <Modal visible={reviewSlot !== null} transparent animationType="slide" onRequestClose={() => { setReviewSlot(null); setReviewPrice(""); setReviewOpPay(""); }}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.standaloneModalTitle, { color: colors.primary }]}>Review Availability</Text>
-            {reviewSlot && (
-              <>
-                <View style={[styles.reviewDetail, { backgroundColor: colors.muted }]}>
-                  {[
-                    ["Operator",   reviewSlot.operator_profile?.user?.name ?? "—"],
-                    ["Discipline", reviewSlot.discipline?.name ?? "—"],
-                    ["Date",       fmtDate(reviewSlot.slot_date)],
-                    ["Time",       `${fmtTime(reviewSlot.start_time)} – ${fmtTime(reviewSlot.end_time)}`],
-                    ["Location",   reviewSlot.location],
-                  ].map(([k, v]) => (
-                    <View key={k} style={styles.reviewRow}>
-                      <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>{k}</Text>
-                      <Text style={[styles.reviewVal, { color: colors.foreground }]}>{v}</Text>
-                    </View>
-                  ))}
-                </View>
 
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 14 }]}>Parent Price per Lesson ($)</Text>
-                <View style={styles.priceInputRow}>
-                  <Text style={[styles.rateCurrency, { color: colors.mutedForeground }]}>$</Text>
-                  <TextInput
-                    style={[styles.flexInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
-                    value={reviewPrice} onChangeText={setReviewPrice}
-                    placeholder="e.g. 80.00"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-                <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
-                  Required to approve. This is what parents will be charged.
-                </Text>
-              </>
-            )}
-            <View style={styles.modalActions}>
-              <Pressable style={[styles.modalBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => approveSlot("rejected")} disabled={saving}>
+            {/* Header strip */}
+            <View style={[styles.modalHeaderStrip, { backgroundColor: colors.primary }]}>
+              <View style={[styles.modalHeaderIcon, { backgroundColor: colors.secondary }]}>
+                <Ionicons name="checkmark-done-outline" size={20} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.modalHeaderTitle}>Review Availability</Text>
+                <Text style={styles.modalHeaderSub}>Set pricing then approve or reject</Text>
+              </View>
+            </View>
+
+            <View style={styles.modalBody}>
+              {reviewSlot && (
+                <>
+                  {/* Slot summary card */}
+                  <View style={[styles.reviewDetail, { backgroundColor: colors.muted }]}>
+                    {([
+                      ["Operator",   reviewSlot.operator_profile?.user?.name ?? "—"],
+                      ["Discipline", reviewSlot.discipline?.name ?? "—"],
+                      ["Date",       fmtDate(reviewSlot.slot_date)],
+                      ["Time",       `${fmtTime(reviewSlot.start_time)} – ${fmtTime(reviewSlot.end_time)}`],
+                      ["Location",   reviewSlot.location],
+                    ] as [string, string][]).map(([k, v]) => (
+                      <View key={k} style={styles.reviewRow}>
+                        <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>{k}</Text>
+                        <Text style={[styles.reviewVal, { color: colors.foreground }]}>{v}</Text>
+                      </View>
+                    ))}
+                    {reviewSlot.operator_profile?.profile_type && (
+                      <View style={styles.reviewRow}>
+                        <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>Type</Text>
+                        <View style={[styles.typePill, {
+                          backgroundColor: reviewSlot.operator_profile.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE",
+                        }]}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: reviewSlot.operator_profile.profile_type === "paid" ? "#92400E" : "#6D28D9" }}>
+                            {reviewSlot.operator_profile.profile_type === "paid" ? "Paid instructor" : "Volunteer"}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                    {reviewSlot.notes ? (
+                      <View style={styles.reviewRow}>
+                        <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>Notes</Text>
+                        <Text style={[styles.reviewVal, { color: colors.foreground, flex: 1, textAlign: "right" }]} numberOfLines={2}>{reviewSlot.notes}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  {/* Parent price */}
+                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
+                    Parent Price per Lesson *
+                  </Text>
+                  <View style={styles.priceInputRow}>
+                    <Text style={[styles.rateCurrency, { color: colors.mutedForeground }]}>$</Text>
+                    <TextInput
+                      style={[styles.flexInput, { borderColor: reviewPrice.trim() ? colors.primary : colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
+                      value={reviewPrice}
+                      onChangeText={setReviewPrice}
+                      placeholder="e.g. 80.00"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                  <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
+                    What parents will be charged for this lesson.
+                  </Text>
+
+                  {/* Operator pay — only relevant for paid instructors */}
+                  {reviewSlot.operator_profile?.profile_type !== "volunteer" && (
+                    <>
+                      <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 14 }]}>
+                        Operator Pay per Lesson
+                      </Text>
+                      <View style={styles.priceInputRow}>
+                        <Text style={[styles.rateCurrency, { color: colors.mutedForeground }]}>$</Text>
+                        <TextInput
+                          style={[styles.flexInput, { borderColor: reviewOpPay.trim() ? "#059669" : colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
+                          value={reviewOpPay}
+                          onChangeText={setReviewOpPay}
+                          placeholder="e.g. 50.00"
+                          placeholderTextColor={colors.mutedForeground}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                      <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
+                        What the instructor is paid. Pre-filled from their rate if set.
+                      </Text>
+
+                      {/* Margin indicator */}
+                      {reviewPrice.trim() && reviewOpPay.trim() && (
+                        (() => {
+                          const parent = parseFloat(reviewPrice) || 0;
+                          const pay    = parseFloat(reviewOpPay)  || 0;
+                          const margin = parent - pay;
+                          return (
+                            <View style={[styles.marginRow, { backgroundColor: margin >= 0 ? "#D1FAE5" : "#FEE2E2" }]}>
+                              <Ionicons
+                                name={margin >= 0 ? "trending-up-outline" : "trending-down-outline"}
+                                size={14}
+                                color={margin >= 0 ? "#065F46" : "#991B1B"}
+                              />
+                              <Text style={[styles.marginText, { color: margin >= 0 ? "#065F46" : "#991B1B" }]}>
+                                Margin: ${margin.toFixed(2)} per lesson
+                              </Text>
+                            </View>
+                          );
+                        })()
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </View>
+
+            <View style={[styles.modalActions, { marginTop: 0 }]}>
+              <Pressable
+                style={[styles.modalBtn, { backgroundColor: saving ? colors.border : "#FEE2E2" }]}
+                onPress={() => approveSlot("rejected")}
+                disabled={saving}
+              >
                 <Ionicons name="close-circle-outline" size={16} color="#991B1B" />
                 <Text style={[styles.modalBtnText, { color: "#991B1B" }]}>Reject</Text>
               </Pressable>
@@ -722,10 +845,13 @@ const styles = StyleSheet.create({
 
   // Review availability
   reviewDetail:       { borderRadius: 12, padding: 12, gap: 6 },
-  reviewRow:          { flexDirection: "row", justifyContent: "space-between" },
+  reviewRow:          { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   reviewKey:          { fontSize: 12, fontWeight: "600" },
   reviewVal:          { fontSize: 12, fontWeight: "700" },
   priceInputRow:      { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
   flexInput:          { flex: 1, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14 },
   priceNote:          { fontSize: 11, marginBottom: 4 },
+  typePill:           { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  marginRow:          { flexDirection: "row", alignItems: "center", gap: 6, padding: 10, borderRadius: 10, marginTop: 8 },
+  marginText:         { fontSize: 13, fontWeight: "700" },
 });
