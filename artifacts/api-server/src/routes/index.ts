@@ -19,6 +19,7 @@ import disciplinesRouter from "./disciplines.js";
 import availabilityRouter from "./availability.js";
 import privateBookingsRouter from "./private-bookings.js";
 import privateNotificationsRouter from "./private-notifications.js";
+import operatorEarningsRouter from "./operator-earnings.js";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(disciplinesRouter);
 router.use(availabilityRouter);
 router.use(privateBookingsRouter);
 router.use(privateNotificationsRouter);
+router.use(operatorEarningsRouter);
 
 export default router;

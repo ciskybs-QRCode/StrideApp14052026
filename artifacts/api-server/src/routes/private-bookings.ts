@@ -139,25 +139,83 @@ router.patch("/private-bookings/:id/cancel", requireAuth, async (req, res) => {
   res.json(booking);
 });
 
-// POST /private-bookings/scan — operator scans QR at lesson
+// POST /private-bookings/scan — operator scans student QR at lesson start
 router.post("/private-bookings/scan", requireAuth, requireRole("operator", "admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
   const { qrToken } = req.body as { qrToken: string };
   if (!qrToken) { res.status(400).json({ error: "qrToken required" }); return; }
 
   // Find booking by QR token
   const { data: booking, error: bErr } = await supabase
     .from("private_bookings")
-    .select("id")
+    .select("*")
     .eq("qr_token", qrToken)
-    .single();
+    .eq("organization_id", user.orgId)
+    .maybeSingle();
   if (bErr || !booking) { res.status(404).json({ error: "Invalid QR code" }); return; }
+  if (booking.status === "completed") {
+    res.status(409).json({ error: "Lesson already marked as attended" }); return;
+  }
+  if (booking.status === "cancelled") {
+    res.status(409).json({ error: "This lesson was cancelled" }); return;
+  }
 
-  const { data, error } = await supabase.rpc("rpc_log_attendance_and_earnings", {
-    p_booking_id: booking.id,
-    p_qr_token: qrToken,
+  // Calculate duration in hours from start_time / end_time (HH:MM)
+  const [sh, sm] = (booking.start_time as string).split(":").map(Number);
+  const [eh, em] = (booking.end_time as string).split(":").map(Number);
+  const durationHours = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+
+  // Prefer operator_pay_cents set by admin on the availability slot
+  let earningsCents = 0;
+  const { data: slot } = await supabase
+    .from("operator_availability")
+    .select("operator_pay_cents")
+    .eq("id", booking.availability_id)
+    .maybeSingle();
+  if (slot?.operator_pay_cents) {
+    earningsCents = Math.round(durationHours * (slot.operator_pay_cents as number));
+  } else {
+    // Fallback: operator's per-discipline rate from operator_discipline_rates
+    const { data: profile } = await supabase
+      .from("operator_profiles")
+      .select("id")
+      .eq("user_id", booking.operator_user_id)
+      .eq("organization_id", user.orgId)
+      .maybeSingle();
+    if (profile) {
+      const { data: rateRow } = await supabase
+        .from("operator_discipline_rates")
+        .select("hourly_rate_cents")
+        .eq("operator_profile_id", (profile as { id: number }).id)
+        .eq("discipline_id", booking.discipline_id)
+        .maybeSingle();
+      if (rateRow?.hourly_rate_cents) {
+        earningsCents = Math.round(durationHours * (rateRow.hourly_rate_cents as number));
+      }
+    }
+  }
+
+  const attended_at = new Date().toISOString();
+  const invoice_number = `INV-${(booking.slot_date as string).replace(/-/g, "")}-${booking.id}`;
+
+  const { error: uErr } = await supabase
+    .from("private_bookings")
+    .update({ status: "completed", earnings_cents: earningsCents, attended_at })
+    .eq("id", booking.id);
+  if (uErr) { res.status(500).json({ error: uErr.message }); return; }
+
+  // Notify parent
+  await supabase.from("private_notifications").insert({
+    organization_id: user.orgId,
+    recipient_id: booking.parent_user_id,
+    sender_id: user.id,
+    type: "payment_received",
+    title: "Lesson Attended ✓",
+    body: `Lesson on ${booking.slot_date} at ${booking.start_time} marked complete. Earnings: €${(earningsCents / 100).toFixed(2)}.`,
+    booking_id: booking.id,
   });
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json(data);
+
+  res.json({ ok: true, earnings_cents: earningsCents, invoice_number, attended_at });
 });
 
 export default router;

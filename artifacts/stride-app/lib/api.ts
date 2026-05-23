@@ -214,6 +214,10 @@ export const api = {
       "POST", "/private-bookings/scan", { qrToken }
     ),
 
+  // Operator earnings aggregation
+  getOperatorEarnings: (month?: string) =>
+    request<ApiOperatorEarnings>("GET", month ? `/operator-earnings?month=${month}` : "/operator-earnings"),
+
   // Notifications
   getPrivateNotifications: () => request<ApiPrivateNotification[]>("GET", "/private-notifications"),
   markNotificationRead: (id: number) =>
@@ -484,6 +488,22 @@ export interface ApiPrivateBooking {
   discipline?: { id: number; name: string };
   child?: { id: number; name: string };
   operator?: { id: number; name: string };
+}
+
+export interface ApiOperatorEarnings {
+  month: string;
+  disciplines: Array<{
+    discipline_id: number;
+    discipline_name: string;
+    lesson_count: number;
+    total_minutes: number;
+    total_hours: number;
+    earnings_cents: number;
+    hourly_rate_cents: number;
+  }>;
+  total_lessons: number;
+  total_hours: number;
+  total_earnings_cents: number;
 }
 
 export interface ApiPrivateNotification {

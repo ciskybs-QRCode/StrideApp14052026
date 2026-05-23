@@ -5,6 +5,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Linking,
@@ -119,6 +120,10 @@ export default function OperatorDashboard() {
   const pulseAnim  = useRef(new Animated.Value(1)).current;
   const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activityLog, setActivityLog]     = useState<LogEntry[]>(INITIAL_LOG);
+  const [lessonScanResult, setLessonScanResult] = useState<{
+    discipline: string; student: string; earnings_cents: number; invoice_number: string; attended_at: string;
+  } | null>(null);
+  const [lessonScanning, setLessonScanning] = useState(false);
 
   // ── Absence Report modal ────────────────────────────────────────────────────
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
@@ -199,9 +204,59 @@ export default function OperatorDashboard() {
   };
 
   const simulateScan = () => showScanResult(MOCK_OUTCOMES[Math.floor(Math.random() * MOCK_OUTCOMES.length)]);
-  const handleBarcodeScan = ({ data }: { data: string }) => {
+
+  // ── Simulate a private lesson QR completion (demo) ─────────────────────
+  const simulateLessonScan = async () => {
     if (scanned) return;
-    if (data.startsWith("STRIDE:")) {
+    setScanned(true);
+    setLessonScanning(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const r = await api.scanPrivateLesson("DEMO-" + Date.now());
+      setLessonScanResult({ discipline: "Ballet", student: "Sofia Rossi", earnings_cents: r.earnings_cents, invoice_number: r.invoice_number, attended_at: r.attended_at });
+    } catch {
+      setLessonScanResult({
+        discipline: "Ballet",
+        student: "Sofia Rossi",
+        earnings_cents: 3500,
+        invoice_number: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-DEMO`,
+        attended_at: new Date().toISOString(),
+      });
+    }
+    setLessonScanning(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    pushLog({ time: nowTime(), action: "✓ Private lesson: Sofia Rossi — Ballet — €35.00 earned", type: "success" });
+    setTimeout(() => { setLessonScanResult(null); setScanned(false); setShowScanner(false); }, 5000);
+  };
+
+  // ── Real barcode scan handler ──────────────────────────────────────────
+  const handleBarcodeScan = async ({ data }: { data: string }) => {
+    if (scanned) return;
+    if (data.startsWith("STRIDE:LESSON:")) {
+      // Private lesson QR — format: STRIDE:LESSON:<bookingId>:<qrToken>
+      const parts = data.split(":");
+      const qrToken = parts[3] ?? "";
+      if (!qrToken) return;
+      setScanned(true);
+      setLessonScanning(true);
+      try {
+        const r = await api.scanPrivateLesson(qrToken);
+        setLessonScanResult({
+          discipline: parts[4] ?? "Private Lesson",
+          student: parts[5] ?? "Student",
+          earnings_cents: r.earnings_cents,
+          invoice_number: r.invoice_number,
+          attended_at: r.attended_at,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        pushLog({ time: nowTime(), action: `✓ Lesson completed — €${(r.earnings_cents / 100).toFixed(2)} earned`, type: "success" });
+        setTimeout(() => { setLessonScanResult(null); setScanned(false); setShowScanner(false); }, 5000);
+      } catch (err) {
+        Alert.alert("Scan Error", (err as Error).message ?? "Could not mark lesson as complete.");
+        setScanned(false);
+      }
+      setLessonScanning(false);
+    } else if (data.startsWith("STRIDE:")) {
       const parts = data.split(":");
       const name = parts[3] || "Unknown Member";
       showScanResult({ type: "success", name, subscription: "active", medical: "valid", payment: "paid" });
@@ -669,11 +724,14 @@ export default function OperatorDashboard() {
           {Platform.OS === "web" ? (
             <View style={styles.scannerPreview}>
               <Ionicons name="qr-code-outline" size={80} color="rgba(255,255,255,0.5)" />
-              <Text style={{ color: "rgba(255,255,255,0.7)", marginTop: 16, textAlign: "center" }}>
+              <Text style={{ color: "rgba(255,255,255,0.7)", marginTop: 16, textAlign: "center", marginBottom: 16 }}>
                 QR Scanner unavailable in web preview.{"\n"}Simulate a scan:
               </Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>
-                <Text style={styles.simulateBtnText}>Simulate Scan</Text>
+                <Text style={styles.simulateBtnText}>Simulate Member Check-in</Text>
+              </Pressable>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#10B981", marginTop: 10 }]} onPress={simulateLessonScan}>
+                <Text style={styles.simulateBtnText}>Simulate Private Lesson QR</Text>
               </Pressable>
             </View>
           ) : (
@@ -694,7 +752,8 @@ export default function OperatorDashboard() {
             </CameraView>
           )}
 
-          {scanResult && (
+          {/* Member check-in semaphore result */}
+          {scanResult && !lessonScanResult && (
             <View style={[styles.scanResultPanel, {
               backgroundColor: scanResult.type === "success" ? "#10B981" : scanResult.type === "warning" ? "#F59E0B" : "#EF4444"
             }]}>
@@ -725,11 +784,38 @@ export default function OperatorDashboard() {
             </View>
           )}
 
-          {!scanResult && Platform.OS !== "web" && (
+          {/* Private lesson completion result */}
+          {lessonScanning && (
+            <View style={styles.lessonScanPanel}>
+              <ActivityIndicator size="large" color="#10B981" />
+              <Text style={styles.lessonScanTitle}>Marking lesson complete…</Text>
+            </View>
+          )}
+          {lessonScanResult && !lessonScanning && (
+            <View style={styles.lessonScanPanel}>
+              <View style={styles.lessonScanCheck}>
+                <Ionicons name="checkmark-circle" size={40} color="#10B981" />
+              </View>
+              <Text style={styles.lessonScanTitle}>Lesson Completed ✓</Text>
+              <Text style={styles.lessonScanSub}>{lessonScanResult.student} · {lessonScanResult.discipline}</Text>
+              <View style={styles.lessonScanEarnings}>
+                <Ionicons name="cash-outline" size={18} color="#FBBF24" />
+                <Text style={styles.lessonScanEarningsText}>
+                  €{(lessonScanResult.earnings_cents / 100).toFixed(2)} earned
+                </Text>
+              </View>
+              <Text style={styles.lessonScanInvoice}>{lessonScanResult.invoice_number}</Text>
+            </View>
+          )}
+
+          {!scanResult && !lessonScanResult && !lessonScanning && Platform.OS !== "web" && (
             <View style={styles.scannerFooter}>
-              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center" }}>Point at student's QR Code</Text>
+              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 8 }}>Point at student's QR Code</Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>
-                <Text style={styles.simulateBtnText}>Simulate Scan</Text>
+                <Text style={styles.simulateBtnText}>Simulate Member Check-in</Text>
+              </Pressable>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#10B981", marginTop: 10 }]} onPress={simulateLessonScan}>
+                <Text style={styles.simulateBtnText}>Simulate Private Lesson QR</Text>
               </Pressable>
             </View>
           )}
@@ -935,6 +1021,15 @@ const styles = StyleSheet.create({
   simulateBtn: { marginTop: 20, backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   simulateBtnText: { color: "#1E3A8A", fontWeight: "700" },
   scannerFooter: { padding: 20, alignItems: "center", gap: 12 },
+
+  // Private lesson scan result panel
+  lessonScanPanel: { backgroundColor: "#0F2460", padding: 24, alignItems: "center", gap: 8 },
+  lessonScanCheck: { width: 72, height: 72, borderRadius: 36, backgroundColor: "rgba(16,185,129,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  lessonScanTitle: { color: "#FFF", fontSize: 20, fontWeight: "800" },
+  lessonScanSub: { color: "rgba(255,255,255,0.75)", fontSize: 14 },
+  lessonScanEarnings: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(251,191,36,0.15)", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
+  lessonScanEarningsText: { color: "#FBBF24", fontSize: 20, fontWeight: "800" },
+  lessonScanInvoice: { color: "rgba(255,255,255,0.45)", fontSize: 11, letterSpacing: 0.5, marginTop: 4 },
 
   // SOS modal
   sosOverlay: { flex: 1, backgroundColor: "rgba(180,0,0,0.95)", alignItems: "center", justifyContent: "center", padding: 24 },
