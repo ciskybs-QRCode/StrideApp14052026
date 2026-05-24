@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SyncEngine } from "@/components/SyncEngine";
 import { AppDataProvider } from "@/context/AppDataContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
@@ -92,6 +93,7 @@ export default function RootLayout() {
                 <SecurityEscalationProvider>
                   <GestureHandlerRootView>
                     <RootLayoutNav />
+                    <SyncEngine />
                   </GestureHandlerRootView>
                 </SecurityEscalationProvider>
                 </RealtimeProvider>

@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
+import { type QrScanParams, useOfflineSync } from "@/context/OfflineSyncContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
@@ -114,6 +115,7 @@ export default function OperatorDashboard() {
   const { reportAbsence, reportDelay, respondToSub, activeAlert, cascadeCountdown } = useSubstitution();
   const { unreadCount } = usePrivateLessons();
   const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts } = useSecurityEscalation();
+  const { isOnline, enqueue, pendingCount: offlinePendingCount } = useOfflineSync();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -282,6 +284,48 @@ export default function OperatorDashboard() {
   // ── Real barcode scan handler ──────────────────────────────────────────
   const handleBarcodeScan = async ({ data }: { data: string }) => {
     if (scanned) return;
+
+    // ── Offline intercept: queue locally and show local confirmation ───────────
+    if (!isOnline) {
+      setScanned(true);
+      let scanType: QrScanParams["scanType"] = "generic";
+      let studentId: string | undefined;
+      let studentName: string | undefined;
+
+      if (data.startsWith("STRIDE:CHILD:")) {
+        const parts = data.split(":");
+        scanType = "checkin";
+        studentId = parts[2] ?? undefined;
+        studentName = decodeURIComponent(parts[3] ?? "Studente");
+      } else if (data.startsWith("STRIDE:GUARDIAN:")) {
+        scanType = "guardian";
+        const parts = data.split(":");
+        studentName = decodeURIComponent(parts[4] ?? "Tutore");
+      } else if (data.startsWith("STRIDE:LESSON:")) {
+        scanType = "lesson";
+        const parts = data.split(":");
+        studentName = parts[5] ?? "Lezione";
+      }
+
+      await enqueue({
+        type: "qrScan",
+        params: {
+          rawData: data,
+          scanType,
+          studentId,
+          studentName,
+          operatorId: user?.id ?? "unknown",
+          scannedAt: Date.now(),
+        },
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const displayName = studentName ?? "Membro";
+      showScanResult({ type: "success", name: displayName, subscription: "active", medical: "valid", payment: "paid" });
+      pushLog({ time: nowTime(), action: `⏳ Offline: ${displayName} — in coda`, type: "warning" });
+      setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 4000);
+      return;
+    }
 
     if (data.startsWith("STRIDE:LESSON:")) {
       // Private lesson QR — format: STRIDE:LESSON:<bookingId>:<qrToken>:<discipline>:<student>
@@ -561,7 +605,14 @@ export default function OperatorDashboard() {
             style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={handleScan}
           >
-            <Ionicons name="qr-code-outline" size={28} color={colors.primary} />
+            <View>
+              <Ionicons name="qr-code-outline" size={28} color={colors.primary} />
+              {offlinePendingCount > 0 && (
+                <View style={styles.offlineBadge}>
+                  <Text style={styles.offlineBadgeText}>{offlinePendingCount}</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.quickBtnText, { color: colors.primary }]}>SCAN{"\n"}QR</Text>
           </Pressable>
           <Pressable
@@ -923,6 +974,14 @@ export default function OperatorDashboard() {
                   <Text style={[styles.semaphoreValue, { color: statusColor(scanResult.payment) }]}>{statusLabel("payment", scanResult.payment)}</Text>
                 </View>
               </View>
+              {!isOnline && (
+                <View style={styles.offlineSavedNote}>
+                  <Ionicons name="cloud-offline-outline" size={13} color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.offlineSavedText}>
+                    Salvato offline — verrà sincronizzato al ripristino della connessione
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -1169,6 +1228,10 @@ const styles = StyleSheet.create({
   semaphoreItem: { flex: 1, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 12, padding: 12, alignItems: "center", gap: 4 },
   semaphoreLabel: { color: "rgba(255,255,255,0.8)", fontSize: 11 },
   semaphoreValue: { fontWeight: "700", fontSize: 13, backgroundColor: "#FFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, overflow: "hidden" },
+  offlineSavedNote: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12, backgroundColor: "rgba(0,0,0,0.18)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  offlineSavedText: { color: "rgba(255,255,255,0.9)", fontSize: 11, flex: 1 },
+  offlineBadge: { position: "absolute", top: -6, right: -6, backgroundColor: "#EF4444", borderRadius: 8, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  offlineBadgeText: { color: "#FFF", fontSize: 9, fontWeight: "800" },
   simulateBtn: { marginTop: 20, backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   simulateBtnText: { color: "#1E3A8A", fontWeight: "700" },
   scannerFooter: { padding: 20, alignItems: "center", gap: 12 },

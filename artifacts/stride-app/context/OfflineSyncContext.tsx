@@ -2,6 +2,28 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
+// ── QR Scan Offline Types ─────────────────────────────────────────────────────
+
+export interface QrScanParams {
+  rawData: string;
+  scanType: "checkin" | "checkout" | "guardian" | "lesson" | "generic";
+  studentId?: string;
+  studentName?: string;
+  operatorId: string;
+  scannedAt: number; // local unix ms when scan occurred (offline timestamp)
+}
+
+export interface QrSyncResult {
+  entryId: string;
+  studentId?: string;
+  studentName?: string;
+  scannedAt: number;
+  syncedAt: number;
+  delayMs: number;
+  suppressedEscalation: boolean; // true when delayMs > OFFLINE_SYNC_DELAY_THRESHOLD_MS
+  success: boolean;
+}
+
 // ── Action Types ───────────────────────────────────────────────────────────────
 
 export type QueuedAction =
@@ -14,7 +36,8 @@ export type QueuedAction =
   | { type: "signDocument";          params: { id: string } }
   | { type: "addDocument";           params: Record<string, unknown> }
   | { type: "addStars";              params: { studentId: string; count: number } }
-  | { type: "updateStudentPresence"; params: { studentId: string; present: boolean } };
+  | { type: "updateStudentPresence"; params: { studentId: string; present: boolean } }
+  | { type: "qrScan";               params: QrScanParams };
 
 export interface QueueEntry {
   id: string;
@@ -26,17 +49,24 @@ export interface QueueEntry {
 
 interface OfflineSyncContextType {
   isOnline: boolean;
+  isSyncing: boolean;
   pendingCount: number;
+  lastSyncAt: number | null;
+  lastSyncResults: QrSyncResult[];
   enqueue: (action: QueuedAction) => Promise<void>;
   dequeue: (id: string) => Promise<void>;
   clearQueue: () => Promise<void>;
   getPendingQueue: () => Promise<QueueEntry[]>;
+  // Called by SyncEngine to report sync outcomes back into context state
+  reportSyncStart: () => void;
+  reportSyncEnd: (results: QrSyncResult[]) => void;
 }
 
 // ── Connectivity Check ────────────────────────────────────────────────────────
 
 const CHECK_INTERVAL_MS = 8000;
-const QUEUE_KEY = "stride_offline_queue_v1";
+export const QUEUE_KEY = "stride_offline_queue_v1";
+export const OFFLINE_SYNC_DELAY_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
 
 async function checkConnectivity(): Promise<boolean> {
   // On web, navigator.onLine is reliable and avoids CORS issues with external fetch
@@ -65,8 +95,18 @@ const OfflineSyncContext = createContext<OfflineSyncContextType | null>(null);
 
 export function OfflineSyncProvider({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
+  const [lastSyncResults, setLastSyncResults] = useState<QrSyncResult[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const reportSyncStart = useCallback(() => setIsSyncing(true), []);
+  const reportSyncEnd = useCallback((results: QrSyncResult[]) => {
+    setIsSyncing(false);
+    setLastSyncAt(Date.now());
+    if (results.length > 0) setLastSyncResults(results);
+  }, []);
 
   const refreshCount = useCallback(async () => {
     try {
@@ -129,7 +169,11 @@ export function OfflineSyncProvider({ children }: { children: React.ReactNode })
   }, [doCheck, refreshCount]);
 
   return (
-    <OfflineSyncContext.Provider value={{ isOnline, pendingCount, enqueue, dequeue, clearQueue, getPendingQueue }}>
+    <OfflineSyncContext.Provider value={{
+      isOnline, isSyncing, pendingCount, lastSyncAt, lastSyncResults,
+      enqueue, dequeue, clearQueue, getPendingQueue,
+      reportSyncStart, reportSyncEnd,
+    }}>
       {children}
     </OfflineSyncContext.Provider>
   );

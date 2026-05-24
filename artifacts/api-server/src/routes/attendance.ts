@@ -66,4 +66,55 @@ router.patch("/students/:id/stars", requireAuth, requireRole("admin", "operator"
   res.json(data);
 });
 
+// ── Batch offline sync endpoint ───────────────────────────────────────────────
+// Accepts an array of QR scans captured offline and inserts them with the
+// original local timestamp preserved.  If delay_ms > 30 min the reconciler
+// (SyncEngine on the client) will already have suppressed any escalation alert,
+// so we just record suppress_escalation for audit purposes.
+
+interface OfflineScanRow {
+  child_id: number | null;
+  scan_type: string;
+  raw_data: string;
+  scanned_at: string;  // ISO — original local time
+  synced_at: string;   // ISO — server receipt time
+  delay_ms: number;
+  suppress_escalation: boolean;
+}
+
+router.post("/attendance/batch", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const { scans } = req.body as { scans: OfflineScanRow[] };
+
+  if (!Array.isArray(scans) || scans.length === 0) {
+    res.status(400).json({ error: "scans array is required and must not be empty" });
+    return;
+  }
+
+  const rows = scans.map(s => ({
+    child_id: s.child_id ?? null,
+    operator_id: parseInt(user.id),
+    notes: [
+      `offline_scan:${s.scan_type}`,
+      `delay:${Math.round(s.delay_ms / 1000)}s`,
+      s.suppress_escalation ? "escalation_suppressed" : null,
+    ].filter(Boolean).join(" | "),
+    // attended_at stores the true local scan time, not the sync time
+    attended_at: s.scanned_at,
+  }));
+
+  const { data, error } = await supabase
+    .from("attendance_records")
+    .insert(rows)
+    .select("id, child_id, attended_at");
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  req.log.info({ synced: data?.length, operator: user.id }, "offline batch sync");
+  res.status(201).json({ synced: data?.length ?? 0, results: data ?? [] });
+});
+
 export default router;
