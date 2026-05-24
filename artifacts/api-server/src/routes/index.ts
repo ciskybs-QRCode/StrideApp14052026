@@ -20,6 +20,9 @@ import availabilityRouter from "./availability.js";
 import privateBookingsRouter from "./private-bookings.js";
 import privateNotificationsRouter from "./private-notifications.js";
 import operatorEarningsRouter from "./operator-earnings.js";
+import blacklistRouter from "./blacklist.js";
+import adminSettingsRouter from "./admin-settings.js";
+import accessCheckRouter from "./access-check.js";
 
 const router: IRouter = Router();
 
@@ -44,5 +47,8 @@ router.use(availabilityRouter);
 router.use(privateBookingsRouter);
 router.use(privateNotificationsRouter);
 router.use(operatorEarningsRouter);
+router.use(blacklistRouter);
+router.use(adminSettingsRouter);
+router.use(accessCheckRouter);
 
 export default router;

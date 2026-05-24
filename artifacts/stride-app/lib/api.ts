@@ -224,6 +224,25 @@ export const api = {
     request<{ ok: boolean }>("POST", `/private-notifications/${id}/read`, {}),
   markAllNotificationsRead: () =>
     request<{ ok: boolean }>("POST", "/private-notifications/read-all", {}),
+
+  // Admin Settings (grace access + anti-fraud)
+  getAdminSettings: () => request<ApiAdminSettings>("GET", "/admin-settings"),
+  updateAdminSettings: (data: Partial<ApiAdminSettings>) =>
+    request<ApiAdminSettings>("PUT", "/admin-settings", data),
+
+  // Blacklist
+  getBlacklist: () => request<ApiBlacklistEntry[]>("GET", "/blacklist"),
+  addBlacklistEntry: (data: Omit<ApiBlacklistEntry, "id" | "created_at">) =>
+    request<ApiBlacklistEntry>("POST", "/blacklist", data),
+  deleteBlacklistEntry: (id: number) => request<void>("DELETE", `/blacklist/${id}`),
+  checkBlacklist: (data: { email?: string; phone_number?: string; first_name?: string; last_name?: string }) =>
+    request<{ blocked: boolean; reason: string | null }>("POST", "/blacklist/check", data),
+
+  // Access verification (QR anti-fraud check)
+  checkAccess: (childId: string) =>
+    request<ApiAccessCheck>("GET", `/access-check/${childId}`),
+  updateChildPayment: (childId: string, data: { payment_status?: string; is_blocked?: boolean; block_reason?: string }) =>
+    request<ApiAccessCheck>("PATCH", `/access-check/${childId}/payment`, data),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -524,4 +543,31 @@ export interface ApiPrivateNotification {
   booking_id?: number;
   read: boolean;
   created_at: string;
+}
+
+export interface ApiAdminSettings {
+  id?: number;
+  organization_id: number;
+  allow_one_time_grace_access: boolean;
+  grace_used_child_ids: number[];
+  updated_at?: string;
+}
+
+export interface ApiBlacklistEntry {
+  id: number;
+  organization_id?: number;
+  email?: string;
+  phone_number?: string;
+  first_name?: string;
+  last_name?: string;
+  reason?: string;
+  blocked_by_user_id?: number;
+  created_at: string;
+}
+
+export interface ApiAccessCheck {
+  verdict: "allowed" | "suspended" | "grace_allowed" | "overdue_denied";
+  childId: string;
+  childName: string;
+  blockReason?: string;
 }

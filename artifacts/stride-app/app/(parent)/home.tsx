@@ -47,7 +47,8 @@ export default function ParentHome() {
   const { user, updateUser } = useAuth();
   const { children, courses, lessons } = useAppData();
   const { unreadCount } = usePrivateLessons();
-  const { activeAlerts } = useSecurityEscalation();
+  const { activeAlerts, dismissAlert } = useSecurityEscalation();
+  const accessDeniedAlerts = activeAlerts.filter(a => a.type === "access_denied");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -156,18 +157,45 @@ export default function ParentHome() {
         </View>
 
         {/* Security Alert Banner */}
-        {activeAlerts.length > 0 && (
+        {activeAlerts.filter(a => a.type !== "access_denied").length > 0 && (
           <Pressable
             style={styles.secAlertBanner}
             onPress={() => router.push("/(parent)/alerts" as Parameters<typeof router.push>[0])}
           >
             <Ionicons name="shield-checkmark" size={18} color="#FFF" />
             <Text style={styles.secAlertBannerText}>
-              {activeAlerts.length} avviso{activeAlerts.length !== 1 ? "i" : ""} di sicurezza — tocca per rispondere
+              {activeAlerts.filter(a => a.type !== "access_denied").length} avviso{activeAlerts.filter(a => a.type !== "access_denied").length !== 1 ? "i" : ""} di sicurezza — tocca per rispondere
             </Text>
             <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.8)" />
           </Pressable>
         )}
+
+        {/* Payment / Blocked Access Banner */}
+        {accessDeniedAlerts.map(alert => (
+          <View
+            key={alert.id}
+            style={[styles.secAlertBanner, {
+              backgroundColor: alert.courseName.includes("sospeso") ? "#7F1D1D" : "#78350F",
+              marginBottom: 6,
+            }]}
+          >
+            <Ionicons
+              name={alert.courseName.includes("sospeso") ? "ban" : "warning"}
+              size={18} color="#FFF"
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.secAlertBannerText, { fontWeight: "800" }]}>
+                {alert.courseName.includes("sospeso") ? "Account Sospeso" : "Pagamento Scaduto"}
+              </Text>
+              <Text style={[styles.secAlertBannerText, { fontSize: 11, opacity: 0.85, marginTop: 1 }]}>
+                Accesso negato per {alert.studentName} — contatta l'amministrazione
+              </Text>
+            </View>
+            <Pressable onPress={() => dismissAlert(alert.id)} hitSlop={10}>
+              <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.75)" />
+            </Pressable>
+          </View>
+        ))}
 
         {/* Next Activity Card */}
         <View style={[styles.lessonCard, { backgroundColor: colors.primary }]}>

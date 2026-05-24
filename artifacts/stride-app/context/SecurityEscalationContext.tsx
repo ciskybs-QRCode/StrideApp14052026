@@ -14,7 +14,7 @@ import { Platform } from "react-native";
 export type EscalationPhase = 0 | 1 | 2 | 3;
 // 0 = clear, 1 = T+0 notification, 2 = T+5 high-priority, 3 = T+10 alarm
 
-export type AlertType = "missed_checkin" | "missed_checkout";
+export type AlertType = "missed_checkin" | "missed_checkout" | "access_denied";
 
 export interface SecurityAlert {
   id: string;
@@ -87,6 +87,7 @@ interface SecurityEscalationContextType {
   maxPhase: EscalationPhase;
   triggerCheckinAlert: (studentId: string, studentName: string, courseId: string, courseName: string) => void;
   triggerCheckoutAlert: (studentId: string, studentName: string, courseId: string, courseName: string) => void;
+  triggerAccessAlert: (studentId: string, studentName: string, reason: string) => void;
   clearAlertByStudent: (studentId: string) => void;
   submitDelay: (alertId: string, delayMinutes: number) => void;
   dismissAlert: (alertId: string) => void;
@@ -205,6 +206,25 @@ export function SecurityEscalationProvider({ children }: { children: React.React
     studentId: string, studentName: string, courseId: string, courseName: string
   ) => triggerAlert(studentId, studentName, courseId, courseName, "missed_checkout"), [triggerAlert]);
 
+  // Access denied alerts (payment/blocked) — phase 1 only, no escalation
+  const triggerAccessAlert = useCallback((
+    studentId: string, studentName: string, reason: string
+  ) => {
+    const id = `access_denied-${studentId}-${Date.now()}`;
+    const newAlert: SecurityAlert = {
+      id, studentId, studentName,
+      courseId: "access_denied",
+      courseName: reason,
+      type: "access_denied",
+      phase: 1,
+      triggeredAt: Date.now(),
+    };
+    setAlerts(prev => [
+      ...prev.filter(a => !(a.studentId === studentId && a.type === "access_denied" && !a.resolvedAt)),
+      newAlert,
+    ]);
+  }, []);
+
   // ── Resolve ────────────────────────────────────────────────────────────────
   const clearAlertByStudent = useCallback((studentId: string) => {
     setAlerts(prev => prev.map(a => {
@@ -249,7 +269,7 @@ export function SecurityEscalationProvider({ children }: { children: React.React
   return (
     <SecurityEscalationContext.Provider value={{
       alerts, activeAlerts, maxPhase,
-      triggerCheckinAlert, triggerCheckoutAlert,
+      triggerCheckinAlert, triggerCheckoutAlert, triggerAccessAlert,
       clearAlertByStudent, submitDelay, dismissAlert,
     }}>
       {children}

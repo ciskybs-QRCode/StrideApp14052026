@@ -17,6 +17,7 @@ import {
   Text,
   View,
 } from "react-native";
+import QRAccessAlert, { type AccessVerdict } from "@/components/QRAccessAlert";
 import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -114,7 +115,7 @@ export default function OperatorDashboard() {
   const { lessons, students, updateStudentPresence } = useAppData();
   const { reportAbsence, reportDelay, respondToSub, activeAlert, cascadeCountdown } = useSubstitution();
   const { unreadCount } = usePrivateLessons();
-  const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts } = useSecurityEscalation();
+  const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts, triggerAccessAlert } = useSecurityEscalation();
   const { isOnline, enqueue, pendingCount: offlinePendingCount } = useOfflineSync();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -136,6 +137,7 @@ export default function OperatorDashboard() {
   } | null>(null);
   const [lessonScanning,  setLessonScanning]  = useState(false);
   const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
+  const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string } | null>(null);
 
   // ── Absence Report modal ────────────────────────────────────────────────────
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
@@ -257,6 +259,32 @@ export default function OperatorDashboard() {
     pushLog({ time: nowTime(), action: `⚠ Allerta sicurezza: ${s.name} — check-in assente`, type: "warning" });
   };
 
+  // ── Simulate access denied (CASE A/B/C demo) ──────────────────────────
+  const simulateAccessDenied = () => {
+    setScanResult(null);
+    setLessonScanResult(null);
+    setGuardianResult(null);
+    const cases = [
+      { verdict: "suspended",      childName: "Marco Bianchi",  blockReason: "Comportamento non accettabile" },
+      { verdict: "grace_allowed",  childName: "Sofia Conti" },
+      { verdict: "overdue_denied", childName: "Luca Esposito" },
+    ];
+    const c = cases[Math.floor(Math.random() * cases.length)];
+    setAccessAlert(c);
+    setScanned(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    const logMsg =
+      c.verdict === "suspended"    ? `✗ SOSPESO: ${c.childName}` :
+      c.verdict === "grace_allowed" ? `⚠ Accesso una tantum: ${c.childName}` :
+      `✗ Pagamento scaduto: ${c.childName}`;
+    pushLog({ time: nowTime(), action: logMsg, type: c.verdict === "grace_allowed" ? "warning" : "error" });
+    if (c.verdict === "suspended" || c.verdict === "overdue_denied") {
+      triggerAccessAlert(`demo-${Date.now()}`, c.childName,
+        c.verdict === "suspended" ? "Account sospeso" : "Pagamento scaduto");
+    }
+    setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
+  };
+
   // ── Simulate a private lesson QR completion (demo) ─────────────────────
   const simulateLessonScan = async () => {
     if (scanned) return;
@@ -372,8 +400,33 @@ export default function OperatorDashboard() {
       const parts = data.split(":");
       const studentId   = parts[2] ?? "";
       const studentName = decodeURIComponent(parts[3] ?? "Student");
-      const found = students.find(s => s.id === studentId);
+      setScanned(true);
       setGuardianResult(null);
+
+      // ── Anti-fraud access verification (CASE A / B / C) ─────────────────
+      try {
+        const check = await api.checkAccess(studentId);
+        if (check.verdict !== "allowed") {
+          const displayName = check.childName || studentName;
+          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          if (check.verdict === "suspended" || check.verdict === "overdue_denied") {
+            triggerAccessAlert(studentId, displayName,
+              check.verdict === "suspended" ? "Account sospeso" : "Pagamento scaduto");
+          }
+          const logMsg =
+            check.verdict === "suspended"    ? `✗ SOSPESO: ${displayName}` :
+            check.verdict === "grace_allowed" ? `⚠ Accesso una tantum: ${displayName}` :
+            `✗ Pagamento scaduto: ${displayName}`;
+          pushLog({ time: nowTime(), action: logMsg, type: check.verdict === "grace_allowed" ? "warning" : "error" });
+          setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
+          return;
+        }
+      } catch {
+        // Check failed — proceed with normal scan (graceful degradation)
+      }
+
+      const found = students.find(s => s.id === studentId);
       clearAlertByStudent(studentId);
       showScanResult({
         type: "success",
@@ -894,6 +947,9 @@ export default function OperatorDashboard() {
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
                 <Text style={styles.simulateBtnText}>⚠ Simula Bambino Assente</Text>
               </Pressable>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#DC2626", marginTop: 10 }]} onPress={simulateAccessDenied}>
+                <Text style={styles.simulateBtnText}>✗ Simula Accesso Negato</Text>
+              </Pressable>
             </View>
           ) : (
             <CameraView
@@ -943,6 +999,15 @@ export default function OperatorDashboard() {
                 <Text style={styles.guardianWarning}>⚠️ Contatta il genitore prima di procedere</Text>
               )}
             </View>
+          )}
+
+          {/* Access denied alert — CASE A (Sospeso) / B (Grazia) / C (Scaduto) */}
+          {accessAlert && !scanResult && (
+            <QRAccessAlert
+              verdict={accessAlert.verdict as AccessVerdict}
+              childName={accessAlert.childName}
+              blockReason={accessAlert.blockReason}
+            />
           )}
 
           {/* Member check-in semaphore result */}
@@ -1009,7 +1074,7 @@ export default function OperatorDashboard() {
             </View>
           )}
 
-          {!scanResult && !lessonScanResult && !lessonScanning && !guardianResult && Platform.OS !== "web" && (
+          {!scanResult && !lessonScanResult && !lessonScanning && !guardianResult && !accessAlert && Platform.OS !== "web" && (
             <View style={styles.scannerFooter}>
               <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 8 }}>Inquadra il QR Code dello studente</Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>
@@ -1023,6 +1088,9 @@ export default function OperatorDashboard() {
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
                 <Text style={styles.simulateBtnText}>⚠ Simula Bambino Assente</Text>
+              </Pressable>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#DC2626", marginTop: 10 }]} onPress={simulateAccessDenied}>
+                <Text style={styles.simulateBtnText}>✗ Simula Accesso Negato</Text>
               </Pressable>
             </View>
           )}

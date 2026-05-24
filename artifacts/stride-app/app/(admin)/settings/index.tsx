@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -15,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { api } from "@/lib/api";
 
 const GRID_ITEMS = [
   {
@@ -58,6 +61,32 @@ export default function SettingsIndex() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [graceEnabled, setGraceEnabled] = useState(false);
+  const [loadingGrace, setLoadingGrace] = useState(true);
+  const [savingGrace, setSavingGrace] = useState(false);
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const data = await api.getAdminSettings();
+      setGraceEnabled(data.allow_one_time_grace_access ?? false);
+    } catch {}
+    setLoadingGrace(false);
+  }, []);
+
+  useEffect(() => { loadSettings(); }, [loadSettings]);
+
+  const handleGraceToggle = useCallback(async (value: boolean) => {
+    setSavingGrace(true);
+    setGraceEnabled(value);
+    try {
+      await api.updateAdminSettings({ allow_one_time_grace_access: value, grace_used_child_ids: [], organization_id: 1 });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      setGraceEnabled(!value);
+      Alert.alert("Errore", "Impossibile salvare le impostazioni.");
+    }
+    setSavingGrace(false);
+  }, []);
 
   const unsignedCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
 
@@ -145,6 +174,50 @@ export default function SettingsIndex() {
           </View>
           <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
         </Pressable>
+
+        {/* Anti-Fraud Security section */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Sicurezza Anti-Frode</Text>
+
+        {/* Blacklist Card */}
+        <Pressable
+          style={({ pressed }) => [styles.featuredCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/blacklist" as never); }}
+        >
+          <View style={[styles.featuredIconBox, { backgroundColor: "#FEE2E2" }]}>
+            <Ionicons name="ban-outline" size={30} color="#DC2626" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Lista Nera</Text>
+            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
+              Gestisci e blocca individui da nuove registrazioni
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+        </Pressable>
+
+        {/* Grace Access Toggle Card */}
+        <View style={[styles.featuredCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.featuredIconBox, { backgroundColor: "#FEF3C7" }]}>
+            <Ionicons name="time-outline" size={30} color="#D97706" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Accesso con Grazia</Text>
+            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
+              Consenti UN accesso ai membri con abbonamento scaduto prima del blocco
+            </Text>
+          </View>
+          {loadingGrace ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Switch
+              value={graceEnabled}
+              onValueChange={handleGraceToggle}
+              disabled={savingGrace}
+              trackColor={{ false: "#D1D5DB", true: "#FBBF24" }}
+              thumbColor={graceEnabled ? "#1E3A8A" : "#F3F4F6"}
+            />
+          )}
+        </View>
 
         {/* Account section */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>

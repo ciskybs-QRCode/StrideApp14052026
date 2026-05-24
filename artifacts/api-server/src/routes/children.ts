@@ -5,6 +5,35 @@ import { requireAuth, type TokenPayload } from "../lib/auth.js";
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
+// ── Blacklist helper ──────────────────────────────────────────────────────────
+async function isBlacklisted(
+  orgId: number,
+  opts: { firstName?: string; lastName?: string; phoneNumber?: string }
+): Promise<{ blocked: boolean; reason?: string }> {
+  const { data } = await supabase
+    .from("blacklist")
+    .select("id, reason, first_name, last_name, phone_number")
+    .eq("organization_id", orgId);
+
+  if (!data?.length) return { blocked: false };
+
+  const fnLow = opts.firstName?.toLowerCase().trim();
+  const lnLow = opts.lastName?.toLowerCase().trim();
+  const phoneTrim = opts.phoneNumber?.replace(/\s/g, "");
+
+  const match = data.find(entry => {
+    if (phoneTrim && entry.phone_number?.replace(/\s/g, "") === phoneTrim) return true;
+    if (fnLow && lnLow &&
+        entry.first_name?.toLowerCase().trim() === fnLow &&
+        entry.last_name?.toLowerCase().trim() === lnLow) return true;
+    return false;
+  });
+
+  return { blocked: !!match, reason: match?.reason ?? undefined };
+}
+
+// ── Routes ───────────────────────────────────────────────────────────────────
+
 router.get("/children", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
   const parentId = user.role === "parent" ? parseInt(user.id) : undefined;
@@ -20,6 +49,25 @@ router.get("/children", requireAuth, async (req, res) => {
 router.post("/children", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
   const body = req.body as Record<string, unknown>;
+  const orgId = user.orgId ?? 1;
+
+  // ── Anti-fraud blacklist check ─────────────────────────────────────────────
+  const check = await isBlacklisted(orgId, {
+    firstName:   typeof body.first_name === "string" ? body.first_name : undefined,
+    lastName:    typeof body.last_name  === "string" ? body.last_name  : undefined,
+    phoneNumber: typeof body.phone      === "string" ? body.phone      : undefined,
+  });
+
+  if (check.blocked) {
+    req.log.warn({ orgId, firstName: body.first_name, lastName: body.last_name },
+      "blocked registration: blacklist match");
+    res.status(403).json({
+      error: "Registrazione non consentita. Contattare l'amministrazione per ulteriori informazioni.",
+      blocked: true,
+    });
+    return;
+  }
+
   const { data, error } = await supabase
     .from("children")
     .insert({ ...body, parent_id: parseInt(user.id) })

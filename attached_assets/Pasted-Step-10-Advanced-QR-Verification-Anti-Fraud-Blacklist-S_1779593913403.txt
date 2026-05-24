@@ -1,0 +1,29 @@
+Step 10: Advanced QR Verification & Anti-Fraud Blacklist System.
+Please update the database schema (Drizzle ORM) and the Expo/React Native controllers to enforce strict membership and payment checks during QR code scanning and registration.
+
+1. Database Updates (Drizzle Schema):
+
+Add a payment_status field to the student/parent profile (options: 'active', 'expired', 'overdue').
+
+Add an is_blocked (boolean) flag and a block_reason text field to users/students.
+
+Create an admin_settings table to store a global configuration toggle: allow_one_time_grace_access (allows an expired user to enter exactly once before being completely locked out).
+
+Create a blacklist table that stores identifiers of banned individuals: email, phone_number, first_name, and last_name.
+
+2. Advanced QR Code Scanning Logic:
+When the Operator scans a QR code, implement the following conditional workflow:
+
+CASE A: Suspended/Blocked Account: If the member or child is flagged as is_blocked, instantly deny entry. Display a prominent 'SUSPENDED / SOSPESO' alert screen on BOTH the Operator's phone and the Parent's phone that says: "The QR code is suspended. Please contact the administration/office for further information."
+
+CASE B: Expired Payment (Within Grace Period): If payment is 'expired' and the Admin enabled the one-time grace access function, allow entry ONLY for this current lesson. Display a warning reminder message to pay. Log that the one-time exception has been used, so future scans will be blocked until paid.
+
+CASE C: Overdue Payment (Long Time Expired): If payment is 'overdue' (past the grace limit), deny entry. Display an alert on BOTH screens stating: "Payment overdue. Please contact the administration/office for more information."
+
+3. Anti-Fraud Re-Registration Check:
+
+Update the Parent sign-up and Child registration logic. Before allowing any new data to insert into the database, run a backend check against the blacklist table.
+
+If the incoming registration matches an existing blacklisted phone, email, or the exact combination of first_name + last_name, reject the registration instantly and show an error message.
+
+UI Constraint: Maintain the Navy Blue and Gold styling for all new alert popups, modals, and error states. Ensure all alert texts fit perfectly within the device boundaries.
