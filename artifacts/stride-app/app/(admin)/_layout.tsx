@@ -4,6 +4,7 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 
 export default function AdminTabLayout() {
   const colors = useColors();
@@ -11,6 +12,7 @@ export default function AdminTabLayout() {
   const isWeb = Platform.OS === "web";
 
   return (
+    <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
@@ -42,6 +44,9 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="activity"       options={{ href: null }} />
       <Tabs.Screen name="setup"          options={{ href: null }} />
       <Tabs.Screen name="pdf-badges"     options={{ href: null }} />
+      <Tabs.Screen name="alerts"         options={{ href: null }} />
     </Tabs>
+    <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
+    </View>
   );
 }

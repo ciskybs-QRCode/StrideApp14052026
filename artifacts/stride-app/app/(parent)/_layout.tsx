@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { useColors } from "@/hooks/useColors";
+import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 
 function CartTabIcon({ color, size, count }: { color: string; size: number; count: number }) {
   return (
@@ -88,7 +89,10 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-sharp" size={size} color={color} /> }} />
         <Tabs.Screen name="checkout" options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />
+        <Tabs.Screen name="alerts" options={{ href: null }} />
       </Tabs>
+
+      <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
 
       {/* Mandatory signature blocking overlay */}
       <Modal visible={blocked} transparent animationType="fade" statusBarTranslucent>

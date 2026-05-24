@@ -23,6 +23,7 @@ import { useRouter } from "expo-router";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
+import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 import {
@@ -112,6 +113,7 @@ export default function OperatorDashboard() {
   const { lessons, students, updateStudentPresence } = useAppData();
   const { reportAbsence, reportDelay, respondToSub, activeAlert, cascadeCountdown } = useSubstitution();
   const { unreadCount } = usePrivateLessons();
+  const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts } = useSecurityEscalation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -203,6 +205,7 @@ export default function OperatorDashboard() {
     if (result.type === "success") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       updateStudentPresence("s1", true);
+      clearAlertByStudent("s1");
     } else if (result.type === "warning") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     } else {
@@ -237,6 +240,19 @@ export default function OperatorDashboard() {
     setScanResult(null);
     setLessonScanResult(null);
     showGuardianResult(MOCK_GUARDIANS[Math.floor(Math.random() * MOCK_GUARDIANS.length)]);
+  };
+
+  const DEMO_ABSENT_STUDENTS = [
+    { id: "sa1", name: "Sofia Rossi",    courseId: "c1", courseName: "Danza Classica" },
+    { id: "sa2", name: "Luca Ferrari",   courseId: "c2", courseName: "Hip-Hop" },
+    { id: "sa3", name: "Giulia Mancini", courseId: "c3", courseName: "Ballo Latino" },
+  ];
+
+  const simulateAbsenceAlert = () => {
+    const s = DEMO_ABSENT_STUDENTS[Math.floor(Math.random() * DEMO_ABSENT_STUDENTS.length)];
+    triggerCheckinAlert(s.id, s.name, s.courseId, s.courseName);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    pushLog({ time: nowTime(), action: `⚠ Allerta sicurezza: ${s.name} — check-in assente`, type: "warning" });
   };
 
   // ── Simulate a private lesson QR completion (demo) ─────────────────────
@@ -314,6 +330,7 @@ export default function OperatorDashboard() {
       const studentName = decodeURIComponent(parts[3] ?? "Student");
       const found = students.find(s => s.id === studentId);
       setGuardianResult(null);
+      clearAlertByStudent(studentId);
       showScanResult({
         type: "success",
         name: found?.name ?? studentName,
@@ -555,6 +572,23 @@ export default function OperatorDashboard() {
             <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>REPORT{"\n"}ABSENCE</Text>
           </Pressable>
         </View>
+
+        {/* ── Security Alerts Quick Access ── */}
+        {secAlerts.length > 0 && (
+          <Pressable
+            style={({ pressed }) => [styles.secAlertBtn, { opacity: pressed ? 0.9 : 1 }]}
+            onPress={() => router.push("/(operator)/alerts" as Parameters<typeof router.push>[0])}
+          >
+            <Ionicons name="shield-checkmark" size={20} color="#FFF" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.secAlertBtnTitle}>
+                {secAlerts.length} Avviso{secAlerts.length !== 1 ? "i" : ""} di Sicurezza Attivo{secAlerts.length !== 1 ? "i" : ""}
+              </Text>
+              <Text style={styles.secAlertBtnSub}>Tocca per gestire gli avvisi</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#FFF" />
+          </Pressable>
+        )}
 
         {/* ── SOS Button — below Quick Actions ── */}
         <Pressable
@@ -806,6 +840,9 @@ export default function OperatorDashboard() {
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#7C3AED", marginTop: 10 }]} onPress={simulateGuardianScan}>
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
+                <Text style={styles.simulateBtnText}>⚠ Simula Bambino Assente</Text>
+              </Pressable>
             </View>
           ) : (
             <CameraView
@@ -925,6 +962,9 @@ export default function OperatorDashboard() {
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#7C3AED", marginTop: 10 }]} onPress={simulateGuardianScan}>
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
+                <Text style={styles.simulateBtnText}>⚠ Simula Bambino Assente</Text>
+              </Pressable>
             </View>
           )}
         </View>
@@ -1041,6 +1081,9 @@ const styles = StyleSheet.create({
 
   // SOS standalone button — below Quick Actions
   sosStandaloneBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#EF4444", borderRadius: 18, paddingVertical: 16, marginBottom: 24 },
+  secAlertBtn: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#7F1D1D", borderRadius: 16, padding: 16, marginBottom: 12 },
+  secAlertBtnTitle: { color: "#FFF", fontWeight: "800", fontSize: 14 },
+  secAlertBtnSub: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 },
   sosStandaloneBtnText: { fontSize: 13, fontWeight: "800", color: "#FFF" },
 
   // Operator QR panel

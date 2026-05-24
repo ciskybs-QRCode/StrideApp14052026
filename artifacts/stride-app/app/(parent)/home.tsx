@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
+import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 
@@ -46,6 +47,7 @@ export default function ParentHome() {
   const { user, updateUser } = useAuth();
   const { children, courses, lessons } = useAppData();
   const { unreadCount } = usePrivateLessons();
+  const { activeAlerts } = useSecurityEscalation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -152,6 +154,20 @@ export default function ParentHome() {
             )}
           </Pressable>
         </View>
+
+        {/* Security Alert Banner */}
+        {activeAlerts.length > 0 && (
+          <Pressable
+            style={styles.secAlertBanner}
+            onPress={() => router.push("/(parent)/alerts" as Parameters<typeof router.push>[0])}
+          >
+            <Ionicons name="shield-checkmark" size={18} color="#FFF" />
+            <Text style={styles.secAlertBannerText}>
+              {activeAlerts.length} avviso{activeAlerts.length !== 1 ? "i" : ""} di sicurezza — tocca per rispondere
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.8)" />
+          </Pressable>
+        )}
 
         {/* Next Activity Card */}
         <View style={[styles.lessonCard, { backgroundColor: colors.primary }]}>
@@ -395,6 +411,8 @@ const styles = StyleSheet.create({
   avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   avatarPhoto: { width: 44, height: 44, borderRadius: 22 },
   avatarText: { color: "#FFF", fontWeight: "700", fontSize: 18 },
+  secAlertBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#EF4444", borderRadius: 14, padding: 14, marginBottom: 16 },
+  secAlertBannerText: { flex: 1, color: "#FFF", fontWeight: "700", fontSize: 13 },
   lessonCard: { borderRadius: 20, padding: 18, marginBottom: 24, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 },
   lessonCardTop: { marginBottom: 8 },
   lessonBadge: { flexDirection: "row", alignItems: "center", gap: 5 },

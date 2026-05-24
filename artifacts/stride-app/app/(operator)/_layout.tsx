@@ -6,6 +6,7 @@ import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-nat
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useRealtime, type BookingNotification } from "@/context/RealtimeContext";
+import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 
 // ── Booking notification banner ───────────────────────────────────────────────
 
@@ -124,7 +125,10 @@ export default function OperatorTabLayout() {
         <Tabs.Screen name="student-detail"  options={{ href: null }} />
         <Tabs.Screen name="private-lessons" options={{ href: null }} />
         <Tabs.Screen name="pdf-badges"      options={{ href: null }} />
+        <Tabs.Screen name="alerts"          options={{ href: null }} />
       </Tabs>
+
+      <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
 
       {/* ── Notification banner ── */}
       {activeNotif && (

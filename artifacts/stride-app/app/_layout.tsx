@@ -22,6 +22,7 @@ import { OfflineSyncProvider, useOfflineSync } from "@/context/OfflineSyncContex
 import { PrivateLessonProvider } from "@/context/PrivateLessonContext";
 import { RealtimeProvider } from "@/context/RealtimeContext";
 import { SubstitutionProvider } from "@/context/SubstitutionContext";
+import { SecurityEscalationProvider } from "@/context/SecurityEscalationContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -88,9 +89,11 @@ export default function RootLayout() {
                 <SubstitutionProvider>
                 <PrivateLessonProvider>
                 <RealtimeProvider>
+                <SecurityEscalationProvider>
                   <GestureHandlerRootView>
                     <RootLayoutNav />
                   </GestureHandlerRootView>
+                </SecurityEscalationProvider>
                 </RealtimeProvider>
                 </PrivateLessonProvider>
                 </SubstitutionProvider>
