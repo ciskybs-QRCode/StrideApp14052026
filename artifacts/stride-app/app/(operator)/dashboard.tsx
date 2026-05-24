@@ -43,6 +43,13 @@ type ScanResult = {
   payment: "paid" | "overdue" | "pending";
 };
 
+type GuardianResult = {
+  guardianName: string;
+  relationship: string;
+  childName: string;
+  isAuthorized: boolean;
+};
+
 interface LogEntry {
   time: string;
   action: string;
@@ -123,7 +130,8 @@ export default function OperatorDashboard() {
   const [lessonScanResult, setLessonScanResult] = useState<{
     discipline: string; student: string; earnings_cents: number; invoice_number: string; attended_at: string;
   } | null>(null);
-  const [lessonScanning, setLessonScanning] = useState(false);
+  const [lessonScanning,  setLessonScanning]  = useState(false);
+  const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
 
   // ── Absence Report modal ────────────────────────────────────────────────────
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
@@ -203,7 +211,33 @@ export default function OperatorDashboard() {
     setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 3500);
   };
 
-  const simulateScan = () => showScanResult(MOCK_OUTCOMES[Math.floor(Math.random() * MOCK_OUTCOMES.length)]);
+  const simulateScan = () => {
+    setGuardianResult(null);
+    showScanResult(MOCK_OUTCOMES[Math.floor(Math.random() * MOCK_OUTCOMES.length)]);
+  };
+
+  // ── Guardian pickup result ──────────────────────────────────────────────
+  const MOCK_GUARDIANS: GuardianResult[] = [
+    { guardianName: "Marco Rossi",   relationship: "Padre",  childName: "Sofia Rossi",   isAuthorized: true  },
+    { guardianName: "Anna Mancini",  relationship: "Madre",  childName: "Giulia Mancini", isAuthorized: true  },
+    { guardianName: "Carlo Verdi",   relationship: "Nonno",  childName: "Luca Ferrari",  isAuthorized: false },
+  ];
+
+  const showGuardianResult = (result: GuardianResult) => {
+    setGuardianResult(result);
+    setScanResult(null);
+    setScanned(true);
+    const tag = result.isAuthorized ? "✓ Ritiro autorizzato" : "✗ Ritiro NON autorizzato";
+    pushLog({ time: nowTime(), action: `${tag}: ${result.guardianName} per ${result.childName}`, type: result.isAuthorized ? "warning" : "error" });
+    Haptics.notificationAsync(result.isAuthorized ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Error);
+    setTimeout(() => { setGuardianResult(null); setScanned(false); setShowScanner(false); }, 5000);
+  };
+
+  const simulateGuardianScan = () => {
+    setScanResult(null);
+    setLessonScanResult(null);
+    showGuardianResult(MOCK_GUARDIANS[Math.floor(Math.random() * MOCK_GUARDIANS.length)]);
+  };
 
   // ── Simulate a private lesson QR completion (demo) ─────────────────────
   const simulateLessonScan = async () => {
@@ -232,13 +266,15 @@ export default function OperatorDashboard() {
   // ── Real barcode scan handler ──────────────────────────────────────────
   const handleBarcodeScan = async ({ data }: { data: string }) => {
     if (scanned) return;
+
     if (data.startsWith("STRIDE:LESSON:")) {
-      // Private lesson QR — format: STRIDE:LESSON:<bookingId>:<qrToken>
+      // Private lesson QR — format: STRIDE:LESSON:<bookingId>:<qrToken>:<discipline>:<student>
       const parts = data.split(":");
       const qrToken = parts[3] ?? "";
       if (!qrToken) return;
       setScanned(true);
       setLessonScanning(true);
+      setGuardianResult(null);
       try {
         const r = await api.scanPrivateLesson(qrToken);
         setLessonScanResult({
@@ -256,11 +292,45 @@ export default function OperatorDashboard() {
         setScanned(false);
       }
       setLessonScanning(false);
+
+    } else if (data.startsWith("STRIDE:GUARDIAN:")) {
+      // Guardian pickup QR — format: STRIDE:GUARDIAN:<delegateId>:<childId>:<guardianName>:<relationship>
+      const parts = data.split(":");
+      const delegateId   = parts[2] ?? "";
+      const childId      = parts[3] ?? "";
+      const guardianName = decodeURIComponent(parts[4] ?? "Guardian");
+      const relationship = parts[5] ?? "Tutore";
+      // Look up the child by id in the students list
+      const child = students.find(s => s.id === childId);
+      const childName = child?.name ?? decodeURIComponent(parts[6] ?? "Bambino");
+      // A QR issued by Stride is implicitly authorized unless the student record says otherwise
+      const isAuthorized = !!delegateId;
+      showGuardianResult({ guardianName, relationship, childName, isAuthorized });
+
+    } else if (data.startsWith("STRIDE:CHILD:")) {
+      // Direct child check-in QR — format: STRIDE:CHILD:<studentId>:<encodedName>
+      const parts = data.split(":");
+      const studentId   = parts[2] ?? "";
+      const studentName = decodeURIComponent(parts[3] ?? "Student");
+      const found = students.find(s => s.id === studentId);
+      setGuardianResult(null);
+      showScanResult({
+        type: "success",
+        name: found?.name ?? studentName,
+        subscription: "active",
+        medical: "valid",
+        payment: "paid",
+      });
+
     } else if (data.startsWith("STRIDE:")) {
+      // Generic STRIDE QR — legacy member check-in
       const parts = data.split(":");
       const name = parts[3] || "Unknown Member";
+      setGuardianResult(null);
       showScanResult({ type: "success", name, subscription: "active", medical: "valid", payment: "paid" });
+
     } else {
+      setGuardianResult(null);
       showScanResult(MOCK_OUTCOMES[Math.floor(Math.random() * MOCK_OUTCOMES.length)]);
     }
   };
@@ -723,8 +793,8 @@ export default function OperatorDashboard() {
 
           {Platform.OS === "web" ? (
             <View style={styles.scannerPreview}>
-              <Ionicons name="qr-code-outline" size={80} color="rgba(255,255,255,0.5)" />
-              <Text style={{ color: "rgba(255,255,255,0.7)", marginTop: 16, textAlign: "center", marginBottom: 16 }}>
+              <Ionicons name="qr-code-outline" size={72} color="rgba(255,255,255,0.5)" />
+              <Text style={{ color: "rgba(255,255,255,0.7)", marginTop: 12, textAlign: "center", marginBottom: 16 }}>
                 QR Scanner unavailable in web preview.{"\n"}Simulate a scan:
               </Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>
@@ -732,6 +802,9 @@ export default function OperatorDashboard() {
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#10B981", marginTop: 10 }]} onPress={simulateLessonScan}>
                 <Text style={styles.simulateBtnText}>Simulate Private Lesson QR</Text>
+              </Pressable>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#7C3AED", marginTop: 10 }]} onPress={simulateGuardianScan}>
+                <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
             </View>
           ) : (
@@ -750,6 +823,38 @@ export default function OperatorDashboard() {
                 )}
               </View>
             </CameraView>
+          )}
+
+          {/* Guardian pickup result */}
+          {guardianResult && (
+            <View style={[styles.guardianPanel, { backgroundColor: guardianResult.isAuthorized ? "#4C1D95" : "#7F1D1D" }]}>
+              <View style={styles.guardianHeader}>
+                <View style={[styles.guardianIconWrap, { backgroundColor: guardianResult.isAuthorized ? "rgba(167,139,250,0.25)" : "rgba(252,165,165,0.25)" }]}>
+                  <Ionicons name={guardianResult.isAuthorized ? "shield-checkmark" : "shield-outline"} size={28} color={guardianResult.isAuthorized ? "#A78BFA" : "#FCA5A5"} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.guardianTitle}>{guardianResult.isAuthorized ? "Ritiro Autorizzato ✓" : "Ritiro NON Autorizzato ✗"}</Text>
+                  <Text style={styles.guardianSub}>{guardianResult.relationship}</Text>
+                </View>
+                <View style={[styles.guardianAuthBadge, { backgroundColor: guardianResult.isAuthorized ? "#10B981" : "#EF4444" }]}>
+                  <Ionicons name={guardianResult.isAuthorized ? "checkmark" : "close"} size={16} color="#FFF" />
+                </View>
+              </View>
+              <View style={styles.guardianRow}>
+                <View style={styles.guardianField}>
+                  <Text style={styles.guardianFieldLabel}>TUTORE</Text>
+                  <Text style={styles.guardianFieldValue}>{guardianResult.guardianName}</Text>
+                </View>
+                <View style={styles.guardianDivider} />
+                <View style={styles.guardianField}>
+                  <Text style={styles.guardianFieldLabel}>BAMBINO</Text>
+                  <Text style={styles.guardianFieldValue}>{guardianResult.childName}</Text>
+                </View>
+              </View>
+              {!guardianResult.isAuthorized && (
+                <Text style={styles.guardianWarning}>⚠️ Contatta il genitore prima di procedere</Text>
+              )}
+            </View>
           )}
 
           {/* Member check-in semaphore result */}
@@ -808,14 +913,17 @@ export default function OperatorDashboard() {
             </View>
           )}
 
-          {!scanResult && !lessonScanResult && !lessonScanning && Platform.OS !== "web" && (
+          {!scanResult && !lessonScanResult && !lessonScanning && !guardianResult && Platform.OS !== "web" && (
             <View style={styles.scannerFooter}>
-              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 8 }}>Point at student's QR Code</Text>
+              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 8 }}>Inquadra il QR Code dello studente</Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>
                 <Text style={styles.simulateBtnText}>Simulate Member Check-in</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#10B981", marginTop: 10 }]} onPress={simulateLessonScan}>
                 <Text style={styles.simulateBtnText}>Simulate Private Lesson QR</Text>
+              </Pressable>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#7C3AED", marginTop: 10 }]} onPress={simulateGuardianScan}>
+                <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
             </View>
           )}
@@ -1021,6 +1129,20 @@ const styles = StyleSheet.create({
   simulateBtn: { marginTop: 20, backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   simulateBtnText: { color: "#1E3A8A", fontWeight: "700" },
   scannerFooter: { padding: 20, alignItems: "center", gap: 12 },
+
+  // Guardian pickup result panel
+  guardianPanel:      { padding: 20, gap: 12 },
+  guardianHeader:     { flexDirection: "row", alignItems: "center", gap: 14 },
+  guardianIconWrap:   { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  guardianTitle:      { color: "#FFF", fontSize: 16, fontWeight: "800" },
+  guardianSub:        { color: "rgba(255,255,255,0.65)", fontSize: 13, marginTop: 2 },
+  guardianAuthBadge:  { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  guardianRow:        { flexDirection: "row", backgroundColor: "rgba(0,0,0,0.25)", borderRadius: 12, padding: 14, gap: 14, alignItems: "center" },
+  guardianField:      { flex: 1 },
+  guardianFieldLabel: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.5)", letterSpacing: 1, marginBottom: 4 },
+  guardianFieldValue: { fontSize: 16, fontWeight: "700", color: "#FFF" },
+  guardianDivider:    { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.2)" },
+  guardianWarning:    { fontSize: 13, color: "#FCA5A5", fontWeight: "600", textAlign: "center" },
 
   // Private lesson scan result panel
   lessonScanPanel: { backgroundColor: "#0F2460", padding: 24, alignItems: "center", gap: 8 },

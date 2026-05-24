@@ -107,7 +107,16 @@ export default function OperatorStudents() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Students</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <Text style={[styles.pageTitle, { color: colors.primary, marginBottom: 0 }]}>Students</Text>
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#1E3A8A", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 }}
+            onPress={() => router.push("/(operator)/pdf-badges" as Parameters<typeof router.push>[0])}
+          >
+            <Ionicons name="print-outline" size={16} color="#FBBF24" />
+            <Text style={{ color: "#FBBF24", fontWeight: "700", fontSize: 13 }}>Badge PDF</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.primary }]}>

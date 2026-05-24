@@ -41,6 +41,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="settings"       options={{ title: "Settings",      tabBarIcon: ({ color, size }) => <Ionicons name="settings"           size={size} color={color} /> }} />
       <Tabs.Screen name="activity"       options={{ href: null }} />
       <Tabs.Screen name="setup"          options={{ href: null }} />
+      <Tabs.Screen name="pdf-badges"     options={{ href: null }} />
     </Tabs>
   );
 }

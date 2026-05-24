@@ -438,6 +438,9 @@ importers:
       expo-sharing:
         specifier: ^55.0.19
         version: 55.0.19(expo@54.0.33)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      qrcode:
+        specifier: ^1.5.4
+        version: 1.5.4
       react-native-qrcode-svg:
         specifier: ^6.3.21
         version: 6.3.21(react-native-svg@15.12.1(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -466,6 +469,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.21(react@19.1.0)
+      '@types/qrcode':
+        specifier: ^1.5.6
+        version: 1.5.6
       '@types/react':
         specifier: ~19.1.10
         version: 19.1.17
@@ -2483,6 +2489,9 @@ packages:
 
   '@types/pg@8.18.0':
     resolution: {integrity: sha512-gT+oueVQkqnj6ajGJXblFR4iavIXWsGAFCk3dP4Kki5+a9R4NMt0JARdk6s8cUKcfUoqP5dAtDSLU8xYUTFV+Q==}
+
+  '@types/qrcode@1.5.6':
+    resolution: {integrity: sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==}
 
   '@types/qs@6.15.0':
     resolution: {integrity: sha512-JawvT8iBVWpzTrz3EGw9BTQFg3BQNmwERdKE22vlTxawwtbyUSlMppvZYKLZzB5zgACXdXxbD3m1bXaMqP/9ow==}
@@ -8476,6 +8485,10 @@ snapshots:
       '@types/node': 25.3.5
       pg-protocol: 1.13.0
       pg-types: 2.2.0
+
+  '@types/qrcode@1.5.6':
+    dependencies:
+      '@types/node': 25.3.5
 
   '@types/qs@6.15.0': {}
 
