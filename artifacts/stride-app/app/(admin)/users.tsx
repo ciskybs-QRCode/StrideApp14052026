@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { api, ApiDiscipline } from "@/lib/api";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,21 @@ export default function AdminUsers() {
     user: UserRecord;
     newRole?: UserRole;
   } | null>(null);
+
+  const [allDisciplines, setAllDisciplines] = useState<ApiDiscipline[]>([]);
+  const [operatorDisciplines, setOperatorDisciplines] = useState<string[]>([]);
+  const [newDiscName, setNewDiscName] = useState("");
+  const [showDiscInput, setShowDiscInput] = useState(false);
+  const [savingDisc, setSavingDisc] = useState(false);
+
+  useEffect(() => {
+    if (selected?.role === "operator") {
+      setOperatorDisciplines([]);
+      setNewDiscName("");
+      setShowDiscInput(false);
+      api.getDisciplines().then(d => setAllDisciplines(d)).catch(() => {});
+    }
+  }, [selected?.id]);
 
   const filtered = users.filter(u => {
     const matchSearch =
@@ -298,6 +314,97 @@ export default function AdminUsers() {
                   )}
 
                   <Text style={[styles.joinDateText, { color: colors.mutedForeground }]}>Joined {user.joinDate}</Text>
+
+                  {/* Disciplines (operators only) */}
+                  {user.role === "operator" && (
+                    <View style={[styles.disciplinesSection, { borderColor: colors.border }]}>
+                      <Text style={[styles.disciplinesSectionTitle, { color: colors.primary }]}>Disciplines</Text>
+                      {allDisciplines.length === 0 ? (
+                        <Text style={[styles.disciplinesEmpty, { color: colors.mutedForeground }]}>No disciplines yet</Text>
+                      ) : (
+                        <View style={styles.disciplinesChips}>
+                          {allDisciplines.map(d => {
+                            const active = operatorDisciplines.includes(d.name);
+                            return (
+                              <Pressable
+                                key={d.id}
+                                style={[styles.disciplineChip, { backgroundColor: active ? colors.primary : colors.muted }]}
+                                onPress={() => {
+                                  setOperatorDisciplines(prev =>
+                                    prev.includes(d.name) ? prev.filter(n => n !== d.name) : [...prev, d.name]
+                                  );
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                }}
+                              >
+                                <Text style={[styles.disciplineChipText, { color: active ? "#FFF" : colors.mutedForeground }]}>{d.name}</Text>
+                                {active && <Ionicons name="checkmark" size={11} color="#FFF" />}
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      )}
+                      {showDiscInput ? (
+                        <View style={[styles.discInputRow, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+                          <TextInput
+                            style={[styles.discInput, { color: colors.foreground }]}
+                            value={newDiscName}
+                            onChangeText={setNewDiscName}
+                            placeholder="New discipline name..."
+                            placeholderTextColor={colors.mutedForeground}
+                            autoFocus
+                            returnKeyType="done"
+                            onSubmitEditing={async () => {
+                              if (!newDiscName.trim()) return;
+                              setSavingDisc(true);
+                              try {
+                                const created = await api.createDiscipline({ name: newDiscName.trim() });
+                                setAllDisciplines(prev => [...prev, created]);
+                                setOperatorDisciplines(prev => [...prev, created.name]);
+                                setNewDiscName("");
+                                setShowDiscInput(false);
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                              } catch {
+                                Alert.alert("Error", "Could not save discipline.");
+                              }
+                              setSavingDisc(false);
+                            }}
+                          />
+                          <Pressable
+                            style={[styles.discSaveBtn, { backgroundColor: colors.primary, opacity: savingDisc ? 0.6 : 1 }]}
+                            disabled={savingDisc}
+                            onPress={async () => {
+                              if (!newDiscName.trim()) return;
+                              setSavingDisc(true);
+                              try {
+                                const created = await api.createDiscipline({ name: newDiscName.trim() });
+                                setAllDisciplines(prev => [...prev, created]);
+                                setOperatorDisciplines(prev => [...prev, created.name]);
+                                setNewDiscName("");
+                                setShowDiscInput(false);
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                              } catch {
+                                Alert.alert("Error", "Could not save discipline.");
+                              }
+                              setSavingDisc(false);
+                            }}
+                          >
+                            <Ionicons name="checkmark" size={15} color="#FFF" />
+                          </Pressable>
+                          <Pressable onPress={() => { setShowDiscInput(false); setNewDiscName(""); }}>
+                            <Ionicons name="close" size={18} color={colors.mutedForeground} />
+                          </Pressable>
+                        </View>
+                      ) : (
+                        <Pressable
+                          style={[styles.addDiscBtn, { borderColor: colors.primary }]}
+                          onPress={() => setShowDiscInput(true)}
+                        >
+                          <Ionicons name="add" size={14} color={colors.primary} />
+                          <Text style={[styles.addDiscBtnText, { color: colors.primary }]}>Add Discipline</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
 
                   {/* Contact */}
                   {user.status !== "suspended" && (
@@ -539,4 +646,15 @@ const styles = StyleSheet.create({
   contactOptionText: { fontSize: 16, fontWeight: "700" },
   contactCancelBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 },
   contactCancelText: { fontWeight: "700", fontSize: 15 },
+  disciplinesSection: { width: "85%", borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 16 },
+  disciplinesSectionTitle: { fontSize: 13, fontWeight: "700", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 },
+  disciplinesEmpty: { fontSize: 12, marginBottom: 8 },
+  disciplinesChips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
+  disciplineChip: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  disciplineChipText: { fontSize: 12, fontWeight: "600" },
+  discInputRow: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6 },
+  discInput: { flex: 1, fontSize: 13, paddingVertical: 4 },
+  discSaveBtn: { borderRadius: 8, padding: 6 },
+  addDiscBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignSelf: "flex-start" },
+  addDiscBtnText: { fontSize: 12, fontWeight: "600" },
 });

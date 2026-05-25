@@ -205,6 +205,67 @@ export default function AdminStats() {
     ({ active: "Active", expired: "Expired", none: "None", valid: "Valid",
        expiring: "Expiring", paid: "Paid", overdue: "Overdue", pending: "Pending" })[s] || s;
 
+  const handleExport = (label: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (Platform.OS !== "web") {
+      Alert.alert("Export", `"${label}.csv" export is available in the web version.`);
+      return;
+    }
+    const now = new Date().toLocaleDateString("en-AU");
+    const school = user?.schoolName || "Stride";
+    let rows: string[][] = [];
+    switch (label) {
+      case "Attendance":
+        rows = [
+          ["Attendance Report", school, now], [],
+          ["Student", "Courses", "Status"],
+          ...students.map(s => [s.name, (s.courses ?? []).join("; "), "Present"]),
+        ];
+        break;
+      case "Income":
+        rows = [
+          ["Income Report", school, now], [],
+          ["Description", "Amount (€)", "Status"],
+          ...payments.map(p => [p.description || "Payment", String(p.amount), p.status]),
+          [], ["Total Paid (€)", String(totalRevenue)],
+          ["Pending (€)", String(pendingRevenue)],
+        ];
+        break;
+      case "Registrations":
+        rows = [
+          ["Registrations Report", school, now], [],
+          ["Course", "Enrolled", "Capacity", "Price (€)", "Occupancy %"],
+          ...courses.map(c => [c.name, String(c.enrolled), String(c.capacity), String(c.price), String(Math.round((c.enrolled / c.capacity) * 100))]),
+        ];
+        break;
+      case "Annual Report":
+        rows = [
+          ["Annual Report", school, now], [],
+          ["Metric", "Value"],
+          ["Total Courses", String(courses.length)],
+          ["Total Students", String(totalStudents)],
+          ["Total Enrolled", String(totalEnrolled)],
+          ["Average Occupancy", `${avgOccupancy}%`],
+          ["Total Revenue (€)", String(totalRevenue)],
+          ["Pending Revenue (€)", String(pendingRevenue)],
+          ["Avg Revenue per Student (€)", String(avgPerStudent)],
+        ];
+        break;
+      default:
+        rows = [["Export", school, now]];
+    }
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${label.replace(/\s+/g, "_")}_${now.replace(/\//g, "-")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case "trends":
@@ -379,10 +440,7 @@ export default function AdminStats() {
                 <Pressable
                   key={item.label}
                   style={({ pressed }) => [styles.exportBtn, { backgroundColor: colors.card, opacity: pressed ? 0.85 : 1 }]}
-                  onPress={() => {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    Alert.alert("Excel Export", `"${item.label}.xlsx" is ready for download.`);
-                  }}
+                  onPress={() => handleExport(item.label)}
                 >
                   <View style={[styles.exportIconWrap, { backgroundColor: `${item.color}18` }]}>
                     <Ionicons name={item.icon} size={26} color={item.color} />
@@ -417,7 +475,7 @@ export default function AdminStats() {
         <View style={styles.headerRow}>
           <View>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Statistics</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>Dance Village • May 2026</Text>
+            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>{user?.schoolName || "Stride"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}</Text>
           </View>
           <View style={[styles.periodToggle, { backgroundColor: colors.muted }]}>
             <Pressable style={[styles.periodBtn, period === "month" && { backgroundColor: colors.primary }]} onPress={() => setPeriod("month")}>

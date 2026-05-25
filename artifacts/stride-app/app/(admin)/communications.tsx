@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
-  pageTitle: { fontSize: 28, fontWeight: "800" },
+  pageTitle: { fontSize: 22, fontWeight: "800" },
   composeBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
   composeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },

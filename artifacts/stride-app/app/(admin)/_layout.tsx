@@ -44,6 +44,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="activity"       options={{ href: null }} />
       <Tabs.Screen name="setup"          options={{ href: null }} />
       <Tabs.Screen name="pdf-badges"     options={{ href: null }} />
+      <Tabs.Screen name="blacklist"      options={{ href: null }} />
       <Tabs.Screen name="alerts"         options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />

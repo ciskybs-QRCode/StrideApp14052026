@@ -1,0 +1,44 @@
+Role: You are an Expert Flutter/Dart Developer working within Replit, using Supabase (Backend/DB) and strictly following the MVVM architecture.
+Objective: Clean up the Admin UI, fix routing duplicates, translate remaining Italian text, and implement the Excel export logic.
+
+CRITICAL RULE: Do not break existing functionality. Ensure all UI changes respect the Navy Blue and Gold branding and do not cause screen overflows.
+
+Please execute the following tasks:
+
+1. Statistics Page (Dynamic Naming)
+Action: Remove the hardcoded text "Dance Village" from the header/display.
+
+Logic: Replace it with the dynamic variable/provider that fetches the "Association/School Name" set by the Admin in the App Configuration settings. It must update automatically.
+
+2. Data Export Page (Excel Generation)
+Issue: The Excel export feature is currently non-functional and cannot generate or download files for testing.
+
+Action: Implement a fully functional Excel creation and download process.
+
+Implementation: Use a web-compatible package like excel. Ensure that clicking the export button securely fetches the relevant Supabase data, generates the .xlsx file, and triggers a web-safe file download prompt in the browser.
+
+3. Communications & New Message UI
+Action: Decrease the font size of the main "Communications" header.
+
+Refactor: Reorganize and clean up the visual layout of both the main "Communications" page and the "New Message" view to ensure a more professional, balanced, and uncluttered UI.
+
+4. Operators & Availability Page (CRUD & Real-time)
+Action: Make existing Operator cards/rows clickable.
+
+Logic: Clicking an operator must open an "Edit Operator" view.
+
+Features: Allow the Admin to edit operator details, specifically adding or modifying "Taught Disciplines". If a completely new discipline is typed/created during this edit process, save it immediately to the Supabase database so it becomes available system-wide in real-time.
+
+5. Settings Page (Translation)
+Action: Locate the following Italian strings in the Settings UI and translate them to English:
+
+Change "Sicurezza Anti-Frode" to "Anti-Fraud Security".
+
+Change "Lista Nera Gestisci e blocca individui da nuove registrazioni" to "Blacklist: Manage and block individuals from new registrations".
+
+Change "Accesso con Grazia Consenti UN accesso ai membri con abbonamento scaduto prima del blocco" to "Grace Access: Allow ONE access to members with expired subscriptions before blocking".
+
+6. Bottom Navigation Bar Cleanup
+Issue: There is a duplicate "Blacklist" page accessible from the bottom nav bar.
+
+Action: Completely remove the "Blacklist" icon and its associated route from the Admin Bottom Navigation Bar. The Blacklist feature must exclusively reside inside the "Settings" page as previously established.

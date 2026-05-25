@@ -176,7 +176,7 @@ export default function SettingsIndex() {
         </Pressable>
 
         {/* Anti-Fraud Security section */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Sicurezza Anti-Frode</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Anti-Fraud Security</Text>
 
         {/* Blacklist Card */}
         <Pressable
@@ -187,9 +187,9 @@ export default function SettingsIndex() {
             <Ionicons name="ban-outline" size={30} color="#DC2626" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Lista Nera</Text>
+            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Blacklist</Text>
             <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
-              Gestisci e blocca individui da nuove registrazioni
+              Manage and block individuals from new registrations
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#DC2626" />
@@ -201,9 +201,9 @@ export default function SettingsIndex() {
             <Ionicons name="time-outline" size={30} color="#D97706" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Accesso con Grazia</Text>
+            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Grace Access</Text>
             <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
-              Consenti UN accesso ai membri con abbonamento scaduto prima del blocco
+              Allow ONE access to members with expired subscriptions before blocking
             </Text>
           </View>
           {loadingGrace ? (
