@@ -88,13 +88,21 @@ export default function AdminLessonsScreen() {
 
   // ── Discipline CRUD ───────────────────────────────────────────────────────────
 
-  const openNewDisc = () => { setDiscName(""); setDiscDesc(""); setShowDiscModal(true); };
+  const [editingDisc, setEditingDisc] = useState<ApiDiscipline | null>(null);
+
+  const openNewDisc = () => { setEditingDisc(null); setDiscName(""); setDiscDesc(""); setShowDiscModal(true); };
+
+  const openEditDisc = (d: ApiDiscipline) => { setEditingDisc(d); setDiscName(d.name); setDiscDesc(d.description ?? ""); setShowDiscModal(true); };
 
   const saveDisc = async () => {
     if (!discName.trim()) return;
     setDiscSaving(true);
     try {
-      await api.createDiscipline({ name: discName.trim(), description: discDesc.trim() || undefined });
+      if (editingDisc) {
+        await api.updateDiscipline(editingDisc.id, { name: discName.trim(), description: discDesc.trim() || undefined });
+      } else {
+        await api.createDiscipline({ name: discName.trim(), description: discDesc.trim() || undefined });
+      }
       await load();
       setShowDiscModal(false);
     } catch (e: unknown) {
@@ -361,6 +369,12 @@ export default function AdminLessonsScreen() {
                     </Text>
                   </View>
                   <View style={{ flexDirection: "row", gap: 8 }}>
+                    <Pressable
+                      style={[styles.discActionBtn, { backgroundColor: `${colors.primary}18` }]}
+                      onPress={() => openEditDisc(d)}
+                    >
+                      <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+                    </Pressable>
                     <Pressable
                       style={[styles.discActionBtn, { backgroundColor: d.active ? "#FEF3C7" : "#D1FAE5" }]}
                       onPress={() => toggleDiscActive(d)}
@@ -706,8 +720,8 @@ export default function AdminLessonsScreen() {
                 <Ionicons name="barbell-outline" size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={styles.modalHeaderTitle}>Nuova Disciplina</Text>
-                <Text style={styles.modalHeaderSub}>Es: Zumba, Crossfit, Danza classica</Text>
+                <Text style={styles.modalHeaderTitle}>{editingDisc ? "Modifica Disciplina" : "Nuova Disciplina"}</Text>
+                <Text style={styles.modalHeaderSub}>{editingDisc ? `Modifica "${editingDisc.name}"` : "Es: Zumba, Crossfit, Danza classica"}</Text>
               </View>
             </View>
 
