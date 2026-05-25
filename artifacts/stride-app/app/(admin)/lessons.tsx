@@ -20,7 +20,7 @@ function fmtDate(d: string) {
   catch { return d; }
 }
 
-type Tab = "operators" | "availability";
+type Tab = "operators" | "disciplines" | "availability";
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
@@ -55,6 +55,12 @@ export default function AdminLessonsScreen() {
   /** Operator pay rate in dollars (per lesson) — pre-filled from their discipline rate */
   const [reviewOpPay, setReviewOpPay] = useState("");
 
+  // ── Discipline management form state ──────────────────────────────────────────
+  const [showDiscModal, setShowDiscModal]   = useState(false);
+  const [discName, setDiscName]             = useState("");
+  const [discDesc, setDiscDesc]             = useState("");
+  const [discSaving, setDiscSaving]         = useState(false);
+
   // ── Data loading ──────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
@@ -79,6 +85,48 @@ export default function AdminLessonsScreen() {
   useEffect(() => { load(); }, [load]);
 
   // ── Operator profile helpers ──────────────────────────────────────────────────
+
+  // ── Discipline CRUD ───────────────────────────────────────────────────────────
+
+  const openNewDisc = () => { setDiscName(""); setDiscDesc(""); setShowDiscModal(true); };
+
+  const saveDisc = async () => {
+    if (!discName.trim()) return;
+    setDiscSaving(true);
+    try {
+      await api.createDiscipline({ name: discName.trim(), description: discDesc.trim() || undefined });
+      await load();
+      setShowDiscModal(false);
+    } catch (e: unknown) {
+      Alert.alert("Errore", e instanceof Error ? e.message : "Salvataggio fallito");
+    } finally { setDiscSaving(false); }
+  };
+
+  const toggleDiscActive = async (d: ApiDiscipline) => {
+    try {
+      await api.updateDiscipline(d.id, { active: !d.active });
+      await load();
+    } catch (e: unknown) {
+      Alert.alert("Errore", e instanceof Error ? e.message : "Aggiornamento fallito");
+    }
+  };
+
+  const deleteDisc = async (d: ApiDiscipline) => {
+    Alert.alert(
+      "Elimina disciplina",
+      `Rimuovere "${d.name}"? I profili operatore esistenti perderanno questa tariffa.`,
+      [
+        { text: "Annulla", style: "cancel" },
+        {
+          text: "Elimina", style: "destructive",
+          onPress: async () => {
+            try { await api.deleteDiscipline(d.id); await load(); }
+            catch (e: unknown) { Alert.alert("Errore", e instanceof Error ? e.message : "Eliminazione fallita"); }
+          },
+        },
+      ],
+    );
+  };
 
   const openNewProfile = () => {
     setProfileUserId("");
@@ -201,8 +249,9 @@ export default function AdminLessonsScreen() {
         {/* Tab bar */}
         <View style={styles.tabBar}>
           {([
-            { key: "operators",    label: "Operators",    icon: "people-outline"   },
-            { key: "availability", label: "Availability", icon: "calendar-outline" },
+            { key: "operators",    label: "Operatori",   icon: "people-outline"      },
+            { key: "disciplines",  label: "Discipline",  icon: "barbell-outline"     },
+            { key: "availability", label: "Disponib.",   icon: "calendar-outline"    },
           ] as const).map(t => (
             <Pressable
               key={t.key}
@@ -280,6 +329,58 @@ export default function AdminLessonsScreen() {
                 </View>
               </View>
             ))}
+          </>
+        )}
+
+        {/* ══ DISCIPLINES TAB ══ */}
+        {tab === "disciplines" && (
+          <>
+            <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openNewDisc}>
+              <Ionicons name="add-circle-outline" size={18} color="#FFF" />
+              <Text style={styles.addBtnText}>Aggiungi Disciplina</Text>
+            </Pressable>
+
+            {disciplines.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Ionicons name="barbell-outline" size={40} color={colors.mutedForeground} />
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                  Nessuna disciplina ancora. Aggiungine una per iniziare.
+                </Text>
+              </View>
+            ) : (
+              disciplines.map(d => (
+                <View key={d.id} style={[styles.card, { backgroundColor: colors.card, opacity: d.active ? 1 : 0.55 }]}>
+                  <View style={[styles.discDot, { backgroundColor: d.active ? "#10B981" : colors.border }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>{d.name}</Text>
+                    {d.description ? (
+                      <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>{d.description}</Text>
+                    ) : null}
+                    <Text style={[styles.cardSub, { color: d.active ? "#059669" : colors.mutedForeground }]}>
+                      {d.active ? "Attiva" : "Inattiva"}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <Pressable
+                      style={[styles.discActionBtn, { backgroundColor: d.active ? "#FEF3C7" : "#D1FAE5" }]}
+                      onPress={() => toggleDiscActive(d)}
+                    >
+                      <Ionicons
+                        name={d.active ? "pause-circle-outline" : "play-circle-outline"}
+                        size={16}
+                        color={d.active ? "#92400E" : "#065F46"}
+                      />
+                    </Pressable>
+                    <Pressable
+                      style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]}
+                      onPress={() => deleteDisc(d)}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#991B1B" />
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
           </>
         )}
 
@@ -596,6 +697,66 @@ export default function AdminLessonsScreen() {
         </View>
       </Modal>
 
+      {/* ══ ADD DISCIPLINE MODAL ══ */}
+      <Modal visible={showDiscModal} transparent animationType="slide" onRequestClose={() => setShowDiscModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeaderStrip, { backgroundColor: colors.primary }]}>
+              <View style={[styles.modalHeaderIcon, { backgroundColor: colors.secondary }]}>
+                <Ionicons name="barbell-outline" size={20} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.modalHeaderTitle}>Nuova Disciplina</Text>
+                <Text style={styles.modalHeaderSub}>Es: Zumba, Crossfit, Danza classica</Text>
+              </View>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Nome disciplina *</Text>
+              <TextInput
+                style={[styles.flexInput, { color: colors.foreground, borderColor: discName.trim() ? colors.primary : colors.border, backgroundColor: colors.muted, marginBottom: 16 }]}
+                value={discName}
+                onChangeText={setDiscName}
+                placeholder="Es: Zumba"
+                placeholderTextColor={colors.mutedForeground}
+                autoFocus
+              />
+
+              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Descrizione (opzionale)</Text>
+              <TextInput
+                style={[styles.textArea, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
+                value={discDesc}
+                onChangeText={setDiscDesc}
+                placeholder="Breve descrizione della disciplina…"
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                numberOfLines={3}
+              />
+
+              <View style={styles.modalActions}>
+                <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted }]} onPress={() => setShowDiscModal(false)}>
+                  <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Annulla</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalBtn, { backgroundColor: (!discName.trim() || discSaving) ? colors.border : colors.primary }]}
+                  onPress={saveDisc}
+                  disabled={!discName.trim() || discSaving}
+                >
+                  {discSaving
+                    ? <ActivityIndicator size="small" color="#FFF" />
+                    : (
+                      <>
+                        <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
+                        <Text style={styles.modalBtnText}>Salva</Text>
+                      </>
+                    )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* ── Review Availability Modal ── */}
       <Modal visible={reviewSlot !== null} transparent animationType="slide" onRequestClose={() => { setReviewSlot(null); setReviewPrice(""); setReviewOpPay(""); }}>
         <View style={styles.modalOverlay}>
@@ -842,6 +1003,10 @@ const styles = StyleSheet.create({
   modalActions:       { flexDirection: "row", gap: 10, marginTop: 16 },
   modalBtn:           { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 14, borderRadius: 12 },
   modalBtnText:       { color: "#FFF", fontWeight: "700", fontSize: 14 },
+
+  // Discipline management
+  discDot:            { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
+  discActionBtn:      { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
   // Review availability
   reviewDetail:       { borderRadius: 12, padding: 12, gap: 6 },
