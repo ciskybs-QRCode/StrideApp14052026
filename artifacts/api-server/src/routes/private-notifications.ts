@@ -14,7 +14,10 @@ router.get("/private-notifications", requireAuth, async (req, res) => {
     .eq("recipient_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50);
-  if (error) { res.status(500).json({ error: error.message }); return; }
+  if (error) {
+    if ((error as { code?: string }).code === "PGRST205") { res.json([]); return; }
+    res.status(500).json({ error: error.message }); return;
+  }
   res.json(data ?? []);
 });
 

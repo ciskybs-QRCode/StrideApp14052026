@@ -24,7 +24,10 @@ router.get("/private-bookings", requireAuth, async (req, res) => {
   if (user.role === "operator") query = query.eq("operator_user_id", user.id);
 
   const { data, error } = await query;
-  if (error) { res.status(500).json({ error: error.message }); return; }
+  if (error) {
+    if ((error as { code?: string }).code === "PGRST205") { res.json([]); return; }
+    res.status(500).json({ error: error.message }); return;
+  }
   res.json(data ?? []);
 });
 

@@ -36,7 +36,10 @@ router.get("/availability", requireAuth, async (req, res) => {
   }
 
   const { data, error } = await query;
-  if (error) { res.status(500).json({ error: error.message }); return; }
+  if (error) {
+    if ((error as { code?: string }).code === "PGRST205") { res.json([]); return; }
+    res.status(500).json({ error: error.message }); return;
+  }
   res.json(data ?? []);
 });
 
