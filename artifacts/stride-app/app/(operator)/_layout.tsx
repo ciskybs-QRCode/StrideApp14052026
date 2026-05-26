@@ -6,6 +6,7 @@ import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-nat
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useRealtime, type BookingNotification } from "@/context/RealtimeContext";
+import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 
@@ -82,6 +83,7 @@ export default function OperatorTabLayout() {
   const colors = useColors();
   const router = useRouter();
   const { bookingNotifications, dismissBookingNotification } = useRealtime();
+  const { unreadCount } = usePrivateLessons();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
 
@@ -118,7 +120,15 @@ export default function OperatorTabLayout() {
           tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
         }}
       >
-        <Tabs.Screen name="dashboard" options={{ title: "Dashboard", tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} /> }} />
+        <Tabs.Screen
+          name="dashboard"
+          options={{
+            title: "Dashboard",
+            tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} />,
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+            tabBarBadgeStyle: { backgroundColor: "#FBBF24", color: "#1E3A8A", fontSize: 10, fontWeight: "800" },
+          }}
+        />
         <Tabs.Screen name="calendar" options={{ title: "Calendar", tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} /> }} />
         <Tabs.Screen name="students" options={{ title: "Students", tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
         <Tabs.Screen name="invoicing" options={{ title: "Admin", tabBarIcon: ({ color, size }) => <Ionicons name="briefcase" size={size} color={color} /> }} />

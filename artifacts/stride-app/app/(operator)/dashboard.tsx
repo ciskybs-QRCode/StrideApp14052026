@@ -107,13 +107,105 @@ const ABSENCE_OPTIONS: { value: AbsenceType; label: string; delayMins: number }[
 ];
 
 
+// ── Notifiche inbox helpers ────────────────────────────────────────────────────
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+function notifIconForType(type: string): { icon: IoniconName; color: string } {
+  if (type === "payment_received")  return { icon: "wallet",            color: "#059669" };
+  if (type === "booking_confirmed") return { icon: "checkmark-circle",  color: "#059669" };
+  if (type === "booking_cancelled") return { icon: "close-circle",      color: "#DC2626" };
+  if (type === "booking_request")   return { icon: "calendar",          color: "#1E3A8A" };
+  if (type === "lesson_reminder")   return { icon: "time",              color: "#D97706" };
+  return { icon: "notifications", color: "#1E3A8A" };
+}
+
+function fmtAge(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins} min fa`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h fa`;
+  return `${Math.floor(hrs / 24)}g fa`;
+}
+
+interface NotificheInboxProps {
+  notifications: import("@/lib/api").ApiPrivateNotification[];
+  unreadCount: number;
+  colors: ReturnType<typeof import("@/hooks/useColors").useColors>;
+  onMarkAll: () => void;
+  onOpenNotif: (id: number) => void;
+  onViewAll: () => void;
+}
+
+function NotificheInbox({ notifications, unreadCount, colors, onMarkAll, onOpenNotif, onViewAll }: NotificheInboxProps) {
+  const unread = notifications.filter(n => !n.read).slice(0, 3);
+
+  return (
+    <View style={[inboxStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={inboxStyles.header}>
+        <View style={inboxStyles.headerLeft}>
+          <Ionicons name="notifications" size={18} color="#1E3A8A" />
+          <Text style={[inboxStyles.title, { color: colors.foreground }]}>Notifiche</Text>
+          <View style={inboxStyles.badge}>
+            <Text style={inboxStyles.badgeText}>{unreadCount}</Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Pressable onPress={onMarkAll}>
+            <Text style={[inboxStyles.linkText, { color: colors.mutedForeground }]}>Segna tutte</Text>
+          </Pressable>
+          <Pressable onPress={onViewAll}>
+            <Text style={[inboxStyles.linkText, { color: "#1E3A8A" }]}>Vedi tutte →</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {unread.map(n => {
+        const { icon, color } = notifIconForType(n.type);
+        return (
+          <Pressable
+            key={n.id}
+            style={({ pressed }) => [inboxStyles.row, { backgroundColor: pressed ? `${color}08` : "transparent" }]}
+            onPress={() => onOpenNotif(n.id)}
+          >
+            <View style={[inboxStyles.rowIcon, { backgroundColor: `${color}18` }]}>
+              <Ionicons name={icon} size={18} color={color} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[inboxStyles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>{n.title}</Text>
+              <Text style={[inboxStyles.rowBody, { color: colors.mutedForeground }]} numberOfLines={2}>{n.body}</Text>
+            </View>
+            <Text style={[inboxStyles.rowAge, { color: colors.mutedForeground }]}>{fmtAge(n.created_at)}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const inboxStyles = StyleSheet.create({
+  card:      { borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  header:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  headerLeft:{ flexDirection: "row", alignItems: "center", gap: 6 },
+  title:     { fontSize: 15, fontWeight: "800" },
+  badge:     { backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
+  badgeText: { fontSize: 11, fontWeight: "800", color: "#1E3A8A" },
+  linkText:  { fontSize: 12, fontWeight: "700" },
+  row:       { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.06)" },
+  rowIcon:   { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  rowTitle:  { fontSize: 13, fontWeight: "700" },
+  rowBody:   { fontSize: 12, lineHeight: 17 },
+  rowAge:    { fontSize: 11, marginTop: 2, flexShrink: 0 },
+});
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function OperatorDashboard() {
   const { user } = useAuth();
   const { lessons, students, updateStudentPresence } = useAppData();
   const { reportAbsence, reportDelay, respondToSub, activeAlert, cascadeCountdown } = useSubstitution();
-  const { unreadCount } = usePrivateLessons();
+  const { unreadCount, notifications, markAllRead, markRead } = usePrivateLessons();
   const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts, triggerAccessAlert } = useSecurityEscalation();
   const { isOnline, enqueue, pendingCount: offlinePendingCount } = useOfflineSync();
   const colors = useColors();
@@ -649,6 +741,18 @@ export default function OperatorDashboard() {
           )}
           <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
         </Pressable>
+
+        {/* ── Notifiche Lezioni Private ── */}
+        {unreadCount > 0 && (
+          <NotificheInbox
+            notifications={notifications}
+            unreadCount={unreadCount}
+            colors={colors}
+            onMarkAll={() => markAllRead()}
+            onOpenNotif={(id) => { markRead(id); router.push("/(operator)/private-lessons"); }}
+            onViewAll={() => router.push("/(operator)/private-lessons")}
+          />
+        )}
 
         {/* ── Quick Actions — identical 2-col grid as Parent ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>

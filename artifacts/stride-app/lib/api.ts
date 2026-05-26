@@ -49,6 +49,89 @@ async function request<T>(
 }
 
 // ── Demo credentials (bypass backend when Supabase is not seeded) ─────────────
+
+async function isDemoSession(): Promise<boolean> {
+  const token = await getToken();
+  return (token?.startsWith("demo-token-") ?? false);
+}
+
+const DEMO_PRIVATE_NOTIFICATIONS: ApiPrivateNotification[] = [
+  {
+    id: 101,
+    organization_id: 1,
+    recipient_id: 2,
+    type: "payment_received",
+    title: "Pagamento ricevuto — Ballet",
+    body: "Sofia Rossi ha pagato €35 per la lezione privata di Ballet (Lun 10 Feb 16:00). Guadagno accreditato.",
+    booking_id: 201,
+    read: false,
+    created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+  },
+  {
+    id: 102,
+    organization_id: 1,
+    recipient_id: 2,
+    type: "booking_confirmed",
+    title: "Prenotazione confermata — Hip Hop",
+    body: "Luca Ferrari ha confermato la lezione privata di Hip Hop per Mar 11 Feb alle 17:30.",
+    booking_id: 202,
+    read: false,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  },
+  {
+    id: 103,
+    organization_id: 1,
+    recipient_id: 2,
+    type: "booking_request",
+    title: "Nuova richiesta — Danza Classica",
+    body: "Marco Bianchi vorrebbe prenotare una lezione privata di Danza Classica per Mer 12 Feb alle 15:00.",
+    booking_id: 203,
+    read: true,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+  },
+];
+
+const DEMO_PRIVATE_BOOKINGS: ApiPrivateBooking[] = [
+  {
+    id: 201,
+    organization_id: 1,
+    availability_id: 301,
+    parent_user_id: 1,
+    child_id: 11,
+    operator_user_id: 2,
+    discipline_id: 1,
+    slot_date: "2026-02-10",
+    start_time: "16:00",
+    end_time: "17:00",
+    location: "Sala A",
+    price_cents: 3500,
+    status: "confirmed",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    child: { id: 11, name: "Sofia Rossi" },
+    operator: { id: 2, name: "Giulia Bianchi" },
+    discipline: { id: 1, name: "Ballet" },
+  },
+  {
+    id: 202,
+    organization_id: 1,
+    availability_id: 302,
+    parent_user_id: 4,
+    child_id: 12,
+    operator_user_id: 2,
+    discipline_id: 2,
+    slot_date: "2026-02-11",
+    start_time: "17:30",
+    end_time: "18:30",
+    location: "Sala B",
+    price_cents: 4000,
+    status: "confirmed",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+    child: { id: 12, name: "Luca Ferrari" },
+    operator: { id: 2, name: "Giulia Bianchi" },
+    discipline: { id: 2, name: "Hip Hop" },
+  },
+];
+
 const DEMO_USERS: Record<string, { token: string; user: ApiUser }> = {
   "genitore@test.com": {
     token: "demo-token-parent",
@@ -224,7 +307,10 @@ export const api = {
     request<ApiAvailabilitySlot>("PATCH", `/availability/${id}`, { status, parentPriceCents, operatorPayCents }),
 
   // Private bookings
-  getPrivateBookings: () => request<ApiPrivateBooking[]>("GET", "/private-bookings"),
+  getPrivateBookings: async () => {
+    if (await isDemoSession()) return DEMO_PRIVATE_BOOKINGS;
+    return request<ApiPrivateBooking[]>("GET", "/private-bookings");
+  },
   createPrivateBooking: (data: { availabilityId: number; childId: number }) =>
     request<ApiPrivateBooking>("POST", "/private-bookings", data),
   confirmPrivateBooking: (id: number) =>
@@ -241,11 +327,25 @@ export const api = {
     request<ApiOperatorEarnings>("GET", month ? `/operator-earnings?month=${month}` : "/operator-earnings"),
 
   // Notifications
-  getPrivateNotifications: () => request<ApiPrivateNotification[]>("GET", "/private-notifications"),
-  markNotificationRead: (id: number) =>
-    request<{ ok: boolean }>("POST", `/private-notifications/${id}/read`, {}),
-  markAllNotificationsRead: () =>
-    request<{ ok: boolean }>("POST", "/private-notifications/read-all", {}),
+  getPrivateNotifications: async () => {
+    if (await isDemoSession()) return DEMO_PRIVATE_NOTIFICATIONS;
+    return request<ApiPrivateNotification[]>("GET", "/private-notifications");
+  },
+  markNotificationRead: async (id: number) => {
+    if (await isDemoSession()) {
+      const n = DEMO_PRIVATE_NOTIFICATIONS.find(x => x.id === id);
+      if (n) n.read = true;
+      return { ok: true };
+    }
+    return request<{ ok: boolean }>("POST", `/private-notifications/${id}/read`, {});
+  },
+  markAllNotificationsRead: async () => {
+    if (await isDemoSession()) {
+      DEMO_PRIVATE_NOTIFICATIONS.forEach(n => { n.read = true; });
+      return { ok: true };
+    }
+    return request<{ ok: boolean }>("POST", "/private-notifications/read-all", {});
+  },
 
   // Admin Settings (grace access + anti-fraud)
   getAdminSettings: () => request<ApiAdminSettings>("GET", "/admin-settings"),
