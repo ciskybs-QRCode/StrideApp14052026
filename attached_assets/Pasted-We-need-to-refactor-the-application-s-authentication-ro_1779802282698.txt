@@ -1,0 +1,35 @@
+We need to refactor the application's authentication, routing, and permission system to support Multi-Role Accounts in our Expo/React Native (TypeScript) + Supabase + Drizzle ORM tech stack.
+
+Currently, users are siloed. We need an architecture where a single User ID can simultaneously hold multiple roles:
+
+An Admin can also be an Operator and a Parent (Associate).
+
+An Operator can also be a Parent (Associate).
+
+Please implement this multi-role capability using the following strict guidelines:
+
+1. Database & Role Architecture (Drizzle ORM):
+
+Ensure the user profile table handles flags or relationships for all roles at once (e.g., isAdmin, isOperator, isParent).
+
+An Operator must have access to the exact same features and layouts whether they are flagged as 'Paid' or 'Volunteer'.
+
+2. Navigation & UI Preservation (CRITICAL):
+
+DO NOT alter the existing UI graphics, colors (Navy Blue and Gold), or visual styles of the individual views.
+
+DO NOT remove or delete any existing functionality.
+
+Implement a clean 'Role Switcher' mechanism (e.g., a profile toggle or dynamic tab rendering) that allows an Admin or Operator to seamlessly view and use the 'Parent View' or 'Operator View' features without breaking their native layout. Add all missing screen connections so that any user with the appropriate role can access all pages inherent to that role.
+
+3. Bulletproof Data Privacy & Security Guardrails:
+
+Enforce strict data isolation. A user acting as a Parent/Associate must ONLY see and access their own personal data, invoices, and their specific linked children profiles.
+
+They must be completely blind to any other parent, operator, or admin data, unless explicit 'special permissions' tables grant cross-access. Ensure Supabase RLS (Row Level Security) or repository layers reflect this strictly.
+
+4. Conflict Resolution Protocol:
+
+If any part of this multi-role consolidation creates a code, architectural, or routing conflict with the existing codebase, DO NOT guess or overwrite blindly.
+
+Stop immediately, explain the conflict clearly to me, and present the two best alternative solutions so I can choose how to proceed.

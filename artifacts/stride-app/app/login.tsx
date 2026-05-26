@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, UserRole } from "@/context/AuthContext";
 
 const LOGO = require("@/assets/images/stride-logo.png");
 
@@ -40,10 +40,10 @@ export default function LoginScreen() {
     ]).start();
   };
 
-  const navigateAfterLogin = (roleEmail: string) => {
-    if (roleEmail === "admin@test.com") router.replace("/(admin)/stats" as never);
-    else if (roleEmail === "operatore@test.com") router.replace("/(operator)/dashboard" as never);
-    else router.replace("/(parent)/home" as never);
+  const navigateAfterLogin = (role: UserRole) => {
+    if (role === "admin")    router.replace("/(admin)/stats" as never);
+    else if (role === "operator") router.replace("/(operator)/dashboard" as never);
+    else                     router.replace("/(parent)/home" as never);
   };
 
   // Demo auto-login: ?demo=parent|operator|admin auto-signs in for canvas previews
@@ -60,7 +60,7 @@ export default function LoginScreen() {
     const creds = DEMO_CREDS[demo];
     if (!creds) return;
     login(creds.email, creds.password)
-      .then(() => navigateAfterLogin(creds.email))
+      .then(u => navigateAfterLogin(u.role))
       .catch(() => { /* silently fall through to manual login */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -69,9 +69,9 @@ export default function LoginScreen() {
     if (!email || !password) { setError("Enter your email and password"); shake(); return; }
     setLoading(true); setError("");
     try {
-      await login(email, password);
+      const loggedInUser = await login(email, password);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigateAfterLogin(email.toLowerCase());
+      navigateAfterLogin(loggedInUser.role);
     } catch (e: unknown) {
       const err = e as Error;
       setError(err.message || "Invalid credentials");

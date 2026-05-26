@@ -5,6 +5,7 @@ import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 export default function AdminTabLayout() {
   const colors = useColors();
@@ -48,6 +49,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="alerts"         options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
+    <RoleSwitcher />
     </View>
   );
 }

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useRealtime, type BookingNotification } from "@/context/RealtimeContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 // ── Booking notification banner ───────────────────────────────────────────────
 
@@ -129,6 +130,7 @@ export default function OperatorTabLayout() {
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
+      <RoleSwitcher />
 
       {/* ── Notification banner ── */}
       {activeNotif && (

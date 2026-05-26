@@ -8,6 +8,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { useColors } from "@/hooks/useColors";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 function CartTabIcon({ color, size, count }: { color: string; size: number; count: number }) {
   return (
@@ -93,6 +94,7 @@ export default function ParentTabLayout() {
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
+      <RoleSwitcher />
 
       {/* Mandatory signature blocking overlay */}
       <Modal visible={blocked} transparent animationType="fade" statusBarTranslucent>
