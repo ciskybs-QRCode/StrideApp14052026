@@ -131,7 +131,7 @@ export default function OperatorTabLayout() {
         />
         <Tabs.Screen name="calendar" options={{ title: "Calendar", tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} /> }} />
         <Tabs.Screen name="students" options={{ title: "Students", tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
-        <Tabs.Screen name="invoicing" options={{ title: "Admin", tabBarIcon: ({ color, size }) => <Ionicons name="briefcase" size={size} color={color} /> }} />
+        <Tabs.Screen name="invoicing" options={{ href: null }} />
         <Tabs.Screen name="support" options={{ title: "Support", tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} /> }} />
         <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} /> }} />
         <Tabs.Screen name="student-detail"  options={{ href: null }} />

@@ -435,6 +435,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       allergies: child.allergies,
       ambulance_consent: child.medicalWaiver === "ambulance",
       media_consent: child.mediaConsent,
+      ...(child.photoUrl ? { photo_url: child.photoUrl } : {}),
     };
     const tempId = `temp_${Date.now()}`;
     setChildrenData(prev => [...prev, { ...child, id: tempId }]);

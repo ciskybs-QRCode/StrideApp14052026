@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiAvailabilitySlot, type ApiDiscipline, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
+import { api, type ApiAvailabilitySlot, type ApiDiscipline, type ApiLocation, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
 
 // ── Date / time helpers ───────────────────────────────────────────────────────
 
@@ -66,6 +66,7 @@ export default function OperatorPrivateLessonsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [disciplines, setDisciplines] = useState<ApiDiscipline[]>([]);
+  const [locations, setLocations] = useState<ApiLocation[]>([]);
   const [slots, setSlots] = useState<ApiAvailabilitySlot[]>([]);
   const [bookings, setBookings] = useState<ApiPrivateBooking[]>([]);
   const [notifications, setNotifications] = useState<ApiPrivateNotification[]>([]);
@@ -92,13 +93,15 @@ export default function OperatorPrivateLessonsScreen() {
   const [scanResult, setScanResult] = useState<{ ok: boolean; earnings_cents?: number; invoice_number?: string; error?: string } | null>(null);
 
   const load = useCallback(async () => {
-    const [disc, avail, bk, notifs] = await Promise.allSettled([
+    const [disc, locs, avail, bk, notifs] = await Promise.allSettled([
       api.getDisciplines(),
+      api.getLocations(),
       api.getAvailability(),
       api.getPrivateBookings(),
       api.getPrivateNotifications(),
     ]);
     if (disc.status   === "fulfilled") setDisciplines(disc.value);
+    if (locs.status   === "fulfilled") setLocations(locs.value);
     if (avail.status  === "fulfilled") setSlots(avail.value);
     if (bk.status     === "fulfilled") setBookings(bk.value);
     if (notifs.status === "fulfilled") setNotifications(notifs.value);
@@ -555,13 +558,28 @@ export default function OperatorPrivateLessonsScreen() {
 
                 {/* ── 2. Location ── */}
                 <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Location *</Text>
-                <TextInput
-                  style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
-                  value={slotLocation}
-                  onChangeText={setSlotLocation}
-                  placeholder="e.g. Studio A, Main Hall"
-                  placeholderTextColor={colors.mutedForeground}
-                />
+                {locations.filter(l => l.active).map(l => (
+                  <Pressable
+                    key={l.id}
+                    style={[styles.pickerOption, slotLocation === l.name && { backgroundColor: `${colors.secondary}80` }]}
+                    onPress={() => { setSlotLocation(l.name); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  >
+                    <Ionicons
+                      name={slotLocation === l.name ? "checkmark-circle" : "location-outline"}
+                      size={18}
+                      color={slotLocation === l.name ? colors.primary : colors.mutedForeground}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.pickerOptionText, { color: slotLocation === l.name ? colors.primary : colors.foreground }]}>{l.name}</Text>
+                      {!!l.description && <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>{l.description}</Text>}
+                    </View>
+                  </Pressable>
+                ))}
+                {locations.filter(l => l.active).length === 0 && (
+                  <Text style={{ color: colors.mutedForeground, fontStyle: "italic", fontSize: 13, padding: 8 }}>
+                    Nessuna location disponibile. Chiedi all'admin di aggiungerne.
+                  </Text>
+                )}
 
                 {/* ── 3. Recurring toggle ── */}
                 <View style={[styles.recurringToggleRow, { borderColor: colors.border, backgroundColor: colors.muted }]}>

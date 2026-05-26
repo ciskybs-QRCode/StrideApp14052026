@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
   Alert,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -48,6 +50,7 @@ export default function ChildrenScreen() {
   const [newChildAllergies, setNewChildAllergies] = useState("");
   const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent">("ambulance");
   const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("none");
+  const [newChildPhotoUri, setNewChildPhotoUri] = useState<string | null>(null);
 
   // Delegate fields
   const [delegateName, setDelegateName] = useState("");
@@ -68,6 +71,24 @@ export default function ChildrenScreen() {
     setNewChildAllergies("");
     setNewChildWaiver("ambulance");
     setNewChildMediaConsent("none");
+    setNewChildPhotoUri(null);
+  };
+
+  const pickChildPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permesso negato", "Consenti l'accesso alla galleria nelle impostazioni del dispositivo.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setNewChildPhotoUri(result.assets[0].uri);
+    }
   };
 
   const handleAddChild = async () => {
@@ -88,6 +109,7 @@ export default function ChildrenScreen() {
       mediaConsent: newChildMediaConsent,
       stars: 0,
       courses: [],
+      photoUrl: newChildPhotoUri ?? undefined,
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     resetAddChildForm();
@@ -155,8 +177,12 @@ export default function ChildrenScreen() {
                   setShowDeleteConfirm(false);
                 }}
               >
-                <View style={[styles.childAvatar, selectedChild === c.id && { backgroundColor: "rgba(255,255,255,0.3)" }]}>
-                  <Text style={[styles.childAvatarText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.charAt(0)}</Text>
+                <View style={[styles.childAvatar, selectedChild === c.id && { backgroundColor: "rgba(255,255,255,0.3)" }, c.photoUrl ? { overflow: "hidden" } : {}]}>
+                  {c.photoUrl ? (
+                    <Image source={{ uri: c.photoUrl }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                  ) : (
+                    <Text style={[styles.childAvatarText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.charAt(0)}</Text>
+                  )}
                 </View>
                 <Text style={[styles.childTabText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.split(" ")[0]}</Text>
               </Pressable>
@@ -404,10 +430,22 @@ export default function ChildrenScreen() {
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
             <View style={styles.modalCard}>
               <View style={styles.addChildHeader}>
-                <View style={[styles.addChildIconCircle, { backgroundColor: colors.primary }]}>
-                  <Ionicons name="person-add" size={28} color="#FFF" />
+                <Pressable
+                  style={[styles.addChildIconCircle, { backgroundColor: newChildPhotoUri ? "transparent" : colors.primary, overflow: "hidden" }]}
+                  onPress={pickChildPhoto}
+                >
+                  {newChildPhotoUri ? (
+                    <Image source={{ uri: newChildPhotoUri }} style={{ width: 56, height: 56, borderRadius: 28 }} />
+                  ) : (
+                    <Ionicons name="camera" size={28} color="#FFF" />
+                  )}
+                </Pressable>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add Child</Text>
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
+                    {newChildPhotoUri ? "Tocca per cambiare foto" : "Tocca per aggiungere foto"}
+                  </Text>
                 </View>
-                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add Child</Text>
               </View>
               <Text style={[styles.addChildSubtitle, { color: colors.mutedForeground }]}>
                 Fill in all required details. These will be stored securely and shared only with authorised staff.

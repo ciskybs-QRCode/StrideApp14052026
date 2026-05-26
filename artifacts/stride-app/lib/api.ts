@@ -55,6 +55,13 @@ async function isDemoSession(): Promise<boolean> {
   return (token?.startsWith("demo-token-") ?? false);
 }
 
+const DEMO_LOCATIONS: ApiLocation[] = [
+  { id: 1, name: "Sala A",   description: "Studio principale",  active: true },
+  { id: 2, name: "Sala B",   description: "Studio secondario",  active: true },
+  { id: 3, name: "Sala C",   description: "Sala prove",         active: true },
+  { id: 4, name: "Palestra", description: "Palestra attrezzata", active: true },
+];
+
 const DEMO_PRIVATE_NOTIFICATIONS: ApiPrivateNotification[] = [
   {
     id: 101,
@@ -267,6 +274,9 @@ export const api = {
 
   // Disciplines
   getDisciplines: () => request<ApiDiscipline[]>("GET", "/disciplines"),
+  // Locations (admin-configured rooms/studios)
+  getLocations: async (): Promise<ApiLocation[]> =>
+    (await isDemoSession()) ? DEMO_LOCATIONS : request<ApiLocation[]>("GET", "/locations"),
   createDiscipline: (data: { name: string; description?: string }) =>
     request<ApiDiscipline>("POST", "/disciplines", data),
   updateDiscipline: (id: number, data: Partial<{ name: string; description: string; active: boolean }>) =>
@@ -554,6 +564,13 @@ export interface ApiEnrollmentRequest {
 }
 
 // ── Private Lesson Types ──────────────────────────────────────────────────────
+
+export interface ApiLocation {
+  id: number;
+  name: string;
+  description?: string;
+  active: boolean;
+}
 
 export interface ApiDiscipline {
   id: number;
