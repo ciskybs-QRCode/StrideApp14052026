@@ -52,6 +52,7 @@ function RootLayoutNav() {
         <Stack.Screen name="index" />
         <Stack.Screen name="splash" />
         <Stack.Screen name="login" />
+        <Stack.Screen name="join" />
         <Stack.Screen name="(parent)" />
         <Stack.Screen name="(operator)" />
         <Stack.Screen name="(admin)" />

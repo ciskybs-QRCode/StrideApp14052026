@@ -45,7 +45,7 @@ export default function AdminSetup() {
 
   const orgSlug = slugify(schoolName || "school");
   const appDomain = process.env.EXPO_PUBLIC_DOMAIN || "strideapp.io";
-  const registrationUrl = `https://${appDomain}/login?org=${orgSlug}&signin=1`;
+  const registrationUrl = `https://${appDomain}/?org=${orgSlug}&school=${encodeURIComponent(schoolName || "School")}&primary=${encodeURIComponent(PRESET_COLORS[selectedColors].primary)}&secondary=${encodeURIComponent(PRESET_COLORS[selectedColors].secondary)}`;
 
   const handleApply = async () => {
     if (!schoolName.trim()) { Alert.alert("Please enter the school name first"); return; }
@@ -79,6 +79,62 @@ export default function AdminSetup() {
     } catch {
       Alert.alert("Share", "Could not open share dialog.");
     }
+  };
+
+  const handlePrintQr = async () => {
+    if (!schoolName.trim()) {
+      Alert.alert("Enter School Name", "Please enter your school name before printing.");
+      return;
+    }
+    try {
+      const QRCodeLib = (await import("qrcode")).default;
+      const svgString = await QRCodeLib.toString(registrationUrl, {
+        type: "svg",
+        width: 260,
+        margin: 2,
+        color: { dark: PRESET_COLORS[selectedColors].primary, light: "#FFFFFF" },
+      });
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+        <style>
+          * { margin:0; padding:0; box-sizing:border-box; }
+          @page { size: A4 portrait; margin: 20mm; }
+          @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+          body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: white; }
+          .card { border: 3px solid ${PRESET_COLORS[selectedColors].primary}; border-radius: 20px; padding: 40px 50px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+          .badge { background: ${PRESET_COLORS[selectedColors].primary}; color: ${PRESET_COLORS[selectedColors].secondary}; padding: 6px 20px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 2px; }
+          .school { font-size: 30px; font-weight: 900; color: ${PRESET_COLORS[selectedColors].primary}; text-align: center; }
+          .tagline { font-size: 13px; color: #9CA3AF; letter-spacing: 2px; text-transform: uppercase; }
+          .instruction { font-size: 14px; color: #374151; text-align: center; max-width: 280px; line-height: 1.5; }
+          .url { font-size: 10px; color: #9CA3AF; margin-top: 4px; word-break: break-all; text-align: center; max-width: 280px; }
+          .divider { width: 60px; height: 3px; background: ${PRESET_COLORS[selectedColors].secondary}; border-radius: 2px; }
+        </style>
+      </head><body>
+        <div class="card">
+          <div class="badge">STRIDE APP</div>
+          <div class="school">${schoolName}</div>
+          <div class="divider"></div>
+          <div class="tagline">Scan to Join</div>
+          ${svgString}
+          <div class="instruction">Scan the QR code or visit the link below to download the app and register as a parent of ${schoolName}.</div>
+          <div class="url">${registrationUrl}</div>
+        </div>
+      </body></html>`;
+
+      if (typeof window !== "undefined") {
+        const win = window.open("", "_blank");
+        if (win) {
+          win.document.write(html);
+          win.document.close();
+          win.focus();
+          setTimeout(() => { win.print(); }, 350);
+        } else {
+          Alert.alert("Pop-up blocked", "Please allow pop-ups and try again.");
+        }
+      }
+    } catch {
+      Alert.alert("Error", "Could not generate the printable QR code.");
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleCopyLink = () => {
@@ -275,7 +331,7 @@ export default function AdminSetup() {
                 </Text>
               </View>
 
-              {/* Action buttons */}
+              {/* Action buttons — row 1 */}
               <View style={styles.qrActions}>
                 <Pressable
                   style={[styles.qrActionBtn, { backgroundColor: "#DBEAFE" }]}
@@ -293,22 +349,14 @@ export default function AdminSetup() {
                 </Pressable>
               </View>
 
-              {/* Share channel hints */}
-              <View style={styles.shareHintRow}>
-                {[
-                  { icon: "logo-whatsapp" as const, label: "WhatsApp", color: "#25D366" },
-                  { icon: "mail-outline" as const,   label: "Email",    color: "#EA4335" },
-                  { icon: "chatbubble-outline" as const, label: "SMS",  color: "#1E3A8A" },
-                  { icon: "print-outline" as const,  label: "Print",    color: "#6B7280" },
-                ].map(ch => (
-                  <View key={ch.label} style={styles.shareHintItem}>
-                    <View style={[styles.shareHintIcon, { backgroundColor: `${ch.color}20` }]}>
-                      <Ionicons name={ch.icon} size={18} color={ch.color} />
-                    </View>
-                    <Text style={[styles.shareHintLabel, { color: colors.mutedForeground }]}>{ch.label}</Text>
-                  </View>
-                ))}
-              </View>
+              {/* Print QR Code button */}
+              <Pressable
+                style={[styles.printBtn, { borderColor: colors.primary }]}
+                onPress={handlePrintQr}
+              >
+                <Ionicons name="print-outline" size={18} color={colors.primary} />
+                <Text style={[styles.printBtnText, { color: colors.primary }]}>Print QR Code (A4)</Text>
+              </Pressable>
 
               <View style={[styles.qrInfoBox, { backgroundColor: "#FEF3C7" }]}>
                 <Ionicons name="information-circle-outline" size={15} color="#F59E0B" />
@@ -377,7 +425,9 @@ const styles = StyleSheet.create({
   qrSubLabel: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" },
   urlBox: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 14 },
   urlText: { flex: 1, fontSize: 11 },
-  qrActions: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  qrActions: { flexDirection: "row", gap: 10, marginBottom: 12 },
+  printBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1.5, borderRadius: 14, paddingVertical: 13, marginBottom: 16 },
+  printBtnText: { fontWeight: "700", fontSize: 14 },
   qrActionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 12, paddingVertical: 12 },
   qrActionText: { fontWeight: "700", fontSize: 14 },
   shareHintRow: { flexDirection: "row", justifyContent: "space-around", marginBottom: 16 },

@@ -53,6 +53,9 @@ export const api = {
   login: (email: string, password: string) =>
     request<{ token: string; user: ApiUser }>("POST", "/auth/login", { email, password }),
 
+  register: (name: string, email: string, password: string, org_slug?: string) =>
+    request<{ token: string; user: ApiUser }>("POST", "/auth/register", { name, email, password, org_slug }),
+
   // Children
   getChildren: () => request<ApiChild[]>("GET", "/children"),
   addChild: (data: Partial<ApiChild>) => request<ApiChild>("POST", "/children", data),
