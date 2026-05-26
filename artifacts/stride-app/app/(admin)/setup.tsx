@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -40,12 +42,36 @@ export default function AdminSetup() {
   const [selectedColors, setSelectedColors] = useState(0);
   const [selectedFont, setSelectedFont] = useState("Montserrat");
   const [buttonStyle, setButtonStyle] = useState<"rounded" | "square">("rounded");
+  const [logoUri, setLogoUri] = useState<string | null>(user?.logoUri ?? null);
+  const [logoFileName, setLogoFileName] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
   const [qrGenerated, setQrGenerated] = useState(false);
 
   const orgSlug = slugify(schoolName || "school");
   const appDomain = process.env.EXPO_PUBLIC_DOMAIN || "strideapp.io";
   const registrationUrl = `https://${appDomain}/?org=${orgSlug}&school=${encodeURIComponent(schoolName || "School")}&primary=${encodeURIComponent(PRESET_COLORS[selectedColors].primary)}&secondary=${encodeURIComponent(PRESET_COLORS[selectedColors].secondary)}`;
+
+  const handlePickLogo = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permesso negato", "Consenti l'accesso alla libreria foto nelle impostazioni del dispositivo.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.85,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const name = asset.fileName || "logo.png";
+      setLogoUri(asset.uri);
+      setLogoFileName(name);
+      await updateUser({ logoUri: asset.uri });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
 
   const handleApply = async () => {
     if (!schoolName.trim()) { Alert.alert("Please enter the school name first"); return; }
@@ -167,13 +193,32 @@ export default function AdminSetup() {
         <View style={[styles.logoCard, { backgroundColor: "#FFFFFF" }]}>
           <Text style={[styles.sectionTitle, { color: colors.primary }]}>School Logo</Text>
           <Pressable
-            style={[styles.logoUpload, { borderColor: colors.border }]}
-            onPress={() => Alert.alert("Upload Logo", "Select your school logo from the gallery.")}
+            style={[styles.logoUpload, { borderColor: logoUri ? colors.primary : colors.border, borderStyle: logoUri ? "solid" : "dashed" }]}
+            onPress={handlePickLogo}
           >
-            <Ionicons name="cloud-upload-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>[YOUR LOGO HERE]</Text>
-            <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>Drag or upload your custom logo</Text>
-            <Text style={[styles.logoUploadHint, { color: colors.mutedForeground }]}>PNG, JPG, SVG — max 5MB</Text>
+            {logoUri ? (
+              <>
+                <Image source={{ uri: logoUri }} style={styles.logoPreviewImg} resizeMode="contain" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Logo caricato</Text>
+                  <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                    {logoFileName ?? "logo.png"}
+                  </Text>
+                  <Text style={[styles.logoUploadHint, { color: colors.primary }]}>Tocca per cambiare</Text>
+                </View>
+                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+              </>
+            ) : (
+              <>
+                <Ionicons name="cloud-upload-outline" size={40} color={colors.mutedForeground} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Carica il logo</Text>
+                  <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>Tocca per selezionare dalla galleria</Text>
+                  <Text style={[styles.logoUploadHint, { color: colors.mutedForeground }]}>PNG, JPG — max 5MB</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+              </>
+            )}
           </Pressable>
 
           <Text style={[styles.fieldLabel, { color: colors.primary }]}>School / Association Name</Text>
@@ -382,10 +427,11 @@ const styles = StyleSheet.create({
   logoCard: { borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 8 },
   sectionDesc: { fontSize: 13, marginBottom: 16 },
-  logoUpload: { borderWidth: 2, borderStyle: "dashed", borderRadius: 16, alignItems: "center", padding: 32, marginBottom: 16, gap: 8 },
-  logoUploadTitle: { fontSize: 16, fontWeight: "700" },
-  logoUploadSub: { fontSize: 13 },
-  logoUploadHint: { fontSize: 11 },
+  logoUpload: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 2, borderRadius: 16, padding: 16, marginBottom: 16 },
+  logoPreviewImg: { width: 56, height: 56, borderRadius: 10, backgroundColor: "#F0F4FF" },
+  logoUploadTitle: { fontSize: 15, fontWeight: "700" },
+  logoUploadSub: { fontSize: 12, marginTop: 2 },
+  logoUploadHint: { fontSize: 11, marginTop: 2 },
   fieldLabel: { fontSize: 13, fontWeight: "600", marginBottom: 8 },
   fieldInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: "#1E3A8A", marginBottom: 12 },
   sectionCard: { borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
