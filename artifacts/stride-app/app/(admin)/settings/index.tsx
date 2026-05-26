@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -65,11 +66,21 @@ export default function SettingsIndex() {
   const [loadingGrace, setLoadingGrace] = useState(true);
   const [savingGrace, setSavingGrace] = useState(false);
 
+  const GRACE_KEY = "stride_grace_access";
+
   const loadSettings = useCallback(async () => {
     try {
       const data = await api.getAdminSettings();
-      setGraceEnabled(data.allow_one_time_grace_access ?? false);
-    } catch {}
+      const serverValue = data.allow_one_time_grace_access ?? false;
+      setGraceEnabled(serverValue);
+      await AsyncStorage.setItem(GRACE_KEY, JSON.stringify(serverValue));
+    } catch {
+      // API unavailable — use locally persisted value
+      try {
+        const stored = await AsyncStorage.getItem(GRACE_KEY);
+        if (stored !== null) setGraceEnabled(JSON.parse(stored) as boolean);
+      } catch { /* ignore */ }
+    }
     setLoadingGrace(false);
   }, []);
 
@@ -78,12 +89,13 @@ export default function SettingsIndex() {
   const handleGraceToggle = useCallback(async (value: boolean) => {
     setSavingGrace(true);
     setGraceEnabled(value);
+    // Persist locally first so the toggle survives regardless of API status
+    try { await AsyncStorage.setItem(GRACE_KEY, JSON.stringify(value)); } catch { /* ignore */ }
     try {
       await api.updateAdminSettings({ allow_one_time_grace_access: value, grace_used_child_ids: [], organization_id: 1 });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      setGraceEnabled(!value);
-      Alert.alert("Errore", "Impossibile salvare le impostazioni.");
+      // API failed but we keep the local value — no revert, no alert
     }
     setSavingGrace(false);
   }, []);
