@@ -106,7 +106,6 @@ const ABSENCE_OPTIONS: { value: AbsenceType; label: string; delayMins: number }[
   { value: "late60", label: "60 min delay",    delayMins: 60 },
 ];
 
-const MOCK_TEACHERS = ["Maria Rossi", "Luigi Ferrari", "Anna Bianchi", "Marco Conti"];
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
@@ -142,7 +141,6 @@ export default function OperatorDashboard() {
   // ── Absence Report modal ────────────────────────────────────────────────────
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
   const [absenceType, setAbsenceType]           = useState<AbsenceType>("absent");
-  const [selectedTeacher, setSelectedTeacher]   = useState(MOCK_TEACHERS[0]);
   const [absenceSent, setAbsenceSent]           = useState(false);
 
   // ── Cascade viewer modal ────────────────────────────────────────────────────
@@ -471,12 +469,13 @@ export default function OperatorDashboard() {
     const lessonName = currentLesson?.courseName ?? "Current Lesson";
     const lessonId   = currentLesson?.id ?? "lesson_0";
 
+    const myName = user?.name ?? "Operator";
     if (absenceType === "absent") {
-      reportAbsence(lessonId, lessonName, selectedTeacher, user?.name ?? "Operator");
-      pushLog({ time: nowTime(), action: `Absence reported: ${selectedTeacher} — ${lessonName}`, type: "error" });
+      reportAbsence(lessonId, lessonName, myName, myName);
+      pushLog({ time: nowTime(), action: `Absence reported: ${myName} — ${lessonName}`, type: "error" });
     } else {
-      reportDelay(lessonId, lessonName, selectedTeacher, user?.name ?? "Operator", selected.delayMins);
-      pushLog({ time: nowTime(), action: `Delay (${selected.delayMins}min) reported: ${selectedTeacher}`, type: "warning" });
+      reportDelay(lessonId, lessonName, myName, myName, selected.delayMins);
+      pushLog({ time: nowTime(), action: `Delay (${selected.delayMins}min) reported: ${myName}`, type: "warning" });
     }
 
     setAbsenceSent(true);
@@ -769,17 +768,13 @@ export default function OperatorDashboard() {
             ) : (
               <>
                 <Text style={[styles.modalTitle, { color: colors.primary }]}>Report Absence / Delay</Text>
-                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Teacher / Instructor</Text>
-                <View style={styles.teacherRow}>
-                  {MOCK_TEACHERS.map(t => (
-                    <Pressable
-                      key={t}
-                      style={[styles.teacherChip, selectedTeacher === t && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                      onPress={() => setSelectedTeacher(t)}
-                    >
-                      <Text style={[styles.teacherChipText, selectedTeacher === t && { color: "#FFF" }]}>{t}</Text>
-                    </Pressable>
-                  ))}
+
+                {/* Reporting for self only */}
+                <View style={[styles.selfOnlyBanner, { backgroundColor: "#DBEAFE", borderColor: "#93C5FD" }]}>
+                  <Ionicons name="person-circle-outline" size={18} color="#1E3A8A" />
+                  <Text style={[styles.selfOnlyText, { color: "#1E3A8A" }]}>
+                    Reporting as: <Text style={{ fontWeight: "800" }}>{user?.name ?? "You"}</Text>
+                  </Text>
                 </View>
 
                 <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Type of report</Text>
@@ -1242,6 +1237,8 @@ const styles = StyleSheet.create({
   teacherRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   teacherChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D1D9F0" },
   teacherChipText: { fontSize: 12, fontWeight: "600", color: "#1E3A8A" },
+  selfOnlyBanner: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 4 },
+  selfOnlyText: { fontSize: 13, fontWeight: "500" },
   absenceOption: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 8, width: "100%" },
   absenceOptionText: { fontSize: 14, fontWeight: "600", color: "#1E3A8A" },
   absenceOptionHint: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },

@@ -220,12 +220,27 @@ export default function ActivityScreen() {
   const doReschedule = () => {
     if (!focusedAlert) return;
     let action: RescheduleAction;
-    if (rescheduleKind === "shift")  action = { kind: "shift",  shiftMinutes: parseInt(shiftMinutes, 10) || 30 };
-    else if (rescheduleKind === "cancel") action = { kind: "cancel" };
-    else                             action = { kind: "makeup", makeupDate, makeupTime };
+    let notifyMsg = "";
+    if (rescheduleKind === "shift") {
+      const mins = parseInt(shiftMinutes, 10) || 30;
+      action = { kind: "shift", shiftMinutes: mins };
+      notifyMsg = `The lesson "${focusedAlert.lessonName}" has been shifted by ${mins} minutes.`;
+    } else if (rescheduleKind === "cancel") {
+      action = { kind: "cancel" };
+      notifyMsg = `The lesson "${focusedAlert.lessonName}" has been cancelled. We apologise for the inconvenience.`;
+    } else {
+      action = { kind: "makeup", makeupDate, makeupTime };
+      notifyMsg = `The lesson "${focusedAlert.lessonName}" has been rescheduled to ${makeupDate} at ${makeupTime}.`;
+    }
     rescheduleLesson(focusedAlert.id, action);
     setShowReschedule(false);
     setShowAlertDetail(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert(
+      "Decision Applied — Participants Notified",
+      `In-app notification sent to all enrolled participants:\n\n"${notifyMsg}"\n\nParents of enrolled children have also been notified.`,
+      [{ text: "OK" }],
+    );
   };
 
   // ── Filtered activities ──

@@ -1,0 +1,19 @@
+Please implement the following features and fixes across the Operator, Admin, and User (Associated/Parent) sides, ensuring they are fully integrated and interact with each other.
+​1. Operator Side: Flexible Availability & Booking System
+​Fix Availability Issue: Investigate and fix why operators currently cannot save/set their availability.
+​Recurring & Multiple Slots: Upgrade the availability settings. Operators must not be limited to single days. Allow them to select recurring days (e.g., "Every Wednesday", "Every Friday") with different, independent time slots for different days.
+​Online Booking Logic:
+​Integrate a ready-made, open-source/freeware booking calendar library (like FullCalendar, Cal.com API, or similar) if it helps streamline the logic.
+​The Logic: If an operator is available on Mondays and Wednesdays from 15:00 to 20:00, and the Admin schedules a group course from 16:00 to 17:30, the remaining time slots (15:00-16:00 and 17:30-20:00) must remain open.
+​If the operator accepts, these open slots can be booked online by associates for private lessons.
+​2. Operator Side: Delay Button Logic
+​Scope Restriction: Restrict the "Delay" (Ritardo) button so that an operator can only declare a delay for themselves or their own children. They must not be able to trigger delays for other operators.
+​3. Admin Side: Delay Management & Notifications
+​Alert Dashboard: When an operator clicks the delay button, an alert must immediately appear on the Admin dashboard (since the Admin is responsible for resolving the issue).
+​Admin Resolution Options: For that specific delayed lesson, the Admin must have three options to choose from:
+​Postpone: Delay the start time within the same day.
+​Cancel: Cancel the lesson entirely.
+​Reschedule: Move the lesson to a different day and time.
+​Automated Notifications: Once the Admin submits their decision, the system must automatically send a notification (Email, SMS, or In-App Push) to all course participants. If the participant is a child, the notification must go to the parent, stating the decision and the new date/time if applicable.
+​4. System Integration
+​Ensure that the Operator, Admin, and User/Parent sides communicate smoothly in real-time, updating the shared database and calendar schedules instantly when any of the actions above take place.

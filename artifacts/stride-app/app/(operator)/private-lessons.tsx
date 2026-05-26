@@ -74,9 +74,15 @@ export default function OperatorPrivateLessonsScreen() {
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [slotDisciplineId, setSlotDisciplineId] = useState<number | null>(null);
   const [slotLocation, setSlotLocation] = useState("");
+  // Single-date mode
   const [slotDate, setSlotDate] = useState<Date | null>(null);
   const [slotStart, setSlotStart] = useState("");
   const [slotEnd, setSlotEnd] = useState("");
+  // Recurring mode
+  const [slotRecurring, setSlotRecurring] = useState(false);
+  const [recurringDays, setRecurringDays] = useState<number[]>([]); // 0=Sun…6=Sat
+  const [dayTimeSlots, setDayTimeSlots] = useState<Record<number, { start: string; end: string }>>({});
+  const [activeDayEdit, setActiveDayEdit] = useState<number | null>(null); // which day is expanded for time edit
   const [slotNotes, setSlotNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -112,27 +118,96 @@ export default function OperatorPrivateLessonsScreen() {
     setSlotDate(null);
     setSlotStart("");
     setSlotEnd("");
+    setSlotRecurring(false);
+    setRecurringDays([]);
+    setDayTimeSlots({});
+    setActiveDayEdit(null);
     setSlotNotes("");
+  };
+
+  // Generate next N occurrences of a given day-of-week (0=Sun…6=Sat)
+  const nextOccurrences = (dayOfWeek: number, weeks = 4): Date[] => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const results: Date[] = [];
+    for (let i = 0; i < weeks; i++) {
+      const d = new Date(today);
+      let daysAhead = dayOfWeek - today.getDay();
+      if (daysAhead <= 0) daysAhead += 7;
+      d.setDate(today.getDate() + daysAhead + i * 7);
+      results.push(d);
+    }
+    return results;
+  };
+
+  const toggleRecurringDay = (day: number) => {
+    setRecurringDays(prev => {
+      if (prev.includes(day)) {
+        setDayTimeSlots(s => { const copy = { ...s }; delete copy[day]; return copy; });
+        if (activeDayEdit === day) setActiveDayEdit(null);
+        return prev.filter(d => d !== day);
+      }
+      setDayTimeSlots(s => ({ ...s, [day]: { start: "", end: "" } }));
+      setActiveDayEdit(day);
+      return [...prev, day];
+    });
   };
 
   // ── Submit availability ─────────────────────────────────────────────────────
 
   const submitSlot = async () => {
-    if (!slotDisciplineId || !slotLocation.trim() || !slotDate || !slotStart || !slotEnd) {
-      Alert.alert("Missing fields", "Please fill in all required fields.");
+    if (!slotDisciplineId || !slotLocation.trim()) {
+      Alert.alert("Missing fields", "Please select a discipline and enter a location.");
       return;
+    }
+    if (slotRecurring) {
+      if (recurringDays.length === 0) {
+        Alert.alert("Missing days", "Select at least one recurring day of the week.");
+        return;
+      }
+      const incomplete = recurringDays.find(d => !dayTimeSlots[d]?.start || !dayTimeSlots[d]?.end);
+      if (incomplete !== undefined) {
+        Alert.alert("Missing times", `Please set start and end time for every selected day.`);
+        return;
+      }
+    } else {
+      if (!slotDate || !slotStart || !slotEnd) {
+        Alert.alert("Missing fields", "Please fill in date, start time and end time.");
+        return;
+      }
     }
     setSaving(true);
     try {
-      await api.submitAvailability({
-        disciplineId: slotDisciplineId,
-        location:    slotLocation.trim(),
-        slotDate:    toISODate(slotDate),
-        startTime:   slotStart + ":00",
-        endTime:     slotEnd + ":00",
-        notes:       slotNotes.trim() || undefined,
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (slotRecurring) {
+        // Submit one slot per day × 4 weeks
+        const submissions = recurringDays.flatMap(day =>
+          nextOccurrences(day, 4).map(d => api.submitAvailability({
+            disciplineId: slotDisciplineId!,
+            location:    slotLocation.trim(),
+            slotDate:    toISODate(d),
+            startTime:   dayTimeSlots[day].start + ":00",
+            endTime:     dayTimeSlots[day].end + ":00",
+            notes:       slotNotes.trim() || undefined,
+          }))
+        );
+        const results = await Promise.allSettled(submissions);
+        const failed = results.filter(r => r.status === "rejected").length;
+        const ok = results.length - failed;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(
+          "Recurring Slots Submitted",
+          `${ok} slot${ok !== 1 ? "s" : ""} submitted for admin review${failed > 0 ? ` (${failed} failed)` : ""}.`,
+        );
+      } else {
+        await api.submitAvailability({
+          disciplineId: slotDisciplineId,
+          location:    slotLocation.trim(),
+          slotDate:    toISODate(slotDate!),
+          startTime:   slotStart + ":00",
+          endTime:     slotEnd + ":00",
+          notes:       slotNotes.trim() || undefined,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
       await load();
       setShowSlotModal(false);
       resetForm();
@@ -206,7 +281,18 @@ export default function OperatorPrivateLessonsScreen() {
 
   // Computed for form
   const endTimeOptions = slotStart ? ALL_TIME_SLOTS.filter(t => t > slotStart) : [];
-  const formComplete   = !!slotDisciplineId && slotLocation.trim().length > 0 && !!slotDate && !!slotStart && !!slotEnd;
+  const recurringFormComplete =
+    !!slotDisciplineId &&
+    slotLocation.trim().length > 0 &&
+    recurringDays.length > 0 &&
+    recurringDays.every(d => dayTimeSlots[d]?.start && dayTimeSlots[d]?.end);
+  const formComplete = slotRecurring
+    ? recurringFormComplete
+    : !!slotDisciplineId && slotLocation.trim().length > 0 && !!slotDate && !!slotStart && !!slotEnd;
+
+  // Helper for per-day end time options
+  const dayEndTimeOptions = (day: number) =>
+    dayTimeSlots[day]?.start ? ALL_TIME_SLOTS.filter(t => t > dayTimeSlots[day].start) : [];
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -477,105 +563,171 @@ export default function OperatorPrivateLessonsScreen() {
                   placeholderTextColor={colors.mutedForeground}
                 />
 
-                {/* ── 3. Date strip ── */}
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Date *</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ marginHorizontal: -4 }}
-                  contentContainerStyle={{ paddingHorizontal: 4, gap: 8, paddingBottom: 4 }}
-                >
-                  {UPCOMING_DATES.map((d, i) => {
-                    const isSelected = slotDate ? toISODate(d) === toISODate(slotDate) : false;
-                    return (
-                      <Pressable
-                        key={i}
-                        style={[
-                          styles.dateChip,
-                          {
-                            borderColor:      isSelected ? colors.primary : colors.border,
-                            backgroundColor:  isSelected ? colors.primary : colors.muted,
-                          },
-                        ]}
-                        onPress={() => setSlotDate(d)}
-                      >
-                        <Text style={[styles.dateChipDay, { color: isSelected ? "rgba(255,255,255,0.8)" : colors.mutedForeground }]}>
-                          {i === 0 ? "Today" : DAY_NAMES[d.getDay()]}
-                        </Text>
-                        <Text style={[styles.dateChipNum, { color: isSelected ? "#FFF" : colors.foreground }]}>
-                          {d.getDate()}
-                        </Text>
-                        <Text style={[styles.dateChipMon, { color: isSelected ? "rgba(255,255,255,0.7)" : colors.mutedForeground }]}>
-                          {MONTH_SHORT[d.getMonth()]}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-
-                {/* ── 4. Start time ── */}
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>Start Time *</Text>
-                <View style={styles.timeGrid}>
-                  {ALL_TIME_SLOTS.map(t => (
-                    <Pressable
-                      key={t}
-                      style={[
-                        styles.timeChip,
-                        {
-                          borderColor:     slotStart === t ? colors.primary : colors.border,
-                          backgroundColor: slotStart === t ? colors.primary : colors.muted,
-                        },
-                      ]}
-                      onPress={() => {
-                        setSlotStart(t);
-                        if (slotEnd && slotEnd <= t) setSlotEnd("");
-                      }}
-                    >
-                      <Text style={[styles.timeChipText, { color: slotStart === t ? "#FFF" : colors.foreground }]}>{t}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                {/* ── 5. End time ── */}
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>End Time *</Text>
-                {!slotStart ? (
-                  <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>Select a start time first</Text>
-                ) : (
-                  <View style={styles.timeGrid}>
-                    {endTimeOptions.map(t => (
-                      <Pressable
-                        key={t}
-                        style={[
-                          styles.timeChip,
-                          {
-                            borderColor:     slotEnd === t ? "#059669" : colors.border,
-                            backgroundColor: slotEnd === t ? "#059669" : colors.muted,
-                          },
-                        ]}
-                        onPress={() => setSlotEnd(t)}
-                      >
-                        <Text style={[styles.timeChipText, { color: slotEnd === t ? "#FFF" : colors.foreground }]}>{t}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
-
-                {/* Duration indicator */}
-                {slotStart && slotEnd && (
-                  <View style={[styles.durationRow, { backgroundColor: `${colors.secondary}30`, borderColor: colors.secondary }]}>
-                    <Ionicons name="time-outline" size={14} color={colors.primary} />
-                    <Text style={[styles.durationText, { color: colors.primary }]}>
-                      {slotStart} – {slotEnd}{" · "}
-                      {(() => {
-                        const [sh, sm] = slotStart.split(":").map(Number);
-                        const [eh, em] = slotEnd.split(":").map(Number);
-                        const mins = (eh * 60 + em) - (sh * 60 + sm);
-                        return mins >= 60
-                          ? `${Math.floor(mins / 60)}h${mins % 60 > 0 ? ` ${mins % 60}m` : ""}`
-                          : `${mins}m`;
-                      })()}
+                {/* ── 3. Recurring toggle ── */}
+                <View style={[styles.recurringToggleRow, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.recurringToggleTitle, { color: colors.foreground }]}>Recurring availability</Text>
+                    <Text style={[styles.recurringToggleSub, { color: colors.mutedForeground }]}>
+                      {slotRecurring ? "Repeat every week for 4 weeks" : "Single date only"}
                     </Text>
                   </View>
+                  <Pressable
+                    style={[styles.recurringToggleBtn, { backgroundColor: slotRecurring ? colors.primary : colors.border }]}
+                    onPress={() => { setSlotRecurring(v => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  >
+                    <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>{slotRecurring ? "ON" : "OFF"}</Text>
+                  </Pressable>
+                </View>
+
+                {slotRecurring ? (
+                  <>
+                    {/* Day-of-week chips */}
+                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Days of the week *</Text>
+                    <View style={styles.dowRow}>
+                      {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((label, dayIdx) => {
+                        const sel = recurringDays.includes(dayIdx);
+                        return (
+                          <Pressable
+                            key={dayIdx}
+                            style={[styles.dowChip, { borderColor: sel ? colors.primary : colors.border, backgroundColor: sel ? colors.primary : colors.muted }]}
+                            onPress={() => toggleRecurringDay(dayIdx)}
+                          >
+                            <Text style={[styles.dowChipText, { color: sel ? "#FFF" : colors.foreground }]}>{label}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    {/* Per-day time slots */}
+                    {recurringDays.sort((a,b)=>a-b).map(day => {
+                      const dayLabel = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][day];
+                      const ts = dayTimeSlots[day] ?? { start: "", end: "" };
+                      const expanded = activeDayEdit === day;
+                      const endOpts = dayEndTimeOptions(day);
+                      return (
+                        <View key={day} style={[styles.daySlotCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                          <Pressable style={styles.daySlotHeader} onPress={() => setActiveDayEdit(expanded ? null : day)}>
+                            <View style={[styles.daySlotDot, { backgroundColor: colors.primary }]}>
+                              <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "800" }}>{dayLabel}</Text>
+                            </View>
+                            <Text style={[styles.daySlotLabel, { color: colors.foreground }]}>
+                              {ts.start && ts.end ? `${ts.start} – ${ts.end}` : "Tap to set times"}
+                            </Text>
+                            <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
+                          </Pressable>
+                          {expanded && (
+                            <View style={styles.daySlotBody}>
+                              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Start Time</Text>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }} contentContainerStyle={{ gap: 6 }}>
+                                {ALL_TIME_SLOTS.map(t => (
+                                  <Pressable
+                                    key={t}
+                                    style={[styles.timeChip, { borderColor: ts.start === t ? colors.primary : colors.border, backgroundColor: ts.start === t ? colors.primary : colors.muted }]}
+                                    onPress={() => setDayTimeSlots(s => ({ ...s, [day]: { ...s[day], start: t, end: (s[day]?.end && s[day].end > t) ? s[day].end : "" } }))}
+                                  >
+                                    <Text style={[styles.timeChipText, { color: ts.start === t ? "#FFF" : colors.foreground }]}>{t}</Text>
+                                  </Pressable>
+                                ))}
+                              </ScrollView>
+                              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>End Time</Text>
+                              {!ts.start ? (
+                                <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>Select a start time first</Text>
+                              ) : (
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                                  {endOpts.map(t => (
+                                    <Pressable
+                                      key={t}
+                                      style={[styles.timeChip, { borderColor: ts.end === t ? "#059669" : colors.border, backgroundColor: ts.end === t ? "#059669" : colors.muted }]}
+                                      onPress={() => setDayTimeSlots(s => ({ ...s, [day]: { ...s[day], end: t } }))}
+                                    >
+                                      <Text style={[styles.timeChipText, { color: ts.end === t ? "#FFF" : colors.foreground }]}>{t}</Text>
+                                    </Pressable>
+                                  ))}
+                                </ScrollView>
+                              )}
+                              {ts.start && ts.end && (
+                                <View style={[styles.durationRow, { backgroundColor: `${colors.secondary}30`, borderColor: colors.secondary, marginTop: 8 }]}>
+                                  <Ionicons name="time-outline" size={13} color={colors.primary} />
+                                  <Text style={[styles.durationText, { color: colors.primary }]}>{ts.start} – {ts.end}</Text>
+                                </View>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                    {recurringDays.length > 0 && (
+                      <View style={[styles.durationRow, { backgroundColor: "#EFF6FF", borderColor: "#93C5FD", marginTop: 4 }]}>
+                        <Ionicons name="refresh-outline" size={13} color="#1E3A8A" />
+                        <Text style={[styles.durationText, { color: "#1E3A8A" }]}>
+                          {recurringDays.length * 4} slot{recurringDays.length * 4 !== 1 ? "s" : ""} will be created (4 weeks)
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* ── 3b. Date strip (single mode) ── */}
+                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Date *</Text>
+                    <ScrollView
+                      horizontal showsHorizontalScrollIndicator={false}
+                      style={{ marginHorizontal: -4 }}
+                      contentContainerStyle={{ paddingHorizontal: 4, gap: 8, paddingBottom: 4 }}
+                    >
+                      {UPCOMING_DATES.map((d, i) => {
+                        const isSelected = slotDate ? toISODate(d) === toISODate(slotDate) : false;
+                        return (
+                          <Pressable key={i} style={[styles.dateChip, { borderColor: isSelected ? colors.primary : colors.border, backgroundColor: isSelected ? colors.primary : colors.muted }]} onPress={() => setSlotDate(d)}>
+                            <Text style={[styles.dateChipDay, { color: isSelected ? "rgba(255,255,255,0.8)" : colors.mutedForeground }]}>{i === 0 ? "Today" : DAY_NAMES[d.getDay()]}</Text>
+                            <Text style={[styles.dateChipNum, { color: isSelected ? "#FFF" : colors.foreground }]}>{d.getDate()}</Text>
+                            <Text style={[styles.dateChipMon, { color: isSelected ? "rgba(255,255,255,0.7)" : colors.mutedForeground }]}>{MONTH_SHORT[d.getMonth()]}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+
+                    {/* ── 4. Start time ── */}
+                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>Start Time *</Text>
+                    <View style={styles.timeGrid}>
+                      {ALL_TIME_SLOTS.map(t => (
+                        <Pressable key={t} style={[styles.timeChip, { borderColor: slotStart === t ? colors.primary : colors.border, backgroundColor: slotStart === t ? colors.primary : colors.muted }]}
+                          onPress={() => { setSlotStart(t); if (slotEnd && slotEnd <= t) setSlotEnd(""); }}>
+                          <Text style={[styles.timeChipText, { color: slotStart === t ? "#FFF" : colors.foreground }]}>{t}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+
+                    {/* ── 5. End time ── */}
+                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>End Time *</Text>
+                    {!slotStart ? (
+                      <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>Select a start time first</Text>
+                    ) : (
+                      <View style={styles.timeGrid}>
+                        {endTimeOptions.map(t => (
+                          <Pressable key={t} style={[styles.timeChip, { borderColor: slotEnd === t ? "#059669" : colors.border, backgroundColor: slotEnd === t ? "#059669" : colors.muted }]}
+                            onPress={() => setSlotEnd(t)}>
+                            <Text style={[styles.timeChipText, { color: slotEnd === t ? "#FFF" : colors.foreground }]}>{t}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* Duration indicator */}
+                    {slotStart && slotEnd && (
+                      <View style={[styles.durationRow, { backgroundColor: `${colors.secondary}30`, borderColor: colors.secondary }]}>
+                        <Ionicons name="time-outline" size={14} color={colors.primary} />
+                        <Text style={[styles.durationText, { color: colors.primary }]}>
+                          {slotStart} – {slotEnd}{" · "}
+                          {(() => {
+                            const [sh, sm] = slotStart.split(":").map(Number);
+                            const [eh, em] = slotEnd.split(":").map(Number);
+                            const mins = (eh * 60 + em) - (sh * 60 + sm);
+                            return mins >= 60 ? `${Math.floor(mins / 60)}h${mins % 60 > 0 ? ` ${mins % 60}m` : ""}` : `${mins}m`;
+                          })()}
+                        </Text>
+                      </View>
+                    )}
+                  </>
                 )}
 
                 {/* ── 6. Notes ── */}
@@ -785,6 +937,19 @@ const styles = StyleSheet.create({
   // Duration indicator
   durationRow:        { flexDirection: "row", alignItems: "center", gap: 6, padding: 10, borderRadius: 10, borderWidth: 1, marginTop: 10 },
   durationText:       { fontSize: 13, fontWeight: "700" },
+  // Recurring slots
+  recurringToggleRow: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1.5, borderRadius: 14, padding: 14, marginTop: 16 },
+  recurringToggleTitle: { fontSize: 14, fontWeight: "700" },
+  recurringToggleSub:   { fontSize: 11, marginTop: 2 },
+  recurringToggleBtn:   { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
+  dowRow:             { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
+  dowChip:            { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5 },
+  dowChipText:        { fontSize: 12, fontWeight: "700" },
+  daySlotCard:        { borderWidth: 1, borderRadius: 12, marginBottom: 8, overflow: "hidden" },
+  daySlotHeader:      { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
+  daySlotDot:         { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  daySlotLabel:       { flex: 1, fontSize: 13, fontWeight: "600" },
+  daySlotBody:        { paddingHorizontal: 12, paddingBottom: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#E5E7EB" },
   // QR / Scan
   qrIconBox:          { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 12 },
   qrInstructions:     { fontSize: 13, textAlign: "center", lineHeight: 18, marginBottom: 16 },
