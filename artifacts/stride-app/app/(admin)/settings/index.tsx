@@ -117,8 +117,7 @@ export default function SettingsIndex() {
             <Text style={styles.avatarText}>{user?.name?.charAt(0) ?? "A"}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.profileName}>{user?.name}</Text>
-            <Text style={styles.profileRole}>Administrator</Text>
+            <Text style={styles.profileName}>Administrator</Text>
             {!!user?.schoolName && <Text style={styles.profileSchool}>{user.schoolName}</Text>}
           </View>
           <View style={[styles.adminBadge, { backgroundColor: colors.secondary }]}>
