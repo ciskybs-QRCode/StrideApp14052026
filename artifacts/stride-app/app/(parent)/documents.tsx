@@ -22,6 +22,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { SignaturePad } from "@/components/SignaturePad";
+import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { api } from "@/lib/api";
 
 const PROFILE_EXTRA_KEY = "stride_profile_extra";
@@ -46,26 +47,12 @@ const EMPTY_EXTRA: ProfileExtra = {
 
 export default function DocumentsScreen() {
   const { documents, signDocument, mediaConsent, setMediaConsent, children, addChild, removeChild } = useAppData();
-  const { user, logout, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
   const [showSign, setShowSign] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
-  const [showChangeEmail, setShowChangeEmail] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-
-  // Change email state
-  const [newEmail, setNewEmail] = useState(user?.email || "");
-
-  // Change password state
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [pwCurrent, setPwCurrent] = useState("");
-  const [pwNext, setPwNext] = useState("");
-  const [pwConfirm, setPwConfirm] = useState("");
-  const [showPwCurrent, setShowPwCurrent] = useState(false);
-  const [showPwNew, setShowPwNew] = useState(false);
 
   // Extra profile state (phone, address, etc.)
   const [profileExtra, setProfileExtra] = useState<ProfileExtra>(EMPTY_EXTRA);
@@ -132,16 +119,6 @@ export default function DocumentsScreen() {
     }
   };
 
-  const handleSaveEmail = async () => {
-    if (!newEmail.trim() || !newEmail.includes("@")) {
-      Alert.alert("Invalid Email", "Please enter a valid email address.");
-      return;
-    }
-    await updateUser({ email: newEmail.trim() });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowChangeEmail(false);
-  };
-
   const openEditProfile = () => {
     setEditExtra({ ...profileExtra });
     if (!profileExtra.firstName && user?.name) {
@@ -186,25 +163,6 @@ export default function DocumentsScreen() {
     setAddingChild(false);
   };
 
-  const handleDeleteConfirmFinal = () => {
-    if (deleteConfirmText !== "DELETE") {
-      Alert.alert("Error", "Type DELETE (all caps) to confirm.");
-      return;
-    }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    setShowDeleteModal(false);
-    setDeleteConfirmText("");
-    logout();
-  };
-
-  const handleSavePassword = () => {
-    if (!pwCurrent) { Alert.alert("Error", "Please enter your current password."); return; }
-    if (pwNext.length < 6) { Alert.alert("Error", "New password must be at least 6 characters."); return; }
-    if (pwNext !== pwConfirm) { Alert.alert("Error", "Passwords do not match."); return; }
-    setPwCurrent(""); setPwNext(""); setPwConfirm("");
-    setShowChangePassword(false);
-    Alert.alert("Password Changed", "Your password has been updated successfully.");
-  };
 
   const docTypeIcon = (type: string) => {
     switch (type) {
@@ -348,32 +306,9 @@ export default function DocumentsScreen() {
             <Text style={[styles.settingsHint, { color: colors.mutedForeground }]}>Name, phone, address, children</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
           </Pressable>
-          <Pressable style={[styles.settingsItem, { borderTopWidth: 1, borderTopColor: colors.border }]} onPress={() => { setNewEmail(user?.email || ""); setShowChangeEmail(true); }}>
-            <Ionicons name="mail-outline" size={20} color={colors.primary} />
-            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Change Email</Text>
-            <Text style={[styles.settingsHint, { color: colors.mutedForeground }]}>{user?.email || ""}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable style={[styles.settingsItem, { borderTopWidth: 1, borderTopColor: colors.border }]} onPress={() => { setPwCurrent(""); setPwNext(""); setPwConfirm(""); setShowChangePassword(true); }}>
-            <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
-            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Change Password</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable style={[styles.settingsItem, { borderTopWidth: 1, borderTopColor: colors.border }]} onPress={logout}>
-            <Ionicons name="log-out-outline" size={20} color="#F59E0B" />
-            <Text style={[styles.settingsLabel, { color: "#F59E0B" }]}>Log Out</Text>
-            <Ionicons name="chevron-forward" size={16} color="#F59E0B" />
-          </Pressable>
         </View>
 
-        {/* Delete Account */}
-        <Pressable
-          style={styles.deleteBtn}
-          onPress={() => { setDeleteConfirmText(""); setShowDeleteModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); }}
-        >
-          <Ionicons name="trash-outline" size={18} color="#EF4444" />
-          <Text style={styles.deleteBtnText}>DELETE ACCOUNT</Text>
-        </Pressable>
+        <AccountSettingsCard />
       </ScrollView>
 
       {/* ── Sign Document Modal — unchanged ── */}
@@ -410,151 +345,6 @@ export default function DocumentsScreen() {
                 </>
               ) : null;
             })()}
-          </View>
-        </View>
-      </Modal>
-
-      {/* ── Change Email Modal ── */}
-      <Modal visible={showChangeEmail} transparent animationType="slide" onRequestClose={() => setShowChangeEmail(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalTitleRow}>
-              <Ionicons name="mail" size={20} color={colors.primary} />
-              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Change Email</Text>
-            </View>
-            <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-              A verification link will be sent to your new email address.
-            </Text>
-            <Text style={[styles.fieldLabel, { color: colors.primary }]}>New Email Address</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
-              value={newEmail}
-              onChangeText={setNewEmail}
-              placeholder="your@email.com"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
-              <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowChangeEmail(false)}>
-                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSaveEmail}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Save</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ── Delete Account Modal ── */}
-      <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}>
-        <View style={styles.modalCentreOverlay}>
-          <View style={styles.modalCentreCard}>
-            <View style={[styles.warningCircle, { backgroundColor: "#FEE2E2" }]}>
-              <Ionicons name="trash-outline" size={28} color="#EF4444" />
-            </View>
-            <Text style={[styles.modalTitle, { color: "#EF4444", textAlign: "center" }]}>Delete Account</Text>
-
-            <View style={[styles.deleteWarningBox, { backgroundColor: "#FEF2F2" }]}>
-              <Ionicons name="warning-outline" size={18} color="#EF4444" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.deleteWarningTitle}>This action is permanent</Text>
-                <Text style={styles.deleteWarningDesc}>All your data, children profiles, documents and payment history will be permanently deleted.</Text>
-              </View>
-            </View>
-
-            {[
-              { icon: "people-outline" as const,        text: "All children profiles will be removed" },
-              { icon: "document-text-outline" as const, text: "All signed documents will be deleted" },
-              { icon: "card-outline" as const,          text: "Payment history will be erased" },
-              { icon: "calendar-outline" as const,      text: "All bookings will be cancelled" },
-            ].map(item => (
-              <View key={item.text} style={[styles.deleteConsequenceRow, { borderColor: colors.border }]}>
-                <View style={[styles.deleteConsequenceIcon, { backgroundColor: "#FEE2E2" }]}>
-                  <Ionicons name={item.icon} size={14} color="#EF4444" />
-                </View>
-                <Text style={[styles.deleteConsequenceText, { color: colors.foreground }]}>{item.text}</Text>
-              </View>
-            ))}
-
-            <Text style={[styles.fieldLabel, { color: "#EF4444", marginTop: 16 }]}>
-              Type <Text style={{ fontWeight: "800" }}>DELETE</Text> to confirm
-            </Text>
-            <TextInput
-              style={[styles.input, { borderColor: deleteConfirmText === "DELETE" ? "#EF4444" : colors.border, color: "#EF4444", fontWeight: "700", letterSpacing: 2 }]}
-              value={deleteConfirmText}
-              onChangeText={setDeleteConfirmText}
-              placeholder="DELETE"
-              placeholderTextColor="#FCA5A5"
-              autoCapitalize="characters"
-              autoCorrect={false}
-            />
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-              <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}>
-                <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalBtn, { flex: 2, backgroundColor: "#EF4444", flexDirection: "row", gap: 6 }]}
-                onPress={handleDeleteConfirmFinal}
-              >
-                <Ionicons name="trash" size={15} color="#FFF" />
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Delete Account</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ── Change Password Modal ── */}
-      <Modal visible={showChangePassword} transparent animationType="slide" onRequestClose={() => setShowChangePassword(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalTitleRow}>
-              <Ionicons name="lock-closed" size={20} color="#10B981" />
-              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Change Password</Text>
-            </View>
-            <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-              Enter your current password then choose a new one.
-            </Text>
-            {([
-              { label: "Current Password", value: pwCurrent, setter: setPwCurrent, show: showPwCurrent, toggle: () => setShowPwCurrent(p => !p) },
-              { label: "New Password",     value: pwNext,    setter: setPwNext,    show: showPwNew,     toggle: () => setShowPwNew(p => !p) },
-              { label: "Confirm Password", value: pwConfirm, setter: setPwConfirm, show: showPwNew,     toggle: () => setShowPwNew(p => !p) },
-            ] as const).map((f, i) => (
-              <View key={f.label} style={{ marginBottom: 14 }}>
-                <Text style={[styles.fieldLabel, { color: colors.primary }]}>{f.label}</Text>
-                <View style={[styles.pwInputRow, {
-                  borderColor: (i > 0 && pwNext.length > 0 && pwConfirm.length > 0 && pwNext !== pwConfirm) ? "#EF4444" : colors.border,
-                  backgroundColor: colors.card,
-                }]}>
-                  <Ionicons name="lock-closed-outline" size={16} color={colors.mutedForeground} />
-                  <TextInput
-                    style={[styles.pwInput, { color: colors.foreground }]}
-                    value={f.value}
-                    onChangeText={f.setter}
-                    placeholder="••••••••"
-                    placeholderTextColor={colors.mutedForeground}
-                    secureTextEntry={!f.show}
-                  />
-                  <Pressable onPress={f.toggle}>
-                    <Ionicons name={f.show ? "eye-off-outline" : "eye-outline"} size={17} color={colors.mutedForeground} />
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-            {pwNext.length > 0 && pwConfirm.length > 0 && pwNext !== pwConfirm && (
-              <Text style={{ fontSize: 12, color: "#EF4444", marginTop: -8, marginBottom: 8 }}>Passwords do not match</Text>
-            )}
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-              <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowChangePassword(false)}>
-                <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSavePassword}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Update</Text>
-              </Pressable>
-            </View>
           </View>
         </View>
       </Modal>

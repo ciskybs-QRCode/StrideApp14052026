@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
+import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 
 const GRID_ITEMS = [
   {
@@ -57,11 +57,10 @@ const GRID_ITEMS = [
 
 export default function SettingsIndex() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { legalAdminDocs } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [confirmLogout, setConfirmLogout] = useState(false);
   const [graceEnabled, setGraceEnabled] = useState(false);
   const [loadingGrace, setLoadingGrace] = useState(true);
   const [savingGrace, setSavingGrace] = useState(false);
@@ -101,8 +100,6 @@ export default function SettingsIndex() {
   }, []);
 
   const unsignedCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
-
-  const handleLogout = () => setConfirmLogout(true);
 
   const navigate = (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -250,81 +247,7 @@ export default function SettingsIndex() {
           )}
         </View>
 
-        {/* Account section */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
-        <View style={[styles.accountCard, { backgroundColor: colors.card }]}>
-          {[
-            {
-              icon: "mail-outline" as const,
-              label: "Change Email",
-              sub: user?.email,
-              iconBg: "#DBEAFE",
-              iconColor: colors.primary,
-              textColor: colors.foreground,
-              onPress: () => navigate("change-email"),
-            },
-            {
-              icon: "lock-closed-outline" as const,
-              label: "Change Password",
-              sub: undefined,
-              iconBg: "#D1FAE5",
-              iconColor: "#10B981",
-              textColor: colors.foreground,
-              onPress: () => navigate("change-password"),
-            },
-            {
-              icon: "trash-outline" as const,
-              label: "Delete Account",
-              sub: undefined,
-              iconBg: "#FEE2E2",
-              iconColor: "#EF4444",
-              textColor: "#EF4444",
-              onPress: () => navigate("delete-account"),
-            },
-            {
-              icon: "log-out-outline" as const,
-              label: "Log Out",
-              sub: undefined,
-              iconBg: "#FEF3C7",
-              iconColor: "#F59E0B",
-              textColor: "#F59E0B",
-              onPress: handleLogout,
-            },
-          ].map((item, i, arr) => (
-            <Pressable
-              key={item.label}
-              style={[
-                styles.accountRow,
-                i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-              ]}
-              onPress={item.onPress}
-            >
-              <View style={[styles.accountIconBox, { backgroundColor: item.iconBg }]}>
-                <Ionicons name={item.icon} size={18} color={item.iconColor} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.accountLabel, { color: item.textColor }]}>{item.label}</Text>
-                {item.sub ? <Text style={[styles.accountSub, { color: colors.mutedForeground }]}>{item.sub}</Text> : null}
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={item.textColor} />
-            </Pressable>
-          ))}
-        </View>
-
-        {confirmLogout && (
-          <View style={styles.confirmPanel}>
-            <Text style={styles.confirmTitle}>Log Out?</Text>
-            <Text style={[styles.confirmBody, { color: colors.mutedForeground }]}>You'll be returned to the login screen.</Text>
-            <View style={styles.confirmButtons}>
-              <Pressable style={[styles.confirmBtn, { backgroundColor: colors.muted }]} onPress={() => setConfirmLogout(false)}>
-                <Text style={[styles.confirmBtnText, { color: colors.foreground }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.confirmBtn, { backgroundColor: "#F59E0B" }]} onPress={logout}>
-                <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Log Out</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
+        <AccountSettingsCard />
 
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` · ${user.schoolName}` : ""}
