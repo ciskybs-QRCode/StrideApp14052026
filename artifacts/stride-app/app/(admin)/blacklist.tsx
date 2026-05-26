@@ -48,7 +48,7 @@ export default function BlacklistScreen() {
   const router = useRouter();
 
   const [entries, setEntries]   = useState<ApiBlacklistEntry[]>([]);
-  const [allUsers, setAllUsers] = useState<ApiUser[]>([]);
+  const [allUsers, setAllUsers] = useState<ApiUser[]>([...DEMO_USERS]);
   const [loading, setLoading]   = useState(true);
   const [showAdd, setShowAdd]   = useState(false);
   const [saving, setSaving]     = useState(false);
@@ -65,9 +65,11 @@ export default function BlacklistScreen() {
     setLoading(true);
     try {
       const [data, users] = await Promise.allSettled([api.getBlacklist(), api.getUsers()]);
-      if (data.status  === "fulfilled") setEntries(data.value);
-      const fetched = users.status === "fulfilled" ? users.value : [];
-      setAllUsers(fetched.length > 0 ? fetched : [...DEMO_USERS]);
+      if (data.status === "fulfilled") setEntries(data.value);
+      if (users.status === "fulfilled" && users.value.length > 0) {
+        setAllUsers(users.value);
+      }
+      // else keep the DEMO_USERS already in state
     } catch {}
     setLoading(false);
   }, []);
@@ -168,7 +170,7 @@ export default function BlacklistScreen() {
       >
         {/* Header */}
         <View style={styles.pageHeader}>
-          <Pressable onPress={() => router.push("/(admin)/settings" as Parameters<typeof router.push>[0])} style={styles.backBtn} hitSlop={10}>
+          <Pressable onPress={() => router.navigate("/(admin)/settings" as never)} style={styles.backBtn} hitSlop={10}>
             <Ionicons name="arrow-back" size={22} color={colors.primary} />
           </Pressable>
           <View style={{ flex: 1 }}>
