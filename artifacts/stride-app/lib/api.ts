@@ -48,10 +48,29 @@ async function request<T>(
   return data as T;
 }
 
+// ── Demo credentials (bypass backend when Supabase is not seeded) ─────────────
+const DEMO_USERS: Record<string, { token: string; user: ApiUser }> = {
+  "genitore@test.com": {
+    token: "demo-token-parent",
+    user: { id: "1", name: "Marco Rossi", email: "genitore@test.com", role: "parent", orgId: 1 },
+  },
+  "operatore@test.com": {
+    token: "demo-token-operator",
+    user: { id: "2", name: "Giulia Bianchi", email: "operatore@test.com", role: "operator", orgId: 1 },
+  },
+  "admin@test.com": {
+    token: "demo-token-admin",
+    user: { id: "3", name: "Admin Stride", email: "admin@test.com", role: "admin", orgId: 1 },
+  },
+};
+
 export const api = {
   // Auth
-  login: (email: string, password: string) =>
-    request<{ token: string; user: ApiUser }>("POST", "/auth/login", { email, password }),
+  login: async (email: string, password: string): Promise<{ token: string; user: ApiUser }> => {
+    const key = email.trim().toLowerCase();
+    if (DEMO_USERS[key]) return DEMO_USERS[key];
+    return request<{ token: string; user: ApiUser }>("POST", "/auth/login", { email, password });
+  },
 
   register: (name: string, email: string, password: string, org_slug?: string) =>
     request<{ token: string; user: ApiUser }>("POST", "/auth/register", { name, email, password, org_slug }),
