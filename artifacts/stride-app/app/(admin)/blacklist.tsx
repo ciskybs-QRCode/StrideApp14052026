@@ -67,9 +67,13 @@ export default function BlacklistScreen() {
       const [data, users] = await Promise.allSettled([api.getBlacklist(), api.getUsers()]);
       if (data.status === "fulfilled") setEntries(data.value);
       if (users.status === "fulfilled" && users.value.length > 0) {
-        setAllUsers(users.value);
+        // Merge: real API users first, then any demo user not already present
+        const realUsers = users.value;
+        const realEmails = new Set(realUsers.map(u => u.email));
+        const extras = ([...DEMO_USERS] as ApiUser[]).filter(u => !realEmails.has(u.email));
+        setAllUsers([...realUsers, ...extras]);
       }
-      // else keep the DEMO_USERS already in state
+      // else keep the DEMO_USERS already initialised in state
     } catch {}
     setLoading(false);
   }, []);

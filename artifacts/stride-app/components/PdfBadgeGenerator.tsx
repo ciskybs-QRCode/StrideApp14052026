@@ -110,7 +110,7 @@ async function buildGridHtml(students: Student[], gridSize: GridSize, opts: Badg
       const idx = students.indexOf(s);
       const course = s.courses[0] ?? opts.courseName ?? "";
       return `
-        <div style="border:2px solid #1E3A8A;border-radius:10px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;background:white;">
+        <div style="border:2px solid #1E3A8A;border-radius:10px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;background:white;page-break-inside:avoid;break-inside:avoid;">
           <div style="width:130px;height:130px;">${qrSvgs[idx]}</div>
           <div style="font-size:22px;font-weight:800;color:#1E3A8A;text-align:center;">${first}${opts.showLastName && last ? `<br/><span style="font-size:15px;font-weight:600;color:#374151;">${last}</span>` : ""}</div>
           ${opts.showPhoto ? `<div style="width:36px;height:36px;border-radius:18px;background:#DBEAFE;border:2px solid #1E3A8A;display:flex;align-items:center;justify-content:center;"><span style="font-size:16px;font-weight:900;color:#1E3A8A;">${first[0] ?? "?"}</span></div>` : ""}
@@ -118,7 +118,7 @@ async function buildGridHtml(students: Student[], gridSize: GridSize, opts: Badg
         </div>`;
     }).join("");
     return `
-      <div style="display:grid;grid-template-columns:repeat(${COLS},1fr);grid-auto-flow:row;gap:8mm;padding:12mm;page-break-after:always;background:white;align-content:start;">
+      <div style="display:grid;grid-template-columns:repeat(${COLS},1fr);grid-auto-flow:row;gap:8mm;padding:12mm;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;background:white;align-content:start;">
         <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-bottom:4mm;">
           <div style="font-size:14px;font-weight:800;color:#1E3A8A;border-left:4px solid #FBBF24;padding-left:8px;">${opts.courseName ?? "All Students"}</div>
           <div style="font-size:11px;color:#9CA3AF;">Stride Dance School</div>
@@ -218,9 +218,15 @@ export default function PdfBadgeGenerator() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const html = await buildHtml();
-      setPendingHtml(html);
-      setShareVisible(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (Platform.OS === "web") {
+        // On web: open in new tab and trigger the browser print dialog directly
+        webOpenAndPrint(html, true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        setPendingHtml(html);
+        setShareVisible(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
     } catch {
       Alert.alert("Errore", "Impossibile generare il PDF. Riprova.");
     } finally {
