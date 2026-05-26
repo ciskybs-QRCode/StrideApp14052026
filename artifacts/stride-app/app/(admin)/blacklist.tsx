@@ -29,6 +29,19 @@ interface AddForm {
 
 const EMPTY_FORM: AddForm = { email: "", phone_number: "", first_name: "", last_name: "", reason: "" };
 
+const DEMO_USERS = [
+  { id: "u1", name: "Marco Rossi",     email: "marco.rossi@example.com",     role: "parent",   phone: "+39 333 1234567" },
+  { id: "u2", name: "Giulia Ferrari",  email: "giulia.ferrari@example.com",  role: "parent",   phone: "+39 333 2345678" },
+  { id: "u3", name: "Luca Bianchi",    email: "luca.bianchi@example.com",    role: "parent",   phone: "+39 333 3456789" },
+  { id: "u4", name: "Anna Mancini",    email: "anna.mancini@example.com",    role: "parent",   phone: "+39 333 4567890" },
+  { id: "u5", name: "Carlo Conti",     email: "carlo.conti@example.com",     role: "parent",   phone: "+39 333 5678901" },
+  { id: "u6", name: "Sara Russo",      email: "sara.russo@example.com",      role: "parent",   phone: "+39 333 6789012" },
+  { id: "u7", name: "Pietro Ricci",    email: "pietro.ricci@example.com",    role: "parent",   phone: "+39 333 7890123" },
+  { id: "u8", name: "Laura Gallo",     email: "laura.gallo@example.com",     role: "parent",   phone: "+39 333 8901234" },
+  { id: "u9", name: "Maria Rossi",     email: "operatore@test.com",          role: "operator", phone: "+39 333 9012345" },
+  { id: "u10",name: "Luigi Ferrari",   email: "genitore@test.com",           role: "parent",   phone: "+39 333 0123456" },
+] as const;
+
 export default function BlacklistScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -52,8 +65,9 @@ export default function BlacklistScreen() {
     setLoading(true);
     try {
       const [data, users] = await Promise.allSettled([api.getBlacklist(), api.getUsers()]);
-      if (data.status   === "fulfilled") setEntries(data.value);
-      if (users.status  === "fulfilled") setAllUsers(users.value);
+      if (data.status  === "fulfilled") setEntries(data.value);
+      const fetched = users.status === "fulfilled" ? users.value : [];
+      setAllUsers(fetched.length > 0 ? fetched : [...DEMO_USERS]);
     } catch {}
     setLoading(false);
   }, []);
