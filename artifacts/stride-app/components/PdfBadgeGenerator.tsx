@@ -67,6 +67,7 @@ async function qrSvgFor(data: string): Promise<string> {
 const BASE_CSS = `
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: Arial, Helvetica, sans-serif; background: white; }
+@page { size: A4 portrait; margin: 0; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 `;
 
@@ -88,7 +89,7 @@ async function buildFullPageHtml(students: Student[], opts: BadgeOpts): Promise<
         <div style="font-size:64px;font-weight:900;color:#1E3A8A;text-align:center;letter-spacing:-2px;line-height:1;${opts.showLastName && last ? "margin-bottom:6px;" : "margin-bottom:24px;"}">${first}</div>
         ${opts.showLastName && last ? `<div style="font-size:36px;font-weight:600;color:#374151;text-align:center;margin-bottom:24px;">${last}</div>` : ""}
         <div style="width:210px;height:210px;">${qr}</div>
-        ${opts.showSecondary ? `<div style="font-size:18px;color:#6B7280;text-align:center;margin-top:20px;">${course} · Età ${s.age} anni</div>` : ""}
+        ${opts.showSecondary ? `<div style="font-size:18px;color:#6B7280;text-align:center;margin-top:20px;">${course} · Age: ${s.age}</div>` : ""}
         <div style="position:absolute;bottom:14mm;font-size:11px;color:#9CA3AF;text-align:center;">Stride Dance School · stride.app</div>
         <div style="position:absolute;bottom:0;left:0;right:0;height:10px;background:#1E3A8A;"></div>
       </div>`;
@@ -97,7 +98,7 @@ async function buildFullPageHtml(students: Student[], opts: BadgeOpts): Promise<
 }
 
 async function buildGridHtml(students: Student[], gridSize: GridSize, opts: BadgeOpts): Promise<string> {
-  const cols = gridSize <= 2 ? 1 : 2;
+  const COLS = 2;
   const chunks: Student[][] = [];
   for (let i = 0; i < students.length; i += gridSize) chunks.push(students.slice(i, i + gridSize));
 
@@ -113,13 +114,13 @@ async function buildGridHtml(students: Student[], gridSize: GridSize, opts: Badg
           <div style="width:130px;height:130px;">${qrSvgs[idx]}</div>
           <div style="font-size:22px;font-weight:800;color:#1E3A8A;text-align:center;">${first}${opts.showLastName && last ? `<br/><span style="font-size:15px;font-weight:600;color:#374151;">${last}</span>` : ""}</div>
           ${opts.showPhoto ? `<div style="width:36px;height:36px;border-radius:18px;background:#DBEAFE;border:2px solid #1E3A8A;display:flex;align-items:center;justify-content:center;"><span style="font-size:16px;font-weight:900;color:#1E3A8A;">${first[0] ?? "?"}</span></div>` : ""}
-          ${opts.showSecondary && course ? `<div style="font-size:12px;color:#6B7280;text-align:center;">${course} · Età ${s.age}</div>` : ""}
+          ${opts.showSecondary && course ? `<div style="font-size:12px;color:#6B7280;text-align:center;">${course} · Age: ${s.age}</div>` : ""}
         </div>`;
     }).join("");
     return `
-      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10mm;padding:15mm;page-break-after:always;background:white;align-content:start;">
-        <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-bottom:5mm;">
-          <div style="font-size:14px;font-weight:800;color:#1E3A8A;border-left:4px solid #FBBF24;padding-left:8px;">${opts.courseName ?? "Tutti gli Studenti"}</div>
+      <div style="display:grid;grid-template-columns:repeat(${COLS},1fr);grid-auto-flow:row;gap:8mm;padding:12mm;page-break-after:always;background:white;align-content:start;">
+        <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-bottom:4mm;">
+          <div style="font-size:14px;font-weight:800;color:#1E3A8A;border-left:4px solid #FBBF24;padding-left:8px;">${opts.courseName ?? "All Students"}</div>
           <div style="font-size:11px;color:#9CA3AF;">Stride Dance School</div>
         </div>
         ${cards}
