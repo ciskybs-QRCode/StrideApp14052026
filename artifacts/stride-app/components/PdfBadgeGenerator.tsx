@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { useRouter } from "expo-router";
@@ -7,6 +8,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -175,6 +177,7 @@ export default function PdfBadgeGenerator() {
   const { students: ctxStudents, courses: ctxCourses } = useAppData();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const tabBarHeight = Platform.OS === "web" ? 84 : 49;
 
   const students = ctxStudents.length > 0 ? ctxStudents : DEMO_STUDENTS;
   const courses  = ctxCourses.length  > 0 ? ctxCourses  : DEMO_COURSES;
@@ -186,6 +189,8 @@ export default function PdfBadgeGenerator() {
   const [showLastName,     setShowLastName]     = useState(true);
   const [showSecondary,    setShowSecondary]    = useState(true);
   const [generating,       setGenerating]       = useState(false);
+  const [shareVisible,     setShareVisible]     = useState(false);
+  const [pendingHtml,      setPendingHtml]      = useState<string>("");
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId);
 
@@ -195,19 +200,38 @@ export default function PdfBadgeGenerator() {
 
   const displayStudents = filteredStudents.length > 0 ? filteredStudents : DEMO_STUDENTS.slice(0, 6);
 
-  // ── Generate PDF ────────────────────────────────────────────────────────────
+  // ── Build HTML (shared by all actions) ─────────────────────────────────────
+
+  const buildHtml = async (): Promise<string> => {
+    const opts: BadgeOpts = { showPhoto, showLastName, showSecondary, courseName: selectedCourse?.name };
+    if (layout === "full")       return buildFullPageHtml(displayStudents, opts);
+    else if (layout === "grid")  return buildGridHtml(displayStudents, gridSize, opts);
+    else                         return buildBadgeHtml(displayStudents, opts);
+  };
+
+  // ── Open share panel ────────────────────────────────────────────────────────
 
   const handleGenerate = async () => {
     if (generating) return;
     setGenerating(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const opts: BadgeOpts = { showPhoto, showLastName, showSecondary, courseName: selectedCourse?.name };
-      let html = "";
-      if (layout === "full")  html = await buildFullPageHtml(displayStudents, opts);
-      else if (layout === "grid") html = await buildGridHtml(displayStudents, gridSize, opts);
-      else html = await buildBadgeHtml(displayStudents, opts);
+      const html = await buildHtml();
+      setPendingHtml(html);
+      setShareVisible(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Errore", "Impossibile generare il PDF. Riprova.");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
+  // ── Share actions ────────────────────────────────────────────────────────────
+
+  const doShare = async (html: string) => {
+    setShareVisible(false);
+    try {
       const { uri } = await Print.printToFileAsync({ html });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
@@ -215,11 +239,50 @@ export default function PdfBadgeGenerator() {
       } else {
         Alert.alert("PDF Pronto", `File salvato: ${uri}`);
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert("Errore", "Impossibile generare il PDF. Riprova.");
-    } finally {
-      setGenerating(false);
+      Alert.alert("Errore", "Impossibile condividere il PDF.");
+    }
+  };
+
+  const doPrint = async (html: string) => {
+    setShareVisible(false);
+    try {
+      await Print.printAsync({ html });
+    } catch {
+      Alert.alert("Errore", "Impossibile avviare la stampa.");
+    }
+  };
+
+  const doWhatsApp = async (html: string) => {
+    setShareVisible(false);
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Invia su WhatsApp", UTI: "com.adobe.pdf" });
+      } else {
+        const waUrl = "whatsapp://send";
+        const canOpen = await Linking.canOpenURL(waUrl);
+        if (canOpen) await Linking.openURL(waUrl);
+        else Alert.alert("WhatsApp non disponibile");
+      }
+    } catch {
+      Alert.alert("Errore", "Impossibile inviare via WhatsApp.");
+    }
+  };
+
+  const doEmail = async (html: string) => {
+    setShareVisible(false);
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Invia via Email", UTI: "com.adobe.pdf" });
+      } else {
+        await Linking.openURL("mailto:?subject=Badge%20PDF");
+      }
+    } catch {
+      Alert.alert("Errore", "Impossibile inviare via Email.");
     }
   };
 
@@ -423,7 +486,7 @@ export default function PdfBadgeGenerator() {
       </ScrollView>
 
       {/* ── Sticky Generate Footer ── */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(tabBarHeight, insets.bottom) + 8 }]}>
         <Pressable
           style={[styles.generateBtn, generating && styles.generateBtnDisabled]}
           onPress={handleGenerate}
@@ -432,16 +495,82 @@ export default function PdfBadgeGenerator() {
           {generating ? (
             <>
               <ActivityIndicator size="small" color="#1E3A8A" />
-              <Text style={styles.generateBtnText}>Generating…</Text>
+              <Text style={styles.generateBtnText}>Preparazione PDF…</Text>
             </>
           ) : (
             <>
               <Ionicons name="document-text-outline" size={22} color="#1E3A8A" />
-              <Text style={styles.generateBtnText}>Generate & Share PDF</Text>
+              <Text style={styles.generateBtnText}>Genera PDF</Text>
             </>
           )}
         </Pressable>
       </View>
+
+      {/* ── Share Action Sheet ── */}
+      <Modal
+        visible={shareVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShareVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShareVisible(false)}>
+          <Pressable style={[styles.shareSheet, { paddingBottom: insets.bottom + 16 }]} onPress={e => e.stopPropagation()}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Cosa vuoi fare con il PDF?</Text>
+            <Text style={styles.sheetSub}>{displayStudents.length} student{displayStudents.length !== 1 ? "i" : "e"} · layout {layout === "full" ? "pagina intera" : layout === "grid" ? "griglia" : "badge"}</Text>
+
+            <Pressable style={styles.shareRow} onPress={() => doPrint(pendingHtml)}>
+              <View style={[styles.shareIcon, { backgroundColor: "#EEF3FF" }]}>
+                <Ionicons name="print-outline" size={22} color="#1E3A8A" />
+              </View>
+              <View style={styles.shareInfo}>
+                <Text style={styles.shareRowTitle}>Stampa</Text>
+                <Text style={styles.shareRowSub}>Invia direttamente a una stampante</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            </Pressable>
+
+            <View style={styles.sheetDivider} />
+
+            <Pressable style={styles.shareRow} onPress={() => doWhatsApp(pendingHtml)}>
+              <View style={[styles.shareIcon, { backgroundColor: "#DCFCE7" }]}>
+                <Ionicons name="logo-whatsapp" size={22} color="#16A34A" />
+              </View>
+              <View style={styles.shareInfo}>
+                <Text style={styles.shareRowTitle}>WhatsApp</Text>
+                <Text style={styles.shareRowSub}>Invia il PDF via WhatsApp</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            </Pressable>
+
+            <Pressable style={styles.shareRow} onPress={() => doEmail(pendingHtml)}>
+              <View style={[styles.shareIcon, { backgroundColor: "#FEF3C7" }]}>
+                <Ionicons name="mail-outline" size={22} color="#D97706" />
+              </View>
+              <View style={styles.shareInfo}>
+                <Text style={styles.shareRowTitle}>Email</Text>
+                <Text style={styles.shareRowSub}>Invia il PDF via email</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            </Pressable>
+
+            <Pressable style={styles.shareRow} onPress={() => doShare(pendingHtml)}>
+              <View style={[styles.shareIcon, { backgroundColor: "#F3E8FF" }]}>
+                <Ionicons name="share-outline" size={22} color="#7C3AED" />
+              </View>
+              <View style={styles.shareInfo}>
+                <Text style={styles.shareRowTitle}>Messaggio / Drive / Dropbox…</Text>
+                <Text style={styles.shareRowSub}>Apre il pannello di condivisione del sistema</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            </Pressable>
+
+            <Pressable style={styles.cancelBtn} onPress={() => setShareVisible(false)}>
+              <Text style={styles.cancelBtnText}>Annulla</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -528,4 +657,19 @@ const styles = StyleSheet.create({
   generateBtn:         { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#FBBF24", borderRadius: 16, paddingVertical: 18 },
   generateBtnDisabled: { opacity: 0.6 },
   generateBtnText:     { fontSize: 16, fontWeight: "800", color: "#1E3A8A" },
+
+  // Share modal
+  modalOverlay:   { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  shareSheet:     { backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12 },
+  sheetHandle:    { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB", alignSelf: "center", marginBottom: 16 },
+  sheetTitle:     { fontSize: 17, fontWeight: "800", color: "#1E3A8A", textAlign: "center", marginBottom: 4 },
+  sheetSub:       { fontSize: 12, color: "#9CA3AF", textAlign: "center", marginBottom: 20 },
+  sheetDivider:   { height: 1, backgroundColor: "#F3F4F6", marginVertical: 4 },
+  shareRow:       { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14 },
+  shareIcon:      { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  shareInfo:      { flex: 1 },
+  shareRowTitle:  { fontSize: 15, fontWeight: "700", color: "#111827" },
+  shareRowSub:    { fontSize: 12, color: "#6B7280", marginTop: 1 },
+  cancelBtn:      { marginTop: 12, backgroundColor: "#F3F4F6", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
+  cancelBtnText:  { fontSize: 15, fontWeight: "700", color: "#374151" },
 });
