@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { api, ApiDiscipline } from "@/lib/api";
+import { api, ApiDiscipline, ApiOperatorProfile } from "@/lib/api";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -83,15 +83,44 @@ export default function AdminUsers() {
   const [newDiscName, setNewDiscName] = useState("");
   const [showDiscInput, setShowDiscInput] = useState(false);
   const [savingDisc, setSavingDisc] = useState(false);
+  const [savingDiscProfile, setSavingDiscProfile] = useState(false);
+  const [operatorProfile, setOperatorProfile] = useState<ApiOperatorProfile | null>(null);
 
   useEffect(() => {
     if (selected?.role === "operator") {
       setOperatorDisciplines([]);
       setNewDiscName("");
       setShowDiscInput(false);
-      api.getDisciplines().then(d => setAllDisciplines(d)).catch(() => {});
+      setOperatorProfile(null);
+      Promise.all([api.getDisciplines(), api.getOperatorProfiles()]).then(([discs, profiles]) => {
+        setAllDisciplines(discs);
+        const profile = profiles.find(p => String(p.user_id) === selected.id);
+        if (profile) {
+          setOperatorProfile(profile);
+          const discNames = (profile.rates ?? []).map(r => r.discipline?.name).filter(Boolean) as string[];
+          setOperatorDisciplines(discNames);
+        }
+      }).catch(() => {});
     }
-  }, [selected?.id]);
+  }, [selected?.id, selected?.role]);
+
+  const saveDisciplinesToProfile = async () => {
+    if (!operatorProfile) return;
+    setSavingDiscProfile(true);
+    try {
+      const rates = allDisciplines
+        .filter(d => operatorDisciplines.includes(d.name))
+        .map(d => {
+          const existing = operatorProfile.rates?.find(r => r.discipline_id === d.id);
+          return { disciplineId: d.id, hourlyRateCents: existing?.hourly_rate_cents ?? 0 };
+        });
+      const updated = await api.updateOperatorProfile(operatorProfile.id, { rates });
+      setOperatorProfile(updated);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not save disciplines. Please try again.");
+    } finally { setSavingDiscProfile(false); }
+  };
 
   const filtered = users.filter(u => {
     const matchSearch =
@@ -406,6 +435,24 @@ export default function AdminUsers() {
                     </View>
                   )}
 
+                  {/* Save disciplines button */}
+                  {user.role === "operator" && operatorProfile && (
+                    <Pressable
+                      style={[styles.saveDiscBtn, { backgroundColor: savingDiscProfile ? colors.muted : "#10B981", opacity: savingDiscProfile ? 0.7 : 1 }]}
+                      onPress={saveDisciplinesToProfile}
+                      disabled={savingDiscProfile}
+                    >
+                      <Ionicons name={savingDiscProfile ? "hourglass-outline" : "save-outline"} size={15} color="#FFF" />
+                      <Text style={styles.saveDiscBtnText}>{savingDiscProfile ? "Saving…" : "Save Disciplines"}</Text>
+                    </Pressable>
+                  )}
+                  {user.role === "operator" && !operatorProfile && allDisciplines.length > 0 && (
+                    <View style={[styles.noProfileNote, { backgroundColor: "#FEF3C7" }]}>
+                      <Ionicons name="information-circle-outline" size={14} color="#92400E" />
+                      <Text style={[styles.noProfileNoteText, { color: "#92400E" }]}>Create an operator profile in Activity → Operators first to save disciplines.</Text>
+                    </View>
+                  )}
+
                   {/* Contact */}
                   {user.status !== "suspended" && (
                     <Pressable style={[styles.contactBtn, { backgroundColor: colors.primary }]} onPress={() => setShowContact(true)}>
@@ -461,6 +508,24 @@ export default function AdminUsers() {
                         >
                           <Ionicons name="arrow-up-circle" size={16} color="#B45309" />
                           <Text style={[styles.modalActionText, { color: "#B45309" }]}>→ Admin</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]}
+                          onPress={() => handleRoleChange(user, "parent")}
+                        >
+                          <Ionicons name="arrow-down-circle" size={16} color="#1E3A8A" />
+                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Parent</Text>
+                        </Pressable>
+                      </>
+                    )}
+                    {user.role === "admin" && user.status !== "suspended" && (
+                      <>
+                        <Pressable
+                          style={[styles.modalActionBtn, { backgroundColor: "#EDE9FE" }]}
+                          onPress={() => handleRoleChange(user, "operator")}
+                        >
+                          <Ionicons name="arrow-down-circle" size={16} color="#7C3AED" />
+                          <Text style={[styles.modalActionText, { color: "#7C3AED" }]}>→ Operator</Text>
                         </Pressable>
                         <Pressable
                           style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]}
@@ -657,4 +722,8 @@ const styles = StyleSheet.create({
   discSaveBtn: { borderRadius: 8, padding: 6 },
   addDiscBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignSelf: "flex-start" },
   addDiscBtnText: { fontSize: 12, fontWeight: "600" },
+  saveDiscBtn: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "center", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20, width: "85%", marginBottom: 10 },
+  saveDiscBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  noProfileNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 12, padding: 12, width: "85%", marginBottom: 10 },
+  noProfileNoteText: { flex: 1, fontSize: 12, lineHeight: 17 },
 });

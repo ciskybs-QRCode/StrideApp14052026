@@ -119,7 +119,7 @@ export default function SettingsIndex() {
           <View style={{ flex: 1 }}>
             <Text style={styles.profileName}>{user?.name}</Text>
             <Text style={styles.profileRole}>Administrator</Text>
-            <Text style={styles.profileSchool}>{user?.schoolName || "Dance Village"}</Text>
+            {!!user?.schoolName && <Text style={styles.profileSchool}>{user.schoolName}</Text>}
           </View>
           <View style={[styles.adminBadge, { backgroundColor: colors.secondary }]}>
             <Ionicons name="shield-checkmark" size={13} color={colors.primary} />
@@ -296,7 +296,7 @@ export default function SettingsIndex() {
         )}
 
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
-          Stride v1.0.0 · {user?.schoolName || "Dance Village"}
+          Stride v1.0.0{user?.schoolName ? ` · ${user.schoolName}` : ""}
         </Text>
       </ScrollView>
     </View>

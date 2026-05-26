@@ -136,12 +136,29 @@ export default function AdminLessonsScreen() {
     );
   };
 
-  const openNewProfile = () => {
+  const [editingProfile, setEditingProfile] = useState<ApiOperatorProfile | null>(null);
+
+  const resetProfileForm = () => {
     setProfileUserId("");
     setIsVolunteer(false);
     setProfileBio("");
     setSelectedDiscs(new Set());
     setProfileRates({});
+    setEditingProfile(null);
+  };
+
+  const openNewProfile = () => {
+    resetProfileForm();
+    setShowProfileModal(true);
+  };
+
+  const openEditProfile = (p: ApiOperatorProfile) => {
+    setEditingProfile(p);
+    setProfileUserId(String(p.user_id));
+    setIsVolunteer(p.profile_type === "volunteer");
+    setProfileBio(p.bio ?? "");
+    setSelectedDiscs(new Set((p.rates ?? []).map(r => r.discipline_id)));
+    setProfileRates(Object.fromEntries((p.rates ?? []).map(r => [r.discipline_id, (r.hourly_rate_cents / 100).toFixed(2)])));
     setShowProfileModal(true);
   };
 
@@ -172,14 +189,23 @@ export default function AdminLessonsScreen() {
               hourlyRateCents: Math.round(parseFloat(profileRates[id] || "0") * 100),
             }));
 
-      await api.createOperatorProfile({
-        userId:      parseInt(profileUserId),
-        profileType: isVolunteer ? "volunteer" : "paid",
-        bio:         profileBio.trim() || undefined,
-        rates,
-      });
+      if (editingProfile) {
+        await api.updateOperatorProfile(editingProfile.id, {
+          profileType: isVolunteer ? "volunteer" : "paid",
+          bio:         profileBio.trim() || undefined,
+          rates,
+        });
+      } else {
+        await api.createOperatorProfile({
+          userId:      parseInt(profileUserId),
+          profileType: isVolunteer ? "volunteer" : "paid",
+          bio:         profileBio.trim() || undefined,
+          rates,
+        });
+      }
       await load();
       setShowProfileModal(false);
+      resetProfileForm();
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed to save");
     } finally { setSaving(false); }
@@ -300,7 +326,7 @@ export default function AdminLessonsScreen() {
             )}
 
             {profiles.map(p => (
-              <View key={p.id} style={[styles.card, { backgroundColor: colors.card }]}>
+              <Pressable key={p.id} style={[styles.card, { backgroundColor: colors.card }]} onPress={() => openEditProfile(p)}>
                 <View style={[styles.profileAvatar, {
                   backgroundColor: p.profile_type === "paid" ? `${colors.secondary}80` : colors.muted,
                 }]}>
@@ -335,7 +361,8 @@ export default function AdminLessonsScreen() {
                     </View>
                   )}
                 </View>
-              </View>
+                <Ionicons name="pencil-outline" size={16} color={colors.mutedForeground} />
+              </Pressable>
             ))}
           </>
         )}
@@ -498,44 +525,51 @@ export default function AdminLessonsScreen() {
               {/* Modal header */}
               <View style={[styles.modalHeaderStrip, { backgroundColor: colors.primary }]}>
                 <View style={[styles.modalHeaderIcon, { backgroundColor: colors.secondary }]}>
-                  <Ionicons name="person-add-outline" size={20} color={colors.primary} />
+                  <Ionicons name={editingProfile ? "pencil-outline" : "person-add-outline"} size={20} color={colors.primary} />
                 </View>
-                <View>
-                  <Text style={styles.modalHeaderTitle}>Operator Profile</Text>
-                  <Text style={styles.modalHeaderSub}>Configure instructor settings</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalHeaderTitle}>{editingProfile ? "Edit Profile" : "New Operator Profile"}</Text>
+                  <Text style={styles.modalHeaderSub}>{editingProfile ? (editingProfile.user?.name ?? "Operator") : "Configure instructor settings"}</Text>
                 </View>
+                <Pressable onPress={() => { setShowProfileModal(false); resetProfileForm(); }} hitSlop={8}>
+                  <Ionicons name="close" size={22} color="rgba(255,255,255,0.8)" />
+                </Pressable>
               </View>
 
               <View style={styles.modalBody}>
 
-                {/* ── Step 1: Select user ── */}
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Instructor</Text>
-                <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-                  {operatorUsers.length === 0 ? (
-                    <Text style={[styles.pickerPlaceholder, { color: colors.mutedForeground }]}>
-                      No operator-role users found
-                    </Text>
-                  ) : (
-                    operatorUsers.map(u => (
-                      <Pressable
-                        key={u.id}
-                        style={[styles.pickerOption, profileUserId === String(u.id) && { backgroundColor: `${colors.secondary}60` }]}
-                        onPress={() => setProfileUserId(String(u.id))}
-                      >
-                        <View style={[styles.pickerAvatar, { backgroundColor: profileUserId === String(u.id) ? colors.primary : colors.border }]}>
-                          <Text style={styles.pickerAvatarText}>{String(u.name).charAt(0)}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.pickerOptionName, { color: colors.foreground }]}>{u.name}</Text>
-                          <Text style={[styles.pickerOptionEmail, { color: colors.mutedForeground }]}>{u.email}</Text>
-                        </View>
-                        {profileUserId === String(u.id) && (
-                          <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-                        )}
-                      </Pressable>
-                    ))
-                  )}
-                </View>
+                {/* ── Step 1: Select user (hidden in edit mode) ── */}
+                {!editingProfile && (
+                  <>
+                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Instructor</Text>
+                    <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+                      {operatorUsers.length === 0 ? (
+                        <Text style={[styles.pickerPlaceholder, { color: colors.mutedForeground }]}>
+                          No operator-role users found
+                        </Text>
+                      ) : (
+                        operatorUsers.map(u => (
+                          <Pressable
+                            key={u.id}
+                            style={[styles.pickerOption, profileUserId === String(u.id) && { backgroundColor: `${colors.secondary}60` }]}
+                            onPress={() => setProfileUserId(String(u.id))}
+                          >
+                            <View style={[styles.pickerAvatar, { backgroundColor: profileUserId === String(u.id) ? colors.primary : colors.border }]}>
+                              <Text style={styles.pickerAvatarText}>{String(u.name).charAt(0)}</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.pickerOptionName, { color: colors.foreground }]}>{u.name}</Text>
+                              <Text style={[styles.pickerOptionEmail, { color: colors.mutedForeground }]}>{u.email}</Text>
+                            </View>
+                            {profileUserId === String(u.id) && (
+                              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                            )}
+                          </Pressable>
+                        ))
+                      )}
+                    </View>
+                  </>
+                )}
 
                 {/* ── Step 2: Paid / Volunteer toggle ── */}
                 <View style={[styles.toggleRow, { borderColor: colors.border, backgroundColor: colors.muted }]}>
