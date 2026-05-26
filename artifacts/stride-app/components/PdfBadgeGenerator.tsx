@@ -227,62 +227,78 @@ export default function PdfBadgeGenerator() {
     }
   };
 
+  // ── Web helper: open HTML in new tab for print/save ─────────────────────────
+
+  const webOpenAndPrint = (html: string, autoPrint = false) => {
+    if (typeof window === "undefined") return;
+    const win = window.open("", "_blank");
+    if (!win) { Alert.alert("Pop-up blocked", "Please allow pop-ups and try again."); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    if (autoPrint) setTimeout(() => { win.print(); }, 300);
+  };
+
   // ── Share actions ────────────────────────────────────────────────────────────
 
   const doShare = async (html: string) => {
     setShareVisible(false);
+    if (Platform.OS === "web") { webOpenAndPrint(html, false); return; }
     try {
       const { uri } = await Print.printToFileAsync({ html });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Condividi Badge PDF", UTI: "com.adobe.pdf" });
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Share Badge PDF", UTI: "com.adobe.pdf" });
       } else {
-        Alert.alert("PDF Pronto", `File salvato: ${uri}`);
+        Alert.alert("PDF Ready", `Saved to: ${uri}`);
       }
     } catch {
-      Alert.alert("Errore", "Impossibile condividere il PDF.");
+      Alert.alert("Error", "Could not share the PDF.");
     }
   };
 
   const doPrint = async (html: string) => {
     setShareVisible(false);
+    if (Platform.OS === "web") { webOpenAndPrint(html, true); return; }
     try {
       await Print.printAsync({ html });
     } catch {
-      Alert.alert("Errore", "Impossibile avviare la stampa.");
+      Alert.alert("Error", "Could not start printing.");
     }
   };
 
   const doWhatsApp = async (html: string) => {
     setShareVisible(false);
+    if (Platform.OS === "web") { webOpenAndPrint(html, false); return; }
     try {
       const { uri } = await Print.printToFileAsync({ html });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Invia su WhatsApp", UTI: "com.adobe.pdf" });
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Send via WhatsApp", UTI: "com.adobe.pdf" });
       } else {
         const waUrl = "whatsapp://send";
         const canOpen = await Linking.canOpenURL(waUrl);
         if (canOpen) await Linking.openURL(waUrl);
-        else Alert.alert("WhatsApp non disponibile");
+        else Alert.alert("WhatsApp not available");
       }
     } catch {
-      Alert.alert("Errore", "Impossibile inviare via WhatsApp.");
+      Alert.alert("Error", "Could not send via WhatsApp.");
     }
   };
 
   const doEmail = async (html: string) => {
     setShareVisible(false);
+    if (Platform.OS === "web") { webOpenAndPrint(html, false); return; }
     try {
       const { uri } = await Print.printToFileAsync({ html });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Invia via Email", UTI: "com.adobe.pdf" });
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Send via Email", UTI: "com.adobe.pdf" });
       } else {
         await Linking.openURL("mailto:?subject=Badge%20PDF");
       }
     } catch {
-      Alert.alert("Errore", "Impossibile inviare via Email.");
+      Alert.alert("Error", "Could not send via Email.");
     }
   };
 
@@ -373,7 +389,7 @@ export default function PdfBadgeGenerator() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Course ── */}
-        <Text style={styles.sectionLabel}>CORSO</Text>
+        <Text style={styles.sectionLabel}>COURSE</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -383,7 +399,7 @@ export default function PdfBadgeGenerator() {
             style={[styles.chip, !selectedCourseId && styles.chipActive]}
             onPress={() => setSelectedCourseId("")}
           >
-            <Text style={[styles.chipText, !selectedCourseId && styles.chipTextActive]}>Tutti</Text>
+            <Text style={[styles.chipText, !selectedCourseId && styles.chipTextActive]}>All</Text>
           </Pressable>
           {courses.map(c => (
             <Pressable
@@ -395,7 +411,7 @@ export default function PdfBadgeGenerator() {
             </Pressable>
           ))}
         </ScrollView>
-        <Text style={styles.studentCount}>{displayStudents.length} student{displayStudents.length !== 1 ? "i" : "e"} selezionat{displayStudents.length !== 1 ? "i" : "a"}</Text>
+        <Text style={styles.studentCount}>{displayStudents.length} student{displayStudents.length !== 1 ? "s" : ""} selected</Text>
 
         {/* ── Layout ── */}
         <Text style={styles.sectionLabel}>LAYOUT</Text>
@@ -412,7 +428,7 @@ export default function PdfBadgeGenerator() {
                 color={layout === l ? "#FFF" : "#1E3A8A"}
               />
               <Text style={[styles.layoutBtnText, layout === l && styles.layoutBtnTextActive]}>
-                {l === "full" ? "Pagina\nIntera" : l === "grid" ? "Griglia" : "Badge\nPlastica"}
+                {l === "full" ? "Full\nPage" : l === "grid" ? "Grid" : "Plastic\nBadge"}
               </Text>
             </Pressable>
           ))}
@@ -421,7 +437,7 @@ export default function PdfBadgeGenerator() {
         {/* ── Grid size ── */}
         {layout === "grid" && (
           <View style={styles.gridSizeSection}>
-            <Text style={styles.sectionLabel}>PER PAGINA (MAX 10)</Text>
+            <Text style={styles.sectionLabel}>PER PAGE (MAX 10)</Text>
             <View style={styles.gridSizeRow}>
               {GRID_SIZES.map(n => (
                 <Pressable
@@ -437,48 +453,48 @@ export default function PdfBadgeGenerator() {
         )}
 
         {/* ── Content toggles ── */}
-        <Text style={styles.sectionLabel}>CONTENUTO BADGE</Text>
+        <Text style={styles.sectionLabel}>BADGE CONTENT</Text>
         <View style={styles.togglesCard}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleLeft}>
               <Ionicons name="person" size={15} color="#1E3A8A" />
-              <Text style={styles.toggleLabel}>Nome</Text>
+              <Text style={styles.toggleLabel}>First Name</Text>
             </View>
-            <View style={styles.requiredBadge}><Text style={styles.requiredText}>Obbligatorio</Text></View>
+            <View style={styles.requiredBadge}><Text style={styles.requiredText}>Required</Text></View>
           </View>
           <View style={[styles.toggleRow, styles.toggleRowBorder]}>
             <View style={styles.toggleLeft}>
               <Ionicons name="qr-code" size={15} color="#1E3A8A" />
               <Text style={styles.toggleLabel}>QR Code</Text>
             </View>
-            <View style={styles.requiredBadge}><Text style={styles.requiredText}>Obbligatorio</Text></View>
+            <View style={styles.requiredBadge}><Text style={styles.requiredText}>Required</Text></View>
           </View>
           <View style={[styles.divider]} />
           <View style={[styles.toggleRow, styles.toggleRowBorder]}>
             <View style={styles.toggleLeft}>
               <Ionicons name="image-outline" size={15} color="#6B7280" />
-              <Text style={[styles.toggleLabel, { color: "#6B7280" }]}>Foto / Avatar</Text>
+              <Text style={[styles.toggleLabel, { color: "#6B7280" }]}>Photo / Avatar</Text>
             </View>
             <Switch value={showPhoto} onValueChange={v => { setShowPhoto(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} trackColor={{ true: "#1E3A8A", false: "#D1D5DB" }} thumbColor="#FFF" />
           </View>
           <View style={[styles.toggleRow, styles.toggleRowBorder]}>
             <View style={styles.toggleLeft}>
               <Ionicons name="person-outline" size={15} color="#6B7280" />
-              <Text style={[styles.toggleLabel, { color: "#6B7280" }]}>Cognome</Text>
+              <Text style={[styles.toggleLabel, { color: "#6B7280" }]}>Last Name</Text>
             </View>
             <Switch value={showLastName} onValueChange={v => { setShowLastName(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} trackColor={{ true: "#1E3A8A", false: "#D1D5DB" }} thumbColor="#FFF" />
           </View>
           <View style={styles.toggleRow}>
             <View style={styles.toggleLeft}>
               <Ionicons name="information-circle-outline" size={15} color="#6B7280" />
-              <Text style={[styles.toggleLabel, { color: "#6B7280" }]}>Corso ed Età</Text>
+              <Text style={[styles.toggleLabel, { color: "#6B7280" }]}>Course & Age</Text>
             </View>
             <Switch value={showSecondary} onValueChange={v => { setShowSecondary(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} trackColor={{ true: "#1E3A8A", false: "#D1D5DB" }} thumbColor="#FFF" />
           </View>
         </View>
 
         {/* ── Preview ── */}
-        <Text style={styles.sectionLabel}>ANTEPRIMA</Text>
+        <Text style={styles.sectionLabel}>PREVIEW</Text>
         <View style={styles.previewCard}>
           <PreviewContent />
         </View>
@@ -495,12 +511,12 @@ export default function PdfBadgeGenerator() {
           {generating ? (
             <>
               <ActivityIndicator size="small" color="#1E3A8A" />
-              <Text style={styles.generateBtnText}>Preparazione PDF…</Text>
+              <Text style={styles.generateBtnText}>Preparing PDF…</Text>
             </>
           ) : (
             <>
               <Ionicons name="document-text-outline" size={22} color="#1E3A8A" />
-              <Text style={styles.generateBtnText}>Genera PDF</Text>
+              <Text style={styles.generateBtnText}>Generate PDF</Text>
             </>
           )}
         </Pressable>
@@ -516,16 +532,16 @@ export default function PdfBadgeGenerator() {
         <Pressable style={styles.modalOverlay} onPress={() => setShareVisible(false)}>
           <Pressable style={[styles.shareSheet, { paddingBottom: insets.bottom + 16 }]} onPress={e => e.stopPropagation()}>
             <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Cosa vuoi fare con il PDF?</Text>
-            <Text style={styles.sheetSub}>{displayStudents.length} student{displayStudents.length !== 1 ? "i" : "e"} · layout {layout === "full" ? "pagina intera" : layout === "grid" ? "griglia" : "badge"}</Text>
+            <Text style={styles.sheetTitle}>What do you want to do with the PDF?</Text>
+            <Text style={styles.sheetSub}>{displayStudents.length} student{displayStudents.length !== 1 ? "s" : ""} · {layout === "full" ? "full page" : layout === "grid" ? "grid" : "badge"} layout</Text>
 
             <Pressable style={styles.shareRow} onPress={() => doPrint(pendingHtml)}>
               <View style={[styles.shareIcon, { backgroundColor: "#EEF3FF" }]}>
                 <Ionicons name="print-outline" size={22} color="#1E3A8A" />
               </View>
               <View style={styles.shareInfo}>
-                <Text style={styles.shareRowTitle}>Stampa</Text>
-                <Text style={styles.shareRowSub}>Invia direttamente a una stampante</Text>
+                <Text style={styles.shareRowTitle}>Print</Text>
+                <Text style={styles.shareRowSub}>Send directly to a printer</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </Pressable>
@@ -538,7 +554,7 @@ export default function PdfBadgeGenerator() {
               </View>
               <View style={styles.shareInfo}>
                 <Text style={styles.shareRowTitle}>WhatsApp</Text>
-                <Text style={styles.shareRowSub}>Invia il PDF via WhatsApp</Text>
+                <Text style={styles.shareRowSub}>Send the PDF via WhatsApp</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </Pressable>
@@ -549,7 +565,7 @@ export default function PdfBadgeGenerator() {
               </View>
               <View style={styles.shareInfo}>
                 <Text style={styles.shareRowTitle}>Email</Text>
-                <Text style={styles.shareRowSub}>Invia il PDF via email</Text>
+                <Text style={styles.shareRowSub}>Send the PDF via email</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </Pressable>
@@ -559,14 +575,14 @@ export default function PdfBadgeGenerator() {
                 <Ionicons name="share-outline" size={22} color="#7C3AED" />
               </View>
               <View style={styles.shareInfo}>
-                <Text style={styles.shareRowTitle}>Messaggio / Drive / Dropbox…</Text>
-                <Text style={styles.shareRowSub}>Apre il pannello di condivisione del sistema</Text>
+                <Text style={styles.shareRowTitle}>Message / Drive / Dropbox…</Text>
+                <Text style={styles.shareRowSub}>Opens the system sharing panel</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             </Pressable>
 
             <Pressable style={styles.cancelBtn} onPress={() => setShareVisible(false)}>
-              <Text style={styles.cancelBtnText}>Annulla</Text>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
           </Pressable>
         </Pressable>

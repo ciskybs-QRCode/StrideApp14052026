@@ -154,7 +154,7 @@ export default function BlacklistScreen() {
       >
         {/* Header */}
         <View style={styles.pageHeader}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
+          <Pressable onPress={() => router.push("/(admin)/settings" as Parameters<typeof router.push>[0])} style={styles.backBtn} hitSlop={10}>
             <Ionicons name="arrow-back" size={22} color={colors.primary} />
           </Pressable>
           <View style={{ flex: 1 }}>
