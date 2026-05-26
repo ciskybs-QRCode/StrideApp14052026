@@ -301,9 +301,7 @@ export default function PdfBadgeGenerator() {
           <Ionicons name="arrow-back" size={22} color="#1E3A8A" />
         </Pressable>
         <Text style={styles.headerTitle}>Badge Generator</Text>
-        <View style={styles.headerRight}>
-          <Ionicons name="print-outline" size={22} color="#1E3A8A" />
-        </View>
+        <View style={styles.headerRight} />
       </View>
 
       <ScrollView
@@ -422,7 +420,10 @@ export default function PdfBadgeGenerator() {
           <PreviewContent />
         </View>
 
-        {/* ── Generate CTA ── */}
+      </ScrollView>
+
+      {/* ── Sticky Generate Footer ── */}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         <Pressable
           style={[styles.generateBtn, generating && styles.generateBtnDisabled]}
           onPress={handleGenerate}
@@ -431,16 +432,16 @@ export default function PdfBadgeGenerator() {
           {generating ? (
             <>
               <ActivityIndicator size="small" color="#1E3A8A" />
-              <Text style={styles.generateBtnText}>Generazione in corso…</Text>
+              <Text style={styles.generateBtnText}>Generating…</Text>
             </>
           ) : (
             <>
-              <Ionicons name="print-outline" size={20} color="#1E3A8A" />
-              <Text style={styles.generateBtnText}>Genera e Condividi PDF</Text>
+              <Ionicons name="document-text-outline" size={22} color="#1E3A8A" />
+              <Text style={styles.generateBtnText}>Generate & Share PDF</Text>
             </>
           )}
         </Pressable>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -522,8 +523,9 @@ const styles = StyleSheet.create({
   previewBadgeDot:       { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FBBF24" },
   previewBadgeTag:       { fontSize: 7, color: "#9CA3AF", letterSpacing: 0.5 },
 
-  // Generate button
-  generateBtn:         { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#FBBF24", borderRadius: 16, paddingVertical: 18, marginTop: 20 },
+  // Generate button footer
+  footer:              { paddingHorizontal: 16, paddingTop: 12, backgroundColor: "#FFF", borderTopWidth: 1, borderTopColor: "#E5EAF5" },
+  generateBtn:         { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#FBBF24", borderRadius: 16, paddingVertical: 18 },
   generateBtnDisabled: { opacity: 0.6 },
   generateBtnText:     { fontSize: 16, fontWeight: "800", color: "#1E3A8A" },
 });
