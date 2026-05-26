@@ -154,6 +154,26 @@ export default function SettingsIndex() {
           ))}
         </View>
 
+        {/* School Setup & Parent QR — full-width featured card */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.featuredCard,
+            { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 },
+          ]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/setup" as never); }}
+        >
+          <View style={[styles.featuredIconBox, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+            <Ionicons name="qr-code-outline" size={30} color="#FBBF24" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featuredTitle, { color: "#FFFFFF" }]}>School Setup & Parent QR</Text>
+            <Text style={[styles.featuredDesc, { color: "rgba(255,255,255,0.75)" }]}>
+              Branding, colours and invite QR code for parents
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
+        </Pressable>
+
         {/* Promo Codes — full-width featured card */}
         <Pressable
           style={({ pressed }) => [
