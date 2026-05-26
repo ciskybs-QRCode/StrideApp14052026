@@ -23,6 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { SignaturePad } from "@/components/SignaturePad";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
+import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { api } from "@/lib/api";
 
 const PROFILE_EXTRA_KEY = "stride_profile_extra";
@@ -308,6 +309,7 @@ export default function DocumentsScreen() {
           </Pressable>
         </View>
 
+        <RoleSwitcherRow />
         <AccountSettingsCard />
       </ScrollView>
 

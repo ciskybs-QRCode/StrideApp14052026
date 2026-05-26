@@ -2,8 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth, UserRole } from "@/context/AuthContext";
 
 // ── Role metadata ─────────────────────────────────────────────────────────────
@@ -14,24 +13,20 @@ const ROLE_META: Record<UserRole, {
   homeRoute: string;
   color: string;
 }> = {
-  admin:    { label: "Admin",    icon: "shield-checkmark", homeRoute: "/(admin)/stats",         color: "#6D28D9" },
-  operator: { label: "Instructor", icon: "school",         homeRoute: "/(operator)/dashboard",  color: "#0369A1" },
-  parent:   { label: "Parent",   icon: "person",           homeRoute: "/(parent)/home",         color: "#047857" },
+  admin:    { label: "Admin",      icon: "shield-checkmark", homeRoute: "/(admin)/stats",        color: "#6D28D9" },
+  operator: { label: "Instructor", icon: "school",           homeRoute: "/(operator)/dashboard", color: "#0369A1" },
+  parent:   { label: "Parent",     icon: "person",           homeRoute: "/(parent)/home",        color: "#047857" },
 };
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Inline settings row (non-floating) ───────────────────────────────────────
 
 /**
- * Floating role-switcher pill. Renders only when the current user has more than
- * one available role. Tapping it opens a compact popup to switch views.
- *
- * Place this inside each group `_layout.tsx` outer View (position: absolute).
+ * Renders a "Cambia Ruolo" settings card that can be embedded in any screen.
+ * Only renders when the user has more than one available role.
  */
-export function RoleSwitcher() {
+export function RoleSwitcherRow() {
   const { user, switchRole } = useAuth();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const isWeb = Platform.OS === "web";
   const [open, setOpen] = useState(false);
 
   if (!user || !user.roles || user.roles.length <= 1) return null;
@@ -46,145 +41,153 @@ export function RoleSwitcher() {
     router.replace(ROLE_META[role].homeRoute as never);
   };
 
-  // Position just above the tab bar
-  const bottomOffset = isWeb ? 96 : 76 + (insets.bottom ?? 0);
-
   return (
     <>
-      {/* Invisible backdrop to close the menu on outside tap */}
-      {open && (
-        <Pressable
-          style={[StyleSheet.absoluteFill, { zIndex: 997 }]}
-          onPress={() => setOpen(false)}
-        />
-      )}
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
+        <Pressable style={rowStyles.backdrop} onPress={() => setOpen(false)}>
+          <View style={rowStyles.sheet}>
+            <View style={rowStyles.sheetHandle} />
+            <Text style={rowStyles.sheetTitle}>Cambia Ruolo</Text>
+            <Text style={rowStyles.sheetSub}>
+              Accedi all'app con un profilo diverso
+            </Text>
 
-      <View style={[styles.wrapper, { bottom: bottomOffset, left: 14, zIndex: 998 }]}>
+            {/* Current role */}
+            <View style={[rowStyles.sheetRow, { backgroundColor: `${current.color}10`, borderColor: `${current.color}30`, borderWidth: 1 }]}>
+              <View style={[rowStyles.sheetIcon, { backgroundColor: `${current.color}20` }]}>
+                <Ionicons name={current.icon} size={20} color={current.color} />
+              </View>
+              <Text style={[rowStyles.sheetRowLabel, { color: current.color }]}>{current.label}</Text>
+              <View style={rowStyles.activePill}>
+                <Text style={rowStyles.activePillText}>Attivo</Text>
+              </View>
+            </View>
 
-        {/* ── Popup menu (above the pill) ── */}
-        {open && (
-          <View style={styles.menu}>
-            <Text style={styles.menuHeading}>Switch view</Text>
+            {/* Other roles */}
             {otherRoles.map(role => {
               const meta = ROLE_META[role];
               return (
                 <Pressable
                   key={role}
-                  style={({ pressed }) => [styles.menuRow, pressed && { opacity: 0.75 }]}
+                  style={({ pressed }) => [rowStyles.sheetRow, { opacity: pressed ? 0.75 : 1 }]}
                   onPress={() => handleSwitch(role)}
                 >
-                  <View style={[styles.menuIconBox, { backgroundColor: `${meta.color}18` }]}>
-                    <Ionicons name={meta.icon} size={16} color={meta.color} />
+                  <View style={[rowStyles.sheetIcon, { backgroundColor: `${meta.color}18` }]}>
+                    <Ionicons name={meta.icon} size={20} color={meta.color} />
                   </View>
-                  <Text style={styles.menuRowLabel}>{meta.label}</Text>
-                  <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
+                  <Text style={[rowStyles.sheetRowLabel, { color: "#1F2937" }]}>{meta.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
                 </Pressable>
               );
             })}
           </View>
-        )}
-
-        {/* ── Floating pill button ── */}
-        <Pressable
-          style={[styles.pill, { backgroundColor: "#1E3A8A" }]}
-          onPress={() => {
-            setOpen(v => !v);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }}
-        >
-          <View style={[styles.pillIconBox, { backgroundColor: `${current.color}30` }]}>
-            <Ionicons name={current.icon} size={13} color="#FBBF24" />
-          </View>
-          <Text style={styles.pillLabel}>{current.label}</Text>
-          <Ionicons
-            name={open ? "chevron-up" : "chevron-down"}
-            size={12}
-            color="rgba(255,255,255,0.6)"
-          />
         </Pressable>
-      </View>
+      </Modal>
+
+      <Pressable
+        style={({ pressed }) => [rowStyles.row, { opacity: pressed ? 0.8 : 1 }]}
+        onPress={() => {
+          setOpen(true);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }}
+      >
+        <View style={[rowStyles.rowIcon, { backgroundColor: `${current.color}18` }]}>
+          <Ionicons name={current.icon} size={20} color={current.color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={rowStyles.rowLabel}>Cambia Ruolo</Text>
+          <Text style={rowStyles.rowSub}>Vista attuale: {current.label}</Text>
+        </View>
+        <View style={[rowStyles.activePill, { backgroundColor: `${current.color}15` }]}>
+          <Text style={[rowStyles.activePillText, { color: current.color }]}>{current.label}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
+      </Pressable>
     </>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  wrapper: {
-    position: "absolute",
-    alignItems: "flex-start",
-  },
-  // Popup menu
-  menu: {
-    backgroundColor: "#FFF",
+const rowStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    minWidth: 180,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    backgroundColor: "#F9FAFB",
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
-  menuHeading: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#9CA3AF",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  menuRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-  },
-  menuIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+  rowIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  menuRowLabel: {
+  rowLabel: { fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 1 },
+  rowSub:   { fontSize: 12, color: "#6B7280" },
+  activePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    backgroundColor: "#ECFDF5",
+  },
+  activePillText: { fontSize: 11, fontWeight: "700", color: "#047857" },
+  // Modal sheet
+  backdrop: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E3A8A",
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
   },
-  // Floating pill
-  pill: {
+  sheet: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: Platform.OS === "ios" ? 40 : 28,
+    gap: 10,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D1D5DB",
+    alignSelf: "center",
+    marginBottom: 8,
+  },
+  sheetTitle: { fontSize: 18, fontWeight: "800", color: "#1F2937", marginBottom: 2 },
+  sheetSub:   { fontSize: 13, color: "#6B7280", marginBottom: 6 },
+  sheetRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
   },
-  pillIconBox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+  sheetIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
   },
-  pillLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#FFF",
-    letterSpacing: 0.2,
-  },
+  sheetRowLabel: { flex: 1, fontSize: 15, fontWeight: "700" },
 });
+
+// ── Legacy floating pill (kept for reference, no longer used) ─────────────────
+
+/**
+ * @deprecated Use RoleSwitcherRow instead.
+ * This component is intentionally a no-op to prevent accidental usage.
+ */
+export function RoleSwitcher() {
+  return null;
+}

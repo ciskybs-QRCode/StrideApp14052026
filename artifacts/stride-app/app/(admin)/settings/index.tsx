@@ -19,6 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
+import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
 const GRID_ITEMS = [
   {
@@ -247,6 +248,7 @@ export default function SettingsIndex() {
           )}
         </View>
 
+        <RoleSwitcherRow />
         <AccountSettingsCard />
 
         <Text style={[styles.version, { color: colors.mutedForeground }]}>

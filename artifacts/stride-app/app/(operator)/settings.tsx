@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
+import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
 // ── Role badge helper ──────────────────────────────────────────────────────
 
@@ -130,6 +131,10 @@ export default function OperatorSettingsScreen() {
           </View>
           <Ionicons name="chevron-forward" size={18} color="#D97706" />
         </Pressable>
+
+        {/* ── Cambia Ruolo ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
+        <RoleSwitcherRow />
 
         {/* ── Account section (shared component) ── */}
         <AccountSettingsCard />
