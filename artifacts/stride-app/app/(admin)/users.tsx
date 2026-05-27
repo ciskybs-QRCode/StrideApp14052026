@@ -63,11 +63,22 @@ const STATUS_CONFIG: Record<UserStatus, { bg: string; dot: string; text: string;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+function apiUserToRecord(u: { id: string | number; name: string; email: string; phone?: string; role?: string; blocked?: boolean; created_at?: string }): UserRecord {
+  const role: UserRole = (["parent", "operator", "admin", "student"].includes(u.role ?? "") ? u.role : "parent") as UserRole;
+  const status: UserStatus = u.blocked ? "suspended" : "active";
+  let joinDate = "";
+  if (u.created_at) {
+    try { joinDate = new Date(u.created_at).toLocaleDateString("en-AU"); } catch { joinDate = ""; }
+  }
+  return { id: String(u.id), name: u.name, email: u.email, phone: u.phone ?? "", role, status, joinDate };
+}
+
 export default function AdminUsers() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "parent" | "operator" | "admin" | "student">("all");
   const [selected, setSelected] = useState<UserRecord | null>(null);
@@ -85,6 +96,14 @@ export default function AdminUsers() {
   const [savingDisc, setSavingDisc] = useState(false);
   const [savingDiscProfile, setSavingDiscProfile] = useState(false);
   const [operatorProfile, setOperatorProfile] = useState<ApiOperatorProfile | null>(null);
+
+  useEffect(() => {
+    setLoadingUsers(true);
+    api.getUsers()
+      .then(data => { if (data.length > 0) setUsers(data.map(apiUserToRecord)); })
+      .catch(() => {})
+      .finally(() => setLoadingUsers(false));
+  }, []);
 
   useEffect(() => {
     if (selected?.role === "operator") {

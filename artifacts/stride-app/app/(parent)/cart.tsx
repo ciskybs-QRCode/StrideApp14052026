@@ -207,7 +207,7 @@ export default function CartScreen() {
           <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
             Browse available courses and tap "Enroll" to add them here.
           </Text>
-          <Pressable style={[styles.browseBtn, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
+          <Pressable style={[styles.browseBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/(parent)/courses")}>
             <Ionicons name="musical-notes-outline" size={18} color="#FFF" />
             <Text style={styles.browseBtnText}>Browse Courses</Text>
           </Pressable>
