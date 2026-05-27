@@ -74,11 +74,11 @@ export default function ChildrenScreen() {
     setNewChildPhotoUri(null);
   };
 
-  const pickChildPhoto = async () => {
+  const openImagePicker = async (): Promise<string | null> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Permission denied", "Please allow gallery access in your device settings.");
-      return;
+      return null;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -86,8 +86,20 @@ export default function ChildrenScreen() {
       aspect: [1, 1],
       quality: 0.8,
     });
-    if (!result.canceled && result.assets[0]) {
-      setNewChildPhotoUri(result.assets[0].uri);
+    if (!result.canceled && result.assets[0]) return result.assets[0].uri;
+    return null;
+  };
+
+  const pickChildPhoto = async () => {
+    const uri = await openImagePicker();
+    if (uri) setNewChildPhotoUri(uri);
+  };
+
+  const pickExistingChildPhoto = async () => {
+    const uri = await openImagePicker();
+    if (uri) {
+      await updateChild(selectedChild, { photoUrl: uri });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 
@@ -200,9 +212,19 @@ export default function ChildrenScreen() {
           <>
             <View style={[styles.childCard, { backgroundColor: colors.card }]}>
               <View style={styles.childCardHeader}>
-                <View style={[styles.childBigAvatar, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.childBigAvatarText}>{child.name.charAt(0)}</Text>
-                </View>
+                <Pressable
+                  style={[styles.childBigAvatar, { backgroundColor: child.photoUrl ? "transparent" : colors.primary, overflow: "hidden" }]}
+                  onPress={pickExistingChildPhoto}
+                >
+                  {child.photoUrl ? (
+                    <Image source={{ uri: child.photoUrl }} style={{ width: 64, height: 64, borderRadius: 32 }} />
+                  ) : (
+                    <Text style={styles.childBigAvatarText}>{child.name.charAt(0)}</Text>
+                  )}
+                  <View style={styles.childAvatarCameraOverlay}>
+                    <Ionicons name="camera" size={12} color="#FFF" />
+                  </View>
+                </Pressable>
                 <View style={styles.childCardInfo}>
                   <Text style={[styles.childName, { color: colors.primary }]}>{child.name}</Text>
                   <Text style={[styles.childAge, { color: colors.mutedForeground }]}>{child.age} yrs</Text>
@@ -604,6 +626,7 @@ const styles = StyleSheet.create({
   childCardHeader: { flexDirection: "row", gap: 16, marginBottom: 12 },
   childBigAvatar: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
   childBigAvatarText: { color: "#FFF", fontWeight: "700", fontSize: 28 },
+  childAvatarCameraOverlay: { position: "absolute", bottom: 0, right: 0, width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center" },
   childCardInfo: { flex: 1, justifyContent: "center" },
   childName: { fontSize: 20, fontWeight: "700" },
   childAge: { fontSize: 14, marginTop: 2 },
