@@ -35,6 +35,7 @@ const MEDIA_CONSENT_COLORS: Record<"full" | "internal" | "none", string> = {
 };
 
 export default function ChildrenScreen() {
+  "use no memo";
   const { children, delegates, addDelegate, removeDelegate, updateChild, addChild, removeChild } = useAppData();
   const { user } = useAuth();
   const colors = useColors();

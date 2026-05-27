@@ -286,7 +286,9 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     const cacheKey = `${user.id}:${user.role}`;
     if (loadedForUser.current === cacheKey) return;
     loadedForUser.current = cacheKey;
-    loadAll(user.role);
+    loadAll(user.role).catch(() => {
+      setIsLoadingData(false);
+    });
   }, [user]);
 
   const refreshData = async () => {
@@ -351,9 +353,18 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
 
   const loadAll = async (role: string) => {
     setIsLoadingData(true);
+    // Clear stale data from a previous role so screens never render with wrong-role content
+    if (role === "parent") {
+      setStudents([]);
+      setLessons([]);
+    } else {
+      setChildrenData([]);
+      setDelegates([]);
+      setPayments([]);
+    }
     try {
       const [coursesData] = await Promise.all([api.getCourses().catch(() => [])]);
-      const mappedCourses = (coursesData as ApiCourse[]).map(mapCourse);
+      const mappedCourses = Array.isArray(coursesData) ? (coursesData as ApiCourse[]).map(mapCourse) : [];
       setCourses(mappedCourses);
 
       if (role === "parent") {
@@ -412,6 +423,8 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
         if (lessonsRes.status === "fulfilled") setLessons((lessonsRes.value as ApiLesson[]).map(mapLesson));
         if (docsRes.status === "fulfilled") setDocuments((docsRes.value as ApiDocument[]).map(mapDocument));
       }
+    } catch {
+      // Silently recover — stale/empty state is safer than crashing the screen
     } finally {
       setIsLoadingData(false);
     }

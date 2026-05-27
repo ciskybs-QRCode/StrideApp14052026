@@ -142,6 +142,91 @@ const DEMO_PRIVATE_BOOKINGS: ApiPrivateBooking[] = [
   },
 ];
 
+const DEMO_CHILDREN: ApiChild[] = [
+  {
+    id: 11,
+    parent_id: 1,
+    name: "Sofia Rossi",
+    age: 8,
+    gold_stars: 12,
+    allergies: "Nessuna",
+    allergies_list: "Nessuna",
+    ambulance_consent: true,
+    media_consent: "full",
+    qr_payload: "STRIDE-QR-11",
+  },
+  {
+    id: 12,
+    parent_id: 1,
+    name: "Luca Ferrari",
+    age: 10,
+    gold_stars: 7,
+    allergies: "Lattosio",
+    allergies_list: "Lattosio",
+    ambulance_consent: false,
+    media_consent: "internal",
+    qr_payload: "STRIDE-QR-12",
+  },
+];
+
+const DEMO_DELEGATES: ApiDelegate[] = [
+  {
+    id: 51,
+    parent_id: 1,
+    child_id: 11,
+    name: "Nonna",
+    surname: "Rossi",
+    phone: "+39 333 1234567",
+    pin: "4291",
+    relationship: "Nonna",
+  },
+];
+
+const DEMO_DOCUMENTS: ApiDocument[] = [
+  {
+    id: 31,
+    organization_id: 1,
+    title: "Liberatoria fotografica",
+    type: "liberatoria",
+    signed: true,
+    mandatory: false,
+    created_at: "2026-01-10T10:00:00Z",
+  },
+  {
+    id: 32,
+    organization_id: 1,
+    title: "Autorizzazione emergenza medica",
+    type: "medica",
+    signed: false,
+    mandatory: true,
+    created_at: "2026-01-10T10:00:00Z",
+  },
+];
+
+const DEMO_PAYMENTS: ApiPayment[] = [
+  {
+    id: 201,
+    organization_id: 1,
+    amount: 120,
+    description: "Quota mensile – Ballet Junior",
+    status: "paid",
+    created_at: "2026-04-01T09:00:00Z",
+  },
+  {
+    id: 202,
+    organization_id: 1,
+    amount: 80,
+    description: "Quota mensile – Hip Hop",
+    status: "pending",
+    created_at: "2026-05-01T09:00:00Z",
+  },
+];
+
+const DEMO_ENROLLMENTS: ApiEnrollment[] = [
+  { id: 301, child_id: 11, course_id: 1, status: "active", enrolled_at: "2026-01-15T08:00:00Z" },
+  { id: 302, child_id: 12, course_id: 2, status: "active", enrolled_at: "2026-01-20T08:00:00Z" },
+];
+
 const DEMO_USERS: Record<string, { token: string; user: ApiUser }> = {
   "genitore@test.com": {
     token: "demo-token-parent",
@@ -174,31 +259,38 @@ export const api = {
     request<{ token: string; user: ApiUser }>("POST", "/auth/register", { name, email, password, org_slug }),
 
   // Children
-  getChildren: () => request<ApiChild[]>("GET", "/children"),
+  getChildren: async (): Promise<ApiChild[]> =>
+    (await isDemoSession()) ? DEMO_CHILDREN : request<ApiChild[]>("GET", "/children"),
   addChild: (data: Partial<ApiChild>) => request<ApiChild>("POST", "/children", data),
   updateChild: (id: string, data: Partial<ApiChild>) => request<ApiChild>("PATCH", `/children/${id}`, data),
   deleteChild: (id: string) => request<void>("DELETE", `/children/${id}`),
 
   // Courses & Enrollments
   getCourses: () => request<ApiCourse[]>("GET", "/courses"),
-  getEnrollments: (childId?: string) =>
-    request<ApiEnrollment[]>("GET", childId ? `/enrollments?childId=${childId}` : "/enrollments"),
+  getEnrollments: async (childId?: string): Promise<ApiEnrollment[]> =>
+    (await isDemoSession())
+      ? (childId ? DEMO_ENROLLMENTS.filter(e => String(e.child_id) === childId) : DEMO_ENROLLMENTS)
+      : request<ApiEnrollment[]>("GET", childId ? `/enrollments?childId=${childId}` : "/enrollments"),
   enroll: (childId: string, courseId: string) =>
     request<ApiEnrollment>("POST", "/enrollments", { childId, courseId }),
 
   // Delegates
-  getDelegates: (childId?: string) =>
-    request<ApiDelegate[]>("GET", childId ? `/delegates?childId=${childId}` : "/delegates"),
+  getDelegates: async (childId?: string): Promise<ApiDelegate[]> =>
+    (await isDemoSession())
+      ? (childId ? DEMO_DELEGATES.filter(d => String(d.child_id) === childId) : DEMO_DELEGATES)
+      : request<ApiDelegate[]>("GET", childId ? `/delegates?childId=${childId}` : "/delegates"),
   addDelegate: (data: Partial<ApiDelegate>) => request<ApiDelegate>("POST", "/delegates", data),
   removeDelegate: (id: string) => request<void>("DELETE", `/delegates/${id}`),
 
   // Documents
-  getDocuments: () => request<ApiDocument[]>("GET", "/documents"),
+  getDocuments: async (): Promise<ApiDocument[]> =>
+    (await isDemoSession()) ? DEMO_DOCUMENTS : request<ApiDocument[]>("GET", "/documents"),
   signDocument: (id: string) => request<{ ok: boolean }>("POST", `/documents/${id}/sign`),
   addDocument: (data: Partial<ApiDocument>) => request<ApiDocument>("POST", "/documents", data),
 
   // Payments
-  getPayments: () => request<ApiPayment[]>("GET", "/payments"),
+  getPayments: async (): Promise<ApiPayment[]> =>
+    (await isDemoSession()) ? DEMO_PAYMENTS : request<ApiPayment[]>("GET", "/payments"),
   addPayment: (data: Partial<ApiPayment>) => request<ApiPayment>("POST", "/payments", data),
 
   // Promo Codes
