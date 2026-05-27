@@ -27,6 +27,31 @@ import { SubstitutionProvider } from "@/context/SubstitutionContext";
 import { SecurityEscalationProvider } from "@/context/SecurityEscalationContext";
 import { TerminologyProvider } from "@/context/TerminologyContext";
 
+// ── Safe localStorage polyfill ───────────────────────────────────────────────
+// Inside sandboxed iframes (e.g. Replit canvas preview) the browser blocks
+// any access to window.localStorage and throws a SecurityError. This patch
+// replaces it with an in-memory fallback so AsyncStorage never crashes.
+if (typeof window !== "undefined") {
+  try {
+    window.localStorage.getItem("__test__");
+  } catch {
+    const _mem: Record<string, string> = {};
+    const _safe: Storage = {
+      getItem:    (k)    => _mem[k] ?? null,
+      setItem:    (k, v) => { _mem[k] = String(v); },
+      removeItem: (k)    => { delete _mem[k]; },
+      clear:      ()     => { Object.keys(_mem).forEach(k => delete _mem[k]); },
+      key:        (i)    => Object.keys(_mem)[i] ?? null,
+      get length()       { return Object.keys(_mem).length; },
+    };
+    try {
+      Object.defineProperty(window, "localStorage", { value: _safe, writable: true, configurable: true });
+    } catch {
+      (window as unknown as Record<string, unknown>)["localStorage"] = _safe;
+    }
+  }
+}
+
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
