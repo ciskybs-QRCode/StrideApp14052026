@@ -80,7 +80,7 @@ const STEPS: { key: Step; label: string; icon: keyof typeof Ionicons.glyphMap }[
   { key: "style",    label: "Style",      icon: "musical-notes-outline" },
   { key: "location", label: "Location",   icon: "location-outline" },
   { key: "time",     label: "Time",       icon: "time-outline" },
-  { key: "student",  label: "Student",    icon: "people-outline" },
+  { key: "student",  label: "Participants", icon: "people-outline" },
 ];
 
 function StepIndicator({ current }: { current: Step }) {
@@ -141,7 +141,7 @@ export default function BookLessonScreen() {
   const [selectedDiscipline, setSelectedDiscipline] = useState<ApiDiscipline | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<ApiAvailabilitySlot | null>(null);
-  const [selectedChild, setSelectedChild] = useState<Child | null>(null);
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
 
   const [booking, setBooking] = useState(false);
   const [confirmed, setConfirmed] = useState<ApiPrivateBooking | null>(null);
@@ -214,18 +214,39 @@ export default function BookLessonScreen() {
 
   const { triggerBookingRequest } = useRealtime();
 
+  // Build list of all possible participants for lookup
+  const selfEntry: Child = {
+    id: "self",
+    name: user?.name ?? "Myself",
+    age: 0, stars: 0, allergies: "", medicalWaiver: "call_parent", mediaConsent: "none", courses: [],
+  };
+  const allParticipantOptions: Child[] = [selfEntry, ...children];
+
+  const toggleParticipant = (id: string) => {
+    setSelectedParticipants(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const participantNames = allParticipantOptions
+    .filter(p => selectedParticipants.has(p.id))
+    .map(p => p.id === "self" ? `${p.name} (myself)` : p.name)
+    .join(", ");
+
   const handleBook = async () => {
-    if (!selectedSlot || !selectedChild) return;
+    if (!selectedSlot || selectedParticipants.size === 0) return;
     setBooking(true);
     try {
       let result: ApiPrivateBooking;
+      const firstChildId = [...selectedParticipants].find(id => id !== "self");
       try {
         result = await api.createPrivateBooking({
           availabilityId: selectedSlot.id,
-          childId: selectedChild.id as unknown as number,
+          childId: (firstChildId ?? "self") as unknown as number,
         });
       } catch {
-        // Demo fallback — create a mock confirmed booking locally
         result = {
           id: Date.now(),
           availability_slot_id: selectedSlot.id,
@@ -233,7 +254,7 @@ export default function BookLessonScreen() {
           start_time: selectedSlot.start_time,
           end_time: selectedSlot.end_time,
           location: selectedSlot.location,
-          price_cents: selectedSlot.parent_price_cents ?? 0,
+          price_cents: (selectedSlot.parent_price_cents ?? 0) * selectedParticipants.size,
           status: "pending",
           qr_token: null,
           created_at: new Date().toISOString(),
@@ -244,21 +265,27 @@ export default function BookLessonScreen() {
       setConfirmed(result);
 
       const scheduleWithLocation = `${fmtDate(result.slot_date)}, ${fmtTime(result.start_time)} – ${fmtTime(result.end_time)} · ${result.location}`;
+      const lessonName = `Private ${selectedDiscipline?.name ?? "Lesson"} with ${selectedOperator?.name ?? "Instructor"}`;
 
-      addItem({
-        courseId: `private-${result.id}`,
-        courseName: `Private ${selectedDiscipline?.name ?? "Lesson"} with ${selectedOperator?.name ?? "Instructor"}`,
-        courseSchedule: scheduleWithLocation,
-        packageType: "dropIn",
-        label: "Private Lesson",
-        price: result.price_cents / 100,
-        participantName: selectedChild.name,
-      });
+      // Add one cart item per participant
+      allParticipantOptions
+        .filter(p => selectedParticipants.has(p.id))
+        .forEach((p, i) => {
+          addItem({
+            courseId: `private-${result.id}-${i}`,
+            courseName: lessonName,
+            courseSchedule: scheduleWithLocation,
+            packageType: "dropIn",
+            label: "Private Lesson",
+            price: (selectedSlot.parent_price_cents ?? 0) / 100,
+            participantName: p.id === "self" ? `${p.name} (myself)` : p.name,
+          });
+        });
 
-      // Notify operator of new booking request via Realtime
+      // Notify operator
       triggerBookingRequest({
         parentName: user?.name ?? "Parent",
-        studentName: selectedChild.name,
+        studentName: participantNames,
         discipline: `${selectedDiscipline?.name ?? "Private Lesson"} with ${selectedOperator?.name ?? "Instructor"}`,
         date: selectedSlot.slot_date,
         time: `${fmtTime(selectedSlot.start_time)} – ${fmtTime(selectedSlot.end_time)}`,
@@ -291,8 +318,8 @@ export default function BookLessonScreen() {
               ["Date", fmtDate(confirmed.slot_date)],
               ["Time", `${fmtTime(confirmed.start_time)} – ${fmtTime(confirmed.end_time)}`],
               ["Location", confirmed.location],
-              ["Student", selectedChild?.name ?? "—"],
-              ["Price", fmt(confirmed.price_cents)],
+              ["Participants", participantNames || "—"],
+              ["Total", fmt(confirmed.price_cents)],
             ].map(([k, v]) => (
               <View key={k} style={styles.confirmedRow}>
                 <Text style={styles.confirmedKey}>{k}</Text>
@@ -349,7 +376,7 @@ export default function BookLessonScreen() {
               {step === "operator" ? "Choose your instructor" :
                step === "style" ? "Choose a dance style" :
                step === "location" ? "Choose a location" :
-               step === "time" ? "Choose a time slot" : "Choose a student"}
+               step === "time" ? "Choose a time slot" : "Choose participants"}
             </Text>
           </View>
         </View>
@@ -528,31 +555,27 @@ export default function BookLessonScreen() {
               </View>
             )}
 
-            <Text style={[styles.sectionLabel, { color: colors.primary }]}>Select a student</Text>
+            <Text style={[styles.sectionLabel, { color: colors.primary }]}>Select participants</Text>
+            <Text style={[styles.participantHint, { color: colors.mutedForeground }]}>Tap to select one or more people attending this session.</Text>
 
-            {/* Parent can book for themselves */}
-            {user && (() => {
-              const selfEntry: Child = { id: `self-${user.id}`, name: `${user.name} (myself)`, age: 0, stars: 0, allergies: "", medicalWaiver: "call_parent", mediaConsent: "none", courses: [] };
-              return (
-                <Pressable
-                  key="self"
-                  style={[styles.optionCard, { backgroundColor: `${colors.secondary}18`, borderColor: selectedChild?.id === selfEntry.id ? colors.primary : colors.secondary, borderWidth: 2 }]}
-                  onPress={() => setSelectedChild(selfEntry)}
-                >
-                  <View style={[styles.avatarCircle, { backgroundColor: colors.secondary }]}>
-                    <Ionicons name="person" size={22} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.optionTitle, { color: colors.foreground }]}>{user.name}</Text>
-                    <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>Book for myself</Text>
-                  </View>
-                  {selectedChild?.id === selfEntry.id
-                    ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                    : <View style={[styles.selfBadge, { backgroundColor: colors.secondary }]}><Text style={[styles.selfBadgeText, { color: colors.primary }]}>ME</Text></View>
-                  }
-                </Pressable>
-              );
-            })()}
+            {/* Parent — book for myself */}
+            {user && (
+              <Pressable
+                style={[styles.optionCard, { backgroundColor: selectedParticipants.has("self") ? `${colors.primary}12` : `${colors.secondary}18`, borderColor: selectedParticipants.has("self") ? colors.primary : colors.secondary, borderWidth: 2 }]}
+                onPress={() => toggleParticipant("self")}
+              >
+                <View style={[styles.avatarCircle, { backgroundColor: selectedParticipants.has("self") ? colors.primary : colors.secondary }]}>
+                  <Ionicons name="person" size={22} color={selectedParticipants.has("self") ? "#FFF" : colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionTitle, { color: colors.foreground }]}>{user.name}</Text>
+                  <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>Book for myself</Text>
+                </View>
+                <View style={[styles.checkbox, { borderColor: selectedParticipants.has("self") ? colors.primary : colors.border, backgroundColor: selectedParticipants.has("self") ? colors.primary : "transparent" }]}>
+                  {selectedParticipants.has("self") && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                </View>
+              </Pressable>
+            )}
 
             {children.length === 0 && !user ? (
               <View style={styles.emptyCard}>
@@ -561,37 +584,48 @@ export default function BookLessonScreen() {
                 <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Add your child in "My Children" first.</Text>
               </View>
             ) : (
-              children.map(child => (
-                <Pressable
-                  key={child.id}
-                  style={[styles.optionCard, { backgroundColor: colors.card, borderColor: selectedChild?.id === child.id ? colors.primary : "transparent", borderWidth: 2 }]}
-                  onPress={() => setSelectedChild(child)}
-                >
-                  <View style={[styles.avatarCircle, { backgroundColor: `${colors.secondary}60` }]}>
-                    <Ionicons name="person" size={22} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.optionTitle, { color: colors.foreground }]}>{child.name}</Text>
-                    <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>Age {child.age} · {child.skillLevel ?? "Beginner"}</Text>
-                  </View>
-                  {selectedChild?.id === child.id && (
-                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                  )}
-                </Pressable>
-              ))
+              children.map(child => {
+                const checked = selectedParticipants.has(child.id);
+                return (
+                  <Pressable
+                    key={child.id}
+                    style={[styles.optionCard, { backgroundColor: checked ? `${colors.primary}12` : colors.card, borderColor: checked ? colors.primary : "transparent", borderWidth: 2 }]}
+                    onPress={() => toggleParticipant(child.id)}
+                  >
+                    <View style={[styles.avatarCircle, { backgroundColor: checked ? colors.primary : `${colors.secondary}60` }]}>
+                      <Ionicons name="person" size={22} color={checked ? "#FFF" : colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.optionTitle, { color: colors.foreground }]}>{child.name}</Text>
+                      <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>Age {child.age} · {child.skillLevel ?? "Beginner"}</Text>
+                    </View>
+                    <View style={[styles.checkbox, { borderColor: checked ? colors.primary : colors.border, backgroundColor: checked ? colors.primary : "transparent" }]}>
+                      {checked && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                    </View>
+                  </Pressable>
+                );
+              })
             )}
 
-            {selectedChild && (
-              <Pressable
-                style={[styles.bookBtn, { backgroundColor: booking ? colors.border : colors.primary }]}
-                onPress={handleBook}
-                disabled={booking}
-              >
-                {booking ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />}
-                <Text style={styles.bookBtnText}>
-                  {booking ? "Booking…" : `Confirm Booking · ${selectedSlot?.parent_price_cents != null ? fmt(selectedSlot.parent_price_cents) : ""}`}
-                </Text>
-              </Pressable>
+            {selectedParticipants.size > 0 && (
+              <>
+                <View style={[styles.participantSummaryBox, { backgroundColor: `${colors.secondary}30`, borderColor: colors.primary }]}>
+                  <Ionicons name="people" size={16} color={colors.primary} />
+                  <Text style={[styles.participantSummaryText, { color: colors.primary }]}>
+                    {selectedParticipants.size} participant{selectedParticipants.size !== 1 ? "s" : ""} · Total {selectedSlot?.parent_price_cents != null ? fmt(selectedSlot.parent_price_cents * selectedParticipants.size) : ""}
+                  </Text>
+                </View>
+                <Pressable
+                  style={[styles.bookBtn, { backgroundColor: booking ? colors.border : colors.primary }]}
+                  onPress={handleBook}
+                  disabled={booking}
+                >
+                  {booking ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />}
+                  <Text style={styles.bookBtnText}>
+                    {booking ? "Booking…" : `Confirm · ${selectedSlot?.parent_price_cents != null ? fmt(selectedSlot.parent_price_cents * selectedParticipants.size) : ""}`}
+                  </Text>
+                </Pressable>
+              </>
             )}
           </>
         )}
@@ -639,6 +673,10 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 13, textAlign: "center", lineHeight: 18, maxWidth: 280 },
   selfBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   selfBadgeText: { fontSize: 10, fontWeight: "900", letterSpacing: 0.5 },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  participantHint: { fontSize: 12, marginBottom: 4, marginTop: -4 },
+  participantSummaryBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 10, marginTop: 4 },
+  participantSummaryText: { fontSize: 13, fontWeight: "700", flex: 1 },
   // Confirmed
   confirmedScroll: { alignItems: "center", paddingHorizontal: 24 },
   confirmedIcon: { width: 96, height: 96, borderRadius: 48, alignItems: "center", justifyContent: "center", marginBottom: 20 },
