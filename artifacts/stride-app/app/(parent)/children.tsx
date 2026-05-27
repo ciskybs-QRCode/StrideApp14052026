@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 
@@ -35,9 +36,10 @@ const MEDIA_CONSENT_COLORS: Record<"full" | "internal" | "none", string> = {
 
 export default function ChildrenScreen() {
   const { children, delegates, addDelegate, removeDelegate, updateChild, addChild, removeChild } = useAppData();
+  const { user } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { secondaryRoleName } = useTerminology();
+  const { primaryRoleName, secondaryRoleName } = useTerminology();
   const [selectedChild, setSelectedChild] = useState(children[0]?.id || "");
   const [showAddDelegate, setShowAddDelegate] = useState(false);
   const [showMedical, setShowMedical] = useState(false);
@@ -176,39 +178,71 @@ export default function ChildrenScreen() {
         }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>My {secondaryRoleName}s</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Profile Management</Text>
 
-        <View style={styles.childSelectorRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-            {children.map(c => (
-              <Pressable
-                key={c.id}
-                style={[styles.childTab, selectedChild === c.id && { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  setSelectedChild(c.id);
-                  setAllergies(c.allergies);
-                  setMedicalWaiver(c.medicalWaiver);
-                  setShowDeleteConfirm(false);
-                }}
-              >
-                <View style={[styles.childAvatar, selectedChild === c.id && { backgroundColor: "rgba(255,255,255,0.3)" }, c.photoUrl ? { overflow: "hidden" } : {}]}>
-                  {c.photoUrl ? (
-                    <Image source={{ uri: c.photoUrl }} style={{ width: 36, height: 36, borderRadius: 18 }} />
-                  ) : (
-                    <Text style={[styles.childAvatarText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.charAt(0)}</Text>
-                  )}
+        {/* ── Primary Account Holder Card ── */}
+        <View style={[styles.primaryCard, { backgroundColor: colors.card }]}>
+          <View style={styles.primaryCardInner}>
+            <View style={[styles.primaryAvatar, { backgroundColor: colors.primary }]}>
+              <Text style={styles.primaryAvatarText}>{(user?.name ?? "?").charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <Text style={[styles.primaryName, { color: colors.primary }]}>{user?.name ?? "Account Holder"}</Text>
+                <View style={[styles.primaryBadge, { backgroundColor: colors.secondary }]}>
+                  <Text style={[styles.primaryBadgeText, { color: colors.primary }]}>{primaryRoleName}</Text>
                 </View>
-                <Text style={[styles.childTabText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.split(" ")[0]}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+              </View>
+              {user?.email ? (
+                <Text style={[styles.primaryEmail, { color: colors.mutedForeground }]}>{user.email}</Text>
+              ) : null}
+            </View>
+          </View>
+          <View style={[styles.primaryFooter, { borderTopColor: colors.border }]}>
+            <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+            <Text style={[styles.primaryFooterText, { color: colors.mutedForeground }]}>Primary account · Always the default enrollee</Text>
+          </View>
+        </View>
+
+        {/* ── Linked Secondary Profiles ── */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Linked {secondaryRoleName}s</Text>
           <Pressable
-            style={[styles.addChildBtn, { backgroundColor: colors.secondary }]}
+            style={[styles.addBtn, { backgroundColor: colors.primary }]}
             onPress={() => { setShowAddChild(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <Ionicons name="add" size={22} color={colors.primary} />
+            <Ionicons name="add" size={18} color="#FFF" />
+            <Text style={styles.addBtnText}>Add {secondaryRoleName}</Text>
           </Pressable>
         </View>
+
+        {children.length > 0 && (
+          <View style={styles.childSelectorRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+              {children.map(c => (
+                <Pressable
+                  key={c.id}
+                  style={[styles.childTab, selectedChild === c.id && { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    setSelectedChild(c.id);
+                    setAllergies(c.allergies);
+                    setMedicalWaiver(c.medicalWaiver);
+                    setShowDeleteConfirm(false);
+                  }}
+                >
+                  <View style={[styles.childAvatar, selectedChild === c.id && { backgroundColor: "rgba(255,255,255,0.3)" }, c.photoUrl ? { overflow: "hidden" } : {}]}>
+                    {c.photoUrl ? (
+                      <Image source={{ uri: c.photoUrl }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                    ) : (
+                      <Text style={[styles.childAvatarText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.charAt(0)}</Text>
+                    )}
+                  </View>
+                  <Text style={[styles.childTabText, selectedChild === c.id && { color: "#FFF" }]}>{c.name.split(" ")[0]}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {child && (
           <>
@@ -296,7 +330,7 @@ export default function ChildrenScreen() {
                   onPress={() => { setShowDeleteConfirm(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); }}
                 >
                   <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                  <Text style={styles.deleteBtnText}>Remove Child</Text>
+                  <Text style={styles.deleteBtnText}>Remove {secondaryRoleName}</Text>
                 </Pressable>
               ) : (
                 <View style={[styles.deleteConfirmBox, { backgroundColor: "#FEF2F2", borderColor: "#FCA5A5" }]}>
@@ -465,7 +499,7 @@ export default function ChildrenScreen() {
                   )}
                 </Pressable>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add Child</Text>
+                  <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add {secondaryRoleName}</Text>
                   <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
                     {newChildPhotoUri ? "Tap to change photo" : "Tap to add a photo"}
                   </Text>
@@ -615,6 +649,17 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
+  // Primary account card
+  primaryCard: { borderRadius: 20, marginBottom: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4, overflow: "hidden" },
+  primaryCardInner: { flexDirection: "row", alignItems: "center", gap: 16, padding: 20 },
+  primaryAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+  primaryAvatarText: { color: "#FFF", fontWeight: "800", fontSize: 24 },
+  primaryName: { fontSize: 18, fontWeight: "700" },
+  primaryEmail: { fontSize: 13, marginTop: 3 },
+  primaryBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
+  primaryBadgeText: { fontSize: 11, fontWeight: "700" },
+  primaryFooter: { flexDirection: "row", alignItems: "center", gap: 6, borderTopWidth: 1, paddingHorizontal: 20, paddingVertical: 12 },
+  primaryFooterText: { fontSize: 12 },
   childSelectorRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 },
   addChildBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, flexShrink: 0 },
   addChildHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 },

@@ -18,6 +18,7 @@ import { useAppData, type Booking } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
+import { useTerminology } from "@/context/TerminologyContext";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -265,6 +266,8 @@ export default function CoursesScreen() {
     const ch = children.find(c => c.id === booking.childId);
     return ch?.name || user?.name || "You";
   };
+
+  const { secondaryRoleName } = useTerminology();
 
   // Smart booking derived options
   const uniqueInstructors = Array.from(new Set(courses.map(c => c.instructor).filter(Boolean)));
@@ -657,30 +660,41 @@ export default function CoursesScreen() {
               )}
             </View>
 
-            {/* Participant selection */}
-            {participantOptions.length > 1 && (
-              <View style={{ marginTop: 14 }}>
-                <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>ENROLL FOR</Text>
-                {participantOptions.map(name => (
-                  <Pressable
-                    key={name}
-                    style={[
-                      styles.participantRow,
-                      { borderColor: enrollParticipant === name ? colors.primary : colors.border,
-                        backgroundColor: enrollParticipant === name ? colors.muted : colors.background },
-                    ]}
-                    onPress={() => setEnrollParticipant(name)}
-                  >
-                    <Ionicons
-                      name={enrollParticipant === name ? "radio-button-on" : "radio-button-off"}
-                      size={18}
-                      color={enrollParticipant === name ? colors.primary : colors.mutedForeground}
-                    />
+            {/* Participant selection — always visible */}
+            <View style={{ marginTop: 14 }}>
+              <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>WHO IS ENROLLING?</Text>
+              {participantOptions.map((name, idx) => (
+                <Pressable
+                  key={name}
+                  style={[
+                    styles.participantRow,
+                    { borderColor: enrollParticipant === name ? colors.primary : colors.border,
+                      backgroundColor: enrollParticipant === name ? colors.muted : colors.background,
+                      marginTop: idx > 0 ? 8 : 0 },
+                  ]}
+                  onPress={() => setEnrollParticipant(name)}
+                >
+                  <Ionicons
+                    name={enrollParticipant === name ? "radio-button-on" : "radio-button-off"}
+                    size={18}
+                    color={enrollParticipant === name ? colors.primary : colors.mutedForeground}
+                  />
+                  <View style={{ flex: 1 }}>
                     <Text style={[styles.participantName, { color: colors.foreground }]}>{name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
+                    {idx === 0 ? (
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>Account Holder · default</Text>
+                    ) : (
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>{secondaryRoleName}</Text>
+                    )}
+                  </View>
+                  {idx === 0 && (
+                    <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
+                      <Text style={[styles.youBadgeText, { color: colors.primary }]}>You</Text>
+                    </View>
+                  )}
+                </Pressable>
+              ))}
+            </View>
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
               <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowEnrollModal(false)}>
@@ -898,6 +912,8 @@ const styles = StyleSheet.create({
   modalTitleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
   participantRow: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8 },
   participantName: { fontSize: 15, fontWeight: "500" },
+  youBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  youBadgeText: { fontSize: 11, fontWeight: "700" },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
   modalDesc: { fontSize: 14, marginBottom: 18, lineHeight: 20 },
   detailRows: { marginBottom: 20 },
