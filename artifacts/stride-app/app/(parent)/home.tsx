@@ -29,11 +29,11 @@ const LOGO = require("@/assets/images/stride-logo.png");
 type AbsenceType = "absent" | "late5" | "late10" | "late15" | "late30";
 
 const ABSENCE_OPTIONS: { value: AbsenceType; label: string }[] = [
-  { value: "absent",  label: "Assente oggi" },
-  { value: "late5",   label: "5 min di ritardo" },
-  { value: "late10",  label: "10 min di ritardo" },
-  { value: "late15",  label: "15 min di ritardo" },
-  { value: "late30",  label: "30 min di ritardo" },
+  { value: "absent",  label: "Absent today" },
+  { value: "late5",   label: "5 min late" },
+  { value: "late10",  label: "10 min late" },
+  { value: "late15",  label: "15 min late" },
+  { value: "late30",  label: "30 min late" },
 ];
 
 function buildMapsUrl(location: string): string {
@@ -264,14 +264,14 @@ export default function ParentHome() {
             onPress={() => openQR("parent")}
           >
             <Ionicons name="qr-code" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>MOSTRA{"\n"}QR PASS</Text>
+            <Text style={[styles.quickBtnText, { color: colors.primary }]}>SHOW{"\n"}QR PASS</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => setShowAbsence(true)}
           >
             <Ionicons name="alert-circle-outline" size={28} color="#F59E0B" />
-            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>SEGNALA{"\n"}ASSENZA/RITARDO</Text>
+            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>REPORT{"\n"}ABSENCE/DELAY</Text>
           </Pressable>
         </View>
 
@@ -343,7 +343,7 @@ export default function ParentHome() {
                   style={[styles.qrChildTab, qrTarget === "parent" && { backgroundColor: colors.primary }]}
                   onPress={() => setQrTarget("parent")}
                 >
-                  <Text style={[styles.qrChildTabText, qrTarget === "parent" && { color: "#FFF" }]}>Il mio QR</Text>
+                  <Text style={[styles.qrChildTabText, qrTarget === "parent" && { color: "#FFF" }]}>My QR</Text>
                 </Pressable>
                 {children.map(c => (
                   <Pressable
@@ -361,11 +361,11 @@ export default function ParentHome() {
               <View style={styles.passStatusRow}>
                 <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
                   <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                  <Text style={[styles.passStatusText, { color: "#10B981" }]}>Abbonamento Attivo</Text>
+                  <Text style={[styles.passStatusText, { color: "#10B981" }]}>Active Subscription</Text>
                 </View>
                 <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
                   <Ionicons name="shield-checkmark" size={14} color="#10B981" />
-                  <Text style={[styles.passStatusText, { color: "#10B981" }]}>Certificato OK</Text>
+                  <Text style={[styles.passStatusText, { color: "#10B981" }]}>Certificate OK</Text>
                 </View>
               </View>
 
@@ -379,19 +379,19 @@ export default function ParentHome() {
                 <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrLabel}</Text>
                 <Text style={[styles.qrId, { color: colors.mutedForeground }]}>
                   {qrTarget === "parent"
-                    ? `Genitore · ID: ${user?.id}`
-                    : `Studente · ID: ${qrTarget}`}
+                    ? `Parent · ID: ${user?.id}`
+                    : `Student · ID: ${qrTarget}`}
                 </Text>
               </View>
 
               <Text style={[styles.qrSwipeHint, { color: colors.mutedForeground }]}>
-                Mostra questo QR all'operatore al check-in
+                Show this QR to the operator at check-in
               </Text>
               <Pressable
                 style={[styles.closeBtn, { backgroundColor: colors.primary, width: "100%", marginTop: 4 }]}
                 onPress={() => setShowQR(false)}
               >
-                <Text style={styles.closeBtnText}>Chiudi</Text>
+                <Text style={styles.closeBtnText}>Close</Text>
               </Pressable>
             </ScrollView>
           </View>
@@ -417,8 +417,8 @@ export default function ParentHome() {
               style={{ width: "100%" }}
               contentContainerStyle={{ paddingBottom: 4 }}
             >
-              <Text style={[styles.modalTitle, { color: colors.primary }]}>Segnala Assenza / Ritardo</Text>
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Figlio/a</Text>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>Report Absence / Delay</Text>
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Child</Text>
               <View style={styles.childRow}>
                 {children.map(child => (
                   <Pressable
@@ -430,7 +430,7 @@ export default function ParentHome() {
                   </Pressable>
                 ))}
               </View>
-              <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Tipo di segnalazione</Text>
+              <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Report type</Text>
               {ABSENCE_OPTIONS.map(opt => (
                 <Pressable
                   key={opt.value}
@@ -447,10 +447,10 @@ export default function ParentHome() {
               ))}
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
-                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Annulla</Text>
+                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSendAbsence}>
-                  <Text style={styles.closeBtnText}>Invia</Text>
+                  <Text style={styles.closeBtnText}>Send</Text>
                 </Pressable>
               </View>
             </ScrollView>
