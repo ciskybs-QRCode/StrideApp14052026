@@ -18,6 +18,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SyncEngine } from "@/components/SyncEngine";
 import { AppDataProvider } from "@/context/AppDataContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { BrandingProvider } from "@/context/BrandingContext";
 import { CartProvider } from "@/context/CartContext";
 import { OfflineSyncProvider, useOfflineSync } from "@/context/OfflineSyncContext";
 import { PrivateLessonProvider } from "@/context/PrivateLessonContext";
@@ -85,6 +86,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
+          <BrandingProvider>
           <TerminologyProvider>
           <OfflineSyncProvider>
             <AuthProvider>
@@ -107,6 +109,7 @@ export default function RootLayout() {
             </AuthProvider>
           </OfflineSyncProvider>
           </TerminologyProvider>
+          </BrandingProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

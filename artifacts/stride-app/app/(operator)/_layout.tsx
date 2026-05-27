@@ -5,6 +5,7 @@ import React, { useEffect, useRef } from "react";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { useRealtime, type BookingNotification } from "@/context/RealtimeContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
@@ -142,6 +143,7 @@ export default function OperatorTabLayout() {
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
       <RoleSwitcher />
+      <BrandingLogoOverlay />
 
       {/* ── Notification banner ── */}
       {activeNotif && (

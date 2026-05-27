@@ -17,6 +17,14 @@ export const adminSettings = pgTable("admin_settings", {
   /** Minimum amount (cents) above which a receipt is required for reimbursements */
   receiptMandatoryThresholdCents: integer("receipt_mandatory_threshold_cents").notNull().default(0),
 
+  // ── White-Label / Branding ─────────────────────────────────────────────────
+  /** Public URL of the organisation's logo (stored in Supabase Storage) */
+  appLogoUrl:     text("app_logo_url"),
+  /** Brand primary colour — hex string, e.g. "#1E3A8A" */
+  primaryColor:   text("primary_color"),
+  /** Brand secondary / accent colour — hex string, e.g. "#FBBF24" */
+  secondaryColor: text("secondary_color"),
+
   updatedAt:                timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

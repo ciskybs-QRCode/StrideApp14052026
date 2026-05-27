@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { useColors } from "@/hooks/useColors";
+import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { useTerminology } from "@/context/TerminologyContext";
@@ -97,6 +98,7 @@ export default function ParentTabLayout() {
 
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
       <RoleSwitcher />
+      <BrandingLogoOverlay />
 
       {/* Mandatory signature blocking overlay */}
       <Modal visible={blocked} transparent animationType="fade" statusBarTranslucent>

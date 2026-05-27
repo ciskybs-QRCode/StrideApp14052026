@@ -1,0 +1,31 @@
+We are upgrading the app to support Global Dynamic Branding (White-labeling). We must move away from the hardcoded color schemes and implement a dynamic theme system across the Admin, Operator, and Parent views in our Expo/React Native (TypeScript) + Supabase architecture.
+
+Please implement the following requirements:
+
+1. Database Updates (Drizzle ORM):
+
+Update the existing admin_settings (or global configuration) table to include fields for branding: app_logo_url (text), primary_color (text, hex code), and secondary_color (text, hex code).
+
+2. Global Theme Provider & State Management:
+
+Create a global state or Context Provider (e.g., ThemeProvider) that fetches the branding settings from Supabase as soon as the app loads.
+
+CRITICAL UPDATE: Stop using any hardcoded 'Navy Blue and Gold' constraints from previous instructions. All UI components (buttons, headers, text highlights, tab bars) must now dynamically inject and use the primary_color and secondary_color provided by the database context.
+
+3. Universal Top-Left Logo Implementation:
+
+Modify the global navigation header (using Expo Router / React Navigation screenOptions).
+
+Inject the dynamic app_logo_url into the headerLeft property so that the customized logo appears consistently in the top-left corner of every single screen across all three roles (Admin, Operator, and Parent/Associate).
+
+Ensure the logo image component is properly sized (e.g., fixed height with resizeMode='contain') so it doesn't break the header layout or push other buttons out of bounds.
+
+4. Admin Branding Setup Screen:
+
+Ensure the Admin has a 'Branding/App Setup' screen where they can upload/change the Logo (saving the file to Supabase Storage and updating the URL) and pick the Hex colors for the app's theme.
+
+UI Constraint Checklist:
+
+Ensure the dynamic header and colors do not cause any content to bleed outside the phone display boundaries.
+
+If the logo image fails to load or hasn't been set yet, provide a graceful fallback (e.g., a blank space or a default placeholder) without crashing the navigation.

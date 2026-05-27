@@ -4,6 +4,7 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 
@@ -52,6 +53,7 @@ export default function AdminTabLayout() {
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <RoleSwitcher />
+    <BrandingLogoOverlay />
     </View>
   );
 }

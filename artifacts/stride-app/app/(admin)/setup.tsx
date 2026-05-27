@@ -17,6 +17,7 @@ import {
 import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { useBranding } from "@/context/BrandingContext";
 import { useColors } from "@/hooks/useColors";
 
 const PRESET_COLORS = [
@@ -36,16 +37,25 @@ function slugify(name: string): string {
 
 export default function AdminSetup() {
   const { user, updateUser } = useAuth();
+  const { branding, saveBranding } = useBranding();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [schoolName, setSchoolName] = useState(user?.schoolName || "");
   const [selectedColors, setSelectedColors] = useState(0);
   const [selectedFont, setSelectedFont] = useState("Montserrat");
   const [buttonStyle, setButtonStyle] = useState<"rounded" | "square">("rounded");
-  const [logoUri, setLogoUri] = useState<string | null>(user?.logoUri ?? null);
+  const [logoUri, setLogoUri] = useState<string | null>(branding.logoUrl ?? user?.logoUri ?? null);
   const [logoFileName, setLogoFileName] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
   const [qrGenerated, setQrGenerated] = useState(false);
+
+  // Editable custom hex — seeded from branding context, then preset selection
+  const [customPrimary, setCustomPrimary] = useState(
+    branding.primaryColor ?? PRESET_COLORS[0].primary
+  );
+  const [customSecondary, setCustomSecondary] = useState(
+    branding.secondaryColor ?? PRESET_COLORS[0].secondary
+  );
 
   const orgSlug = slugify(schoolName || "school");
   const appDomain = process.env.EXPO_PUBLIC_DOMAIN || "strideapp.io";
@@ -68,22 +78,34 @@ export default function AdminSetup() {
       const name = asset.fileName || "logo.png";
       setLogoUri(asset.uri);
       setLogoFileName(name);
-      await updateUser({ logoUri: asset.uri });
+      // Persist locally for the current user and broadcast globally
+      await Promise.all([
+        updateUser({ logoUri: asset.uri }),
+        saveBranding({ logoUrl: asset.uri }),
+      ]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 
   const handleApply = async () => {
     if (!schoolName.trim()) { Alert.alert("Please enter the school name first"); return; }
-    await updateUser({
-      schoolName,
-      primaryColor: PRESET_COLORS[selectedColors].primary,
-      secondaryColor: PRESET_COLORS[selectedColors].secondary,
-    });
+    // Validate hex — fall back to preset if user typed something invalid
+    const validHex = /^#[0-9A-Fa-f]{6}$/;
+    const primary   = validHex.test(customPrimary)   ? customPrimary   : PRESET_COLORS[selectedColors].primary;
+    const secondary = validHex.test(customSecondary) ? customSecondary : PRESET_COLORS[selectedColors].secondary;
+
+    await Promise.all([
+      updateUser({ schoolName, primaryColor: primary, secondaryColor: secondary }),
+      // Broadcast to every connected device — Operator + Parent screens update instantly
+      saveBranding({ primaryColor: primary, secondaryColor: secondary }),
+    ]);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setApplied(true);
     setQrGenerated(true);
-    Alert.alert("Settings Saved!", `Customization for "${schoolName}" has been saved.`);
+    Alert.alert(
+      "Branding Applied!",
+      `Colors and settings for "${schoolName}" have been saved and broadcast to all users in real time.`
+    );
   };
 
   const handleGenerateQr = () => {
@@ -240,7 +262,12 @@ export default function AdminSetup() {
               <Pressable
                 key={i}
                 style={[styles.colorOption, selectedColors === i && styles.colorOptionSelected]}
-                onPress={() => { setSelectedColors(i); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                onPress={() => {
+                  setSelectedColors(i);
+                  setCustomPrimary(preset.primary);
+                  setCustomSecondary(preset.secondary);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
               >
                 <View style={styles.colorSwatch}>
                   <View style={[styles.colorSwatchPrimary, { backgroundColor: preset.primary }]} />
@@ -254,13 +281,29 @@ export default function AdminSetup() {
 
           <Text style={[styles.fieldLabel, { color: colors.primary }]}>Primary Color (Hex)</Text>
           <View style={[styles.hexInput, { borderColor: colors.border }]}>
-            <View style={[styles.hexPreview, { backgroundColor: PRESET_COLORS[selectedColors].primary }]} />
-            <Text style={{ flex: 1, color: colors.primary, fontWeight: "600" }}>{PRESET_COLORS[selectedColors].primary}</Text>
+            <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(customPrimary) ? customPrimary : "#CCCCCC" }]} />
+            <TextInput
+              style={{ flex: 1, color: colors.primary, fontWeight: "600", fontSize: 14 }}
+              value={customPrimary}
+              onChangeText={setCustomPrimary}
+              placeholder="#1E3A8A"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="characters"
+              maxLength={7}
+            />
           </View>
-          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Secondary Color (Hex)</Text>
+          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Secondary / Accent Color (Hex)</Text>
           <View style={[styles.hexInput, { borderColor: colors.border }]}>
-            <View style={[styles.hexPreview, { backgroundColor: PRESET_COLORS[selectedColors].secondary }]} />
-            <Text style={{ flex: 1, color: colors.primary, fontWeight: "600" }}>{PRESET_COLORS[selectedColors].secondary}</Text>
+            <View style={[styles.hexPreview, { backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(customSecondary) ? customSecondary : "#CCCCCC" }]} />
+            <TextInput
+              style={{ flex: 1, color: colors.primary, fontWeight: "600", fontSize: 14 }}
+              value={customSecondary}
+              onChangeText={setCustomSecondary}
+              placeholder="#FBBF24"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="characters"
+              maxLength={7}
+            />
           </View>
         </View>
 
@@ -307,24 +350,61 @@ export default function AdminSetup() {
         {/* Live Preview */}
         <View style={[styles.previewCard, { backgroundColor: "#FFFFFF" }]}>
           <Text style={[styles.sectionTitle, { color: colors.primary }]}>Live Preview</Text>
-          <View style={[styles.previewBox, { backgroundColor: PRESET_COLORS[selectedColors].primary }]}>
+
+          {/* Simulated navigation header with logo */}
+          <View style={{ marginBottom: 12, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "#E5E7EB" }}>
+            <View style={{ backgroundColor: "#F8F9FC", flexDirection: "row", alignItems: "center", padding: 12, gap: 10 }}>
+              {logoUri ? (
+                <Image source={{ uri: logoUri }} style={{ width: 90, height: 28 }} resizeMode="contain" />
+              ) : (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: customPrimary }} />
+                  <Text style={{ fontSize: 14, fontWeight: "800", color: customPrimary }}>{schoolName || "Your School"}</Text>
+                </View>
+              )}
+              <View style={{ flex: 1 }} />
+              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: customSecondary, alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="person" size={14} color={customPrimary} />
+              </View>
+            </View>
+            <View style={{ padding: 12, gap: 8 }}>
+              <View style={{ height: 10, borderRadius: 5, backgroundColor: `${customPrimary}30`, width: "70%" }} />
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: "#E5E7EB", width: "90%" }} />
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: "#E5E7EB", width: "60%" }} />
+            </View>
+          </View>
+
+          <View style={[styles.previewBox, { backgroundColor: customPrimary }]}>
             <Text style={styles.previewSchoolName}>{schoolName || "School Name"}</Text>
             <Text style={styles.previewTagline}>STRIDE DANCE SCHOOL</Text>
             <Text style={styles.previewBody}>Sample body text in {selectedFont}</Text>
-            <View style={[styles.previewButton, { backgroundColor: PRESET_COLORS[selectedColors].secondary, borderRadius: buttonStyle === "rounded" ? 20 : 4 }]}>
-              <Text style={{ color: PRESET_COLORS[selectedColors].primary, fontWeight: "700" }}>SIGN IN</Text>
+            <View style={[styles.previewButton, { backgroundColor: customSecondary, borderRadius: buttonStyle === "rounded" ? 20 : 4 }]}>
+              <Text style={{ color: customPrimary, fontWeight: "700" }}>SIGN IN</Text>
             </View>
           </View>
         </View>
 
+        {/* "Live for all users" indicator */}
+        {applied && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#D1FAE5", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#A7F3D0" }}>
+            <Ionicons name="radio-outline" size={18} color="#059669" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#065F46" }}>Branding is live for all users</Text>
+              <Text style={{ fontSize: 11, color: "#059669", marginTop: 2 }}>
+                Colors and logo are applied instantly across Admin, Operator, and Parent views.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Save Button */}
         <Pressable
-          style={({ pressed }) => [styles.applyBtn, { backgroundColor: applied ? "#10B981" : "#1E3A8A", transform: pressed ? [{ scale: 0.98 }] : [] }]}
+          style={({ pressed }) => [styles.applyBtn, { backgroundColor: applied ? "#10B981" : customPrimary, transform: pressed ? [{ scale: 0.98 }] : [] }]}
           onPress={handleApply}
         >
-          <Ionicons name={applied ? "checkmark-circle" : "save-outline"} size={22} color="#FFF" />
+          <Ionicons name={applied ? "checkmark-circle" : "save-outline"} size={22} color={applied ? "#FFF" : customSecondary} />
           <Text style={styles.applyBtnText}>
-            {applied ? "SAVED!" : "SAVE & APPLY"}
+            {applied ? "BRANDING SAVED & LIVE!" : "SAVE & APPLY BRANDING"}
           </Text>
         </Pressable>
 
