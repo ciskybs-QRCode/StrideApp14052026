@@ -370,6 +370,9 @@ export default function OperatorInvoicing() {
   const [newEmail, setNewEmail]                   = useState("");
   const [deleteStep, setDeleteStep]               = useState<0 | 1 | 2>(0);
   const [deleteInput, setDeleteInput]             = useState("");
+  const [showSuccessModal, setShowSuccessModal]   = useState(false);
+  const [submittedId, setSubmittedId]             = useState("");
+  const [submitError, setSubmitError]             = useState<string | null>(null);
 
   // ── Load persisted settings ──────────────────────────────────────────────
   useEffect(() => {
@@ -519,6 +522,7 @@ export default function OperatorInvoicing() {
   // ── Submit invoice ────────────────────────────────────────────────────────
   const handleSubmitToAdmin = async () => {
     setSubmitting(true);
+    setSubmitError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const invoiceId = `INV-${selectedMonth.replace("-", "")}-${Date.now()}`;
@@ -534,13 +538,13 @@ export default function OperatorInvoicing() {
         totalHours:   filteredTotalHours,
       };
 
-      // Persist invoice
+      // Persist invoice in AsyncStorage
       const existing = await AsyncStorage.getItem("submitted_invoices");
       const list = existing ? JSON.parse(existing) : [];
       list.unshift(submission);
       await AsyncStorage.setItem("submitted_invoices", JSON.stringify(list));
 
-      // Write admin AsyncStorage notification (offline-safe fallback)
+      // Write admin notification (AsyncStorage fallback — works offline)
       const adminNotif: InvoiceSubmittedPayload = {
         invoiceId,
         operatorName: user?.name ?? "Operator",
@@ -555,7 +559,7 @@ export default function OperatorInvoicing() {
         await AsyncStorage.setItem(ADMIN_NOTIFICATIONS_KEY, JSON.stringify(notifList));
       } catch { /* ignore */ }
 
-      // Supabase Realtime broadcast (best-effort)
+      // Supabase Realtime broadcast (best-effort — degrades gracefully)
       if (supabase) {
         const sb = supabase;
         try {
@@ -569,10 +573,13 @@ export default function OperatorInvoicing() {
         } catch { /* not configured */ }
       }
 
+      setSubmittedId(invoiceId);
       setSubmitted(true);
+      setShowSuccessModal(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      Alert.alert("Error", "Could not submit invoice. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not submit invoice. Please try again.";
+      setSubmitError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -784,19 +791,46 @@ export default function OperatorInvoicing() {
             Exports a professional daily work log invoice for {dateRange.label}
           </Text>
 
-          {submitted ? (
-            <View style={styles.submittedBadge}>
-              <Ionicons name="checkmark-circle" size={16} color="#059669" />
-              <Text style={styles.submittedText}>Invoice submitted to Admin for review</Text>
+          {/* Submit error banner */}
+          {submitError && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FEF2F2", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#FCA5A5" }}>
+              <Ionicons name="alert-circle" size={18} color="#DC2626" />
+              <Text style={{ flex: 1, color: "#991B1B", fontSize: 13, fontWeight: "600" }}>{submitError}</Text>
+              <Pressable onPress={() => setSubmitError(null)} hitSlop={12}>
+                <Ionicons name="close" size={16} color="#DC2626" />
+              </Pressable>
             </View>
+          )}
+
+          {submitted ? (
+            <Pressable
+              style={[styles.submittedBadge, { backgroundColor: "#ECFDF5", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#A7F3D0" }]}
+              onPress={() => setShowSuccessModal(true)}
+            >
+              <Ionicons name="checkmark-circle" size={20} color="#059669" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.submittedText, { marginBottom: 1 }]}>Invoice submitted to Admin</Text>
+                <Text style={{ fontSize: 11, color: "#059669" }}>Tap to view confirmation · {submittedId}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={14} color="#059669" />
+            </Pressable>
           ) : (
             <Pressable
               style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.6 : 1 }]}
               onPress={handleSubmitToAdmin}
               disabled={submitting || loading}
             >
-              <Ionicons name={submitting ? "hourglass-outline" : "paper-plane-outline"} size={16} color="#FBBF24" />
-              <Text style={styles.submitBtnText}>{submitting ? "SUBMITTING…" : "SUBMIT INVOICE TO ADMIN"}</Text>
+              {submitting ? (
+                <>
+                  <ActivityIndicator size="small" color="#FBBF24" />
+                  <Text style={styles.submitBtnText}>SUBMITTING…</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="paper-plane-outline" size={16} color="#FBBF24" />
+                  <Text style={styles.submitBtnText}>SUBMIT INVOICE TO ADMIN</Text>
+                </>
+              )}
             </Pressable>
           )}
         </View>
@@ -815,22 +849,6 @@ export default function OperatorInvoicing() {
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
         </Pressable>
-
-        {/* ── Teaching Materials ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Teaching Materials</Text>
-        <View style={[styles.materialCard, { backgroundColor: colors.card }]}>
-          <Pressable style={[styles.uploadBtn, { backgroundColor: colors.muted }]} onPress={() => Alert.alert("Upload", "Select a file to share with your students.")}>
-            <Ionicons name="cloud-upload-outline" size={24} color={colors.primary} />
-            <Text style={[styles.uploadBtnText, { color: colors.primary }]}>Upload MP3 / PDF / Script</Text>
-          </Pressable>
-          {[{ name: "Recital Script 2026.pdf", date: "05 Apr", type: "pdf" }, { name: "Dance Music Base.mp3", date: "02 Apr", type: "mp3" }].map((file, i) => (
-            <View key={i} style={[styles.fileRow, { borderTopColor: colors.border }]}>
-              <Ionicons name={file.type === "pdf" ? "document-text" : "musical-notes"} size={18} color={colors.primary} />
-              <Text style={[styles.fileName, { color: colors.foreground }]}>{file.name}</Text>
-              <Text style={[styles.fileDate, { color: colors.mutedForeground }]}>{file.date}</Text>
-            </View>
-          ))}
-        </View>
 
         {/* ── Account Settings ── */}
         <View style={[styles.settingsCard, { backgroundColor: colors.card }]}>
@@ -862,6 +880,44 @@ export default function OperatorInvoicing() {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* ── Invoice Submission Success Modal ── */}
+      <Modal visible={showSuccessModal} transparent animationType="fade" onRequestClose={() => setShowSuccessModal(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", padding: 28 }}>
+          <View style={{ backgroundColor: "#FFF", borderRadius: 24, padding: 28, width: "100%", alignItems: "center", gap: 6 }}>
+            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+              <Ionicons name="checkmark-circle" size={44} color="#059669" />
+            </View>
+            <Text style={{ fontSize: 22, fontWeight: "900", color: "#1E3A8A", textAlign: "center" }}>Invoice Submitted!</Text>
+            <Text style={{ fontSize: 14, color: "#6B7280", textAlign: "center", lineHeight: 20, marginBottom: 4 }}>
+              Your invoice for {dateRange.label} has been sent to Admin for review. You will be notified once payment is processed.
+            </Text>
+            <View style={{ backgroundColor: "#F0F4FF", borderRadius: 12, padding: 14, width: "100%", gap: 6 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "600" }}>Invoice ID</Text>
+                <Text style={{ fontSize: 12, color: "#1E3A8A", fontWeight: "800" }}>{submittedId}</Text>
+              </View>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "600" }}>Amount Due</Text>
+                <Text style={{ fontSize: 12, color: "#059669", fontWeight: "800" }}>€{(filteredTotalCents / 100).toFixed(2)}</Text>
+              </View>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "600" }}>Status</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FEF3C7", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
+                  <Ionicons name="time-outline" size={11} color="#92400E" />
+                  <Text style={{ fontSize: 11, color: "#92400E", fontWeight: "700" }}>Pending Review</Text>
+                </View>
+              </View>
+            </View>
+            <Pressable
+              style={{ backgroundColor: "#1E3A8A", borderRadius: 14, paddingVertical: 14, width: "100%", alignItems: "center", marginTop: 8 }}
+              onPress={() => setShowSuccessModal(false)}
+            >
+              <Text style={{ color: "#FBBF24", fontWeight: "800", fontSize: 15 }}>DONE</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <HeaderSettingsModal visible={showHeaderModal} onClose={() => setShowHeaderModal(false)} header={invoiceHeader} onSave={saveHeader} />
 

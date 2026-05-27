@@ -116,6 +116,22 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color="#D97706" />
         </Pressable>
 
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/courses" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#EDE9FE" }]}>
+            <Ionicons name="school-outline" size={26} color="#7C3AED" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>My Courses</Text>
+            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
+              Upload teaching materials for your classes
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
+        </Pressable>
+
         {/* ── Cambia Ruolo ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
         <RoleSwitcherRow />

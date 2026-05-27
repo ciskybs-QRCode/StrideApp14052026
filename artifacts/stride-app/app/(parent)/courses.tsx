@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Linking,
@@ -12,6 +13,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { type CourseMaterial, materialsKey, getTypeIcon, getTypeBg, getTypeColor, fmtSize, fmtDate } from "@/app/(operator)/courses";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAppData, type Booking } from "@/context/AppDataContext";
@@ -243,6 +245,16 @@ export default function CoursesScreen() {
 
   const router = useRouter();
   const { addItem, items: cartItems, count: cartCount } = useCart();
+
+  // Teaching materials for selected course (read-only, loaded when course modal opens)
+  const [courseMaterials, setCourseMaterials] = useState<CourseMaterial[]>([]);
+
+  useEffect(() => {
+    if (!selectedCourse) { setCourseMaterials([]); return; }
+    AsyncStorage.getItem(materialsKey(selectedCourse)).then(raw => {
+      setCourseMaterials(raw ? JSON.parse(raw) as CourseMaterial[] : []);
+    });
+  }, [selectedCourse]);
 
   // Local enrollments (added in-session without backend)
   const [localBookings, setLocalBookings] = useState<Booking[]>([]);
@@ -558,40 +570,81 @@ export default function CoursesScreen() {
       {/* Course Detail Modal */}
       <Modal visible={!!selectedCourse} transparent animationType="slide" onRequestClose={() => setSelectedCourse(null)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            {course && (
-              <>
-                <Text style={[styles.modalTitle, { color: colors.primary }]}>{course.name}</Text>
-                <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{course.description}</Text>
-                <View style={styles.detailRows}>
-                  {[
-                    { icon: "person",   label: "Instructor", value: course.instructor },
-                    { icon: "time",     label: "Schedule",   value: course.schedule },
-                    { icon: "location", label: "Location",   value: course.location || "TBA" },
-                    { icon: "people",   label: "Spots",      value: `${course.enrolled}/${course.capacity}` },
-                    { icon: "fitness",  label: "Age",        value: `${course.ageMin}–${course.ageMax} yrs` },
-                  ].map(row => (
-                    <View key={row.label} style={[styles.detailRow, { borderBottomColor: colors.border }]}>
-                      <Ionicons name={row.icon as "person"} size={16} color={colors.mutedForeground} />
-                      <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
-                      <Text style={[styles.detailValue, { color: colors.primary }]}>{row.value}</Text>
+          <View style={[styles.modalCard, { maxHeight: "85%", padding: 0, overflow: "hidden" }]}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, gap: 0 }}>
+              {course && (
+                <>
+                  <Text style={[styles.modalTitle, { color: colors.primary }]}>{course.name}</Text>
+                  <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{course.description}</Text>
+                  <View style={styles.detailRows}>
+                    {[
+                      { icon: "person",   label: "Instructor", value: course.instructor },
+                      { icon: "time",     label: "Schedule",   value: course.schedule },
+                      { icon: "location", label: "Location",   value: course.location || "TBA" },
+                      { icon: "people",   label: "Spots",      value: `${course.enrolled}/${course.capacity}` },
+                      { icon: "fitness",  label: "Age",        value: `${course.ageMin}–${course.ageMax} yrs` },
+                    ].map(row => (
+                      <View key={row.label} style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                        <Ionicons name={row.icon as "person"} size={16} color={colors.mutedForeground} />
+                        <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
+                        <Text style={[styles.detailValue, { color: colors.primary }]}>{row.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Teaching Materials — visible to enrolled parents */}
+                  {isEnrolled(course.id) && (
+                    <View style={{ marginTop: 16, gap: 10 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
+                        <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          Teaching Materials
+                        </Text>
+                      </View>
+                      {courseMaterials.length === 0 ? (
+                        <View style={{ backgroundColor: colors.muted, borderRadius: 12, padding: 16, alignItems: "center", gap: 6 }}>
+                          <Ionicons name="cloud-outline" size={24} color={colors.mutedForeground} />
+                          <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center" }}>
+                            No materials uploaded yet.{"\n"}Check back after your first class.
+                          </Text>
+                        </View>
+                      ) : (
+                        courseMaterials.map(m => (
+                          <View
+                            key={m.id}
+                            style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
+                          >
+                            <View style={{ width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: getTypeBg(m.type) }}>
+                              <Ionicons name={getTypeIcon(m.type)} size={18} color={getTypeColor(m.type)} />
+                            </View>
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground }} numberOfLines={1}>{m.name}</Text>
+                              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
+                                {m.type.toUpperCase()} · {fmtSize(m.size)} · {fmtDate(m.uploadedAt)}
+                              </Text>
+                            </View>
+                            <Ionicons name="lock-closed-outline" size={14} color={colors.mutedForeground} />
+                          </View>
+                        ))
+                      )}
                     </View>
-                  ))}
-                </View>
-                {course.location ? (
-                  <Pressable
-                    style={[styles.navigateFullBtn, { backgroundColor: colors.secondary, marginBottom: 10 }]}
-                    onPress={() => openNavigate(course.location)}
-                  >
-                    <Ionicons name="navigate" size={16} color={colors.primary} />
-                    <Text style={[styles.navigateFullBtnText, { color: colors.primary }]}>Navigate to Studio</Text>
+                  )}
+
+                  {course.location ? (
+                    <Pressable
+                      style={[styles.navigateFullBtn, { backgroundColor: colors.secondary, marginTop: 16, marginBottom: 0 }]}
+                      onPress={() => openNavigate(course.location)}
+                    >
+                      <Ionicons name="navigate" size={16} color={colors.primary} />
+                      <Text style={[styles.navigateFullBtnText, { color: colors.primary }]}>Navigate to Studio</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary, marginTop: 12 }]} onPress={() => setSelectedCourse(null)}>
+                    <Text style={styles.closeBtnText}>Close</Text>
                   </Pressable>
-                ) : null}
-                <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setSelectedCourse(null)}>
-                  <Text style={styles.closeBtnText}>Close</Text>
-                </Pressable>
-              </>
-            )}
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
