@@ -392,7 +392,7 @@ export default function AdminLessonsScreen() {
                       <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>{d.description}</Text>
                     ) : null}
                     <Text style={[styles.cardSub, { color: d.active ? "#059669" : colors.mutedForeground }]}>
-                      {d.active ? "Attiva" : "Inattiva"}
+                      {d.active ? "Active" : "Inactive"}
                     </Text>
                   </View>
                   <View style={{ flexDirection: "row", gap: 8 }}>

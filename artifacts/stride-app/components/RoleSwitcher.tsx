@@ -21,7 +21,7 @@ const ROLE_META: Record<UserRole, {
 // ── Inline settings row (non-floating) ───────────────────────────────────────
 
 /**
- * Renders a "Cambia Ruolo" settings card that can be embedded in any screen.
+ * Renders a "Switch Role" settings card that can be embedded in any screen.
  * Only renders when the user has more than one available role.
  */
 export function RoleSwitcherRow() {
@@ -52,9 +52,9 @@ export function RoleSwitcherRow() {
         <Pressable style={rowStyles.backdrop} onPress={() => setOpen(false)}>
           <View style={rowStyles.sheet}>
             <View style={rowStyles.sheetHandle} />
-            <Text style={rowStyles.sheetTitle}>Cambia Ruolo</Text>
+            <Text style={rowStyles.sheetTitle}>Switch Role</Text>
             <Text style={rowStyles.sheetSub}>
-              Accedi all'app con un profilo diverso
+              Access the app with a different profile
             </Text>
 
             {/* Current role */}
@@ -64,7 +64,7 @@ export function RoleSwitcherRow() {
               </View>
               <Text style={[rowStyles.sheetRowLabel, { color: current.color }]}>{current.label}</Text>
               <View style={rowStyles.activePill}>
-                <Text style={rowStyles.activePillText}>Attivo</Text>
+                <Text style={rowStyles.activePillText}>Active</Text>
               </View>
             </View>
 
@@ -100,8 +100,8 @@ export function RoleSwitcherRow() {
           <Ionicons name={current.icon} size={20} color={current.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={rowStyles.rowLabel}>Cambia Ruolo</Text>
-          <Text style={rowStyles.rowSub}>Vista attuale: {current.label}</Text>
+          <Text style={rowStyles.rowLabel}>Switch Role</Text>
+          <Text style={rowStyles.rowSub}>Current view: {current.label}</Text>
         </View>
         <View style={[rowStyles.activePill, { backgroundColor: `${current.color}15` }]}>
           <Text style={[rowStyles.activePillText, { color: current.color }]}>{current.label}</Text>

@@ -62,7 +62,7 @@ const DISCOUNT_ICON: Record<DiscountType, keyof typeof Ionicons.glyphMap> = {
 const DISCOUNT_LABEL: Record<DiscountType, string> = {
   percent: "% Discount", lessons: "Free Lessons", months_free: "Free Months",
 };
-const LOCATIONS = ["Main Studio", "Sala B", "East Wing Studio", "Community Hall", "Online / Remote"];
+const LOCATIONS = ["Main Studio", "Studio B", "East Wing Studio", "Community Hall", "Online / Remote"];
 
 function formatDiscount(p: PromoCode): string {
   if (p.discountType === "percent") return `${p.discountValue}% off`;
