@@ -11,6 +11,16 @@ let initialized = false;
 export async function ensureTables(): Promise<void> {
   if (initialized) return;
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS blacklist (
+      id              SERIAL PRIMARY KEY,
+      organization_id INTEGER NOT NULL DEFAULT 1,
+      email           TEXT,
+      phone_number    TEXT,
+      first_name      TEXT,
+      last_name       TEXT,
+      reason          TEXT,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
     CREATE TABLE IF NOT EXISTS disciplines (
       id            SERIAL PRIMARY KEY,
       organization_id INTEGER NOT NULL,

@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -53,6 +52,7 @@ export default function BlacklistScreen() {
   const [showAdd, setShowAdd]   = useState(false);
   const [saving, setSaving]     = useState(false);
   const [form, setForm]         = useState<AddForm>(EMPTY_FORM);
+  const [addError, setAddError] = useState<string | null>(null);
 
   // User search within the add modal
   const [userSearch, setUserSearch] = useState("");
@@ -60,6 +60,8 @@ export default function BlacklistScreen() {
 
   // Entry detail modal
   const [detailEntry, setDetailEntry] = useState<ApiBlacklistEntry | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,9 +109,10 @@ export default function BlacklistScreen() {
   const handleAdd = async () => {
     const { email, phone_number, first_name, last_name, reason } = form;
     if (!email.trim() && !phone_number.trim() && !(first_name.trim() && last_name.trim())) {
-      Alert.alert("Required", "Please provide at least one identifier: email, phone number, or full name.");
+      setAddError("Provide at least one identifier: email, phone number, or full name (first + last).");
       return;
     }
+    setAddError(null);
     setSaving(true);
     try {
       const body: Omit<ApiBlacklistEntry, "id" | "created_at"> = { organization_id: 1 };
@@ -126,34 +129,21 @@ export default function BlacklistScreen() {
       setUserSearch("");
       load();
     } catch (e: unknown) {
-      Alert.alert("Error", e instanceof Error ? e.message : "Could not add entry. Please try again.");
+      setAddError(e instanceof Error ? e.message : "Could not add entry. Please try again.");
     } finally { setSaving(false); }
   };
 
-  const handleDelete = (entry: ApiBlacklistEntry) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const label = [entry.first_name, entry.last_name, entry.email ?? entry.phone_number].filter(Boolean).join(" ");
-    Alert.alert(
-      "Remove from Blacklist?",
-      label || "This entry will be permanently removed.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.deleteBlacklistEntry(entry.id);
-              setEntries(prev => prev.filter(e => e.id !== entry.id));
-              if (detailEntry?.id === entry.id) setDetailEntry(null);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            } catch {
-              Alert.alert("Error", "Could not remove entry. Please try again.");
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async (entry: ApiBlacklistEntry) => {
+    setDeleting(true);
+    try {
+      await api.deleteBlacklistEntry(entry.id);
+      setEntries(prev => prev.filter(e => e.id !== entry.id));
+      setDetailEntry(null);
+      setConfirmDelete(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      setConfirmDelete(false);
+    } finally { setDeleting(false); }
   };
 
   const formatDate = (s: string) => {
@@ -342,6 +332,13 @@ export default function BlacklistScreen() {
                 </View>
               ))}
 
+              {addError ? (
+                <View style={[styles.inlineError, { backgroundColor: "#FEE2E2" }]}>
+                  <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+                  <Text style={styles.inlineErrorText}>{addError}</Text>
+                </View>
+              ) : null}
+
               <Pressable
                 style={[styles.saveBtn, { backgroundColor: "#DC2626", opacity: saving ? 0.6 : 1 }]}
                 onPress={handleAdd}
@@ -360,8 +357,13 @@ export default function BlacklistScreen() {
       </Modal>
 
       {/* ══ ENTRY DETAIL MODAL ══ */}
-      <Modal visible={!!detailEntry} transparent animationType="fade" onRequestClose={() => setDetailEntry(null)}>
-        <Pressable style={styles.detailOverlay} onPress={() => setDetailEntry(null)}>
+      <Modal
+        visible={!!detailEntry}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setDetailEntry(null); setConfirmDelete(false); }}
+      >
+        <Pressable style={styles.detailOverlay} onPress={() => { setDetailEntry(null); setConfirmDelete(false); }}>
           <View style={[styles.detailSheet, { backgroundColor: colors.background }]}>
             {detailEntry && (
               <>
@@ -407,19 +409,44 @@ export default function BlacklistScreen() {
                   Added on {formatDate(detailEntry.created_at)}
                 </Text>
 
-                <Pressable
-                  style={[styles.detailRemoveBtn, { backgroundColor: "#DC2626" }]}
-                  onPress={() => handleDelete(detailEntry)}
-                >
-                  <Ionicons name="trash-outline" size={16} color="#FFF" />
-                  <Text style={styles.detailRemoveBtnText}>Remove from Blacklist</Text>
-                </Pressable>
+                {confirmDelete ? (
+                  <View style={[styles.confirmBox, { backgroundColor: "#FEE2E2", borderColor: "#FECACA" }]}>
+                    <Text style={styles.confirmText}>Rimuovere definitivamente questo blocco?</Text>
+                    <View style={styles.confirmRow}>
+                      <Pressable
+                        style={[styles.confirmBtn, { backgroundColor: colors.muted, flex: 1 }]}
+                        onPress={() => setConfirmDelete(false)}
+                        disabled={deleting}
+                      >
+                        <Text style={[styles.confirmBtnText, { color: colors.foreground }]}>Annulla</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.confirmBtn, { backgroundColor: "#DC2626", flex: 1, opacity: deleting ? 0.6 : 1 }]}
+                        onPress={() => handleDelete(detailEntry)}
+                        disabled={deleting}
+                      >
+                        {deleting
+                          ? <ActivityIndicator color="#FFF" size="small" />
+                          : <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Sì, rimuovi</Text>
+                        }
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={[styles.detailRemoveBtn, { backgroundColor: "#DC2626" }]}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setConfirmDelete(true); }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#FFF" />
+                    <Text style={styles.detailRemoveBtnText}>Revoca blocco</Text>
+                  </Pressable>
+                )}
 
                 <Pressable
                   style={[styles.detailCancelBtn, { backgroundColor: colors.muted }]}
-                  onPress={() => setDetailEntry(null)}
+                  onPress={() => { setDetailEntry(null); setConfirmDelete(false); }}
                 >
-                  <Text style={[styles.detailCancelText, { color: colors.mutedForeground }]}>Close</Text>
+                  <Text style={[styles.detailCancelText, { color: colors.mutedForeground }]}>Chiudi</Text>
                 </Pressable>
               </>
             )}
@@ -498,4 +525,13 @@ const styles = StyleSheet.create({
   detailRemoveBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
   detailCancelBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center", width: "100%" },
   detailCancelText: { fontWeight: "700", fontSize: 15 },
+  // Inline confirm delete
+  confirmBox: { borderWidth: 1, borderRadius: 14, padding: 14, width: "100%", marginBottom: 10 },
+  confirmText: { fontSize: 14, fontWeight: "600", color: "#DC2626", textAlign: "center", marginBottom: 12 },
+  confirmRow: { flexDirection: "row", gap: 10 },
+  confirmBtn: { borderRadius: 12, paddingVertical: 12, alignItems: "center", justifyContent: "center" },
+  confirmBtnText: { fontWeight: "700", fontSize: 14 },
+  // Inline add error
+  inlineError: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, padding: 12, marginBottom: 12 },
+  inlineErrorText: { flex: 1, fontSize: 13, color: "#DC2626", lineHeight: 18 },
 });
