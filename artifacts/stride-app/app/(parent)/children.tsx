@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -35,12 +35,16 @@ const MEDIA_CONSENT_COLORS: Record<"full" | "internal" | "none", string> = {
 };
 
 export default function ChildrenScreen() {
+  "use no memo";
+
   const { children, delegates, addDelegate, removeDelegate, updateChild, addChild, removeChild } = useAppData();
   const { user } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { primaryRoleName, secondaryRoleName } = useTerminology();
-  const [selectedChild, setSelectedChild] = useState(children[0]?.id || "");
+
+  // Never initialise with children data — keeps hook count stable across role switches
+  const [selectedChild, setSelectedChild] = useState("");
   const [showAddDelegate, setShowAddDelegate] = useState(false);
   const [showMedical, setShowMedical] = useState(false);
   const [showQRPass, setShowQRPass] = useState<string | null>(null);
@@ -61,9 +65,25 @@ export default function ChildrenScreen() {
   const [delegateSurname, setDelegateSurname] = useState("");
   const [delegatePhone, setDelegatePhone] = useState("");
 
-  // Medical edit fields (for existing child)
-  const [allergies, setAllergies] = useState(children.find(c => c.id === selectedChild)?.allergies || "");
-  const [medicalWaiver, setMedicalWaiver] = useState<"ambulance" | "call_parent">(children.find(c => c.id === selectedChild)?.medicalWaiver || "ambulance");
+  // Medical edit fields — synced via useEffect, never initialised from children
+  const [allergies, setAllergies] = useState("");
+  const [medicalWaiver, setMedicalWaiver] = useState<"ambulance" | "call_parent">("ambulance");
+
+  // Auto-select the first child once data loads (or reset when children change)
+  useEffect(() => {
+    if (children.length > 0 && (selectedChild === "" || !children.find(c => c.id === selectedChild))) {
+      setSelectedChild(children[0].id);
+    } else if (children.length === 0) {
+      setSelectedChild("");
+    }
+  }, [children]);
+
+  // Sync medical fields when selected child changes
+  useEffect(() => {
+    const c = children.find(ch => ch.id === selectedChild);
+    setAllergies(c?.allergies ?? "");
+    setMedicalWaiver(c?.medicalWaiver ?? "ambulance");
+  }, [selectedChild, children]);
 
   const child = children.find(c => c.id === selectedChild);
   const childDelegates = delegates.filter(d => d.childId === selectedChild);
