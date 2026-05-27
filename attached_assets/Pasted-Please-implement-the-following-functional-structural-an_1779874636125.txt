@@ -1,0 +1,53 @@
+Please implement the following functional, structural, and visual updates to our Expo/React Native (TypeScript) + Supabase + Drizzle ORM application.
+
+1. Operator Dashboard & UI Refactoring:
+
+Logo Removal: On the Operator Dashboard page, completely remove the 'Stride' logo from the top left corner.
+
+Page Renaming: Rename the 'Dashboard' page/tab to 'Home' across the entire app routing. Change its icon in the bottom navigation tab bar to a standard Home icon.
+
+Payroll Layout & Font Fix: On the settings/payroll&Earnings page, update the header text from 'Admin & Payroll' to just 'Payroll'. To fix the minor text overflow/bleeding issue, slightly reduce the font sizes on this page so everything fits cleanly within the screen boundaries.
+
+Dynamic Association Naming: Display the dynamic organization names. Fetch the association name chosen by the Admin in their settings (e.g., 'Dance Village') and interpolate it dynamically as: 'Admin [Association Name]' and 'Operator / Teacher [Association Name]'.
+
+2. Scoped Absence Reporting Logic:
+
+Restructure the 'Report Absence' button visibility and authorization. It must ONLY be accessible and visible for the active user's own profile and their specifically linked children profiles. Remove the global absence button or the ability to report absences for unauthorized members.
+
+3. Database Schema Updates (Drizzle ORM):
+
+Operator Bank Details: Add fields to the operator profile table to store banking details (Account Number, BSB, Account Name for Australia parity).
+
+Admin Payout Settings: Add an organization configuration field for payout_frequency (enum: 'weekly', 'fortnightly', 'monthly').
+
+Invoices & Reimbursements Tables: >   - Create an invoices table: tracks generated operator bills, date breakdowns, line items, totals, and payment_status.
+
+Create a reimbursements table: tracks user-submitted expense claims, role of claimant (Admin, Paid Operator, Volunteer, Parent), status (pending, paid), receipt attachment (supports PDF/JPG storage path or Google Drive/Dropbox URL strings).
+
+Add an admin_settings field: receipt_mandatory_threshold (numeric amount above which a receipt file/link is strictly required).
+
+4. Operator Invoices & Automated Admin Payroll Workflow:
+
+PDF Generation (expo-print): Build a feature for Operators to generate a structured PDF invoice. It must contain a complete breakdown of: Dates worked, Lesson Type/Style, Time slots, Unit Cost per lesson, Subtotal per day, and a final Grand Total. Provide a button to submit this directly to the Admin.
+
+Admin Invoice Dashboard: Create a dedicated management section in the Admin view to list incoming invoice notifications and view/download the attached PDFs to authorize payment.
+
+Automated Payments & Reminders: Based on the Admin's configured payout frequency (weekly, fortnightly, monthly), set up automated local reminders or background notification triggers that alert the Admin the day before and the day of the payment deadline. Simulate the automated bank payout process based on the generated invoice data.
+
+Payment Status Notification: Instantly trigger a push notification to the Operator the moment the Admin marks their invoice as 'Paid'.
+
+5. Universal Reimbursement System (All Roles):
+
+Build a shared 'Request Reimbursement' form accessible by Admins, Operators (Paid & Volunteer), and Parents/Associates for out-of-pocket materials bought for the association.
+
+Receipt Attachment: Users must be able to upload a JPG, a PDF, or paste an external file link (Google Drive / Dropbox).
+
+Threshold Validation: Enforce the Admin's receipt_mandatory_threshold. If the requested amount is higher than the threshold, the app must prevent submission until a valid file/link is provided.
+
+Notification Loop: Send an instant notification to the claimant when their reimbursement request is approved and paid.
+
+UI Constraint Checklist:
+
+Keep our exact Navy Blue and Gold design system intact.
+
+Use SafeAreaView and ScrollView for all new input fields, receipt upload buttons, and layout lists to completely guarantee that no content overflows or cuts off at the bottom of the device screen."

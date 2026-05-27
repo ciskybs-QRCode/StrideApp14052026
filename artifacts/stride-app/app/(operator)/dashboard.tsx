@@ -642,13 +642,11 @@ export default function OperatorDashboard() {
       >
         {/* ── Header — identical to Parent ── */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            {logoSource ? (
+          {logoSource ? (
+            <View style={styles.headerLeft}>
               <Image source={{ uri: logoSource }} style={styles.headerLogo} contentFit="contain" />
-            ) : (
-              <Image source={LOGO} style={styles.headerLogo} contentFit="contain" />
-            )}
-          </View>
+            </View>
+          ) : null}
           <View style={styles.headerCenter}>
             <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Hi,</Text>
             <Text style={[styles.userName, { color: colors.primary }]}>{firstName}</Text>

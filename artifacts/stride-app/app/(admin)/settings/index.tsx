@@ -204,6 +204,41 @@ export default function SettingsIndex() {
           <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
         </Pressable>
 
+        {/* Finance section */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Finance</Text>
+
+        <Pressable
+          style={({ pressed }) => [styles.featuredCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/invoices" as never); }}
+        >
+          <View style={[styles.featuredIconBox, { backgroundColor: "#DBEAFE" }]}>
+            <Ionicons name="document-text-outline" size={30} color="#1E3A8A" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Invoices</Text>
+            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
+              Review and approve operator payment requests
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.featuredCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/reimbursements" as never); }}
+        >
+          <View style={[styles.featuredIconBox, { backgroundColor: "#D1FAE5" }]}>
+            <Ionicons name="cash-outline" size={30} color="#059669" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Reimbursements</Text>
+            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
+              Manage expense claims from all members
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#059669" />
+        </Pressable>
+
         {/* Anti-Fraud Security section */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Anti-Fraud Security</Text>
 

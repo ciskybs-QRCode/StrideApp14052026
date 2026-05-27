@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -19,8 +20,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiOperatorEarnings } from "@/lib/api";
+import { ReimbursementRequestForm, type ClaimantRole } from "@/app/(admin)/reimbursements";
 
-const SCHOOL_NAME = "Dance Village";
 
 // ── Month selector helpers ──────────────────────────────────────────────────
 
@@ -63,8 +64,9 @@ function buildInvoiceHtml(opts: {
   operatorName: string;
   month: string;
   earnings: ApiOperatorEarnings;
+  schoolName: string;
 }) {
-  const { operatorName, month, earnings } = opts;
+  const { operatorName, month, earnings, schoolName } = opts;
   const invoiceNum = `INV-${month.replace("-", "")}-${String(Math.floor(Math.random() * 8000) + 1000)}`;
   const dateStr = new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric" });
   const totalEur = (earnings.total_earnings_cents / 100).toFixed(2);
@@ -109,12 +111,12 @@ tbody td{padding:10px 14px;font-size:13px;border-bottom:1px solid #E5E7EB}
 </style></head>
 <body>
 <div class="header">
-  <div><div class="brand-name">STRIDE</div><div class="brand-sub">Dance School Management Platform</div></div>
+  <div><div class="brand-name">${schoolName.toUpperCase()}</div><div class="brand-sub">Dance School Management Platform</div></div>
   <div><div class="inv-label">PAYMENT REQUEST</div><div class="inv-meta">${invoiceNum}</div><div class="inv-meta">Issued: ${dateStr}</div></div>
 </div>
 <div class="parties">
-  <div style="flex:1"><div class="party-label">From (Instructor)</div><div class="party-name">${operatorName}</div><div class="party-sub">Operator / Instructor</div><div class="party-sub">${SCHOOL_NAME}</div></div>
-  <div style="flex:1"><div class="party-label">To (Administration)</div><div class="party-name">${SCHOOL_NAME} Admin</div><div class="party-sub">Finance Department</div></div>
+  <div style="flex:1"><div class="party-label">From (Instructor)</div><div class="party-name">${operatorName}</div><div class="party-sub">Operator / Teacher · ${schoolName}</div></div>
+  <div style="flex:1"><div class="party-label">To (Administration)</div><div class="party-name">Admin · ${schoolName}</div><div class="party-sub">Finance Department</div></div>
 </div>
 <div class="section-heading">Earnings Summary — ${monthLabel(month)}</div>
 <table class="summary-table">
@@ -155,10 +157,15 @@ export default function OperatorInvoicing() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
+  const schoolName = user?.schoolName ?? "Dance Village";
+
   const [selectedMonth, setSelectedMonth]   = useState(MONTHS[0].key);
   const [earnings, setEarnings]             = useState<ApiOperatorEarnings | null>(null);
   const [loading, setLoading]               = useState(false);
   const [generating, setGenerating]         = useState(false);
+  const [submitting, setSubmitting]         = useState(false);
+  const [submitted, setSubmitted]           = useState(false);
+  const [showReimbursement, setShowReimbursement] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [newEmail, setNewEmail]             = useState("");
   const [deleteStep, setDeleteStep]         = useState<0 | 1 | 2>(0);
@@ -189,6 +196,7 @@ export default function OperatorInvoicing() {
         operatorName: user?.name ?? "Operator",
         month: selectedMonth,
         earnings: current,
+        schoolName,
       });
 
       if (Platform.OS === "web") {
@@ -214,6 +222,32 @@ export default function OperatorInvoicing() {
       Alert.alert("Error", "Could not generate PDF. Please try again.");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleSubmitToAdmin = async () => {
+    setSubmitting(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const submission = {
+        id: `INV-${selectedMonth.replace("-", "")}-${Date.now()}`,
+        operatorName: user?.name ?? "Operator",
+        period: selectedMonth,
+        totalCents: current.total_earnings_cents,
+        status: "pending",
+        submittedAt: new Date().toISOString(),
+        schoolName,
+      };
+      const existing = await AsyncStorage.getItem("submitted_invoices");
+      const list = existing ? JSON.parse(existing) : [];
+      list.unshift(submission);
+      await AsyncStorage.setItem("submitted_invoices", JSON.stringify(list));
+      setSubmitted(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not submit invoice. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -249,7 +283,7 @@ export default function OperatorInvoicing() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Admin & Payroll</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Payroll</Text>
 
         {/* ── Profile card ── */}
         <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
@@ -259,8 +293,7 @@ export default function OperatorInvoicing() {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{user?.name}</Text>
-              <Text style={styles.profileRole}>Operator / Teacher</Text>
-              <Text style={styles.profileSchool}>{SCHOOL_NAME}</Text>
+              <Text style={styles.profileRole}>Operator / Teacher · {schoolName}</Text>
             </View>
           </View>
           <View style={styles.profileStats}>
@@ -327,6 +360,25 @@ export default function OperatorInvoicing() {
               {generating ? "GENERATING PDF..." : Platform.OS === "web" ? "PRINT / SAVE PDF" : "GENERATE & SHARE PDF"}
             </Text>
           </Pressable>
+
+          {/* Submit to Admin */}
+          {submitted ? (
+            <View style={styles.submittedBadge}>
+              <Ionicons name="checkmark-circle" size={16} color="#059669" />
+              <Text style={styles.submittedText}>Invoice submitted to Admin</Text>
+            </View>
+          ) : (
+            <Pressable
+              style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.6 : 1 }]}
+              onPress={handleSubmitToAdmin}
+              disabled={submitting}
+            >
+              <Ionicons name={submitting ? "hourglass-outline" : "paper-plane-outline"} size={16} color="#FBBF24" />
+              <Text style={styles.submitBtnText}>
+                {submitting ? "SUBMITTING..." : "SUBMIT INVOICE TO ADMIN"}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {/* ── Per-discipline breakdown ── */}
@@ -385,6 +437,21 @@ export default function OperatorInvoicing() {
             </View>
           )}
         </View>
+
+        {/* ── Request Reimbursement ── */}
+        <Pressable
+          style={[styles.reimbBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setShowReimbursement(true)}
+        >
+          <View style={[styles.reimbIconBox, { backgroundColor: "#D1FAE5" }]}>
+            <Ionicons name="cash-outline" size={20} color="#059669" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.reimbTitle, { color: colors.foreground }]}>Request Reimbursement</Text>
+            <Text style={[styles.reimbSub, { color: colors.mutedForeground }]}>Submit an out-of-pocket expense claim</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </Pressable>
 
         {/* ── Teaching Materials ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Teaching Materials</Text>
@@ -455,6 +522,26 @@ export default function OperatorInvoicing() {
         )}
       </ScrollView>
 
+      {/* ── Reimbursement Modal ── */}
+      <ReimbursementRequestForm
+        visible={showReimbursement}
+        onClose={() => setShowReimbursement(false)}
+        onSubmit={async (req) => {
+          const AsyncStorageLib = await import("@react-native-async-storage/async-storage");
+          const newReq = { ...req, id: `RMB-${Date.now()}`, status: "pending" as const, submittedAt: new Date().toISOString() };
+          try {
+            const raw = await AsyncStorageLib.default.getItem("reimbursement_requests");
+            const stored = raw ? JSON.parse(raw) : [];
+            stored.unshift(newReq);
+            await AsyncStorageLib.default.setItem("reimbursement_requests", JSON.stringify(stored));
+          } catch { /* local only */ }
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
+        claimantName={user?.name ?? "Operator"}
+        claimantRole={"paid_operator" as ClaimantRole}
+        receiptThresholdCents={5000}
+      />
+
       {/* ── Change Email Modal ── */}
       <Modal visible={showChangeEmail} transparent animationType="slide" onRequestClose={() => setShowChangeEmail(false)}>
         <View style={styles.modalOverlay}>
@@ -488,19 +575,18 @@ export default function OperatorInvoicing() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
+  pageTitle: { fontSize: 24, fontWeight: "800", marginBottom: 20 },
 
   profileCard: { borderRadius: 20, padding: 20, marginBottom: 24 },
   profileTop: { flexDirection: "row", gap: 16, marginBottom: 20 },
   profileAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   profileAvatarText: { color: "#FFF", fontSize: 26, fontWeight: "700" },
   profileInfo: { flex: 1, justifyContent: "center" },
-  profileName: { color: "#FFF", fontSize: 20, fontWeight: "700" },
-  profileRole: { color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: 2 },
-  profileSchool: { color: "#FBBF24", fontSize: 13, fontWeight: "600", marginTop: 2 },
+  profileName: { color: "#FFF", fontSize: 17, fontWeight: "700" },
+  profileRole: { color: "#FBBF24", fontSize: 12, marginTop: 3, fontWeight: "600" },
   profileStats: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 14, padding: 16 },
   profileStat: { flex: 1, alignItems: "center" },
-  profileStatNumber: { color: "#FFF", fontSize: 22, fontWeight: "800" },
+  profileStatNumber: { color: "#FFF", fontSize: 18, fontWeight: "800" },
   profileStatLabel: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
   profileStatDivider: { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.2)" },
 
@@ -518,9 +604,13 @@ const styles = StyleSheet.create({
   invoiceValue: { fontSize: 14, fontWeight: "700" },
   totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 18 },
   totalLabel: { color: "#FFF", fontSize: 13, fontWeight: "700", letterSpacing: 1 },
-  totalAmount: { color: "#FFF", fontSize: 26, fontWeight: "800" },
-  generateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, margin: 16, marginBottom: 16, borderRadius: 12, paddingVertical: 14, borderWidth: 2 },
-  generateBtnText: { fontWeight: "700", fontSize: 14 },
+  totalAmount: { color: "#FFF", fontSize: 22, fontWeight: "800" },
+  generateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, margin: 16, marginBottom: 8, borderRadius: 12, paddingVertical: 13, borderWidth: 2 },
+  generateBtnText: { fontWeight: "700", fontSize: 13 },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginHorizontal: 16, marginBottom: 16, borderRadius: 12, paddingVertical: 12 },
+  submitBtnText: { color: "#FBBF24", fontWeight: "800", fontSize: 12, letterSpacing: 0.5 },
+  submittedBadge: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginHorizontal: 16, marginBottom: 16, backgroundColor: "#D1FAE5", borderRadius: 10, paddingVertical: 10 },
+  submittedText: { fontSize: 13, fontWeight: "700", color: "#059669" },
 
   disciplineCard: { borderRadius: 18, overflow: "hidden", marginBottom: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
   disciplineHeaderRow: { flexDirection: "row", paddingHorizontal: 14, paddingVertical: 11 },
@@ -535,6 +625,11 @@ const styles = StyleSheet.create({
   disciplineLoadingText: { fontSize: 13 },
   disciplineEmptyRow: { alignItems: "center", paddingVertical: 28, gap: 10 },
   disciplineEmptyText: { fontSize: 13, textAlign: "center" },
+
+  reimbBtn: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1 },
+  reimbIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  reimbTitle: { fontSize: 15, fontWeight: "700" },
+  reimbSub: { fontSize: 12, marginTop: 2 },
 
   materialCard: { borderRadius: 18, padding: 16, marginBottom: 20 },
   uploadBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 12, paddingVertical: 16, marginBottom: 12 },

@@ -42,11 +42,13 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="lessons"        options={{ title: "Activity",      tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"   size={size} color={color} /> }} />
       <Tabs.Screen name="communications" options={{ title: "Messages",      tabBarIcon: ({ color, size }) => <Ionicons name="megaphone"          size={size} color={color} /> }} />
       <Tabs.Screen name="settings"       options={{ title: "Settings",      tabBarIcon: ({ color, size }) => <Ionicons name="settings"           size={size} color={color} /> }} />
-      <Tabs.Screen name="activity"       options={{ href: null }} />
-      <Tabs.Screen name="setup"          options={{ href: null }} />
-      <Tabs.Screen name="pdf-badges"     options={{ href: null }} />
-      <Tabs.Screen name="blacklist"      options={{ href: null }} />
-      <Tabs.Screen name="alerts"         options={{ href: null }} />
+      <Tabs.Screen name="activity"         options={{ href: null }} />
+      <Tabs.Screen name="setup"           options={{ href: null }} />
+      <Tabs.Screen name="pdf-badges"      options={{ href: null }} />
+      <Tabs.Screen name="blacklist"       options={{ href: null }} />
+      <Tabs.Screen name="alerts"          options={{ href: null }} />
+      <Tabs.Screen name="invoices"        options={{ href: null }} />
+      <Tabs.Screen name="reimbursements"  options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <RoleSwitcher />

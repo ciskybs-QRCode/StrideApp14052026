@@ -123,8 +123,8 @@ export default function OperatorTabLayout() {
         <Tabs.Screen
           name="dashboard"
           options={{
-            title: "Dashboard",
-            tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} />,
+            title: "Home",
+            tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
             tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
             tabBarBadgeStyle: { backgroundColor: "#FBBF24", color: "#1E3A8A", fontSize: 10, fontWeight: "800" },
           }}

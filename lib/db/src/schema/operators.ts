@@ -34,6 +34,12 @@ export const operators = pgTable(
     disciplineRates: jsonb("discipline_rates").$type<DisciplineRates>(),
 
     bio:       text("bio"),
+
+    /** Banking details for payroll */
+    bankAccountName:   text("bank_account_name"),
+    bankAccountNumber: text("bank_account_number"),
+    bankBsb:           text("bank_bsb"),
+
     active:    boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
