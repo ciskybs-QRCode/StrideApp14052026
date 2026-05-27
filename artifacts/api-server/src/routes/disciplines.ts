@@ -194,4 +194,23 @@ router.patch("/operator-profiles/:id", requireAuth, requireRole("admin"), async 
   res.json(profile);
 });
 
+// DELETE /operator-profiles/:id
+router.delete("/operator-profiles/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  await ensureTables();
+  const user = (req as AuthReq).user;
+  const profileId = parseInt(String(req.params.id));
+  try {
+    await pool.query(`DELETE FROM operator_discipline_rates WHERE operator_profile_id = $1`, [profileId]);
+    const { rows } = await pool.query(
+      `DELETE FROM operator_profiles WHERE id = $1 AND organization_id = $2 RETURNING id`,
+      [profileId, user.orgId],
+    );
+    if (!rows.length) { res.status(404).json({ error: "not found" }); return; }
+    res.status(204).end();
+  } catch (e: unknown) {
+    req.log.error(e);
+    res.status(500).json({ error: "Failed to delete operator profile" });
+  }
+});
+
 export default router;

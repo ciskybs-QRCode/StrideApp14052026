@@ -306,6 +306,7 @@ export const api = {
     active: boolean;
     rates: Array<{ disciplineId: number; hourlyRateCents: number }>;
   }>) => request<ApiOperatorProfile>("PATCH", `/operator-profiles/${id}`, data),
+  deleteOperatorProfile: (id: number) => request<void>("DELETE", `/operator-profiles/${id}`),
 
   // Availability
   getAvailability: () => request<ApiAvailabilitySlot[]>("GET", "/availability"),

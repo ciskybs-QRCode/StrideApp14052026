@@ -61,6 +61,7 @@ export default function AdminLessonsScreen() {
   const [discDesc, setDiscDesc]             = useState("");
   const [discSaving, setDiscSaving]         = useState(false);
   const [confirmDeleteDiscId, setConfirmDeleteDiscId] = useState<number | null>(null);
+  const [confirmDeleteProfileId, setConfirmDeleteProfileId] = useState<number | null>(null);
 
   // ── Data loading ──────────────────────────────────────────────────────────────
 
@@ -205,6 +206,12 @@ export default function AdminLessonsScreen() {
     } finally { setSaving(false); }
   };
 
+  const deleteProfile = async (p: ApiOperatorProfile) => {
+    setConfirmDeleteProfileId(null);
+    try { await api.deleteOperatorProfile(p.id); } catch { /* ignore in demo */ }
+    setProfiles(prev => prev.filter(x => x.id !== p.id));
+  };
+
   // Validate: paid operators must have a rate for every selected discipline
   const paidRatesMissing = !isVolunteer && Array.from(selectedDiscs).some(
     id => !profileRates[id]?.trim()
@@ -320,7 +327,7 @@ export default function AdminLessonsScreen() {
             )}
 
             {profiles.map(p => (
-              <Pressable key={p.id} style={[styles.card, { backgroundColor: colors.card }]} onPress={() => openEditProfile(p)}>
+              <View key={p.id} style={[styles.card, { backgroundColor: colors.card }]}>
                 <View style={[styles.profileAvatar, {
                   backgroundColor: p.profile_type === "paid" ? `${colors.secondary}80` : colors.muted,
                 }]}>
@@ -354,9 +361,44 @@ export default function AdminLessonsScreen() {
                       ))}
                     </View>
                   )}
+                  {confirmDeleteProfileId === p.id && (
+                    <Text style={[styles.cardSub, { color: "#DC2626", fontWeight: "700", marginTop: 6 }]}>
+                      Remove this operator?
+                    </Text>
+                  )}
                 </View>
-                <Ionicons name="pencil-outline" size={16} color={colors.mutedForeground} />
-              </Pressable>
+                {confirmDeleteProfileId === p.id ? (
+                  <View style={{ flexDirection: "column", gap: 6 }}>
+                    <Pressable
+                      style={[styles.discActionBtn, { backgroundColor: colors.muted, paddingHorizontal: 10 }]}
+                      onPress={() => setConfirmDeleteProfileId(null)}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.discActionBtn, { backgroundColor: "#EF4444", paddingHorizontal: 10 }]}
+                      onPress={() => deleteProfile(p)}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#FFF" }}>Delete</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: "column", gap: 6 }}>
+                    <Pressable
+                      style={[styles.discActionBtn, { backgroundColor: `${colors.primary}18` }]}
+                      onPress={() => openEditProfile(p)}
+                    >
+                      <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+                    </Pressable>
+                    <Pressable
+                      style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]}
+                      onPress={() => setConfirmDeleteProfileId(p.id)}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#991B1B" />
+                    </Pressable>
+                  </View>
+                )}
+              </View>
             ))}
           </>
         )}
@@ -667,6 +709,20 @@ export default function AdminLessonsScreen() {
                         </Pressable>
                       );
                     })}
+                  </View>
+                )}
+
+                {/* ── Discipline badge preview ── */}
+                {selectedDiscs.size > 0 && (
+                  <View style={{ marginTop: 10, marginBottom: 2 }}>
+                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Badge Preview</Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                      {activeDiscs.filter(d => selectedDiscs.has(d.id)).map(d => (
+                        <View key={d.id} style={[styles.rateChip, { backgroundColor: `${colors.secondary}40` }]}>
+                          <Text style={[styles.rateChipText, { color: colors.primary }]}>{d.name}</Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 )}
 
