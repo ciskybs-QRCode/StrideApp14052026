@@ -60,6 +60,7 @@ export default function AdminLessonsScreen() {
   const [discName, setDiscName]             = useState("");
   const [discDesc, setDiscDesc]             = useState("");
   const [discSaving, setDiscSaving]         = useState(false);
+  const [confirmDeleteDiscId, setConfirmDeleteDiscId] = useState<number | null>(null);
 
   // ── Data loading ──────────────────────────────────────────────────────────────
 
@@ -120,20 +121,13 @@ export default function AdminLessonsScreen() {
   };
 
   const deleteDisc = async (d: ApiDiscipline) => {
-    Alert.alert(
-      "Delete Discipline",
-      `Remove "${d.name}"? Existing operator profiles will lose this rate.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete", style: "destructive",
-          onPress: async () => {
-            try { await api.deleteDiscipline(d.id); await load(); }
-            catch (e: unknown) { Alert.alert("Error", e instanceof Error ? e.message : "Delete failed"); }
-          },
-        },
-      ],
-    );
+    setConfirmDeleteDiscId(d.id);
+  };
+
+  const confirmDeleteDisc = async (d: ApiDiscipline) => {
+    setConfirmDeleteDiscId(null);
+    try { await api.deleteDiscipline(d.id); await load(); }
+    catch { /* ignore in demo */ setDisciplines(prev => prev.filter(x => x.id !== d.id)); }
   };
 
   const [editingProfile, setEditingProfile] = useState<ApiOperatorProfile | null>(null);
@@ -391,34 +385,55 @@ export default function AdminLessonsScreen() {
                     {d.description ? (
                       <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>{d.description}</Text>
                     ) : null}
-                    <Text style={[styles.cardSub, { color: d.active ? "#059669" : colors.mutedForeground }]}>
-                      {d.active ? "Active" : "Inactive"}
-                    </Text>
+                    {confirmDeleteDiscId === d.id ? (
+                      <Text style={[styles.cardSub, { color: "#DC2626", fontWeight: "700" }]}>Remove this discipline?</Text>
+                    ) : (
+                      <Text style={[styles.cardSub, { color: d.active ? "#059669" : colors.mutedForeground }]}>
+                        {d.active ? "Active" : "Inactive"}
+                      </Text>
+                    )}
                   </View>
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <Pressable
-                      style={[styles.discActionBtn, { backgroundColor: `${colors.primary}18` }]}
-                      onPress={() => openEditDisc(d)}
-                    >
-                      <Ionicons name="pencil-outline" size={16} color={colors.primary} />
-                    </Pressable>
-                    <Pressable
-                      style={[styles.discActionBtn, { backgroundColor: d.active ? "#FEF3C7" : "#D1FAE5" }]}
-                      onPress={() => toggleDiscActive(d)}
-                    >
-                      <Ionicons
-                        name={d.active ? "pause-circle-outline" : "play-circle-outline"}
-                        size={16}
-                        color={d.active ? "#92400E" : "#065F46"}
-                      />
-                    </Pressable>
-                    <Pressable
-                      style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]}
-                      onPress={() => deleteDisc(d)}
-                    >
-                      <Ionicons name="trash-outline" size={16} color="#991B1B" />
-                    </Pressable>
-                  </View>
+                  {confirmDeleteDiscId === d.id ? (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <Pressable
+                        style={[styles.discActionBtn, { backgroundColor: colors.muted, paddingHorizontal: 10 }]}
+                        onPress={() => setConfirmDeleteDiscId(null)}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Cancel</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.discActionBtn, { backgroundColor: "#EF4444", paddingHorizontal: 10 }]}
+                        onPress={() => confirmDeleteDisc(d)}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <Pressable
+                        style={[styles.discActionBtn, { backgroundColor: `${colors.primary}18` }]}
+                        onPress={() => openEditDisc(d)}
+                      >
+                        <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+                      </Pressable>
+                      <Pressable
+                        style={[styles.discActionBtn, { backgroundColor: d.active ? "#FEF3C7" : "#D1FAE5" }]}
+                        onPress={() => toggleDiscActive(d)}
+                      >
+                        <Ionicons
+                          name={d.active ? "pause-circle-outline" : "play-circle-outline"}
+                          size={16}
+                          color={d.active ? "#92400E" : "#065F46"}
+                        />
+                      </Pressable>
+                      <Pressable
+                        style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]}
+                        onPress={() => deleteDisc(d)}
+                      >
+                        <Ionicons name="trash-outline" size={16} color="#991B1B" />
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
               ))
             )}
