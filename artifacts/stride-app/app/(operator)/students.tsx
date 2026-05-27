@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,7 +21,7 @@ import { useColors } from "@/hooks/useColors";
 type Filter = "all" | "present" | "absent" | "approvals";
 
 export default function OperatorStudents() {
-  const { students, updateStudentPresence } = useAppData();
+  const { students, updateStudentPresence, refreshData, isLoadingData } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -106,6 +107,14 @@ export default function OperatorStudents() {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoadingData}
+            onRefresh={refreshData}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
           <Text style={[styles.pageTitle, { color: colors.primary, marginBottom: 0 }]}>Students</Text>

@@ -138,6 +138,7 @@ interface AppDataContextType {
   students: Student[];
   lessons: Lesson[];
   isLoadingData: boolean;
+  refreshData: () => Promise<void>;
   addChild: (child: Omit<Child, "id">) => Promise<void>;
   updateChild: (id: string, updates: Partial<Child>) => Promise<void>;
   removeChild: (id: string) => Promise<void>;
@@ -281,10 +282,19 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
   const loadedForUser = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!user || loadedForUser.current === user.id) return;
-    loadedForUser.current = user.id;
+    if (!user) return;
+    const cacheKey = `${user.id}:${user.role}`;
+    if (loadedForUser.current === cacheKey) return;
+    loadedForUser.current = cacheKey;
     loadAll(user.role);
   }, [user]);
+
+  const refreshData = async () => {
+    if (!user) return;
+    loadedForUser.current = null;
+    await loadAll(user.role);
+    if (user) loadedForUser.current = `${user.id}:${user.role}`;
+  };
 
   // When coming back online, process any queued actions
   const prevOnline = useRef(true);
@@ -595,6 +605,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       students,
       lessons,
       isLoadingData,
+      refreshData,
       addChild,
       updateChild,
       removeChild,
