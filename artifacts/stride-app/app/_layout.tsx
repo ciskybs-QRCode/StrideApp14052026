@@ -24,6 +24,7 @@ import { PrivateLessonProvider } from "@/context/PrivateLessonContext";
 import { RealtimeProvider } from "@/context/RealtimeContext";
 import { SubstitutionProvider } from "@/context/SubstitutionContext";
 import { SecurityEscalationProvider } from "@/context/SecurityEscalationContext";
+import { TerminologyProvider } from "@/context/TerminologyContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -84,6 +85,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
+          <TerminologyProvider>
           <OfflineSyncProvider>
             <AuthProvider>
               <AppDataProvider>
@@ -104,6 +106,7 @@ export default function RootLayout() {
               </AppDataProvider>
             </AuthProvider>
           </OfflineSyncProvider>
+          </TerminologyProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

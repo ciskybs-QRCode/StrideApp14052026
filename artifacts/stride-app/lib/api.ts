@@ -235,7 +235,8 @@ export const api = {
 
   // Org
   getOrg: () => request<ApiOrg>("GET", "/org"),
-  updateOrg: (data: Partial<ApiOrg>) => request<ApiOrg>("PATCH", "/org", data),
+  updateOrg: (data: Partial<ApiOrg> & { member_label?: string }) => request<ApiOrg>("PATCH", "/org", data),
+  getTerminology: () => request<{ primaryRoleName: string; secondaryRoleName: string }>("GET", "/terminology"),
 
   // Profile (parent self-update)
   updateProfile: (data: { name?: string; phone?: string }) =>

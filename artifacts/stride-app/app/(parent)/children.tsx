@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { useTerminology } from "@/context/TerminologyContext";
 
 const MEDIA_CONSENT_LABELS: Record<"full" | "internal" | "none", string> = {
   full: "Full Consent",
@@ -36,6 +37,7 @@ export default function ChildrenScreen() {
   const { children, delegates, addDelegate, removeDelegate, updateChild, addChild, removeChild } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { secondaryRoleName } = useTerminology();
   const [selectedChild, setSelectedChild] = useState(children[0]?.id || "");
   const [showAddDelegate, setShowAddDelegate] = useState(false);
   const [showMedical, setShowMedical] = useState(false);
@@ -174,7 +176,7 @@ export default function ChildrenScreen() {
         }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>My Children</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>My {secondaryRoleName}s</Text>
 
         <View style={styles.childSelectorRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>

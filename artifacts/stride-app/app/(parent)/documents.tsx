@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useTerminology } from "@/context/TerminologyContext";
 import { SignaturePad } from "@/components/SignaturePad";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
@@ -51,6 +52,7 @@ export default function DocumentsScreen() {
   const { user, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { secondaryRoleName } = useTerminology();
 
   const [showSign, setShowSign] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -421,10 +423,10 @@ export default function DocumentsScreen() {
             </View>
 
             {/* Children */}
-            <Text style={[styles.editSection, { color: colors.primary }]}>My Children</Text>
+            <Text style={[styles.editSection, { color: colors.primary }]}>My {secondaryRoleName}s</Text>
             <View style={[styles.editCard, { backgroundColor: colors.card }]}>
               {children.length === 0 && (
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, textAlign: "center", paddingVertical: 8 }]}>No children added yet</Text>
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, textAlign: "center", paddingVertical: 8 }]}>No {secondaryRoleName.toLowerCase()}s added yet</Text>
               )}
               {children.map(c => (
                 <View key={c.id} style={[styles.childRow, { borderBottomColor: colors.border }]}>

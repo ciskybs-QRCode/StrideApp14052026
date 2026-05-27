@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api, ApiDiscipline, ApiOperatorProfile, ApiStudent } from "@/lib/api";
+import { useTerminology } from "@/context/TerminologyContext";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ function apiStudentToRecord(s: ApiStudent): UserRecord {
     role: "student",
     status: "active",
     joinDate: "",
-    childName: parentName ? `Parent: ${parentName}` : undefined,
+    childName: parentName ? `${parentName}` : undefined,
   };
 }
 
@@ -92,6 +93,7 @@ export default function AdminUsers() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { primaryRoleName, secondaryRoleName } = useTerminology();
   const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [search, setSearch] = useState("");
@@ -244,10 +246,10 @@ export default function AdminUsers() {
   // ── Grouped list ──────────────────────────────────────────────────────────
 
   const grouped: Record<string, UserRecord[]> = {
-    Admins:    filtered.filter(u => u.role === "admin"),
-    Operators: filtered.filter(u => u.role === "operator"),
-    Parents:   filtered.filter(u => u.role === "parent"),
-    Students:  filtered.filter(u => u.role === "student"),
+    Admins:                        filtered.filter(u => u.role === "admin"),
+    Operators:                     filtered.filter(u => u.role === "operator"),
+    [`${primaryRoleName}s`]:       filtered.filter(u => u.role === "parent"),
+    [`${secondaryRoleName}s`]:     filtered.filter(u => u.role === "student"),
   };
   const showGrouped = filter === "all";
 
@@ -276,8 +278,8 @@ export default function AdminUsers() {
             { label: "Total",     value: counts.total,     bg: colors.primary },
             ...(counts.admins > 0 ? [{ label: "Admins", value: counts.admins, bg: "#B45309" }] : []),
             { label: "Operators", value: counts.operators, bg: "#7C3AED" },
-            { label: "Parents",   value: counts.parents,   bg: "#10B981" },
-            { label: "Students",  value: counts.students,  bg: "#F59E0B" },
+            { label: `${primaryRoleName}s`,   value: counts.parents,   bg: "#10B981" },
+            { label: `${secondaryRoleName}s`, value: counts.students,  bg: "#F59E0B" },
             ...(counts.suspended > 0 ? [{ label: "Suspended", value: counts.suspended, bg: "#EF4444" }] : []),
           ].map(s => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
@@ -310,7 +312,7 @@ export default function AdminUsers() {
             {(["all", "admin", "operator", "parent", "student"] as const).map(f => (
               <Pressable key={f} style={[styles.filterBtn, filter === f && { backgroundColor: colors.primary }]} onPress={() => setFilter(f)}>
                 <Text style={[styles.filterText, filter === f && { color: "#FFF" }]}>
-                  {f === "all" ? "All" : f === "admin" ? "Admins" : f === "operator" ? "Operators" : f === "parent" ? "Parents" : "Students"}
+                  {f === "all" ? "All" : f === "admin" ? "Admins" : f === "operator" ? "Operators" : f === "parent" ? `${primaryRoleName}s` : `${secondaryRoleName}s`}
                 </Text>
               </Pressable>
             ))}

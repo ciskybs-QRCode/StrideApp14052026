@@ -1,17 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useTerminology } from "@/context/TerminologyContext";
 
 const CONFIG_ITEMS = [
   {
@@ -74,10 +77,34 @@ export default function AppConfigurationPage() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { primaryRoleName, secondaryRoleName, updateTerminology } = useTerminology();
 
   const [values, setValues] = useState<Record<string, boolean>>(
     Object.fromEntries(CONFIG_ITEMS.map(i => [i.key, i.defaultValue]))
   );
+
+  const [primaryInput, setPrimaryInput] = useState(primaryRoleName);
+  const [secondaryInput, setSecondaryInput] = useState(secondaryRoleName);
+  const [savingTerms, setSavingTerms] = useState(false);
+  const [termsSaved, setTermsSaved] = useState(false);
+
+  useEffect(() => {
+    setPrimaryInput(primaryRoleName);
+    setSecondaryInput(secondaryRoleName);
+  }, [primaryRoleName, secondaryRoleName]);
+
+  const handleSaveTerminology = async () => {
+    const p = primaryInput.trim() || "Parent";
+    const s = secondaryInput.trim() || "Child";
+    setSavingTerms(true);
+    try {
+      await updateTerminology(p, s);
+      setTermsSaved(true);
+      setTimeout(() => setTermsSaved(false), 2500);
+    } finally {
+      setSavingTerms(false);
+    }
+  };
 
   const toggle = (key: string) =>
     setValues(prev => ({ ...prev, [key]: !prev[key] }));
@@ -137,6 +164,52 @@ export default function AppConfigurationPage() {
               />
             </View>
           ))}
+        </View>
+
+        {/* Role Terminology */}
+        <View style={{ marginBottom: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="text-outline" size={18} color="#B45309" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Role Terminology</Text>
+              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+                Customise how account holders and participants are called across the app
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.card, { backgroundColor: colors.card, padding: 16 }]}>
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Account Holder (e.g. Parent, Member)</Text>
+            <TextInput
+              style={[styles.termInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+              value={primaryInput}
+              onChangeText={setPrimaryInput}
+              placeholder="Parent"
+              placeholderTextColor={colors.mutedForeground}
+              returnKeyType="next"
+            />
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6, marginTop: 14 }]}>Participant (e.g. Child, Student, Guest)</Text>
+            <TextInput
+              style={[styles.termInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+              value={secondaryInput}
+              onChangeText={setSecondaryInput}
+              placeholder="Child"
+              placeholderTextColor={colors.mutedForeground}
+              returnKeyType="done"
+            />
+            <Pressable
+              style={[styles.saveBtn, { backgroundColor: termsSaved ? "#10B981" : colors.primary, opacity: savingTerms ? 0.7 : 1 }]}
+              onPress={handleSaveTerminology}
+              disabled={savingTerms}
+            >
+              {savingTerms ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.saveBtnText}>{termsSaved ? "Saved ✓" : "Save Terminology"}</Text>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {/* Info box */}
@@ -205,4 +278,24 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   infoText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  termInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  saveBtn: {
+    marginTop: 18,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveBtnText: {
+    color: "#FFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
 });
