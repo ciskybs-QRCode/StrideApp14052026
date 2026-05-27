@@ -58,22 +58,22 @@ const HEADER_STORAGE_KEY = "operator_invoice_header";
 
 // ── Month selector helpers ───────────────────────────────────────────────────
 
+const IT_MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+
 function getRecentMonths() {
   const result: Array<{ key: string; label: string }> = [];
   const now = new Date();
   for (let i = 0; i < 3; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    result.push({
-      key: d.toISOString().slice(0, 7),
-      label: d.toLocaleDateString("en-AU", { month: "long", year: "numeric" }),
-    });
+    const key = d.toISOString().slice(0, 7);
+    result.push({ key, label: `${IT_MONTHS[d.getMonth()]} ${d.getFullYear()}` });
   }
   return result;
 }
 
 function monthLabel(key: string) {
   const [y, m] = key.split("-").map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString("en-AU", { month: "long", year: "numeric" });
+  return `${IT_MONTHS[m - 1]} ${y}`;
 }
 
 function formatDate(iso: string) {
@@ -498,7 +498,19 @@ export default function OperatorInvoicing() {
         filteredLog:    filteredDailyLog,
       });
       if (Platform.OS === "web") {
-        await Print.printAsync({ html });
+        // window.print() is blocked inside sandboxed iframes — download an HTML file
+        // that the user can open in any browser and print → Save as PDF
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url  = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href          = url;
+        link.download      = `invoice-${selectedMonth}.html`;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         const { uri } = await Print.printToFileAsync({ html });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -685,60 +697,61 @@ export default function OperatorInvoicing() {
 
         {/* ── Daily Work Log ── */}
         <View style={styles.logSectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Daily Work Log</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Registro Giornaliero</Text>
           <Text style={[styles.logPeriodChip, { backgroundColor: `${colors.primary}18`, color: colors.primary }]}>{dateRange.label}</Text>
         </View>
 
         <View style={[styles.logCard, { backgroundColor: colors.card }]}>
+          {/* Column header — 3 columns: Disciplina | Ore | Totale */}
           <View style={[styles.logTableHeader, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.logTH, { flex: 2.5 }]}>Date · Discipline</Text>
-            <Text style={[styles.logTH, { textAlign: "center" }]}>Hrs</Text>
-            <Text style={[styles.logTH, { textAlign: "center" }]}>Rate</Text>
-            <Text style={[styles.logTH, { textAlign: "right" }]}>Daily Total</Text>
+            <Text style={[styles.logTH, { flex: 3 }]}>Disciplina</Text>
+            <Text style={[styles.logTH, { flex: 1, textAlign: "center" }]}>Ore</Text>
+            <Text style={[styles.logTH, { flex: 1.2, textAlign: "right" }]}>Totale</Text>
           </View>
 
           {loading ? (
             <View style={styles.logLoadingRow}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.logLoadingText, { color: colors.mutedForeground }]}>Loading work log…</Text>
+              <Text style={[styles.logLoadingText, { color: colors.mutedForeground }]}>Caricamento registro…</Text>
             </View>
           ) : dailyGroups.length === 0 ? (
             <View style={styles.logEmptyRow}>
               <Ionicons name="calendar-outline" size={32} color={colors.mutedForeground} />
-              <Text style={[styles.logEmptyText, { color: colors.mutedForeground }]}>No sessions in this period</Text>
+              <Text style={[styles.logEmptyText, { color: colors.mutedForeground }]}>Nessuna sessione nel periodo selezionato</Text>
             </View>
           ) : (
             dailyGroups.map((group, gi) => (
               <View
                 key={group.date}
                 style={[
-                  styles.logDayGroup,
-                  { backgroundColor: gi % 2 === 0 ? colors.card : `${colors.primary}05` },
+                  { backgroundColor: gi % 2 === 0 ? colors.card : `${colors.primary}06` },
                   gi < dailyGroups.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                 ]}
               >
-                <View style={styles.logDateRow}>
-                  <View style={[styles.logDateBadge, { backgroundColor: `${colors.primary}18` }]}>
+                {/* Date separator row — full-width, space-between */}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingTop: 10, paddingBottom: 5 }}>
+                  <View style={[styles.logDateBadge, { backgroundColor: `${colors.primary}15` }]}>
                     <Ionicons name="calendar-outline" size={11} color={colors.primary} />
                     <Text style={[styles.logDateText, { color: colors.primary }]}>{formatDate(group.date)}</Text>
+                    {group.entries.length > 1 && (
+                      <Text style={{ fontSize: 10, color: colors.mutedForeground, marginLeft: 2 }}>· {group.entries.length} sess.</Text>
+                    )}
                   </View>
-                  {group.entries.length > 1 && (
-                    <Text style={[styles.logSessionCount, { color: colors.mutedForeground }]}>{group.entries.length} sessions</Text>
-                  )}
-                  <Text style={[styles.logDayTotalText, { color: colors.primary }]}>€{(group.dayTotalCents / 100).toFixed(2)}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "900", color: colors.primary }}>€{(group.dayTotalCents / 100).toFixed(2)}</Text>
                 </View>
+
+                {/* Entry rows — aligned to 3-column header */}
                 {group.entries.map((entry, ei) => (
                   <View
                     key={`${group.date}-${ei}`}
-                    style={[styles.logEntryRow, ei < group.entries.length - 1 && { borderBottomWidth: 1, borderBottomColor: `${colors.border}80` }]}
+                    style={[styles.logEntryRow, { borderTopWidth: 1, borderTopColor: `${colors.border}50` }]}
                   >
-                    <View style={{ flex: 2.5, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View style={{ flex: 3, flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <View style={[styles.logDisciplineDot, { backgroundColor: colors.secondary }]} />
                       <Text style={[styles.logDisciplineName, { color: colors.foreground }]} numberOfLines={1}>{entry.discipline}</Text>
                     </View>
-                    <Text style={[styles.logEntryCell, { color: colors.primary, textAlign: "center" }]}>{entry.hours}h</Text>
-                    <Text style={[styles.logEntryCell, { color: colors.mutedForeground, textAlign: "center" }]}>€{(entry.rateCents / 100).toFixed(0)}</Text>
-                    <Text style={[styles.logEntryCell, { color: colors.primary, fontWeight: "700", textAlign: "right" }]}>€{(entry.totalCents / 100).toFixed(2)}</Text>
+                    <Text style={[styles.logEntryCell, { flex: 1, color: colors.mutedForeground, textAlign: "center" }]}>{entry.hours}h</Text>
+                    <Text style={[styles.logEntryCell, { flex: 1.2, color: colors.primary, fontWeight: "700", textAlign: "right" }]}>€{(entry.totalCents / 100).toFixed(2)}</Text>
                   </View>
                 ))}
               </View>
@@ -748,8 +761,8 @@ export default function OperatorInvoicing() {
           {!loading && dailyGroups.length > 0 && (
             <View style={[styles.logGrandTotal, { backgroundColor: colors.primary }]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.logGrandTotalLabel}>TOTAL DUE</Text>
-                <Text style={styles.logGrandTotalSub}>{filteredTotalHours}h · {filteredDailyLog.length} sessions · {dailyGroups.length} days</Text>
+                <Text style={styles.logGrandTotalLabel}>TOTALE DOVUTO</Text>
+                <Text style={styles.logGrandTotalSub}>{filteredTotalHours}h · {filteredDailyLog.length} sessioni</Text>
               </View>
               <Text style={styles.logGrandTotalAmount}>€{totalEur}</Text>
             </View>
@@ -765,11 +778,13 @@ export default function OperatorInvoicing() {
           >
             <Ionicons name={generating ? "hourglass-outline" : "document-text"} size={18} color={colors.primary} />
             <Text style={[styles.pdfBtnText, { color: colors.primary }]}>
-              {generating ? "GENERATING PDF…" : Platform.OS === "web" ? "PRINT / SAVE PDF" : "GENERATE & SHARE PDF"}
+              {generating ? "GENERAZIONE IN CORSO…" : Platform.OS === "web" ? "SCARICA INVOICE HTML" : "GENERA & CONDIVIDI PDF"}
             </Text>
           </Pressable>
           <Text style={[styles.pdfHint, { color: colors.mutedForeground }]}>
-            Exports a professional daily work log invoice for {dateRange.label}
+            {Platform.OS === "web"
+              ? "Scarica il file HTML, aprilo nel browser e stampa come PDF"
+              : `Genera un PDF professionale per ${dateRange.label}`}
           </Text>
 
           {/* PDF error banner */}
@@ -801,8 +816,8 @@ export default function OperatorInvoicing() {
             >
               <Ionicons name="checkmark-circle" size={20} color="#059669" />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.submittedText, { marginBottom: 1 }]}>Invoice submitted to Admin</Text>
-                <Text style={{ fontSize: 11, color: "#059669" }}>Tap to view confirmation · {submittedId}</Text>
+                <Text style={[styles.submittedText, { marginBottom: 1 }]}>Invoice inviata all'Admin</Text>
+                <Text style={{ fontSize: 11, color: "#059669" }}>Tocca per vedere conferma · {submittedId}</Text>
               </View>
               <Ionicons name="chevron-forward" size={14} color="#059669" />
             </Pressable>
@@ -815,12 +830,12 @@ export default function OperatorInvoicing() {
               {submitting ? (
                 <>
                   <ActivityIndicator size="small" color="#FBBF24" />
-                  <Text style={styles.submitBtnText}>SUBMITTING…</Text>
+                  <Text style={styles.submitBtnText}>INVIO IN CORSO…</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="paper-plane-outline" size={16} color="#FBBF24" />
-                  <Text style={styles.submitBtnText}>SUBMIT INVOICE TO ADMIN</Text>
+                  <Text style={styles.submitBtnText}>INVIA INVOICE ALL'ADMIN</Text>
                 </>
               )}
             </Pressable>
@@ -910,7 +925,7 @@ export default function OperatorInvoicing() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingHorizontal: 16 },
+  scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 26, fontWeight: "900", letterSpacing: -0.5, marginBottom: 16 },
   sectionTitle: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 },
 
