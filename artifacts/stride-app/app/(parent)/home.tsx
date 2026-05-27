@@ -29,11 +29,11 @@ const LOGO = require("@/assets/images/stride-logo.png");
 type AbsenceType = "absent" | "late5" | "late10" | "late15" | "late30";
 
 const ABSENCE_OPTIONS: { value: AbsenceType; label: string }[] = [
-  { value: "absent",  label: "Absent today" },
-  { value: "late5",   label: "5 min late" },
-  { value: "late10",  label: "10 min late" },
-  { value: "late15",  label: "15 min late" },
-  { value: "late30",  label: "30 min late" },
+  { value: "absent",  label: "Assente oggi" },
+  { value: "late5",   label: "5 min di ritardo" },
+  { value: "late10",  label: "10 min di ritardo" },
+  { value: "late15",  label: "15 min di ritardo" },
+  { value: "late30",  label: "30 min di ritardo" },
 ];
 
 function buildMapsUrl(location: string): string {
@@ -83,7 +83,7 @@ export default function ParentHome() {
 
   const handleNavigate = async () => {
     if (!lessonLocation) {
-      Alert.alert("No location available", "This activity does not have a location set.");
+      Alert.alert("Posizione non disponibile", "Questa attività non ha una posizione impostata.");
       return;
     }
     const url = buildMapsUrl(lessonLocation);
@@ -99,7 +99,7 @@ export default function ParentHome() {
     if (Platform.OS !== "web") {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert("Permission Required", "Please allow access to your photo library in Settings.");
+        Alert.alert("Autorizzazione richiesta", "Consenti l'accesso alla libreria foto nelle Impostazioni.");
         return;
       }
     }
@@ -118,7 +118,6 @@ export default function ParentHome() {
   const handleSendAbsence = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowAbsence(false);
-    Alert.alert("Sent", "Your report has been sent to the office.");
   };
 
   const openQR = (target: "parent" | string = "parent") => {
@@ -141,7 +140,7 @@ export default function ParentHome() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerCenter}>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Hi,</Text>
+            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Ciao,</Text>
             <Text style={[styles.userName, { color: colors.primary }]}>{firstName}</Text>
           </View>
           <Pressable
@@ -202,7 +201,7 @@ export default function ParentHome() {
           <View style={styles.lessonCardTop}>
             <View style={styles.lessonBadge}>
               <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.lessonBadgeText}>NEXT ACTIVITY:</Text>
+              <Text style={styles.lessonBadgeText}>PROSSIMA ATTIVITÀ:</Text>
             </View>
           </View>
           {nextLesson && nextCourse ? (
@@ -229,11 +228,11 @@ export default function ParentHome() {
                 onPress={handleNavigate}
               >
                 <Ionicons name="navigate" size={14} color="#1E3A8A" />
-                <Text style={styles.navigateBtnText}>NAVIGATE</Text>
+                <Text style={styles.navigateBtnText}>NAVIGA</Text>
               </Pressable>
             </>
           ) : (
-            <Text style={styles.lessonCourseName}>No upcoming activities</Text>
+            <Text style={styles.lessonCourseName}>Nessuna attività in programma</Text>
           )}
         </View>
 
@@ -246,8 +245,8 @@ export default function ParentHome() {
             <Ionicons name="school-outline" size={24} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.privateLessonTitle}>Private Lessons</Text>
-            <Text style={styles.privateLessonSub}>Book a 1-on-1 session with an instructor</Text>
+            <Text style={styles.privateLessonTitle}>Lezioni Private</Text>
+            <Text style={styles.privateLessonSub}>Prenota una sessione 1-a-1 con un istruttore</Text>
           </View>
           {unreadCount > 0 && (
             <View style={styles.privateLessonBadge}>
@@ -265,23 +264,23 @@ export default function ParentHome() {
             onPress={() => openQR("parent")}
           >
             <Ionicons name="qr-code" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>SHOW QR{"\n"}PASS</Text>
+            <Text style={[styles.quickBtnText, { color: colors.primary }]}>MOSTRA{"\n"}QR PASS</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => setShowAbsence(true)}
           >
             <Ionicons name="alert-circle-outline" size={28} color="#F59E0B" />
-            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>REPORT{"\n"}ABSENCE/DELAY</Text>
+            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>SEGNALA{"\n"}ASSENZA/RITARDO</Text>
           </Pressable>
         </View>
 
         {/* Notifications */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifiche e Avvisi</Text>
         {[
-          { id: "1", icon: "star-outline"     as const, text: "Sofia: ★ Gold Stars for the choreography!", time: "Today",     accent: "#FBBF24" },
-          { id: "2", icon: "document-outline" as const, text: "New Document: WA Privacy Policy to Sign",    time: "Yesterday", accent: colors.primary },
-          { id: "3", icon: "time-outline"     as const, text: "Tomorrow's lesson: Moved to 15:30",          time: "2 hrs ago", accent: "#7C3AED" },
+          { id: "1", icon: "star-outline"     as const, text: "Sofia: ★ Stelle d'oro per la coreografia!", time: "Oggi",     accent: "#FBBF24" },
+          { id: "2", icon: "document-outline" as const, text: "Nuovo documento: Informativa Privacy da firmare", time: "Ieri", accent: colors.primary },
+          { id: "3", icon: "time-outline"     as const, text: "Lezione di domani: spostata alle 15:30",      time: "2 ore fa", accent: "#7C3AED" },
         ].map(item => (
           <Pressable key={item.id} style={[styles.notifCard, { backgroundColor: colors.card }]}>
             <View style={[styles.notifIcon, { backgroundColor: `${item.accent}20` }]}>
@@ -293,7 +292,7 @@ export default function ParentHome() {
         ))}
 
         {/* Contact */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact Office</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contatta la Segreteria</Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
           <View style={styles.contactRow}>
             <Pressable style={[styles.contactBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => Linking.openURL("https://wa.me/390212345678")}>

@@ -36,7 +36,10 @@ async function isBlacklisted(
 
 router.get("/children", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
-  const parentId = user.role === "parent" ? parseInt(user.id) : undefined;
+  // Always filter by the caller's own parent_id unless they are admin.
+  // This ensures that an operator who switches to the parent role in-app
+  // can only ever see their own children, not all children in the system.
+  const parentId = user.role !== "admin" ? parseInt(user.id) : undefined;
 
   let query = supabase.from("children").select("*").order("first_name");
   if (parentId) query = query.eq("parent_id", parentId);
