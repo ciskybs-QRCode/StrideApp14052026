@@ -257,56 +257,151 @@ export default function OperatorCalendar() {
           })}
         </ScrollView>
 
-        {/* ── Lessons for selected day ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
-          {DAYS[selectedDay]} — {todayLessons.length} {todayLessons.length === 1 ? "lesson" : "lessons"}
-        </Text>
+        {/* ── Lessons: list vs grid ── */}
+        {view === "list" ? (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+              {DAYS[selectedDay]} — {todayLessons.length} {todayLessons.length === 1 ? "lesson" : "lessons"}
+            </Text>
 
-        {todayLessons.length === 0 ? (
-          <View style={[styles.emptyBox, { backgroundColor: colors.card }]}>
-            <Ionicons name="calendar-outline" size={38} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No lessons today</Text>
-          </View>
-        ) : (
-          todayLessons.map((lesson, i) => (
-            <View
-              key={i}
-              style={[styles.lessonCard, { backgroundColor: colors.card, opacity: lesson.cancelled ? 0.5 : 1 }]}
-            >
-              <View style={[styles.lessonBar, { backgroundColor: lesson.cancelled ? "#9CA3AF" : colors.secondary }]} />
-              <View style={styles.lessonContent}>
-                <View style={styles.lessonTopRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.lessonName, { color: colors.primary }]}>{lesson.course}</Text>
-                    {lesson.cancelled && <Text style={styles.cancelledBadge}>CANCELLED</Text>}
-                  </View>
-                  <View style={styles.lessonTopRight}>
-                    <View style={[styles.studentsBadge, { backgroundColor: colors.muted }]}>
-                      <Ionicons name="people" size={12} color={colors.primary} />
-                      <Text style={[styles.studentsCount, { color: colors.primary }]}>{lesson.students}</Text>
+            {todayLessons.length === 0 ? (
+              <View style={[styles.emptyBox, { backgroundColor: colors.card }]}>
+                <Ionicons name="calendar-outline" size={38} color={colors.mutedForeground} />
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No lessons today</Text>
+              </View>
+            ) : (
+              todayLessons.map((lesson, i) => (
+                <View
+                  key={i}
+                  style={[styles.lessonCard, { backgroundColor: colors.card, opacity: lesson.cancelled ? 0.5 : 1 }]}
+                >
+                  <View style={[styles.lessonBar, { backgroundColor: lesson.cancelled ? "#9CA3AF" : colors.secondary }]} />
+                  <View style={styles.lessonContent}>
+                    <View style={styles.lessonTopRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.lessonName, { color: colors.primary }]}>{lesson.course}</Text>
+                        {lesson.cancelled && <Text style={styles.cancelledBadge}>CANCELLED</Text>}
+                      </View>
+                      <View style={styles.lessonTopRight}>
+                        <View style={[styles.studentsBadge, { backgroundColor: colors.muted }]}>
+                          <Ionicons name="people" size={12} color={colors.primary} />
+                          <Text style={[styles.studentsCount, { color: colors.primary }]}>{lesson.students}</Text>
+                        </View>
+                        {!lesson.cancelled && (
+                          <Pressable
+                            onPress={() => {
+                              setShowOptions({ dayIdx: selectedDay, lessonIdx: i });
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            }}
+                            style={styles.optionsBtn}
+                          >
+                            <Ionicons name="ellipsis-vertical" size={18} color={colors.mutedForeground} />
+                          </Pressable>
+                        )}
+                      </View>
                     </View>
-                    {!lesson.cancelled && (
-                      <Pressable
-                        onPress={() => {
-                          setShowOptions({ dayIdx: selectedDay, lessonIdx: i });
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        }}
-                        style={styles.optionsBtn}
-                      >
-                        <Ionicons name="ellipsis-vertical" size={18} color={colors.mutedForeground} />
-                      </Pressable>
-                    )}
+                    <Text style={[styles.lessonMeta, { color: colors.mutedForeground }]}>
+                      <Ionicons name="time-outline" size={13} /> {lesson.start} – {lesson.end}
+                    </Text>
+                    <Text style={[styles.lessonMeta, { color: colors.mutedForeground }]}>
+                      <Ionicons name="location-outline" size={13} /> {lesson.room}
+                    </Text>
                   </View>
                 </View>
-                <Text style={[styles.lessonMeta, { color: colors.mutedForeground }]}>
-                  <Ionicons name="time-outline" size={13} /> {lesson.start} – {lesson.end}
-                </Text>
-                <Text style={[styles.lessonMeta, { color: colors.mutedForeground }]}>
-                  <Ionicons name="location-outline" size={13} /> {lesson.room}
-                </Text>
-              </View>
+              ))
+            )}
+          </>
+        ) : (
+          /* ── GRID VIEW ── */
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Week at a Glance</Text>
+            <View style={[styles.gridCard, { backgroundColor: colors.card }]}>
+              {DAYS.map((day, idx) => {
+                const dayLessons = schedule[idx] ?? [];
+                const isSelected = selectedDay === idx;
+                const hasLessons = dayLessons.length > 0;
+                const visible = dayLessons.slice(0, 2);
+                const overflow = dayLessons.length - 2;
+                return (
+                  <Pressable
+                    key={day}
+                    onPress={() => { setSelectedDay(idx); setView("list"); }}
+                    style={[
+                      styles.gridCol,
+                      isSelected && { backgroundColor: `${colors.primary}12`, borderRadius: 12 },
+                    ]}
+                  >
+                    {/* Day header */}
+                    <View style={[
+                      styles.gridDayHeader,
+                      { backgroundColor: isSelected ? colors.primary : colors.muted },
+                    ]}>
+                      <Text style={[
+                        styles.gridDayLabel,
+                        { color: isSelected ? "#FFF" : colors.mutedForeground },
+                      ]}>
+                        {day}
+                      </Text>
+                      {hasLessons && (
+                        <View style={[
+                          styles.gridDot,
+                          { backgroundColor: isSelected ? colors.secondary : colors.primary },
+                        ]} />
+                      )}
+                    </View>
+
+                    {/* Lesson chips */}
+                    <View style={styles.gridChips}>
+                      {visible.map((lesson, li) => (
+                        <View
+                          key={li}
+                          style={[
+                            styles.gridChip,
+                            {
+                              backgroundColor: lesson.cancelled
+                                ? "#F3F4F6"
+                                : isSelected
+                                ? `${colors.primary}20`
+                                : `${colors.primary}10`,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.gridChipTime,
+                              { color: lesson.cancelled ? "#9CA3AF" : colors.primary },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {lesson.start}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.gridChipName,
+                              { color: lesson.cancelled ? "#9CA3AF" : colors.primary },
+                            ]}
+                            numberOfLines={2}
+                          >
+                            {lesson.course.split(" ")[0]}
+                          </Text>
+                        </View>
+                      ))}
+                      {overflow > 0 && (
+                        <View style={[styles.gridOverflow, { backgroundColor: colors.secondary }]}>
+                          <Text style={[styles.gridOverflowText, { color: colors.primary }]}>+{overflow}</Text>
+                        </View>
+                      )}
+                      {!hasLessons && (
+                        <View style={styles.gridEmpty}>
+                          <Text style={[styles.gridEmptyText, { color: colors.mutedForeground }]}>—</Text>
+                        </View>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
-          ))
+          </>
         )}
 
         {/* ── Week overview ── */}
@@ -842,6 +937,19 @@ const styles = StyleSheet.create({
   sheetBtnSecText:   { fontWeight: "700", fontSize: 15 },
   sheetBtnPri:       { flex: 1, borderRadius: 14, padding: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 },
   sheetBtnPriText:   { fontWeight: "700", fontSize: 15 },
+  gridCard:          { flexDirection: "row", borderRadius: 16, padding: 10, marginBottom: 20, gap: 4 },
+  gridCol:           { flex: 1, alignItems: "center", paddingVertical: 6, paddingHorizontal: 2 },
+  gridDayHeader:     { width: "100%", alignItems: "center", borderRadius: 10, paddingVertical: 6, marginBottom: 6, gap: 3 },
+  gridDayLabel:      { fontSize: 11, fontWeight: "800" },
+  gridDot:           { width: 5, height: 5, borderRadius: 3 },
+  gridChips:         { width: "100%", gap: 4, alignItems: "center" },
+  gridChip:          { width: "100%", borderRadius: 8, padding: 4, alignItems: "center" },
+  gridChipTime:      { fontSize: 9, fontWeight: "800" },
+  gridChipName:      { fontSize: 9, fontWeight: "600", textAlign: "center", lineHeight: 11 },
+  gridOverflow:      { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, marginTop: 2 },
+  gridOverflowText:  { fontSize: 10, fontWeight: "800" },
+  gridEmpty:         { paddingVertical: 8 },
+  gridEmptyText:     { fontSize: 14, fontWeight: "300" },
   optionsCard:       { backgroundColor: "#FFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24 },
   optionsTitle:      { fontSize: 18, fontWeight: "800", marginBottom: 4 },
   optionsSubtitle:   { fontSize: 13, marginBottom: 20 },
