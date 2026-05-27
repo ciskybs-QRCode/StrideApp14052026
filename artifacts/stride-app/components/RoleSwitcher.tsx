@@ -103,8 +103,8 @@ export function RoleSwitcherRow() {
           <Text style={rowStyles.rowLabel}>Switch Role</Text>
           <Text style={rowStyles.rowSub}>Current view: {current.label}</Text>
         </View>
-        <View style={[rowStyles.activePill, { backgroundColor: `${current.color}15` }]}>
-          <Text style={[rowStyles.activePillText, { color: current.color }]}>{current.label}</Text>
+        <View style={[rowStyles.activePill, { backgroundColor: `${current.color}15`, flexShrink: 0 }]}>
+          <Text style={[rowStyles.activePillText, { color: current.color }]} numberOfLines={1}>{current.label}</Text>
         </View>
         <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
       </Pressable>

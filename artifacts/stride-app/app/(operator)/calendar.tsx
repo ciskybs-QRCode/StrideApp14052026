@@ -30,7 +30,9 @@ const DANCE_STYLES = [
 
 type StyleId = typeof DANCE_STYLES[number]["id"];
 
-const STORAGE_KEY = "stride_workshops";
+const STORAGE_KEY           = "stride_workshops";
+const SAVED_INSTRUCTORS_KEY = "stride_saved_instructors";
+const SAVED_VENUES_KEY      = "stride_saved_venues";
 
 type Workshop = {
   id: string;
@@ -60,8 +62,22 @@ type LessonItem = {
 function formatDateDisplay(iso: string): string {
   if (!iso || iso.length < 10) return iso;
   const [y, m, d] = iso.split("-");
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${d} ${months[parseInt(m) - 1]} ${y}`;
+  return `${d}/${m}/${y}`;
+}
+
+function isoToDisplay(iso: string): string {
+  if (!iso || iso.length < 10) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function displayToIso(display: string): string {
+  if (!display) return "";
+  const parts = display.split("/");
+  if (parts.length === 3 && parts[2]?.length === 4) {
+    return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+  }
+  return "";
 }
 
 function daysBetween(a: string, b: string): number {
@@ -117,22 +133,33 @@ export default function OperatorCalendar() {
   const [wPrice,            setWPrice]           = useState("0");
   const [wDescription,      setWDescription]     = useState("");
   const [validationMsg,     setValidationMsg]    = useState("");
+  const [wSingleDay,        setWSingleDay]       = useState(false);
+  const [wStartDateDisplay, setWStartDateDisplay]= useState(isoToDisplay(todayIso()));
+  const [wEndDateDisplay,   setWEndDateDisplay]  = useState(isoToDisplay(todayIso()));
+  const [savedInstructors,  setSavedInstructors] = useState<string[]>([]);
+  const [savedVenues,       setSavedVenues]      = useState<string[]>([]);
 
   // ── derived lists ────────────────────────────────────────────────────────────
   const knownInstructors: string[] = (() => {
     const fromCourses = courses.map(c => c.instructor).filter(i => i && i !== "TBA");
-    const unique = [...new Set(fromCourses)];
+    const unique = [...new Set([...fromCourses, ...savedInstructors])];
     return unique.length ? unique : ["Maria Rossi", "Luca Ferri", "Anna Bianchi"];
   })();
 
   const knownRooms: string[] = [
-    ...new Set(["Main Hall", "Room A", "Room B", "Room C", "Studio 1", ...schedule.flat().map(l => l.room)]),
+    ...new Set(["Main Hall", "Room A", "Room B", "Room C", "Studio 1", ...schedule.flat().map(l => l.room), ...savedVenues]),
   ];
 
   // ── persistence ──────────────────────────────────────────────────────────────
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then(val => { if (val) setWorkshops(JSON.parse(val) as Workshop[]); })
+      .catch(() => {});
+    AsyncStorage.getItem(SAVED_INSTRUCTORS_KEY)
+      .then(val => { if (val) setSavedInstructors(JSON.parse(val) as string[]); })
+      .catch(() => {});
+    AsyncStorage.getItem(SAVED_VENUES_KEY)
+      .then(val => { if (val) setSavedVenues(JSON.parse(val) as string[]); })
       .catch(() => {});
   }, []);
 
@@ -143,8 +170,11 @@ export default function OperatorCalendar() {
 
   // ── helpers ──────────────────────────────────────────────────────────────────
   const resetForm = () => {
+    const today = todayIso();
     setWTitle(""); setWStyle("general");
-    setWStartDate(todayIso()); setWEndDate(todayIso());
+    setWStartDate(today); setWEndDate(today);
+    setWStartDateDisplay(isoToDisplay(today)); setWEndDateDisplay(isoToDisplay(today));
+    setWSingleDay(false);
     setWStartTime("10:00"); setWEndTime("13:00");
     setWInstructor(""); setWCustomInstructor(false); setWNewInstructor("");
     setWLocation(""); setWCustomLocation(false); setWNewLocation("");
@@ -185,6 +215,25 @@ export default function OperatorCalendar() {
       status:      "upcoming",
     };
     persistWorkshops([...workshops, w]);
+
+    // Persist instructor and venue so they appear in future dropdowns
+    AsyncStorage.getItem(SAVED_INSTRUCTORS_KEY).then(raw => {
+      const saved: string[] = raw ? JSON.parse(raw) : [];
+      if (!saved.includes(instructor)) {
+        const updated = [...saved, instructor];
+        setSavedInstructors(updated);
+        AsyncStorage.setItem(SAVED_INSTRUCTORS_KEY, JSON.stringify(updated)).catch(() => {});
+      }
+    }).catch(() => {});
+    AsyncStorage.getItem(SAVED_VENUES_KEY).then(raw => {
+      const saved: string[] = raw ? JSON.parse(raw) : [];
+      if (!saved.includes(location)) {
+        const updated = [...saved, location];
+        setSavedVenues(updated);
+        AsyncStorage.setItem(SAVED_VENUES_KEY, JSON.stringify(updated)).catch(() => {});
+      }
+    }).catch(() => {});
+
     setShowModal(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -502,8 +551,8 @@ export default function OperatorCalendar() {
         {/* ── Events & meetings (static) ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 4 }]}>Events & Meetings</Text>
         {[
-          { title: "End-of-Year Recital", date: "June 15, 2026", type: "event"   },
-          { title: "Staff Meeting",       date: "April 20, 2026", type: "meeting" },
+          { title: "End-of-Year Recital", date: "15/06/2026", type: "event"   },
+          { title: "Staff Meeting",       date: "20/04/2026", type: "meeting" },
         ].map((ev, i) => (
           <View key={i} style={[styles.eventCard, { backgroundColor: colors.card }]}>
             <View style={[styles.eventIcon, { backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EDE9FE" }]}>
@@ -597,46 +646,80 @@ export default function OperatorCalendar() {
               </ScrollView>
 
               {/* ─ Dates ─ */}
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Date Range</Text>
-              <View style={styles.twoCol}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.subLabel}>Start (YYYY-MM-DD)</Text>
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Date</Text>
+
+              {/* Single Day / Date Range segmented toggle */}
+              <View style={{ flexDirection: "row", borderRadius: 10, borderWidth: 1.5, borderColor: colors.primary, overflow: "hidden", marginBottom: 12 }}>
+                <Pressable
+                  style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, backgroundColor: wSingleDay ? colors.primary : "transparent" }}
+                  onPress={() => { setWSingleDay(true); setWEndDate(wStartDate); setWEndDateDisplay(wStartDateDisplay); setValidationMsg(""); }}
+                >
+                  <Ionicons name="today-outline" size={14} color={wSingleDay ? "#FFF" : colors.primary} />
+                  <Text style={{ fontSize: 13, fontWeight: "600" as const, color: wSingleDay ? "#FFF" : colors.primary }}>Single Day</Text>
+                </Pressable>
+                <View style={{ width: 1.5, backgroundColor: colors.primary }} />
+                <Pressable
+                  style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, backgroundColor: !wSingleDay ? colors.primary : "transparent" }}
+                  onPress={() => { setWSingleDay(false); setValidationMsg(""); }}
+                >
+                  <Ionicons name="calendar-outline" size={14} color={!wSingleDay ? "#FFF" : colors.primary} />
+                  <Text style={{ fontSize: 13, fontWeight: "600" as const, color: !wSingleDay ? "#FFF" : colors.primary }}>Date Range</Text>
+                </Pressable>
+              </View>
+
+              {/* Date inputs */}
+              <View style={wSingleDay ? {} : styles.twoCol}>
+                <View style={wSingleDay ? {} : { flex: 1 }}>
+                  <Text style={styles.subLabel}>{wSingleDay ? "Date (GG/MM/AAAA)" : "Inizio (GG/MM/AAAA)"}</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-                    placeholder={todayIso()}
+                    placeholder={isoToDisplay(todayIso())}
                     placeholderTextColor={colors.mutedForeground}
-                    value={wStartDate}
-                    onChangeText={t => { setWStartDate(t); setValidationMsg(""); }}
+                    value={wStartDateDisplay}
+                    onChangeText={t => {
+                      setWStartDateDisplay(t);
+                      setValidationMsg("");
+                      const iso = displayToIso(t);
+                      if (iso.length === 10) {
+                        setWStartDate(iso);
+                        if (wSingleDay) { setWEndDate(iso); setWEndDateDisplay(t); }
+                      }
+                    }}
                   />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.subLabel}>End (max +7 days)</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      { borderColor: durationDays > 6 ? "#EF4444" : colors.primary, color: colors.foreground },
-                    ]}
-                    placeholder={todayIso()}
-                    placeholderTextColor={colors.mutedForeground}
-                    value={wEndDate}
-                    onChangeText={t => { setWEndDate(t); setValidationMsg(""); }}
-                  />
-                </View>
+                {!wSingleDay && (
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subLabel}>Fine (max +7 gg)</Text>
+                    <TextInput
+                      style={[styles.input, { borderColor: durationDays > 6 ? "#EF4444" : colors.primary, color: colors.foreground }]}
+                      placeholder={isoToDisplay(todayIso())}
+                      placeholderTextColor={colors.mutedForeground}
+                      value={wEndDateDisplay}
+                      onChangeText={t => {
+                        setWEndDateDisplay(t);
+                        setValidationMsg("");
+                        const iso = displayToIso(t);
+                        if (iso.length === 10) setWEndDate(iso);
+                      }}
+                    />
+                  </View>
+                )}
               </View>
+
               {/* Duration pill */}
               {wStartDate.length === 10 && wEndDate.length === 10 && (
                 durationDays > 6 ? (
                   <View style={[styles.durationPill, { backgroundColor: "#FEE2E2" }]}>
                     <Ionicons name="warning-outline" size={13} color="#EF4444" />
                     <Text style={[styles.durationPillText, { color: "#EF4444" }]}>
-                      {durationDays + 1} days — exceeds limit, use a Course instead
+                      {durationDays + 1} giorni — limite superato, usa un Corso
                     </Text>
                   </View>
                 ) : durationDays >= 0 ? (
                   <View style={[styles.durationPill, { backgroundColor: colors.secondary }]}>
                     <Ionicons name="calendar-outline" size={13} color={colors.primary} />
                     <Text style={[styles.durationPillText, { color: colors.primary }]}>
-                      {durationDays === 0 ? "Single day" : `${durationDays + 1} days`}
+                      {durationDays === 0 ? "Giornata singola" : `${durationDays + 1} giorni`}
                     </Text>
                   </View>
                 ) : null

@@ -71,29 +71,30 @@ export default function OperatorSettingsScreen() {
 
         {/* ── Profile card ── */}
         <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
-          <Pressable onPress={handlePickPhoto} style={styles.avatarWrap}>
-            {user?.profilePhotoUri ? (
-              <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} />
-            ) : (
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarText}>{user?.name?.charAt(0) ?? "I"}</Text>
+          <View style={styles.profileInner}>
+            <Pressable onPress={handlePickPhoto} style={styles.avatarWrap}>
+              {user?.profilePhotoUri ? (
+                <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} />
+              ) : (
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarText}>{user?.name?.charAt(0) ?? "I"}</Text>
+                </View>
+              )}
+              <View style={styles.cameraOverlay}>
+                <Ionicons name="camera" size={12} color="#FFF" />
               </View>
-            )}
-            <View style={styles.cameraOverlay}>
-              <Ionicons name="camera" size={12} color="#FFF" />
+            </Pressable>
+
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName} numberOfLines={1}>{user?.name ?? "Instructor"}</Text>
+              {user?.email ? (
+                <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
+              ) : null}
+              <View style={[styles.roleBadge, { backgroundColor: "#FBBF24" }]}>
+                <Ionicons name={meta.icon as never} size={12} color={colors.primary} />
+                <Text style={[styles.roleBadgeText, { color: colors.primary }]}>{meta.label}</Text>
+              </View>
             </View>
-          </Pressable>
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.profileName}>{user?.name ?? "Instructor"}</Text>
-            {user?.email ? (
-              <Text style={styles.profileEmail}>{user.email}</Text>
-            ) : null}
-          </View>
-
-          <View style={[styles.roleBadge, { backgroundColor: "#FBBF24" }]}>
-            <Ionicons name={meta.icon as never} size={13} color={colors.primary} />
-            <Text style={[styles.roleBadgeText, { color: colors.primary }]}>{meta.label}</Text>
           </View>
         </View>
 
@@ -154,14 +155,9 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
   // Profile card
-  profileCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
-  },
+  profileCard: { borderRadius: 20, padding: 20, marginBottom: 24 },
+  profileInner: { flexDirection: "row", alignItems: "center", gap: 14 },
+  profileInfo: { flex: 1, minWidth: 0 },
   avatarWrap: { position: "relative" },
   avatarCircle: {
     width: 52,
@@ -184,16 +180,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  profileName: { color: "#FFF", fontSize: 17, fontWeight: "700" },
-  profileEmail: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },
-  roleBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
+  profileName: { color: "#FFF", fontSize: 17, fontWeight: "700", marginBottom: 2 },
+  profileEmail: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginBottom: 8 },
+  roleBadge: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   roleBadgeText: { fontSize: 11, fontWeight: "700" },
   // Quick links
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },

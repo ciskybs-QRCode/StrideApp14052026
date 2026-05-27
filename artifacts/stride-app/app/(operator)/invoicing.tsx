@@ -77,8 +77,9 @@ function monthLabel(key: string) {
 }
 
 function formatDate(iso: string) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+  if (!iso || iso.length < 10) return iso;
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
 }
 
 // ── Daily log generator ──────────────────────────────────────────────────────
