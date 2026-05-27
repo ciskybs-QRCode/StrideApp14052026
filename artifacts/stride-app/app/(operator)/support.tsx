@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import {
   Linking,
   Modal,
@@ -42,12 +43,18 @@ function detectEmergencyInfo(org?: ApiOrg | null): { number: string; country: st
   return { number: "000", country: "Emergency" };
 }
 
+interface ProtocolStep {
+  text: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  letter?: string;
+}
+
 interface Protocol {
   id: string;
   title: string;
-  icon: "flame" | "medkit" | "person-remove" | "shield-half";
+  icon: React.ComponentProps<typeof Ionicons>["name"];
   color: string;
-  steps: string[];
+  steps: ProtocolStep[];
 }
 
 const PROTOCOLS: Protocol[] = [
@@ -57,11 +64,11 @@ const PROTOCOLS: Protocol[] = [
     icon: "flame",
     color: "#EF4444",
     steps: [
-      "Activate the fire alarm immediately",
-      "Evacuate the room in an orderly fashion — no running",
-      "Escort all students to the designated assembly point",
-      "Call the fire brigade using the emergency number",
-      "Notify school administration and await further instructions",
+      { icon: "alarm-outline",      text: "Activate the fire alarm immediately." },
+      { icon: "walk-outline",       text: "Evacuate the room in an orderly fashion — no running." },
+      { icon: "people-outline",     text: "Escort all students to the designated assembly point." },
+      { icon: "call",               text: "Call the fire brigade using the emergency number." },
+      { icon: "megaphone-outline",  text: "Notify school administration and await further instructions." },
     ],
   },
   {
@@ -70,11 +77,15 @@ const PROTOCOLS: Protocol[] = [
     icon: "medkit",
     color: "#F59E0B",
     steps: [
-      "Assess the severity of the situation calmly",
-      "Check the student's medical profile for allergies and waiver",
-      "If waiver is 'ambulance consent': call emergency services immediately",
-      "If waiver is 'call parent': contact the parent or guardian first",
-      "Stay with the student until help arrives — do not leave them alone",
+      { icon: "shield-outline",           letter: "D", text: "DANGER — Ensure the area is safe for you, bystanders, and the patient. Do not put yourself at risk." },
+      { icon: "hand-left-outline",        letter: "R", text: "RESPONSE — Call their name and squeeze their shoulders gently. Check if they respond." },
+      { icon: "call",                     letter: "S", text: "SEND HELP — Call emergency services immediately. Send a bystander to find the nearest AED now." },
+      { icon: "fitness-outline",          letter: "A", text: "AIRWAY — Open mouth and check for obstructions. If clear: tilt head back and lift chin. If blocked: roll onto side." },
+      { icon: "ear-outline",              letter: "B", text: "BREATHING — Look, listen, and feel for normal breathing for exactly 10 seconds." },
+      { icon: "heart",                    letter: "C", text: "CPR — If not breathing: 30 chest compressions then 2 rescue breaths at 100–120/min. Repeat until AED or help arrives." },
+      { icon: "flash",                    letter: "D", text: "DEFIBRILLATOR — As soon as AED is available, turn it on and follow the automated voice prompts while continuing CPR." },
+      { icon: "refresh-circle-outline",              text: "RECOVERY — If breathing returns: place in recovery position (on their side). Monitor breathing continuously." },
+      { icon: "document-text-outline",               text: "DOCUMENT — Stay with the patient. Log this incident. Do not leave until professional help takes over." },
     ],
   },
   {
@@ -83,11 +94,11 @@ const PROTOCOLS: Protocol[] = [
     icon: "person-remove",
     color: "#7C3AED",
     steps: [
-      "Wait 15 minutes past the scheduled collection time",
-      "Attempt to contact the primary parent or guardian by phone",
-      "Contact all authorised delegates listed in the student's profile",
-      "After 30 minutes with no contact: notify school administration",
-      "Do not leave the child unattended under any circumstances",
+      { icon: "time-outline",             text: "Wait 15 minutes past the scheduled collection time." },
+      { icon: "call",                     text: "Attempt to contact the primary parent or guardian by phone." },
+      { icon: "people-outline",           text: "Contact all authorised delegates listed in the student's profile." },
+      { icon: "notifications-outline",    text: "After 30 minutes with no contact: notify school administration." },
+      { icon: "eye-outline",              text: "Do not leave the child unattended under any circumstances." },
     ],
   },
   {
@@ -96,11 +107,11 @@ const PROTOCOLS: Protocol[] = [
     icon: "shield-half",
     color: "#1E3A8A",
     steps: [
-      "Ask the person to present their QR Code via the Stride app",
-      "Request a government-issued photo ID for verification",
-      "Call the registered parent to confirm the collection",
-      "If any doubt exists: DO NOT release the child — safety first",
-      "Immediately notify school administration of the incident",
+      { icon: "qr-code-outline",          text: "Ask the person to present their QR Code via the Stride app." },
+      { icon: "card-outline",             text: "Request a government-issued photo ID for verification." },
+      { icon: "call",                     text: "Call the registered parent to confirm the collection." },
+      { icon: "hand-left",               text: "If any doubt exists: DO NOT release the child — safety first." },
+      { icon: "shield-checkmark-outline", text: "Immediately notify school administration of the incident." },
     ],
   },
 ];
@@ -152,7 +163,7 @@ export default function OperatorSupport() {
       protocol_id: wizardProtocol.id,
       protocol_title: wizardProtocol.title,
       step_index: currentStep,
-      step_text: wizardProtocol.steps[currentStep],
+      step_text: wizardProtocol.steps[currentStep]?.text ?? "",
     }).catch(() => {});
 
     const nextStep = currentStep + 1;
@@ -298,12 +309,24 @@ export default function OperatorSupport() {
                   />
                 </View>
 
-                <View style={[styles.stepBox, { backgroundColor: `${wizardProtocol.color}10`, borderColor: `${wizardProtocol.color}40` }]}>
-                  <View style={[styles.stepNumber, { backgroundColor: wizardProtocol.color }]}>
-                    <Text style={styles.stepNumberText}>{currentStep + 1}</Text>
-                  </View>
-                  <Text style={[styles.stepText, { color: colors.foreground }]}>{wizardProtocol.steps[currentStep]}</Text>
-                </View>
+                {(() => {
+                  const step = wizardProtocol.steps[currentStep];
+                  return (
+                    <View style={[styles.stepBox, { backgroundColor: `${wizardProtocol.color}10`, borderColor: `${wizardProtocol.color}40` }]}>
+                      <View style={[styles.stepNumber, { backgroundColor: wizardProtocol.color }]}>
+                        {step?.letter ? (
+                          <Text style={[styles.stepNumberText, { fontSize: 18, fontWeight: "900" }]}>{step.letter}</Text>
+                        ) : (
+                          <Text style={styles.stepNumberText}>{currentStep + 1}</Text>
+                        )}
+                      </View>
+                      <View style={{ flex: 1, gap: 6 }}>
+                        <Ionicons name={step?.icon ?? "information-circle"} size={20} color={wizardProtocol.color} />
+                        <Text style={[styles.stepText, { color: colors.foreground }]}>{step?.text}</Text>
+                      </View>
+                    </View>
+                  );
+                })()}
 
                 <Text style={[styles.logNote, { color: colors.mutedForeground }]}>
                   Tapping "Done" logs this step to Supabase for legal traceability
