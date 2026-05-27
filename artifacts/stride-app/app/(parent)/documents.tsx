@@ -332,7 +332,7 @@ export default function DocumentsScreen() {
                 const doc = documents.find(d => d.id === showSign);
                 return doc ? (
                   <>
-                    <Text style={[styles.modalTitle, { color: colors.primary }]}>Firma Documento</Text>
+                    <Text style={[styles.modalTitle, { color: colors.primary }]}>Sign Document</Text>
                     <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{doc.title}</Text>
                     <SignaturePad onHasSignatureChange={setHasSignature} strokeColor={colors.primary} />
                     <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
@@ -340,14 +340,14 @@ export default function DocumentsScreen() {
                         style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]}
                         onPress={() => { setShowSign(null); setHasSignature(false); }}
                       >
-                        <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                        <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                       </Pressable>
                       <Pressable
                         style={[styles.modalBtn, { flex: 1, backgroundColor: hasSignature ? colors.primary : colors.border }]}
                         onPress={() => { if (hasSignature) handleSign(doc.id); }}
                         disabled={!hasSignature}
                       >
-                        <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Conferma Firma</Text>
+                        <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Signature</Text>
                       </Pressable>
                     </View>
                   </>
@@ -400,17 +400,17 @@ export default function DocumentsScreen() {
             <View style={[styles.formGroup, { backgroundColor: colors.card }]}>
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>First Name</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.firstName} onChangeText={v => setEditExtra(p => ({ ...p, firstName: v }))} placeholder="Nome" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.firstName} onChangeText={v => setEditExtra(p => ({ ...p, firstName: v }))} placeholder="First name" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Last Name</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.lastName} onChangeText={v => setEditExtra(p => ({ ...p, lastName: v }))} placeholder="Cognome" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.lastName} onChangeText={v => setEditExtra(p => ({ ...p, lastName: v }))} placeholder="Last name" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Date of Birth</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.dateOfBirth} onChangeText={v => setEditExtra(p => ({ ...p, dateOfBirth: v }))} placeholder="GG/MM/AAAA" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.dateOfBirth} onChangeText={v => setEditExtra(p => ({ ...p, dateOfBirth: v }))} placeholder="DD/MM/YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" />
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>

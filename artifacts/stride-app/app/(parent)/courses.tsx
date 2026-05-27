@@ -582,10 +582,10 @@ export default function CoursesScreen() {
                   <View style={styles.detailRows}>
                     {[
                       { icon: "person",   label: "Operator",   value: course.instructor },
-                      { icon: "time",     label: "Orario",     value: course.schedule },
-                      { icon: "location", label: "Luogo",      value: course.location || "TBD" },
-                      { icon: "people",   label: "Posti",      value: `${course.enrolled}/${course.capacity}` },
-                      { icon: "fitness",  label: "Età",        value: `${course.ageMin}–${course.ageMax} anni` },
+                      { icon: "time",     label: "Schedule",   value: course.schedule },
+                      { icon: "location", label: "Location",   value: course.location || "TBD" },
+                      { icon: "people",   label: "Spots",      value: `${course.enrolled}/${course.capacity}` },
+                      { icon: "fitness",  label: "Age",        value: `${course.ageMin}–${course.ageMax} years` },
                     ].map(row => (
                       <View key={row.label} style={[styles.detailRow, { borderBottomColor: colors.border }]}>
                         <Ionicons name={row.icon as "person"} size={16} color={colors.mutedForeground} />
@@ -601,14 +601,14 @@ export default function CoursesScreen() {
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                         <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
                         <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                          Materiale Didattico
+                          Course Materials
                         </Text>
                       </View>
                       {courseMaterials.length === 0 ? (
                         <View style={{ backgroundColor: colors.muted, borderRadius: 12, padding: 16, alignItems: "center", gap: 6 }}>
                           <Ionicons name="cloud-outline" size={24} color={colors.mutedForeground} />
                           <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center" }}>
-                            Nessun materiale caricato.{"\n"}Controlla dopo la prima lezione.
+                            No materials uploaded yet.{"\n"}Check back after the first lesson.
                           </Text>
                         </View>
                       ) : (
@@ -639,11 +639,11 @@ export default function CoursesScreen() {
                       onPress={() => openNavigate(course.location)}
                     >
                       <Ionicons name="navigate" size={16} color={colors.primary} />
-                      <Text style={[styles.navigateFullBtnText, { color: colors.primary }]}>Naviga allo Studio</Text>
+                      <Text style={[styles.navigateFullBtnText, { color: colors.primary }]}>Navigate to Studio</Text>
                     </Pressable>
                   ) : null}
                   <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary, marginTop: 12 }]} onPress={() => setSelectedCourse(null)}>
-                    <Text style={styles.closeBtnText}>Chiudi</Text>
+                    <Text style={styles.closeBtnText}>Close</Text>
                   </Pressable>
                 </>
               )}
@@ -662,7 +662,7 @@ export default function CoursesScreen() {
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="cart-outline" size={22} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Aggiungi al Carrello</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add to Cart</Text>
               </View>
               {enrollCourse && (
                 <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
@@ -688,8 +688,8 @@ export default function CoursesScreen() {
                       color={enrollPackage === "dropIn" ? colors.primary : colors.mutedForeground}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.participantName, { color: colors.foreground }]}>Lezione Singola</Text>
-                      <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginTop: 2 }]}>Una lezione, nessun impegno</Text>
+                      <Text style={[styles.participantName, { color: colors.foreground }]}>Single Lesson</Text>
+                      <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginTop: 2 }]}>One lesson, no commitment</Text>
                     </View>
                     <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.dropInPrice}</Text>
                   </Pressable>
@@ -711,9 +711,9 @@ export default function CoursesScreen() {
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.participantName, { color: colors.foreground }]}>
-                        Pacchetto Completo · {enrollCourse.fixedBlockLessons} lezioni
+                        Full Package · {enrollCourse.fixedBlockLessons} lessons
                       </Text>
-                      <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>Sconto del 15% incluso</Text>
+                      <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>15% discount included</Text>
                     </View>
                     <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.fixedBlockPrice}</Text>
                   </Pressable>
@@ -758,11 +758,11 @@ export default function CoursesScreen() {
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowEnrollModal(false)}>
-                  <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Annulla</Text>
+                  <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                 </Pressable>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleAddToCart}>
                   <Ionicons name="cart-outline" size={16} color="#FFF" />
-                  <Text style={styles.closeBtnText}>Aggiungi al Carrello</Text>
+                  <Text style={styles.closeBtnText}>Add to Cart</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -780,15 +780,15 @@ export default function CoursesScreen() {
               </Pressable>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="star" size={22} color="#FBBF24" />
-                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Prenota Lezione Privata</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Book Private Lesson</Text>
               </View>
               <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-                Seleziona le preferenze — i posti disponibili si aggiornano man mano.
+                Select your preferences — available slots update as you go.
               </Text>
 
               <Dropdown
-                label="Partecipante"
-                placeholder="Per chi è questa lezione?"
+                label="Participant"
+                placeholder="Who is this lesson for?"
                 value={privParticipant}
                 options={participantOptions}
                 onSelect={setPrivParticipant}
@@ -803,7 +803,7 @@ export default function CoursesScreen() {
                 colors={colors}
               />
               <Dropdown
-                label="Attività / Stile"
+                label="Activity / Style"
                 placeholder={privInstructor ? "Choose activity" : "Select operator first"}
                 value={privActivity}
                 options={activitiesForInstructor(privInstructor)}
@@ -812,8 +812,8 @@ export default function CoursesScreen() {
                 disabled={!privInstructor}
               />
               <Dropdown
-                label="Data Preferita"
-                placeholder={privActivity ? "Scegli una data" : "Seleziona prima l'attività"}
+                label="Preferred Date"
+                placeholder={privActivity ? "Choose a date" : "Select activity first"}
                 value={privDate}
                 options={privInstructor ? getInstructorDates(privInstructor) : []}
                 onSelect={v => { setPrivDate(v); setPrivSlot(null); }}
@@ -821,8 +821,8 @@ export default function CoursesScreen() {
                 disabled={!privActivity}
               />
               <Dropdown
-                label="Fascia Oraria"
-                placeholder={privDate ? "Scegli un orario" : "Seleziona prima la data"}
+                label="Time Slot"
+                placeholder={privDate ? "Choose a time" : "Select date first"}
                 value={privSlot}
                 options={privInstructor && privDate ? getInstructorSlots(privInstructor, privDate) : []}
                 onSelect={setPrivSlot}
@@ -832,14 +832,14 @@ export default function CoursesScreen() {
 
               <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => { setShowPrivateModal(false); resetPrivate(); }}>
-                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Annulla</Text>
+                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.closeBtn, { flex: 1, backgroundColor: privCanSend ? colors.primary : colors.border }]}
                   onPress={handleSendPrivate}
                   disabled={!privCanSend}
                 >
-                  <Text style={[styles.closeBtnText, { color: privCanSend ? "#FFF" : colors.mutedForeground }]}>Invia Richiesta</Text>
+                  <Text style={[styles.closeBtnText, { color: privCanSend ? "#FFF" : colors.mutedForeground }]}>Send Request</Text>
                 </Pressable>
               </View>
             </View>
@@ -857,23 +857,23 @@ export default function CoursesScreen() {
               </Pressable>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Prenota Appuntamento</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Book an Appointment</Text>
               </View>
               <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-                Dicci il motivo della tua visita e scegli un orario che ti si adatti.
+                Tell us the reason for your visit and choose a time that works for you.
               </Text>
 
               <Dropdown
-                label="Motivo dell'Appuntamento"
-                placeholder="Seleziona un argomento"
+                label="Reason for Appointment"
+                placeholder="Select a topic"
                 value={meetReason}
                 options={OFFICE_REASONS}
                 onSelect={v => { setMeetReason(v); setMeetDate(null); setMeetSlot(null); }}
                 colors={colors}
               />
               <Dropdown
-                label="Data Preferita"
-                placeholder={meetReason ? "Scegli una data" : "Seleziona prima il motivo"}
+                label="Preferred Date"
+                placeholder={meetReason ? "Choose a date" : "Select reason first"}
                 value={meetDate}
                 options={getUpcomingWeekdays(8)}
                 onSelect={v => { setMeetDate(v); setMeetSlot(null); }}
@@ -881,8 +881,8 @@ export default function CoursesScreen() {
                 disabled={!meetReason}
               />
               <Dropdown
-                label="Fascia Oraria"
-                placeholder={meetDate ? "Scegli un orario" : "Seleziona prima la data"}
+                label="Time Slot"
+                placeholder={meetDate ? "Choose a time" : "Select date first"}
                 value={meetSlot}
                 options={OFFICE_TIMES}
                 onSelect={setMeetSlot}
@@ -892,14 +892,14 @@ export default function CoursesScreen() {
 
               <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => { setShowMeetingModal(false); resetMeeting(); }}>
-                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Annulla</Text>
+                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.closeBtn, { flex: 1, backgroundColor: meetCanSend ? colors.primary : colors.border }]}
                   onPress={handleSendMeeting}
                   disabled={!meetCanSend}
                 >
-                  <Text style={[styles.closeBtnText, { color: meetCanSend ? "#FFF" : colors.mutedForeground }]}>Invia Richiesta</Text>
+                  <Text style={[styles.closeBtnText, { color: meetCanSend ? "#FFF" : colors.mutedForeground }]}>Send Request</Text>
                 </Pressable>
               </View>
             </View>

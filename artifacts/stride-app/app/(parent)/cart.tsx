@@ -371,7 +371,7 @@ export default function CartScreen() {
                       <View style={styles.validSectionHeader}>
                         <Ionicons name="checkmark-circle" size={16} color="#065F46" />
                         <Text style={[styles.validSectionTitle, { color: "#065F46" }]}>
-                          Pronti al Pagamento ({validatedReady.length})
+                          Ready for Payment ({validatedReady.length})
                         </Text>
                       </View>
                       {validatedReady.map(item => (
@@ -387,7 +387,7 @@ export default function CartScreen() {
                       <View style={styles.validSectionHeader}>
                         <Ionicons name="warning-outline" size={16} color="#92400E" />
                         <Text style={[styles.validSectionTitle, { color: "#92400E" }]}>
-                          Richiede Approvazione Operatore ({validatedFlagged.length})
+                          Requires Operator Approval ({validatedFlagged.length})
                         </Text>
                       </View>
                       {validatedFlagged.map(f => (
@@ -399,20 +399,20 @@ export default function CartScreen() {
                         </View>
                       ))}
                       <Text style={[styles.validNote, { color: "#92400E" }]}>
-                        L'operatore esaminerà le richieste e riceverai una notifica quando approvate.
+                        The operator will review your requests and you'll be notified once approved.
                       </Text>
                     </View>
                   )}
 
                   {validatedFlagged.length === 0 && validatedReady.length === 0 && (
                     <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-                      Tutti gli articoli nel carrello sono in attesa o già esaminati.
+                      All items in your cart are pending or already reviewed.
                     </Text>
                   )}
 
                   <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
                     <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowValidationModal(false)}>
-                      <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Annulla</Text>
+                      <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                     </Pressable>
                     {validatedFlagged.length > 0 && (
                       <Pressable
@@ -440,23 +440,23 @@ export default function CartScreen() {
                   <View style={[styles.successCircle, { backgroundColor: "#FEF3C7" }]}>
                     <Ionicons name="send" size={36} color="#F59E0B" />
                   </View>
-                  <Text style={[styles.successTitle, { color: colors.primary }]}>Richieste Inviate!</Text>
+                  <Text style={[styles.successTitle, { color: colors.primary }]}>Requests Sent!</Text>
                   <Text style={[styles.successDesc, { color: colors.mutedForeground }]}>
-                    {validatedFlagged.length} richiesta{validatedFlagged.length !== 1 ? "e" : ""} inviata{validatedFlagged.length !== 1 ? "e" : ""} all'operatore. Riceverai una notifica quando esaminate.
+                    {validatedFlagged.length} request{validatedFlagged.length !== 1 ? "s" : ""} sent to the operator. You'll receive a notification once reviewed.
                   </Text>
                   {validatedReady.length > 0 && (
                     <Text style={[styles.successDesc, { color: colors.primary, fontWeight: "600" }]}>
-                      {validatedReady.length} articolo{validatedReady.length !== 1 ? "i" : ""} (€{validatedReady.reduce((s, i) => s + i.price, 0)}) pronto al pagamento.
+                      {validatedReady.length} item{validatedReady.length !== 1 ? "s" : ""} (€{validatedReady.reduce((s, i) => s + i.price, 0)}) ready for payment.
                     </Text>
                   )}
                   <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
                     <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowValidationModal(false)}>
-                      <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Chiudi</Text>
+                      <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Close</Text>
                     </Pressable>
                     {validatedReady.length > 0 && (
                       <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 2 }]} onPress={handlePayReady}>
                         <Ionicons name="card-outline" size={15} color="#FFF" />
-                        <Text style={styles.modalBtnText}>Paga gli Articoli Pronti</Text>
+                        <Text style={styles.modalBtnText}>Pay Ready Items</Text>
                       </Pressable>
                     )}
                   </View>

@@ -389,7 +389,7 @@ export default function WalletScreen() {
               </Pressable>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="card-outline" size={22} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.primary }]}>Coordinate Bancarie</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary }]}>Bank Details</Text>
               </View>
 
               {/* GPS detection banner */}
@@ -488,14 +488,14 @@ export default function WalletScreen() {
 
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                 <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowBankModal(false)}>
-                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.modalBtn, { flex: 1, backgroundColor: bankCanSave ? colors.primary : colors.border }]}
                   onPress={saveBankDetails}
                   disabled={!bankCanSave}
                 >
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Salva Coordinate</Text>
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Save Details</Text>
                 </Pressable>
               </View>
             </View>
@@ -513,10 +513,10 @@ export default function WalletScreen() {
               </Pressable>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="card" size={22} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.primary }]}>Aggiungi / Aggiorna Carta</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary }]}>Add / Update Card</Text>
               </View>
               <Text style={[styles.modalHint, { color: colors.mutedForeground }]}>
-                I dati della carta sono crittografati. Non archiviamo il CVV o il numero completo.
+                Card details are encrypted. We do not store your CVV or full card number.
               </Text>
 
               <Text style={[styles.fieldLabel, { color: colors.primary }]}>Card Number</Text>
@@ -578,13 +578,13 @@ export default function WalletScreen() {
 
               <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                 <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowAddCard(false)}>
-                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.modalBtn, { flex: 1, backgroundColor: cardNumber.replace(/\D/g, "").length >= 13 && cardName.trim() && cardExpiry.match(/^\d{2}\/\d{2}$/) ? colors.primary : colors.border }]}
                   onPress={handleSaveCard}
                 >
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Salva Carta</Text>
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Save Card</Text>
                 </Pressable>
               </View>
             </View>
@@ -604,20 +604,20 @@ export default function WalletScreen() {
                 <View style={[styles.warningCircle, { backgroundColor: "#FEF3C7" }]}>
                   <Ionicons name="warning" size={32} color="#F59E0B" />
                 </View>
-                <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Annulla Rinnovo?</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Cancel Renewal?</Text>
                 <Text style={[styles.modalDesc, { color: colors.mutedForeground, textAlign: "center" }]}>
-                  Stai per annullare il rinnovo automatico{cancelledCourse ? ` di "${cancelledCourse.name}"` : " di questo abbonamento"}.
-                  {"\n\n"}È previsto un preavviso di 14 giorni. L'accesso continua fino alla fine del periodo corrente.
+                  You are about to cancel automatic renewal{cancelledCourse ? ` for "${cancelledCourse.name}"` : " for this subscription"}.
+                  {"\n\n"}A 14-day notice period applies. Access continues until the end of the current period.
                 </Text>
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
                   <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setCancelId(null)}>
-                    <Text style={[styles.modalBtnText, { color: colors.primary }]}>Indietro</Text>
+                    <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.modalBtn, { flex: 1, backgroundColor: "#EF4444" }]}
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setCancelStep(2); }}
                   >
-                    <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Sì, Annulla</Text>
+                    <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Yes, Cancel</Text>
                   </Pressable>
                 </View>
               </>
@@ -626,15 +626,15 @@ export default function WalletScreen() {
                 <View style={[styles.warningCircle, { backgroundColor: "#FEE2E2" }]}>
                   <Ionicons name="heart-dislike-outline" size={32} color="#EF4444" />
                 </View>
-                <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Conferma Finale</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Final Confirmation</Text>
                 <Text style={[styles.modalDesc, { color: colors.mutedForeground, textAlign: "center", marginBottom: 16 }]}>
-                  Questa azione cancellerà definitivamente il rinnovo. L'operazione non può essere annullata.
+                  This action will permanently cancel the renewal. It cannot be undone.
                 </Text>
                 <TextInput
                   style={[styles.feedbackInput, { borderColor: colors.border, color: colors.foreground }]}
                   value={cancelFeedback}
                   onChangeText={setCancelFeedback}
-                  placeholder="Ci dispiace vederti andare. Perché stai cancellando? (opzionale)"
+                  placeholder="Sorry to see you go. Why are you cancelling? (optional)"
                   placeholderTextColor={colors.mutedForeground}
                   multiline
                   numberOfLines={3}
@@ -642,13 +642,13 @@ export default function WalletScreen() {
                 />
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                   <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setCancelStep(1)}>
-                    <Text style={[styles.modalBtnText, { color: colors.primary }]}>Indietro</Text>
+                    <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.modalBtn, { flex: 1, backgroundColor: "#DC2626" }]}
                     onPress={handleFinalCancel}
                   >
-                    <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Conferma Annullamento</Text>
+                    <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Cancellation</Text>
                   </Pressable>
                 </View>
               </>

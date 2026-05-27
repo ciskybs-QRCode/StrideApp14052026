@@ -512,32 +512,32 @@ export default function ChildrenScreen() {
                 style={[styles.modalInput, { borderColor: colors.border }]}
                 value={allergies}
                 onChangeText={setAllergies}
-                placeholder="es. Penicillina, Lattosio..."
+                placeholder="e.g. Penicillin, Lactose..."
                 placeholderTextColor={colors.mutedForeground}
                 multiline
                 numberOfLines={3}
               />
-              <Text style={[styles.modalLabel, { color: colors.primary }]}>Protocollo Emergenza</Text>
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>Emergency Protocol</Text>
               <Pressable
                 style={[styles.waiverOption, medicalWaiver === "ambulance" && { backgroundColor: colors.primary }]}
                 onPress={() => setMedicalWaiver("ambulance")}
               >
                 <Ionicons name={medicalWaiver === "ambulance" ? "radio-button-on" : "radio-button-off"} size={18} color={medicalWaiver === "ambulance" ? "#FFF" : colors.primary} />
-                <Text style={[styles.waiverText, medicalWaiver === "ambulance" && { color: "#FFF" }]}>Chiama l'ambulanza (a mio carico)</Text>
+                <Text style={[styles.waiverText, medicalWaiver === "ambulance" && { color: "#FFF" }]}>Call an ambulance (at my expense)</Text>
               </Pressable>
               <Pressable
                 style={[styles.waiverOption, medicalWaiver === "call_parent" && { backgroundColor: colors.primary }]}
                 onPress={() => setMedicalWaiver("call_parent")}
               >
                 <Ionicons name={medicalWaiver === "call_parent" ? "radio-button-on" : "radio-button-off"} size={18} color={medicalWaiver === "call_parent" ? "#FFF" : colors.primary} />
-                <Text style={[styles.waiverText, medicalWaiver === "call_parent" && { color: "#FFF" }]}>Chiama prima il genitore</Text>
+                <Text style={[styles.waiverText, medicalWaiver === "call_parent" && { color: "#FFF" }]}>Call a family member first</Text>
               </Pressable>
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowMedical(false)}>
-                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleSaveMedical}>
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Salva</Text>
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Save</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -553,11 +553,11 @@ export default function ChildrenScreen() {
               <Ionicons name="close-circle" size={30} color="#9CA3AF" />
             </Pressable>
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
-              <Text style={[styles.modalTitle, { color: colors.primary }]}>Aggiungi Delegato</Text>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>Add Delegate</Text>
               {[
-                { label: "Nome",     value: delegateName,    setter: setDelegateName,    placeholder: "Marco" },
-                { label: "Cognome",  value: delegateSurname, setter: setDelegateSurname, placeholder: "Bianchi" },
-                { label: "Telefono", value: delegatePhone,   setter: setDelegatePhone,   placeholder: "+39 3xx xxx xxxx", keyboard: "phone-pad" as const },
+                { label: "First Name", value: delegateName,    setter: setDelegateName,    placeholder: "Marco" },
+                { label: "Last Name",  value: delegateSurname, setter: setDelegateSurname, placeholder: "Bianchi" },
+                { label: "Phone",      value: delegatePhone,   setter: setDelegatePhone,   placeholder: "+39 3xx xxx xxxx", keyboard: "phone-pad" as const },
               ].map(field => (
                 <View key={field.label} style={{ marginBottom: 12 }}>
                   <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
@@ -573,10 +573,10 @@ export default function ChildrenScreen() {
               ))}
               <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowAddDelegate(false)}>
-                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddDelegate}>
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Aggiungi</Text>
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -604,38 +604,38 @@ export default function ChildrenScreen() {
                   )}
                 </Pressable>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Aggiungi {secondaryRoleName}</Text>
+                  <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add {secondaryRoleName}</Text>
                   <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
-                    {newChildPhotoUri ? "Tocca per cambiare foto" : "Tocca per aggiungere una foto"}
+                    {newChildPhotoUri ? "Tap to change photo" : "Tap to add a photo"}
                   </Text>
                 </View>
               </View>
               <Text style={[styles.addChildSubtitle, { color: colors.mutedForeground }]}>
-                Compila tutti i campi richiesti. I dati saranno conservati in modo sicuro e condivisi solo con il personale autorizzato.
+                Fill in all required fields. Data will be stored securely and shared only with authorised staff.
               </Text>
 
-              {/* Nome */}
-              <Text style={[styles.modalLabel, { color: colors.primary }]}>Nome <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildName} onChangeText={setNewChildName} placeholder="es. Sofia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+              {/* First Name */}
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>First Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildName} onChangeText={setNewChildName} placeholder="e.g. Sofia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
-              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Cognome <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="es. Rossi" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Last Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Rossi" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
-              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Età <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildAge} onChangeText={setNewChildAge} placeholder="es. 8" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
+              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Age <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildAge} onChangeText={setNewChildAge} placeholder="e.g. 8" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
 
-              {/* Informazioni Mediche */}
+              {/* Medical Information */}
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="medical" size={15} color={colors.primary} />
-                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Informazioni Mediche</Text>
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Medical Information</Text>
               </View>
-              <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergie / Note Mediche</Text>
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergies / Medical Notes</Text>
               <TextInput
                 style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
                 value={newChildAllergies}
                 onChangeText={setNewChildAllergies}
-                placeholder="es. Penicillina, intolleranza al lattosio (lascia vuoto se nessuna)"
+                placeholder="e.g. Penicillin, lactose intolerance (leave blank if none)"
                 placeholderTextColor={colors.mutedForeground}
                 multiline
                 numberOfLines={2}
@@ -643,10 +643,10 @@ export default function ChildrenScreen() {
 
               {/* Priorità Emergenza */}
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 14 }]}>
-                Priorità Emergenza <Text style={{ color: "#EF4444" }}>*</Text>
+                Emergency Priority <Text style={{ color: "#EF4444" }}>*</Text>
               </Text>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>
-                Cosa devono fare i collaboratori per primi in caso di emergenza medica?
+                What should staff do first in case of a medical emergency?
               </Text>
               {(["ambulance", "call_parent"] as const).map(opt => (
                 <Pressable
@@ -661,10 +661,10 @@ export default function ChildrenScreen() {
                   />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.waiverText, newChildWaiver === opt && { color: "#FFF" }]}>
-                      {opt === "ambulance" ? "Chiama l'Ambulanza" : "Chiama un Familiare"}
+                      {opt === "ambulance" ? "Call an Ambulance" : "Call a Family Member"}
                     </Text>
                     <Text style={[styles.waiverHint, newChildWaiver === opt ? { color: "rgba(255,255,255,0.7)" } : { color: colors.mutedForeground }]}>
-                      {opt === "ambulance" ? "Autorizza i soccorsi immediatamente (a mio carico)" : "Contattami o un familiare autorizzato prima dei soccorsi"}
+                      {opt === "ambulance" ? "Authorise emergency services immediately (at my expense)" : "Contact me or an authorised family member first"}
                     </Text>
                   </View>
                 </Pressable>
@@ -674,16 +674,16 @@ export default function ChildrenScreen() {
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="camera" size={15} color={colors.primary} />
-                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Consenso Foto / Video</Text>
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Photo / Video Consent</Text>
               </View>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground, marginBottom: 10 }]}>
-                Autorizzazione per foto o video durante le lezioni e gli eventi.
+                Authorisation for photos or videos during lessons and events.
               </Text>
               {(["full", "internal", "none"] as const).map(opt => {
                 const labels = {
-                  full:     { title: "Consenso Totale",   hint: "Utilizzabili su sito web, social media e materiali interni" },
-                  internal: { title: "Solo Interno",       hint: "Usati solo per documenti e comunicazioni interne della scuola" },
-                  none:     { title: "Nessun Consenso",   hint: "Il bambino non deve essere fotografato o filmato" },
+                  full:     { title: "Full Consent",    hint: "May be used on website, social media and internal materials" },
+                  internal: { title: "Internal Only",   hint: "Used only for school documents and internal communications" },
+                  none:     { title: "No Consent",      hint: "Child must not be photographed or filmed" },
                 };
                 const isSelected = newChildMediaConsent === opt;
                 return (
@@ -711,10 +711,10 @@ export default function ChildrenScreen() {
 
               <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); resetAddChildForm(); }}>
-                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Aggiungi</Text>
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
                 </Pressable>
               </View>
             </View>
@@ -745,7 +745,7 @@ export default function ChildrenScreen() {
                 ) : null;
               })()}
               <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, width: "100%" }]} onPress={() => setShowQRPass(null)}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Chiudi</Text>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Close</Text>
               </Pressable>
             </ScrollView>
           </View>
