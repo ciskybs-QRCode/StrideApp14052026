@@ -102,22 +102,6 @@ export default function OperatorSettingsScreen() {
 
         <Pressable
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/private-lessons" as never); }}
-        >
-          <View style={[styles.featureIconBox, { backgroundColor: "#DBEAFE" }]}>
-            <Ionicons name="calendar-outline" size={26} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.featureTitle, { color: colors.foreground }]}>My Availability</Text>
-            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
-              Manage private lesson slots and bookings
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/invoicing" as never); }}
         >
           <View style={[styles.featureIconBox, { backgroundColor: "#FEF3C7" }]}>
