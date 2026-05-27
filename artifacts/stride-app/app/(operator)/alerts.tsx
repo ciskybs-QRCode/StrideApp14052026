@@ -21,7 +21,7 @@ import { useColors } from "@/hooks/useColors";
 const PARENT_PHONE = "+39 347 1234 567";
 
 const PHASE_COLOR: Record<number, string> = { 1: "#F59E0B", 2: "#EF4444", 3: "#7F1D1D" };
-const PHASE_LABEL: Record<number, string> = { 1: "Fase 1", 2: "CRITICO", 3: "ALLARME" };
+const PHASE_LABEL: Record<number, string> = { 1: "Phase 1", 2: "CRITICAL", 3: "ALARM" };
 
 // ── Alert Row ─────────────────────────────────────────────────────────────────
 
@@ -35,7 +35,7 @@ function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =>
     const tel = `tel:${PARENT_PHONE.replace(/\s/g, "")}`;
     Linking.canOpenURL(tel).then(ok => {
       if (ok) Linking.openURL(tel);
-      else Alert.alert("Chiama il genitore", PARENT_PHONE);
+      else Alert.alert("Call Parent", PARENT_PHONE);
     });
   };
 
@@ -57,15 +57,15 @@ function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =>
             {alert.studentName}
           </Text>
           <View style={[styles.phasePill, { backgroundColor: phaseColor }]}>
-            <Text style={styles.phasePillText}>{PHASE_LABEL[alert.phase] ?? "Avviso"}</Text>
+            <Text style={styles.phasePillText}>{PHASE_LABEL[alert.phase] ?? "Alert"}</Text>
           </View>
         </View>
         <Text style={[styles.rowCourse, { color: colors.mutedForeground }]} numberOfLines={1}>
-          {alert.type === "missed_checkin" ? "Check-in non rilevato" : "Check-out non rilevato"} · {alert.courseName}
+          {alert.type === "missed_checkin" ? "Check-in not detected" : "Check-out not detected"} · {alert.courseName}
         </Text>
         <Text style={[styles.rowTime, { color: colors.mutedForeground }]}>
-          {minsAgo <= 0 ? "Ora" : `${minsAgo} min fa`}
-          {alert.delayMinutes ? ` · Genitore: ${alert.delayMinutes} min ritardo` : ""}
+          {minsAgo <= 0 ? "Just now" : `${minsAgo} min ago`}
+          {alert.delayMinutes ? ` · Parent: ${alert.delayMinutes} min delay` : ""}
         </Text>
       </View>
 
@@ -79,7 +79,7 @@ function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =>
           }}
         >
           <Ionicons name="checkmark" size={14} color="#1E3A8A" />
-          <Text style={styles.resolveBtnText}>Risolvi</Text>
+          <Text style={styles.resolveBtnText}>Resolve</Text>
         </Pressable>
         <Pressable style={styles.callBtnSmall} onPress={handleCall}>
           <Ionicons name="call" size={14} color="#FFF" />
@@ -97,19 +97,19 @@ function StatsBar({ active, resolved, maxPhase }: { active: number; resolved: nu
     <View style={[styles.statsBar, { backgroundColor: colors.card }]}>
       <View style={styles.statItem}>
         <Text style={[styles.statNum, { color: active > 0 ? "#EF4444" : "#10B981" }]}>{active}</Text>
-        <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Attivi</Text>
+        <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Active</Text>
       </View>
       <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
       <View style={styles.statItem}>
         <Text style={[styles.statNum, { color: colors.foreground }]}>{resolved}</Text>
-        <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Risolti</Text>
+        <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Resolved</Text>
       </View>
       <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
       <View style={styles.statItem}>
         <Text style={[styles.statNum, { color: PHASE_COLOR[maxPhase] ?? "#10B981" }]}>
           {maxPhase === 0 ? "OK" : `F${maxPhase}`}
         </Text>
-        <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Max Fase</Text>
+        <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Max Phase</Text>
       </View>
     </View>
   );
@@ -141,16 +141,16 @@ export default function OperatorAlerts() {
             color={maxPhase > 0 ? (PHASE_COLOR[maxPhase] ?? "#9CA3AF") : "#10B981"}
           />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.foreground }]}>Sicurezza Minori</Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>Child Safety</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
               {activeAlerts.length === 0
-                ? "Tutti i bambini presenti"
-                : `${activeAlerts.length} avviso${activeAlerts.length !== 1 ? "i" : ""} in corso`}
+                ? "All children checked in"
+                : `${activeAlerts.length} alert${activeAlerts.length !== 1 ? "s" : ""} in progress`}
             </Text>
           </View>
           {maxPhase === 3 && (
             <View style={styles.alarmPill}>
-              <Text style={styles.alarmPillText}>ALLARME ATTIVO</Text>
+              <Text style={styles.alarmPillText}>ACTIVE ALARM</Text>
             </View>
           )}
         </View>
@@ -168,10 +168,10 @@ export default function OperatorAlerts() {
             <Ionicons name="information-circle" size={18} color={PHASE_COLOR[maxPhase] ?? "#9CA3AF"} />
             <Text style={[styles.infoText, { color: PHASE_COLOR[maxPhase] ?? "#9CA3AF" }]}>
               {maxPhase === 1
-                ? "Notifica inviata a genitori e amministratori. Monitorare la situazione."
+                ? "Notification sent to parents and administrators. Monitor the situation."
                 : maxPhase === 2
-                ? "Secondo avviso ad alta priorità inviato. Contattare immediatamente il genitore."
-                : "ALLARME AUDIO ATTIVO — Azione immediata richiesta. Contattare le autorità se necessario."}
+                ? "Second high-priority alert sent. Contact parent immediately."
+                : "AUDIO ALARM ACTIVE — Immediate action required. Contact authorities if necessary."}
             </Text>
           </View>
         )}
@@ -180,14 +180,14 @@ export default function OperatorAlerts() {
         {activeAlerts.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
             <Ionicons name="checkmark-circle" size={44} color="#10B981" />
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Tutto in ordine</Text>
+            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>All clear</Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Nessun avviso di sicurezza attivo. Tutti i bambini sono stati registrati.
+              No active security alerts. All children have been checked in.
             </Text>
           </View>
         ) : (
           <View style={{ gap: 10 }}>
-            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>AVVISI ATTIVI</Text>
+            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>ACTIVE ALERTS</Text>
             {activeAlerts.map(a => (
               <AlertRow key={a.id} alert={a} onResolve={() => dismissAlert(a.id)} />
             ))}
@@ -197,7 +197,7 @@ export default function OperatorAlerts() {
         {/* Resolved */}
         {resolvedAlerts.length > 0 && (
           <View style={{ marginTop: 24, gap: 8 }}>
-            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>RISOLTI</Text>
+            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>RESOLVED</Text>
             {resolvedAlerts.slice(0, 8).map(a => (
               <View key={a.id} style={[styles.resolvedRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="checkmark-circle" size={16} color="#10B981" />

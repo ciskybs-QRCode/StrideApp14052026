@@ -77,7 +77,7 @@ export default function ChildrenScreen() {
   const pickChildPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permesso negato", "Consenti l'accesso alla galleria nelle impostazioni del dispositivo.");
+      Alert.alert("Permission denied", "Please allow gallery access in your device settings.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -443,7 +443,7 @@ export default function ChildrenScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add Child</Text>
                   <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
-                    {newChildPhotoUri ? "Tocca per cambiare foto" : "Tocca per aggiungere foto"}
+                    {newChildPhotoUri ? "Tap to change photo" : "Tap to add a photo"}
                   </Text>
                 </View>
               </View>

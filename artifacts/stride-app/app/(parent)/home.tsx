@@ -164,7 +164,7 @@ export default function ParentHome() {
           >
             <Ionicons name="shield-checkmark" size={18} color="#FFF" />
             <Text style={styles.secAlertBannerText}>
-              {activeAlerts.filter(a => a.type !== "access_denied").length} avviso{activeAlerts.filter(a => a.type !== "access_denied").length !== 1 ? "i" : ""} di sicurezza — tocca per rispondere
+              {activeAlerts.filter(a => a.type !== "access_denied").length} security alert{activeAlerts.filter(a => a.type !== "access_denied").length !== 1 ? "s" : ""} — tap to respond
             </Text>
             <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.8)" />
           </Pressable>
@@ -175,20 +175,20 @@ export default function ParentHome() {
           <View
             key={alert.id}
             style={[styles.secAlertBanner, {
-              backgroundColor: alert.courseName.includes("sospeso") ? "#7F1D1D" : "#78350F",
+              backgroundColor: alert.courseName.includes("suspended") ? "#7F1D1D" : "#78350F",
               marginBottom: 6,
             }]}
           >
             <Ionicons
-              name={alert.courseName.includes("sospeso") ? "ban" : "warning"}
+              name={alert.courseName.includes("suspended") ? "ban" : "warning"}
               size={18} color="#FFF"
             />
             <View style={{ flex: 1 }}>
               <Text style={[styles.secAlertBannerText, { fontWeight: "800" }]}>
-                {alert.courseName.includes("sospeso") ? "Account Sospeso" : "Pagamento Scaduto"}
+                {alert.courseName.includes("suspended") ? "Account Suspended" : "Payment Overdue"}
               </Text>
               <Text style={[styles.secAlertBannerText, { fontSize: 11, opacity: 0.85, marginTop: 1 }]}>
-                Accesso negato per {alert.studentName} — contatta l'amministrazione
+                Access denied for {alert.studentName} — contact administration
               </Text>
             </View>
             <Pressable onPress={() => dismissAlert(alert.id)} hitSlop={10}>

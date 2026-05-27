@@ -30,11 +30,11 @@ const CONFIG: Record<
     border: "#DC2626",
     icon: "ban-outline",
     iconColor: "#FCA5A5",
-    label: "ACCESSO NEGATO",
+    label: "ACCESS DENIED",
     labelColor: "#FCA5A5",
-    title: "Account Sospeso",
-    body: "Il codice QR è sospeso. Contattare l'amministrazione/ufficio per ulteriori informazioni.",
-    badge: "SOSPESO",
+    title: "Account Suspended",
+    body: "This QR code is suspended. Please contact the administration office for more information.",
+    badge: "SUSPENDED",
     badgeBg: "#DC2626",
   },
   grace_allowed: {
@@ -42,11 +42,11 @@ const CONFIG: Record<
     border: "#F59E0B",
     icon: "warning-outline",
     iconColor: "#FCD34D",
-    label: "ACCESSO TEMPORANEO",
+    label: "TEMPORARY ACCESS",
     labelColor: "#FCD34D",
-    title: "Abbonamento Scaduto — Ultimo Accesso",
-    body: "L'abbonamento è scaduto. Questo è l'unico accesso consentito come eccezione. Rinnovare l'abbonamento immediatamente per continuare a frequentare le lezioni.",
-    badge: "ACCESSO UNA TANTUM",
+    title: "Subscription Expired — Last Entry",
+    body: "The subscription has expired. This is the only entry permitted as an exception. Please renew the subscription immediately to continue attending lessons.",
+    badge: "ONE-TIME ACCESS",
     badgeBg: "#D97706",
   },
   overdue_denied: {
@@ -54,11 +54,11 @@ const CONFIG: Record<
     border: "#DC2626",
     icon: "close-circle-outline",
     iconColor: "#FCA5A5",
-    label: "ACCESSO NEGATO",
+    label: "ACCESS DENIED",
     labelColor: "#FCA5A5",
-    title: "Pagamento Scaduto",
-    body: "Il pagamento è in ritardo. Accesso negato. Contattare l'amministrazione/ufficio per ulteriori informazioni.",
-    badge: "NON PAGATO",
+    title: "Payment Overdue",
+    body: "Payment is overdue. Access denied. Please contact the administration office for more information.",
+    badge: "UNPAID",
     badgeBg: "#DC2626",
   },
 };
@@ -90,7 +90,7 @@ export default function QRAccessAlert({ verdict, childName, blockReason }: QRAcc
         </View>
       ) : null}
 
-      <Text style={styles.dismiss}>Questo avviso verrà inviato anche al genitore.</Text>
+      <Text style={styles.dismiss}>This alert will also be sent to the parent.</Text>
     </View>
   );
 }

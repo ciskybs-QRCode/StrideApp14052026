@@ -106,7 +106,7 @@ export default function AdminLessonsScreen() {
       await load();
       setShowDiscModal(false);
     } catch (e: unknown) {
-      Alert.alert("Errore", e instanceof Error ? e.message : "Salvataggio fallito");
+      Alert.alert("Error", e instanceof Error ? e.message : "Save failed");
     } finally { setDiscSaving(false); }
   };
 
@@ -115,21 +115,21 @@ export default function AdminLessonsScreen() {
       await api.updateDiscipline(d.id, { active: !d.active });
       await load();
     } catch (e: unknown) {
-      Alert.alert("Errore", e instanceof Error ? e.message : "Aggiornamento fallito");
+      Alert.alert("Error", e instanceof Error ? e.message : "Update failed");
     }
   };
 
   const deleteDisc = async (d: ApiDiscipline) => {
     Alert.alert(
-      "Elimina disciplina",
-      `Rimuovere "${d.name}"? I profili operatore esistenti perderanno questa tariffa.`,
+      "Delete Discipline",
+      `Remove "${d.name}"? Existing operator profiles will lose this rate.`,
       [
-        { text: "Annulla", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         {
-          text: "Elimina", style: "destructive",
+          text: "Delete", style: "destructive",
           onPress: async () => {
             try { await api.deleteDiscipline(d.id); await load(); }
-            catch (e: unknown) { Alert.alert("Errore", e instanceof Error ? e.message : "Eliminazione fallita"); }
+            catch (e: unknown) { Alert.alert("Error", e instanceof Error ? e.message : "Delete failed"); }
           },
         },
       ],
@@ -372,14 +372,14 @@ export default function AdminLessonsScreen() {
           <>
             <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openNewDisc}>
               <Ionicons name="add-circle-outline" size={18} color="#FFF" />
-              <Text style={styles.addBtnText}>Aggiungi Disciplina</Text>
+              <Text style={styles.addBtnText}>Add Discipline</Text>
             </Pressable>
 
             {disciplines.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="barbell-outline" size={40} color={colors.mutedForeground} />
                 <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                  Nessuna disciplina ancora. Aggiungine una per iniziare.
+                  No disciplines yet. Add one to get started.
                 </Text>
               </View>
             ) : (
@@ -754,13 +754,13 @@ export default function AdminLessonsScreen() {
                 <Ionicons name="barbell-outline" size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={styles.modalHeaderTitle}>{editingDisc ? "Modifica Disciplina" : "Nuova Disciplina"}</Text>
-                <Text style={styles.modalHeaderSub}>{editingDisc ? `Modifica "${editingDisc.name}"` : "Es: Zumba, Crossfit, Danza classica"}</Text>
+                <Text style={styles.modalHeaderTitle}>{editingDisc ? "Edit Discipline" : "New Discipline"}</Text>
+                <Text style={styles.modalHeaderSub}>{editingDisc ? `Edit "${editingDisc.name}"` : "e.g. Zumba, Crossfit, Classical Dance"}</Text>
               </View>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Nome disciplina *</Text>
+              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Discipline name *</Text>
               <TextInput
                 style={[styles.flexInput, { color: colors.foreground, borderColor: discName.trim() ? colors.primary : colors.border, backgroundColor: colors.muted, marginBottom: 16 }]}
                 value={discName}
@@ -770,12 +770,12 @@ export default function AdminLessonsScreen() {
                 autoFocus
               />
 
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Descrizione (opzionale)</Text>
+              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Description (optional)</Text>
               <TextInput
                 style={[styles.textArea, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
                 value={discDesc}
                 onChangeText={setDiscDesc}
-                placeholder="Breve descrizione della disciplina…"
+                placeholder="Brief description of the discipline…"
                 placeholderTextColor={colors.mutedForeground}
                 multiline
                 numberOfLines={3}
@@ -783,7 +783,7 @@ export default function AdminLessonsScreen() {
 
               <View style={styles.modalActions}>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted }]} onPress={() => setShowDiscModal(false)}>
-                  <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Annulla</Text>
+                  <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.modalBtn, { backgroundColor: (!discName.trim() || discSaving) ? colors.border : colors.primary }]}
@@ -795,7 +795,7 @@ export default function AdminLessonsScreen() {
                     : (
                       <>
                         <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
-                        <Text style={styles.modalBtnText}>Salva</Text>
+                        <Text style={styles.modalBtnText}>Save</Text>
                       </>
                     )}
                 </Pressable>

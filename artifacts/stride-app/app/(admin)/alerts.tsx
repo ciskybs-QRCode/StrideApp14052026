@@ -14,7 +14,7 @@ import { useSecurityEscalation, type SecurityAlert } from "@/context/SecurityEsc
 import { useColors } from "@/hooks/useColors";
 
 const PHASE_COLOR: Record<number, string> = { 1: "#F59E0B", 2: "#EF4444", 3: "#7F1D1D" };
-const PHASE_LABEL: Record<number, string> = { 1: "Avviso", 2: "Critico", 3: "ALLARME" };
+const PHASE_LABEL: Record<number, string> = { 1: "Alert", 2: "Critical", 3: "ALARM" };
 
 // ── Summary Card ──────────────────────────────────────────────────────────────
 
@@ -33,17 +33,17 @@ function SummaryCard({ activeAlerts, resolvedCount, maxPhase }: {
       <View style={{ flex: 1 }}>
         <Text style={[styles.summaryStatus, { color: alarmColor }]}>
           {maxPhase === 0
-            ? "Sistema sicuro"
+            ? "System secure"
             : maxPhase === 1
-            ? "Avvisi in corso"
+            ? "Alerts in progress"
             : maxPhase === 2
-            ? "Situazione critica"
-            : "ALLARME ATTIVO"}
+            ? "Critical situation"
+            : "ACTIVE ALARM"}
         </Text>
         <Text style={[styles.summaryDesc, { color: colors.mutedForeground }]}>
           {activeAlerts.length === 0
-            ? "Tutti i bambini presenti — nessun avviso"
-            : `${activeAlerts.length} bambino${activeAlerts.length !== 1 ? "i" : ""} non registrato${activeAlerts.length !== 1 ? "i" : ""}`}
+            ? "All children present — no alerts"
+            : `${activeAlerts.length} child${activeAlerts.length !== 1 ? "ren" : ""} not checked in`}
         </Text>
       </View>
 
@@ -53,11 +53,11 @@ function SummaryCard({ activeAlerts, resolvedCount, maxPhase }: {
           <Text style={[styles.counterNum, { color: activeAlerts.length > 0 ? "#EF4444" : "#10B981" }]}>
             {activeAlerts.length}
           </Text>
-          <Text style={[styles.counterLabel, { color: colors.mutedForeground }]}>Attivi</Text>
+          <Text style={[styles.counterLabel, { color: colors.mutedForeground }]}>Active</Text>
         </View>
         <View style={styles.counter}>
           <Text style={[styles.counterNum, { color: colors.foreground }]}>{resolvedCount}</Text>
-          <Text style={[styles.counterLabel, { color: colors.mutedForeground }]}>Risolti</Text>
+          <Text style={[styles.counterLabel, { color: colors.mutedForeground }]}>Resolved</Text>
         </View>
       </View>
     </View>
@@ -97,8 +97,8 @@ function AlertItem({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =
           <View style={styles.alertMeta}>
             <Ionicons name="time-outline" size={11} color={colors.mutedForeground} />
             <Text style={[styles.alertMetaText, { color: colors.mutedForeground }]}>
-              {minsAgo <= 0 ? "ora" : `${minsAgo} min fa`}
-              {alert.delayMinutes ? `  · Genitore: ${alert.delayMinutes} min ritardo` : ""}
+              {minsAgo <= 0 ? "just now" : `${minsAgo} min ago`}
+              {alert.delayMinutes ? `  · Parent: ${alert.delayMinutes} min delay` : ""}
             </Text>
           </View>
         </View>
@@ -113,7 +113,7 @@ function AlertItem({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =
         }}
       >
         <Ionicons name="checkmark-circle" size={14} color="#1E3A8A" />
-        <Text style={styles.resolveBtnText}>Risolvi</Text>
+        <Text style={styles.resolveBtnText}>Resolve</Text>
       </Pressable>
     </View>
   );
@@ -124,14 +124,14 @@ function AlertItem({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =
 function EscalationTimeline() {
   const colors = useColors();
   const steps = [
-    { phase: 1, label: "T+0",  title: "Notifica immediata",         sub: "Avviso a operatore, amministratore e genitore", color: "#F59E0B" },
-    { phase: 2, label: "T+5",  title: "Alta priorità",              sub: "Secondo avviso urgente a tutte le parti",        color: "#EF4444" },
-    { phase: 3, label: "T+10", title: "Allarme audio continuo",     sub: "Sirena attiva su tutti i dispositivi",           color: "#7F1D1D" },
+    { phase: 1, label: "T+0",  title: "Immediate notification",     sub: "Alert sent to operator, administrator and parent", color: "#F59E0B" },
+    { phase: 2, label: "T+5",  title: "High priority",              sub: "Second urgent alert to all parties",               color: "#EF4444" },
+    { phase: 3, label: "T+10", title: "Continuous audio alarm",     sub: "Siren active on all devices",                      color: "#7F1D1D" },
   ];
   return (
     <View style={[styles.timeline, { backgroundColor: colors.card }]}>
       <Text style={[styles.timelineTitle, { color: colors.foreground }]}>
-        Protocollo di Escalation
+        Escalation Protocol
       </Text>
       {steps.map((s, i) => (
         <View key={s.phase} style={styles.timelineStep}>
@@ -177,8 +177,8 @@ export default function AdminAlerts() {
             color={maxPhase > 0 ? (PHASE_COLOR[maxPhase] ?? "#9CA3AF") : "#10B981"}
           />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.foreground }]}>Sicurezza Minori</Text>
-            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Supervisione amministrativa</Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>Child Safety</Text>
+            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Administrative oversight</Text>
           </View>
         </View>
 
@@ -192,7 +192,7 @@ export default function AdminAlerts() {
         {/* Active alerts */}
         {activeAlerts.length > 0 && (
           <View style={{ gap: 10, marginBottom: 24 }}>
-            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>AVVISI ATTIVI</Text>
+            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>ACTIVE ALERTS</Text>
             {activeAlerts.map(a => (
               <AlertItem key={a.id} alert={a} onResolve={() => dismissAlert(a.id)} />
             ))}
@@ -203,7 +203,7 @@ export default function AdminAlerts() {
         {activeAlerts.length === 0 && (
           <View style={[styles.allClear, { backgroundColor: "#D1FAE5" }]}>
             <Ionicons name="shield-checkmark" size={32} color="#10B981" />
-            <Text style={styles.allClearText}>Sistema sicuro — tutti i bambini registrati</Text>
+            <Text style={styles.allClearText}>System secure — all children checked in</Text>
           </View>
         )}
 
@@ -213,7 +213,7 @@ export default function AdminAlerts() {
         {/* Resolved log */}
         {resolvedAlerts.length > 0 && (
           <View style={{ marginTop: 24, gap: 8 }}>
-            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>LOG RISOLTI</Text>
+            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>RESOLVED LOG</Text>
             {resolvedAlerts.slice(0, 10).map(a => (
               <View key={a.id} style={[styles.logRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="checkmark-circle" size={14} color="#10B981" />

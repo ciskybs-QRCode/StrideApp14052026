@@ -238,7 +238,7 @@ export default function PdfBadgeGenerator() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch {
-      Alert.alert("Errore", "Impossibile generare il PDF. Riprova.");
+      Alert.alert("Error", "Could not generate PDF. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -343,7 +343,7 @@ export default function PdfBadgeGenerator() {
           <View style={styles.previewQrBox}>
             <Ionicons name="qr-code" size={52} color="#1E3A8A" />
           </View>
-          {showSecondary && <Text style={styles.previewSec}>{previewCourse} · Età {previewAge}</Text>}
+          {showSecondary && <Text style={styles.previewSec}>{previewCourse} · Age {previewAge}</Text>}
           <View style={styles.previewStripeBottom} />
         </View>
       );
@@ -363,7 +363,7 @@ export default function PdfBadgeGenerator() {
             </View>
           ))}
           <View style={[styles.previewGridCard, { width: "90%", backgroundColor: "transparent", borderStyle: "dashed", borderColor: "#CBD5E1", marginTop: 2 }]}>
-            <Text style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>{gridSize} per pagina · {previewCols} {previewCols === 1 ? "colonna" : "colonne"}</Text>
+            <Text style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>{gridSize} per page · {previewCols} {previewCols === 1 ? "column" : "columns"}</Text>
           </View>
         </View>
       );

@@ -14,9 +14,9 @@ const PHASE_CONFIG: Record<Exclude<EscalationPhase, 0>, {
   label: string;
   sub: string;
 }> = {
-  1: { bg: "#F59E0B", icon: "alert-circle",      label: "CHECK-IN NON RILEVATO",    sub: "Nessuna scansione registrata all'inizio della lezione" },
-  2: { bg: "#EF4444", icon: "warning",            label: "ASSENZA CRITICA · 5 MIN",  sub: "Secondo avviso — contattare immediatamente genitore e amministratore" },
-  3: { bg: "#7F1D1D", icon: "nuclear",            label: "⚠ ALLARME SICUREZZA · 10 MIN", sub: "Attivazione allarme — azione immediata richiesta" },
+  1: { bg: "#F59E0B", icon: "alert-circle",      label: "CHECK-IN NOT DETECTED",    sub: "No scan recorded at lesson start" },
+  2: { bg: "#EF4444", icon: "warning",            label: "CRITICAL ABSENCE · 5 MIN",  sub: "Second alert — contact parent and administrator immediately" },
+  3: { bg: "#7F1D1D", icon: "nuclear",            label: "⚠ SECURITY ALARM · 10 MIN", sub: "Alarm triggered — immediate action required" },
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────

@@ -24,9 +24,9 @@ const OPERATOR_PHONE = "+39 02 1234 5678";
 // ── Phase labels ──────────────────────────────────────────────────────────────
 
 const PHASE_LABEL: Record<number, string> = {
-  1: "Avviso",
-  2: "Alta Priorità",
-  3: "ALLARME",
+  1: "Alert",
+  2: "High Priority",
+  3: "ALARM",
 };
 
 const PHASE_COLOR: Record<number, string> = {
@@ -63,7 +63,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
     const tel = `tel:${OPERATOR_PHONE.replace(/\s/g, "")}`;
     Linking.canOpenURL(tel).then(ok => {
       if (ok) Linking.openURL(tel);
-      else Alert.alert("Chiama l'operatore", OPERATOR_PHONE);
+      else Alert.alert("Call Operator", OPERATOR_PHONE);
     });
   };
 
@@ -76,16 +76,16 @@ function AlertCard({ alert, onDelay, onDismiss }: {
           size={13}
           color="#FFF"
         />
-        <Text style={styles.phaseBadgeText}>{PHASE_LABEL[alert.phase] ?? "Avviso"}</Text>
+        <Text style={styles.phaseBadgeText}>{PHASE_LABEL[alert.phase] ?? "Alert"}</Text>
       </View>
 
       {/* Student + course */}
       <Text style={[styles.studentName, { color: colors.foreground }]}>{alert.studentName}</Text>
       <Text style={[styles.courseName, { color: colors.mutedForeground }]}>
-        {isCheckin ? "Check-in non registrato" : "Check-out non registrato"} · {alert.courseName}
+        {isCheckin ? "Check-in not recorded" : "Check-out not recorded"} · {alert.courseName}
       </Text>
       <Text style={[styles.timeAgo, { color: colors.mutedForeground }]}>
-        Segnalato {minsAgo <= 0 ? "ora" : `${minsAgo} min fa`}
+        Reported {minsAgo <= 0 ? "just now" : `${minsAgo} min ago`}
       </Text>
 
       {/* Phase message */}
@@ -93,10 +93,10 @@ function AlertCard({ alert, onDelay, onDismiss }: {
         <Ionicons name="information-circle" size={16} color={phaseColor} />
         <Text style={[styles.messageText, { color: phaseColor }]}>
           {alert.phase === 1
-            ? "Il tuo bambino non è stato registrato all'inizio della lezione. Stai per arrivare?"
+            ? "Your child was not checked in at lesson start. Are you on your way?"
             : alert.phase === 2
-            ? "Secondo avviso critico inviato a operatore e amministratore. Rispondere immediatamente."
-            : "ALLARME ATTIVO — Operatore e amministratore informati. Azione immediata richiesta."}
+            ? "Second critical alert sent to operator and administrator. Please respond immediately."
+            : "ACTIVE ALARM — Operator and administrator notified. Immediate action required."}
         </Text>
       </View>
 
@@ -105,7 +105,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
         <View style={styles.delayConfirm}>
           <Ionicons name="checkmark-circle" size={16} color="#10B981" />
           <Text style={styles.delayConfirmText}>
-            Ritardo di {alert.delayMinutes ?? selectedDelay} min comunicato
+            Delay of {alert.delayMinutes ?? selectedDelay} min reported
           </Text>
         </View>
       )}
@@ -114,7 +114,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
       {isCheckin && !delaySubmitted && !alert.resolvedAt && (
         <>
           <Text style={[styles.delayLabel, { color: colors.mutedForeground }]}>
-            Seleziona minuti di ritardo:
+            Select delay in minutes:
           </Text>
 
           {/* Delay chips */}
@@ -141,7 +141,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
           <Pressable style={styles.submitBtn} onPress={handleSubmitDelay}>
             <Ionicons name="time-outline" size={16} color="#1E3A8A" />
             <Text style={styles.submitBtnText}>
-              Confermo {selectedDelay} min di ritardo
+              Confirm {selectedDelay} min delay
             </Text>
           </Pressable>
         </>
@@ -150,7 +150,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
       {/* Call operator */}
       <Pressable style={styles.callBtn} onPress={handleCall}>
         <Ionicons name="call" size={16} color="#FFF" />
-        <Text style={styles.callBtnText}>Chiama l'operatore</Text>
+        <Text style={styles.callBtnText}>Call Operator</Text>
       </Pressable>
 
       {/* Dismiss (phase 1 only) */}
@@ -160,7 +160,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
           onPress={() => onDismiss(alert.id)}
         >
           <Text style={[styles.dismissBtnText, { color: colors.mutedForeground }]}>
-            Ignora avviso
+            Dismiss alert
           </Text>
         </Pressable>
       )}
@@ -194,11 +194,11 @@ export default function ParentAlerts() {
             color={maxPhase === 3 ? "#7F1D1D" : maxPhase === 2 ? "#EF4444" : maxPhase === 1 ? "#F59E0B" : "#10B981"}
           />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.foreground }]}>Avvisi di Sicurezza</Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>Security Alerts</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
               {activeAlerts.length === 0
-                ? "Nessun avviso attivo — tutto ok"
-                : `${activeAlerts.length} avviso${activeAlerts.length !== 1 ? "i" : ""} attivo${activeAlerts.length !== 1 ? "i" : ""}`}
+                ? "No active alerts — all clear"
+                : `${activeAlerts.length} active alert${activeAlerts.length !== 1 ? "s" : ""}`}
             </Text>
           </View>
         </View>
@@ -208,10 +208,10 @@ export default function ParentAlerts() {
           <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
             <Ionicons name="checkmark-circle" size={48} color="#10B981" />
             <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-              Tutto in ordine
+              All clear
             </Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Nessun avviso di sicurezza attivo. Riceverai una notifica se si verifica un problema.
+              No active security alerts. You will be notified if an issue occurs.
             </Text>
           </View>
         )}
@@ -230,7 +230,7 @@ export default function ParentAlerts() {
         {resolvedAlerts.length > 0 && (
           <>
             <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>
-              Avvisi Risolti
+              Resolved Alerts
             </Text>
             {resolvedAlerts.slice(0, 5).map(a => (
               <View key={a.id} style={[styles.resolvedRow, { backgroundColor: colors.card, borderColor: colors.border }]}>

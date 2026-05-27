@@ -55,6 +55,9 @@ async function isDemoSession(): Promise<boolean> {
   return (token?.startsWith("demo-token-") ?? false);
 }
 
+let DEMO_BLACKLIST: ApiBlacklistEntry[] = [];
+let _demoBlacklistId = 1000;
+
 const DEMO_LOCATIONS: ApiLocation[] = [
   { id: 1, name: "Sala A",   description: "Studio principale",  active: true },
   { id: 2, name: "Sala B",   description: "Studio secondario",  active: true },
@@ -363,10 +366,23 @@ export const api = {
     request<ApiAdminSettings>("PUT", "/admin-settings", data),
 
   // Blacklist
-  getBlacklist: () => request<ApiBlacklistEntry[]>("GET", "/blacklist"),
-  addBlacklistEntry: (data: Omit<ApiBlacklistEntry, "id" | "created_at">) =>
-    request<ApiBlacklistEntry>("POST", "/blacklist", data),
-  deleteBlacklistEntry: (id: number) => request<void>("DELETE", `/blacklist/${id}`),
+  getBlacklist: async (): Promise<ApiBlacklistEntry[]> =>
+    (await isDemoSession()) ? [...DEMO_BLACKLIST] : request<ApiBlacklistEntry[]>("GET", "/blacklist"),
+  addBlacklistEntry: async (data: Omit<ApiBlacklistEntry, "id" | "created_at">): Promise<ApiBlacklistEntry> => {
+    if (await isDemoSession()) {
+      const entry: ApiBlacklistEntry = { ...data, id: ++_demoBlacklistId, created_at: new Date().toISOString() };
+      DEMO_BLACKLIST = [...DEMO_BLACKLIST, entry];
+      return entry;
+    }
+    return request<ApiBlacklistEntry>("POST", "/blacklist", data);
+  },
+  deleteBlacklistEntry: async (id: number): Promise<void> => {
+    if (await isDemoSession()) {
+      DEMO_BLACKLIST = DEMO_BLACKLIST.filter(e => e.id !== id);
+      return;
+    }
+    return request<void>("DELETE", `/blacklist/${id}`);
+  },
   checkBlacklist: (data: { email?: string; phone_number?: string; first_name?: string; last_name?: string }) =>
     request<{ blocked: boolean; reason: string | null }>("POST", "/blacklist/check", data),
 

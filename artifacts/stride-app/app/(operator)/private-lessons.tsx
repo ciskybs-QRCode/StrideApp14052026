@@ -577,7 +577,7 @@ export default function OperatorPrivateLessonsScreen() {
                 ))}
                 {locations.filter(l => l.active).length === 0 && (
                   <Text style={{ color: colors.mutedForeground, fontStyle: "italic", fontSize: 13, padding: 8 }}>
-                    Nessuna location disponibile. Chiedi all'admin di aggiungerne.
+                    No locations available. Ask admin to add some.
                   </Text>
                 )}
 

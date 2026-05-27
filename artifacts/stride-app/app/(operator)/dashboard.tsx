@@ -346,7 +346,7 @@ export default function OperatorDashboard() {
     const s = DEMO_ABSENT_STUDENTS[Math.floor(Math.random() * DEMO_ABSENT_STUDENTS.length)];
     triggerCheckinAlert(s.id, s.name, s.courseId, s.courseName);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    pushLog({ time: nowTime(), action: `⚠ Allerta sicurezza: ${s.name} — check-in assente`, type: "warning" });
+    pushLog({ time: nowTime(), action: `⚠ Security alert: ${s.name} — check-in absent`, type: "warning" });
   };
 
   // ── Simulate access denied (CASE A/B/C demo) ──────────────────────────
@@ -364,13 +364,13 @@ export default function OperatorDashboard() {
     setScanned(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     const logMsg =
-      c.verdict === "suspended"    ? `✗ SOSPESO: ${c.childName}` :
-      c.verdict === "grace_allowed" ? `⚠ Accesso una tantum: ${c.childName}` :
-      `✗ Pagamento scaduto: ${c.childName}`;
+      c.verdict === "suspended"    ? `✗ SUSPENDED: ${c.childName}` :
+      c.verdict === "grace_allowed" ? `⚠ One-time access: ${c.childName}` :
+      `✗ Payment overdue: ${c.childName}`;
     pushLog({ time: nowTime(), action: logMsg, type: c.verdict === "grace_allowed" ? "warning" : "error" });
     if (c.verdict === "suspended" || c.verdict === "overdue_denied") {
       triggerAccessAlert(`demo-${Date.now()}`, c.childName,
-        c.verdict === "suspended" ? "Account sospeso" : "Pagamento scaduto");
+        c.verdict === "suspended" ? "Account suspended" : "Payment overdue");
     }
     setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
   };
@@ -502,12 +502,12 @@ export default function OperatorDashboard() {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           if (check.verdict === "suspended" || check.verdict === "overdue_denied") {
             triggerAccessAlert(studentId, displayName,
-              check.verdict === "suspended" ? "Account sospeso" : "Pagamento scaduto");
+              check.verdict === "suspended" ? "Account suspended" : "Payment overdue");
           }
           const logMsg =
-            check.verdict === "suspended"    ? `✗ SOSPESO: ${displayName}` :
-            check.verdict === "grace_allowed" ? `⚠ Accesso una tantum: ${displayName}` :
-            `✗ Pagamento scaduto: ${displayName}`;
+            check.verdict === "suspended"    ? `✗ SUSPENDED: ${displayName}` :
+            check.verdict === "grace_allowed" ? `⚠ One-time access: ${displayName}` :
+            `✗ Payment overdue: ${displayName}`;
           pushLog({ time: nowTime(), action: logMsg, type: check.verdict === "grace_allowed" ? "warning" : "error" });
           setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
           return;
@@ -789,9 +789,9 @@ export default function OperatorDashboard() {
             <Ionicons name="shield-checkmark" size={20} color="#FFF" />
             <View style={{ flex: 1 }}>
               <Text style={styles.secAlertBtnTitle}>
-                {secAlerts.length} Avviso{secAlerts.length !== 1 ? "i" : ""} di Sicurezza Attivo{secAlerts.length !== 1 ? "i" : ""}
+                {secAlerts.length} Active Security Alert{secAlerts.length !== 1 ? "s" : ""}
               </Text>
-              <Text style={styles.secAlertBtnSub}>Tocca per gestire gli avvisi</Text>
+              <Text style={styles.secAlertBtnSub}>Tap to manage alerts</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#FFF" />
           </Pressable>
@@ -1044,10 +1044,10 @@ export default function OperatorDashboard() {
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
-                <Text style={styles.simulateBtnText}>⚠ Simula Bambino Assente</Text>
+                <Text style={styles.simulateBtnText}>⚠ Simulate Absent Child</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#DC2626", marginTop: 10 }]} onPress={simulateAccessDenied}>
-                <Text style={styles.simulateBtnText}>✗ Simula Accesso Negato</Text>
+                <Text style={styles.simulateBtnText}>✗ Simulate Access Denied</Text>
               </Pressable>
             </View>
           ) : (
@@ -1085,17 +1085,17 @@ export default function OperatorDashboard() {
               </View>
               <View style={styles.guardianRow}>
                 <View style={styles.guardianField}>
-                  <Text style={styles.guardianFieldLabel}>TUTORE</Text>
+                  <Text style={styles.guardianFieldLabel}>GUARDIAN</Text>
                   <Text style={styles.guardianFieldValue}>{guardianResult.guardianName}</Text>
                 </View>
                 <View style={styles.guardianDivider} />
                 <View style={styles.guardianField}>
-                  <Text style={styles.guardianFieldLabel}>BAMBINO</Text>
+                  <Text style={styles.guardianFieldLabel}>CHILD</Text>
                   <Text style={styles.guardianFieldValue}>{guardianResult.childName}</Text>
                 </View>
               </View>
               {!guardianResult.isAuthorized && (
-                <Text style={styles.guardianWarning}>⚠️ Contatta il genitore prima di procedere</Text>
+                <Text style={styles.guardianWarning}>⚠️ Contact parent before proceeding</Text>
               )}
             </View>
           )}
@@ -1142,7 +1142,7 @@ export default function OperatorDashboard() {
                 <View style={styles.offlineSavedNote}>
                   <Ionicons name="cloud-offline-outline" size={13} color="rgba(255,255,255,0.9)" />
                   <Text style={styles.offlineSavedText}>
-                    Salvato offline — verrà sincronizzato al ripristino della connessione
+                    Saved offline — will sync when connection is restored
                   </Text>
                 </View>
               )}
@@ -1186,10 +1186,10 @@ export default function OperatorDashboard() {
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
-                <Text style={styles.simulateBtnText}>⚠ Simula Bambino Assente</Text>
+                <Text style={styles.simulateBtnText}>⚠ Simulate Absent Child</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#DC2626", marginTop: 10 }]} onPress={simulateAccessDenied}>
-                <Text style={styles.simulateBtnText}>✗ Simula Accesso Negato</Text>
+                <Text style={styles.simulateBtnText}>✗ Simulate Access Denied</Text>
               </Pressable>
             </View>
           )}

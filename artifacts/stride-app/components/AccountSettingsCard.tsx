@@ -71,7 +71,7 @@ export function AccountSettingsCard() {
 
   const handleSaveEmail = async () => {
     if (!newEmail.trim() || !newEmail.includes("@")) {
-      Alert.alert("Indirizzo non valido", "Inserisci un indirizzo e-mail valido.");
+      Alert.alert("Invalid address", "Please enter a valid email address.");
       return;
     }
     await updateUser({ email: newEmail.trim() });
@@ -80,18 +80,18 @@ export function AccountSettingsCard() {
   };
 
   const handleSavePassword = () => {
-    if (!pwCurrent) { Alert.alert("Errore", "Inserisci la password attuale."); return; }
-    if (pwNew.length < 6) { Alert.alert("Errore", "La nuova password deve avere almeno 6 caratteri."); return; }
-    if (pwNew !== pwConfirm) { Alert.alert("Errore", "Le password non coincidono."); return; }
+    if (!pwCurrent) { Alert.alert("Error", "Please enter your current password."); return; }
+    if (pwNew.length < 6) { Alert.alert("Error", "New password must be at least 6 characters."); return; }
+    if (pwNew !== pwConfirm) { Alert.alert("Error", "Passwords do not match."); return; }
     setPwCurrent(""); setPwNew(""); setPwConfirm("");
     setShowPassword(false);
-    Alert.alert("Password aggiornata", "La tua password è stata modificata con successo.");
+    Alert.alert("Password updated", "Your password has been updated successfully.");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleDeleteConfirm = () => {
     if (deleteText !== "DELETE") {
-      Alert.alert("Errore", "Scrivi DELETE (in maiuscolo) per confermare.");
+      Alert.alert("Error", "Type DELETE (in uppercase) to confirm.");
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

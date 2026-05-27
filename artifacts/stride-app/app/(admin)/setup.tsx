@@ -54,7 +54,7 @@ export default function AdminSetup() {
   const handlePickLogo = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permesso negato", "Consenti l'accesso alla libreria foto nelle impostazioni del dispositivo.");
+      Alert.alert("Permission denied", "Please allow photo library access in your device settings.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -200,11 +200,11 @@ export default function AdminSetup() {
               <>
                 <Image source={{ uri: logoUri }} style={styles.logoPreviewImg} resizeMode="contain" />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Logo caricato</Text>
+                  <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Logo uploaded</Text>
                   <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]} numberOfLines={1}>
                     {logoFileName ?? "logo.png"}
                   </Text>
-                  <Text style={[styles.logoUploadHint, { color: colors.primary }]}>Tocca per cambiare</Text>
+                  <Text style={[styles.logoUploadHint, { color: colors.primary }]}>Tap to change</Text>
                 </View>
                 <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
               </>
@@ -212,8 +212,8 @@ export default function AdminSetup() {
               <>
                 <Ionicons name="cloud-upload-outline" size={40} color={colors.mutedForeground} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Carica il logo</Text>
-                  <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>Tocca per selezionare dalla galleria</Text>
+                  <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Upload logo</Text>
+                  <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>Tap to select from gallery</Text>
                   <Text style={[styles.logoUploadHint, { color: colors.mutedForeground }]}>PNG, JPG — max 5MB</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
