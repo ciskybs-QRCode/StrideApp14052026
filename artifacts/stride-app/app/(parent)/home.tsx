@@ -315,67 +315,86 @@ export default function ParentHome() {
       {/* ── QR Modal ── */}
       <Modal visible={showQR} transparent animationType="fade" onRequestClose={() => setShowQR(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            {logoSource ? (
-              <Image source={{ uri: logoSource }} style={styles.modalLogo} contentFit="contain" />
-            ) : (
-              <Image source={LOGO} style={styles.modalLogo} contentFit="contain" />
-            )}
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Smart Pass — QR Check-In</Text>
+          <View style={[styles.modalCard, { position: "relative", maxHeight: "90%", paddingTop: 44 }]}>
 
-            {/* Tab bar: My QR + one per child */}
-            <View style={styles.qrChildTabs}>
-              <Pressable
-                style={[styles.qrChildTab, qrTarget === "parent" && { backgroundColor: colors.primary }]}
-                onPress={() => setQrTarget("parent")}
-              >
-                <Text style={[styles.qrChildTabText, qrTarget === "parent" && { color: "#FFF" }]}>My QR</Text>
-              </Pressable>
-              {children.map(c => (
-                <Pressable
-                  key={c.id}
-                  style={[styles.qrChildTab, qrTarget === c.id && { backgroundColor: colors.primary }]}
-                  onPress={() => setQrTarget(c.id)}
-                >
-                  <Text style={[styles.qrChildTabText, qrTarget === c.id && { color: "#FFF" }]}>
-                    {c.name.split(" ")[0]}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={styles.passStatusRow}>
-              <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
-                <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                <Text style={[styles.passStatusText, { color: "#10B981" }]}>Active Subscription</Text>
-              </View>
-              <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
-                <Ionicons name="shield-checkmark" size={14} color="#10B981" />
-                <Text style={[styles.passStatusText, { color: "#10B981" }]}>Certificate OK</Text>
-              </View>
-            </View>
-
-            <View style={[styles.qrBox, { backgroundColor: "#F0F4FF" }]}>
-              <QRCode
-                value={qrValue}
-                size={160}
-                color={colors.primary}
-                backgroundColor="transparent"
-              />
-              <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrLabel}</Text>
-              <Text style={[styles.qrId, { color: colors.mutedForeground }]}>
-                {qrTarget === "parent"
-                  ? `Parent · ID: ${user?.id}`
-                  : `Student · ID: ${qrTarget}`}
-              </Text>
-            </View>
-
-            <Text style={[styles.qrSwipeHint, { color: colors.mutedForeground }]}>
-              Show this QR to the operator at check-in
-            </Text>
-            <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary }]} onPress={() => setShowQR(false)}>
-              <Text style={styles.closeBtnText}>Close</Text>
+            {/* ── X close button — always visible at top-right ── */}
+            <Pressable
+              style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }}
+              onPress={() => setShowQR(false)}
+              hitSlop={14}
+            >
+              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
             </Pressable>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ width: "100%" }}
+              contentContainerStyle={{ alignItems: "center", paddingBottom: 4 }}
+            >
+              {logoSource ? (
+                <Image source={{ uri: logoSource }} style={styles.modalLogo} contentFit="contain" />
+              ) : (
+                <Image source={LOGO} style={styles.modalLogo} contentFit="contain" />
+              )}
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>Smart Pass — QR Check-In</Text>
+
+              {/* Tab bar: Il mio QR + one per child */}
+              <View style={styles.qrChildTabs}>
+                <Pressable
+                  style={[styles.qrChildTab, qrTarget === "parent" && { backgroundColor: colors.primary }]}
+                  onPress={() => setQrTarget("parent")}
+                >
+                  <Text style={[styles.qrChildTabText, qrTarget === "parent" && { color: "#FFF" }]}>Il mio QR</Text>
+                </Pressable>
+                {children.map(c => (
+                  <Pressable
+                    key={c.id}
+                    style={[styles.qrChildTab, qrTarget === c.id && { backgroundColor: colors.primary }]}
+                    onPress={() => setQrTarget(c.id)}
+                  >
+                    <Text style={[styles.qrChildTabText, qrTarget === c.id && { color: "#FFF" }]}>
+                      {c.name.split(" ")[0]}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.passStatusRow}>
+                <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
+                  <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                  <Text style={[styles.passStatusText, { color: "#10B981" }]}>Abbonamento Attivo</Text>
+                </View>
+                <View style={[styles.passStatusBadge, { backgroundColor: "#D1FAE5" }]}>
+                  <Ionicons name="shield-checkmark" size={14} color="#10B981" />
+                  <Text style={[styles.passStatusText, { color: "#10B981" }]}>Certificato OK</Text>
+                </View>
+              </View>
+
+              <View style={[styles.qrBox, { backgroundColor: "#F0F4FF" }]}>
+                <QRCode
+                  value={qrValue}
+                  size={160}
+                  color={colors.primary}
+                  backgroundColor="transparent"
+                />
+                <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrLabel}</Text>
+                <Text style={[styles.qrId, { color: colors.mutedForeground }]}>
+                  {qrTarget === "parent"
+                    ? `Genitore · ID: ${user?.id}`
+                    : `Studente · ID: ${qrTarget}`}
+                </Text>
+              </View>
+
+              <Text style={[styles.qrSwipeHint, { color: colors.mutedForeground }]}>
+                Mostra questo QR all'operatore al check-in
+              </Text>
+              <Pressable
+                style={[styles.closeBtn, { backgroundColor: colors.primary, width: "100%", marginTop: 4 }]}
+                onPress={() => setShowQR(false)}
+              >
+                <Text style={styles.closeBtnText}>Chiudi</Text>
+              </Pressable>
+            </ScrollView>
           </View>
         </View>
       </Modal>
