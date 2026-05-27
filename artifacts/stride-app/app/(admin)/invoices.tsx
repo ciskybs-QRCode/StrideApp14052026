@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -14,6 +14,15 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import {
+  type InvoiceSubmittedPayload,
+  type PaymentConfirmedPayload,
+  ADMIN_NOTIFICATIONS_KEY,
+  OPERATOR_NOTIFICATIONS_KEY,
+  INVOICE_CHANNEL_NAME,
+  PAYMENT_CHANNEL_NAME,
+} from "@/lib/strideChannel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,25 +57,25 @@ function fmtDate(iso: string) {
 // ── Demo data ─────────────────────────────────────────────────────────────────
 
 const DEMO_INVOICES: SubmittedInvoice[] = [
-  {
-    id: "INV-202604-1001",
-    operatorName: "Maria Chen",
-    period: "2026-04",
-    totalCents: 112000,
-    status: "pending",
-    submittedAt: new Date(Date.now() - 86400000).toISOString(),
-    schoolName: "Dance Village",
-  },
-  {
-    id: "INV-202603-2045",
-    operatorName: "Marco Bianchi",
-    period: "2026-03",
-    totalCents: 87500,
-    status: "paid",
-    submittedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-    schoolName: "Dance Village",
-  },
+  { id: "INV-202604-1001", operatorName: "Maria Chen",    period: "2026-04", totalCents: 112000, status: "pending", submittedAt: new Date(Date.now() - 86400000).toISOString(),     schoolName: "Dance Village" },
+  { id: "INV-202603-2045", operatorName: "Marco Bianchi", period: "2026-03", totalCents: 87500,  status: "paid",    submittedAt: new Date(Date.now() - 7 * 86400000).toISOString(), schoolName: "Dance Village" },
 ];
+
+// ── In-app banner ─────────────────────────────────────────────────────────────
+
+function InAppBanner({ message, type, onDismiss }: { message: string; type: "success" | "info"; onDismiss: () => void }) {
+  const bg   = type === "success" ? "#064E3B" : "#1E3A8A";
+  const icon = type === "success" ? "checkmark-circle" as const : "information-circle" as const;
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: bg, borderRadius: 14, padding: 14, marginBottom: 16 }}>
+      <Ionicons name={icon} size={22} color="#FBBF24" />
+      <Text style={{ flex: 1, color: "#FFF", fontSize: 13, fontWeight: "600", lineHeight: 18 }}>{message}</Text>
+      <Pressable onPress={onDismiss} hitSlop={12}>
+        <Ionicons name="close" size={18} color="rgba(255,255,255,0.65)" />
+      </Pressable>
+    </View>
+  );
+}
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -76,9 +85,12 @@ export default function AdminInvoicesScreen() {
   const { user } = useAuth();
   const schoolName = user?.schoolName ?? "Dance Village";
 
-  const [invoices, setInvoices] = useState<SubmittedInvoice[]>([]);
-  const [confirmPay, setConfirmPay] = useState<string | null>(null);
+  const [invoices, setInvoices]       = useState<SubmittedInvoice[]>([]);
+  const [confirmPay, setConfirmPay]   = useState<string | null>(null);
+  const [newInvoiceBanner, setNewInvoiceBanner] = useState<InvoiceSubmittedPayload | null>(null);
+  const [paidBanner, setPaidBanner]   = useState<string | null>(null); // operatorName
 
+  // ── Load invoices ──────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     try {
       const raw = await AsyncStorage.getItem("submitted_invoices");
@@ -91,26 +103,94 @@ export default function AdminInvoicesScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const markPaid = async (id: string) => {
+  // ── Supabase Realtime: listen for new invoice submissions ─────────────────
+  useEffect(() => {
+    if (!supabase) return;
+    const sb = supabase;
+    let ch: ReturnType<typeof sb.channel> | null = null;
+    try {
+      ch = sb.channel(INVOICE_CHANNEL_NAME)
+        .on("broadcast", { event: "invoice_submitted" }, ({ payload }) => {
+          const p = payload as InvoiceSubmittedPayload;
+          setNewInvoiceBanner(p);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          load();
+        })
+        .subscribe();
+    } catch { /* not configured */ }
+    return () => { if (ch) sb.removeChannel(ch!); };
+  }, [load]);
+
+  // ── Poll AsyncStorage for new invoice notifications (fallback) ────────────
+  useFocusEffect(useCallback(() => {
+    const check = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(ADMIN_NOTIFICATIONS_KEY);
+        if (!raw) return;
+        const list = JSON.parse(raw) as InvoiceSubmittedPayload[];
+        if (list.length > 0) {
+          setNewInvoiceBanner(list[0]);
+          await AsyncStorage.removeItem(ADMIN_NOTIFICATIONS_KEY);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          load();
+        }
+      } catch { /* ignore */ }
+    };
+    check();
+    const id = setInterval(check, 8000);
+    return () => clearInterval(id);
+  }, [load]));
+
+  // ── Mark as paid ───────────────────────────────────────────────────────────
+  const markPaid = async (inv: SubmittedInvoice) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const update = (list: SubmittedInvoice[]) =>
-      list.map(inv => inv.id === id ? { ...inv, status: "paid" as const } : inv);
+      list.map(i => i.id === inv.id ? { ...i, status: "paid" as const } : i);
 
-    const updated = update(invoices);
-    setInvoices(updated);
+    setInvoices(update(invoices));
     setConfirmPay(null);
 
+    // Persist
     try {
       const raw = await AsyncStorage.getItem("submitted_invoices");
       if (raw) {
-        const stored: SubmittedInvoice[] = JSON.parse(raw);
-        await AsyncStorage.setItem("submitted_invoices", JSON.stringify(update(stored)));
+        await AsyncStorage.setItem("submitted_invoices", JSON.stringify(update(JSON.parse(raw))));
       }
     } catch { /* local only */ }
+
+    // Write operator AsyncStorage notification (offline-safe fallback)
+    const operatorNotif: PaymentConfirmedPayload = {
+      invoiceId:    inv.id,
+      operatorName: inv.operatorName,
+      totalCents:   inv.totalCents,
+      paidAt:       new Date().toISOString(),
+    };
+    try {
+      const existing = await AsyncStorage.getItem(OPERATOR_NOTIFICATIONS_KEY);
+      const list = existing ? JSON.parse(existing) : [];
+      list.unshift(operatorNotif);
+      await AsyncStorage.setItem(OPERATOR_NOTIFICATIONS_KEY, JSON.stringify(list));
+    } catch { /* ignore */ }
+
+    // Supabase Realtime broadcast (best-effort)
+    if (supabase) {
+      const sb = supabase;
+      try {
+        const ch = sb.channel(PAYMENT_CHANNEL_NAME);
+        ch.subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            await ch.send({ type: "broadcast", event: "payment_confirmed", payload: operatorNotif });
+            sb.removeChannel(ch);
+          }
+        });
+      } catch { /* not configured */ }
+    }
+
+    setPaidBanner(inv.operatorName);
   };
 
-  const pending  = invoices.filter(i => i.status === "pending" || i.status === "approved");
-  const history  = invoices.filter(i => i.status === "paid" || i.status === "rejected");
+  const pending = invoices.filter(i => i.status === "pending" || i.status === "approved");
+  const history = invoices.filter(i => i.status === "paid"    || i.status === "rejected");
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -123,6 +203,24 @@ export default function AdminInvoicesScreen() {
           Operator payment requests for {schoolName}
         </Text>
 
+        {/* ── New invoice received banner ── */}
+        {newInvoiceBanner && (
+          <InAppBanner
+            type="info"
+            message={`New invoice received from ${newInvoiceBanner.operatorName} — €${(newInvoiceBanner.totalCents / 100).toFixed(2)} for ${newInvoiceBanner.period}. Review below.`}
+            onDismiss={() => setNewInvoiceBanner(null)}
+          />
+        )}
+
+        {/* ── Payment confirmed banner ── */}
+        {paidBanner && (
+          <InAppBanner
+            type="success"
+            message={`Payment confirmed and logged for ${paidBanner}. A notification has been sent to the operator.`}
+            onDismiss={() => setPaidBanner(null)}
+          />
+        )}
+
         {/* ── Pending / Awaiting Payment ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Awaiting Action</Text>
 
@@ -133,7 +231,7 @@ export default function AdminInvoicesScreen() {
           </View>
         ) : (
           pending.map(inv => {
-            const meta = STATUS_META[inv.status];
+            const meta    = STATUS_META[inv.status];
             const isPaying = confirmPay === inv.id;
             return (
               <View key={inv.id} style={[styles.invoiceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -144,9 +242,7 @@ export default function AdminInvoicesScreen() {
                     <Text style={[styles.invoiceId, { color: colors.mutedForeground }]}>{inv.id}</Text>
                   </View>
                   <View>
-                    <Text style={[styles.amount, { color: colors.primary }]}>
-                      ${(inv.totalCents / 100).toFixed(2)}
-                    </Text>
+                    <Text style={[styles.amount, { color: colors.primary }]}>€{(inv.totalCents / 100).toFixed(2)}</Text>
                     <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
                       <Ionicons name={meta.icon} size={11} color={meta.text} />
                       <Text style={[styles.statusText, { color: meta.text }]}>{meta.label}</Text>
@@ -157,13 +253,13 @@ export default function AdminInvoicesScreen() {
                 {isPaying ? (
                   <View style={styles.confirmRow}>
                     <Text style={[styles.confirmMsg, { color: colors.foreground }]}>
-                      Mark ${(inv.totalCents / 100).toFixed(2)} as paid to {inv.operatorName}?
+                      Mark €{(inv.totalCents / 100).toFixed(2)} as paid to {inv.operatorName}? The operator will receive a payment confirmation.
                     </Text>
                     <View style={styles.confirmBtns}>
                       <Pressable style={[styles.confirmBtn, { backgroundColor: colors.muted }]} onPress={() => setConfirmPay(null)}>
                         <Text style={[styles.confirmBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                       </Pressable>
-                      <Pressable style={[styles.confirmBtn, { backgroundColor: "#059669" }]} onPress={() => markPaid(inv.id)}>
+                      <Pressable style={[styles.confirmBtn, { backgroundColor: "#059669" }]} onPress={() => markPaid(inv)}>
                         <Ionicons name="checkmark" size={14} color="#FFF" />
                         <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Confirm Paid</Text>
                       </Pressable>
@@ -198,9 +294,7 @@ export default function AdminInvoicesScreen() {
                       <Text style={[styles.invoiceId, { color: colors.mutedForeground }]}>{inv.id}</Text>
                     </View>
                     <View style={{ alignItems: "flex-end", gap: 6 }}>
-                      <Text style={[styles.amount, { color: colors.foreground }]}>
-                        ${(inv.totalCents / 100).toFixed(2)}
-                      </Text>
+                      <Text style={[styles.amount, { color: colors.foreground }]}>€{(inv.totalCents / 100).toFixed(2)}</Text>
                       <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
                         <Ionicons name={meta.icon} size={11} color={meta.text} />
                         <Text style={[styles.statusText, { color: meta.text }]}>{meta.label}</Text>

@@ -20,6 +20,7 @@ import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
+import { type PayoutFrequency, PAYOUT_FREQUENCY_KEY } from "@/lib/strideChannel";
 
 const GRID_ITEMS = [
   {
@@ -62,9 +63,10 @@ export default function SettingsIndex() {
   const { legalAdminDocs } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [graceEnabled, setGraceEnabled] = useState(false);
-  const [loadingGrace, setLoadingGrace] = useState(true);
-  const [savingGrace, setSavingGrace] = useState(false);
+  const [graceEnabled, setGraceEnabled]     = useState(false);
+  const [loadingGrace, setLoadingGrace]     = useState(true);
+  const [savingGrace, setSavingGrace]       = useState(false);
+  const [payoutFrequency, setPayoutFrequency] = useState<PayoutFrequency>("monthly");
 
   const GRACE_KEY = "stride_grace_access";
 
@@ -85,6 +87,18 @@ export default function SettingsIndex() {
   }, []);
 
   useEffect(() => { loadSettings(); }, [loadSettings]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(PAYOUT_FREQUENCY_KEY).then(v => {
+      if (v) setPayoutFrequency(v as PayoutFrequency);
+    });
+  }, []);
+
+  const handleSetPayoutFrequency = useCallback(async (f: PayoutFrequency) => {
+    setPayoutFrequency(f);
+    try { await AsyncStorage.setItem(PAYOUT_FREQUENCY_KEY, f); } catch { /* ignore */ }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
 
   const handleGraceToggle = useCallback(async (value: boolean) => {
     setSavingGrace(true);
@@ -206,6 +220,34 @@ export default function SettingsIndex() {
 
         {/* Finance section */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Finance</Text>
+
+        {/* Payout Frequency */}
+        <View style={[styles.featuredCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.featuredIconBox, { backgroundColor: "#EDE9FE" }]}>
+            <Ionicons name="repeat-outline" size={30} color="#7C3AED" />
+          </View>
+          <View style={{ flex: 1, gap: 10 }}>
+            <View>
+              <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Payout Frequency</Text>
+              <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
+                Sets billing cycle & operator invoice reminders
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {(["weekly", "fortnightly", "monthly"] as PayoutFrequency[]).map(f => (
+                <Pressable
+                  key={f}
+                  style={{ flex: 1, backgroundColor: payoutFrequency === f ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 10, alignItems: "center" }}
+                  onPress={() => handleSetPayoutFrequency(f)}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: payoutFrequency === f ? "#FBBF24" : colors.mutedForeground, textTransform: "capitalize" }}>
+                    {f === "fortnightly" ? "Bi-weekly" : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
 
         <Pressable
           style={({ pressed }) => [styles.featuredCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}

@@ -63,6 +63,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         const { supabase } = await import("@/lib/supabase");
         if (!active) return;
 
+        if (!supabase) return;
         const channel = supabase
           .channel("stride_realtime_v1")
           .on(
@@ -95,7 +96,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           )
           .subscribe();
 
-        removeChannel = () => { supabase.removeChannel(channel); };
+        removeChannel = () => { supabase?.removeChannel(channel); };
       } catch { /* Supabase not reachable in demo mode */ }
     })();
 

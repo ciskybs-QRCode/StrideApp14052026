@@ -1,0 +1,37 @@
+Please implement the following precise updates to the Operator View -> Settings -> Payroll page and its PDF/Notification workflow in Expo/React Native (TypeScript) with Supabase + Drizzle ORM.
+
+1. Strict PDF Scope (DAILY WORK LOG Only):
+
+Fix the PDF generation logic. The exported document must ONLY render the professional DAILY WORK LOG table.
+
+The PDF table must strictly include the following sequential columns:
+
+DATE (The specific calendar day of the shift)
+
+DISCIPLINE (The course style taught)
+
+HRS (Exact hours worked)
+
+RATE (The discipline-specific hourly rate)
+
+DAILY TOTAL (Calculated as HRS * RATE)
+
+Date Range Filtering: By default, the PDF must automatically filter and include rows relative only to the current month. However, the engine must respect the global configuration: if the Admin has set a 'weekly' or 'fortnightly' payout frequency in the settings, the PDF must dynamically adapt its date range to fetch only that specific week or fortnight cycle.
+
+2. Automated Invoice Reminders (Operator Side):
+
+Based on the Admin's configured billing cycle (weekly, fortnightly, or monthly), set up automated local triggers or push reminders to alert the Operator that their invoice/timesheet is due and needs to be submitted to the Admin.
+
+3. Real-Time Push Notification Flow (Supabase Channels):
+
+Submission Alert: The exact moment the Operator clicks 'Submit Invoice', trigger an immediate push notification to the Admin dashboard stating that a new invoice has been received for review.
+
+Payment Confirmation Alerts: >   - When the Admin updates the invoice status to 'Paid', instantly trigger a high-priority push notification to the Operator's phone confirming their payment has been processed.
+
+Concurrently, send a success/logged notification to the Admin confirming the transaction status has been updated.
+
+UI Constraint Checklist:
+
+Keep our exact Navy Blue and Gold design system intact for any status badges or submission buttons.
+
+Ensure all elements on the Payroll screen remain fully visible and scrollable within the device boundaries.

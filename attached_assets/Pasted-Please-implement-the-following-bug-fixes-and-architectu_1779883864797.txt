@@ -1,0 +1,29 @@
+Please implement the following bug fixes and architectural reorganization in our Expo/React Native (TypeScript) + Supabase application.
+
+1. Bug Fix: Operator Payroll 'Submit' Button:
+
+On the Operator -> Settings -> Payroll page, the 'Submit Invoice To Admin' button is currently non-functional.
+
+Please wire this button correctly. When pressed, it must update the invoice status to 'submitted' in the Supabase database and successfully trigger the push notification to the Admin. Add loading states and success/error UI feedback so the Operator knows the action worked.
+
+2. Relocate 'Teaching Materials' from Settings:
+
+Remove the 'Teaching Materials' upload section (Upload MP3 / PDF / Script) entirely from the global Operator Settings page.
+
+CRITICAL NOTE: Do NOT move or alter the account management features. 'Change Password', 'Change Email', and 'Delete Account' must remain exactly where they are on the global Settings page.
+
+3. Implement Course-Specific Teaching Materials:
+
+Move the 'Teaching Materials' feature directly into the specific Course Detail Page.
+
+File Support: The Operator must be able to upload diverse file types relevant to the course: Videos (e.g., choreography videos), Audio files (MP3, WAV for music), Images (JPG/PNG), and Documents (PDF, DOC/DOCX for scripts and lyrics). Connect this to Supabase Storage.
+
+Strict Operator Authorization: An Operator can ONLY see the upload tools and manage materials for a course if they are explicitly assigned as the teacher for that specific course.
+
+Strict Student/Parent Access Control: Ensure database queries and UI logic enforce privacy. Uploaded materials must ONLY be visible and accessible to the Parents/Associates (and their linked children) who are actively enrolled in that specific course. No one else can view or access these files.
+
+UI Constraint Checklist:
+
+Maintain the exact Navy Blue and Gold design system.
+
+Ensure all new file upload interfaces, buttons, and material lists are perfectly contained within the phone display boundaries (SafeAreaView and ScrollView). No visual elements should bleed outside the screen."
