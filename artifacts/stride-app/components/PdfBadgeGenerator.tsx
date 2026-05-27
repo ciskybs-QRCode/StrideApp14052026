@@ -97,8 +97,17 @@ async function buildFullPageHtml(students: Student[], opts: BadgeOpts): Promise<
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${BASE_CSS}</style></head><body>${pages.join("")}</body></html>`;
 }
 
+// Layout parameters keyed by gridSize — cols, QR side in px, name font size
+const GRID_LAYOUT_PARAMS: Record<GridSize, { cols: number; qrPx: number; namePx: number; subPx: number; pad: string; gap: string }> = {
+  2:  { cols: 1, qrPx: 220, namePx: 28, subPx: 14, pad: "16mm", gap: "12mm" },
+  4:  { cols: 2, qrPx: 155, namePx: 22, subPx: 12, pad: "14mm", gap: "10mm" },
+  6:  { cols: 2, qrPx: 130, namePx: 20, subPx: 11, pad: "12mm", gap: "8mm"  },
+  8:  { cols: 2, qrPx: 108, namePx: 17, subPx: 10, pad: "10mm", gap: "6mm"  },
+  10: { cols: 2, qrPx:  88, namePx: 14, subPx:  9, pad: "8mm",  gap: "5mm"  },
+};
+
 async function buildGridHtml(students: Student[], gridSize: GridSize, opts: BadgeOpts): Promise<string> {
-  const COLS = 2;
+  const { cols, qrPx, namePx, subPx, pad, gap } = GRID_LAYOUT_PARAMS[gridSize];
   const chunks: Student[][] = [];
   for (let i = 0; i < students.length; i += gridSize) chunks.push(students.slice(i, i + gridSize));
 
@@ -109,19 +118,20 @@ async function buildGridHtml(students: Student[], gridSize: GridSize, opts: Badg
       const { first, last } = splitName(s.name);
       const idx = students.indexOf(s);
       const course = s.courses[0] ?? opts.courseName ?? "";
+      const photoCirclePx = Math.max(24, Math.round(qrPx * 0.22));
       return `
-        <div style="border:2px solid #1E3A8A;border-radius:10px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;background:white;page-break-inside:avoid;break-inside:avoid;">
-          <div style="width:130px;height:130px;">${qrSvgs[idx]}</div>
-          <div style="font-size:22px;font-weight:800;color:#1E3A8A;text-align:center;">${first}${opts.showLastName && last ? `<br/><span style="font-size:15px;font-weight:600;color:#374151;">${last}</span>` : ""}</div>
-          ${opts.showPhoto ? `<div style="width:36px;height:36px;border-radius:18px;background:#DBEAFE;border:2px solid #1E3A8A;display:flex;align-items:center;justify-content:center;"><span style="font-size:16px;font-weight:900;color:#1E3A8A;">${first[0] ?? "?"}</span></div>` : ""}
-          ${opts.showSecondary && course ? `<div style="font-size:12px;color:#6B7280;text-align:center;">${course} · Age: ${s.age}</div>` : ""}
+        <div style="border:2px solid #1E3A8A;border-radius:10px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;background:white;page-break-inside:avoid;break-inside:avoid;">
+          <div style="width:${qrPx}px;height:${qrPx}px;">${qrSvgs[idx]}</div>
+          <div style="font-size:${namePx}px;font-weight:800;color:#1E3A8A;text-align:center;line-height:1.2;">${first}${opts.showLastName && last ? `<br/><span style="font-size:${Math.round(namePx * 0.72)}px;font-weight:600;color:#374151;">${last}</span>` : ""}</div>
+          ${opts.showPhoto ? `<div style="width:${photoCirclePx}px;height:${photoCirclePx}px;border-radius:${Math.round(photoCirclePx / 2)}px;background:#DBEAFE;border:2px solid #1E3A8A;display:flex;align-items:center;justify-content:center;"><span style="font-size:${Math.round(photoCirclePx * 0.55)}px;font-weight:900;color:#1E3A8A;">${first[0] ?? "?"}</span></div>` : ""}
+          ${opts.showSecondary && course ? `<div style="font-size:${subPx}px;color:#6B7280;text-align:center;">${course} · Age: ${s.age}</div>` : ""}
         </div>`;
     }).join("");
     return `
-      <div style="display:grid;grid-template-columns:repeat(${COLS},1fr);grid-auto-flow:row;gap:8mm;padding:12mm;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;background:white;align-content:start;">
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);grid-auto-flow:row;gap:${gap};padding:${pad};page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;background:white;align-content:start;min-height:297mm;box-sizing:border-box;">
         <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-bottom:4mm;">
-          <div style="font-size:14px;font-weight:800;color:#1E3A8A;border-left:4px solid #FBBF24;padding-left:8px;">${opts.courseName ?? "All Students"}</div>
-          <div style="font-size:11px;color:#9CA3AF;">Stride Dance School</div>
+          <div style="font-size:13px;font-weight:800;color:#1E3A8A;border-left:4px solid #FBBF24;padding-left:8px;">${opts.courseName ?? "All Students"} · ${gridSize} per page</div>
+          <div style="font-size:10px;color:#9CA3AF;">Stride Dance School</div>
         </div>
         ${cards}
       </div>`;
@@ -339,15 +349,22 @@ export default function PdfBadgeGenerator() {
       );
     }
     if (layout === "grid") {
+      const previewCols = GRID_LAYOUT_PARAMS[gridSize].cols;
+      const previewCount = Math.min(previewCols * 2, gridSize); // show up to 2 rows
+      const cardWidthPct = previewCols === 1 ? "90%" : "44%";
+      const qrIconSize = previewCols === 1 ? 38 : 24;
       return (
-        <View style={styles.previewGridWrap}>
-          {displayStudents.slice(0, Math.min(4, gridSize)).map((s, i) => (
-            <View key={i} style={styles.previewGridCard}>
-              <Ionicons name="qr-code" size={28} color="#1E3A8A" />
+        <View style={[styles.previewGridWrap]}>
+          {displayStudents.slice(0, previewCount).map((s, i) => (
+            <View key={i} style={[styles.previewGridCard, { width: cardWidthPct }]}>
+              <Ionicons name="qr-code" size={qrIconSize} color="#1E3A8A" />
               <Text style={styles.previewGridName}>{s.name.split(" ")[0]}</Text>
               {showSecondary && <Text style={styles.previewGridSec}>{s.courses[0] ?? previewCourse}</Text>}
             </View>
           ))}
+          <View style={[styles.previewGridCard, { width: "90%", backgroundColor: "transparent", borderStyle: "dashed", borderColor: "#CBD5E1", marginTop: 2 }]}>
+            <Text style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>{gridSize} per pagina · {previewCols} {previewCols === 1 ? "colonna" : "colonne"}</Text>
+          </View>
         </View>
       );
     }
