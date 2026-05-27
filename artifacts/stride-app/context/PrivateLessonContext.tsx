@@ -156,7 +156,7 @@ export function PrivateLessonProvider({ children }: { children: React.ReactNode 
     }}>
       {children}
       {/* Toast overlay — rendered at the very top of the tree */}
-      <View style={styles.toastContainer} pointerEvents="box-none">
+      <View style={[styles.toastContainer, { pointerEvents: "box-none" }]}>
         {toasts.map(t => (
           <NotificationToast key={t.id} toast={t} onDismiss={() => dismissToast(t.id)} />
         ))}

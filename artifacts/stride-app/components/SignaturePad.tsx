@@ -88,7 +88,7 @@ export function SignaturePad({
           ) : null}
         </Svg>
         {isEmpty && (
-          <View style={styles.hint} pointerEvents="none">
+          <View style={[styles.hint, { pointerEvents: "none" }]}>
             <Text style={styles.hintText}>✍️  Sign here with your finger</Text>
           </View>
         )}
