@@ -37,8 +37,8 @@ const CONFIG_ITEMS = [
   },
   {
     key: "parentAlerts",
-    label: "Parent Alerts",
-    description: "Notify parents on late arrivals or absences",
+    label: "Member Alerts",
+    description: "Notify members on late arrivals or absences",
     icon: "people-outline" as const,
     iconBg: "#FEF3C7",
     iconColor: "#F59E0B",
@@ -94,7 +94,7 @@ export default function AppConfigurationPage() {
   }, [primaryRoleName, secondaryRoleName]);
 
   const handleSaveTerminology = async () => {
-    const p = primaryInput.trim() || "Parent";
+    const p = primaryInput.trim() || "Member";
     const s = secondaryInput.trim() || "Child";
     setSavingTerms(true);
     try {

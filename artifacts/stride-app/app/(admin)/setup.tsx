@@ -486,7 +486,7 @@ export default function AdminSetup() {
               <View style={[styles.qrInfoBox, { backgroundColor: "#FEF3C7" }]}>
                 <Ionicons name="information-circle-outline" size={15} color="#F59E0B" />
                 <Text style={[styles.qrInfoText, { color: "#92400E" }]}>
-                  New sign-ups default to "Parent" access. Upgrade roles manually in Users.
+                  New sign-ups default to "Member" access. Upgrade roles manually in Users.
                 </Text>
               </View>
             </>

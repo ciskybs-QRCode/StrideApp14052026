@@ -588,8 +588,8 @@ export default function AdminCommunications() {
               {recipientTab === "quick" && (
                 <>
                   {[
-                    { sel: { mode: "all" as const },                                        label: "All Users",      sub: "All parents, operators and students", icon: "people" as const,       bg: "#DBEAFE", color: colors.primary },
-                    { sel: { mode: "group" as const, groupRole: "parents" as const },       label: "All Parents",    sub: "30 parents registered",                icon: "person" as const,       bg: "#D1FAE5", color: "#10B981" },
+                    { sel: { mode: "all" as const },                                        label: "All Users",      sub: "All members, operators and students", icon: "people" as const,       bg: "#DBEAFE", color: colors.primary },
+                    { sel: { mode: "group" as const, groupRole: "parents" as const },       label: "All Members",    sub: "30 members registered",                icon: "person" as const,       bg: "#D1FAE5", color: "#10B981" },
                     { sel: { mode: "group" as const, groupRole: "operators" as const },     label: "All Operators",  sub: "15 operators registered",              icon: "briefcase" as const,    bg: "#EDE9FE", color: "#7C3AED" },
                     { sel: { mode: "group" as const, groupRole: "students" as const },      label: "All Students",   sub: "8 students registered",                icon: "school" as const,       bg: "#FEF3C7", color: "#F59E0B" },
                   ].map(({ sel, label, sub, icon, bg, color }) => (

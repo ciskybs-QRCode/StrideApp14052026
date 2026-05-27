@@ -420,7 +420,7 @@ export default function CoursesScreen() {
                         </View>
                         <View style={styles.detailItem}>
                           <Ionicons name="person-outline" size={15} color={colors.mutedForeground} />
-                          <Text style={[styles.detailItemLabel, { color: colors.mutedForeground }]}>Instructor</Text>
+                          <Text style={[styles.detailItemLabel, { color: colors.mutedForeground }]}>Operator</Text>
                           <Text style={[styles.detailItemValue, { color: colors.foreground }]}>{c.instructor}</Text>
                         </View>
                         <View style={styles.detailItem}>
@@ -581,7 +581,7 @@ export default function CoursesScreen() {
                   <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{course.description}</Text>
                   <View style={styles.detailRows}>
                     {[
-                      { icon: "person",   label: "Istruttore", value: course.instructor },
+                      { icon: "person",   label: "Operator",   value: course.instructor },
                       { icon: "time",     label: "Orario",     value: course.schedule },
                       { icon: "location", label: "Luogo",      value: course.location || "TBD" },
                       { icon: "people",   label: "Posti",      value: `${course.enrolled}/${course.capacity}` },
@@ -795,8 +795,8 @@ export default function CoursesScreen() {
                 colors={colors}
               />
               <Dropdown
-                label="Istruttore"
-                placeholder="Scegli un istruttore"
+                label="Operator"
+                placeholder="Choose an operator"
                 value={privInstructor}
                 options={uniqueInstructors}
                 onSelect={v => { setPrivInstructor(v); setPrivActivity(null); setPrivDate(null); setPrivSlot(null); }}
@@ -804,7 +804,7 @@ export default function CoursesScreen() {
               />
               <Dropdown
                 label="Attività / Stile"
-                placeholder={privInstructor ? "Scegli attività" : "Seleziona prima l'istruttore"}
+                placeholder={privInstructor ? "Choose activity" : "Select operator first"}
                 value={privActivity}
                 options={activitiesForInstructor(privInstructor)}
                 onSelect={v => { setPrivActivity(v); setPrivDate(null); setPrivSlot(null); }}

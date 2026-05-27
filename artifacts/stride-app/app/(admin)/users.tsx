@@ -385,7 +385,7 @@ export default function AdminUsers() {
                           <Text style={[styles.profileTypePillText, {
                             color: operatorProfile.profile_type === "paid" ? "#92400E" : "#6D28D9",
                           }]}>
-                            {operatorProfile.profile_type === "paid" ? "Paid Instructor" : "Volunteer"}
+                            {operatorProfile.profile_type === "paid" ? "Paid Operator" : "Volunteer"}
                           </Text>
                         </View>
                       )}

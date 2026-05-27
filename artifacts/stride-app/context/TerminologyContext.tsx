@@ -8,13 +8,13 @@ interface TerminologyContextType {
 }
 
 const TerminologyContext = createContext<TerminologyContextType>({
-  primaryRoleName: "Parent",
+  primaryRoleName: "Member",
   secondaryRoleName: "Child",
   updateTerminology: async () => {},
 });
 
 export function TerminologyProvider({ children }: { children: React.ReactNode }) {
-  const [primaryRoleName, setPrimary] = useState("Parent");
+  const [primaryRoleName, setPrimary] = useState("Member");
   const [secondaryRoleName, setSecondary] = useState("Child");
 
   useEffect(() => {

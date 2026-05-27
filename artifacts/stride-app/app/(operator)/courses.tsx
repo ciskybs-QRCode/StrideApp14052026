@@ -121,7 +121,7 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
         mimeType:   asset.mimeType ?? "application/octet-stream",
         size:       asset.size ?? 0,
         uploadedAt: new Date().toISOString(),
-        uploadedBy: user?.name ?? "Instructor",
+        uploadedBy: user?.name ?? "Operator",
         uri:        asset.uri,
       };
       const updated = [material, ...materials];
@@ -154,7 +154,7 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
         mimeType:   isVideo ? "video/mp4" : "image/jpeg",
         size:       asset.fileSize ?? 0,
         uploadedAt: new Date().toISOString(),
-        uploadedBy: user?.name ?? "Instructor",
+        uploadedBy: user?.name ?? "Operator",
         uri:        asset.uri,
       };
       const updated = [material, ...materials];

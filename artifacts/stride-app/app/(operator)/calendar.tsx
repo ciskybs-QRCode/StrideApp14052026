@@ -750,8 +750,8 @@ export default function OperatorCalendar() {
                 </View>
               </View>
 
-              {/* ─ Instructor ─ */}
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Instructor</Text>
+              {/* ─ Operator ─ */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Operator</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
                 {knownInstructors.map(instr => {
                   const active = wInstructor === instr && !wCustomInstructor;

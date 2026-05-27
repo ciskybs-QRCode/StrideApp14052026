@@ -76,7 +76,7 @@ function calcDurationMins(start: string, end: string) {
 // ── Step indicator ────────────────────────────────────────────────────────────
 
 const STEPS: { key: Step; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: "operator", label: "Instructor", icon: "person-outline" },
+  { key: "operator", label: "Operator", icon: "person-outline" },
   { key: "style",    label: "Style",      icon: "musical-notes-outline" },
   { key: "location", label: "Location",   icon: "location-outline" },
   { key: "time",     label: "Time",       icon: "time-outline" },
@@ -174,7 +174,7 @@ export default function BookLessonScreen() {
           {
             profileId: s.operator_profile!.id,
             userId: s.operator_profile!.user?.id ?? 0,
-            name: s.operator_profile!.user?.name ?? "Instructor",
+            name: s.operator_profile!.user?.name ?? "Operator",
             profileType: s.operator_profile!.profile_type,
           } as OperatorOption,
         ])
@@ -265,7 +265,7 @@ export default function BookLessonScreen() {
       setConfirmed(result);
 
       const scheduleWithLocation = `${fmtDate(result.slot_date)}, ${fmtTime(result.start_time)} – ${fmtTime(result.end_time)} · ${result.location}`;
-      const lessonName = `Private ${selectedDiscipline?.name ?? "Lesson"} with ${selectedOperator?.name ?? "Instructor"}`;
+      const lessonName = `Private ${selectedDiscipline?.name ?? "Lesson"} with ${selectedOperator?.name ?? "Operator"}`;
 
       // Add one cart item per participant
       allParticipantOptions
@@ -284,9 +284,9 @@ export default function BookLessonScreen() {
 
       // Notify operator
       triggerBookingRequest({
-        parentName: user?.name ?? "Parent",
+        parentName: user?.name ?? "Member",
         studentName: participantNames,
-        discipline: `${selectedDiscipline?.name ?? "Private Lesson"} with ${selectedOperator?.name ?? "Instructor"}`,
+        discipline: `${selectedDiscipline?.name ?? "Private Lesson"} with ${selectedOperator?.name ?? "Operator"}`,
         date: selectedSlot.slot_date,
         time: `${fmtTime(selectedSlot.start_time)} – ${fmtTime(selectedSlot.end_time)}`,
         location: selectedSlot.location,
@@ -313,7 +313,7 @@ export default function BookLessonScreen() {
 
           <View style={[styles.confirmedCard, { backgroundColor: "rgba(255,255,255,0.12)" }]}>
             {[
-              ["Instructor", selectedOperator?.name ?? "—"],
+              ["Operator", selectedOperator?.name ?? "—"],
               ["Style", selectedDiscipline?.name ?? "—"],
               ["Date", fmtDate(confirmed.slot_date)],
               ["Time", `${fmtTime(confirmed.start_time)} – ${fmtTime(confirmed.end_time)}`],
@@ -397,8 +397,8 @@ export default function BookLessonScreen() {
             {operators.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="person-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Instructors Available</Text>
-                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Check back soon — instructors haven't submitted availability yet.</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Operators Available</Text>
+                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Check back soon — operators haven't submitted availability yet.</Text>
               </View>
             ) : (
               operators.map(op => (
@@ -540,7 +540,7 @@ export default function BookLessonScreen() {
               <View style={[styles.summaryCard, { backgroundColor: `${colors.secondary}30`, borderColor: colors.primary, borderWidth: 1.5 }]}>
                 <Text style={[styles.summaryTitle, { color: colors.primary }]}>Booking Summary</Text>
                 {[
-                  ["Instructor", selectedOperator?.name ?? "—"],
+                  ["Operator", selectedOperator?.name ?? "—"],
                   ["Style", selectedDiscipline?.name ?? "—"],
                   ["Date", fmtDate(selectedSlot.slot_date)],
                   ["Time", `${fmtTime(selectedSlot.start_time)} – ${fmtTime(selectedSlot.end_time)}`],

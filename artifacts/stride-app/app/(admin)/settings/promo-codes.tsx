@@ -394,7 +394,7 @@ export default function PromoCodesPage() {
                     { label: "Duration", value: p.durationMonths ? `${p.durationMonths} months` : "No expiry" },
                     { label: "Uses", value: `${p.usedCount} / ${p.maxUses}` },
                     { label: "Created", value: p.createdAt },
-                    ...(p.targetType !== "all" ? [{ label: "Target", value: p.targetType === "student" ? `${p.targetStudentName} → ${p.targetStudentParent}` : p.targetType === "courses" ? (p.targetCourseNames?.join(", ") || "—") : p.targetType === "locations" ? (p.targetLocationNames?.join(", ") || "—") : "Parents" }] : []),
+                    ...(p.targetType !== "all" ? [{ label: "Target", value: p.targetType === "student" ? `${p.targetStudentName} → ${p.targetStudentParent}` : p.targetType === "courses" ? (p.targetCourseNames?.join(", ") || "—") : p.targetType === "locations" ? (p.targetLocationNames?.join(", ") || "—") : "Members" }] : []),
                     ...(p.restrictedCourses ? [{ label: "Restricted To", value: p.restrictedCourses.join(", ") }] : []),
                   ].map(row => (
                     <View key={row.label} style={[styles.detailRow, { borderBottomColor: colors.border }]}>

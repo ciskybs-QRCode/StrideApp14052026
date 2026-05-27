@@ -599,7 +599,7 @@ export default function AdminLessonsScreen() {
                 {/* ── Step 1: Select user (hidden in edit mode) ── */}
                 {!editingProfile && (
                   <>
-                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Instructor</Text>
+                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Operator</Text>
                     <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.muted }]}>
                       {operatorUsers.length === 0 ? (
                         <Text style={[styles.pickerPlaceholder, { color: colors.mutedForeground }]}>

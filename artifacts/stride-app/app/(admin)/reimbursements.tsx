@@ -38,7 +38,7 @@ export interface ReimbursementRequest {
 
 const ROLE_LABELS: Record<ClaimantRole, string> = {
   admin: "Admin",
-  paid_operator: "Paid Instructor",
+  paid_operator: "Paid Operator",
   volunteer: "Volunteer",
   parent: "Parent / Associate",
 };

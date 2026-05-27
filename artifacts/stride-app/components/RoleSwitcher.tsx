@@ -14,8 +14,8 @@ const ROLE_META: Record<UserRole, {
   color: string;
 }> = {
   admin:    { label: "Admin",      icon: "shield-checkmark", homeRoute: "/(admin)/stats",        color: "#6D28D9" },
-  operator: { label: "Instructor", icon: "school",           homeRoute: "/(operator)/dashboard", color: "#0369A1" },
-  parent:   { label: "Parent",     icon: "person",           homeRoute: "/(parent)/home",        color: "#047857" },
+  operator: { label: "Operator", icon: "school",           homeRoute: "/(operator)/dashboard", color: "#0369A1" },
+  parent:   { label: "Member",   icon: "person",           homeRoute: "/(parent)/home",        color: "#047857" },
 };
 
 // ── Inline settings row (non-floating) ───────────────────────────────────────

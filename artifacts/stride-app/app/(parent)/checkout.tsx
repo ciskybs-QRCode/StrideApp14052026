@@ -212,7 +212,7 @@ export default function CheckoutScreen() {
         const operatorMatch = first.courseName.match(/with\s+(.+)$/i);
         const schedParts = first.courseSchedule.split(" · ");
         triggerPaymentConfirmation({
-          operatorName: operatorMatch?.[1] ?? "Instructor",
+          operatorName: operatorMatch?.[1] ?? "Operator",
           discipline: first.courseName.replace(/Private\s+/i, "").replace(/\s+with.+$/i, ""),
           studentName: first.participantName,
           date: schedParts[0] ?? first.courseSchedule,
@@ -389,7 +389,7 @@ export default function CheckoutScreen() {
 
                 {(
                   [
-                    operator ? ["Instructor", operator, "person-outline"] : null,
+                    operator ? ["Operator", operator, "person-outline"] : null,
                     ["Style", discipline, "musical-notes-outline"],
                     ["Student", item.participantName, "body-outline"],
                     ["Schedule", dateTime, "time-outline"],

@@ -155,7 +155,7 @@ export default function LoginScreen() {
           <View style={styles.testPanel}>
             <Text style={styles.testPanelTitle}>Test Credentials</Text>
             {[
-              { role: "Parent",   email: "genitore@test.com"  },
+              { role: "Member",   email: "genitore@test.com"  },
               { role: "Operator", email: "operatore@test.com" },
               { role: "Admin",    email: "admin@test.com"     },
             ].map(c => (

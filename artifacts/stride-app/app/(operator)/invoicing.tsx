@@ -212,7 +212,7 @@ tbody td{padding:9px 12px;border-bottom:1px solid #E5E7EB;vertical-align:middle}
 </div>
 <div class="parties-band">
   <div class="party">
-    <div class="party-label">From (Instructor)</div>
+    <div class="party-label">From (Operator)</div>
     <div class="party-name">${displayName}</div>
     <div class="party-sub">Operator / Teacher · ${schoolName}</div>
     ${headerAddr ? `<div class="party-sub" style="margin-top:4px">${headerAddr}</div>` : ""}

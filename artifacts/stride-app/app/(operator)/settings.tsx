@@ -23,8 +23,8 @@ import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
 const ROLE_META: Record<string, { label: string; iconBg: string; iconColor: string; icon: string }> = {
   admin:    { label: "Admin",      iconBg: "#EDE9FE", iconColor: "#7C3AED", icon: "shield-checkmark" },
-  operator: { label: "Instructor", iconBg: "#DBEAFE", iconColor: "#1E3A8A", icon: "school" },
-  parent:   { label: "Parent",     iconBg: "#D1FAE5", iconColor: "#047857", icon: "person" },
+  operator: { label: "Operator", iconBg: "#DBEAFE", iconColor: "#1E3A8A", icon: "school" },
+  parent:   { label: "Member",     iconBg: "#D1FAE5", iconColor: "#047857", icon: "person" },
 };
 
 // ── Screen ─────────────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ export default function OperatorSettingsScreen() {
             </Pressable>
 
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName} numberOfLines={1}>{user?.name ?? "Instructor"}</Text>
+              <Text style={styles.profileName} numberOfLines={1}>{user?.name ?? "Operator"}</Text>
               {user?.email ? (
                 <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
               ) : null}

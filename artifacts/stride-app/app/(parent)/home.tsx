@@ -246,7 +246,7 @@ export default function ParentHome() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.privateLessonTitle}>Lezioni Private</Text>
-            <Text style={styles.privateLessonSub}>Prenota una sessione 1-a-1 con un istruttore</Text>
+            <Text style={styles.privateLessonSub}>Book a 1-on-1 session with an operator</Text>
           </View>
           {unreadCount > 0 && (
             <View style={styles.privateLessonBadge}>
