@@ -362,7 +362,7 @@ export default function DocumentsScreen() {
       <Modal visible={showProfile} transparent={false} animationType="slide" onRequestClose={() => setShowProfile(false)}>
         <View style={[styles.fullScreenModal, { backgroundColor: colors.background }]}>
           <View style={[styles.fullScreenHeader, { paddingTop: insets.top + 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-            <Pressable onPress={() => setShowProfile(false)} style={styles.headerBack}>
+            <Pressable onPress={() => setShowProfile(false)} style={styles.headerBack} hitSlop={12}>
               <Ionicons name="arrow-back" size={24} color={colors.primary} />
             </Pressable>
             <Text style={[styles.headerTitle, { color: colors.primary }]}>Edit Profile</Text>
@@ -373,117 +373,145 @@ export default function DocumentsScreen() {
 
           <ScrollView contentContainerStyle={styles.editScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-            {/* Personal Info */}
-            <Text style={[styles.editSection, { color: colors.primary }]}>Personal Information</Text>
-            <View style={[styles.editCard, { backgroundColor: colors.card }]}>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>First Name</Text>
-                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.firstName} onChangeText={v => setEditExtra(p => ({ ...p, firstName: v }))} placeholder="First name" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+            {/* ── Avatar Hero ── */}
+            <View style={styles.editHero}>
+              <Pressable style={styles.editAvatarWrap} onPress={handlePickProfilePhoto}>
+                <View style={[styles.editAvatar, { backgroundColor: colors.primary }]}>
+                  {user?.profilePhotoUri ? (
+                    <Image source={{ uri: user.profilePhotoUri }} style={styles.editAvatarImg} />
+                  ) : (
+                    <Text style={styles.editAvatarInitial}>
+                      {(editExtra.firstName || user?.name || "?").charAt(0).toUpperCase()}
+                    </Text>
+                  )}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Last Name</Text>
-                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.lastName} onChangeText={v => setEditExtra(p => ({ ...p, lastName: v }))} placeholder="Last name" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+                <View style={[styles.editAvatarBadge, { backgroundColor: "#FBBF24", borderColor: colors.background }]}>
+                  <Ionicons name="camera" size={13} color="#1E3A8A" />
                 </View>
-              </View>
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Date of Birth</Text>
-              <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.dateOfBirth} onChangeText={v => setEditExtra(p => ({ ...p, dateOfBirth: v }))} placeholder="DD/MM/YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" />
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Phone Number</Text>
-              <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.phone} onChangeText={v => setEditExtra(p => ({ ...p, phone: v }))} placeholder="+61 4xx xxx xxx" placeholderTextColor={colors.mutedForeground} keyboardType="phone-pad" />
+              </Pressable>
+              <Text style={[styles.editHeroName, { color: colors.primary }]}>
+                {[editExtra.firstName, editExtra.lastName].filter(Boolean).join(" ") || user?.name || ""}
+              </Text>
+              <Text style={[styles.editHeroEmail, { color: colors.mutedForeground }]}>{user?.email}</Text>
             </View>
 
-            {/* Address */}
-            <Text style={[styles.editSection, { color: colors.primary }]}>Address</Text>
-            <View style={[styles.editCard, { backgroundColor: colors.card }]}>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>House / Unit No.</Text>
-                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.houseNumber} onChangeText={v => setEditExtra(p => ({ ...p, houseNumber: v }))} placeholder="Apt 4B" placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" />
-                </View>
-                <View style={{ flex: 2 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Street Address</Text>
-                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.addressLine1} onChangeText={v => setEditExtra(p => ({ ...p, addressLine1: v }))} placeholder="123 Main Street" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
-                </View>
+            {/* ── Personal Information ── */}
+            <Text style={[styles.editGroupLabel, { color: colors.mutedForeground }]}>PERSONAL INFORMATION</Text>
+            <View style={[styles.formGroup, { backgroundColor: colors.card }]}>
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>First Name</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.firstName} onChangeText={v => setEditExtra(p => ({ ...p, firstName: v }))} placeholder="Nome" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
               </View>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>City</Text>
-                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.city} onChangeText={v => setEditExtra(p => ({ ...p, city: v }))} placeholder="Melbourne" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Postcode</Text>
-                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.postcode} onChangeText={v => setEditExtra(p => ({ ...p, postcode: v }))} placeholder="3000" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
-                </View>
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Last Name</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.lastName} onChangeText={v => setEditExtra(p => ({ ...p, lastName: v }))} placeholder="Cognome" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
               </View>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>State / Region</Text>
-                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.state} onChangeText={v => setEditExtra(p => ({ ...p, state: v }))} placeholder="VIC" placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Country</Text>
-                  <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} value={editExtra.country} onChangeText={v => setEditExtra(p => ({ ...p, country: v }))} placeholder="Australia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
-                </View>
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Date of Birth</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.dateOfBirth} onChangeText={v => setEditExtra(p => ({ ...p, dateOfBirth: v }))} placeholder="GG/MM/AAAA" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" />
+              </View>
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Phone</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.phone} onChangeText={v => setEditExtra(p => ({ ...p, phone: v }))} placeholder="+39 3xx xxx xxxx" placeholderTextColor={colors.mutedForeground} keyboardType="phone-pad" />
               </View>
             </View>
 
-            {/* Children */}
-            <Text style={[styles.editSection, { color: colors.primary }]}>My {secondaryRoleName}s</Text>
-            <View style={[styles.editCard, { backgroundColor: colors.card }]}>
+            {/* ── Address ── */}
+            <Text style={[styles.editGroupLabel, { color: colors.mutedForeground }]}>ADDRESS</Text>
+            <View style={[styles.formGroup, { backgroundColor: colors.card }]}>
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Street</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.addressLine1} onChangeText={v => setEditExtra(p => ({ ...p, addressLine1: v }))} placeholder="Via Roma 10" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+              </View>
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Unit / Apt</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.houseNumber} onChangeText={v => setEditExtra(p => ({ ...p, houseNumber: v }))} placeholder="Interno 3" placeholderTextColor={colors.mutedForeground} />
+              </View>
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>City</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.city} onChangeText={v => setEditExtra(p => ({ ...p, city: v }))} placeholder="Milano" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+              </View>
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Postcode</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.postcode} onChangeText={v => setEditExtra(p => ({ ...p, postcode: v }))} placeholder="20100" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
+              </View>
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Province</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.state} onChangeText={v => setEditExtra(p => ({ ...p, state: v }))} placeholder="MI" placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" />
+              </View>
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.formRow}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Country</Text>
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.country} onChangeText={v => setEditExtra(p => ({ ...p, country: v }))} placeholder="Italia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+              </View>
+            </View>
+
+            {/* ── Children ── */}
+            <Text style={[styles.editGroupLabel, { color: colors.mutedForeground }]}>MY {secondaryRoleName.toUpperCase()}S</Text>
+            <View style={[styles.formGroup, { backgroundColor: colors.card }]}>
               {children.length === 0 && (
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, textAlign: "center", paddingVertical: 8 }]}>No {secondaryRoleName.toLowerCase()}s added yet</Text>
-              )}
-              {children.map(c => (
-                <View key={c.id} style={[styles.childRow, { borderBottomColor: colors.border }]}>
-                  <View style={[styles.childRowAvatar, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.childRowAvatarText}>{c.name.charAt(0)}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.childRowName, { color: colors.primary }]}>{c.name}</Text>
-                    <Text style={[styles.childRowAge, { color: colors.mutedForeground }]}>{c.age} yrs</Text>
-                  </View>
-                  <Pressable
-                    style={styles.childRemoveBtn}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                      removeChild(c.id);
-                    }}
-                  >
-                    <Ionicons name="person-remove-outline" size={18} color="#EF4444" />
-                  </Pressable>
+                <View style={[styles.formRow, { justifyContent: "center" }]}>
+                  <Text style={[styles.formLabel, { color: colors.mutedForeground, width: undefined }]}>No {secondaryRoleName.toLowerCase()}s added yet</Text>
                 </View>
+              )}
+              {children.map((c, i) => (
+                <React.Fragment key={c.id}>
+                  {i > 0 && <View style={[styles.formDivider, { backgroundColor: colors.border }]} />}
+                  <View style={styles.childFormRow}>
+                    <View style={[styles.childFormAvatar, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.childFormAvatarText}>{c.name.charAt(0)}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.childFormName, { color: colors.foreground }]}>{c.name}</Text>
+                      <Text style={[styles.childFormAge, { color: colors.mutedForeground }]}>{c.age} years old</Text>
+                    </View>
+                    <Pressable
+                      style={[styles.childFormRemove, { backgroundColor: "#FEF2F2" }]}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); removeChild(c.id); }}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                    </Pressable>
+                  </View>
+                </React.Fragment>
               ))}
 
-              {/* Quick Add Child */}
-              <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Add a Child</Text>
-              <View style={{ flexDirection: "row", gap: 10 }}>
+              {/* Add child inline */}
+              <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.addChildRow}>
                 <TextInput
-                  style={[styles.input, { borderColor: colors.border, color: colors.foreground, flex: 2 }]}
+                  style={[styles.addChildInput, { borderColor: colors.border, color: colors.foreground, flex: 3 }]}
                   value={addChildName}
                   onChangeText={setAddChildName}
-                  placeholder="Full name"
+                  placeholder="Child's name"
                   placeholderTextColor={colors.mutedForeground}
                   autoCapitalize="words"
                 />
                 <TextInput
-                  style={[styles.input, { borderColor: colors.border, color: colors.foreground, flex: 1 }]}
+                  style={[styles.addChildInput, { borderColor: colors.border, color: colors.foreground, flex: 1 }]}
                   value={addChildAge}
                   onChangeText={setAddChildAge}
                   placeholder="Age"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="number-pad"
                 />
+                <Pressable
+                  style={[styles.addChildBtn, { backgroundColor: addChildName.trim() && addChildAge.trim() ? colors.primary : colors.border }]}
+                  onPress={handleQuickAddChild}
+                  disabled={addingChild}
+                >
+                  <Ionicons name={addingChild ? "hourglass-outline" : "add"} size={20} color="#FFF" />
+                </Pressable>
               </View>
-              <Pressable
-                style={[styles.addChildQuickBtn, { backgroundColor: addChildName.trim() && addChildAge.trim() ? colors.primary : colors.border }]}
-                onPress={handleQuickAddChild}
-                disabled={addingChild}
-              >
-                <Ionicons name="add" size={16} color="#FFF" />
-                <Text style={styles.addChildQuickText}>{addingChild ? "Adding…" : "Add Child"}</Text>
-              </Pressable>
-              <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>
-                Go to "My Children" to add medical info and emergency details.
+              <Text style={[styles.fieldHint, { color: colors.mutedForeground, paddingHorizontal: 16, paddingBottom: 12, marginTop: 0 }]}>
+                Go to "My Children" for medical info and emergency contacts.
               </Text>
             </View>
 
@@ -563,15 +591,36 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 18, fontWeight: "700" },
   headerSave: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
   headerSaveText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
-  editScroll: { paddingHorizontal: 20, paddingTop: 20 },
-  editSection: { fontSize: 16, fontWeight: "700", marginBottom: 10, marginTop: 4 },
-  editCard: { borderRadius: 16, padding: 18, marginBottom: 20 },
-  childRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 1 },
-  childRowAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
-  childRowAvatarText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
-  childRowName: { fontSize: 14, fontWeight: "600" },
-  childRowAge: { fontSize: 12, marginTop: 1 },
-  childRemoveBtn: { padding: 6 },
-  addChildQuickBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, paddingVertical: 13, marginTop: 10 },
-  addChildQuickText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+  editScroll: { paddingHorizontal: 16, paddingTop: 0 },
+
+  // Avatar hero
+  editHero: { alignItems: "center", paddingVertical: 28 },
+  editAvatarWrap: { position: "relative", marginBottom: 14 },
+  editAvatar: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  editAvatarImg: { width: 88, height: 88, borderRadius: 44 },
+  editAvatarInitial: { color: "#FFF", fontSize: 38, fontWeight: "700" },
+  editAvatarBadge: { position: "absolute", bottom: 2, right: 2, width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 2 },
+  editHeroName: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
+  editHeroEmail: { fontSize: 13 },
+
+  // iOS-style form groups
+  editGroupLabel: { fontSize: 12, fontWeight: "600", letterSpacing: 0.5, marginBottom: 8, marginTop: 24, paddingHorizontal: 4 },
+  formGroup: { borderRadius: 16, overflow: "hidden", marginBottom: 0 },
+  formRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, minHeight: 52 },
+  formLabel: { fontSize: 14, fontWeight: "500", width: 108 },
+  formInput: { flex: 1, fontSize: 15, textAlign: "right" },
+  formDivider: { height: 1, marginLeft: 16 },
+
+  // Children rows
+  childFormRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
+  childFormAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  childFormAvatarText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
+  childFormName: { fontSize: 14, fontWeight: "600" },
+  childFormAge: { fontSize: 12, marginTop: 1 },
+  childFormRemove: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+
+  // Add child inline
+  addChildRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 },
+  addChildInput: { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  addChildBtn: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
 });
