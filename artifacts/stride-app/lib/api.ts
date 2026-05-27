@@ -160,9 +160,14 @@ const DEMO_USERS: Record<string, { token: string; user: ApiUser }> = {
 export const api = {
   // Auth
   login: async (email: string, password: string): Promise<{ token: string; user: ApiUser }> => {
-    const key = email.trim().toLowerCase();
-    if (DEMO_USERS[key]) return DEMO_USERS[key];
-    return request<{ token: string; user: ApiUser }>("POST", "/auth/login", { email, password });
+    try {
+      return await request<{ token: string; user: ApiUser }>("POST", "/auth/login", { email, password });
+    } catch (err) {
+      // Fallback to demo mode only when the server is completely unreachable
+      const key = email.trim().toLowerCase();
+      if (DEMO_USERS[key] && String(err).includes("Failed to fetch")) return DEMO_USERS[key];
+      throw err;
+    }
   },
 
   register: (name: string, email: string, password: string, org_slug?: string) =>

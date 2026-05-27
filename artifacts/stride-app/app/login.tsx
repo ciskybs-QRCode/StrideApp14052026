@@ -53,9 +53,9 @@ export default function LoginScreen() {
     const demo = params.get("demo");
     if (!demo) return;
     const DEMO_CREDS: Record<string, { email: string; password: string }> = {
-      parent:   { email: "genitore@test.com",   password: "test123" },
-      operator: { email: "operatore@test.com",  password: "test123" },
-      admin:    { email: "admin@test.com",       password: "test123" },
+      parent:   { email: "genitore@test.com",   password: "stride123" },
+      operator: { email: "operatore@test.com",  password: "stride123" },
+      admin:    { email: "admin@test.com",       password: "stride123" },
     };
     const creds = DEMO_CREDS[demo];
     if (!creds) return;
@@ -151,6 +151,26 @@ export default function LoginScreen() {
             </Pressable>
           </Animated.View>
 
+          {/* Test credentials panel */}
+          <View style={styles.testPanel}>
+            <Text style={styles.testPanelTitle}>Test Credentials</Text>
+            {[
+              { role: "Parent",   email: "genitore@test.com"  },
+              { role: "Operator", email: "operatore@test.com" },
+              { role: "Admin",    email: "admin@test.com"     },
+            ].map(c => (
+              <Pressable
+                key={c.role}
+                style={styles.testRow}
+                onPress={() => { setEmail(c.email); setPassword("stride123"); setError(""); }}
+              >
+                <Text style={styles.testRole}>{c.role}</Text>
+                <Text style={styles.testEmail}>{c.email}</Text>
+              </Pressable>
+            ))}
+            <Text style={styles.testPw}>Password: stride123</Text>
+          </View>
+
           <Text style={styles.footer}>Powered by Stride • v1.0</Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -215,5 +235,25 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   loginBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15, letterSpacing: 1.5 },
-  footer: { color: "rgba(30,58,138,0.35)", fontSize: 12, textAlign: "center", marginTop: 28 },
+  footer: { color: "rgba(30,58,138,0.35)", fontSize: 12, textAlign: "center", marginTop: 16 },
+  testPanel: {
+    marginTop: 20,
+    backgroundColor: "#F0F4FF",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#D1D9F0",
+  },
+  testPanelTitle: { fontSize: 11, fontWeight: "700", color: "#6B7BA4", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 },
+  testRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#D1D9F0",
+  },
+  testRole: { fontSize: 13, fontWeight: "700", color: "#1E3A8A", width: 72 },
+  testEmail: { fontSize: 12, color: "#374151", flex: 1, textAlign: "right" },
+  testPw: { fontSize: 11, color: "#6B7BA4", textAlign: "center", marginTop: 10 },
 });

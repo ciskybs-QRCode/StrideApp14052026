@@ -29,12 +29,18 @@ type GridSize = 2 | 4 | 6 | 8 | 10;
 // ── Demo fallback data ────────────────────────────────────────────────────────
 
 const DEMO_STUDENTS: Student[] = [
-  { id: "d1", name: "Sofia Rossi",    age: 8,  parentName: "Marco Rossi",   parentPhone: "", courses: ["Classical Dance"], allergies: "None", medicalWaiver: "call_parent", stars: 12 },
-  { id: "d2", name: "Luca Ferrari",   age: 10, parentName: "Luigi Ferrari",  parentPhone: "", courses: ["Hip Hop"],         allergies: "None", medicalWaiver: "call_parent", stars: 8  },
-  { id: "d3", name: "Giulia Mancini", age: 7,  parentName: "Anna Mancini",   parentPhone: "", courses: ["Classical Dance"], allergies: "None", medicalWaiver: "call_parent", stars: 5  },
-  { id: "d4", name: "Marco Bianchi",  age: 12, parentName: "Carlo Bianchi",  parentPhone: "", courses: ["Ballet"],          allergies: "Nuts", medicalWaiver: "ambulance",   stars: 25 },
-  { id: "d5", name: "Emma Conti",     age: 9,  parentName: "Sara Conti",     parentPhone: "", courses: ["Contemporary"],    allergies: "None", medicalWaiver: "call_parent", stars: 18 },
-  { id: "d6", name: "Pietro Russo",   age: 11, parentName: "Giulia Russo",   parentPhone: "", courses: ["Hip Hop"],         allergies: "None", medicalWaiver: "call_parent", stars: 31 },
+  { id: "d1",  name: "Sofia Rossi",     age: 8,  parentName: "Marco Rossi",    parentPhone: "", courses: ["Classical Dance"], allergies: "None",    medicalWaiver: "call_parent", stars: 12 },
+  { id: "d2",  name: "Luca Ferrari",    age: 10, parentName: "Luigi Ferrari",  parentPhone: "", courses: ["Hip Hop"],         allergies: "None",    medicalWaiver: "call_parent", stars: 8  },
+  { id: "d3",  name: "Giulia Mancini",  age: 7,  parentName: "Anna Mancini",   parentPhone: "", courses: ["Classical Dance"], allergies: "None",    medicalWaiver: "call_parent", stars: 5  },
+  { id: "d4",  name: "Marco Bianchi",   age: 12, parentName: "Carlo Bianchi",  parentPhone: "", courses: ["Ballet"],          allergies: "Nuts",    medicalWaiver: "ambulance",   stars: 25 },
+  { id: "d5",  name: "Emma Conti",      age: 9,  parentName: "Sara Conti",     parentPhone: "", courses: ["Contemporary"],    allergies: "None",    medicalWaiver: "call_parent", stars: 18 },
+  { id: "d6",  name: "Pietro Russo",    age: 11, parentName: "Giulia Russo",   parentPhone: "", courses: ["Hip Hop"],         allergies: "None",    medicalWaiver: "call_parent", stars: 31 },
+  { id: "d7",  name: "Anna Verde",      age: 8,  parentName: "Laura Verde",    parentPhone: "", courses: ["Ballet"],          allergies: "None",    medicalWaiver: "call_parent", stars: 9  },
+  { id: "d8",  name: "Matteo Esposito", age: 13, parentName: "Franco Esposito",parentPhone: "", courses: ["Contemporary"],    allergies: "Lactose", medicalWaiver: "ambulance",   stars: 37 },
+  { id: "d9",  name: "Chiara Bruno",    age: 6,  parentName: "Giorgio Bruno",  parentPhone: "", courses: ["Classical Dance"], allergies: "None",    medicalWaiver: "call_parent", stars: 3  },
+  { id: "d10", name: "Lorenzo Greco",   age: 14, parentName: "Marta Greco",    parentPhone: "", courses: ["Hip Hop"],         allergies: "None",    medicalWaiver: "call_parent", stars: 44 },
+  { id: "d11", name: "Valentina Ricci", age: 9,  parentName: "Roberto Ricci",  parentPhone: "", courses: ["Ballet"],          allergies: "None",    medicalWaiver: "call_parent", stars: 21 },
+  { id: "d12", name: "Davide Fontana",  age: 11, parentName: "Elena Fontana",  parentPhone: "", courses: ["Contemporary"],    allergies: "None",    medicalWaiver: "call_parent", stars: 16 },
 ];
 
 const DEMO_COURSES: Course[] = [
@@ -190,8 +196,14 @@ export default function PdfBadgeGenerator() {
   const router = useRouter();
   const tabBarHeight = Platform.OS === "web" ? 84 : 49;
 
-  const students = ctxStudents.length > 0 ? ctxStudents : DEMO_STUDENTS;
-  const courses  = ctxCourses.length  > 0 ? ctxCourses  : DEMO_COURSES;
+  // Always pad real students with demo data so grid layouts show multiple pages
+  const MIN_STUDENTS_FOR_GRID = 12;
+  const realStudents = ctxStudents.length > 0 ? ctxStudents : [];
+  const demoExtras = DEMO_STUDENTS.filter(d => !realStudents.find(s => s.name === d.name));
+  const students = realStudents.length >= MIN_STUDENTS_FOR_GRID
+    ? realStudents
+    : [...realStudents, ...demoExtras].slice(0, Math.max(MIN_STUDENTS_FOR_GRID, realStudents.length));
+  const courses  = ctxCourses.length > 0 ? ctxCourses : DEMO_COURSES;
 
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [layout,           setLayout]           = useState<Layout>("badge");

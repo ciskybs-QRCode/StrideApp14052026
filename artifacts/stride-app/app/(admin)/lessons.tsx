@@ -283,9 +283,9 @@ export default function AdminLessonsScreen() {
         {/* Tab bar */}
         <View style={styles.tabBar}>
           {([
-            { key: "operators",    label: "Operatori",   icon: "people-outline"      },
-            { key: "disciplines",  label: "Discipline",  icon: "barbell-outline"     },
-            { key: "availability", label: "Disponib.",   icon: "calendar-outline"    },
+            { key: "operators",    label: "Operators",    icon: "people-outline"      },
+            { key: "disciplines",  label: "Disciplines",  icon: "barbell-outline"     },
+            { key: "availability", label: "Availability", icon: "calendar-outline"    },
           ] as const).map(t => (
             <Pressable
               key={t.key}
