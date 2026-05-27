@@ -161,12 +161,17 @@ export default function AdminUsers() {
     }
   }, [selected?.id, selected?.role]);
 
-  const saveDisciplinesToProfile = async () => {
+  const saveDisciplinesToProfile = async (
+    forceDiscs?: string[],
+    forceAllDiscs?: typeof allDisciplines,
+  ) => {
     if (!operatorProfile) return;
+    const opDiscs    = forceDiscs    ?? operatorDisciplines;
+    const discs      = forceAllDiscs ?? allDisciplines;
     setSavingDiscProfile(true);
     try {
-      const rates = allDisciplines
-        .filter(d => operatorDisciplines.includes(d.name))
+      const rates = discs
+        .filter(d => opDiscs.includes(d.name))
         .map(d => {
           const existing = operatorProfile.rates?.find(r => r.discipline_id === d.id);
           return { disciplineId: d.id, hourlyRateCents: existing?.hourly_rate_cents ?? 0 };
@@ -177,6 +182,27 @@ export default function AdminUsers() {
     } catch {
       Alert.alert("Error", "Could not save disciplines. Please try again.");
     } finally { setSavingDiscProfile(false); }
+  };
+
+  const createAndAssignDisc = async () => {
+    if (!newDiscName.trim()) return;
+    setSavingDisc(true);
+    try {
+      const created = await api.createDiscipline({ name: newDiscName.trim() });
+      const updatedAllDiscs = [...allDisciplines, created];
+      const updatedOpDiscs  = [...operatorDisciplines, created.name];
+      setAllDisciplines(updatedAllDiscs);
+      setOperatorDisciplines(updatedOpDiscs);
+      setNewDiscName("");
+      setShowDiscInput(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Auto-save the assignment to the operator profile immediately
+      if (operatorProfile) {
+        await saveDisciplinesToProfile(updatedOpDiscs, updatedAllDiscs);
+      }
+    } catch {
+      Alert.alert("Error", "Could not save discipline.");
+    } finally { setSavingDisc(false); }
   };
 
   const filtered = users.filter(u => {
@@ -439,40 +465,12 @@ export default function AdminUsers() {
                             placeholderTextColor={colors.mutedForeground}
                             autoFocus
                             returnKeyType="done"
-                            onSubmitEditing={async () => {
-                              if (!newDiscName.trim()) return;
-                              setSavingDisc(true);
-                              try {
-                                const created = await api.createDiscipline({ name: newDiscName.trim() });
-                                setAllDisciplines(prev => [...prev, created]);
-                                setOperatorDisciplines(prev => [...prev, created.name]);
-                                setNewDiscName("");
-                                setShowDiscInput(false);
-                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                              } catch {
-                                Alert.alert("Error", "Could not save discipline.");
-                              }
-                              setSavingDisc(false);
-                            }}
+                            onSubmitEditing={createAndAssignDisc}
                           />
                           <Pressable
                             style={[styles.discSaveBtn, { backgroundColor: colors.primary, opacity: savingDisc ? 0.6 : 1 }]}
                             disabled={savingDisc}
-                            onPress={async () => {
-                              if (!newDiscName.trim()) return;
-                              setSavingDisc(true);
-                              try {
-                                const created = await api.createDiscipline({ name: newDiscName.trim() });
-                                setAllDisciplines(prev => [...prev, created]);
-                                setOperatorDisciplines(prev => [...prev, created.name]);
-                                setNewDiscName("");
-                                setShowDiscInput(false);
-                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                              } catch {
-                                Alert.alert("Error", "Could not save discipline.");
-                              }
-                              setSavingDisc(false);
-                            }}
+                            onPress={createAndAssignDisc}
                           >
                             <Ionicons name="checkmark" size={15} color="#FFF" />
                           </Pressable>
@@ -496,7 +494,7 @@ export default function AdminUsers() {
                   {user.role === "operator" && operatorProfile && (
                     <Pressable
                       style={[styles.saveDiscBtn, { backgroundColor: savingDiscProfile ? colors.muted : "#10B981", opacity: savingDiscProfile ? 0.7 : 1 }]}
-                      onPress={saveDisciplinesToProfile}
+                      onPress={() => saveDisciplinesToProfile()}
                       disabled={savingDiscProfile}
                     >
                       <Ionicons name={savingDiscProfile ? "hourglass-outline" : "save-outline"} size={15} color="#FFF" />

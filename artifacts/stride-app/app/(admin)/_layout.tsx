@@ -39,7 +39,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="stats"          options={{ title: "Statistics",    tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart"         size={size} color={color} /> }} />
       <Tabs.Screen name="users"          options={{ title: "Users",         tabBarIcon: ({ color, size }) => <Ionicons name="people"             size={size} color={color} /> }} />
       <Tabs.Screen name="disciplines"    options={{ href: null }} />
-      <Tabs.Screen name="lessons"        options={{ title: "Activity",      tabBarIcon: ({ color, size }) => <Ionicons name="pulse-outline"      size={size} color={color} /> }} />
+      <Tabs.Screen name="lessons"        options={{ title: "Activity",      tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"   size={size} color={color} /> }} />
       <Tabs.Screen name="communications" options={{ title: "Messages",      tabBarIcon: ({ color, size }) => <Ionicons name="megaphone"          size={size} color={color} /> }} />
       <Tabs.Screen name="settings"       options={{ title: "Settings",      tabBarIcon: ({ color, size }) => <Ionicons name="settings"           size={size} color={color} /> }} />
       <Tabs.Screen name="activity"       options={{ href: null }} />
