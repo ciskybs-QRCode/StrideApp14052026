@@ -35,7 +35,6 @@ const MEDIA_CONSENT_COLORS: Record<"full" | "internal" | "none", string> = {
 };
 
 export default function ChildrenScreen() {
-  "use no memo";
   const { children, delegates, addDelegate, removeDelegate, updateChild, addChild, removeChild } = useAppData();
   const { user } = useAuth();
   const colors = useColors();
@@ -169,6 +168,78 @@ export default function ChildrenScreen() {
       });
     } catch {}
   };
+
+  if (children.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.scroll, {
+          paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 32,
+        }]}>
+          <View style={[styles.emptyStateCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.emptyStateIconBox, { backgroundColor: `${colors.primary}15` }]}>
+              <Ionicons name="people-circle-outline" size={52} color={colors.primary} />
+            </View>
+            <Text style={[styles.emptyStateTitle, { color: colors.primary }]}>No Members Linked</Text>
+            <Text style={[styles.emptyStateSub, { color: colors.mutedForeground }]}>
+              No linked members found for your account.
+            </Text>
+            <Pressable
+              style={[styles.emptyStateBtn, { backgroundColor: colors.primary }]}
+              onPress={() => { setShowAddChild(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
+              <Ionicons name="add" size={18} color="#FFF" />
+              <Text style={styles.emptyStateBtnText}>Add {secondaryRoleName}</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Add Child Modal — still accessible from empty state */}
+        {showAddChild && (
+          <Modal visible={showAddChild} transparent animationType="slide" onRequestClose={() => setShowAddChild(false)}>
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalCard, { position: "relative", maxHeight: "90%", paddingTop: 44 }]}>
+                <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => setShowAddChild(false)} hitSlop={14}>
+                  <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+                </Pressable>
+                <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
+                  <Text style={[styles.modalTitle, { color: colors.primary }]}>Add {secondaryRoleName}</Text>
+                  {[
+                    { label: "First Name", value: newChildName, setter: setNewChildName, placeholder: "Mario" },
+                    { label: "Last Name",  value: newChildSurname, setter: setNewChildSurname, placeholder: "Rossi" },
+                    { label: "Age",        value: newChildAge, setter: setNewChildAge, placeholder: "8", keyboard: "numeric" as const },
+                  ].map(field => (
+                    <View key={field.label} style={{ marginBottom: 12 }}>
+                      <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
+                      <TextInput
+                        style={[styles.modalInput, { borderColor: colors.border }]}
+                        value={field.value}
+                        onChangeText={field.setter}
+                        placeholder={field.placeholder}
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType={field.keyboard ?? "default"}
+                      />
+                    </View>
+                  ))}
+                  <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                    <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { resetAddChildForm(); setShowAddChild(false); }}>
+                      <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+                    </Pressable>
+                    <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
+                      <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
+                    </Pressable>
+                  </View>
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -748,4 +819,11 @@ const styles = StyleSheet.create({
   consentHint: { fontSize: 11, marginTop: 2, lineHeight: 15 },
   modalBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   modalBtnText: { fontWeight: "700", fontSize: 15 },
+  // Empty state
+  emptyStateCard: { borderRadius: 24, padding: 32, alignItems: "center", gap: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4, width: "100%" },
+  emptyStateIconBox: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center" },
+  emptyStateTitle: { fontSize: 22, fontWeight: "800", textAlign: "center" },
+  emptyStateSub: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+  emptyStateBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, marginTop: 4 },
+  emptyStateBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
 });
