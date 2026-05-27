@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { api, ApiDiscipline, ApiOperatorProfile } from "@/lib/api";
+import { api, ApiDiscipline, ApiOperatorProfile, ApiStudent } from "@/lib/api";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -73,6 +73,21 @@ function apiUserToRecord(u: { id: string | number; name: string; email: string; 
   return { id: String(u.id), name: u.name, email: u.email, phone: u.phone ?? "", role, status, joinDate };
 }
 
+function apiStudentToRecord(s: ApiStudent): UserRecord {
+  const name = s.name || `${s.first_name ?? ""} ${s.last_name ?? ""}`.trim() || "Unknown";
+  const parentName = s.parent?.name ?? "";
+  return {
+    id: `child-${s.id}`,
+    name,
+    email: "",
+    phone: s.parent?.phone ?? "",
+    role: "student",
+    status: "active",
+    joinDate: "",
+    childName: parentName ? `Parent: ${parentName}` : undefined,
+  };
+}
+
 export default function AdminUsers() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -99,8 +114,16 @@ export default function AdminUsers() {
 
   useEffect(() => {
     setLoadingUsers(true);
-    api.getUsers()
-      .then(data => { if (data.length > 0) setUsers(data.map(apiUserToRecord)); })
+    Promise.allSettled([api.getUsers(), api.getStudents()])
+      .then(([usersRes, studentsRes]) => {
+        const userRecords = usersRes.status === "fulfilled" && usersRes.value.length > 0
+          ? usersRes.value.map(apiUserToRecord)
+          : MOCK_USERS.filter(u => u.role !== "student");
+        const studentRecords = studentsRes.status === "fulfilled"
+          ? (studentsRes.value as ApiStudent[]).map(apiStudentToRecord)
+          : MOCK_USERS.filter(u => u.role === "student");
+        setUsers([...userRecords, ...studentRecords]);
+      })
       .catch(() => {})
       .finally(() => setLoadingUsers(false));
   }, []);
