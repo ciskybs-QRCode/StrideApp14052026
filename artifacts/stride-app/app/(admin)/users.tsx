@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { api, ApiDiscipline, ApiOperatorProfile, ApiStudent } from "@/lib/api";
+import { api, ApiOperatorProfile, ApiStudent } from "@/lib/api";
 import { useTerminology } from "@/context/TerminologyContext";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -106,12 +106,6 @@ export default function AdminUsers() {
     newRole?: UserRole;
   } | null>(null);
 
-  const [allDisciplines, setAllDisciplines] = useState<ApiDiscipline[]>([]);
-  const [operatorDisciplines, setOperatorDisciplines] = useState<string[]>([]);
-  const [newDiscName, setNewDiscName] = useState("");
-  const [showDiscInput, setShowDiscInput] = useState(false);
-  const [savingDisc, setSavingDisc] = useState(false);
-  const [savingDiscProfile, setSavingDiscProfile] = useState(false);
   const [operatorProfile, setOperatorProfile] = useState<ApiOperatorProfile | null>(null);
 
   useEffect(() => {
@@ -145,65 +139,13 @@ export default function AdminUsers() {
 
   useEffect(() => {
     if (selected?.role === "operator") {
-      setOperatorDisciplines([]);
-      setNewDiscName("");
-      setShowDiscInput(false);
       setOperatorProfile(null);
-      Promise.all([api.getDisciplines(), api.getOperatorProfiles()]).then(([discs, profiles]) => {
-        setAllDisciplines(discs);
+      api.getOperatorProfiles().then(profiles => {
         const profile = profiles.find(p => String(p.user_id) === selected.id);
-        if (profile) {
-          setOperatorProfile(profile);
-          const discNames = (profile.rates ?? []).map(r => r.discipline?.name).filter(Boolean) as string[];
-          setOperatorDisciplines(discNames);
-        }
+        setOperatorProfile(profile ?? null);
       }).catch(() => {});
     }
   }, [selected?.id, selected?.role]);
-
-  const saveDisciplinesToProfile = async (
-    forceDiscs?: string[],
-    forceAllDiscs?: typeof allDisciplines,
-  ) => {
-    if (!operatorProfile) return;
-    const opDiscs    = forceDiscs    ?? operatorDisciplines;
-    const discs      = forceAllDiscs ?? allDisciplines;
-    setSavingDiscProfile(true);
-    try {
-      const rates = discs
-        .filter(d => opDiscs.includes(d.name))
-        .map(d => {
-          const existing = operatorProfile.rates?.find(r => r.discipline_id === d.id);
-          return { disciplineId: d.id, hourlyRateCents: existing?.hourly_rate_cents ?? 0 };
-        });
-      const updated = await api.updateOperatorProfile(operatorProfile.id, { rates });
-      setOperatorProfile(updated);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      Alert.alert("Error", "Could not save disciplines. Please try again.");
-    } finally { setSavingDiscProfile(false); }
-  };
-
-  const createAndAssignDisc = async () => {
-    if (!newDiscName.trim()) return;
-    setSavingDisc(true);
-    try {
-      const created = await api.createDiscipline({ name: newDiscName.trim() });
-      const updatedAllDiscs = [...allDisciplines, created];
-      const updatedOpDiscs  = [...operatorDisciplines, created.name];
-      setAllDisciplines(updatedAllDiscs);
-      setOperatorDisciplines(updatedOpDiscs);
-      setNewDiscName("");
-      setShowDiscInput(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Auto-save the assignment to the operator profile immediately
-      if (operatorProfile) {
-        await saveDisciplinesToProfile(updatedOpDiscs, updatedAllDiscs);
-      }
-    } catch {
-      Alert.alert("Error", "Could not save discipline.");
-    } finally { setSavingDisc(false); }
-  };
 
   const filtered = users.filter(u => {
     const matchSearch =
@@ -427,84 +369,60 @@ export default function AdminUsers() {
 
                   <Text style={[styles.joinDateText, { color: colors.mutedForeground }]}>Joined {user.joinDate}</Text>
 
-                  {/* Disciplines (operators only) */}
+                  {/* Operator profile summary (read-only) */}
                   {user.role === "operator" && (
                     <View style={[styles.disciplinesSection, { borderColor: colors.border }]}>
-                      <Text style={[styles.disciplinesSectionTitle, { color: colors.primary }]}>Disciplines</Text>
-                      {allDisciplines.length === 0 ? (
-                        <Text style={[styles.disciplinesEmpty, { color: colors.mutedForeground }]}>No disciplines yet</Text>
+                      {/* Paid / Volunteer badge */}
+                      {operatorProfile && (
+                        <View style={[styles.profileTypePill, {
+                          backgroundColor: operatorProfile.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE",
+                        }]}>
+                          <Ionicons
+                            name={operatorProfile.profile_type === "paid" ? "cash-outline" : "heart-outline"}
+                            size={12}
+                            color={operatorProfile.profile_type === "paid" ? "#92400E" : "#6D28D9"}
+                          />
+                          <Text style={[styles.profileTypePillText, {
+                            color: operatorProfile.profile_type === "paid" ? "#92400E" : "#6D28D9",
+                          }]}>
+                            {operatorProfile.profile_type === "paid" ? "Paid Instructor" : "Volunteer"}
+                          </Text>
+                        </View>
+                      )}
+
+                      <Text style={[styles.disciplinesSectionTitle, { color: colors.primary, marginTop: operatorProfile ? 10 : 0 }]}>
+                        Disciplines
+                      </Text>
+
+                      {!operatorProfile ? (
+                        <Text style={[styles.disciplinesEmpty, { color: colors.mutedForeground }]}>
+                          No operator profile yet
+                        </Text>
+                      ) : !operatorProfile.rates || operatorProfile.rates.length === 0 ? (
+                        <Text style={[styles.disciplinesEmpty, { color: colors.mutedForeground }]}>
+                          No disciplines assigned yet
+                        </Text>
                       ) : (
                         <View style={styles.disciplinesChips}>
-                          {allDisciplines.map(d => {
-                            const active = operatorDisciplines.includes(d.name);
-                            return (
-                              <Pressable
-                                key={d.id}
-                                style={[styles.disciplineChip, { backgroundColor: active ? colors.primary : colors.muted }]}
-                                onPress={() => {
-                                  setOperatorDisciplines(prev =>
-                                    prev.includes(d.name) ? prev.filter(n => n !== d.name) : [...prev, d.name]
-                                  );
-                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                }}
-                              >
-                                <Text style={[styles.disciplineChipText, { color: active ? "#FFF" : colors.mutedForeground }]}>{d.name}</Text>
-                                {active && <Ionicons name="checkmark" size={11} color="#FFF" />}
-                              </Pressable>
-                            );
-                          })}
+                          {operatorProfile.rates.map(r => (
+                            <View key={r.id} style={[styles.disciplineChip, { backgroundColor: colors.primary }]}>
+                              <Text style={[styles.disciplineChipText, { color: "#FFF" }]}>{r.discipline?.name}</Text>
+                              <Ionicons name="checkmark" size={11} color="#FFF" />
+                            </View>
+                          ))}
                         </View>
                       )}
-                      {showDiscInput ? (
-                        <View style={[styles.discInputRow, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-                          <TextInput
-                            style={[styles.discInput, { color: colors.foreground }]}
-                            value={newDiscName}
-                            onChangeText={setNewDiscName}
-                            placeholder="New discipline name..."
-                            placeholderTextColor={colors.mutedForeground}
-                            autoFocus
-                            returnKeyType="done"
-                            onSubmitEditing={createAndAssignDisc}
-                          />
-                          <Pressable
-                            style={[styles.discSaveBtn, { backgroundColor: colors.primary, opacity: savingDisc ? 0.6 : 1 }]}
-                            disabled={savingDisc}
-                            onPress={createAndAssignDisc}
-                          >
-                            <Ionicons name="checkmark" size={15} color="#FFF" />
-                          </Pressable>
-                          <Pressable onPress={() => { setShowDiscInput(false); setNewDiscName(""); }}>
-                            <Ionicons name="close" size={18} color={colors.mutedForeground} />
-                          </Pressable>
-                        </View>
-                      ) : (
-                        <Pressable
-                          style={[styles.addDiscBtn, { borderColor: colors.primary }]}
-                          onPress={() => setShowDiscInput(true)}
-                        >
-                          <Ionicons name="add" size={14} color={colors.primary} />
-                          <Text style={[styles.addDiscBtnText, { color: colors.primary }]}>Add Discipline</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  )}
 
-                  {/* Save disciplines button */}
-                  {user.role === "operator" && operatorProfile && (
-                    <Pressable
-                      style={[styles.saveDiscBtn, { backgroundColor: savingDiscProfile ? colors.muted : "#10B981", opacity: savingDiscProfile ? 0.7 : 1 }]}
-                      onPress={() => saveDisciplinesToProfile()}
-                      disabled={savingDiscProfile}
-                    >
-                      <Ionicons name={savingDiscProfile ? "hourglass-outline" : "save-outline"} size={15} color="#FFF" />
-                      <Text style={styles.saveDiscBtnText}>{savingDiscProfile ? "Saving…" : "Save Disciplines"}</Text>
-                    </Pressable>
-                  )}
-                  {user.role === "operator" && !operatorProfile && allDisciplines.length > 0 && (
-                    <View style={[styles.noProfileNote, { backgroundColor: "#FEF3C7" }]}>
-                      <Ionicons name="information-circle-outline" size={14} color="#92400E" />
-                      <Text style={[styles.noProfileNoteText, { color: "#92400E" }]}>Create an operator profile in Activity → Operators first to save disciplines.</Text>
+                      {/* Deep-link to Activity → Operators */}
+                      <Pressable
+                        style={[styles.manageProfileBtn, { borderColor: colors.primary }]}
+                        onPress={() => { setSelected(null); router.push("/(admin)/lessons"); }}
+                      >
+                        <Ionicons name="calendar-outline" size={14} color={colors.primary} />
+                        <Text style={[styles.manageProfileBtnText, { color: colors.primary }]}>
+                          {operatorProfile ? "Edit Profile in Activity →" : "Create Profile in Activity →"}
+                        </Text>
+                      </Pressable>
                     </View>
                   )}
 
@@ -772,13 +690,8 @@ const styles = StyleSheet.create({
   disciplinesChips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
   disciplineChip: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   disciplineChipText: { fontSize: 12, fontWeight: "600" },
-  discInputRow: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6 },
-  discInput: { flex: 1, fontSize: 13, paddingVertical: 4 },
-  discSaveBtn: { borderRadius: 8, padding: 6 },
-  addDiscBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignSelf: "flex-start" },
-  addDiscBtnText: { fontSize: 12, fontWeight: "600" },
-  saveDiscBtn: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "center", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20, width: "85%", marginBottom: 10 },
-  saveDiscBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
-  noProfileNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 12, padding: 12, width: "85%", marginBottom: 10 },
-  noProfileNoteText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  profileTypePill: { flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+  profileTypePillText: { fontSize: 12, fontWeight: "700" },
+  manageProfileBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, alignSelf: "center", marginTop: 6 },
+  manageProfileBtnText: { fontSize: 12, fontWeight: "700" },
 });
