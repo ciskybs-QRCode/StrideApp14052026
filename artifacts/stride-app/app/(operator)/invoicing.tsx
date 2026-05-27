@@ -7,7 +7,6 @@ import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -340,7 +339,7 @@ function InAppBanner({ message, type, onDismiss }: { message: string; type: "suc
 const MONTHS = getRecentMonths();
 
 export default function OperatorInvoicing() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const schoolName = user?.schoolName ?? "Dance Village";
@@ -366,13 +365,10 @@ export default function OperatorInvoicing() {
 
   // UI modals
   const [showReimbursement, setShowReimbursement] = useState(false);
-  const [showChangeEmail, setShowChangeEmail]     = useState(false);
-  const [newEmail, setNewEmail]                   = useState("");
-  const [deleteStep, setDeleteStep]               = useState<0 | 1 | 2>(0);
-  const [deleteInput, setDeleteInput]             = useState("");
   const [showSuccessModal, setShowSuccessModal]   = useState(false);
   const [submittedId, setSubmittedId]             = useState("");
   const [submitError, setSubmitError]             = useState<string | null>(null);
+  const [generateError, setGenerateError]         = useState<string | null>(null);
 
   // ── Load persisted settings ──────────────────────────────────────────────
   useEffect(() => {
@@ -488,6 +484,7 @@ export default function OperatorInvoicing() {
   // ── Generate PDF ─────────────────────────────────────────────────────────
   const handleGenerateAndShare = async () => {
     setGenerating(true);
+    setGenerateError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const html = buildInvoiceHtml({
@@ -507,13 +504,11 @@ export default function OperatorInvoicing() {
         const canShare = await Sharing.isAvailableAsync();
         if (canShare) {
           await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: `Invoice ${dateRange.label}`, UTI: "com.adobe.pdf" });
-        } else {
-          Alert.alert("PDF Ready", "Your invoice has been generated and saved.");
         }
       }
       api.logPdfGeneration({ period: selectedMonth, month: dateRange.label, total_amount: filteredTotalCents / 100, action: "generated" }).catch(() => {});
     } catch {
-      Alert.alert("Error", "Could not generate PDF. Please try again.");
+      setGenerateError("Could not generate PDF. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -582,21 +577,6 @@ export default function OperatorInvoicing() {
       setSubmitError(msg);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleChangeEmail = () => {
-    if (!newEmail.trim() || !newEmail.includes("@")) { Alert.alert("Invalid Email", "Please enter a valid email address."); return; }
-    Alert.alert("Email Updated", `Your email has been updated to ${newEmail}.`);
-    setShowChangeEmail(false); setNewEmail("");
-  };
-
-  const handleDeleteAccount = () => {
-    if (deleteStep === 0) { setDeleteStep(1); }
-    else if (deleteStep === 1) { setDeleteStep(2); }
-    else {
-      if (deleteInput.trim() !== "DELETE") { Alert.alert("Incorrect", "Please type DELETE exactly to confirm."); return; }
-      Alert.alert("Account Deleted", "Your account has been removed.", [{ text: "OK", onPress: logout }]);
     }
   };
 
@@ -791,6 +771,17 @@ export default function OperatorInvoicing() {
             Exports a professional daily work log invoice for {dateRange.label}
           </Text>
 
+          {/* PDF error banner */}
+          {generateError && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FEF2F2", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#FCA5A5" }}>
+              <Ionicons name="alert-circle" size={18} color="#DC2626" />
+              <Text style={{ flex: 1, color: "#991B1B", fontSize: 13, fontWeight: "600" }}>{generateError}</Text>
+              <Pressable onPress={() => setGenerateError(null)} hitSlop={12}>
+                <Ionicons name="close" size={16} color="#DC2626" />
+              </Pressable>
+            </View>
+          )}
+
           {/* Submit error banner */}
           {submitError && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FEF2F2", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#FCA5A5" }}>
@@ -850,35 +841,6 @@ export default function OperatorInvoicing() {
           <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        {/* ── Account Settings ── */}
-        <View style={[styles.settingsCard, { backgroundColor: colors.card }]}>
-          <Pressable style={styles.settingsItem} onPress={() => Alert.alert("Password", "A reset link has been sent to your email.")}>
-            <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
-            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Change Password</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable style={[styles.settingsItem, { borderTopWidth: 1, borderTopColor: colors.border }]} onPress={() => setShowChangeEmail(true)}>
-            <Ionicons name="mail-outline" size={20} color={colors.primary} />
-            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Change Email</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable style={[styles.settingsItem, styles.settingsDanger, { borderTopWidth: 1, borderTopColor: colors.border }]} onPress={handleDeleteAccount}>
-            <Ionicons name="trash-outline" size={20} color="#EF4444" />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.settingsLabel, { color: "#EF4444" }]}>
-                {deleteStep === 0 ? "Delete Account" : deleteStep === 1 ? "Are you sure?" : "Type DELETE to confirm"}
-              </Text>
-              {deleteStep === 2 && (
-                <TextInput
-                  style={[styles.deleteInput, { color: "#EF4444", borderColor: "#EF4444" }]}
-                  placeholder="DELETE" placeholderTextColor="#FCA5A5"
-                  value={deleteInput} onChangeText={setDeleteInput} autoCapitalize="characters"
-                />
-              )}
-            </View>
-            {deleteStep > 0 && <Text style={{ color: "#EF4444", fontSize: 12, fontWeight: "700" }}>{deleteStep === 2 ? "CONFIRM" : "TAP AGAIN"}</Text>}
-          </Pressable>
-        </View>
       </ScrollView>
 
       {/* ── Invoice Submission Success Modal ── */}
@@ -939,22 +901,6 @@ export default function OperatorInvoicing() {
         receiptThresholdCents={5000}
       />
 
-      <Modal visible={showChangeEmail} transparent animationType="slide" onRequestClose={() => setShowChangeEmail(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>Change Email</Text>
-            <TextInput style={[styles.modalInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]} placeholder="New email address" placeholderTextColor={colors.mutedForeground} value={newEmail} onChangeText={setNewEmail} keyboardType="email-address" autoCapitalize="none" />
-            <View style={styles.modalButtons}>
-              <Pressable style={[styles.modalBtn, { borderColor: colors.border }]} onPress={() => setShowChangeEmail(false)}>
-                <Text style={[styles.modalBtnText, { color: colors.foreground }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary }]} onPress={handleChangeEmail}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Update</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1038,17 +984,4 @@ const styles = StyleSheet.create({
   fileName: { flex: 1, fontSize: 13 },
   fileDate: { fontSize: 12 },
 
-  settingsCard: { borderRadius: 18, overflow: "hidden", marginBottom: 32 },
-  settingsItem: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16 },
-  settingsDanger: { flexDirection: "column" as never, alignItems: "flex-start" as never },
-  settingsLabel: { flex: 1, fontSize: 15, fontWeight: "600" },
-  deleteInput: { marginTop: 8, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, width: 160 },
-
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalCard: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
-  modalTitle: { fontSize: 18, fontWeight: "800", marginBottom: 16 },
-  modalInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, marginBottom: 20 },
-  modalButtons: { flexDirection: "row", gap: 12 },
-  modalBtn: { flex: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  modalBtnText: { fontSize: 15, fontWeight: "700" },
 });
