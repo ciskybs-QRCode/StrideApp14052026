@@ -570,19 +570,22 @@ export default function CoursesScreen() {
       {/* Course Detail Modal */}
       <Modal visible={!!selectedCourse} transparent animationType="slide" onRequestClose={() => setSelectedCourse(null)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { maxHeight: "85%", padding: 0, overflow: "hidden" }]}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, gap: 0 }}>
+          <View style={[styles.modalCard, { position: "relative", maxHeight: "90%", padding: 0, overflow: "hidden", paddingTop: 44 }]}>
+            <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => setSelectedCourse(null)} hitSlop={14}>
+              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+            </Pressable>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingTop: 0, gap: 0 }}>
               {course && (
                 <>
                   <Text style={[styles.modalTitle, { color: colors.primary }]}>{course.name}</Text>
                   <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{course.description}</Text>
                   <View style={styles.detailRows}>
                     {[
-                      { icon: "person",   label: "Instructor", value: course.instructor },
-                      { icon: "time",     label: "Schedule",   value: course.schedule },
-                      { icon: "location", label: "Location",   value: course.location || "TBA" },
-                      { icon: "people",   label: "Spots",      value: `${course.enrolled}/${course.capacity}` },
-                      { icon: "fitness",  label: "Age",        value: `${course.ageMin}–${course.ageMax} yrs` },
+                      { icon: "person",   label: "Istruttore", value: course.instructor },
+                      { icon: "time",     label: "Orario",     value: course.schedule },
+                      { icon: "location", label: "Luogo",      value: course.location || "TBD" },
+                      { icon: "people",   label: "Posti",      value: `${course.enrolled}/${course.capacity}` },
+                      { icon: "fitness",  label: "Età",        value: `${course.ageMin}–${course.ageMax} anni` },
                     ].map(row => (
                       <View key={row.label} style={[styles.detailRow, { borderBottomColor: colors.border }]}>
                         <Ionicons name={row.icon as "person"} size={16} color={colors.mutedForeground} />
@@ -592,20 +595,20 @@ export default function CoursesScreen() {
                     ))}
                   </View>
 
-                  {/* Teaching Materials — visible to enrolled parents */}
+                  {/* Materiale Didattico — visibile ai genitori iscritti */}
                   {isEnrolled(course.id) && (
                     <View style={{ marginTop: 16, gap: 10 }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                         <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
                         <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                          Teaching Materials
+                          Materiale Didattico
                         </Text>
                       </View>
                       {courseMaterials.length === 0 ? (
                         <View style={{ backgroundColor: colors.muted, borderRadius: 12, padding: 16, alignItems: "center", gap: 6 }}>
                           <Ionicons name="cloud-outline" size={24} color={colors.mutedForeground} />
                           <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center" }}>
-                            No materials uploaded yet.{"\n"}Check back after your first class.
+                            Nessun materiale caricato.{"\n"}Controlla dopo la prima lezione.
                           </Text>
                         </View>
                       ) : (
@@ -636,11 +639,11 @@ export default function CoursesScreen() {
                       onPress={() => openNavigate(course.location)}
                     >
                       <Ionicons name="navigate" size={16} color={colors.primary} />
-                      <Text style={[styles.navigateFullBtnText, { color: colors.primary }]}>Navigate to Studio</Text>
+                      <Text style={[styles.navigateFullBtnText, { color: colors.primary }]}>Naviga allo Studio</Text>
                     </Pressable>
                   ) : null}
                   <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary, marginTop: 12 }]} onPress={() => setSelectedCourse(null)}>
-                    <Text style={styles.closeBtnText}>Close</Text>
+                    <Text style={styles.closeBtnText}>Chiudi</Text>
                   </Pressable>
                 </>
               )}
@@ -652,112 +655,117 @@ export default function CoursesScreen() {
       {/* Enroll Modal — package selection + add to cart */}
       <Modal visible={showEnrollModal} transparent animationType="slide" onRequestClose={() => setShowEnrollModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalTitleRow}>
-              <Ionicons name="cart-outline" size={22} color={colors.primary} />
-              <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Add to Cart</Text>
-            </View>
-            {enrollCourse && (
-              <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-                {enrollCourse.name} · {enrollCourse.schedule}
-              </Text>
-            )}
-
-            {/* Package type selection */}
-            <View style={{ marginTop: 12 }}>
-              <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>SELECT PACKAGE</Text>
-              {enrollCourse?.dropInEnabled && (
-                <Pressable
-                  style={[
-                    styles.participantRow,
-                    { borderColor: enrollPackage === "dropIn" ? colors.primary : colors.border,
-                      backgroundColor: enrollPackage === "dropIn" ? colors.muted : colors.background },
-                  ]}
-                  onPress={() => setEnrollPackage("dropIn")}
-                >
-                  <Ionicons
-                    name={enrollPackage === "dropIn" ? "radio-button-on" : "radio-button-off"}
-                    size={18}
-                    color={enrollPackage === "dropIn" ? colors.primary : colors.mutedForeground}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.participantName, { color: colors.foreground }]}>Single Lesson</Text>
-                    <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginTop: 2 }]}>One class, no commitment</Text>
-                  </View>
-                  <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.dropInPrice}</Text>
-                </Pressable>
+          <View style={[styles.modalCard, { position: "relative", maxHeight: "90%", paddingTop: 44 }]}>
+            <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => setShowEnrollModal(false)} hitSlop={14}>
+              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+            </Pressable>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
+              <View style={styles.modalTitleRow}>
+                <Ionicons name="cart-outline" size={22} color={colors.primary} />
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Aggiungi al Carrello</Text>
+              </View>
+              {enrollCourse && (
+                <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
+                  {enrollCourse.name} · {enrollCourse.schedule}
+                </Text>
               )}
-              {enrollCourse?.fixedBlockEnabled && (
-                <Pressable
-                  style={[
-                    styles.participantRow,
-                    { borderColor: enrollPackage === "fixedBlock" ? colors.primary : colors.border,
-                      backgroundColor: enrollPackage === "fixedBlock" ? colors.muted : colors.background,
-                      marginTop: 8 },
-                  ]}
-                  onPress={() => setEnrollPackage("fixedBlock")}
-                >
-                  <Ionicons
-                    name={enrollPackage === "fixedBlock" ? "radio-button-on" : "radio-button-off"}
-                    size={18}
-                    color={enrollPackage === "fixedBlock" ? colors.primary : colors.mutedForeground}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.participantName, { color: colors.foreground }]}>
-                      Full Package · {enrollCourse.fixedBlockLessons} lessons
-                    </Text>
-                    <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>15% discount included</Text>
-                  </View>
-                  <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.fixedBlockPrice}</Text>
-                </Pressable>
-              )}
-            </View>
 
-            {/* Participant selection — always visible */}
-            <View style={{ marginTop: 14 }}>
-              <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>WHO IS ENROLLING?</Text>
-              {participantOptions.map((name, idx) => (
-                <Pressable
-                  key={name}
-                  style={[
-                    styles.participantRow,
-                    { borderColor: enrollParticipant === name ? colors.primary : colors.border,
-                      backgroundColor: enrollParticipant === name ? colors.muted : colors.background,
-                      marginTop: idx > 0 ? 8 : 0 },
-                  ]}
-                  onPress={() => setEnrollParticipant(name)}
-                >
-                  <Ionicons
-                    name={enrollParticipant === name ? "radio-button-on" : "radio-button-off"}
-                    size={18}
-                    color={enrollParticipant === name ? colors.primary : colors.mutedForeground}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.participantName, { color: colors.foreground }]}>{name}</Text>
-                    {idx === 0 ? (
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>Account Holder · default</Text>
-                    ) : (
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>{secondaryRoleName}</Text>
-                    )}
-                  </View>
-                  {idx === 0 && (
-                    <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
-                      <Text style={[styles.youBadgeText, { color: colors.primary }]}>You</Text>
+              {/* Selezione pacchetto */}
+              <View style={{ marginTop: 12 }}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>SELEZIONA PACCHETTO</Text>
+                {enrollCourse?.dropInEnabled && (
+                  <Pressable
+                    style={[
+                      styles.participantRow,
+                      { borderColor: enrollPackage === "dropIn" ? colors.primary : colors.border,
+                        backgroundColor: enrollPackage === "dropIn" ? colors.muted : colors.background },
+                    ]}
+                    onPress={() => setEnrollPackage("dropIn")}
+                  >
+                    <Ionicons
+                      name={enrollPackage === "dropIn" ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={enrollPackage === "dropIn" ? colors.primary : colors.mutedForeground}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.participantName, { color: colors.foreground }]}>Lezione Singola</Text>
+                      <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginTop: 2 }]}>Una lezione, nessun impegno</Text>
                     </View>
-                  )}
-                </Pressable>
-              ))}
-            </View>
+                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.dropInPrice}</Text>
+                  </Pressable>
+                )}
+                {enrollCourse?.fixedBlockEnabled && (
+                  <Pressable
+                    style={[
+                      styles.participantRow,
+                      { borderColor: enrollPackage === "fixedBlock" ? colors.primary : colors.border,
+                        backgroundColor: enrollPackage === "fixedBlock" ? colors.muted : colors.background,
+                        marginTop: 8 },
+                    ]}
+                    onPress={() => setEnrollPackage("fixedBlock")}
+                  >
+                    <Ionicons
+                      name={enrollPackage === "fixedBlock" ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={enrollPackage === "fixedBlock" ? colors.primary : colors.mutedForeground}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.participantName, { color: colors.foreground }]}>
+                        Pacchetto Completo · {enrollCourse.fixedBlockLessons} lezioni
+                      </Text>
+                      <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>Sconto del 15% incluso</Text>
+                    </View>
+                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.fixedBlockPrice}</Text>
+                  </Pressable>
+                )}
+              </View>
 
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
-              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowEnrollModal(false)}>
-                <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleAddToCart}>
-                <Ionicons name="cart-outline" size={16} color="#FFF" />
-                <Text style={styles.closeBtnText}>Add to Cart</Text>
-              </Pressable>
-            </View>
+              {/* Selezione partecipante */}
+              <View style={{ marginTop: 14 }}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>CHI SI ISCRIVE?</Text>
+                {participantOptions.map((name, idx) => (
+                  <Pressable
+                    key={name}
+                    style={[
+                      styles.participantRow,
+                      { borderColor: enrollParticipant === name ? colors.primary : colors.border,
+                        backgroundColor: enrollParticipant === name ? colors.muted : colors.background,
+                        marginTop: idx > 0 ? 8 : 0 },
+                    ]}
+                    onPress={() => setEnrollParticipant(name)}
+                  >
+                    <Ionicons
+                      name={enrollParticipant === name ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={enrollParticipant === name ? colors.primary : colors.mutedForeground}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.participantName, { color: colors.foreground }]}>{name}</Text>
+                      {idx === 0 ? (
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>Titolare account · predefinito</Text>
+                      ) : (
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>{secondaryRoleName}</Text>
+                      )}
+                    </View>
+                    {idx === 0 && (
+                      <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
+                        <Text style={[styles.youBadgeText, { color: colors.primary }]}>Tu</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
+                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowEnrollModal(false)}>
+                  <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Annulla</Text>
+                </Pressable>
+                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleAddToCart}>
+                  <Ionicons name="cart-outline" size={16} color="#FFF" />
+                  <Text style={styles.closeBtnText}>Aggiungi al Carrello</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -766,34 +774,37 @@ export default function CoursesScreen() {
       <Modal visible={showPrivateModal} transparent animationType="slide" onRequestClose={() => { setShowPrivateModal(false); resetPrivate(); }}>
         <View style={styles.modalOverlay}>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
-            <View style={styles.modalCard}>
+            <View style={[styles.modalCard, { position: "relative", paddingTop: 44 }]}>
+              <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowPrivateModal(false); resetPrivate(); }} hitSlop={14}>
+                <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+              </Pressable>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="star" size={22} color="#FBBF24" />
-                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Book Private Lesson</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Prenota Lezione Privata</Text>
               </View>
               <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-                Select your preferences — available slots update as you choose.
+                Seleziona le preferenze — i posti disponibili si aggiornano man mano.
               </Text>
 
               <Dropdown
-                label="Participant"
-                placeholder="Who is this lesson for?"
+                label="Partecipante"
+                placeholder="Per chi è questa lezione?"
                 value={privParticipant}
                 options={participantOptions}
                 onSelect={setPrivParticipant}
                 colors={colors}
               />
               <Dropdown
-                label="Instructor"
-                placeholder="Choose an instructor"
+                label="Istruttore"
+                placeholder="Scegli un istruttore"
                 value={privInstructor}
                 options={uniqueInstructors}
                 onSelect={v => { setPrivInstructor(v); setPrivActivity(null); setPrivDate(null); setPrivSlot(null); }}
                 colors={colors}
               />
               <Dropdown
-                label="Activity / Style"
-                placeholder={privInstructor ? "Choose activity" : "Select instructor first"}
+                label="Attività / Stile"
+                placeholder={privInstructor ? "Scegli attività" : "Seleziona prima l'istruttore"}
                 value={privActivity}
                 options={activitiesForInstructor(privInstructor)}
                 onSelect={v => { setPrivActivity(v); setPrivDate(null); setPrivSlot(null); }}
@@ -801,8 +812,8 @@ export default function CoursesScreen() {
                 disabled={!privInstructor}
               />
               <Dropdown
-                label="Preferred Date"
-                placeholder={privActivity ? "Choose a date" : "Select activity first"}
+                label="Data Preferita"
+                placeholder={privActivity ? "Scegli una data" : "Seleziona prima l'attività"}
                 value={privDate}
                 options={privInstructor ? getInstructorDates(privInstructor) : []}
                 onSelect={v => { setPrivDate(v); setPrivSlot(null); }}
@@ -810,8 +821,8 @@ export default function CoursesScreen() {
                 disabled={!privActivity}
               />
               <Dropdown
-                label="Time Slot"
-                placeholder={privDate ? "Choose a time" : "Select date first"}
+                label="Fascia Oraria"
+                placeholder={privDate ? "Scegli un orario" : "Seleziona prima la data"}
                 value={privSlot}
                 options={privInstructor && privDate ? getInstructorSlots(privInstructor, privDate) : []}
                 onSelect={setPrivSlot}
@@ -821,14 +832,14 @@ export default function CoursesScreen() {
 
               <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => { setShowPrivateModal(false); resetPrivate(); }}>
-                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Annulla</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.closeBtn, { flex: 1, backgroundColor: privCanSend ? colors.primary : colors.border }]}
                   onPress={handleSendPrivate}
                   disabled={!privCanSend}
                 >
-                  <Text style={[styles.closeBtnText, { color: privCanSend ? "#FFF" : colors.mutedForeground }]}>Send Request</Text>
+                  <Text style={[styles.closeBtnText, { color: privCanSend ? "#FFF" : colors.mutedForeground }]}>Invia Richiesta</Text>
                 </Pressable>
               </View>
             </View>
@@ -840,26 +851,29 @@ export default function CoursesScreen() {
       <Modal visible={showMeetingModal} transparent animationType="slide" onRequestClose={() => { setShowMeetingModal(false); resetMeeting(); }}>
         <View style={styles.modalOverlay}>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
-            <View style={styles.modalCard}>
+            <View style={[styles.modalCard, { position: "relative", paddingTop: 44 }]}>
+              <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowMeetingModal(false); resetMeeting(); }} hitSlop={14}>
+                <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+              </Pressable>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Book Office Meeting</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Prenota Appuntamento</Text>
               </View>
               <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-                Tell us the reason for your visit and choose a time that suits you.
+                Dicci il motivo della tua visita e scegli un orario che ti si adatti.
               </Text>
 
               <Dropdown
-                label="Reason for Meeting"
-                placeholder="Select a topic"
+                label="Motivo dell'Appuntamento"
+                placeholder="Seleziona un argomento"
                 value={meetReason}
                 options={OFFICE_REASONS}
                 onSelect={v => { setMeetReason(v); setMeetDate(null); setMeetSlot(null); }}
                 colors={colors}
               />
               <Dropdown
-                label="Preferred Date"
-                placeholder={meetReason ? "Choose a date" : "Select reason first"}
+                label="Data Preferita"
+                placeholder={meetReason ? "Scegli una data" : "Seleziona prima il motivo"}
                 value={meetDate}
                 options={getUpcomingWeekdays(8)}
                 onSelect={v => { setMeetDate(v); setMeetSlot(null); }}
@@ -867,8 +881,8 @@ export default function CoursesScreen() {
                 disabled={!meetReason}
               />
               <Dropdown
-                label="Time Slot"
-                placeholder={meetDate ? "Choose a time" : "Select date first"}
+                label="Fascia Oraria"
+                placeholder={meetDate ? "Scegli un orario" : "Seleziona prima la data"}
                 value={meetSlot}
                 options={OFFICE_TIMES}
                 onSelect={setMeetSlot}
@@ -878,14 +892,14 @@ export default function CoursesScreen() {
 
               <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => { setShowMeetingModal(false); resetMeeting(); }}>
-                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Annulla</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.closeBtn, { flex: 1, backgroundColor: meetCanSend ? colors.primary : colors.border }]}
                   onPress={handleSendMeeting}
                   disabled={!meetCanSend}
                 >
-                  <Text style={[styles.closeBtnText, { color: meetCanSend ? "#FFF" : colors.mutedForeground }]}>Send Request</Text>
+                  <Text style={[styles.closeBtnText, { color: meetCanSend ? "#FFF" : colors.mutedForeground }]}>Invia Richiesta</Text>
                 </Pressable>
               </View>
             </View>

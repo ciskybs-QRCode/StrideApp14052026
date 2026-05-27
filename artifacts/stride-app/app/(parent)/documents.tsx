@@ -315,7 +315,7 @@ export default function DocumentsScreen() {
         <AccountSettingsCard />
       </ScrollView>
 
-      {/* ── Sign Document Modal — unchanged ── */}
+      {/* ── Sign Document Modal ── */}
       <Modal
         visible={!!showSign}
         transparent
@@ -323,32 +323,37 @@ export default function DocumentsScreen() {
         onRequestClose={() => { setShowSign(null); setHasSignature(false); }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            {showSign && (() => {
-              const doc = documents.find(d => d.id === showSign);
-              return doc ? (
-                <>
-                  <Text style={[styles.modalTitle, { color: colors.primary }]}>Sign Document</Text>
-                  <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{doc.title}</Text>
-                  <SignaturePad onHasSignatureChange={setHasSignature} strokeColor={colors.primary} />
-                  <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-                    <Pressable
-                      style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]}
-                      onPress={() => { setShowSign(null); setHasSignature(false); }}
-                    >
-                      <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-                    </Pressable>
-                    <Pressable
-                      style={[styles.modalBtn, { flex: 1, backgroundColor: hasSignature ? colors.primary : colors.border }]}
-                      onPress={() => { if (hasSignature) handleSign(doc.id); }}
-                      disabled={!hasSignature}
-                    >
-                      <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Signature</Text>
-                    </Pressable>
-                  </View>
-                </>
-              ) : null;
-            })()}
+          <View style={[styles.modalCard, { position: "relative", maxHeight: "90%", paddingTop: 44 }]}>
+            <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowSign(null); setHasSignature(false); }} hitSlop={14}>
+              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+            </Pressable>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
+              {showSign && (() => {
+                const doc = documents.find(d => d.id === showSign);
+                return doc ? (
+                  <>
+                    <Text style={[styles.modalTitle, { color: colors.primary }]}>Firma Documento</Text>
+                    <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{doc.title}</Text>
+                    <SignaturePad onHasSignatureChange={setHasSignature} strokeColor={colors.primary} />
+                    <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                      <Pressable
+                        style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]}
+                        onPress={() => { setShowSign(null); setHasSignature(false); }}
+                      >
+                        <Text style={[styles.modalBtnText, { color: colors.primary }]}>Annulla</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.modalBtn, { flex: 1, backgroundColor: hasSignature ? colors.primary : colors.border }]}
+                        onPress={() => { if (hasSignature) handleSign(doc.id); }}
+                        disabled={!hasSignature}
+                      >
+                        <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Conferma Firma</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : null;
+              })()}
+            </ScrollView>
           </View>
         </View>
       </Modal>

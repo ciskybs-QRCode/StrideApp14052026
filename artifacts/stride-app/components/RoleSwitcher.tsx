@@ -14,8 +14,8 @@ const ROLE_META: Record<UserRole, {
   color: string;
 }> = {
   admin:    { label: "Admin",      icon: "shield-checkmark", homeRoute: "/(admin)/stats",        color: "#6D28D9" },
-  operator: { label: "Instructor", icon: "school",           homeRoute: "/(operator)/dashboard", color: "#0369A1" },
-  parent:   { label: "Parent",     icon: "person",           homeRoute: "/(parent)/home",        color: "#047857" },
+  operator: { label: "Istruttore", icon: "school",           homeRoute: "/(operator)/dashboard", color: "#0369A1" },
+  parent:   { label: "Genitore",   icon: "person",           homeRoute: "/(parent)/home",        color: "#047857" },
 };
 
 // ── Inline settings row (non-floating) ───────────────────────────────────────
@@ -52,9 +52,9 @@ export function RoleSwitcherRow() {
         <Pressable style={rowStyles.backdrop} onPress={() => setOpen(false)}>
           <View style={rowStyles.sheet}>
             <View style={rowStyles.sheetHandle} />
-            <Text style={rowStyles.sheetTitle}>Switch Role</Text>
+            <Text style={rowStyles.sheetTitle}>Cambia Ruolo</Text>
             <Text style={rowStyles.sheetSub}>
-              Access the app with a different profile
+              Accedi all'app con un profilo diverso
             </Text>
 
             {/* Current role */}
@@ -64,7 +64,7 @@ export function RoleSwitcherRow() {
               </View>
               <Text style={[rowStyles.sheetRowLabel, { color: current.color }]}>{current.label}</Text>
               <View style={rowStyles.activePill}>
-                <Text style={rowStyles.activePillText}>Active</Text>
+                <Text style={rowStyles.activePillText}>Attivo</Text>
               </View>
             </View>
 
@@ -100,8 +100,8 @@ export function RoleSwitcherRow() {
           <Ionicons name={current.icon} size={20} color={current.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={rowStyles.rowLabel}>Switch Role</Text>
-          <Text style={rowStyles.rowSub}>Current view: {current.label}</Text>
+          <Text style={rowStyles.rowLabel}>Cambia Ruolo</Text>
+          <Text style={rowStyles.rowSub}>Vista corrente: {current.label}</Text>
         </View>
         <View style={[rowStyles.activePill, { backgroundColor: `${current.color}15`, flexShrink: 0 }]}>
           <Text style={[rowStyles.activePillText, { color: current.color }]} numberOfLines={1}>{current.label}</Text>
