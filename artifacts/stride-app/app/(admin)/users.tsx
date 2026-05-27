@@ -116,10 +116,23 @@ export default function AdminUsers() {
 
   useEffect(() => {
     setLoadingUsers(true);
-    Promise.allSettled([api.getUsers(), api.getStudents()])
-      .then(([usersRes, studentsRes]) => {
+    Promise.allSettled([api.getUsers(), api.getStudents(), api.getOperatorProfiles()])
+      .then(([usersRes, studentsRes, profilesRes]) => {
+        // Build a set of user IDs that have an operator profile in the DB
+        const operatorUserIds = new Set<string>(
+          profilesRes.status === "fulfilled"
+            ? profilesRes.value.map(p => String(p.user_id))
+            : []
+        );
         const userRecords = usersRes.status === "fulfilled" && usersRes.value.length > 0
-          ? usersRes.value.map(apiUserToRecord)
+          ? usersRes.value.map(u => {
+              const record = apiUserToRecord(u);
+              // If the user has an operator profile but their role column isn't "operator", fix it
+              if (operatorUserIds.has(String(u.id)) && record.role !== "operator") {
+                return { ...record, role: "operator" as UserRole };
+              }
+              return record;
+            })
           : MOCK_USERS.filter(u => u.role !== "student");
         const studentRecords = studentsRes.status === "fulfilled"
           ? (studentsRes.value as ApiStudent[]).map(apiStudentToRecord)
