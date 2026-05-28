@@ -512,6 +512,7 @@ export interface ApiUser {
 export interface ApiChild {
   id: number;
   user_id: number;
+  full_name?: string;
   name: string;
   first_name?: string;
   last_name?: string;

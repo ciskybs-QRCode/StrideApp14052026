@@ -17,11 +17,17 @@ export function TerminologyProvider({ children }: { children: React.ReactNode })
   const [primaryRoleName, setPrimary] = useState("Member");
   const [secondaryRoleName, setSecondary] = useState("Dependent Member");
 
+  // Legacy values stored in some DBs before the rename — always upgrade them
+  const LEGACY_PRIMARY = new Set(["Parent", "parent"]);
+  const LEGACY_SECONDARY = new Set(["Child", "child"]);
+
   useEffect(() => {
     api.getTerminology()
       .then(data => {
-        if (data.primaryRoleName) setPrimary(data.primaryRoleName);
-        if (data.secondaryRoleName) setSecondary(data.secondaryRoleName);
+        const p = data.primaryRoleName;
+        const s = data.secondaryRoleName;
+        if (p && !LEGACY_PRIMARY.has(p)) setPrimary(p);
+        if (s && !LEGACY_SECONDARY.has(s)) setSecondary(s);
       })
       .catch(() => {});
   }, []);

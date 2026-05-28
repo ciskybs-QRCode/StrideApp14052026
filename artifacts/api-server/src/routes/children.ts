@@ -68,7 +68,11 @@ router.post("/members", requireAuth, async (req, res) => {
 
   const { data, error } = await supabase
     .from("members")
-    .insert({ ...body, user_id: parseInt(user.id) })
+    .insert({
+      ...body,
+      user_id: parseInt(user.id),
+      organization_id: body.organization_id ?? (user.orgId ?? 1),
+    })
     .select()
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }

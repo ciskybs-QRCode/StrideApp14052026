@@ -182,7 +182,7 @@ function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
   const age = dob ? calcAgeFromDob(dob) : (c.age ?? 0);
   return {
     id: String(c.id),
-    name: c.name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(),
+    name: c.full_name || c.name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(),
     age,
     stars,
     allergies: c.allergies_list || c.allergies || "None",
@@ -463,12 +463,17 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
   // ── Mutations ────────────────────────────────────────────────────────────────
 
   const addChild = async (child: Omit<Child, "id">) => {
+    const nameParts = child.name.trim().split(/\s+/);
+    const firstName = nameParts[0] ?? "";
+    const lastName = nameParts.slice(1).join(" ");
     const payload = {
-      name: child.name,
-      age: child.age,
+      full_name: child.name,
+      first_name: firstName,
+      ...(lastName ? { last_name: lastName } : {}),
+      organization_id: 1,
       ...(child.dateOfBirth ? { date_of_birth: child.dateOfBirth } : {}),
       gold_stars: child.stars ?? 0,
-      allergies: child.allergies,
+      ...(child.allergies && child.allergies !== "None" ? { allergies_list: child.allergies } : {}),
       ambulance_consent: child.medicalWaiver === "ambulance",
       media_consent: child.mediaConsent,
       ...(child.photoUrl ? { photo_url: child.photoUrl } : {}),
