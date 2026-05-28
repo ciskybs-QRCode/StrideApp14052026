@@ -34,28 +34,22 @@ async function isBlacklisted(
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 
-router.get("/children", requireAuth, async (req, res) => {
+router.get("/members", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
-  // Always scope to the caller's own parent_id.
-  // Admins/operators access all students via GET /students — this endpoint
-  // is parent-only. Using the JWT role here would leak all children when an
-  // admin temporarily switches to the member role in-app (the JWT is not
-  // re-issued on client-side role switch, so user.role still reads "admin").
   const { data, error } = await supabase
-    .from("children")
+    .from("members")
     .select("*")
-    .eq("parent_id", parseInt(user.id))
+    .eq("user_id", parseInt(user.id))
     .order("first_name");
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data ?? []);
 });
 
-router.post("/children", requireAuth, async (req, res) => {
+router.post("/members", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
   const body = req.body as Record<string, unknown>;
   const orgId = user.orgId ?? 1;
 
-  // ── Anti-fraud blacklist check ─────────────────────────────────────────────
   const check = await isBlacklisted(orgId, {
     firstName:   typeof body.first_name === "string" ? body.first_name : undefined,
     lastName:    typeof body.last_name  === "string" ? body.last_name  : undefined,
@@ -73,25 +67,35 @@ router.post("/children", requireAuth, async (req, res) => {
   }
 
   const { data, error } = await supabase
-    .from("children")
-    .insert({ ...body, parent_id: parseInt(user.id) })
+    .from("members")
+    .insert({ ...body, user_id: parseInt(user.id) })
     .select()
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.status(201).json(data);
 });
 
-router.patch("/children/:id", requireAuth, async (req, res) => {
+router.patch("/members/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   const body = req.body as Record<string, unknown>;
   const { data, error } = await supabase
-    .from("children")
+    .from("members")
     .update(body)
     .eq("id", parseInt(String(id)))
     .select()
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data);
+});
+
+router.delete("/members/:id", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { error } = await supabase
+    .from("members")
+    .delete()
+    .eq("id", parseInt(String(id)));
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  res.status(204).send();
 });
 
 export default router;

@@ -1,0 +1,48 @@
+Role: Expert React Native (Expo) and Express.js Developer working with Supabase.
+Architecture: MVVM / Clean Route Architecture.
+UI Rules: Navy Blue and Gold branding. All UI elements MUST STRICTLY remain within the physical phone display boundaries (No text/layout overflows, no items escaping the screen constraints).
+
+🚨 STRICT ISOLATION DIRECTIVE 🚨
+DO NOT modify, rewrite, or "optimize" ANY files, layouts, components, or database fields that are not explicitly required to fulfill the following tasks. Keep all existing working features completely intact.
+
+Please execute these specific tasks step-by-step:
+
+1. Terminology Overhaul (Eradicate "Child" & "Parent")
+Target: Parent/Profile Management Screens & Global UI Text.
+
+Action: Replace legacy family terms with white-label, adult-friendly terms across the entire app interface:
+
+Change "Linked Childs" to "Dependent Members"
+
+Change "Add Child" to "Add Dependent Member"
+
+Change "Remove Child" to "Remove Dependent Member"
+
+Change all visible instances of "Parent" to "Member" (or "Primary Member" where context requires differentiation from dependents).
+
+2. Smart Pick-up: Unique QR Code Generation
+Target: Smart Pick-up Feature (Dependent Member Management).
+
+Action: When a user configures or adds a "Smart Pick-up" person, the app must generate a real, unique, and encrypted QR Code string.
+
+Logic: This QR code must uniquely link that specific pick-up person to the corresponding Dependent Member, under the authorization of the Primary Member (account holder). Use a standard React Native QR generation library (e.g., react-native-qrcode-svg).
+
+3. Paid Lesson UI: Replace Checkout Button with GPS Navigation
+Target: Home Page -> Active/Paid Lesson Card Header.
+
+Action: Locate the header text/button that currently says "Go to Cart & Pay" for already paid lessons. Replace it entirely with a "Navigate" button.
+
+Logic: Use the existing map/navigation link structure. When clicked, it must fetch the specific address of that paid lesson and trigger the device's native mapping system (Apple Maps / Google Maps) using Expo's Linking API to guide the user to the destination.
+
+4. Operator Side: Ultra-Flexible Promo Code & Free Gift Logic
+Target: Operator Side -> Settings -> Promo Code / Discounts Management.
+
+Action: Refactor the discount/promo creation logic to allow absolute customization:
+
+Targeting: The operator must be able to select exactly one specific Dependent Member.
+
+Course Scope: The operator can assign the promo to 1, 2, multiple, or ALL courses that the selected dependent member is enrolled in.
+
+100% Free / Gift Option: Add a toggle or input allowing the operator to set a 100% discount ("Totally Free"), effectively allowing the admin/operator to gift any course/item to any specific member safely.
+
+Backend: Ensure the Express routes and Supabase schema support this targeted validation logic without breaking global promo codes.

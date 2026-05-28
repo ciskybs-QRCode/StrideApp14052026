@@ -1,3 +1,4 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -62,9 +63,8 @@ export default function ChildrenScreen() {
   // Add Child fields
   const [newChildName, setNewChildName] = useState("");
   const [newChildSurname, setNewChildSurname] = useState("");
-  const [newChildDobDay, setNewChildDobDay] = useState("");
-  const [newChildDobMonth, setNewChildDobMonth] = useState("");
-  const [newChildDobYear, setNewChildDobYear] = useState("");
+  const [newChildDob, setNewChildDob] = useState<Date | null>(null);
+  const [showDobPicker, setShowDobPicker] = useState(false);
   const [newChildAllergies, setNewChildAllergies] = useState("");
   const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent">("ambulance");
   const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("none");
@@ -101,9 +101,8 @@ export default function ChildrenScreen() {
   const resetAddChildForm = () => {
     setNewChildName("");
     setNewChildSurname("");
-    setNewChildDobDay("");
-    setNewChildDobMonth("");
-    setNewChildDobYear("");
+    setNewChildDob(null);
+    setShowDobPicker(false);
     setNewChildAllergies("");
     setNewChildWaiver("ambulance");
     setNewChildMediaConsent("none");
@@ -140,18 +139,11 @@ export default function ChildrenScreen() {
   };
 
   const handleAddChild = async () => {
-    if (!newChildName.trim() || !newChildSurname.trim() || !newChildDobDay || !newChildDobMonth || !newChildDobYear) {
+    if (!newChildName.trim() || !newChildSurname.trim() || !newChildDob) {
       Alert.alert("Required Fields", "Please enter first name, last name and date of birth.");
       return;
     }
-    const dobStr = `${newChildDobYear.padStart(4, "0")}-${newChildDobMonth.padStart(2, "0")}-${newChildDobDay.padStart(2, "0")}`;
-    const dobDate = new Date(dobStr);
-    const dd = parseInt(newChildDobDay, 10);
-    const mm = parseInt(newChildDobMonth, 10);
-    if (isNaN(dobDate.getTime()) || dd < 1 || dd > 31 || mm < 1 || mm > 12) {
-      Alert.alert("Invalid Date", "Please enter a valid date of birth (DD / MM / YYYY).");
-      return;
-    }
+    const dobStr = newChildDob.toISOString().split("T")[0];
     const age = calcAgeFromDob(dobStr);
     if (age < 0 || age > 100) {
       Alert.alert("Invalid Date", "Date of birth appears incorrect.");
@@ -264,22 +256,38 @@ export default function ChildrenScreen() {
                     </View>
                   ))}
                   <Text style={[styles.modalLabel, { color: colors.primary }]}>Date of Birth</Text>
-                  <View style={{ flexDirection: "row", gap: 6, alignItems: "flex-end", marginBottom: 12 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Day</Text>
-                      <TextInput style={[styles.modalInput, { borderColor: colors.border, textAlign: "center" }]} value={newChildDobDay} onChangeText={t => setNewChildDobDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
-                    </View>
-                    <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "700", paddingBottom: 12 }}>/</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Month</Text>
-                      <TextInput style={[styles.modalInput, { borderColor: colors.border, textAlign: "center" }]} value={newChildDobMonth} onChangeText={t => setNewChildDobMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
-                    </View>
-                    <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "700", paddingBottom: 12 }}>/</Text>
-                    <View style={{ flex: 2 }}>
-                      <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Year</Text>
-                      <TextInput style={[styles.modalInput, { borderColor: colors.border, textAlign: "center" }]} value={newChildDobYear} onChangeText={t => setNewChildDobYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={4} />
-                    </View>
-                  </View>
+                  {Platform.OS === "web" ? (
+                    <TextInput
+                      style={[styles.modalInput, { borderColor: colors.border, marginBottom: 12 }]}
+                      value={newChildDob ? newChildDob.toISOString().split("T")[0] : ""}
+                      onChangeText={t => { const d = new Date(t); setNewChildDob(!isNaN(d.getTime()) ? d : null); }}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={colors.mutedForeground}
+                    />
+                  ) : (
+                    <>
+                      <Pressable
+                        style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center", marginBottom: 12 }]}
+                        onPress={() => setShowDobPicker(true)}
+                      >
+                        <Text style={{ color: newChildDob ? colors.foreground : colors.mutedForeground, fontSize: 15 }}>
+                          {newChildDob ? newChildDob.toLocaleDateString("en-GB") : "Select date of birth"}
+                        </Text>
+                      </Pressable>
+                      {showDobPicker && (
+                        <DateTimePicker
+                          value={newChildDob ?? new Date(2010, 0, 1)}
+                          mode="date"
+                          display={Platform.OS === "ios" ? "spinner" : "default"}
+                          maximumDate={new Date()}
+                          onChange={(_, date) => {
+                            if (Platform.OS === "android") setShowDobPicker(false);
+                            if (date) setNewChildDob(date);
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
                   <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                     <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { resetAddChildForm(); setShowAddChild(false); }}>
                       <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
@@ -668,22 +676,38 @@ export default function ChildrenScreen() {
               <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Rossi" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Date of Birth <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <View style={{ flexDirection: "row", gap: 6, alignItems: "flex-end" }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Day</Text>
-                  <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]} value={newChildDobDay} onChangeText={t => setNewChildDobDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
-                </View>
-                <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "700", paddingBottom: 12 }}>/</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Month</Text>
-                  <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]} value={newChildDobMonth} onChangeText={t => setNewChildDobMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
-                </View>
-                <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "700", paddingBottom: 12 }}>/</Text>
-                <View style={{ flex: 2 }}>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Year</Text>
-                  <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]} value={newChildDobYear} onChangeText={t => setNewChildDobYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={4} />
-                </View>
-              </View>
+              {Platform.OS === "web" ? (
+                <TextInput
+                  style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
+                  value={newChildDob ? newChildDob.toISOString().split("T")[0] : ""}
+                  onChangeText={t => { const d = new Date(t); setNewChildDob(!isNaN(d.getTime()) ? d : null); }}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+              ) : (
+                <>
+                  <Pressable
+                    style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center" }]}
+                    onPress={() => setShowDobPicker(true)}
+                  >
+                    <Text style={{ color: newChildDob ? colors.foreground : colors.mutedForeground, fontSize: 15 }}>
+                      {newChildDob ? newChildDob.toLocaleDateString("en-GB") : "Select date of birth"}
+                    </Text>
+                  </Pressable>
+                  {showDobPicker && (
+                    <DateTimePicker
+                      value={newChildDob ?? new Date(2010, 0, 1)}
+                      mode="date"
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      maximumDate={new Date()}
+                      onChange={(_, date) => {
+                        if (Platform.OS === "android") setShowDobPicker(false);
+                        if (date) setNewChildDob(date);
+                      }}
+                    />
+                  )}
+                </>
+              )}
 
               {/* Medical Information */}
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />

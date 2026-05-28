@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
 import {
   Alert,
-  Animated,
   Linking,
   Platform,
   Pressable,
@@ -13,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppData } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
 import { useSecurityEscalation, type SecurityAlert } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -93,7 +94,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
         <Ionicons name="information-circle" size={16} color={phaseColor} />
         <Text style={[styles.messageText, { color: phaseColor }]}>
           {alert.phase === 1
-            ? "Your child was not checked in at lesson start. Are you on your way?"
+            ? "Your member was not checked in at lesson start. Are you on your way?"
             : alert.phase === 2
             ? "Second critical alert sent to operator and administrator. Please respond immediately."
             : "ACTIVE ALARM — Operator and administrator notified. Immediate action required."}
@@ -117,7 +118,6 @@ function AlertCard({ alert, onDelay, onDismiss }: {
             Select delay in minutes:
           </Text>
 
-          {/* Delay chips */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             <View style={styles.chipRow}>
               {DELAY_OPTIONS.map(m => (
@@ -137,23 +137,18 @@ function AlertCard({ alert, onDelay, onDismiss }: {
             </View>
           </ScrollView>
 
-          {/* Submit delay */}
           <Pressable style={styles.submitBtn} onPress={handleSubmitDelay}>
             <Ionicons name="time-outline" size={16} color="#1E3A8A" />
-            <Text style={styles.submitBtnText}>
-              Confirm {selectedDelay} min delay
-            </Text>
+            <Text style={styles.submitBtnText}>Confirm {selectedDelay} min delay</Text>
           </Pressable>
         </>
       )}
 
-      {/* Call operator */}
       <Pressable style={styles.callBtn} onPress={handleCall}>
         <Ionicons name="call" size={16} color="#FFF" />
         <Text style={styles.callBtnText}>Call Operator</Text>
       </Pressable>
 
-      {/* Dismiss (phase 1 only) */}
       {alert.phase === 1 && !alert.resolvedAt && (
         <Pressable
           style={[styles.dismissBtn, { borderColor: colors.border }]}
@@ -172,8 +167,21 @@ function AlertCard({ alert, onDelay, onDismiss }: {
 
 export default function ParentAlerts() {
   const { activeAlerts, alerts, submitDelay, dismissAlert, maxPhase } = useSecurityEscalation();
+  const { children } = useAppData();
+  const { user } = useAuth();
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
+
+  const [reportWho,       setReportWho]      = useState("self");
+  const [reportType,      setReportType]     = useState<"absence" | "delay">("delay");
+  const [reportDelay,     setReportDelay]    = useState<(typeof DELAY_OPTIONS)[number]>(15);
+  const [reportSubmitted, setReportSubmitted] = useState(false);
+
+  const handleSubmitReport = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setReportSubmitted(true);
+    setTimeout(() => setReportSubmitted(false), 4000);
+  };
 
   const resolvedAlerts = alerts.filter(a => a.resolvedAt);
 
@@ -203,13 +211,106 @@ export default function ParentAlerts() {
           </View>
         </View>
 
-        {/* No active alerts */}
+        {/* ── Proactive Absence / Delay Reporting ──────────────────────────── */}
+        <View style={[styles.reportCard, { backgroundColor: colors.card }]}>
+          <View style={styles.reportHeader}>
+            <Ionicons name="megaphone-outline" size={18} color={colors.primary} />
+            <Text style={[styles.reportTitle, { color: colors.primary }]}>
+              Report Absence / Delay
+            </Text>
+          </View>
+
+          {reportSubmitted ? (
+            <View style={styles.reportSuccess}>
+              <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+              <Text style={{ color: "#065F46", fontWeight: "600", fontSize: 14 }}>
+                {reportType === "absence" ? "Absence reported to operator" : `${reportDelay} min delay reported`}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={[styles.reportLabel, { color: colors.mutedForeground }]}>Reporting for:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <Pressable
+                    style={[styles.reportChip, reportWho === "self" && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => { setReportWho("self"); Haptics.selectionAsync(); }}
+                  >
+                    <Text style={[styles.reportChipText, reportWho === "self" && { color: "#FFF" }]}>
+                      Myself ({(user?.name ?? "Me").split(" ")[0]})
+                    </Text>
+                  </Pressable>
+                  {children.map(c => (
+                    <Pressable
+                      key={c.id}
+                      style={[styles.reportChip, reportWho === c.id && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                      onPress={() => { setReportWho(c.id); Haptics.selectionAsync(); }}
+                    >
+                      <Text style={[styles.reportChipText, reportWho === c.id && { color: "#FFF" }]}>
+                        {c.name.split(" ")[0]}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+
+              <Text style={[styles.reportLabel, { color: colors.mutedForeground }]}>Report type:</Text>
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+                {(["delay", "absence"] as const).map(t => (
+                  <Pressable
+                    key={t}
+                    style={[
+                      styles.reportChip,
+                      { flex: 1, justifyContent: "center" },
+                      reportType === t && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={() => { setReportType(t); Haptics.selectionAsync(); }}
+                  >
+                    <Text style={[styles.reportChipText, { textAlign: "center" }, reportType === t && { color: "#FFF" }]}>
+                      {t === "delay" ? "Running Late" : "Absent Today"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {reportType === "delay" && (
+                <>
+                  <Text style={[styles.reportLabel, { color: colors.mutedForeground }]}>Delay (minutes):</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+                    <View style={styles.chipRow}>
+                      {DELAY_OPTIONS.map(m => (
+                        <Pressable
+                          key={m}
+                          style={[styles.chip, reportDelay === m && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
+                          onPress={() => { setReportDelay(m); Haptics.selectionAsync(); }}
+                        >
+                          <Text style={[styles.chipText, reportDelay === m && { color: "#FFF" }]}>{m} min</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </>
+              )}
+
+              <Pressable style={[styles.submitBtn, { marginTop: 4 }]} onPress={handleSubmitReport}>
+                <Ionicons
+                  name={reportType === "delay" ? "time-outline" : "close-circle-outline"}
+                  size={16}
+                  color="#1E3A8A"
+                />
+                <Text style={styles.submitBtnText}>
+                  {reportType === "delay" ? `Confirm ${reportDelay} min delay` : "Report Absence"}
+                </Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+
+        {/* No active security alerts */}
         {activeAlerts.length === 0 && (
           <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
             <Ionicons name="checkmark-circle" size={48} color="#10B981" />
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-              All clear
-            </Text>
+            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>All clear</Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
               No active security alerts. You will be notified if an issue occurs.
             </Text>
@@ -238,7 +339,7 @@ export default function ParentAlerts() {
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.resolvedName, { color: colors.foreground }]}>{a.studentName}</Text>
                   <Text style={[styles.resolvedSub, { color: colors.mutedForeground }]}>
-                    {a.type === "missed_checkin" ? "Check-in" : "Check-out"} risolto
+                    {a.type === "missed_checkin" ? "Check-in" : "Check-out"} resolved
                   </Text>
                 </View>
                 <Text style={[styles.resolvedTime, { color: colors.mutedForeground }]}>
@@ -330,12 +431,7 @@ const styles = StyleSheet.create({
   },
   callBtnText: { color: "#FFF", fontWeight: "800", fontSize: 14 },
 
-  dismissBtn: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
+  dismissBtn: { borderWidth: 1, borderRadius: 12, paddingVertical: 10, alignItems: "center" },
   dismissBtnText: { fontSize: 13, fontWeight: "600" },
 
   delayConfirm: {
@@ -371,4 +467,35 @@ const styles = StyleSheet.create({
   resolvedName: { fontSize: 14, fontWeight: "700" },
   resolvedSub:  { fontSize: 12, marginTop: 1 },
   resolvedTime: { fontSize: 12 },
+
+  reportCard: {
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 20,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  reportHeader:   { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
+  reportTitle:    { fontSize: 15, fontWeight: "800" },
+  reportLabel:    { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  reportChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
+  },
+  reportChipText: { fontSize: 13, fontWeight: "700", color: "#374151" },
+  reportSuccess: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#D1FAE5",
+    borderRadius: 12,
+    padding: 12,
+  },
 });

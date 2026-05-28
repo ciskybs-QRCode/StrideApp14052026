@@ -145,7 +145,7 @@ const DEMO_PRIVATE_BOOKINGS: ApiPrivateBooking[] = [
 const DEMO_CHILDREN: ApiChild[] = [
   {
     id: 11,
-    parent_id: 1,
+    user_id: 1,
     name: "Sofia Rossi",
     age: 8,
     gold_stars: 12,
@@ -157,7 +157,7 @@ const DEMO_CHILDREN: ApiChild[] = [
   },
   {
     id: 12,
-    parent_id: 1,
+    user_id: 1,
     name: "Luca Ferrari",
     age: 10,
     gold_stars: 7,
@@ -260,10 +260,10 @@ export const api = {
 
   // Children
   getChildren: async (): Promise<ApiChild[]> =>
-    (await isDemoSession()) ? DEMO_CHILDREN : request<ApiChild[]>("GET", "/children"),
-  addChild: (data: Partial<ApiChild>) => request<ApiChild>("POST", "/children", data),
-  updateChild: (id: string, data: Partial<ApiChild>) => request<ApiChild>("PATCH", `/children/${id}`, data),
-  deleteChild: (id: string) => request<void>("DELETE", `/children/${id}`),
+    (await isDemoSession()) ? DEMO_CHILDREN : request<ApiChild[]>("GET", "/members"),
+  addChild: (data: Partial<ApiChild>) => request<ApiChild>("POST", "/members", data),
+  updateChild: (id: string, data: Partial<ApiChild>) => request<ApiChild>("PATCH", `/members/${id}`, data),
+  deleteChild: (id: string) => request<void>("DELETE", `/members/${id}`),
 
   // Courses & Enrollments
   getCourses: () => request<ApiCourse[]>("GET", "/courses"),
@@ -511,7 +511,7 @@ export interface ApiUser {
 
 export interface ApiChild {
   id: number;
-  parent_id: number;
+  user_id: number;
   name: string;
   first_name?: string;
   last_name?: string;

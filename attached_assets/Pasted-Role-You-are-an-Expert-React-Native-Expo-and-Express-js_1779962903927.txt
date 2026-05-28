@@ -1,0 +1,51 @@
+Role: You are an Expert React Native (Expo) and Express.js Developer working with Supabase.
+Context: The Supabase database has been successfully updated. The core table is now named members (not children), and the admin_settings table handles the birthday templates.
+UI Rules: Navy Blue and Gold branding. All UI elements MUST STRICTLY remain within the physical phone display boundaries (Absolutely no text or layout overflows, no elements escaping the screen).
+
+🚨 STRICT ISOLATION DIRECTIVE 🚨
+DO NOT modify, rewrite, or "optimize" ANY files, layouts, components, or Express routes that are not explicitly required to fulfill the following tasks. Keep the existing working codebase completely intact. Do not break what already works.
+
+Please execute these specific, isolated tasks step-by-step:
+
+1. Translation Fix (Shopping Cart)
+Target: Parent Side -> Shopping Cart Screen.
+
+Action: Locate the checkout/validation button text currently written in Italian (e.g., "Convalida", "Valida elemento") and translate it to English: "Validate Item" (or "Checkout").
+
+2. Cart Badge State Synchronization
+Target: Bottom Navigation Bar -> Cart Icon Badge (the yellow number overlay).
+
+Action: Fix the state persistence bug. Upon a successful payment flow completion, explicitly clear the cart state and reset the badge item count to 0 so the yellow badge disappears instantly, accurately reflecting an empty cart.
+
+3. Adult Self-Reporting (Absence/Delay)
+Target: Parent Side -> "Report Absence/Delay" Screen.
+
+Action: Update the member selection dropdown/list. It MUST now include the Primary Account Holder (the currently logged-in user profile) along with any linked profiles, allowing adult users to report their own absence or delay when the app is used for gyms/adult associations.
+
+4. White-Label Member Onboarding & DOB Logic
+Target: Member Management Screens (Entire App) & Express Entry Routes.
+
+Action 1 (Terminology): Change the "+ Add Child" button text to "+ Add Member". Ensure the word "Child" is removed from the default UI everywhere, replacing it with "Member" (or the dynamic variable set by the Admin).
+
+Action 2 (Date of Birth Picker): In the creation form, replace the manual "Age" text input field with a React Native Date Picker component for "Date of Birth".
+
+Action 3 (Dynamic Age Calculation): Store this DOB as a standard date format in the new Supabase members.date_of_birth column via Express. Calculate the age dynamically from the DOB to display it on profile cards and badges. Ensure the text layout handles the dynamic age display perfectly with no UI truncation or overflow.
+
+5. Post-Payment PDF Receipt Generation
+Target: Checkout Success Flow.
+
+Action: Upon successful payment validation, automatically generate a receipt document (PDF) using an Expo-compatible library (e.g., expo-print).
+
+Content: It must display a clean layout containing: Association Header, Logo (if uploaded in Admin settings), Booking Date, Time, Location, Operator Name, and Discipline.
+
+Logic: Do not render a complex in-app preview that could break UI constraints. Generate the file and immediately invoke the native OS share sheet (e.g., via expo-sharing) so the user can safely download, view, or print it.
+
+6. Event Reminders (Push Notifications via Express/Backend)
+Target: Backend Notification Scheduler.
+
+Action: Set up the logic (or Express background worker/cron trigger) to send automated push notification reminders to the member for their upcoming booked events.
+
+Intervals: 1. Exactly 24 hours (1 day) before the event.
+2. Exactly 1 hour before the event.
+
+Payload: The notification should contain the dynamic event details (Time, discipline, operator) matching your existing notification push structure.
