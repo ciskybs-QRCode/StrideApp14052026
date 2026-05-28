@@ -43,7 +43,13 @@ async function request<T>(
   });
 
   if (res.status === 204) return undefined as T;
-  const data = await res.json() as T | { error: string };
+  let data: T | { error: string };
+  try {
+    data = await res.json() as T | { error: string };
+  } catch {
+    // Empty or non-JSON body (e.g. proxy 502 when server is down)
+    throw new Error(`Server unavailable (HTTP ${res.status})`);
+  }
   if (!res.ok) throw new Error((data as { error: string }).error ?? `HTTP ${res.status}`);
   return data as T;
 }
