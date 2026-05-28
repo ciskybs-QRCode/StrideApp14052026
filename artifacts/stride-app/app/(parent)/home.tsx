@@ -55,7 +55,7 @@ export default function ParentHome() {
   const [showQR, setShowQR] = useState(false);
   const [showAbsence, setShowAbsence] = useState(false);
   const [absenceType, setAbsenceType] = useState<AbsenceType>("absent");
-  const [selectedChild, setSelectedChild] = useState(children[0]?.id || "");
+  const [selectedChild, setSelectedChild] = useState("");
   const [qrTarget, setQrTarget] = useState<"parent" | string>("parent");
   const [orgLogoUri, setOrgLogoUri] = useState<string | null>(null);
 
@@ -80,6 +80,14 @@ export default function ParentHome() {
       if (org.logo_url) setOrgLogoUri(org.logo_url);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (children.length > 0 && (!selectedChild || !children.find(c => c.id === selectedChild))) {
+      setSelectedChild(children[0].id);
+    } else if (children.length === 0) {
+      setSelectedChild("");
+    }
+  }, [children]);
 
   const handleNavigate = async () => {
     if (!lessonLocation) {
@@ -418,41 +426,63 @@ export default function ParentHome() {
               contentContainerStyle={{ paddingBottom: 4 }}
             >
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Report Absence / Delay</Text>
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Child</Text>
-              <View style={styles.childRow}>
-                {children.map(child => (
+
+              {children.length === 0 ? (
+                <View style={{ alignItems: "center", paddingVertical: 24, gap: 14 }}>
+                  <Ionicons name="people-outline" size={48} color={colors.mutedForeground} />
+                  <Text style={{ color: colors.mutedForeground, textAlign: "center", fontSize: 15 }}>
+                    No members linked to your account.
+                  </Text>
                   <Pressable
-                    key={child.id}
-                    style={[styles.childOption, selectedChild === child.id && { backgroundColor: colors.primary }]}
-                    onPress={() => setSelectedChild(child.id)}
+                    style={[styles.closeBtn, { backgroundColor: colors.primary, paddingHorizontal: 24 }]}
+                    onPress={() => { setShowAbsence(false); router.push("/(parent)/children"); }}
                   >
-                    <Text style={[styles.childOptionText, selectedChild === child.id && { color: "#FFF" }]}>{child.name}</Text>
+                    <Ionicons name="add" size={16} color="#FFF" />
+                    <Text style={styles.closeBtnText}>+ Add Member</Text>
                   </Pressable>
-                ))}
-              </View>
-              <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Report type</Text>
-              {ABSENCE_OPTIONS.map(opt => (
-                <Pressable
-                  key={opt.value}
-                  style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setAbsenceType(opt.value)}
-                >
-                  <Ionicons
-                    name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"}
-                    size={18}
-                    color={absenceType === opt.value ? "#FFF" : colors.primary}
-                  />
-                  <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
-                </Pressable>
-              ))}
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
-                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
-                </Pressable>
-                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSendAbsence}>
-                  <Text style={styles.closeBtnText}>Send</Text>
-                </Pressable>
-              </View>
+                  <Pressable style={[styles.closeBtn, { backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
+                    <Text style={[styles.closeBtnText, { color: colors.primary }]}>Close</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Child</Text>
+                  <View style={styles.childRow}>
+                    {children.map(child => (
+                      <Pressable
+                        key={child.id}
+                        style={[styles.childOption, selectedChild === child.id && { backgroundColor: colors.primary }]}
+                        onPress={() => setSelectedChild(child.id)}
+                      >
+                        <Text style={[styles.childOptionText, selectedChild === child.id && { color: "#FFF" }]}>{child.name}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Report type</Text>
+                  {ABSENCE_OPTIONS.map(opt => (
+                    <Pressable
+                      key={opt.value}
+                      style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                      onPress={() => setAbsenceType(opt.value)}
+                    >
+                      <Ionicons
+                        name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"}
+                        size={18}
+                        color={absenceType === opt.value ? "#FFF" : colors.primary}
+                      />
+                      <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
+                    </Pressable>
+                  ))}
+                  <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+                    <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
+                      <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                    </Pressable>
+                    <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSendAbsence}>
+                      <Text style={styles.closeBtnText}>Send</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
             </ScrollView>
           </View>
         </View>

@@ -1,0 +1,30 @@
+Role: You are an Expert Flutter Developer debugging a critical production issue.
+Context: The app uses Supabase and follows MVVM. All UI must strictly stay within phone screen boundaries (no overflow). Colors: Navy Blue & Gold.
+
+Objective: You must surgically fix two massive bugs. Stop generating generic UI code and focus on the data logic.
+
+1. PRIVACY BUG: Fix Data Leak on QR Code & Delay Actions
+The Issue: When an Admin uses "Switch Role" to become a Member, clicking "Show QR Code" or "Report Delay/Absence" fetches and displays ALL members/children in the entire Supabase database. This is a critical privacy breach.
+
+The Fix:
+
+Locate the query fetching members for these two actions.
+
+You MUST append a strict filter to the Supabase query: e.g., .eq('parent_id', currentUserId) or .eq('owner_id', currentUserId). Only fetch profiles linked to the current logged-in user.
+
+Empty State Logic: If the returned list is empty, DO NOT show an empty screen or error. Render a text widget clearly stating: "No other members at the moment." followed by a functional "+ Add Member" button that routes to the standard creation page.
+
+2. FATAL CRASH FIX: "Something went wrong" on Members Page
+The Issue: Clicking the "Members" icon immediately throws the Flutter red screen of death: "Something went wrong. Please reload the app...".
+
+The Fix (Aggressive Debugging):
+
+Go to the ViewModel or Controller responsible for fetching data for the Members page.
+
+Wrap the ENTIRE fetch logic in a try/catch block.
+
+You MUST print the exact error to the console: print('🚨 FATAL CRASH ERROR: $e'); print(stackTrace); so I can see what is actually breaking.
+
+Null Safety Enforcement: The crash is likely caused by a null value from Supabase. Go into the Model/Entity class for Members. Ensure EVERY SINGLE FIELD has a default fallback value if null (e.g., name: json['name'] ?? 'Unknown').
+
+UI Fallback: Ensure the View never renders the red error screen. If the state is an error, display the specific error message on the screen in a Text widget so I know exactly what failed.

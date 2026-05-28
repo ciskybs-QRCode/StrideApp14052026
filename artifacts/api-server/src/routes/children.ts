@@ -36,15 +36,16 @@ async function isBlacklisted(
 
 router.get("/children", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
-  // Always filter by the caller's own parent_id unless they are admin.
-  // This ensures that an operator who switches to the parent role in-app
-  // can only ever see their own children, not all children in the system.
-  const parentId = user.role !== "admin" ? parseInt(user.id) : undefined;
-
-  let query = supabase.from("children").select("*").order("first_name");
-  if (parentId) query = query.eq("parent_id", parentId);
-
-  const { data, error } = await query;
+  // Always scope to the caller's own parent_id.
+  // Admins/operators access all students via GET /students — this endpoint
+  // is parent-only. Using the JWT role here would leak all children when an
+  // admin temporarily switches to the member role in-app (the JWT is not
+  // re-issued on client-side role switch, so user.role still reads "admin").
+  const { data, error } = await supabase
+    .from("children")
+    .select("*")
+    .eq("parent_id", parseInt(user.id))
+    .order("first_name");
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data ?? []);
 });
