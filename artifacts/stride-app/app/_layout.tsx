@@ -23,6 +23,7 @@ import { CartProvider } from "@/context/CartContext";
 import { OfflineSyncProvider, useOfflineSync } from "@/context/OfflineSyncContext";
 import { PrivateLessonProvider } from "@/context/PrivateLessonContext";
 import { RealtimeProvider } from "@/context/RealtimeContext";
+import { PromoProvider } from "@/context/PromoContext";
 import { SubstitutionProvider } from "@/context/SubstitutionContext";
 import { SecurityEscalationProvider } from "@/context/SecurityEscalationContext";
 import { TerminologyProvider } from "@/context/TerminologyContext";
@@ -117,6 +118,7 @@ export default function RootLayout() {
             <AuthProvider>
               <AppDataProvider>
                 <CartProvider>
+                <PromoProvider>
                 <SubstitutionProvider>
                 <PrivateLessonProvider>
                 <RealtimeProvider>
@@ -129,6 +131,7 @@ export default function RootLayout() {
                 </RealtimeProvider>
                 </PrivateLessonProvider>
                 </SubstitutionProvider>
+                </PromoProvider>
                 </CartProvider>
               </AppDataProvider>
             </AuthProvider>

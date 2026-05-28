@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
+import { useRealtime } from "@/context/RealtimeContext";
 import { useColors } from "@/hooks/useColors";
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -77,6 +78,7 @@ export default function PromoCodesPage() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { students, courses } = useAppData();
+  const { triggerPromoReceived } = useRealtime();
 
   const [promos, setPromos] = useState<PromoCode[]>(INITIAL_PROMOS);
   const [search, setSearch] = useState("");
@@ -130,8 +132,33 @@ export default function PromoCodesPage() {
     setPromos(prev => [newPromo, ...prev]);
     resetCreate(); setShowCreate(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    if (selectedStudent) Alert.alert("Code Created!", `Sent to ${selectedStudent.parentName}. Restricted to: ${selectedStudent.courses.join(", ")}.`);
-    else Alert.alert("Code Created!", `"${code}" is now active.`);
+
+    // Fire push notification to the targeted user so the promo auto-applies in their cart
+    if (targetType === "student" && selectedStudent) {
+      triggerPromoReceived({
+        code: newPromo.code,
+        description: `${formatDiscount(newPromo)} — sent to you by the school`,
+        discountType: newPromo.discountType === "percent" ? "percent" : "percent",
+        discountPercent: newPromo.discountType === "percent" ? newPromo.discountValue : 100,
+        targetCourseNames: selectedStudent.courses,
+        targetCourseIds: [],
+      });
+      Alert.alert("Code Created & Sent!", `"${code}" sent to ${selectedStudent.parentName}. Restricted to: ${selectedStudent.courses.join(", ")}.`);
+    } else if (targetType === "courses" && targetCourseIds.length > 0) {
+      const courseNames = courses.filter(c => targetCourseIds.includes(c.id)).map(c => c.name);
+      triggerPromoReceived({
+        code: newPromo.code,
+        description: `${formatDiscount(newPromo)} on: ${courseNames.join(", ")}`,
+        discountType: newPromo.discountType === "percent" ? "percent" : "amount",
+        discountPercent: newPromo.discountType === "percent" ? newPromo.discountValue : undefined,
+        discountAmount: newPromo.discountType !== "percent" ? newPromo.discountValue : undefined,
+        targetCourseNames: courseNames,
+        targetCourseIds: targetCourseIds,
+      });
+      Alert.alert("Code Created & Sent!", `"${code}" activated for selected courses.`);
+    } else {
+      Alert.alert("Code Created!", `"${code}" is now active.`);
+    }
   };
 
   const handleCopy = async (code: string) => {

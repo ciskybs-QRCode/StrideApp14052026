@@ -11,12 +11,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCart, type CartItem, type CartItemStatus } from "@/context/CartContext";
+import { usePromo, type ActivePromo } from "@/context/PromoContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { api } from "@/lib/api";
 import { validateEnrollment, type ParticipantInfo } from "@/utils/validateEnrollment";
@@ -46,7 +48,8 @@ export default function CartScreen() {
   const { items, removeItem, clearCart, updateItemStatus, total, count } = useCart();
   const { children, courses } = useAppData();
   const { user } = useAuth();
-  const { clearCartBadge } = useRealtime();
+  const { clearCartBadge, promoNotification, clearPromoNotification } = useRealtime();
+  const { activePromo, applyPromo, receivePromo, clearPromo, promoError, clearPromoError, calculateItemDiscount } = usePromo();
 
   // Clear notification badge when the cart screen is opened
   useEffect(() => { clearCartBadge(); }, []);
@@ -57,6 +60,8 @@ export default function CartScreen() {
   const [validatedFlagged, setValidatedFlagged] = useState<FlaggedItem[]>([]);
   const [submittingApprovals, setSubmittingApprovals] = useState(false);
   const [approvalsSubmitted, setApprovalsSubmitted] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [applyingPromo, setApplyingPromo] = useState(false);
 
   const [snack, setSnack] = useState<string | null>(null);
   const snackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,6 +75,8 @@ export default function CartScreen() {
   const payableItems = items.filter(i => i.status === "ready" || i.status === "approved");
   const pendingItems = items.filter(i => i.status === "pending_approval");
   const payableTotal = payableItems.reduce((s, i) => s + i.price, 0);
+  const promoDiscount = payableItems.reduce((s, i) => s + calculateItemDiscount(i), 0);
+  const discountedPayableTotal = payableTotal - promoDiscount;
   const hasPendingItems = pendingItems.length > 0;
 
   useEffect(() => {
@@ -95,6 +102,53 @@ export default function CartScreen() {
     const interval = setInterval(poll, 15000);
     return () => clearInterval(interval);
   }, [hasPendingItems]);
+
+  const handleApplyPromo = () => {
+    if (applyingPromo) return;
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setApplyingPromo(true);
+    const result = applyPromo(code);
+    setApplyingPromo(false);
+    if (result === "ok") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPromoInput("");
+      showSnack(`Promo "${code}" applied!`);
+    }
+  };
+
+  useEffect(() => {
+    if (!promoNotification) return;
+    const promo: ActivePromo = {
+      code: promoNotification.code,
+      description: promoNotification.description,
+      discountType: promoNotification.discountType,
+      discountPercent: promoNotification.discountPercent,
+      discountAmount: promoNotification.discountAmount,
+      targetCourseNames: promoNotification.targetCourseNames,
+      targetCourseIds: promoNotification.targetCourseIds,
+    };
+    receivePromo(promo);
+    const hasMatch =
+      promoNotification.targetCourseIds.length === 0 && promoNotification.targetCourseNames.length === 0
+        ? payableItems.length > 0
+        : payableItems.some(
+            item =>
+              promoNotification.targetCourseIds.includes(item.courseId) ||
+              promoNotification.targetCourseNames.some(n =>
+                item.courseName.toLowerCase().includes(n.toLowerCase()),
+              ),
+          );
+    if (hasMatch && payableItems.length > 0) {
+      applyPromo(promoNotification.code);
+      showSnack(`🎉 Promo "${promoNotification.code}" auto-applied!`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      setPromoInput(promoNotification.code);
+      showSnack(`You received a promo code: "${promoNotification.code}"`);
+    }
+    clearPromoNotification();
+  }, [promoNotification]);
 
   const handleValidateAndProceed = () => {
     setValidating(true);
@@ -275,11 +329,71 @@ export default function CartScreen() {
                   <Ionicons name="person-outline" size={13} color={colors.mutedForeground} />
                   <Text style={[styles.itemParticipantText, { color: colors.mutedForeground }]}>{item.participantName}</Text>
                 </View>
-                <Text style={[styles.itemPrice, { color: colors.primary }]}>€{item.price}</Text>
+                {(() => {
+                const disc = calculateItemDiscount(item);
+                return disc > 0 ? (
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, textDecorationLine: "line-through" }}>€{item.price.toFixed(2)}</Text>
+                    <Text style={[styles.itemPrice, { color: "#10B981" }]}>€{(item.price - disc).toFixed(2)}</Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.itemPrice, { color: colors.primary }]}>€{item.price}</Text>
+                );
+              })()}
               </View>
               <Text style={[styles.itemLabel, { color: colors.mutedForeground }]}>{item.label}</Text>
             </View>
           ))}
+
+          {/* ── Promo Code Section ── */}
+          <View style={{ marginBottom: 12 }}>
+            {activePromo ? (
+              <View style={[styles.promoApplied, { backgroundColor: "#D1FAE5", borderColor: "#10B981" }]}>
+                <Ionicons name="pricetag" size={18} color="#10B981" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "800", color: "#065F46", fontSize: 14 }}>{activePromo.code}</Text>
+                  <Text style={{ color: "#065F46", fontSize: 12 }}>{activePromo.description}</Text>
+                </View>
+                <Pressable
+                  onPress={() => { clearPromo(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+                  hitSlop={10}
+                >
+                  <Ionicons name="close-circle" size={22} color="#065F46" />
+                </Pressable>
+              </View>
+            ) : (
+              <View style={[styles.promoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Ionicons name="pricetag-outline" size={16} color={colors.mutedForeground} />
+                <TextInput
+                  style={[styles.promoInput, { color: colors.foreground }]}
+                  placeholder="Enter promo code"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={promoInput}
+                  onChangeText={t => { setPromoInput(t.toUpperCase()); if (promoError) clearPromoError(); }}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleApplyPromo}
+                />
+                <Pressable
+                  style={[styles.promoApplyBtn, { backgroundColor: promoInput.trim() ? colors.primary : colors.muted }]}
+                  onPress={handleApplyPromo}
+                  disabled={!promoInput.trim() || applyingPromo}
+                >
+                  {applyingPromo
+                    ? <ActivityIndicator size="small" color="#FFF" />
+                    : <Text style={[styles.promoApplyText, { color: promoInput.trim() ? "#FFF" : colors.mutedForeground }]}>Apply</Text>
+                  }
+                </Pressable>
+              </View>
+            )}
+            {promoError ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
+                <Ionicons name="alert-circle-outline" size={14} color="#EF4444" />
+                <Text style={{ color: "#EF4444", fontSize: 12 }}>{promoError}</Text>
+              </View>
+            ) : null}
+          </View>
 
           {/* ── Checkout section ── */}
           <View style={[styles.checkoutSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -304,7 +418,17 @@ export default function CartScreen() {
                     </Text>
                   )}
                 </View>
-                <Text style={[styles.totalAmount, { color: colors.primary }]}>€{payableTotal}</Text>
+                <View style={{ alignItems: "flex-end" }}>
+                  {promoDiscount > 0 && (
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, textDecorationLine: "line-through" }}>€{payableTotal.toFixed(2)}</Text>
+                  )}
+                  <Text style={[styles.totalAmount, { color: promoDiscount > 0 ? "#10B981" : colors.primary }]}>
+                    €{discountedPayableTotal.toFixed(2)}
+                  </Text>
+                  {promoDiscount > 0 && (
+                    <Text style={{ fontSize: 11, color: "#10B981" }}>save €{promoDiscount.toFixed(2)}</Text>
+                  )}
+                </View>
               </View>
             )}
 
@@ -559,4 +683,9 @@ const styles = StyleSheet.create({
   summaryPrice: { fontSize: 14 },
   doneBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center", width: "100%" },
   doneBtnText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
+  promoApplied: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1.5, padding: 12 },
+  promoRow: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, borderWidth: 1, padding: 10 },
+  promoInput: { flex: 1, fontSize: 14, fontWeight: "600", letterSpacing: 0.5 },
+  promoApplyBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
+  promoApplyText: { fontSize: 13, fontWeight: "700" },
 });

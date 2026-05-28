@@ -24,6 +24,18 @@ export interface PaymentConfirmation {
   invoiceNumber: string;
 }
 
+export interface PromoNotification {
+  id: string;
+  code: string;
+  description: string;
+  discountType: "percent" | "amount";
+  discountPercent?: number;
+  discountAmount?: number;
+  targetCourseNames: string[];
+  targetCourseIds: string[];
+  sentAt: Date;
+}
+
 interface RealtimeContextType {
   bookingNotifications: BookingNotification[];
   dismissBookingNotification: (id: string) => void;
@@ -31,9 +43,12 @@ interface RealtimeContextType {
   clearCartBadge: () => void;
   paymentConfirmation: PaymentConfirmation | null;
   clearPaymentConfirmation: () => void;
+  promoNotification: PromoNotification | null;
+  clearPromoNotification: () => void;
   triggerBookingRequest: (data: Omit<BookingNotification, "id" | "createdAt">) => void;
   triggerCartApproved: () => void;
   triggerPaymentConfirmation: (data: PaymentConfirmation) => void;
+  triggerPromoReceived: (data: Omit<PromoNotification, "id" | "sentAt">) => void;
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -44,6 +59,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const [bookingNotifications, setBookingNotifications] = useState<BookingNotification[]>([]);
   const [cartBadgeCount, setCartBadgeCount] = useState(0);
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmation | null>(null);
+  const [promoNotification, setPromoNotification] = useState<PromoNotification | null>(null);
   const demoAcceptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Supabase Realtime (when configured) ─────────────────────────────────────
@@ -114,6 +130,10 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   const clearCartBadge = useCallback(() => setCartBadgeCount(0), []);
   const clearPaymentConfirmation = useCallback(() => setPaymentConfirmation(null), []);
+  const clearPromoNotification = useCallback(() => setPromoNotification(null), []);
+  const triggerPromoReceived = useCallback((data: Omit<PromoNotification, "id" | "sentAt">) => {
+    setPromoNotification({ ...data, id: `promo-${Date.now()}`, sentAt: new Date() });
+  }, []);
 
   const triggerBookingRequest = useCallback((data: Omit<BookingNotification, "id" | "createdAt">) => {
     const notif: BookingNotification = {
@@ -151,9 +171,12 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         clearCartBadge,
         paymentConfirmation,
         clearPaymentConfirmation,
+        promoNotification,
+        clearPromoNotification,
         triggerBookingRequest,
         triggerCartApproved,
         triggerPaymentConfirmation,
+        triggerPromoReceived,
       }}
     >
       {children}

@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useCart, type CartItem } from "@/context/CartContext";
+import { usePromo } from "@/context/PromoContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { api, type ApiOrg } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
@@ -54,9 +55,11 @@ export default function CheckoutScreen() {
   const { items, removeItem } = useCart();
   const { children, addDocument } = useAppData();
   const { triggerPaymentConfirmation, clearCartBadge } = useRealtime();
+  const { activePromo, calculateItemDiscount } = usePromo();
 
   const payableItems = items.filter(i => i.status === "ready" || i.status === "approved");
-  const total = payableItems.reduce((s, i) => s + i.price, 0);
+  const total = payableItems.reduce((s, i) => s + i.price - calculateItemDiscount(i), 0);
+  const totalDiscount = payableItems.reduce((s, i) => s + calculateItemDiscount(i), 0);
   const [paidItems, setPaidItems] = useState<CartItem[]>([]);
 
   const [tab, setTab] = useState<Tab>("card");
@@ -81,7 +84,7 @@ export default function CheckoutScreen() {
   const [auAccountName, setAuAccountName] = useState("");
 
   const [processing, setProcessing] = useState(false);
-  const [success, setSuccess] = useState<{ invoiceNumber: string; invoiceId?: number | null } | null>(null);
+  const [success, setSuccess] = useState<{ invoiceNumber: string; invoiceId?: number | null; amount?: number } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [orgData, setOrgData] = useState<ApiOrg | null>(null);
 
@@ -205,7 +208,7 @@ export default function CheckoutScreen() {
       snapshot.forEach(item => removeItem(item.id));
       clearCartBadge();
       setPaidItems(snapshot);
-      setSuccess({ invoiceNumber, invoiceId });
+      setSuccess({ invoiceNumber, invoiceId, amount: total });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       // Generate and save PDF receipt to Document Centre
@@ -478,7 +481,7 @@ export default function CheckoutScreen() {
             <View style={styles.successRow}>
               <Text style={styles.successLabel}>Total paid</Text>
               <Text style={[styles.successValue, { color: "#FBBF24", fontSize: 18, fontWeight: "800" }]}>
-                €{paidItems.reduce((s, i) => s + i.price, 0).toFixed(2)}
+                €{(success.amount ?? paidItems.reduce((s, i) => s + i.price, 0)).toFixed(2)}
               </Text>
             </View>
           </View>
@@ -546,6 +549,15 @@ export default function CheckoutScreen() {
               <Text style={[styles.summaryItemPrice, { color: colors.primary }]}>€{item.price}</Text>
             </View>
           ))}
+          {totalDiscount > 0 && (
+            <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
+              <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Ionicons name="pricetag" size={12} color="#10B981" />
+                <Text style={[styles.summaryItemName, { color: "#10B981" }]}>Promo: {activePromo?.code}</Text>
+              </View>
+              <Text style={[styles.summaryItemPrice, { color: "#10B981" }]}>-€{totalDiscount.toFixed(2)}</Text>
+            </View>
+          )}
           <View style={styles.summaryTotal}>
             <Text style={[styles.summaryTotalLabel, { color: colors.primary }]}>Total</Text>
             <Text style={[styles.summaryTotalAmount, { color: colors.primary }]}>€{total.toFixed(2)}</Text>
