@@ -1,0 +1,32 @@
+Role: Expert React Native (Expo) Developer.
+Target Screen: Parent/Member Side -> "Add Dependent Member" Form (Date of Birth Section).
+UI Rules: Navy Blue and Gold branding. Must fit perfectly inside the phone display with zero layout overflows.
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT modify, rewrite, or "optimize" ANY backend logic, database schemas, or unrelated components. Your changes must be simple, fast, and secure. DO NOT change ANYTHING that is not explicitly involved in this specific issue. Keep the existing codebase 100% intact.
+
+Context: The native date picker component is fundamentally broken and fails to lock the user's selection, causing random inputs or total freezes. We need to replace it with a foolproof, platform-independent UI pattern.
+
+Please execute this UI replacement:
+
+1. Build a 3-Field Date Input Grid (DD / MM / YYYY)
+Action: Completely remove the broken native Date Picker component from the "Date of Birth" row.
+
+Replacement: Create a clean, horizontal row containing three separate input fields (or compact dropdown wheels) side-by-side:
+
+Day (DD): Accepting numbers from 01 to 31.
+
+Month (MM): Accepting numbers from 01 to 12 (or short text names like Jan, Feb, Mar...).
+
+Year (YYYY): Accepting 4-digit numbers (limited to realistic birth years, e.g., current year down to 1920).
+
+UI Constraint: Give them clear placeholders (e.g., DD, MM, YYYY). Ensure the three boxes share the horizontal screen width gracefully without touching or overflowing the screen borders.
+
+2. Auto-Format & Combine State for Backend
+Logic: As the user fills in these three separate fields, combine them in the local state.
+
+Auto-Advance (Optional but clean): When the user types 2 digits in Day, auto-focus to Month. When they type 2 digits in Month, auto-focus to Year.
+
+Payload Preparation: Before sending the data to the Supabase members table via Express, concatenate the 3 values into a single standard database string: YYYY-MM-DD.
+
+Output Requirement: Delete the old picker, implement the clean 3-field input layout, and confirm that the text typed by the user matches the final payload state.

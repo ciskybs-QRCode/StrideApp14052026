@@ -1,9 +1,8 @@
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -65,8 +64,11 @@ export default function ChildrenScreen() {
   const [newChildName, setNewChildName] = useState("");
   const [newChildSurname, setNewChildSurname] = useState("");
   const [newChildDob, setNewChildDob] = useState<Date | null>(null);
-  const [showDobPicker, setShowDobPicker] = useState(false);
-  const [pickerTempDate, setPickerTempDate] = useState<Date>(new Date(2010, 0, 1));
+  const [dobDay,   setDobDay]   = useState("");
+  const [dobMonth, setDobMonth] = useState("");
+  const [dobYear,  setDobYear]  = useState("");
+  const dobMonthRef = useRef<TextInput>(null);
+  const dobYearRef  = useRef<TextInput>(null);
   const [newChildAllergies, setNewChildAllergies] = useState("");
   const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent">("ambulance");
   const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("none");
@@ -97,6 +99,26 @@ export default function ChildrenScreen() {
     setMedicalWaiver(c?.medicalWaiver ?? "ambulance");
   }, [selectedChild, children]);
 
+  // Combine DD/MM/YYYY fields into a single Date (and keep newChildDob in sync)
+  useEffect(() => {
+    const dd   = parseInt(dobDay,   10);
+    const mm   = parseInt(dobMonth, 10);
+    const yyyy = parseInt(dobYear,  10);
+    const currentYear = new Date().getFullYear();
+    if (
+      dd >= 1 && dd <= 31 &&
+      mm >= 1 && mm <= 12 &&
+      yyyy >= 1920 && yyyy <= currentYear
+    ) {
+      const d = new Date(yyyy, mm - 1, dd);
+      if (!isNaN(d.getTime()) && d.getDate() === dd) {
+        setNewChildDob(d);
+        return;
+      }
+    }
+    setNewChildDob(null);
+  }, [dobDay, dobMonth, dobYear]);
+
   const child = children.find(c => c.id === selectedChild);
   const childDelegates = delegates.filter(d => d.childId === selectedChild);
 
@@ -104,8 +126,9 @@ export default function ChildrenScreen() {
     setNewChildName("");
     setNewChildSurname("");
     setNewChildDob(null);
-    setShowDobPicker(false);
-    setPickerTempDate(new Date(2010, 0, 1));
+    setDobDay("");
+    setDobMonth("");
+    setDobYear("");
     setNewChildAllergies("");
     setNewChildWaiver("ambulance");
     setNewChildMediaConsent("none");
@@ -259,70 +282,74 @@ export default function ChildrenScreen() {
                     </View>
                   ))}
                   <Text style={[styles.modalLabel, { color: colors.primary }]}>Date of Birth</Text>
-                  {Platform.OS === "web" ? (
-                    <TextInput
-                      style={[styles.modalInput, { borderColor: colors.border, marginBottom: 12 }]}
-                      value={newChildDob
-                        ? `${String(newChildDob.getDate()).padStart(2, "0")}/${String(newChildDob.getMonth() + 1).padStart(2, "0")}/${newChildDob.getFullYear()}`
-                        : ""}
-                      onChangeText={t => {
-                        const slashParts = t.split("/");
-                        if (slashParts.length === 3) {
-                          const [dd, mm, yyyy] = slashParts.map(Number);
-                          if (dd && mm && yyyy > 1900) {
-                            const d = new Date(yyyy, mm - 1, dd);
-                            if (!isNaN(d.getTime())) { setNewChildDob(d); return; }
-                          }
-                        }
-                        const isoDate = new Date(t);
-                        setNewChildDob(!isNaN(isoDate.getTime()) && isoDate.getFullYear() > 1900 ? isoDate : null);
-                      }}
-                      placeholder="DD/MM/YYYY"
-                      placeholderTextColor={colors.mutedForeground}
-                    />
-                  ) : (
-                    <>
-                      <Pressable
-                        style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center", marginBottom: showDobPicker && Platform.OS === "ios" ? 0 : 12 }]}
-                        onPress={() => { setPickerTempDate(newChildDob ?? new Date(2010, 0, 1)); setShowDobPicker(true); }}
-                      >
-                        <Text style={{ color: newChildDob ? colors.foreground : colors.mutedForeground, fontSize: 15 }}>
-                          {newChildDob ? newChildDob.toLocaleDateString("en-GB") : "Select date of birth"}
-                        </Text>
-                      </Pressable>
-                      {showDobPicker && Platform.OS === "ios" && (
-                        <>
-                          <DateTimePicker
-                            value={pickerTempDate}
-                            mode="date"
-                            display="spinner"
-                            maximumDate={new Date()}
-                            onChange={(_, date) => { if (date) setPickerTempDate(date); }}
-                          />
-                          <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
-                            <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowDobPicker(false)}>
-                              <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-                            </Pressable>
-                            <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={() => { setNewChildDob(pickerTempDate); setShowDobPicker(false); }}>
-                              <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Done</Text>
-                            </Pressable>
-                          </View>
-                        </>
-                      )}
-                      {showDobPicker && Platform.OS === "android" && (
-                        <DateTimePicker
-                          value={pickerTempDate}
-                          mode="date"
-                          display="default"
-                          maximumDate={new Date()}
-                          onChange={(event, date) => {
-                            setShowDobPicker(false);
-                            if (event.type === "set" && date) setNewChildDob(date);
-                          }}
-                        />
-                      )}
-                    </>
-                  )}
+                  <View style={styles.dobGrid}>
+                    <View style={styles.dobField}>
+                      <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Day</Text>
+                      <TextInput
+                        style={[styles.dobInput, { borderColor: dobDay.length === 2 ? colors.primary : colors.border, color: colors.foreground }]}
+                        value={dobDay}
+                        onChangeText={t => {
+                          const v = t.replace(/\D/g, "").slice(0, 2);
+                          setDobDay(v);
+                          if (v.length === 2) dobMonthRef.current?.focus();
+                        }}
+                        placeholder="DD"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        returnKeyType="next"
+                        onSubmitEditing={() => dobMonthRef.current?.focus()}
+                      />
+                    </View>
+                    <Text style={[styles.dobSep, { color: colors.mutedForeground }]}>/</Text>
+                    <View style={styles.dobField}>
+                      <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Month</Text>
+                      <TextInput
+                        ref={dobMonthRef}
+                        style={[styles.dobInput, { borderColor: dobMonth.length === 2 ? colors.primary : colors.border, color: colors.foreground }]}
+                        value={dobMonth}
+                        onChangeText={t => {
+                          const v = t.replace(/\D/g, "").slice(0, 2);
+                          setDobMonth(v);
+                          if (v.length === 2) dobYearRef.current?.focus();
+                        }}
+                        placeholder="MM"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        returnKeyType="next"
+                        onSubmitEditing={() => dobYearRef.current?.focus()}
+                      />
+                    </View>
+                    <Text style={[styles.dobSep, { color: colors.mutedForeground }]}>/</Text>
+                    <View style={[styles.dobField, { flex: 2 }]}>
+                      <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Year</Text>
+                      <TextInput
+                        ref={dobYearRef}
+                        style={[styles.dobInput, { borderColor: dobYear.length === 4 ? colors.primary : colors.border, color: colors.foreground }]}
+                        value={dobYear}
+                        onChangeText={t => setDobYear(t.replace(/\D/g, "").slice(0, 4))}
+                        placeholder="YYYY"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="number-pad"
+                        maxLength={4}
+                        returnKeyType="done"
+                      />
+                    </View>
+                  </View>
+                  {newChildDob ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                      <Ionicons name="checkmark-circle" size={13} color="#10B981" />
+                      <Text style={{ fontSize: 12, color: "#10B981" }}>
+                        {newChildDob.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      </Text>
+                    </View>
+                  ) : (dobDay || dobMonth || dobYear) ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                      <Ionicons name="alert-circle" size={13} color="#EF4444" />
+                      <Text style={{ fontSize: 12, color: "#EF4444" }}>Enter a valid date (DD / MM / YYYY)</Text>
+                    </View>
+                  ) : <View style={{ marginBottom: 8 }} />}
                   <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                     <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { resetAddChildForm(); setShowAddChild(false); }}>
                       <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
@@ -711,71 +738,74 @@ export default function ChildrenScreen() {
               <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Doe" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Date of Birth <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              {Platform.OS === "web" ? (
-                <TextInput
-                  style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
-                  value={newChildDob
-                    ? `${String(newChildDob.getDate()).padStart(2, "0")}/${String(newChildDob.getMonth() + 1).padStart(2, "0")}/${newChildDob.getFullYear()}`
-                    : ""}
-                  onChangeText={t => {
-                    const slashParts = t.split("/");
-                    if (slashParts.length === 3) {
-                      const [dd, mm, yyyy] = slashParts.map(Number);
-                      if (dd && mm && yyyy > 1900) {
-                        const d = new Date(yyyy, mm - 1, dd);
-                        if (!isNaN(d.getTime())) { setNewChildDob(d); return; }
-                      }
-                    }
-                    const isoDate = new Date(t);
-                    setNewChildDob(!isNaN(isoDate.getTime()) && isoDate.getFullYear() > 1900 ? isoDate : null);
-                  }}
-                  placeholder="DD/MM/YYYY"
-                  placeholderTextColor={colors.mutedForeground}
-                />
-              ) : (
-                <>
-                  <Pressable
-                    style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center", marginBottom: showDobPicker && Platform.OS === "ios" ? 0 : undefined }]}
-                    onPress={() => { setPickerTempDate(newChildDob ?? new Date(2010, 0, 1)); setShowDobPicker(true); }}
-                  >
-                    <Text style={{ color: newChildDob ? colors.foreground : colors.mutedForeground, fontSize: 15 }}>
-                      {newChildDob ? newChildDob.toLocaleDateString("en-GB") : "Select date of birth"}
-                    </Text>
-                  </Pressable>
-                  {showDobPicker && Platform.OS === "ios" && (
-                    <>
-                      <DateTimePicker
-                        value={pickerTempDate}
-                        mode="date"
-                        display="spinner"
-                        maximumDate={new Date()}
-                        onChange={(_, date) => { if (date) setPickerTempDate(date); }}
-                      />
-                      <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
-                        <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowDobPicker(false)}>
-                          <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-                        </Pressable>
-                        <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={() => { setNewChildDob(pickerTempDate); setShowDobPicker(false); }}>
-                          <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Done</Text>
-                        </Pressable>
-                      </View>
-                    </>
-                  )}
-                  {showDobPicker && Platform.OS === "android" && (
-                    <DateTimePicker
-                      value={pickerTempDate}
-                      mode="date"
-                      display="default"
-                      maximumDate={new Date()}
-                      onChange={(event, date) => {
-                        setShowDobPicker(false);
-                        if (event.type === "set" && date) setNewChildDob(date);
-                      }}
-                    />
-                  )}
-                </>
-              )}
-
+              <View style={styles.dobGrid}>
+                <View style={styles.dobField}>
+                  <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Day</Text>
+                  <TextInput
+                    style={[styles.dobInput, { borderColor: dobDay.length === 2 ? colors.primary : colors.border, color: colors.foreground }]}
+                    value={dobDay}
+                    onChangeText={t => {
+                      const v = t.replace(/\D/g, "").slice(0, 2);
+                      setDobDay(v);
+                      if (v.length === 2) dobMonthRef.current?.focus();
+                    }}
+                    placeholder="DD"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    returnKeyType="next"
+                    onSubmitEditing={() => dobMonthRef.current?.focus()}
+                  />
+                </View>
+                <Text style={[styles.dobSep, { color: colors.mutedForeground }]}>/</Text>
+                <View style={styles.dobField}>
+                  <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Month</Text>
+                  <TextInput
+                    ref={dobMonthRef}
+                    style={[styles.dobInput, { borderColor: dobMonth.length === 2 ? colors.primary : colors.border, color: colors.foreground }]}
+                    value={dobMonth}
+                    onChangeText={t => {
+                      const v = t.replace(/\D/g, "").slice(0, 2);
+                      setDobMonth(v);
+                      if (v.length === 2) dobYearRef.current?.focus();
+                    }}
+                    placeholder="MM"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    returnKeyType="next"
+                    onSubmitEditing={() => dobYearRef.current?.focus()}
+                  />
+                </View>
+                <Text style={[styles.dobSep, { color: colors.mutedForeground }]}>/</Text>
+                <View style={[styles.dobField, { flex: 2 }]}>
+                  <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Year</Text>
+                  <TextInput
+                    ref={dobYearRef}
+                    style={[styles.dobInput, { borderColor: dobYear.length === 4 ? colors.primary : colors.border, color: colors.foreground }]}
+                    value={dobYear}
+                    onChangeText={t => setDobYear(t.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="YYYY"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    returnKeyType="done"
+                  />
+                </View>
+              </View>
+              {newChildDob ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                  <Ionicons name="checkmark-circle" size={13} color="#10B981" />
+                  <Text style={{ fontSize: 12, color: "#10B981" }}>
+                    {newChildDob.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                  </Text>
+                </View>
+              ) : (dobDay || dobMonth || dobYear) ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                  <Ionicons name="alert-circle" size={13} color="#EF4444" />
+                  <Text style={{ fontSize: 12, color: "#EF4444" }}>Enter a valid date (DD / MM / YYYY)</Text>
+                </View>
+              ) : <View style={{ marginBottom: 8 }} />}
               {/* Medical Information */}
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
@@ -999,6 +1029,11 @@ const styles = StyleSheet.create({
   consentHint: { fontSize: 11, marginTop: 2, lineHeight: 15 },
   modalBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   modalBtnText: { fontWeight: "700", fontSize: 15 },
+  dobGrid: { flexDirection: "row", alignItems: "flex-end", gap: 6, marginBottom: 4 },
+  dobField: { flex: 1, alignItems: "center" },
+  dobFieldLabel: { fontSize: 11, fontWeight: "600", marginBottom: 4, letterSpacing: 0.5, textTransform: "uppercase" },
+  dobInput: { borderWidth: 1.5, borderRadius: 10, paddingVertical: 10, fontSize: 17, fontWeight: "700", textAlign: "center", width: "100%" },
+  dobSep: { fontSize: 20, fontWeight: "700", paddingBottom: 10 },
   // Empty state
   emptyStateCard: { borderRadius: 24, padding: 32, alignItems: "center", gap: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4, width: "100%" },
   emptyStateIconBox: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center" },
