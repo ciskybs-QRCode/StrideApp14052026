@@ -346,20 +346,10 @@ export default function BookLessonScreen() {
 
           <Pressable
             style={[styles.confirmedBtn, { backgroundColor: colors.secondary }]}
-            onPress={async () => {
-              const loc = confirmed.location;
-              if (!loc) { Alert.alert("Location Unavailable", "No address found for this lesson."); return; }
-              const url = buildMapsUrl(loc);
-              const canOpen = await Linking.canOpenURL(url);
-              if (canOpen) {
-                Linking.openURL(url);
-              } else {
-                Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(loc)}`);
-              }
-            }}
+            onPress={() => router.replace("/(parent)/cart")}
           >
-            <Ionicons name="navigate" size={18} color={colors.primary} />
-            <Text style={[styles.confirmedBtnText, { color: colors.primary }]}>Navigate</Text>
+            <Ionicons name="cart-outline" size={18} color={colors.primary} />
+            <Text style={[styles.confirmedBtnText, { color: colors.primary }]}>Go to Cart to Pay</Text>
           </Pressable>
           <Pressable style={[styles.confirmedBtn, { backgroundColor: "rgba(255,255,255,0.15)", marginTop: 10 }]} onPress={() => router.replace("/(parent)/home")}>
             <Ionicons name="home-outline" size={18} color="#FFF" />

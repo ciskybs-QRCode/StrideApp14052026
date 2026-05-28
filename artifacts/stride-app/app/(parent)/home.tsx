@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
+import { usePaidLessons, type PaidLesson } from "@/context/PaidLessonsContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
@@ -47,6 +48,7 @@ export default function ParentHome() {
   const { user, updateUser } = useAuth();
   const { children, courses, lessons } = useAppData();
   const { unreadCount } = usePrivateLessons();
+  const { paidLessons } = usePaidLessons();
   const { activeAlerts, dismissAlert } = useSecurityEscalation();
   const accessDeniedAlerts = activeAlerts.filter(a => a.type === "access_denied");
   const colors = useColors();
@@ -54,6 +56,7 @@ export default function ParentHome() {
   const router = useRouter();
   const [showQR, setShowQR] = useState(false);
   const [showAbsence, setShowAbsence] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<PaidLesson | null>(null);
   const [absenceType, setAbsenceType] = useState<AbsenceType>("absent");
   const [selectedChild, setSelectedChild] = useState<string>("self");
   const [qrTarget, setQrTarget] = useState<"parent" | string>("parent");
@@ -265,6 +268,45 @@ export default function ParentHome() {
           <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
         </Pressable>
 
+        {/* Upcoming Private Sessions — shown only after payment */}
+        {paidLessons.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Upcoming Private Sessions</Text>
+            {paidLessons.map(lesson => {
+              const schedParts = lesson.courseSchedule.split(" · ");
+              const dateTime = schedParts[0] ?? "";
+              const location = schedParts[1] ?? null;
+              const discipline = lesson.courseName.replace(/^Private\s+/i, "").replace(/\s+with.+$/i, "");
+              const operator = lesson.courseName.match(/with\s+(.+)$/i)?.[1] ?? null;
+              return (
+                <Pressable
+                  key={lesson.cartItemId}
+                  style={({ pressed }) => [styles.paidLessonCard, { backgroundColor: colors.card, borderColor: colors.primary, opacity: pressed ? 0.9 : 1 }]}
+                  onPress={() => setSelectedLesson(lesson)}
+                >
+                  <View style={[styles.paidLessonIcon, { backgroundColor: `${colors.primary}15` }]}>
+                    <Ionicons name="star" size={20} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.paidLessonTitle, { color: colors.primary }]} numberOfLines={1}>{discipline}</Text>
+                    {operator && (
+                      <Text style={[styles.paidLessonSub, { color: colors.mutedForeground }]} numberOfLines={1}>with {operator}</Text>
+                    )}
+                    <Text style={[styles.paidLessonDate, { color: colors.foreground }]} numberOfLines={1}>{dateTime}</Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: 4 }}>
+                    <View style={[styles.paidBadge, { backgroundColor: "#D1FAE5" }]}>
+                      <Ionicons name="checkmark-circle" size={12} color="#10B981" />
+                      <Text style={[styles.paidBadgeText, { color: "#10B981" }]}>Paid</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </>
+        )}
+
         {/* Quick Actions */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
         <View style={styles.quickActions}>
@@ -403,6 +445,68 @@ export default function ParentHome() {
                 <Text style={styles.closeBtnText}>Close</Text>
               </Pressable>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Private Session Detail Modal ── */}
+      <Modal visible={!!selectedLesson} transparent animationType="slide" onRequestClose={() => setSelectedLesson(null)}>
+        <View style={[styles.modalOverlay, { justifyContent: "flex-end", padding: 0 }]}>
+          <View style={[styles.modalCard, { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, margin: 0, alignItems: "flex-start", maxHeight: "82%", paddingTop: 48, position: "relative" }]}>
+            <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => setSelectedLesson(null)} hitSlop={14}>
+              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+            </Pressable>
+            {selectedLesson && (() => {
+              const schedParts = selectedLesson.courseSchedule.split(" · ");
+              const dateTime = schedParts[0] ?? "";
+              const location = schedParts[1] ?? null;
+              const discipline = selectedLesson.courseName.replace(/^Private\s+/i, "").replace(/\s+with.+$/i, "");
+              const operator = selectedLesson.courseName.match(/with\s+(.+)$/i)?.[1] ?? null;
+              const rows: { icon: string; label: string; value: string }[] = [
+                { icon: "musical-notes-outline", label: "Discipline",   value: discipline },
+                ...(operator  ? [{ icon: "person-outline",   label: "Operator",    value: operator  }] : []),
+                ...(dateTime  ? [{ icon: "time-outline",     label: "Schedule",    value: dateTime  }] : []),
+                ...(location  ? [{ icon: "location-outline", label: "Location",    value: location  }] : []),
+                { icon: "people-outline", label: "Participant", value: selectedLesson.participantName },
+                { icon: "card-outline",   label: "Amount Paid", value: `€${selectedLesson.price.toFixed(2)}` },
+              ];
+              return (
+                <ScrollView style={{ width: "100%" }} showsVerticalScrollIndicator={false} bounces={false}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <Ionicons name="star" size={22} color="#FBBF24" />
+                    <Text style={[styles.modalTitle, { color: colors.primary }]}>Private Session</Text>
+                  </View>
+                  <View style={[styles.paidBadge, { backgroundColor: "#D1FAE5", marginBottom: 18, alignSelf: "flex-start" }]}>
+                    <Ionicons name="checkmark-circle" size={12} color="#10B981" />
+                    <Text style={[styles.paidBadgeText, { color: "#10B981" }]}>Payment Confirmed</Text>
+                  </View>
+                  {rows.map(row => (
+                    <View key={row.label} style={styles.detailRow}>
+                      <View style={styles.detailRowLeft}>
+                        <Ionicons name={row.icon as never} size={16} color={colors.primary} />
+                        <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
+                      </View>
+                      <Text style={[styles.detailValue, { color: colors.foreground }]} numberOfLines={2}>{row.value}</Text>
+                    </View>
+                  ))}
+                  {location && (
+                    <Pressable
+                      style={[styles.navigateBtn, { marginTop: 20, alignSelf: "stretch", justifyContent: "center", paddingVertical: 14 }]}
+                      onPress={async () => {
+                        const url = buildMapsUrl(location);
+                        const canOpen = await Linking.canOpenURL(url);
+                        if (canOpen) { Linking.openURL(url); }
+                        else { Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(location)}`); }
+                      }}
+                    >
+                      <Ionicons name="navigate" size={16} color="#1E3A8A" />
+                      <Text style={styles.navigateBtnText}>Navigate via GPS</Text>
+                    </Pressable>
+                  )}
+                  <View style={{ height: 24 }} />
+                </ScrollView>
+              );
+            })()}
           </View>
         </View>
       </Modal>
@@ -555,4 +659,15 @@ const styles = StyleSheet.create({
   absenceOptionText: { fontSize: 14, fontWeight: "500", color: "#1E3A8A" },
   closeBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  paidLessonCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1.5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  paidLessonIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  paidLessonTitle: { fontSize: 15, fontWeight: "700", marginBottom: 1 },
+  paidLessonSub: { fontSize: 12, marginBottom: 2 },
+  paidLessonDate: { fontSize: 12, fontWeight: "500" },
+  paidBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  paidBadgeText: { fontSize: 11, fontWeight: "700" },
+  detailRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F0F4FF", gap: 10 },
+  detailRowLeft: { flexDirection: "row", alignItems: "center", gap: 6, width: 100 },
+  detailLabel: { fontSize: 13 },
+  detailValue: { fontSize: 13, fontWeight: "600", flex: 1, textAlign: "right" },
 });

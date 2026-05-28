@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useCart, type CartItem } from "@/context/CartContext";
+import { usePaidLessons } from "@/context/PaidLessonsContext";
 import { usePromo } from "@/context/PromoContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { api, type ApiOrg } from "@/lib/api";
@@ -55,6 +56,7 @@ export default function CheckoutScreen() {
   const { items, removeItem } = useCart();
   const { children, addDocument } = useAppData();
   const { triggerPaymentConfirmation, clearCartBadge } = useRealtime();
+  const { addPaidLesson } = usePaidLessons();
   const { activePromo, calculateItemDiscount } = usePromo();
 
   const payableItems = items.filter(i => i.status === "ready" || i.status === "approved");
@@ -208,6 +210,7 @@ export default function CheckoutScreen() {
       snapshot.forEach(item => removeItem(item.id));
       clearCartBadge();
       setPaidItems(snapshot);
+      snapshot.filter(item => item.courseId.startsWith("private-")).forEach(item => addPaidLesson(item));
       setSuccess({ invoiceNumber, invoiceId, amount: total });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 

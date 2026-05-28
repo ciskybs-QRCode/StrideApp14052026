@@ -1,0 +1,26 @@
+Role: Expert React Native (Expo) Developer.
+Target Screen: Parent/Member Side -> "Add Dependent Member" Form.
+UI Rules: Navy Blue and Gold branding. All UI elements MUST STREECTLY remain within the physical phone display boundaries (Strictly zero layout overflows).
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT modify, rewrite, or "optimize" ANY backend logic, database schemas, or unrelated components. Your changes must be simple, fast, and secure. DO NOT change ANYTHING that is not explicitly involved in this specific issue. Keep the existing codebase 100% intact.
+
+Please fix the Date of Birth input by executing these specific tasks:
+
+1. Fix Random Date Selection Bug (State Sync)
+Context: Currently, when choosing a date in the Date of Birth picker, the component inserts random dates instead of the user's explicit selection.
+
+Action: Audit the onChange or onConfirm event handler of the Date Picker component. Ensure the selected timestamp is properly captured, stored in the local component state without unauthorized mutations, and correctly reflected in the input field display.
+
+2. Dynamic Regional Date Formatting (DD/MM/YYYY)
+Context: The app is currently forcing the American date format (YYYY/MM/DD), possibly due to a default fallback or a New York headquarters setting in the app configuration.
+
+Action: Implement dynamic formatting for the UI display string.
+
+Check the organization/association physical address or system locale.
+
+If the organization is not explicitly in an American territory, format the displayed date string strictly to the European/International standard: DD/MM/YYYY (e.g., 28/05/2026).
+
+Note: This formatting change is purely for the visual UI display so the user sees it correctly. The raw data sent to the Supabase members.date_of_birth column must remain in the standard ISO format (YYYY-MM-DD) required by PostgreSQL.
+
+Output Requirement: Fix the date picker selection bug, apply the regional formatting fallback, and show me the exact file where the state binding was corrected.
