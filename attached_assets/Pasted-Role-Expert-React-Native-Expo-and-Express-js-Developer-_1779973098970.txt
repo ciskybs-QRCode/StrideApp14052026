@@ -1,0 +1,39 @@
+Role: Expert React Native (Expo) and Express.js Developer working with Supabase.
+Target Screen: Parent/Member Side -> "Add/Edit Dependent Member" Form.
+UI Rules: Navy Blue and Gold branding. All UI elements MUST STRICTLY remain within the physical phone display boundaries (Strictly zero layout overflows).
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT modify, rewrite, or "optimize" ANY backend billing logic, calendar availability, or unrelated components. Your changes must be simple, fast, and secure. DO NOT change ANYTHING that is not explicitly involved in this specific privacy feature. Keep the existing codebase 100% intact.
+
+Context: We need to implement an individual Photo/Video Consent rule for each Dependent Member. This preference must be granular and unique per dependent.
+
+Please implement this feature end-to-end:
+
+1. Database Schema Update (Supabase Migration Hint)
+Target: members table.
+
+Action: Ensure the backend Express server maps a new text column named photo_consent (or updates the query to save it).
+
+Allowed Values: 'full', 'internal', 'none'.
+
+2. Frontend UI: 3-Option Consent Selector
+Target: "Add Dependent Member" and "Edit Dependent Member" forms, right below the Date of Birth section.
+
+Action: Add a clean, highly professional selection component (e.g., a vertical list of 3 custom styled radio buttons or an elegant dropdown container) using Navy Blue and Gold branding.
+
+The 3 Explicit Choices (Strictly in English):
+
+Full Consent (Social/Promo) -> Maps to 'full'
+
+Internal Educational Use Only -> Maps to 'internal'
+
+No Consent -> Maps to 'none'
+
+UI Constraint: Include a small, neat text label: "Photo & Video Consent". Ensure the options are perfectly spaced and do not overflow the screen container boundaries.
+
+3. Express Backend & State Integration
+Action: Update the form submission state payload. When creating or updating a dependent member, the chosen consent value must be sent via the Express route and securely stored in the Supabase members table under the specific dependent's row.
+
+Default State: Set the default selection to "No Consent" ('none') for privacy-first safety until the user explicitly changes it.
+
+Output Requirement: Implement the UI selection selector, update the saving payload logic in Express, and confirm which file handles this form data.

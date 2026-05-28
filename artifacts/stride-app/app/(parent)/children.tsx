@@ -82,6 +82,7 @@ export default function ChildrenScreen() {
   // Medical edit fields — synced via useEffect, never initialised from children
   const [allergies, setAllergies] = useState("");
   const [medicalWaiver, setMedicalWaiver] = useState<"ambulance" | "call_parent">("ambulance");
+  const [editMediaConsent, setEditMediaConsent] = useState<"full" | "internal" | "none">("none");
 
   // Auto-select the first child once data loads (or reset when children change)
   useEffect(() => {
@@ -97,6 +98,7 @@ export default function ChildrenScreen() {
     const c = children.find(ch => ch.id === selectedChild);
     setAllergies(c?.allergies ?? "");
     setMedicalWaiver(c?.medicalWaiver ?? "ambulance");
+    setEditMediaConsent(c?.mediaConsent ?? "none");
   }, [selectedChild, children]);
 
   // Combine DD/MM/YYYY fields into a single Date (and keep newChildDob in sync)
@@ -192,7 +194,7 @@ export default function ChildrenScreen() {
   };
 
   const handleSaveMedical = async () => {
-    await updateChild(selectedChild, { allergies, medicalWaiver });
+    await updateChild(selectedChild, { allergies, medicalWaiver, mediaConsent: editMediaConsent });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowMedical(false);
   };
@@ -622,8 +624,10 @@ export default function ChildrenScreen() {
               <Ionicons name="close-circle" size={30} color="#9CA3AF" />
             </Pressable>
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
-              <Text style={[styles.modalTitle, { color: colors.primary }]}>Informazioni Mediche</Text>
-              <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergie / Note</Text>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>Health & Consent</Text>
+
+              {/* Allergies */}
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergies / Medical Notes</Text>
               <TextInput
                 style={[styles.modalInput, { borderColor: colors.border }]}
                 value={allergies}
@@ -633,7 +637,9 @@ export default function ChildrenScreen() {
                 multiline
                 numberOfLines={3}
               />
-              <Text style={[styles.modalLabel, { color: colors.primary }]}>Emergency Protocol</Text>
+
+              {/* Emergency Protocol */}
+              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Emergency Protocol</Text>
               <Pressable
                 style={[styles.waiverOption, medicalWaiver === "ambulance" && { backgroundColor: colors.primary }]}
                 onPress={() => setMedicalWaiver("ambulance")}
@@ -648,7 +654,47 @@ export default function ChildrenScreen() {
                 <Ionicons name={medicalWaiver === "call_parent" ? "radio-button-on" : "radio-button-off"} size={18} color={medicalWaiver === "call_parent" ? "#FFF" : colors.primary} />
                 <Text style={[styles.waiverText, medicalWaiver === "call_parent" && { color: "#FFF" }]}>Call a family member first</Text>
               </Pressable>
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+
+              {/* Photo / Video Consent */}
+              <View style={[styles.sectionDivider, { borderTopColor: colors.border, marginTop: 16 }]} />
+              <View style={styles.sectionLabelRow}>
+                <Ionicons name="camera" size={15} color={colors.primary} />
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Photo & Video Consent</Text>
+              </View>
+              <Text style={[styles.fieldHint, { color: colors.mutedForeground, marginBottom: 10 }]}>
+                Authorisation for photos or videos during lessons and events.
+              </Text>
+              {(["full", "internal", "none"] as const).map(opt => {
+                const labels = {
+                  full:     { title: "Full Consent (Social / Promo)",    hint: "May be used on website, social media and promotional materials" },
+                  internal: { title: "Internal Educational Use Only",    hint: "Used only for school documents and internal communications" },
+                  none:     { title: "No Consent",                       hint: `${secondaryRoleName} must not be photographed or filmed` },
+                };
+                const isSelected = editMediaConsent === opt;
+                return (
+                  <Pressable
+                    key={opt}
+                    style={[
+                      styles.consentOption,
+                      { borderColor: isSelected ? MEDIA_CONSENT_COLORS[opt] : colors.border },
+                      isSelected && { backgroundColor: `${MEDIA_CONSENT_COLORS[opt]}15` },
+                    ]}
+                    onPress={() => setEditMediaConsent(opt)}
+                  >
+                    <View style={[styles.consentDot, { borderColor: MEDIA_CONSENT_COLORS[opt] }]}>
+                      {isSelected && <View style={[styles.consentDotFill, { backgroundColor: MEDIA_CONSENT_COLORS[opt] }]} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.consentTitle, { color: isSelected ? MEDIA_CONSENT_COLORS[opt] : colors.foreground }]}>
+                        {labels[opt].title}
+                      </Text>
+                      <Text style={[styles.consentHint, { color: colors.mutedForeground }]}>{labels[opt].hint}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowMedical(false)}>
                   <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
@@ -852,20 +898,20 @@ export default function ChildrenScreen() {
                 </Pressable>
               ))}
 
-              {/* Consenso Foto / Video */}
+              {/* Photo / Video Consent */}
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="camera" size={15} color={colors.primary} />
-                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Photo / Video Consent</Text>
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Photo & Video Consent</Text>
               </View>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground, marginBottom: 10 }]}>
                 Authorisation for photos or videos during lessons and events.
               </Text>
               {(["full", "internal", "none"] as const).map(opt => {
                 const labels = {
-                  full:     { title: "Full Consent",    hint: "May be used on website, social media and internal materials" },
-                  internal: { title: "Internal Only",   hint: "Used only for school documents and internal communications" },
-                  none:     { title: "No Consent",      hint: `${secondaryRoleName} must not be photographed or filmed` },
+                  full:     { title: "Full Consent (Social / Promo)",    hint: "May be used on website, social media and promotional materials" },
+                  internal: { title: "Internal Educational Use Only",    hint: "Used only for school documents and internal communications" },
+                  none:     { title: "No Consent",                       hint: `${secondaryRoleName} must not be photographed or filmed` },
                 };
                 const isSelected = newChildMediaConsent === opt;
                 return (

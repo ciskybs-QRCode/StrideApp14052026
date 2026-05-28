@@ -507,6 +507,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     if (updates.stars !== undefined) payload.gold_stars = updates.stars;
     if (updates.allergies !== undefined) payload.allergies = updates.allergies;
     if (updates.medicalWaiver !== undefined) payload.ambulance_consent = updates.medicalWaiver === "ambulance";
+    if (updates.mediaConsent !== undefined) payload.media_consent = updates.mediaConsent;
     await withOfflineFallback(
       () => api.updateChild(id, payload),
       { type: "updateChild", params: { id, updates: payload as Record<string, unknown> } },
