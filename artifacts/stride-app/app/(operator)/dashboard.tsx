@@ -142,7 +142,7 @@ const SOS_PROCEDURES: Record<SosType, SosProcedure> = {
     ],
   },
   police: {
-    label: "Soccorso / Police",
+    label: "Police",
     emoji: "🚔",
     color: "#1E3A8A",
     callLabel: "Police",
@@ -1347,7 +1347,7 @@ export default function OperatorDashboard() {
                     return (
                       <Pressable
                         key={t}
-                        style={({ pressed }) => [styles.sosTypeBtn, { borderColor: p.color, opacity: pressed ? 0.85 : 1 }]}
+                        style={({ pressed }) => [styles.sosTypeBtn, { borderLeftColor: p.color, opacity: pressed ? 0.88 : 1 }]}
                         onPress={() => {
                           setSosType(t);
                           setSosPhase("call");
@@ -1355,8 +1355,11 @@ export default function OperatorDashboard() {
                           pushLog({ time: nowTime(), action: `🚨 SOS: ${p.label}`, type: "error" });
                         }}
                       >
-                        <Text style={styles.sosTypeEmoji}>{p.emoji}</Text>
-                        <Text style={[styles.sosTypeLabel, { color: p.color }]}>{p.label}</Text>
+                        <View style={[styles.sosTypeIconBox, { backgroundColor: `${p.color}33` }]}>
+                          <Text style={styles.sosTypeEmoji}>{p.emoji}</Text>
+                        </View>
+                        <Text style={styles.sosTypeLabel}>{p.label}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={p.color} />
                       </Pressable>
                     );
                   })}
@@ -1677,10 +1680,11 @@ const styles = StyleSheet.create({
   sosSubDesc: { color: "rgba(255,255,255,0.7)", fontSize: 13 },
 
   // Type selection grid
-  sosTypeGrid: { flexDirection: "row", gap: 10, width: "100%", marginVertical: 8 },
-  sosTypeBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 18, gap: 8, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 2 },
-  sosTypeEmoji: { fontSize: 30 },
-  sosTypeLabel: { fontSize: 11, fontWeight: "800", textAlign: "center", letterSpacing: 0.3 },
+  sosTypeGrid: { flexDirection: "column", gap: 10, width: "100%", marginVertical: 8 },
+  sosTypeBtn: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 16, backgroundColor: "rgba(255,255,255,0.09)", borderLeftWidth: 4, borderLeftColor: "#EF4444" },
+  sosTypeIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  sosTypeEmoji: { fontSize: 24 },
+  sosTypeLabel: { flex: 1, fontSize: 15, fontWeight: "800", color: "#FFFFFF", letterSpacing: 0.2 },
 
   // Call button
   sosCallBtn: { borderRadius: 100, width: 160, height: 160, alignItems: "center", justifyContent: "center", gap: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 12 },
