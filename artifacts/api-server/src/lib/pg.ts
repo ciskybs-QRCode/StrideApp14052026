@@ -47,5 +47,10 @@ export async function ensureTables(): Promise<void> {
       UNIQUE(operator_profile_id, discipline_id)
     );
   `);
+  // Add birthday_message column to organizations if not already present (safe on Supabase PostgreSQL)
+  await pool.query(`
+    ALTER TABLE IF EXISTS organizations
+    ADD COLUMN IF NOT EXISTS birthday_message TEXT;
+  `).catch(() => {});
   initialized = true;
 }

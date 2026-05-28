@@ -656,6 +656,7 @@ export interface ApiOrg {
   legal_address?: string;
   region?: string;
   plan?: string;
+  birthday_message?: string;
 }
 
 export interface ApiEnrollmentRequest {

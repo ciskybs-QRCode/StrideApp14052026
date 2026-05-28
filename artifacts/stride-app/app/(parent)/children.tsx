@@ -28,6 +28,16 @@ const MEDIA_CONSENT_LABELS: Record<"full" | "internal" | "none", string> = {
   none: "No Consent",
 };
 
+function calcAgeFromDob(dob: string): number {
+  const birth = new Date(dob);
+  if (isNaN(birth.getTime())) return 0;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return Math.max(0, age);
+}
+
 const MEDIA_CONSENT_COLORS: Record<"full" | "internal" | "none", string> = {
   full: "#10B981",
   internal: "#F59E0B",
@@ -52,7 +62,9 @@ export default function ChildrenScreen() {
   // Add Child fields
   const [newChildName, setNewChildName] = useState("");
   const [newChildSurname, setNewChildSurname] = useState("");
-  const [newChildAge, setNewChildAge] = useState("");
+  const [newChildDobDay, setNewChildDobDay] = useState("");
+  const [newChildDobMonth, setNewChildDobMonth] = useState("");
+  const [newChildDobYear, setNewChildDobYear] = useState("");
   const [newChildAllergies, setNewChildAllergies] = useState("");
   const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent">("ambulance");
   const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("none");
@@ -89,7 +101,9 @@ export default function ChildrenScreen() {
   const resetAddChildForm = () => {
     setNewChildName("");
     setNewChildSurname("");
-    setNewChildAge("");
+    setNewChildDobDay("");
+    setNewChildDobMonth("");
+    setNewChildDobYear("");
     setNewChildAllergies("");
     setNewChildWaiver("ambulance");
     setNewChildMediaConsent("none");
@@ -126,18 +140,27 @@ export default function ChildrenScreen() {
   };
 
   const handleAddChild = async () => {
-    if (!newChildName.trim() || !newChildSurname.trim() || !newChildAge.trim()) {
-      Alert.alert("Required Fields", "Please enter first name, last name and age.");
+    if (!newChildName.trim() || !newChildSurname.trim() || !newChildDobDay || !newChildDobMonth || !newChildDobYear) {
+      Alert.alert("Required Fields", "Please enter first name, last name and date of birth.");
       return;
     }
-    const age = parseInt(newChildAge, 10);
-    if (isNaN(age) || age < 1 || age > 18) {
-      Alert.alert("Invalid Age", "Please enter a valid age between 1 and 18.");
+    const dobStr = `${newChildDobYear.padStart(4, "0")}-${newChildDobMonth.padStart(2, "0")}-${newChildDobDay.padStart(2, "0")}`;
+    const dobDate = new Date(dobStr);
+    const dd = parseInt(newChildDobDay, 10);
+    const mm = parseInt(newChildDobMonth, 10);
+    if (isNaN(dobDate.getTime()) || dd < 1 || dd > 31 || mm < 1 || mm > 12) {
+      Alert.alert("Invalid Date", "Please enter a valid date of birth (DD / MM / YYYY).");
+      return;
+    }
+    const age = calcAgeFromDob(dobStr);
+    if (age < 0 || age > 100) {
+      Alert.alert("Invalid Date", "Date of birth appears incorrect.");
       return;
     }
     await addChild({
       name: `${newChildName.trim()} ${newChildSurname.trim()}`,
       age,
+      dateOfBirth: dobStr,
       allergies: newChildAllergies.trim() || "None",
       medicalWaiver: newChildWaiver,
       mediaConsent: newChildMediaConsent,
@@ -228,7 +251,6 @@ export default function ChildrenScreen() {
                   {[
                     { label: "First Name", value: newChildName, setter: setNewChildName, placeholder: "Mario" },
                     { label: "Last Name",  value: newChildSurname, setter: setNewChildSurname, placeholder: "Rossi" },
-                    { label: "Age",        value: newChildAge, setter: setNewChildAge, placeholder: "8", keyboard: "numeric" as const },
                   ].map(field => (
                     <View key={field.label} style={{ marginBottom: 12 }}>
                       <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
@@ -238,10 +260,26 @@ export default function ChildrenScreen() {
                         onChangeText={field.setter}
                         placeholder={field.placeholder}
                         placeholderTextColor={colors.mutedForeground}
-                        keyboardType={field.keyboard ?? "default"}
                       />
                     </View>
                   ))}
+                  <Text style={[styles.modalLabel, { color: colors.primary }]}>Date of Birth</Text>
+                  <View style={{ flexDirection: "row", gap: 6, alignItems: "flex-end", marginBottom: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Day</Text>
+                      <TextInput style={[styles.modalInput, { borderColor: colors.border, textAlign: "center" }]} value={newChildDobDay} onChangeText={t => setNewChildDobDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
+                    </View>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "700", paddingBottom: 12 }}>/</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Month</Text>
+                      <TextInput style={[styles.modalInput, { borderColor: colors.border, textAlign: "center" }]} value={newChildDobMonth} onChangeText={t => setNewChildDobMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
+                    </View>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "700", paddingBottom: 12 }}>/</Text>
+                    <View style={{ flex: 2 }}>
+                      <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Year</Text>
+                      <TextInput style={[styles.modalInput, { borderColor: colors.border, textAlign: "center" }]} value={newChildDobYear} onChangeText={t => setNewChildDobYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={4} />
+                    </View>
+                  </View>
                   <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
                     <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { resetAddChildForm(); setShowAddChild(false); }}>
                       <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
@@ -353,7 +391,9 @@ export default function ChildrenScreen() {
                 </Pressable>
                 <View style={styles.childCardInfo}>
                   <Text style={[styles.childName, { color: colors.primary }]}>{child.name}</Text>
-                  <Text style={[styles.childAge, { color: colors.mutedForeground }]}>{child.age} yrs</Text>
+                  <Text style={[styles.childAge, { color: colors.mutedForeground }]}>
+                    {child.dateOfBirth ? calcAgeFromDob(child.dateOfBirth) : child.age} yrs
+                  </Text>
                   <View style={styles.starsRow}>
                     <Ionicons name="star" size={16} color="#FBBF24" />
                     <Text style={[styles.starsCount, { color: colors.primary }]}>{child.stars} Gold Stars</Text>
@@ -396,6 +436,14 @@ export default function ChildrenScreen() {
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
+              {child.dateOfBirth && (
+                <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
+                  <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Born:</Text>
+                  <Text style={[styles.infoValue, { color: colors.foreground }]}>
+                    {new Date(child.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                  </Text>
+                </View>
+              )}
               <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
                 <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Allergies:</Text>
                 <Text style={[styles.infoValue, { color: colors.foreground }]}>{child.allergies || "None"}</Text>
@@ -426,7 +474,7 @@ export default function ChildrenScreen() {
                 <View style={[styles.deleteConfirmBox, { backgroundColor: "#FEF2F2", borderColor: "#FCA5A5" }]}>
                   <Text style={styles.deleteConfirmTitle}>Remove {child.name}?</Text>
                   <Text style={styles.deleteConfirmDesc}>
-                    This will remove the child profile and all associated delegates from your account.
+                    This will remove the {secondaryRoleName.toLowerCase()} profile and all linked delegates from your account.
                   </Text>
                   <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
                     <Pressable
@@ -619,8 +667,23 @@ export default function ChildrenScreen() {
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Last Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Rossi" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
-              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Age <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildAge} onChangeText={setNewChildAge} placeholder="e.g. 8" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
+              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Date of Birth <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <View style={{ flexDirection: "row", gap: 6, alignItems: "flex-end" }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Day</Text>
+                  <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]} value={newChildDobDay} onChangeText={t => setNewChildDobDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
+                </View>
+                <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "700", paddingBottom: 12 }}>/</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Month</Text>
+                  <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]} value={newChildDobMonth} onChangeText={t => setNewChildDobMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
+                </View>
+                <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "700", paddingBottom: 12 }}>/</Text>
+                <View style={{ flex: 2 }}>
+                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textAlign: "center" }}>Year</Text>
+                  <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]} value={newChildDobYear} onChangeText={t => setNewChildDobYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={4} />
+                </View>
+              </View>
 
               {/* Medical Information */}
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
@@ -681,7 +744,7 @@ export default function ChildrenScreen() {
                 const labels = {
                   full:     { title: "Full Consent",    hint: "May be used on website, social media and internal materials" },
                   internal: { title: "Internal Only",   hint: "Used only for school documents and internal communications" },
-                  none:     { title: "No Consent",      hint: "Child must not be photographed or filmed" },
+                  none:     { title: "No Consent",      hint: `${secondaryRoleName} must not be photographed or filmed` },
                 };
                 const isSelected = newChildMediaConsent === opt;
                 return (

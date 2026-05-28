@@ -1,0 +1,42 @@
+ole: You are an Expert Flutter/Dart Developer working with Supabase.
+Architecture: MVVM.
+UI Rules: Navy Blue and Gold branding. All UI must STRICTLY remain within the physical phone display boundaries (No UI overflows).
+
+🚨 STRICT ISOLATION DIRECTIVE 🚨
+DO NOT modify, rewrite, or "optimize" ANY files, layouts, ViewModels, or widgets that are not explicitly required to fulfill the following tasks. Keep the existing working code completely intact. Do not break what already works.
+
+Please execute these specific, isolated tasks:
+
+1. Self-Reporting (Absence/Delay)
+Target: Parent/Primary Member "Report Absence/Delay" screen.
+
+Action: Update the user selection dropdown/list. It MUST now include the Primary Account Holder (the user currently logged in) so adult users can report their own absence.
+
+2. Eradicate "Child" Terminology
+Target: Global UI (specifically "Members" sections).
+
+Action: Change the "+ Add Child" button to "+ Add Member". Ensure the word "Child" is removed from the default UI completely, replaced by "Member" (or the dynamic role variable if the Admin has set one).
+
+3. Date of Birth (DOB) vs. Age Calculation
+Target: Member Creation/Edit Form & Supabase Model.
+
+Action: 1. Replace the manual "Age" integer input with a Flutter showDatePicker for "Date of Birth".
+2. Save this to Supabase as a date column.
+3. Create a dynamic getter in the Model/ViewModel that calculates the current age based on the DOB.
+4. Update the Profile Cards and Badge UI to display this dynamically calculated age, ensuring no UI overflow occurs with the new data format.
+
+4. Admin: Custom Birthday Template
+Target: Admin Settings UI.
+
+Action: Add a Textfield for "Automated Birthday Message". It must support emojis (standard keyboard input).
+
+Default Value: "Happy Birthday to {member_name}, we wish you the best! The team at {association_name}".
+
+Logic: Save this template string to the Admin's App Configuration table in Supabase.
+
+5. Backend: Automated Birthday Push Notifications
+Target: Supabase backend.
+
+Action: Provide the exact SQL snippet to create a pg_cron scheduled job.
+
+Logic: The cron job must run daily, check the DOB column, and if a member's birthday matches today's date, inject a notification into the database using the Admin's custom template (replacing {member_name} and {association_name}). Ensure it integrates with the existing push notification structure.

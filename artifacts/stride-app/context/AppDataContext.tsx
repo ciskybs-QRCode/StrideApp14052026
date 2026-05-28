@@ -165,13 +165,25 @@ function inferSkillLevel(stars: number): string {
   return "Beginner";
 }
 
+function calcAgeFromDob(dob: string): number {
+  const birth = new Date(dob);
+  if (isNaN(birth.getTime())) return 0;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return Math.max(0, age);
+}
+
 function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
   const childEnrollments = enrollments.filter(e => e.child_id === c.id && e.status === "active");
   const stars = c.gold_stars ?? 0;
+  const dob = c.date_of_birth;
+  const age = dob ? calcAgeFromDob(dob) : (c.age ?? 0);
   return {
     id: String(c.id),
     name: c.name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(),
-    age: c.age ?? 0,
+    age,
     stars,
     allergies: c.allergies_list || c.allergies || "None",
     medicalWaiver: c.ambulance_consent ? "ambulance" : "call_parent",
@@ -179,7 +191,7 @@ function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
     courses: childEnrollments.map(e => String(e.course_id)),
     photoUrl: c.photo_url,
     qrPayload: c.qr_payload,
-    dateOfBirth: c.date_of_birth,
+    dateOfBirth: dob,
     skillLevel: (c as unknown as Record<string, unknown>)["skill_level"] as string | undefined ?? inferSkillLevel(stars),
   };
 }
@@ -454,6 +466,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     const payload = {
       name: child.name,
       age: child.age,
+      ...(child.dateOfBirth ? { date_of_birth: child.dateOfBirth } : {}),
       gold_stars: child.stars ?? 0,
       allergies: child.allergies,
       ambulance_consent: child.medicalWaiver === "ambulance",
@@ -485,6 +498,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     const payload: Partial<ApiChild> = {};
     if (updates.name !== undefined) payload.name = updates.name;
     if (updates.age !== undefined) payload.age = updates.age;
+    if (updates.dateOfBirth !== undefined) payload.date_of_birth = updates.dateOfBirth;
     if (updates.stars !== undefined) payload.gold_stars = updates.stars;
     if (updates.allergies !== undefined) payload.allergies = updates.allergies;
     if (updates.medicalWaiver !== undefined) payload.ambulance_consent = updates.medicalWaiver === "ambulance";

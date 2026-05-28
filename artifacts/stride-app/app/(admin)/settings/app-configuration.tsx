@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
+import { api } from "@/lib/api";
 
 const CONFIG_ITEMS = [
   {
@@ -88,10 +89,33 @@ export default function AppConfigurationPage() {
   const [savingTerms, setSavingTerms] = useState(false);
   const [termsSaved, setTermsSaved] = useState(false);
 
+  const DEFAULT_BIRTHDAY_MSG = "Happy Birthday to {member_name}! Wishing you a wonderful day from all of us at {association_name}.";
+  const [birthdayMsg, setBirthdayMsg] = useState(DEFAULT_BIRTHDAY_MSG);
+  const [savingBirthday, setSavingBirthday] = useState(false);
+  const [birthdaySaved, setBirthdaySaved] = useState(false);
+
   useEffect(() => {
     setPrimaryInput(primaryRoleName);
     setSecondaryInput(secondaryRoleName);
   }, [primaryRoleName, secondaryRoleName]);
+
+  useEffect(() => {
+    api.getOrg().then(org => {
+      if (org.birthday_message) setBirthdayMsg(org.birthday_message);
+    }).catch(() => {});
+  }, []);
+
+  const handleSaveBirthdayMsg = async () => {
+    setSavingBirthday(true);
+    try {
+      await api.updateOrg({ birthday_message: birthdayMsg.trim() || DEFAULT_BIRTHDAY_MSG });
+      setBirthdaySaved(true);
+      setTimeout(() => setBirthdaySaved(false), 2500);
+    } catch {
+    } finally {
+      setSavingBirthday(false);
+    }
+  };
 
   const handleSaveTerminology = async () => {
     const p = primaryInput.trim() || "Member";
@@ -207,6 +231,46 @@ export default function AppConfigurationPage() {
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
                 <Text style={styles.saveBtnText}>{termsSaved ? "Saved ✓" : "Save Terminology"}</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Birthday Notification Template */}
+        <View style={{ marginBottom: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="gift-outline" size={18} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Birthday Notification</Text>
+              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+                Automated message sent to each member on their birthday
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.card, { backgroundColor: colors.card, padding: 16 }]}>
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 8 }]}>
+              Placeholders: {"{member_name}"}, {"{association_name}"}
+            </Text>
+            <TextInput
+              style={[styles.termInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background, minHeight: 80, textAlignVertical: "top", paddingTop: 10 }]}
+              value={birthdayMsg}
+              onChangeText={setBirthdayMsg}
+              placeholder={DEFAULT_BIRTHDAY_MSG}
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              numberOfLines={3}
+            />
+            <Pressable
+              style={[styles.saveBtn, { backgroundColor: birthdaySaved ? "#10B981" : colors.primary, opacity: savingBirthday ? 0.7 : 1 }]}
+              onPress={handleSaveBirthdayMsg}
+              disabled={savingBirthday}
+            >
+              {savingBirthday ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.saveBtnText}>{birthdaySaved ? "Saved ✓" : "Save Birthday Message"}</Text>
               )}
             </Pressable>
           </View>
