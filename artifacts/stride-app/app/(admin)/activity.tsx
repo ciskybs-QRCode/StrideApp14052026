@@ -94,10 +94,10 @@ const STATUS_CONFIG: Record<ActivityStatus, { label: string; color: string; bg: 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 
 const MOCK_TEACHERS = [
-  { id: "t1", name: "Maria Rossi" },
-  { id: "t2", name: "Luigi Ferrari" },
-  { id: "t3", name: "Anna Bianchi" },
-  { id: "t4", name: "Marco Conti" },
+  { id: "t1", name: "Emma Wilson" },
+  { id: "t2", name: "Louis Ford" },
+  { id: "t3", name: "Anna Parker" },
+  { id: "t4", name: "Mark Parker" },
 ];
 
 const MOCK_CAMPUSES = [
@@ -111,7 +111,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     level: "beginner", ageGroup: "kids",
     schedule: [{ day: "Mon", startTime: "16:00" }, { day: "Wed", startTime: "16:00" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
-    teacherId: "t1", teacherName: "Maria Rossi",
+    teacherId: "t1", teacherName: "Emma Wilson",
     duration: 60, capacity: 15, enrolled: 11, status: "active",
     enrollment: { dropIn: true, dropInPrice: 25, fixedBlock: true, fixedBlockLessons: 10, fixedBlockPrice: 200 },
     color: "#1E3A8A",
@@ -121,7 +121,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     level: "intermediate", ageGroup: "adult",
     schedule: [{ day: "Sat", startTime: "10:00" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio B",
-    teacherId: "t2", teacherName: "Luigi Ferrari",
+    teacherId: "t2", teacherName: "Louis Ford",
     duration: 90, capacity: 20, enrolled: 14, status: "active",
     enrollment: { dropIn: true, dropInPrice: 35, fixedBlock: false, fixedBlockLessons: 8, fixedBlockPrice: 240 },
     color: "#D97706",
@@ -131,7 +131,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     level: "all", ageGroup: "all",
     schedule: [{ day: "Thu", startTime: "18:00" }],
     campusId: "c2", campusName: "East Wing Studio", room: "Conference",
-    teacherId: "t3", teacherName: "Anna Bianchi",
+    teacherId: "t3", teacherName: "Anna Parker",
     duration: 60, capacity: 10, enrolled: 6, status: "active",
     enrollment: { dropIn: false, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 0, fixedBlockPrice: 0 },
     color: "#0D9488",
@@ -141,7 +141,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     level: "all", ageGroup: "youth",
     schedule: [{ day: "Fri", startTime: "17:30" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
-    teacherId: "t4", teacherName: "Marco Conti",
+    teacherId: "t4", teacherName: "Mark Parker",
     duration: 45, capacity: 25, enrolled: 18, status: "draft",
     enrollment: { dropIn: true, dropInPrice: 20, fixedBlock: true, fixedBlockLessons: 5, fixedBlockPrice: 80 },
     color: "#7C3AED",
@@ -151,7 +151,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
 const INITIAL_ADMIN_ITEMS: AdminScheduleItem[] = [
   { id: "s1", title: "Front Desk Coverage", type: "secretary_hours", date: "19/05/2026", startTime: "09:00", duration: 480, participants: "Sara Chen", notes: "Covers registration and payments", status: "scheduled" },
   { id: "s2", title: "Weekly Staff Briefing", type: "staff_meeting", date: "20/05/2026", startTime: "08:30", duration: 30, participants: "All instructors", notes: "Discuss schedule changes", status: "scheduled" },
-  { id: "s3", title: "Parent Consultation — Rossi", type: "parent_teacher", date: "21/05/2026", startTime: "17:00", duration: 45, participants: "Maria Rossi, Mr & Mrs Rossi", notes: "Progress review for Sofia", status: "scheduled" },
+  { id: "s3", title: "Parent Consultation — Smith", type: "parent_teacher", date: "21/05/2026", startTime: "17:00", duration: 45, participants: "Emma Wilson, Mr & Mrs Smith", notes: "Progress review for Jane", status: "scheduled" },
 ];
 
 // ── Blank drafts ───────────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
   title: "", type: "lesson", level: "all", ageGroup: "all",
   schedule: [{ day: "Mon", startTime: "09:00" }],
   campusId: "c1", campusName: "Main Studio", room: "",
-  teacherId: "t1", teacherName: "Maria Rossi",
+  teacherId: "t1", teacherName: "Emma Wilson",
   duration: 60, capacity: 15, status: "active",
   enrollment: { dropIn: true, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0 },
 });

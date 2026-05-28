@@ -837,7 +837,7 @@ export default function AdminLessonsScreen() {
                 style={[styles.flexInput, { color: colors.foreground, borderColor: discName.trim() ? colors.primary : colors.border, backgroundColor: colors.muted, marginBottom: 16 }]}
                 value={discName}
                 onChangeText={setDiscName}
-                placeholder="Es: Zumba"
+                placeholder="e.g. Yoga"
                 placeholderTextColor={colors.mutedForeground}
                 autoFocus
               />

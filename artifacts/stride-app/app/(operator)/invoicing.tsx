@@ -278,7 +278,7 @@ function HeaderSettingsModal({ visible, onClose, header, onSave }: HeaderModalPr
           <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
             <View style={hm.fieldWrap}>
               <Text style={[hm.fieldLabel, { color: colors.mutedForeground }]}>Full Name / Business Name</Text>
-              <TextInput style={inputStyle} placeholder="e.g. Maria Rossi / Rossi Dance Studio" placeholderTextColor={colors.mutedForeground} value={draft.businessName} onChangeText={v => setDraft(p => ({ ...p, businessName: v }))} />
+              <TextInput style={inputStyle} placeholder="e.g. Jane Smith / Smith Dance Studio" placeholderTextColor={colors.mutedForeground} value={draft.businessName} onChangeText={v => setDraft(p => ({ ...p, businessName: v }))} />
             </View>
             <View style={hm.fieldWrap}>
               <Text style={[hm.fieldLabel, { color: colors.mutedForeground }]}>Tax ID / ABN</Text>
@@ -717,7 +717,7 @@ export default function OperatorInvoicing() {
           ) : dailyGroups.length === 0 ? (
             <View style={styles.logEmptyRow}>
               <Ionicons name="calendar-outline" size={32} color={colors.mutedForeground} />
-              <Text style={[styles.logEmptyText, { color: colors.mutedForeground }]}>Nessuna sessione nel periodo selezionato</Text>
+              <Text style={[styles.logEmptyText, { color: colors.mutedForeground }]}>No sessions in the selected period</Text>
             </View>
           ) : (
             dailyGroups.map((group, gi) => (

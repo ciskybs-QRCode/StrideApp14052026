@@ -424,32 +424,32 @@ export default function DocumentsScreen() {
             <View style={[styles.formGroup, { backgroundColor: colors.card }]}>
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Street</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.addressLine1} onChangeText={v => setEditExtra(p => ({ ...p, addressLine1: v }))} placeholder="Via Roma 10" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.addressLine1} onChangeText={v => setEditExtra(p => ({ ...p, addressLine1: v }))} placeholder="123 Main Street" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Unit / Apt</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.houseNumber} onChangeText={v => setEditExtra(p => ({ ...p, houseNumber: v }))} placeholder="Interno 3" placeholderTextColor={colors.mutedForeground} />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.houseNumber} onChangeText={v => setEditExtra(p => ({ ...p, houseNumber: v }))} placeholder="Apt 3" placeholderTextColor={colors.mutedForeground} />
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>City</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.city} onChangeText={v => setEditExtra(p => ({ ...p, city: v }))} placeholder="Milano" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.city} onChangeText={v => setEditExtra(p => ({ ...p, city: v }))} placeholder="New York" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Postcode</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.postcode} onChangeText={v => setEditExtra(p => ({ ...p, postcode: v }))} placeholder="20100" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.postcode} onChangeText={v => setEditExtra(p => ({ ...p, postcode: v }))} placeholder="10001" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" />
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Province</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.state} onChangeText={v => setEditExtra(p => ({ ...p, state: v }))} placeholder="MI" placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.state} onChangeText={v => setEditExtra(p => ({ ...p, state: v }))} placeholder="NY" placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" />
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Country</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.country} onChangeText={v => setEditExtra(p => ({ ...p, country: v }))} placeholder="Italia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.country} onChangeText={v => setEditExtra(p => ({ ...p, country: v }))} placeholder="United States" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
               </View>
             </View>
 

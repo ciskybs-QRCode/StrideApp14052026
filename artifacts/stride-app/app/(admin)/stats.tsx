@@ -60,11 +60,11 @@ const AGE_GROUPS = [
 ];
 
 const RECENT_ACTIVITY = [
-  { name: "Sofia Rossi",   action: "Payment received",  amount: "€120", time: "2 hrs ago",  icon: "checkmark-circle", color: "#10B981" },
-  { name: "Luca Ferrari",  action: "New registration",  amount: "€85",  time: "5 hrs ago",  icon: "person-add",       color: "#3B82F6" },
-  { name: "Anna Greco",    action: "Monthly renewal",   amount: "€95",  time: "Yesterday",  icon: "refresh-circle",   color: "#7C3AED" },
-  { name: "Marco Bianchi", action: "Payment pending",   amount: "€110", time: "Yesterday",  icon: "time",             color: "#F59E0B" },
-  { name: "Giulia Conti",  action: "Payment received",  amount: "€75",  time: "2 days ago", icon: "checkmark-circle", color: "#10B981" },
+  { name: "Jane Smith",   action: "Payment received",  amount: "€120", time: "2 hrs ago",  icon: "checkmark-circle", color: "#10B981" },
+  { name: "Tom Davis",    action: "New registration",  amount: "€85",  time: "5 hrs ago",  icon: "person-add",       color: "#3B82F6" },
+  { name: "Anna Harris",  action: "Monthly renewal",   amount: "€95",  time: "Yesterday",  icon: "refresh-circle",   color: "#7C3AED" },
+  { name: "Chris Carter", action: "Payment pending",   amount: "€110", time: "Yesterday",  icon: "time",             color: "#F59E0B" },
+  { name: "Julia Brooks", action: "Payment received",  amount: "€75",  time: "2 days ago", icon: "checkmark-circle", color: "#10B981" },
 ];
 
 type ScanResult = {
@@ -151,9 +151,9 @@ export default function AdminStats() {
   };
 
   const MOCK_OUTCOMES: ScanResult[] = [
-    { type: "success", name: "Sofia Rossi",   subscription: "active",  medical: "valid",    payment: "paid" },
-    { type: "warning", name: "Luca Ferrari",  subscription: "active",  medical: "expiring", payment: "paid" },
-    { type: "error",   name: "Marco Bianchi", subscription: "expired", medical: "expired",  payment: "overdue" },
+    { type: "success", name: "Jane Smith",   subscription: "active",  medical: "valid",    payment: "paid" },
+    { type: "warning", name: "Tom Davis",    subscription: "active",  medical: "expiring", payment: "paid" },
+    { type: "error",   name: "Chris Carter", subscription: "expired", medical: "expired",  payment: "overdue" },
   ];
 
   const showScanResult = (r: ScanResult) => {

@@ -143,7 +143,7 @@ export default function OperatorCalendar() {
   const knownInstructors: string[] = (() => {
     const fromCourses = courses.map(c => c.instructor).filter(i => i && i !== "TBA");
     const unique = [...new Set([...fromCourses, ...savedInstructors])];
-    return unique.length ? unique : ["Maria Rossi", "Luca Ferri", "Anna Bianchi"];
+    return unique.length ? unique : ["Jane Smith", "Tom Davis", "Emma Wilson"];
   })();
 
   const knownRooms: string[] = [

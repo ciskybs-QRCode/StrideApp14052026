@@ -68,14 +68,14 @@ interface CommUser {
 // ── Mock Data ──────────────────────────────────────────────────────────────────
 
 const COMM_USERS: CommUser[] = [
-  { id: "u1", name: "Marco Rossi",    role: "parent",   childName: "Sofia Rossi" },
-  { id: "u2", name: "Sara Bianchi",   role: "operator" },
-  { id: "u3", name: "Luigi Ferrari",  role: "parent",   childName: "Luca Ferrari" },
-  { id: "u4", name: "Elena Russo",    role: "operator" },
-  { id: "u5", name: "Anna Mancini",   role: "parent",   childName: "Giulia Mancini" },
-  { id: "u6", name: "Sofia Rossi",    role: "student" },
-  { id: "u7", name: "Luca Ferrari",   role: "student" },
-  { id: "u8", name: "Giulia Mancini", role: "student" },
+  { id: "u1", name: "John Smith",   role: "parent",   childName: "Jane Smith" },
+  { id: "u2", name: "Sara Wilson",  role: "operator" },
+  { id: "u3", name: "Louis Ford",   role: "parent",   childName: "Tom Davis" },
+  { id: "u4", name: "Elena Walsh",  role: "operator" },
+  { id: "u5", name: "Amy Parker",   role: "parent",   childName: "Julia Parker" },
+  { id: "u6", name: "Jane Smith",   role: "student" },
+  { id: "u7", name: "Tom Davis",    role: "student" },
+  { id: "u8", name: "Julia Parker", role: "student" },
 ];
 
 const MOCK_COURSES = [

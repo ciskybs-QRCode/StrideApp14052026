@@ -242,8 +242,8 @@ export default function ChildrenScreen() {
                 <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
                   <Text style={[styles.modalTitle, { color: colors.primary }]}>Add {secondaryRoleName}</Text>
                   {[
-                    { key: "fn", label: `${secondaryRoleName}'s First Name`, value: newChildName, setter: setNewChildName, placeholder: "Mario" },
-                    { key: "ln", label: `${secondaryRoleName}'s Last Name`,  value: newChildSurname, setter: setNewChildSurname, placeholder: "Rossi" },
+                    { key: "fn", label: `${secondaryRoleName}'s First Name`, value: newChildName, setter: setNewChildName, placeholder: "Jane" },
+                    { key: "ln", label: `${secondaryRoleName}'s Last Name`,  value: newChildSurname, setter: setNewChildSurname, placeholder: "Doe" },
                   ].map(field => (
                     <View key={field.key} style={{ marginBottom: 12 }}>
                       <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
@@ -610,9 +610,9 @@ export default function ChildrenScreen() {
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Add Delegate</Text>
               {[
-                { label: "First Name", value: delegateName,    setter: setDelegateName,    placeholder: "Marco" },
-                { label: "Last Name",  value: delegateSurname, setter: setDelegateSurname, placeholder: "Bianchi" },
-                { label: "Phone",      value: delegatePhone,   setter: setDelegatePhone,   placeholder: "+39 3xx xxx xxxx", keyboard: "phone-pad" as const },
+                { label: "First Name", value: delegateName,    setter: setDelegateName,    placeholder: "John" },
+                { label: "Last Name",  value: delegateSurname, setter: setDelegateSurname, placeholder: "Smith" },
+                { label: "Phone",      value: delegatePhone,   setter: setDelegatePhone,   placeholder: "+1 555 123 4567", keyboard: "phone-pad" as const },
               ].map(field => (
                 <View key={field.label} style={{ marginBottom: 12 }}>
                   <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
@@ -671,10 +671,10 @@ export default function ChildrenScreen() {
 
               {/* First Name */}
               <Text style={[styles.modalLabel, { color: colors.primary }]}>{secondaryRoleName}'s First Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildName} onChangeText={setNewChildName} placeholder="e.g. Sofia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildName} onChangeText={setNewChildName} placeholder="e.g. Jane" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>{secondaryRoleName}'s Last Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Rossi" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Doe" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Date of Birth <Text style={{ color: "#EF4444" }}>*</Text></Text>
               {Platform.OS === "web" ? (

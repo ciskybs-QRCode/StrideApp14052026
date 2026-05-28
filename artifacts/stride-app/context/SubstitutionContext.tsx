@@ -11,9 +11,9 @@ const STORAGE_KEY = "stride_absence_alerts_v2";
 // ─── Mock substitute teachers ─────────────────────────────────────────────────
 
 export const MOCK_SUBS: SubInfo[] = [
-  { id: "s1", name: "Anna Bianchi",   phone: "+61 400 111 222", specialty: "Ballet · Contemporary" },
-  { id: "s2", name: "Marco Conti",    phone: "+61 400 333 444", specialty: "Hip Hop · Jazz" },
-  { id: "s3", name: "Luigi Ferrari",  phone: "+61 400 555 666", specialty: "All disciplines" },
+  { id: "s1", name: "Anna Parker",    phone: "+61 400 111 222", specialty: "Ballet · Contemporary" },
+  { id: "s2", name: "Mark Parker",    phone: "+61 400 333 444", specialty: "Hip Hop · Jazz" },
+  { id: "s3", name: "Louis Ford",     phone: "+61 400 555 666", specialty: "All disciplines" },
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────

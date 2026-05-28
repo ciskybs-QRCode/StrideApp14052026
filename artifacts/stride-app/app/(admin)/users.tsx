@@ -38,15 +38,15 @@ interface UserRecord {
 // ── Mock Data ──────────────────────────────────────────────────────────────────
 
 const MOCK_USERS: UserRecord[] = [
-  { id: "u1", name: "Marco Rossi",    email: "genitore@test.com",  phone: "+61411111111", role: "parent",   status: "active",  joinDate: "01/01/2026", childName: "Sofia Rossi" },
-  { id: "u2", name: "Sara Bianchi",   email: "operatore@test.com", phone: "+61422222222", role: "operator", status: "active",  joinDate: "15/01/2026" },
-  { id: "u3", name: "Luigi Ferrari",  email: "luigi@test.com",     phone: "+61433333333", role: "parent",   status: "active",  joinDate: "10/02/2026", childName: "Luca Ferrari" },
-  { id: "u4", name: "Elena Russo",    email: "elena@test.com",     phone: "+61444444444", role: "operator", status: "pending", joinDate: "05/04/2026" },
-  { id: "u5", name: "Anna Mancini",   email: "anna@test.com",      phone: "+61455555555", role: "parent",   status: "active",  joinDate: "20/03/2026", childName: "Giulia Mancini" },
-  { id: "u6", name: "Sofia Rossi",    email: "sofia.r@test.com",   phone: "+61466666666", role: "student",  status: "active",  joinDate: "01/01/2026" },
-  { id: "u7", name: "Luca Ferrari",   email: "luca.f@test.com",    phone: "+61477777777", role: "student",  status: "active",  joinDate: "10/02/2026" },
-  { id: "u8", name: "Giulia Mancini", email: "giulia.m@test.com",  phone: "+61488888888", role: "student",  status: "active",  joinDate: "20/03/2026" },
-  { id: "u9", name: "Matteo Conti",   email: "matteo.c@test.com",  phone: "+61499999999", role: "student",  status: "pending", joinDate: "02/05/2026" },
+  { id: "u1", name: "John Smith",    email: "genitore@test.com",  phone: "+61411111111", role: "parent",   status: "active",  joinDate: "01/01/2026", childName: "Jane Smith" },
+  { id: "u2", name: "Sara Wilson",   email: "operatore@test.com", phone: "+61422222222", role: "operator", status: "active",  joinDate: "15/01/2026" },
+  { id: "u3", name: "Louis Ford",    email: "louis@test.com",     phone: "+61433333333", role: "parent",   status: "active",  joinDate: "10/02/2026", childName: "Tom Davis" },
+  { id: "u4", name: "Elena Walsh",   email: "elena@test.com",     phone: "+61444444444", role: "operator", status: "pending", joinDate: "05/04/2026" },
+  { id: "u5", name: "Amy Parker",    email: "amy@test.com",       phone: "+61455555555", role: "parent",   status: "active",  joinDate: "20/03/2026", childName: "Julia Parker" },
+  { id: "u6", name: "Jane Smith",    email: "jane.s@test.com",    phone: "+61466666666", role: "student",  status: "active",  joinDate: "01/01/2026" },
+  { id: "u7", name: "Tom Davis",     email: "tom.d@test.com",     phone: "+61477777777", role: "student",  status: "active",  joinDate: "10/02/2026" },
+  { id: "u8", name: "Julia Parker",  email: "julia.p@test.com",   phone: "+61488888888", role: "student",  status: "active",  joinDate: "20/03/2026" },
+  { id: "u9", name: "Matt Brooks",   email: "matt.b@test.com",    phone: "+61499999999", role: "student",  status: "pending", joinDate: "02/05/2026" },
 ];
 
 const ROLE_COLORS: Record<UserRole, { bg: string; text: string }> = {

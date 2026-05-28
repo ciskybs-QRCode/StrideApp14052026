@@ -158,7 +158,7 @@ export default function WalletScreen() {
   // Card state
   const [savedCard, setSavedCard] = useState<SavedCard>({
     number: "1234",
-    name: "Marco Rossi",
+    name: "John Smith",
     expiry: "09/28",
     brand: "VISA",
   });

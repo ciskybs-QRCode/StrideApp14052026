@@ -85,10 +85,10 @@ function nowTime(): string {
 }
 
 const INITIAL_LOG: LogEntry[] = [
-  { time: "15:48", action: "Check-in: Emma Ferrari",            type: "success" },
-  { time: "15:35", action: "Check-in: Luca Rossi",              type: "success" },
-  { time: "15:32", action: "Delegated: Maria Ferrari for Sofia", type: "warning" },
-  { time: "15:20", action: "Session started: Classical Dance",   type: "info"    },
+  { time: "15:48", action: "Check-in: Emma Parker",            type: "success" },
+  { time: "15:35", action: "Check-in: Tom Davis",              type: "success" },
+  { time: "15:32", action: "Delegated: Amy Carter for Jane",   type: "warning" },
+  { time: "15:20", action: "Session started: Classical Dance", type: "info"    },
 ];
 
 // ── SOS Emergency Procedures ───────────────────────────────────────────────────
@@ -157,9 +157,9 @@ const SOS_PROCEDURES: Record<SosType, SosProcedure> = {
 };
 
 const MOCK_OUTCOMES: ScanResult[] = [
-  { type: "success", name: "Sofia Rossi",   subscription: "active",  medical: "valid",    payment: "paid" },
-  { type: "warning", name: "Luca Ferrari",  subscription: "active",  medical: "expiring", payment: "paid" },
-  { type: "error",   name: "Marco Bianchi", subscription: "expired", medical: "expired",  payment: "overdue" },
+  { type: "success", name: "Jane Smith",   subscription: "active",  medical: "valid",    payment: "paid" },
+  { type: "warning", name: "Tom Davis",    subscription: "active",  medical: "expiring", payment: "paid" },
+  { type: "error",   name: "Chris Carter", subscription: "expired", medical: "expired",  payment: "overdue" },
 ];
 
 type AbsenceType = "absent" | "late15" | "late30" | "late45" | "late60";
@@ -385,16 +385,16 @@ export default function OperatorDashboard() {
 
   // ── Guardian pickup result ──────────────────────────────────────────────
   const MOCK_GUARDIANS: GuardianResult[] = [
-    { guardianName: "Marco Rossi",   relationship: "Padre",  childName: "Sofia Rossi",   isAuthorized: true  },
-    { guardianName: "Anna Mancini",  relationship: "Madre",  childName: "Giulia Mancini", isAuthorized: true  },
-    { guardianName: "Carlo Verdi",   relationship: "Nonno",  childName: "Luca Ferrari",  isAuthorized: false },
+    { guardianName: "John Smith",    relationship: "Father",      childName: "Jane Smith",   isAuthorized: true  },
+    { guardianName: "Amy Parker",    relationship: "Mother",      childName: "Julia Parker", isAuthorized: true  },
+    { guardianName: "Carl Brooks",   relationship: "Grandfather", childName: "Tom Davis",    isAuthorized: false },
   ];
 
   const showGuardianResult = (result: GuardianResult) => {
     setGuardianResult(result);
     setScanResult(null);
     setScanned(true);
-    const tag = result.isAuthorized ? "✓ Ritiro autorizzato" : "✗ Ritiro NON autorizzato";
+    const tag = result.isAuthorized ? "✓ Pick-up authorised" : "✗ Pick-up NOT authorised";
     pushLog({ time: nowTime(), action: `${tag}: ${result.guardianName} per ${result.childName}`, type: result.isAuthorized ? "warning" : "error" });
     Haptics.notificationAsync(result.isAuthorized ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Error);
     setTimeout(() => { setGuardianResult(null); setScanned(false); setShowScanner(false); }, 5000);
@@ -407,9 +407,9 @@ export default function OperatorDashboard() {
   };
 
   const DEMO_ABSENT_STUDENTS = [
-    { id: "sa1", name: "Sofia Rossi",    courseId: "c1", courseName: "Danza Classica" },
-    { id: "sa2", name: "Luca Ferrari",   courseId: "c2", courseName: "Hip-Hop" },
-    { id: "sa3", name: "Giulia Mancini", courseId: "c3", courseName: "Ballo Latino" },
+    { id: "sa1", name: "Jane Smith",   courseId: "c1", courseName: "Ballet" },
+    { id: "sa2", name: "Tom Davis",    courseId: "c2", courseName: "Hip-Hop" },
+    { id: "sa3", name: "Julia Parker", courseId: "c3", courseName: "Latin Dance" },
   ];
 
   const simulateAbsenceAlert = () => {
@@ -425,9 +425,9 @@ export default function OperatorDashboard() {
     setLessonScanResult(null);
     setGuardianResult(null);
     const cases = [
-      { verdict: "suspended",      childName: "Marco Bianchi",  blockReason: "Comportamento non accettabile" },
-      { verdict: "grace_allowed",  childName: "Sofia Conti" },
-      { verdict: "overdue_denied", childName: "Luca Esposito" },
+      { verdict: "suspended",      childName: "Chris Carter",  blockReason: "Unacceptable behaviour" },
+      { verdict: "grace_allowed",  childName: "Jane Brooks" },
+      { verdict: "overdue_denied", childName: "Luke Evans" },
     ];
     const c = cases[Math.floor(Math.random() * cases.length)];
     setAccessAlert(c);
@@ -453,11 +453,11 @@ export default function OperatorDashboard() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const r = await api.scanPrivateLesson("DEMO-" + Date.now());
-      setLessonScanResult({ discipline: "Ballet", student: "Sofia Rossi", earnings_cents: r.earnings_cents, invoice_number: r.invoice_number, attended_at: r.attended_at });
+      setLessonScanResult({ discipline: "Ballet", student: "Jane Smith", earnings_cents: r.earnings_cents, invoice_number: r.invoice_number, attended_at: r.attended_at });
     } catch {
       setLessonScanResult({
         discipline: "Ballet",
-        student: "Sofia Rossi",
+        student: "Jane Smith",
         earnings_cents: 3500,
         invoice_number: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-DEMO`,
         attended_at: new Date().toISOString(),
@@ -465,7 +465,7 @@ export default function OperatorDashboard() {
     }
     setLessonScanning(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    pushLog({ time: nowTime(), action: "✓ Private lesson: Sofia Rossi — Ballet — €35.00 earned", type: "success" });
+    pushLog({ time: nowTime(), action: "✓ Private lesson: Jane Smith — Ballet — €35.00 earned", type: "success" });
     setTimeout(() => { setLessonScanResult(null); setScanned(false); setShowScanner(false); }, 5000);
   };
 

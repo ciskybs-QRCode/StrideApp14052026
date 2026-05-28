@@ -58,7 +58,7 @@ function fmtDate(iso: string) {
 
 const DEMO_INVOICES: SubmittedInvoice[] = [
   { id: "INV-202604-1001", operatorName: "Maria Chen",    period: "2026-04", totalCents: 112000, status: "pending", submittedAt: new Date(Date.now() - 86400000).toISOString(),     schoolName: "Dance Village" },
-  { id: "INV-202603-2045", operatorName: "Marco Bianchi", period: "2026-03", totalCents: 87500,  status: "paid",    submittedAt: new Date(Date.now() - 7 * 86400000).toISOString(), schoolName: "Dance Village" },
+  { id: "INV-202603-2045", operatorName: "Tom Davis",     period: "2026-03", totalCents: 87500,  status: "paid",    submittedAt: new Date(Date.now() - 7 * 86400000).toISOString(), schoolName: "Dance Village" },
 ];
 
 // ── In-app banner ─────────────────────────────────────────────────────────────

@@ -133,7 +133,7 @@ export default function JoinScreen() {
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Marco Rossi"
+              placeholder="e.g. John Smith"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
             />

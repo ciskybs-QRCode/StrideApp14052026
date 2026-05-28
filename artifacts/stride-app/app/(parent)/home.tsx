@@ -287,7 +287,7 @@ export default function ParentHome() {
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>
         {[
-          { id: "1", icon: "star-outline"     as const, text: "Sofia: ★ Gold stars for choreography!", time: "Today",  accent: "#FBBF24" },
+          { id: "1", icon: "star-outline"     as const, text: "Jane: ★ Gold stars for choreography!", time: "Today",  accent: "#FBBF24" },
           { id: "2", icon: "document-outline" as const, text: "New document: Privacy Policy to sign", time: "Yesterday", accent: colors.primary },
           { id: "3", icon: "time-outline"     as const, text: "Tomorrow's lesson: moved to 15:30",    time: "2h ago",  accent: "#7C3AED" },
         ].map(item => (

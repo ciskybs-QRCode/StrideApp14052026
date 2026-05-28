@@ -29,16 +29,16 @@ interface AddForm {
 const EMPTY_FORM: AddForm = { email: "", phone_number: "", first_name: "", last_name: "", reason: "" };
 
 const DEMO_USERS = [
-  { id: "u1", name: "Marco Rossi",     email: "marco.rossi@example.com",     role: "parent",   phone: "+39 333 1234567" },
-  { id: "u2", name: "Giulia Ferrari",  email: "giulia.ferrari@example.com",  role: "parent",   phone: "+39 333 2345678" },
-  { id: "u3", name: "Luca Bianchi",    email: "luca.bianchi@example.com",    role: "parent",   phone: "+39 333 3456789" },
-  { id: "u4", name: "Anna Mancini",    email: "anna.mancini@example.com",    role: "parent",   phone: "+39 333 4567890" },
-  { id: "u5", name: "Carlo Conti",     email: "carlo.conti@example.com",     role: "parent",   phone: "+39 333 5678901" },
-  { id: "u6", name: "Sara Russo",      email: "sara.russo@example.com",      role: "parent",   phone: "+39 333 6789012" },
-  { id: "u7", name: "Pietro Ricci",    email: "pietro.ricci@example.com",    role: "parent",   phone: "+39 333 7890123" },
-  { id: "u8", name: "Laura Gallo",     email: "laura.gallo@example.com",     role: "parent",   phone: "+39 333 8901234" },
-  { id: "u9", name: "Maria Rossi",     email: "operatore@test.com",          role: "operator", phone: "+39 333 9012345" },
-  { id: "u10",name: "Luigi Ferrari",   email: "genitore@test.com",           role: "parent",   phone: "+39 333 0123456" },
+  { id: "u1", name: "John Smith",      email: "john.smith@example.com",      role: "parent",   phone: "+1 310 123 4567" },
+  { id: "u2", name: "Julia Davis",     email: "julia.davis@example.com",     role: "parent",   phone: "+1 310 234 5678" },
+  { id: "u3", name: "Chris Carter",    email: "chris.carter@example.com",    role: "parent",   phone: "+1 310 345 6789" },
+  { id: "u4", name: "Amy Parker",      email: "amy.parker@example.com",      role: "parent",   phone: "+1 310 456 7890" },
+  { id: "u5", name: "Carl Brooks",     email: "carl.brooks@example.com",     role: "parent",   phone: "+1 310 567 8901" },
+  { id: "u6", name: "Sara Wilson",     email: "sara.wilson@example.com",     role: "parent",   phone: "+1 310 678 9012" },
+  { id: "u7", name: "Peter Collins",   email: "peter.collins@example.com",   role: "parent",   phone: "+1 310 789 0123" },
+  { id: "u8", name: "Laura Harris",    email: "laura.harris@example.com",    role: "parent",   phone: "+1 310 890 1234" },
+  { id: "u9", name: "Maria Chen",      email: "operatore@test.com",          role: "operator", phone: "+1 310 901 2345" },
+  { id: "u10",name: "Louis Ford",      email: "genitore@test.com",           role: "parent",   phone: "+1 310 012 3456" },
 ] as const;
 
 export default function BlacklistScreen() {

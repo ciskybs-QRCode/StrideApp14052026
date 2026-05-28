@@ -63,7 +63,7 @@ const DEMO_REQUESTS: ReimbursementRequest[] = [
   },
   {
     id: "RMB-002",
-    claimantName: "Luca Ferrari",
+    claimantName: "Tom Davis",
     claimantRole: "volunteer",
     description: "Printed music sheets for contemporary class",
     amountCents: 2400,
