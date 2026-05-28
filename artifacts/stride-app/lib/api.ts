@@ -459,6 +459,17 @@ export const api = {
     return request<{ ok: boolean }>("POST", "/private-notifications/read-all", {});
   },
 
+  // Meeting availability (all authenticated roles)
+  getMeetingAvailability: async (): Promise<{ meeting_days: number[]; meeting_slots: string[] }> => {
+    if (await isDemoSession()) {
+      return {
+        meeting_days: [1, 2, 3, 4, 5],
+        meeting_slots: ["09:00 \u2013 09:45", "10:00 \u2013 10:45", "11:00 \u2013 11:45", "14:00 \u2013 14:45", "15:00 \u2013 15:45", "16:00 \u2013 16:45"],
+      };
+    }
+    return request<{ meeting_days: number[]; meeting_slots: string[] }>("GET", "/meeting-availability");
+  },
+
   // Admin Settings (grace access + anti-fraud)
   getAdminSettings: () => request<ApiAdminSettings>("GET", "/admin-settings"),
   updateAdminSettings: (data: Partial<ApiAdminSettings>) =>

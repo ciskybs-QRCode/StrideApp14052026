@@ -1,0 +1,31 @@
+Role: Expert React Native (Expo) and Express.js Developer.
+Context: We found a critical logic bug. When a member books a private lesson, the app skips the shopping cart/payment flow and immediately shows the "Navigate" button. We need to restore the correct chronological workflow.
+UI Rules: Navy Blue and Gold branding. All detailed cards and layouts MUST remain within the physical phone display boundaries (No text truncation, no screen overflows).
+
+🚨 STRICT ISOLATION DIRECTIVE 🚨
+DO NOT alter the core database schemas or modify unrelated payment validation routes. Keep the calendar availability logic we just built 100% intact. Focus purely on fixing the screen navigation states and conditional button rendering.
+
+Please fix the Private Lesson flow by implementing these 3 steps:
+
+1. Restore the Cart Flow on Booking
+Target: Parent/Member Side -> Private Lesson Booking Flow.
+
+Action: When a member selects a date and time slot for a private lesson and clicks confirm, DO NOT consider it paid and do not show the "Navigate" button.
+
+Logic: The booking action must successfully add the lesson item to the Shopping Cart with a pending status, increment the cart badge count, and direct the user to the Cart/Checkout screen for payment.
+
+2. Move to "Upcoming Activities" Only After Payment
+Target: Home Page -> Upcoming Activities List.
+
+Logic: A booked private lesson must ONLY appear in the "Upcoming Activities" section on the main dashboard after the payment has been fully validated and processed through the checkout.
+
+3. Activity Details Sheet & "Navigate" Button Relocation
+Target: Home Page -> Upcoming Activities -> Lesson Detail View.
+
+Action: When a user clicks on a paid lesson inside the "Upcoming Activities" list, open a clean, well-organized detail modal or sub-screen.
+
+Content: This screen must display ALL lesson specifications: Discipline, Date, Time, Operator/Teacher Name, and Location Address.
+
+The "Navigate" Button: This is where the "Navigate" button belongs. Place it clearly inside this paid activity detail view. When clicked, it must fetch the lesson address and safely trigger the device's native GPS map (Apple/Google Maps) via Expo Linking.
+
+Output Requirement: Correct this flow sequence, verify that booking a lesson triggers the cart insertion instead of an instant confirmation, and notify me when fixed.

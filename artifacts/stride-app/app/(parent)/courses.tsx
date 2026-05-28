@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
+import { api } from "@/lib/api";
 import {
   Animated,
   Linking,
@@ -217,6 +218,141 @@ const ddStyles = StyleSheet.create({
   optionText: { fontSize: 15 },
 });
 
+// ─── Meeting Calendar ────────────────────────────────────────────────────────
+
+const WEEK_DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function MeetingCalendar({
+  enabledDays,
+  selectedDate,
+  onSelect,
+  displayMonth,
+  onMonthChange,
+  colors,
+}: {
+  enabledDays: number[];
+  selectedDate: string | null;
+  onSelect: (iso: string) => void;
+  displayMonth: { year: number; month: number };
+  onMonthChange: (delta: -1 | 1) => void;
+  colors: ReturnType<typeof useColors>;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const maxDate = new Date(today);
+  maxDate.setDate(maxDate.getDate() + 31);
+
+  const { year, month } = displayMonth;
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const toIso = (day: number) =>
+    `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const isDisabled = (day: number) => {
+    const d = new Date(year, month, day);
+    d.setHours(0, 0, 0, 0);
+    return d < today || d > maxDate || !enabledDays.includes(d.getDay());
+  };
+
+  const canPrev = year > today.getFullYear() || month > today.getMonth();
+  const canNext = new Date(year, month + 1, 1) <= maxDate;
+
+  const monthLabel = new Date(year, month, 1).toLocaleDateString("en-AU", { month: "long", year: "numeric" });
+  const rows = Math.ceil(cells.length / 7);
+
+  return (
+    <View style={{ borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, padding: 12 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <Pressable onPress={() => { if (canPrev) onMonthChange(-1); }} hitSlop={12} style={{ padding: 6, opacity: canPrev ? 1 : 0.25 }}>
+          <Ionicons name="chevron-back" size={18} color={colors.primary} />
+        </Pressable>
+        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>{monthLabel}</Text>
+        <Pressable onPress={() => { if (canNext) onMonthChange(1); }} hitSlop={12} style={{ padding: 6, opacity: canNext ? 1 : 0.25 }}>
+          <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+        </Pressable>
+      </View>
+      <View style={{ flexDirection: "row", marginBottom: 6 }}>
+        {WEEK_DAY_LABELS.map(wd => (
+          <View key={wd} style={{ flex: 1, alignItems: "center" }}>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>{wd}</Text>
+          </View>
+        ))}
+      </View>
+      {Array.from({ length: rows }).map((_, row) => (
+        <View key={row} style={{ flexDirection: "row" }}>
+          {cells.slice(row * 7, (row + 1) * 7).map((day, col) => {
+            if (!day) return <View key={col} style={{ flex: 1, height: 38 }} />;
+            const iso = toIso(day);
+            const disabled = isDisabled(day);
+            const selected = selectedDate === iso;
+            const isToday = iso === todayIso;
+            return (
+              <Pressable
+                key={col}
+                onPress={() => { if (!disabled) { onSelect(iso); void Haptics.selectionAsync(); } }}
+                disabled={disabled}
+                style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, margin: 1, backgroundColor: selected ? colors.primary : "transparent" }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: selected || isToday ? "700" : "400", color: selected ? "#FFF" : disabled ? colors.border : isToday ? colors.secondary : colors.foreground }}>
+                  {day}
+                </Text>
+                {isToday && !selected && (
+                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.secondary, position: "absolute", bottom: 3 }} />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function TimeSlotGrid({
+  slots,
+  value,
+  onSelect,
+  colors,
+}: {
+  slots: string[];
+  value: string | null;
+  onSelect: (slot: string) => void;
+  colors: ReturnType<typeof useColors>;
+}) {
+  const rows: string[][] = [];
+  for (let i = 0; i < slots.length; i += 2) rows.push(slots.slice(i, i + 2));
+  return (
+    <View>
+      <Text style={[ddStyles.label, { color: colors.primary, marginBottom: 10 }]}>Available Times</Text>
+      {rows.map((row, ri) => (
+        <View key={ri} style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+          {row.map(slot => {
+            const selected = value === slot;
+            return (
+              <Pressable
+                key={slot}
+                onPress={() => { onSelect(slot); void Haptics.selectionAsync(); }}
+                style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 12, borderWidth: 1.5, borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primary : colors.card, alignItems: "center" }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "600", color: selected ? "#FFF" : colors.foreground }}>{slot}</Text>
+              </Pressable>
+            );
+          })}
+          {row.length === 1 && <View style={{ flex: 1 }} />}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function CoursesScreen() {
@@ -242,6 +378,15 @@ export default function CoursesScreen() {
   const [meetReason, setMeetReason] = useState<string | null>(null);
   const [meetDate, setMeetDate] = useState<string | null>(null);
   const [meetSlot, setMeetSlot] = useState<string | null>(null);
+  const [meetAvail, setMeetAvail] = useState<{ meeting_days: number[]; meeting_slots: string[] }>({
+    meeting_days: [1, 2, 3, 4, 5],
+    meeting_slots: OFFICE_TIMES,
+  });
+  const [meetAvailLoading, setMeetAvailLoading] = useState(false);
+  const [meetCalMonth, setMeetCalMonth] = useState<{ year: number; month: number }>(() => {
+    const t = new Date();
+    return { year: t.getFullYear(), month: t.getMonth() };
+  });
 
   const router = useRouter();
   const { addItem, items: cartItems, count: cartCount } = useCart();
@@ -255,6 +400,17 @@ export default function CoursesScreen() {
       setCourseMaterials(raw ? JSON.parse(raw) as CourseMaterial[] : []);
     });
   }, [selectedCourse]);
+
+  useEffect(() => {
+    if (!showMeetingModal) return;
+    const t = new Date();
+    setMeetCalMonth({ year: t.getFullYear(), month: t.getMonth() });
+    setMeetAvailLoading(true);
+    api.getMeetingAvailability()
+      .then(data => setMeetAvail(data))
+      .catch(() => {})
+      .finally(() => setMeetAvailLoading(false));
+  }, [showMeetingModal]);
 
   // Local enrollments (added in-session without backend)
   const [localBookings, setLocalBookings] = useState<Booking[]>([]);
@@ -849,18 +1005,18 @@ export default function CoursesScreen() {
 
       {/* Office Meeting Booking Modal */}
       <Modal visible={showMeetingModal} transparent animationType="slide" onRequestClose={() => { setShowMeetingModal(false); resetMeeting(); }}>
-        <View style={styles.modalOverlay}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
-            <View style={[styles.modalCard, { position: "relative", paddingTop: 44 }]}>
-              <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowMeetingModal(false); resetMeeting(); }} hitSlop={14}>
-                <Ionicons name="close-circle" size={30} color="#9CA3AF" />
-              </Pressable>
+        <View style={[styles.modalOverlay, { justifyContent: "flex-end" }]}>
+          <View style={[styles.modalCard, { position: "relative", paddingTop: 44, margin: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, maxHeight: "92%" }]}>
+            <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowMeetingModal(false); resetMeeting(); }} hitSlop={14}>
+              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+            </Pressable>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" bounces={false}>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
                 <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>Book an Appointment</Text>
               </View>
               <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-                Tell us the reason for your visit and choose a time that works for you.
+                Select a reason, pick a date, then choose an available time slot.
               </Text>
 
               <Dropdown
@@ -871,26 +1027,62 @@ export default function CoursesScreen() {
                 onSelect={v => { setMeetReason(v); setMeetDate(null); setMeetSlot(null); }}
                 colors={colors}
               />
-              <Dropdown
-                label="Preferred Date"
-                placeholder={meetReason ? "Choose a date" : "Select reason first"}
-                value={meetDate}
-                options={getUpcomingWeekdays(8)}
-                onSelect={v => { setMeetDate(v); setMeetSlot(null); }}
-                colors={colors}
-                disabled={!meetReason}
-              />
-              <Dropdown
-                label="Time Slot"
-                placeholder={meetDate ? "Choose a time" : "Select date first"}
-                value={meetSlot}
-                options={OFFICE_TIMES}
-                onSelect={setMeetSlot}
-                colors={colors}
-                disabled={!meetDate}
-              />
 
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+              {/* Calendar */}
+              <View style={{ marginBottom: 18 }}>
+                <Text style={[ddStyles.label, { color: meetReason ? colors.primary : colors.mutedForeground, marginBottom: 10 }]}>
+                  Select Date
+                </Text>
+                {meetAvailLoading ? (
+                  <View style={{ alignItems: "center", paddingVertical: 32, borderRadius: 16, borderWidth: 1.5, borderColor: colors.border }}>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Loading availability…</Text>
+                  </View>
+                ) : (
+                  <View style={{ opacity: meetReason ? 1 : 0.38 }} pointerEvents={meetReason ? "auto" : "none"}>
+                    <MeetingCalendar
+                      enabledDays={meetAvail.meeting_days}
+                      selectedDate={meetDate}
+                      onSelect={iso => { setMeetDate(iso); setMeetSlot(null); }}
+                      displayMonth={meetCalMonth}
+                      onMonthChange={delta => {
+                        setMeetCalMonth(prev => {
+                          let m = prev.month + delta;
+                          let y = prev.year;
+                          if (m < 0) { m = 11; y -= 1; }
+                          if (m > 11) { m = 0; y += 1; }
+                          return { year: y, month: m };
+                        });
+                      }}
+                      colors={colors}
+                    />
+                  </View>
+                )}
+              </View>
+
+              {/* Time Slots */}
+              {meetDate && !meetAvailLoading && (
+                <View style={{ marginBottom: 14 }}>
+                  <TimeSlotGrid
+                    slots={meetAvail.meeting_slots}
+                    value={meetSlot}
+                    onSelect={setMeetSlot}
+                    colors={colors}
+                  />
+                </View>
+              )}
+
+              {/* Confirmation summary */}
+              {meetDate && meetSlot && (
+                <View style={{ borderRadius: 12, padding: 14, backgroundColor: `${colors.primary}12`, marginBottom: 18, gap: 3 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Appointment Summary</Text>
+                  <Text style={{ fontSize: 14, color: colors.foreground }}>
+                    {new Date(`${meetDate}T00:00:00`).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  </Text>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>{meetSlot}</Text>
+                </View>
+              )}
+
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 4, paddingBottom: 8 }}>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => { setShowMeetingModal(false); resetMeeting(); }}>
                   <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
@@ -902,8 +1094,8 @@ export default function CoursesScreen() {
                   <Text style={[styles.closeBtnText, { color: meetCanSend ? "#FFF" : colors.mutedForeground }]}>Send Request</Text>
                 </Pressable>
               </View>
-            </View>
-          </ScrollView>
+            </ScrollView>
+          </View>
         </View>
       </Modal>
     </View>

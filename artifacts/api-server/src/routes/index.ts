@@ -23,6 +23,7 @@ import operatorEarningsRouter from "./operator-earnings.js";
 import blacklistRouter from "./blacklist.js";
 import adminSettingsRouter from "./admin-settings.js";
 import accessCheckRouter from "./access-check.js";
+import meetingAvailabilityRouter from "./meeting-availability.js";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(operatorEarningsRouter);
 router.use(blacklistRouter);
 router.use(adminSettingsRouter);
 router.use(accessCheckRouter);
+router.use(meetingAvailabilityRouter);
 
 export default router;
