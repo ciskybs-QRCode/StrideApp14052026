@@ -145,7 +145,7 @@ export default function StudentDetail() {
             <View style={styles.infoContent}>
               <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Medical Waiver</Text>
               <Text style={[styles.infoValue, { color: colors.primary }]}>
-                {student.medicalWaiver === "ambulance" ? "Call Ambulance Immediately" : "Call Parent First"}
+                {student.medicalWaiver === "ambulance" ? "Call Ambulance Immediately" : "Contact Primary Member"}
               </Text>
             </View>
           </View>
@@ -156,13 +156,13 @@ export default function StudentDetail() {
             <View style={styles.infoContent}>
               <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Ambulance Consent</Text>
               <Text style={[styles.infoValue, { color: apiStudent?.ambulance_consent ? "#10B981" : "#EF4444" }]}>
-                {apiStudent?.ambulance_consent ? "YES — Consent given" : "NO — Call parent first"}
+                {apiStudent?.ambulance_consent ? "YES — Consent given" : "NO — Contact primary member"}
               </Text>
             </View>
           </View>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Parent / Guardian</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Primary Member</Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
           <View style={[styles.infoRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
             <View style={[styles.infoIcon, { backgroundColor: colors.muted }]}>
@@ -240,7 +240,7 @@ export default function StudentDetail() {
           <Ionicons name="star" size={20} color="#FFF" />
           <View>
             <Text style={styles.starToastTitle}>⭐ Star Awarded!</Text>
-            <Text style={styles.starToastSub}>Parent has been notified</Text>
+            <Text style={styles.starToastSub}>Member notified</Text>
           </View>
         </View>
       )}

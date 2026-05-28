@@ -1,5 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
+import QRCode from "react-native-qrcode-svg";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
@@ -216,9 +217,9 @@ export default function ChildrenScreen() {
             <View style={[styles.emptyStateIconBox, { backgroundColor: `${colors.primary}15` }]}>
               <Ionicons name="people-circle-outline" size={52} color={colors.primary} />
             </View>
-            <Text style={[styles.emptyStateTitle, { color: colors.primary }]}>No Members Linked</Text>
+            <Text style={[styles.emptyStateTitle, { color: colors.primary }]}>No Dependent Members Linked</Text>
             <Text style={[styles.emptyStateSub, { color: colors.mutedForeground }]}>
-              No linked members found for your account.
+              No dependent members linked to your account.
             </Text>
             <Pressable
               style={[styles.emptyStateBtn, { backgroundColor: colors.primary }]}
@@ -424,7 +425,7 @@ export default function ChildrenScreen() {
                     color={child.medicalWaiver === "ambulance" ? "#1D4ED8" : "#15803D"}
                   />
                   <Text style={[styles.badgeText, { color: child.medicalWaiver === "ambulance" ? "#1D4ED8" : "#15803D" }]}>
-                    {child.medicalWaiver === "ambulance" ? "Ambulance Auth." : "Call Parent First"}
+                    {child.medicalWaiver === "ambulance" ? "Ambulance Auth." : "Contact Primary Member"}
                   </Text>
                 </View>
                 <View style={[styles.badge, { backgroundColor: `${MEDIA_CONSENT_COLORS[child.mediaConsent]}20` }]}>
@@ -459,7 +460,7 @@ export default function ChildrenScreen() {
               <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
                 <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Emergency:</Text>
                 <Text style={[styles.infoValue, { color: colors.foreground }]}>
-                  {child.medicalWaiver === "ambulance" ? "Authorise Ambulance" : "Call Parent First"}
+                  {child.medicalWaiver === "ambulance" ? "Authorise Ambulance" : "Contact Primary Member"}
                 </Text>
               </View>
               <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
@@ -815,16 +816,24 @@ export default function ChildrenScreen() {
               <Ionicons name="close-circle" size={30} color="#9CA3AF" />
             </Pressable>
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ alignItems: "center", paddingBottom: 4 }}>
-              <Text style={[styles.modalTitle, { color: colors.primary }]}>Pass Ritiro</Text>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>Collection Pass</Text>
               {showQRPass && (() => {
                 const del = delegates.find(d => d.id === showQRPass);
+                const qrPayload = del
+                  ? `STRIDE:PICKUP:${del.id}:${del.childId}:${user?.id ?? ""}`
+                  : "STRIDE:PICKUP:INVALID";
                 return del ? (
                   <>
                     <Text style={[styles.modalLabel, { color: colors.mutedForeground }]}>{del.name} {del.surname}</Text>
-                    <View style={{ alignItems: "center", padding: 20, backgroundColor: colors.muted, borderRadius: 16, marginVertical: 16, width: "100%" }}>
-                      <Ionicons name="qr-code" size={100} color={colors.primary} />
-                      <Text style={{ marginTop: 12, fontSize: 24, fontWeight: "800", letterSpacing: 8, color: colors.primary }}>{del.pin}</Text>
-                      <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>PIN a 6 cifre</Text>
+                    <View style={{ alignItems: "center", padding: 20, backgroundColor: "#FFFFFF", borderRadius: 16, marginVertical: 16, width: "100%", borderWidth: 1, borderColor: colors.border }}>
+                      <QRCode
+                        value={qrPayload}
+                        size={180}
+                        color={colors.primary}
+                        backgroundColor="transparent"
+                      />
+                      <Text style={{ marginTop: 14, fontSize: 24, fontWeight: "800", letterSpacing: 8, color: colors.primary }}>{del.pin}</Text>
+                      <Text style={{ color: colors.mutedForeground, marginTop: 4, fontSize: 12 }}>6-digit PIN</Text>
                     </View>
                   </>
                 ) : null;

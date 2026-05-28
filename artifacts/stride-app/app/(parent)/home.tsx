@@ -388,7 +388,7 @@ export default function ParentHome() {
                 <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrLabel}</Text>
                 <Text style={[styles.qrId, { color: colors.mutedForeground }]}>
                   {qrTarget === "parent"
-                    ? `Parent · ID: ${user?.id}`
+                    ? `Member · ID: ${user?.id}`
                     : `Student · ID: ${qrTarget}`}
                 </Text>
               </View>

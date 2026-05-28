@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -16,6 +17,11 @@ import { api, type ApiAvailabilitySlot, type ApiDiscipline, type ApiPrivateBooki
 import type { Child } from "@/context/AppDataContext";
 
 // ── Mock fallback data (shown when API is unreachable / demo mode) ─────────────
+
+function buildMapsUrl(location: string): string {
+  const encoded = encodeURIComponent(location);
+  return `maps://?q=${encoded}`;
+}
 
 const TODAY = new Date();
 function futureDate(daysFromNow: number): string {
@@ -338,9 +344,22 @@ export default function BookLessonScreen() {
 
           <Text style={styles.cartNote}>This lesson has been added to your cart for payment.</Text>
 
-          <Pressable style={[styles.confirmedBtn, { backgroundColor: colors.secondary }]} onPress={() => router.push("/(parent)/cart")}>
-            <Ionicons name="cart-outline" size={18} color={colors.primary} />
-            <Text style={[styles.confirmedBtnText, { color: colors.primary }]}>Go to Cart & Pay</Text>
+          <Pressable
+            style={[styles.confirmedBtn, { backgroundColor: colors.secondary }]}
+            onPress={async () => {
+              const loc = confirmed.location;
+              if (!loc) { Alert.alert("Location Unavailable", "No address found for this lesson."); return; }
+              const url = buildMapsUrl(loc);
+              const canOpen = await Linking.canOpenURL(url);
+              if (canOpen) {
+                Linking.openURL(url);
+              } else {
+                Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(loc)}`);
+              }
+            }}
+          >
+            <Ionicons name="navigate" size={18} color={colors.primary} />
+            <Text style={[styles.confirmedBtnText, { color: colors.primary }]}>Navigate</Text>
           </Pressable>
           <Pressable style={[styles.confirmedBtn, { backgroundColor: "rgba(255,255,255,0.15)", marginTop: 10 }]} onPress={() => router.replace("/(parent)/home")}>
             <Ionicons name="home-outline" size={18} color="#FFF" />

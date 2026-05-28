@@ -133,6 +133,22 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
         </Pressable>
 
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/promo-codes" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#D1FAE5" }]}>
+            <Ionicons name="pricetag-outline" size={26} color="#10B981" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>Promo & Discounts</Text>
+            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
+              Create targeted promo codes and gift memberships
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#10B981" />
+        </Pressable>
+
         {/* ── Cambia Ruolo ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
         <RoleSwitcherRow />

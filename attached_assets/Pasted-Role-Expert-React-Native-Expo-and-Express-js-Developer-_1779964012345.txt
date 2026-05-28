@@ -1,0 +1,34 @@
+Role: Expert React Native (Expo) and Express.js Developer.
+Target Screens: Admin Dashboard, Operator Dashboard, Operator Settings, and Backend HTML Invoice Template.
+UI Rules: Navy Blue and Gold branding. All UI elements MUST STRICTLY remain within the physical phone display boundaries (Strictly zero layout/text overflows, perfect vertical and horizontal symmetry).
+
+🚨 STRICT ISOLATION DIRECTIVE 🚨
+DO NOT modify, rewrite, or "optimize" ANY underlying backend logic, emergency procedures, workflows, or files not explicitly mentioned below. Keep the existing working codebase 100% intact. Do not break what already works and what we are happy with.
+
+Please execute these specific visual and text updates in a single run:
+
+1. HTML Invoice Template Footer Update
+Target: Backend HTML Invoice Generation Template/Service.
+
+Action: Locate the footer text string that currently reads:
+Powered by Stride · Dance School Management
+
+Modification: Strictly remove the words " · Dance School Management". The final updated string must read exactly: Powered by Stride. Do not alter any other styles or invoice data.
+
+2. Emergency Double-Click Modal (Admin & Operator Sides)
+Target: Emergency Button Action (Triggered on Double-Click) on both Admin and Operator main dashboards.
+
+Translation Fix: In the 3-choice pop-up/modal, locate the Italian word "Soccorso" and translate it to English: "Police" (or "Rescue / Police"). The three final choices must be perfectly in English: "Fire", "Medical", and "Police".
+
+UI Refactoring: The current layout of these 3 buttons looks cluttered/confusing. Redesign them to be incredibly clean, modern, and distinct. Use clear spacing, uniform sizing, and elegant Navy Blue/Gold branding cues. Ensure the modal completely fits within the phone display boundaries with no overlapping elements.
+
+Note: DO NOT touch or alter the underlying double-click trigger logic or the automated emergency procedures/payloads themselves. Only change the button layout and the single translation.
+
+3. Operator Settings Button Realignment
+Target: Operator Dashboard / Settings Screen.
+
+Buttons Involved: "Protocols & Support" and "Emergency Numbers".
+
+UI Refactoring: Fix the alignment of these two buttons. Currently, they look off-center, uneven, and untidy. Re-align them to be perfectly centered, mathematically symmetrical, and uniformly sized. They must look highly professional and clean, strictly adhering to the screen boundary safety rules.
+
+Output Requirement: Apply these changes step-by-step and notify me when complete, showing the specific layout files modified for the UI alignment.

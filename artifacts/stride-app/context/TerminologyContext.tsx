@@ -9,13 +9,13 @@ interface TerminologyContextType {
 
 const TerminologyContext = createContext<TerminologyContextType>({
   primaryRoleName: "Member",
-  secondaryRoleName: "Member",
+  secondaryRoleName: "Dependent Member",
   updateTerminology: async () => {},
 });
 
 export function TerminologyProvider({ children }: { children: React.ReactNode }) {
   const [primaryRoleName, setPrimary] = useState("Member");
-  const [secondaryRoleName, setSecondary] = useState("Member");
+  const [secondaryRoleName, setSecondary] = useState("Dependent Member");
 
   useEffect(() => {
     api.getTerminology()
