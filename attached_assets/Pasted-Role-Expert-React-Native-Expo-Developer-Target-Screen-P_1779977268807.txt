@@ -1,0 +1,26 @@
+Role: Expert React Native (Expo) Developer.
+Target Screen: Parent/Member Side -> Course Selection / Enrollment Screen (app/(parent)/courses.tsx).
+UI Rules: Navy Blue and Gold branding. All UI elements MUST STRICTLY remain within the physical phone display boundaries (Strictly zero layout overflows).
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT modify, rewrite, or "optimize" ANY backend checkout logic, Supabase database schemas, or unrelated navigation components. Your changes must be simple, fast, and secure. DO NOT change ANYTHING that is not explicitly involved in these specific screen adjustments. Keep the existing codebase 100% intact.
+
+Please audit and update the Course Selection screen with these two modifications:
+
+1. 100% English Localization Sweep
+Action: Scan the entire courses.tsx file for any residual Italian UI strings (labels, buttons, headers, subtitles, or alert popups).
+
+Requirement: Translate everything into professional, clean English (e.g., replace things like "Iscriviti", "Seleziona Corso", or "Dettagli" with "Enroll", "Select Course", "Details").
+
+2. Granular Participant Selection (Parent and/or Dependents)
+Context: Currently, the screen doesn't let a parent enroll multiple specific members (e.g., enrolling both themselves and a dependent, or just one dependent) into a course.
+
+New UI Element: Inside the course details card or right before the "Add to Cart" button, add a clear section labeled: "Select Participants".
+
+Selection Logic: Dynamically fetch the current logged-in Parent name and all their connected Dependent Members (from the active user/children context). Display them as a list of independent checkboxes or multi-select chips.
+
+Behavior: The user must be able to select one, multiple, or all members.
+
+Cart Payload Update: When clicking the "Add to Cart / Enroll" button, the app must bundle the course item for each selected participant explicitly, ensuring that unique cart line items are generated for each chosen member.
+
+Output Requirement: Update the localization strings, implement the participant checkboxes within display limits, adjust the cart submission state payload, and notify me when complete.
