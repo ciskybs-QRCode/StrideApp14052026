@@ -1,0 +1,32 @@
+Role: You are an Expert Supabase Database Administrator and Flutter Developer.
+Architecture: MVVM.
+UI Rules: Navy Blue and Gold branding. All UI MUST STRICTLY remain within the physical phone display boundaries (No UI overflows).
+
+🚨 STRICT ISOLATION DIRECTIVE 🚨
+Do not alter any UI layouts or visual elements. This is strictly a database migration and backend synchronization task. Keep all existing features working perfectly.
+
+Objective: We are in "Scenario A". We already have an existing table named children populated with data. DO NOT create a new table from scratch. We must securely migrate the existing schema to the new White-Label format and sync the Flutter app.
+
+Please execute the following tasks:
+
+1. SQL Migration Script (Database Update)
+Generate a clean SQL script for me to run in the Supabase SQL Editor that performs the following:
+
+Rename the existing table children to members.
+
+Rename the foreign key column parent_id (or whatever links to the account holder) to user_id inside the newly renamed members table.
+
+Rename organization_id if it was previously named something else, ensuring it matches the new white-label logic.
+
+Include the pg_cron Birthday Snippet: Rewrite the exact pg_cron daily birthday notification script from the previous step, but explicitly targeting this newly renamed members table and the newly renamed user_id column.
+
+2. Flutter Codebase Synchronization (Supabase Queries)
+Once the database SQL is provided, you must update the Flutter app's backend logic to match the new schema:
+
+Update API Calls: Search the entire codebase (Repositories, ViewModels, Services) and replace all Supabase queries targeting .from('children') to .from('members').
+
+Update JSON Mapping: In the Model classes (e.g., Member or Child model), update the fromJson and toJson methods. Ensure the keys match the new database columns (e.g., replacing 'parent_id' with 'user_id').
+
+Model Renaming: If the Dart model class is still named Child, safely refactor and rename it to Member across the entire project (including imports) to maintain clean MVVM architecture.
+
+Output Requirement: First, output the SQL script for Task 1 so I can run it in Supabase. Then, proceed to refactor the Flutter codebase for Task 2.
