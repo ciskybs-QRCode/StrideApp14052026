@@ -1,0 +1,53 @@
+Comprendo perfettamente l'esigenza. Arrivati a questo punto dello sviluppo, la stabilità è la priorità assoluta. Inseriremo di nuovo la "Strict Isolation Directive" per blindare il codice funzionante e impedire all'AI di prendere iniziative fuori programma.
+
+Inoltre, per la generazione del PDF, faremo leva sul fatto che avevi già previsto la logica per la creazione di documenti (nel tuo Project Tree originale), chiedendo all'AI di integrarla senza scombinare la UI.
+
+Ecco il comando pronto da copiare e incollare su Replit:
+
+Replit AI Prompt: Strict UI Fixes, State Sync, PDF Generation & Cron Notifications
+Role: You are an Expert Flutter/Dart Developer working with Supabase.
+Architecture: MVVM.
+UI Rules: Navy Blue and Gold branding. All UI MUST STRICTLY remain within the physical phone display boundaries (Absolutely no UI overflows).
+
+🚨 STRICT ISOLATION DIRECTIVE 🚨
+DO NOT modify, rewrite, or "optimize" ANY files, layouts, ViewModels, or widgets that are not explicitly required to fulfill the following 4 tasks. Keep all existing working code completely intact. Do not break what already works.
+
+Please execute these specific, isolated tasks step-by-step:
+
+1. Translation Fix (Shopping Cart)
+Target: Parent Side -> Shopping Cart UI.
+
+Action: Locate the button text currently written in Italian (e.g., "Convalida", "Valida elemento", etc.) and translate it to English (e.g., "Validate Item" or "Checkout").
+
+2. Cart Badge State Synchronization
+Target: Bottom Navigation Bar -> Cart Icon Badge (the yellow number).
+
+Action: Fix the state management bug where the badge number persists after a successful payment.
+
+Logic: Upon successful payment and clearing of the cart list, explicitly reset the cart item count variable to 0 in the ViewModel/Provider so the yellow badge disappears immediately to accurately reflect the empty cart.
+
+3. Post-Payment PDF Receipt Generation
+Target: Checkout Success flow.
+
+Action: Upon successful payment, automatically generate a PDF receipt for the member using the pdf package.
+
+Content: The PDF must include:
+
+The Association's Name and Logo (fetched from Admin settings).
+
+Booking Details: Course/Discipline name, Date, Time, Location, and Operator name.
+
+Logic: Save this generated PDF to the user's local device or explicitly add it to their in-app "Document Centre" so they can view/download it later without breaking screen boundaries.
+
+4. Automated Event Reminders (Push Notifications)
+Target: Supabase Backend (Scheduled logic).
+
+Action: Provide the exact SQL snippet (using pg_cron) or Supabase Edge Function logic to trigger automated event reminders.
+
+Logic: The system must check the booked event dates and automatically insert a notification for the member at two specific intervals:
+
+Exactly 24 hours (1 day) before the event starts.
+
+Exactly 1 hour before the event starts.
+
+Constraint: Do not touch the Flutter UI for this step, just provide the backend code needed to trigger the existing push notification payload structure.

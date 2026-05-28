@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as Print from "expo-print";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -51,8 +52,8 @@ export default function CheckoutScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { items, removeItem } = useCart();
-  const { children } = useAppData();
-  const { triggerPaymentConfirmation } = useRealtime();
+  const { children, addDocument } = useAppData();
+  const { triggerPaymentConfirmation, clearCartBadge } = useRealtime();
 
   const payableItems = items.filter(i => i.status === "ready" || i.status === "approved");
   const total = payableItems.reduce((s, i) => s + i.price, 0);
@@ -202,9 +203,58 @@ export default function CheckoutScreen() {
         // Demo fallback — generate a local invoice number
       }
       snapshot.forEach(item => removeItem(item.id));
+      clearCartBadge();
       setPaidItems(snapshot);
       setSuccess({ invoiceNumber, invoiceId });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Generate and save PDF receipt to Document Centre
+      (async () => {
+        try {
+          const orgTitle = orgData?.name ?? "Dance Academy";
+          const dateStr = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+          const rows = snapshot.map(item =>
+            `<tr><td>${item.courseName}</td><td>${item.participantName}</td>` +
+            `<td>${item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson"}</td>` +
+            `<td style="text-align:right">€${item.price.toFixed(2)}</td></tr>`
+          ).join("");
+          const receiptTotal = snapshot.reduce((s, i) => s + i.price, 0).toFixed(2);
+          const html =
+            `<!DOCTYPE html><html><head><meta charset="utf-8"/>` +
+            `<style>*{box-sizing:border-box;margin:0;padding:0}` +
+            `body{font-family:Arial,sans-serif;padding:40px;color:#1E3A8A}` +
+            `.header{border-bottom:3px solid #FBBF24;padding-bottom:16px;margin-bottom:24px}` +
+            `.org{font-size:24px;font-weight:800}.sub{font-size:14px;color:#6B7280;margin-top:4px}` +
+            `.meta{display:flex;justify-content:space-between;margin-bottom:24px;font-size:13px}` +
+            `.lbl{color:#9CA3AF}.val{font-weight:600}` +
+            `table{width:100%;border-collapse:collapse}` +
+            `th{background:#1E3A8A;color:#fff;padding:10px 12px;text-align:left;font-size:13px}` +
+            `td{padding:10px 12px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151}` +
+            `.tot{margin-top:16px;text-align:right;font-size:16px;font-weight:800;color:#1E3A8A}` +
+            `.foot{margin-top:40px;text-align:center;font-size:11px;color:#9CA3AF;border-top:1px solid #E5E7EB;padding-top:16px}` +
+            `</style></head><body>` +
+            `<div class="header"><div class="org">${orgTitle}</div><div class="sub">Payment Receipt</div></div>` +
+            `<div class="meta">` +
+            `<div><div class="lbl">Invoice Number</div><div class="val">${invoiceNumber}</div></div>` +
+            `<div><div class="lbl">Date</div><div class="val">${dateStr}</div></div>` +
+            `</div>` +
+            `<table><thead><tr><th>Course / Lesson</th><th>Participant</th><th>Package</th><th style="text-align:right">Amount</th></tr></thead>` +
+            `<tbody>${rows}</tbody></table>` +
+            `<div class="tot">Total Paid: €${receiptTotal}</div>` +
+            `<div class="foot">Thank you for choosing ${orgTitle}. This is an automatically generated receipt.</div>` +
+            `</body></html>`;
+
+          let fileUrl: string | undefined;
+          if (Platform.OS !== "web") {
+            const { uri } = await Print.printToFileAsync({ html });
+            fileUrl = uri;
+          } else if (typeof Blob !== "undefined") {
+            const blob = new Blob([html], { type: "text/html" });
+            fileUrl = URL.createObjectURL(blob);
+          }
+          await addDocument({ title: `Receipt — ${invoiceNumber}`, type: "invoice", signed: true, required: false, fileUrl });
+        } catch { /* non-critical — don't interrupt success screen */ }
+      })();
 
       // Push instant Realtime confirmation for the first item
       const first = snapshot[0];
@@ -228,7 +278,7 @@ export default function CheckoutScreen() {
     } finally {
       setProcessing(false);
     }
-  }, [payableItems, children, total]);
+  }, [payableItems, children, total, clearCartBadge, addDocument, orgData]);
 
   handleCompleteRef.current = handleComplete;
 

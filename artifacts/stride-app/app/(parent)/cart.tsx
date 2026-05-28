@@ -361,7 +361,7 @@ export default function CartScreen() {
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.primary }]}>Risultati Validazione</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary }]}>Validation Results</Text>
               </View>
 
               {!approvalsSubmitted ? (
@@ -422,14 +422,14 @@ export default function CartScreen() {
                       >
                         {submittingApprovals ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="send-outline" size={15} color="#FFF" />}
                         <Text style={styles.modalBtnText}>
-                          {submittingApprovals ? "Invio..." : "Richiedi Approvazione"}
+                          {submittingApprovals ? "Requesting…" : "Request Approval"}
                         </Text>
                       </Pressable>
                     )}
                     {validatedReady.length > 0 && (
                       <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: validatedFlagged.length > 0 ? 1 : 2 }]} onPress={handlePayReady}>
                         <Ionicons name="card-outline" size={15} color="#FFF" />
-                        <Text style={styles.modalBtnText}>Paga {validatedReady.length > 0 ? `(€${validatedReady.reduce((s, i) => s + i.price, 0)})` : ""}</Text>
+                        <Text style={styles.modalBtnText}>Pay {validatedReady.length > 0 ? `(€${validatedReady.reduce((s, i) => s + i.price, 0)})` : ""}</Text>
                       </Pressable>
                     )}
                   </View>
