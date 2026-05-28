@@ -118,7 +118,7 @@ export default function JoinScreen() {
           <Text style={styles.heroSchool}>{schoolName}</Text>
           <Text style={styles.heroTagline}>Parent Registration</Text>
           <Text style={styles.heroDesc}>
-            Create your free account to follow lessons, payments and communications of your children.
+            Create your free account to follow lessons, payments and communications of your dependent members.
           </Text>
         </View>
 

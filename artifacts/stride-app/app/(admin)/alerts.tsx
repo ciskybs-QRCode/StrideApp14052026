@@ -42,8 +42,8 @@ function SummaryCard({ activeAlerts, resolvedCount, maxPhase }: {
         </Text>
         <Text style={[styles.summaryDesc, { color: colors.mutedForeground }]}>
           {activeAlerts.length === 0
-            ? "All children present — no alerts"
-            : `${activeAlerts.length} child${activeAlerts.length !== 1 ? "ren" : ""} not checked in`}
+            ? "All dependent members present — no alerts"
+            : `${activeAlerts.length} dependent member${activeAlerts.length !== 1 ? "s" : ""} not checked in`}
         </Text>
       </View>
 
@@ -177,7 +177,7 @@ export default function AdminAlerts() {
             color={maxPhase > 0 ? (PHASE_COLOR[maxPhase] ?? "#9CA3AF") : "#10B981"}
           />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.foreground }]}>Child Safety</Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>Dependent Member Safety</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Administrative oversight</Text>
           </View>
         </View>
@@ -203,7 +203,7 @@ export default function AdminAlerts() {
         {activeAlerts.length === 0 && (
           <View style={[styles.allClear, { backgroundColor: "#D1FAE5" }]}>
             <Ionicons name="shield-checkmark" size={32} color="#10B981" />
-            <Text style={styles.allClearText}>System secure — all children checked in</Text>
+            <Text style={styles.allClearText}>System secure — all dependent members checked in</Text>
           </View>
         )}
 

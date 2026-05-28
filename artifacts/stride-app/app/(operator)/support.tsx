@@ -90,7 +90,7 @@ const PROTOCOLS: Protocol[] = [
   },
   {
     id: "missing",
-    title: "Child Not Collected",
+    title: "Dependent Member Not Collected",
     icon: "person-remove",
     color: "#7C3AED",
     steps: [
@@ -98,7 +98,7 @@ const PROTOCOLS: Protocol[] = [
       { icon: "call",                     text: "Attempt to contact the primary parent or guardian by phone." },
       { icon: "people-outline",           text: "Contact all authorised delegates listed in the student's profile." },
       { icon: "notifications-outline",    text: "After 30 minutes with no contact: notify school administration." },
-      { icon: "eye-outline",              text: "Do not leave the child unattended under any circumstances." },
+      { icon: "eye-outline",              text: "Do not leave the dependent member unattended under any circumstances." },
     ],
   },
   {
@@ -110,7 +110,7 @@ const PROTOCOLS: Protocol[] = [
       { icon: "qr-code-outline",          text: "Ask the person to present their QR Code via the Stride app." },
       { icon: "card-outline",             text: "Request a government-issued photo ID for verification." },
       { icon: "call",                     text: "Call the registered parent to confirm the collection." },
-      { icon: "hand-left",               text: "If any doubt exists: DO NOT release the child — safety first." },
+      { icon: "hand-left",               text: "If any doubt exists: DO NOT release the dependent member — safety first." },
       { icon: "shield-checkmark-outline", text: "Immediately notify school administration of the incident." },
     ],
   },

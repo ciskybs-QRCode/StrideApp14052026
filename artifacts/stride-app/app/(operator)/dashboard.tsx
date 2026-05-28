@@ -1145,7 +1145,7 @@ export default function OperatorDashboard() {
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
-                <Text style={styles.simulateBtnText}>⚠ Simulate Absent Child</Text>
+                <Text style={styles.simulateBtnText}>⚠ Simulate Absent Member</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#DC2626", marginTop: 10 }]} onPress={simulateAccessDenied}>
                 <Text style={styles.simulateBtnText}>✗ Simulate Access Denied</Text>
@@ -1287,7 +1287,7 @@ export default function OperatorDashboard() {
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
-                <Text style={styles.simulateBtnText}>⚠ Simulate Absent Child</Text>
+                <Text style={styles.simulateBtnText}>⚠ Simulate Absent Member</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#DC2626", marginTop: 10 }]} onPress={simulateAccessDenied}>
                 <Text style={styles.simulateBtnText}>✗ Simulate Access Denied</Text>

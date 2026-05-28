@@ -363,7 +363,7 @@ export default function AdminUsers() {
                   {user.childName && (
                     <View style={[styles.childTag, { backgroundColor: colors.muted }]}>
                       <Ionicons name="person-outline" size={13} color={colors.mutedForeground} />
-                      <Text style={[styles.childTagText, { color: colors.mutedForeground }]}>Child: {user.childName}</Text>
+                      <Text style={[styles.childTagText, { color: colors.mutedForeground }]}>{secondaryRoleName}: {user.childName}</Text>
                     </View>
                   )}
 

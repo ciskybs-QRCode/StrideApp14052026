@@ -238,7 +238,7 @@ export default function ActivityScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(
       "Decision Applied — Participants Notified",
-      `In-app notification sent to all enrolled participants:\n\n"${notifyMsg}"\n\nParents of enrolled children have also been notified.`,
+      `In-app notification sent to all enrolled participants:\n\n"${notifyMsg}"\n\nMembers with enrolled dependent members have also been notified.`,
       [{ text: "OK" }],
     );
   };

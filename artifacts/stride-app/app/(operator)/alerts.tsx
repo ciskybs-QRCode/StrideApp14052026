@@ -141,10 +141,10 @@ export default function OperatorAlerts() {
             color={maxPhase > 0 ? (PHASE_COLOR[maxPhase] ?? "#9CA3AF") : "#10B981"}
           />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.foreground }]}>Child Safety</Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>Dependent Member Safety</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
               {activeAlerts.length === 0
-                ? "All children checked in"
+                ? "All dependent members checked in"
                 : `${activeAlerts.length} alert${activeAlerts.length !== 1 ? "s" : ""} in progress`}
             </Text>
           </View>
@@ -182,7 +182,7 @@ export default function OperatorAlerts() {
             <Ionicons name="checkmark-circle" size={44} color="#10B981" />
             <Text style={[styles.emptyTitle, { color: colors.foreground }]}>All clear</Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              No active security alerts. All children have been checked in.
+              No active security alerts. All dependent members have been checked in.
             </Text>
           </View>
         ) : (

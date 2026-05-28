@@ -599,8 +599,8 @@ export default function BookLessonScreen() {
             {children.length === 0 && !user ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="people-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Children Added</Text>
-                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Add your child in "My Children" first.</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Dependent Members Added</Text>
+                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Add a dependent member in "My Members" first.</Text>
               </View>
             ) : (
               children.map(child => {

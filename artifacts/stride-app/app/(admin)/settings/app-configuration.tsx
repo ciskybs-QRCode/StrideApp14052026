@@ -119,7 +119,7 @@ export default function AppConfigurationPage() {
 
   const handleSaveTerminology = async () => {
     const p = primaryInput.trim() || "Member";
-    const s = secondaryInput.trim() || "Child";
+    const s = secondaryInput.trim() || "Dependent Member";
     setSavingTerms(true);
     try {
       await updateTerminology(p, s);
@@ -213,12 +213,12 @@ export default function AppConfigurationPage() {
               placeholderTextColor={colors.mutedForeground}
               returnKeyType="next"
             />
-            <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6, marginTop: 14 }]}>Participant (e.g. Child, Student, Guest)</Text>
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6, marginTop: 14 }]}>Participant (e.g. Dependent Member, Student, Guest)</Text>
             <TextInput
               style={[styles.termInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
               value={secondaryInput}
               onChangeText={setSecondaryInput}
-              placeholder="Child"
+              placeholder="Dependent Member"
               placeholderTextColor={colors.mutedForeground}
               returnKeyType="done"
             />

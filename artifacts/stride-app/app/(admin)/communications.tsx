@@ -615,7 +615,7 @@ export default function AdminCommunications() {
               {recipientTab === "course" && (
                 <>
                   <Text style={[styles.pickerSectionHint, { color: colors.mutedForeground }]}>
-                    Send to parents whose children are enrolled in a specific course.
+                    Send to members whose dependent members are enrolled in a specific course.
                   </Text>
                   {MOCK_COURSES.map(course => (
                     <Pressable
@@ -668,7 +668,7 @@ export default function AdminCommunications() {
                               <Text style={[styles.pickerPersonRoleText, { color: rc.text }]}>{user.role}</Text>
                             </View>
                             {user.childName && (
-                              <Text style={[styles.pickerPersonSub, { color: colors.mutedForeground }]}>Child: {user.childName}</Text>
+                              <Text style={[styles.pickerPersonSub, { color: colors.mutedForeground }]}>Dependent Member: {user.childName}</Text>
                             )}
                           </View>
                         </View>

@@ -306,7 +306,7 @@ export default function DocumentsScreen() {
           <Pressable style={styles.settingsItem} onPress={openEditProfile}>
             <Ionicons name="person-outline" size={20} color={colors.primary} />
             <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Edit Profile</Text>
-            <Text style={[styles.settingsHint, { color: colors.mutedForeground }]}>Name, phone, address, children</Text>
+            <Text style={[styles.settingsHint, { color: colors.mutedForeground }]}>Name, phone, address, dependent members</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
           </Pressable>
         </View>
