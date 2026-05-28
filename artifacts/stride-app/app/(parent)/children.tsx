@@ -66,6 +66,7 @@ export default function ChildrenScreen() {
   const [newChildSurname, setNewChildSurname] = useState("");
   const [newChildDob, setNewChildDob] = useState<Date | null>(null);
   const [showDobPicker, setShowDobPicker] = useState(false);
+  const [pickerTempDate, setPickerTempDate] = useState<Date>(new Date(2010, 0, 1));
   const [newChildAllergies, setNewChildAllergies] = useState("");
   const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent">("ambulance");
   const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("none");
@@ -104,6 +105,7 @@ export default function ChildrenScreen() {
     setNewChildSurname("");
     setNewChildDob(null);
     setShowDobPicker(false);
+    setPickerTempDate(new Date(2010, 0, 1));
     setNewChildAllergies("");
     setNewChildWaiver("ambulance");
     setNewChildMediaConsent("none");
@@ -260,30 +262,62 @@ export default function ChildrenScreen() {
                   {Platform.OS === "web" ? (
                     <TextInput
                       style={[styles.modalInput, { borderColor: colors.border, marginBottom: 12 }]}
-                      value={newChildDob ? newChildDob.toISOString().split("T")[0] : ""}
-                      onChangeText={t => { const d = new Date(t); setNewChildDob(!isNaN(d.getTime()) ? d : null); }}
-                      placeholder="YYYY-MM-DD"
+                      value={newChildDob
+                        ? `${String(newChildDob.getDate()).padStart(2, "0")}/${String(newChildDob.getMonth() + 1).padStart(2, "0")}/${newChildDob.getFullYear()}`
+                        : ""}
+                      onChangeText={t => {
+                        const slashParts = t.split("/");
+                        if (slashParts.length === 3) {
+                          const [dd, mm, yyyy] = slashParts.map(Number);
+                          if (dd && mm && yyyy > 1900) {
+                            const d = new Date(yyyy, mm - 1, dd);
+                            if (!isNaN(d.getTime())) { setNewChildDob(d); return; }
+                          }
+                        }
+                        const isoDate = new Date(t);
+                        setNewChildDob(!isNaN(isoDate.getTime()) && isoDate.getFullYear() > 1900 ? isoDate : null);
+                      }}
+                      placeholder="DD/MM/YYYY"
                       placeholderTextColor={colors.mutedForeground}
                     />
                   ) : (
                     <>
                       <Pressable
-                        style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center", marginBottom: 12 }]}
-                        onPress={() => setShowDobPicker(true)}
+                        style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center", marginBottom: showDobPicker && Platform.OS === "ios" ? 0 : 12 }]}
+                        onPress={() => { setPickerTempDate(newChildDob ?? new Date(2010, 0, 1)); setShowDobPicker(true); }}
                       >
                         <Text style={{ color: newChildDob ? colors.foreground : colors.mutedForeground, fontSize: 15 }}>
                           {newChildDob ? newChildDob.toLocaleDateString("en-GB") : "Select date of birth"}
                         </Text>
                       </Pressable>
-                      {showDobPicker && (
+                      {showDobPicker && Platform.OS === "ios" && (
+                        <>
+                          <DateTimePicker
+                            value={pickerTempDate}
+                            mode="date"
+                            display="spinner"
+                            maximumDate={new Date()}
+                            onChange={(_, date) => { if (date) setPickerTempDate(date); }}
+                          />
+                          <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
+                            <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowDobPicker(false)}>
+                              <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+                            </Pressable>
+                            <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={() => { setNewChildDob(pickerTempDate); setShowDobPicker(false); }}>
+                              <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Done</Text>
+                            </Pressable>
+                          </View>
+                        </>
+                      )}
+                      {showDobPicker && Platform.OS === "android" && (
                         <DateTimePicker
-                          value={newChildDob ?? new Date(2010, 0, 1)}
+                          value={pickerTempDate}
                           mode="date"
-                          display={Platform.OS === "ios" ? "spinner" : "default"}
+                          display="default"
                           maximumDate={new Date()}
-                          onChange={(_, date) => {
-                            if (Platform.OS === "android") setShowDobPicker(false);
-                            if (date) setNewChildDob(date);
+                          onChange={(event, date) => {
+                            setShowDobPicker(false);
+                            if (event.type === "set" && date) setNewChildDob(date);
                           }}
                         />
                       )}
@@ -680,30 +714,62 @@ export default function ChildrenScreen() {
               {Platform.OS === "web" ? (
                 <TextInput
                   style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
-                  value={newChildDob ? newChildDob.toISOString().split("T")[0] : ""}
-                  onChangeText={t => { const d = new Date(t); setNewChildDob(!isNaN(d.getTime()) ? d : null); }}
-                  placeholder="YYYY-MM-DD"
+                  value={newChildDob
+                    ? `${String(newChildDob.getDate()).padStart(2, "0")}/${String(newChildDob.getMonth() + 1).padStart(2, "0")}/${newChildDob.getFullYear()}`
+                    : ""}
+                  onChangeText={t => {
+                    const slashParts = t.split("/");
+                    if (slashParts.length === 3) {
+                      const [dd, mm, yyyy] = slashParts.map(Number);
+                      if (dd && mm && yyyy > 1900) {
+                        const d = new Date(yyyy, mm - 1, dd);
+                        if (!isNaN(d.getTime())) { setNewChildDob(d); return; }
+                      }
+                    }
+                    const isoDate = new Date(t);
+                    setNewChildDob(!isNaN(isoDate.getTime()) && isoDate.getFullYear() > 1900 ? isoDate : null);
+                  }}
+                  placeholder="DD/MM/YYYY"
                   placeholderTextColor={colors.mutedForeground}
                 />
               ) : (
                 <>
                   <Pressable
-                    style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center" }]}
-                    onPress={() => setShowDobPicker(true)}
+                    style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center", marginBottom: showDobPicker && Platform.OS === "ios" ? 0 : undefined }]}
+                    onPress={() => { setPickerTempDate(newChildDob ?? new Date(2010, 0, 1)); setShowDobPicker(true); }}
                   >
                     <Text style={{ color: newChildDob ? colors.foreground : colors.mutedForeground, fontSize: 15 }}>
                       {newChildDob ? newChildDob.toLocaleDateString("en-GB") : "Select date of birth"}
                     </Text>
                   </Pressable>
-                  {showDobPicker && (
+                  {showDobPicker && Platform.OS === "ios" && (
+                    <>
+                      <DateTimePicker
+                        value={pickerTempDate}
+                        mode="date"
+                        display="spinner"
+                        maximumDate={new Date()}
+                        onChange={(_, date) => { if (date) setPickerTempDate(date); }}
+                      />
+                      <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
+                        <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowDobPicker(false)}>
+                          <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+                        </Pressable>
+                        <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={() => { setNewChildDob(pickerTempDate); setShowDobPicker(false); }}>
+                          <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Done</Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  )}
+                  {showDobPicker && Platform.OS === "android" && (
                     <DateTimePicker
-                      value={newChildDob ?? new Date(2010, 0, 1)}
+                      value={pickerTempDate}
                       mode="date"
-                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      display="default"
                       maximumDate={new Date()}
-                      onChange={(_, date) => {
-                        if (Platform.OS === "android") setShowDobPicker(false);
-                        if (date) setNewChildDob(date);
+                      onChange={(event, date) => {
+                        setShowDobPicker(false);
+                        if (event.type === "set" && date) setNewChildDob(date);
                       }}
                     />
                   )}
