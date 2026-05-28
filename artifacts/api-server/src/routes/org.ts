@@ -13,8 +13,8 @@ router.get("/terminology", async (_req, res) => {
     .eq("id", 1)
     .maybeSingle();
   const raw = (data as { member_label?: string } | null)?.member_label ?? "";
-  let primaryRoleName = "Parent";
-  let secondaryRoleName = "Child";
+  let primaryRoleName = "Member";
+  let secondaryRoleName = "Dependent Member";
   if (raw.includes(":")) {
     // compact format: "Primary:Secondary" (stored to fit varchar(32))
     const [p, s] = raw.split(":");

@@ -490,7 +490,7 @@ export default function DocumentsScreen() {
                   style={[styles.addChildInput, { borderColor: colors.border, color: colors.foreground, flex: 3 }]}
                   value={addChildName}
                   onChangeText={setAddChildName}
-                  placeholder="Child's name"
+                  placeholder={`${secondaryRoleName}'s name`}
                   placeholderTextColor={colors.mutedForeground}
                   autoCapitalize="words"
                 />

@@ -242,10 +242,10 @@ export default function ChildrenScreen() {
                 <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
                   <Text style={[styles.modalTitle, { color: colors.primary }]}>Add {secondaryRoleName}</Text>
                   {[
-                    { label: "First Name", value: newChildName, setter: setNewChildName, placeholder: "Mario" },
-                    { label: "Last Name",  value: newChildSurname, setter: setNewChildSurname, placeholder: "Rossi" },
+                    { key: "fn", label: `${secondaryRoleName}'s First Name`, value: newChildName, setter: setNewChildName, placeholder: "Mario" },
+                    { key: "ln", label: `${secondaryRoleName}'s Last Name`,  value: newChildSurname, setter: setNewChildSurname, placeholder: "Rossi" },
                   ].map(field => (
-                    <View key={field.label} style={{ marginBottom: 12 }}>
+                    <View key={field.key} style={{ marginBottom: 12 }}>
                       <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
                       <TextInput
                         style={[styles.modalInput, { borderColor: colors.border }]}
@@ -670,10 +670,10 @@ export default function ChildrenScreen() {
               </Text>
 
               {/* First Name */}
-              <Text style={[styles.modalLabel, { color: colors.primary }]}>First Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>{secondaryRoleName}'s First Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildName} onChangeText={setNewChildName} placeholder="e.g. Sofia" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
-              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Last Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
+              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>{secondaryRoleName}'s Last Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Rossi" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Date of Birth <Text style={{ color: "#EF4444" }}>*</Text></Text>
