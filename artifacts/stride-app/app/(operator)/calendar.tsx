@@ -297,6 +297,12 @@ export default function OperatorCalendar() {
   const upcomingWorkshops = workshops.filter(w => w.status === "upcoming");
   const durationDays      = daysBetween(wStartDate, wEndDate);
 
+  // ── month view vars (used in month branch of the toggle) ──────────────────
+  const yr      = viewDate.getFullYear();
+  const mo      = viewDate.getMonth();
+  const matrix  = getMonthMatrix(yr, mo);
+  const todayD  = new Date();
+
   // ── render ───────────────────────────────────────────────────────────────────
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -499,13 +505,7 @@ export default function OperatorCalendar() {
           </>
         ) : (
           /* ── MONTH VIEW ── */
-          (() => {
-            const yr   = viewDate.getFullYear();
-            const mo   = viewDate.getMonth();
-            const matrix = getMonthMatrix(yr, mo);
-            const todayD = new Date();
-            return (
-              <>
+          <>
                 {/* Month navigation */}
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                   <Pressable
@@ -596,9 +596,7 @@ export default function OperatorCalendar() {
                     </View>
                   ))}
                 </View>
-              </>
-            );
-          })()
+          </>
         )}
 
         {/* ── Week overview ── */}

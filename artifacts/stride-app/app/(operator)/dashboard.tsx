@@ -295,6 +295,12 @@ export default function OperatorDashboard() {
   const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
   const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string } | null>(null);
 
+  // ── Clock-Out / QR logout state ─────────────────────────────────────────────
+  const [showClockOutModal, setShowClockOutModal]     = useState(false);
+  const [clockOutStatus, setClockOutStatus]           = useState<"idle" | "confirming" | "done">("idle");
+  const [clockOutAbsent, setClockOutAbsent]           = useState(false);
+  const [clockOutDetails, setClockOutDetails]         = useState<{ discipline: string; scheduledEnd: string; clockedOut: string } | null>(null);
+
   // ── Absence Report modal ────────────────────────────────────────────────────
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
   const [absenceType, setAbsenceType]           = useState<AbsenceType>("absent");
@@ -336,6 +342,62 @@ export default function OperatorDashboard() {
       setShowCascade(true);
     }
   }, [activeAlert?.id]);
+
+  // ── Clock-Out / QR-logout handler ────────────────────────────────────────
+  const handleClockOut = async () => {
+    const now = new Date();
+    const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const dateStr = now.toISOString().split("T")[0];
+
+    // Load today's schedule from AsyncStorage (the calendar stores it under "stride_schedule")
+    let scheduleRaw: string | null = null;
+    try { scheduleRaw = await AsyncStorage.getItem("stride_schedule"); } catch { /* ignore */ }
+    const todayDow = (now.getDay() + 6) % 7; // Mon=0 … Sun=6
+    const todayLessons: Array<{ course: string; end: string; cancelled?: boolean }> = [];
+    if (scheduleRaw) {
+      try {
+        const parsed = JSON.parse(scheduleRaw) as Record<string, Array<{ course: string; end: string; cancelled?: boolean }>>;
+        const key = String(todayDow);
+        if (Array.isArray(parsed[key])) {
+          todayLessons.push(...(parsed[key] as Array<{ course: string; end: string; cancelled?: boolean }>).filter(l => !l.cancelled));
+        }
+      } catch { /* ignore */ }
+    }
+
+    // Fallback mock schedule if nothing persisted
+    if (todayLessons.length === 0) {
+      todayLessons.push({ course: "Ballet", end: "19:00" });
+    }
+
+    // Find the latest-ending class today
+    const lastClass = todayLessons.reduce((latest, l) => l.end > latest.end ? l : latest, todayLessons[0]);
+    const [endH, endM] = lastClass.end.split(":").map(Number);
+    const nowMins    = now.getHours() * 60 + now.getMinutes();
+    const endMins    = endH * 60 + endM;
+    const earlyByMins = endMins - nowMins;
+    const isEarly    = earlyByMins >= 60;
+
+    if (isEarly) {
+      // Record the absence
+      const absenceEntry = { date: dateStr, discipline: lastClass.course, scheduledEnd: lastClass.end, clockedOut: hhmm };
+      try {
+        const raw = await AsyncStorage.getItem("stride_operator_absences");
+        const list = raw ? JSON.parse(raw) : [];
+        list.unshift(absenceEntry);
+        await AsyncStorage.setItem("stride_operator_absences", JSON.stringify(list));
+      } catch { /* ignore */ }
+      setClockOutAbsent(true);
+      setClockOutDetails({ discipline: lastClass.course, scheduledEnd: lastClass.end, clockedOut: hhmm });
+      pushLog({ time: nowTime(), action: `⚠ Clock-out: ABSENT — left ${earlyByMins} min early (${lastClass.course})`, type: "warning" });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    } else {
+      setClockOutAbsent(false);
+      setClockOutDetails(null);
+      pushLog({ time: nowTime(), action: `✓ Clock-out logged — ${hhmm}`, type: "success" });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    setClockOutStatus("done");
+  };
 
   // ── Log helper ────────────────────────────────────────────────────────────
   const pushLog = (entry: LogEntry) => {
@@ -956,6 +1018,22 @@ export default function OperatorDashboard() {
           <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
         </Pressable>
 
+        {/* ── Clock Out / QR Logout ── */}
+        <Pressable
+          style={[styles.qrPanel, { backgroundColor: colors.card, marginTop: 10 }]}
+          onPress={() => { setClockOutStatus("idle"); setShowClockOutModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        >
+          <View style={[styles.qrMiniBox, { backgroundColor: "#FEF3C7", width: 56, height: 56, borderRadius: 14 }]}>
+            <Ionicons name="log-out-outline" size={26} color="#D97706" />
+          </View>
+          <View style={styles.qrPanelRight}>
+            <Text style={[styles.qrPanelTitle, { color: "#D97706" }]}>CLOCK OUT</Text>
+            <Text style={[styles.qrPanelName, { color: colors.foreground, fontSize: 13 }]}>Log your departure from the facility</Text>
+            <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>Schedules checked automatically</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
+
         {/* ── Activity Log — using Parent's notifCard style ── */}
         <View style={styles.logHeader}>
           <Text style={[styles.sectionTitle, { color: colors.primary }]}>Activity Log</Text>
@@ -973,6 +1051,119 @@ export default function OperatorDashboard() {
           </View>
         ))}
       </ScrollView>
+
+      {/* ══════════════════════════════════════════════════
+          CLOCK OUT MODAL
+      ══════════════════════════════════════════════════ */}
+      <Modal
+        visible={showClockOutModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowClockOutModal(false)}
+      >
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }} onPress={() => setShowClockOutModal(false)}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card, paddingBottom: 36 }]}>
+            {/* Handle */}
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginBottom: 20 }} />
+
+            {clockOutStatus === "idle" && (
+              <>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 20 }}>
+                  <View style={{ width: 54, height: 54, borderRadius: 16, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="log-out-outline" size={28} color="#D97706" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 2 }]}>Clock Out</Text>
+                    <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Your schedule will be checked automatically</Text>
+                  </View>
+                </View>
+                <View style={{ backgroundColor: "#F0F4FF", borderRadius: 14, padding: 14, marginBottom: 20, gap: 6 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>How it works</Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 17 }}>
+                    If you leave 1 hour or more before your last scheduled class ends, that session will be automatically marked as Absent in your Payroll log and the earning nullified.
+                  </Text>
+                </View>
+                <Pressable
+                  style={{ backgroundColor: "#D97706", borderRadius: 14, paddingVertical: 15, alignItems: "center" }}
+                  onPress={() => { setClockOutStatus("confirming"); handleClockOut(); }}
+                >
+                  <Text style={{ color: "#FFF", fontWeight: "800", fontSize: 15 }}>CONFIRM CLOCK OUT</Text>
+                </Pressable>
+                <Pressable
+                  style={{ borderRadius: 14, paddingVertical: 12, alignItems: "center", marginTop: 8 }}
+                  onPress={() => setShowClockOutModal(false)}
+                >
+                  <Text style={{ color: colors.mutedForeground, fontWeight: "600", fontSize: 14 }}>Cancel</Text>
+                </Pressable>
+              </>
+            )}
+
+            {clockOutStatus === "confirming" && (
+              <View style={{ alignItems: "center", paddingVertical: 32, gap: 12 }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>Checking your schedule…</Text>
+              </View>
+            )}
+
+            {clockOutStatus === "done" && !clockOutAbsent && (
+              <View style={{ alignItems: "center", paddingVertical: 24, gap: 12 }}>
+                <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="checkmark-circle" size={44} color="#059669" />
+                </View>
+                <Text style={{ fontSize: 19, fontWeight: "900", color: colors.primary }}>Clock-Out Logged</Text>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", lineHeight: 18 }}>
+                  You left on time. No Payroll adjustments needed. Have a great rest of your day!
+                </Text>
+                <Pressable
+                  style={{ backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40, marginTop: 8 }}
+                  onPress={() => setShowClockOutModal(false)}
+                >
+                  <Text style={{ color: "#FBBF24", fontWeight: "800", fontSize: 15 }}>DONE</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {clockOutStatus === "done" && clockOutAbsent && clockOutDetails && (
+              <View style={{ alignItems: "center", paddingVertical: 16, gap: 12 }}>
+                <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="warning" size={40} color="#EF4444" />
+                </View>
+                <Text style={{ fontSize: 19, fontWeight: "900", color: "#DC2626" }}>Absence Recorded</Text>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", lineHeight: 18 }}>
+                  You clocked out more than 1 hour before your scheduled class ended.
+                </Text>
+
+                <View style={{ backgroundColor: "#FEF2F2", borderRadius: 14, padding: 14, width: "100%", gap: 8, borderWidth: 1, borderColor: "#FCA5A5" }}>
+                  {[
+                    { label: "Discipline",     value: clockOutDetails.discipline },
+                    { label: "Scheduled End",  value: clockOutDetails.scheduledEnd },
+                    { label: "Clocked Out At", value: clockOutDetails.clockedOut },
+                    { label: "Payroll Impact", value: "Earning nullified for this session" },
+                  ].map(({ label, value }) => (
+                    <View key={label} style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={{ fontSize: 12, color: "#9CA3AF", fontWeight: "600" }}>{label}</Text>
+                      <Text style={{ fontSize: 12, color: "#991B1B", fontWeight: "800" }}>{value}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: "center" }}>
+                  This record has been saved. It will appear in your Payroll log. Contact Admin if you believe this is an error.
+                </Text>
+                <Pressable
+                  style={{ backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 }}
+                  onPress={() => setShowClockOutModal(false)}
+                >
+                  <Text style={{ color: "#FBBF24", fontWeight: "800", fontSize: 15 }}>UNDERSTOOD</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* ══════════════════════════════════════════════════
           PRIVATE LESSON BOOKING DETAIL MODAL

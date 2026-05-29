@@ -58,7 +58,7 @@ const HEADER_STORAGE_KEY = "operator_invoice_header";
 
 // ── Month selector helpers ───────────────────────────────────────────────────
 
-const IT_MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const IT_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 function getRecentMonths() {
   const result: Array<{ key: string; label: string }> = [];
@@ -322,8 +322,24 @@ const hm = StyleSheet.create({
 // ── In-app banner ────────────────────────────────────────────────────────────
 
 function InAppBanner({ message, type, onDismiss }: { message: string; type: "success" | "warning" | "info"; onDismiss: () => void }) {
-  const bg   = type === "success" ? "#064E3B" : type === "warning" ? "#78350F" : "#1E3A8A";
-  const icon = type === "success" ? "checkmark-circle" as const : type === "warning" ? "warning" as const : "information-circle" as const;
+  if (type === "warning") {
+    return (
+      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: "#FBBF24", backgroundColor: "#FFFBEB" }}>
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+          <Ionicons name="warning" size={20} color="#D97706" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 12, fontWeight: "800", color: "#92400E", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Action Required</Text>
+          <Text style={{ fontSize: 13, color: "#78350F", fontWeight: "500", lineHeight: 18 }}>{message}</Text>
+        </View>
+        <Pressable onPress={onDismiss} hitSlop={12}>
+          <Ionicons name="close" size={18} color="#92400E" />
+        </Pressable>
+      </View>
+    );
+  }
+  const bg   = type === "success" ? "#064E3B" : "#1E3A8A";
+  const icon = type === "success" ? "checkmark-circle" as const : "information-circle" as const;
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: bg, borderRadius: 14, padding: 14, marginBottom: 12 }}>
       <Ionicons name={icon} size={22} color="#FBBF24" />
@@ -459,6 +475,19 @@ export default function OperatorInvoicing() {
     });
   }, [dailyLog, dateRange]);
 
+  // ── Operator absences (clock-out early) ─────────────────────────────────
+  const [operatorAbsences, setOperatorAbsences] = useState<Array<{ date: string; discipline: string }>>([]);
+
+  useFocusEffect(useCallback(() => {
+    AsyncStorage.getItem("stride_operator_absences").then(raw => {
+      setOperatorAbsences(raw ? JSON.parse(raw) : []);
+    }).catch(() => {});
+  }, []));
+
+  const isAbsent = useCallback((e: DailyEntry) =>
+    operatorAbsences.some(a => a.date === e.date && a.discipline === e.discipline),
+  [operatorAbsences]);
+
   // Group filtered log by date for UI rendering
   const dailyGroups = useMemo(() => {
     const groups: Array<{ date: string; entries: DailyEntry[]; dayTotalCents: number }> = [];
@@ -479,8 +508,16 @@ export default function OperatorInvoicing() {
   const filteredTotalHours = filteredDailyLog.reduce((s, e) => s + e.hours, 0);
   const totalEur = (filteredTotalCents / 100).toFixed(2);
 
-  // ── Reminder ─────────────────────────────────────────────────────────────
+  // ── Reminder + last-day push notification ────────────────────────────────
   const showReminder = isReminderDue(payoutFrequency) && !submitted && !reminderDismissed;
+
+  // Last-day-of-month in-app reminder (shown once per session)
+  const [showLastDayBanner, setShowLastDayBanner] = useState(false);
+  useEffect(() => {
+    const now     = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    if (now.getDate() === lastDay) setShowLastDayBanner(true);
+  }, []);
 
   // ── Generate PDF ─────────────────────────────────────────────────────────
   const handleGenerateAndShare = async () => {
@@ -621,6 +658,15 @@ export default function OperatorInvoicing() {
           />
         )}
 
+        {/* ── Last-day-of-month reminder ── */}
+        {showLastDayBanner && (
+          <InAppBanner
+            type="info"
+            message="Today is the last day of the month — submit your invoice to ensure timely payment."
+            onDismiss={() => setShowLastDayBanner(false)}
+          />
+        )}
+
         {/* ── Profile card ── */}
         <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
           <View style={styles.profileTop}>
@@ -697,22 +743,22 @@ export default function OperatorInvoicing() {
 
         {/* ── Daily Work Log ── */}
         <View style={styles.logSectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Registro Giornaliero</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Log</Text>
           <Text style={[styles.logPeriodChip, { backgroundColor: `${colors.primary}18`, color: colors.primary }]}>{dateRange.label}</Text>
         </View>
 
         <View style={[styles.logCard, { backgroundColor: colors.card }]}>
           {/* Column header — 3 columns: Disciplina | Ore | Totale */}
           <View style={[styles.logTableHeader, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.logTH, { flex: 3 }]}>Disciplina</Text>
-            <Text style={[styles.logTH, { flex: 1, textAlign: "center" }]}>Ore</Text>
-            <Text style={[styles.logTH, { flex: 1.2, textAlign: "right" }]}>Totale</Text>
+            <Text style={[styles.logTH, { flex: 3 }]}>Discipline</Text>
+            <Text style={[styles.logTH, { flex: 1, textAlign: "center" }]}>Hours</Text>
+            <Text style={[styles.logTH, { flex: 1.2, textAlign: "right" }]}>Total</Text>
           </View>
 
           {loading ? (
             <View style={styles.logLoadingRow}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.logLoadingText, { color: colors.mutedForeground }]}>Caricamento registro…</Text>
+              <Text style={[styles.logLoadingText, { color: colors.mutedForeground }]}>Loading log…</Text>
             </View>
           ) : dailyGroups.length === 0 ? (
             <View style={styles.logEmptyRow}>
@@ -741,19 +787,30 @@ export default function OperatorInvoicing() {
                 </View>
 
                 {/* Entry rows — aligned to 3-column header */}
-                {group.entries.map((entry, ei) => (
-                  <View
-                    key={`${group.date}-${ei}`}
-                    style={[styles.logEntryRow, { borderTopWidth: 1, borderTopColor: `${colors.border}50` }]}
-                  >
-                    <View style={{ flex: 3, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <View style={[styles.logDisciplineDot, { backgroundColor: colors.secondary }]} />
-                      <Text style={[styles.logDisciplineName, { color: colors.foreground }]} numberOfLines={1}>{entry.discipline}</Text>
+                {group.entries.map((entry, ei) => {
+                  const absent = isAbsent(entry);
+                  return (
+                    <View
+                      key={`${group.date}-${ei}`}
+                      style={[styles.logEntryRow, { borderTopWidth: 1, borderTopColor: `${colors.border}50`, opacity: absent ? 0.6 : 1 }]}
+                    >
+                      <View style={{ flex: 3, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <View style={[styles.logDisciplineDot, { backgroundColor: absent ? "#EF4444" : colors.secondary }]} />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[styles.logDisciplineName, { color: absent ? "#DC2626" : colors.foreground }]} numberOfLines={1}>{entry.discipline}</Text>
+                          {absent && (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 }}>
+                              <Ionicons name="warning" size={10} color="#DC2626" />
+                              <Text style={{ fontSize: 10, color: "#DC2626", fontWeight: "700" }}>ABSENT — earning nullified</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <Text style={[styles.logEntryCell, { flex: 1, color: absent ? "#9CA3AF" : colors.mutedForeground, textAlign: "center", textDecorationLine: absent ? "line-through" : "none" }]}>{entry.hours}h</Text>
+                      <Text style={[styles.logEntryCell, { flex: 1.2, color: absent ? "#9CA3AF" : colors.primary, fontWeight: "700", textAlign: "right", textDecorationLine: absent ? "line-through" : "none" }]}>€{(entry.totalCents / 100).toFixed(2)}</Text>
                     </View>
-                    <Text style={[styles.logEntryCell, { flex: 1, color: colors.mutedForeground, textAlign: "center" }]}>{entry.hours}h</Text>
-                    <Text style={[styles.logEntryCell, { flex: 1.2, color: colors.primary, fontWeight: "700", textAlign: "right" }]}>€{(entry.totalCents / 100).toFixed(2)}</Text>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             ))
           )}
@@ -761,8 +818,8 @@ export default function OperatorInvoicing() {
           {!loading && dailyGroups.length > 0 && (
             <View style={[styles.logGrandTotal, { backgroundColor: colors.primary }]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.logGrandTotalLabel}>TOTALE DOVUTO</Text>
-                <Text style={styles.logGrandTotalSub}>{filteredTotalHours}h · {filteredDailyLog.length} sessioni</Text>
+                <Text style={styles.logGrandTotalLabel}>TOTAL DUE</Text>
+                <Text style={styles.logGrandTotalSub}>{filteredTotalHours}h · {filteredDailyLog.length} sessions</Text>
               </View>
               <Text style={styles.logGrandTotalAmount}>€{totalEur}</Text>
             </View>
@@ -778,13 +835,13 @@ export default function OperatorInvoicing() {
           >
             <Ionicons name={generating ? "hourglass-outline" : "document-text"} size={18} color={colors.primary} />
             <Text style={[styles.pdfBtnText, { color: colors.primary }]}>
-              {generating ? "GENERAZIONE IN CORSO…" : Platform.OS === "web" ? "SCARICA INVOICE HTML" : "GENERA & CONDIVIDI PDF"}
+              {generating ? "GENERATING…" : Platform.OS === "web" ? "DOWNLOAD INVOICE HTML" : "GENERATE & SHARE PDF"}
             </Text>
           </Pressable>
           <Text style={[styles.pdfHint, { color: colors.mutedForeground }]}>
             {Platform.OS === "web"
-              ? "Scarica il file HTML, aprilo nel browser e stampa come PDF"
-              : `Genera un PDF professionale per ${dateRange.label}`}
+              ? "Download the HTML file, open it in any browser and print → Save as PDF"
+              : `Generate a professional PDF for ${dateRange.label}`}
           </Text>
 
           {/* PDF error banner */}
@@ -816,8 +873,8 @@ export default function OperatorInvoicing() {
             >
               <Ionicons name="checkmark-circle" size={20} color="#059669" />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.submittedText, { marginBottom: 1 }]}>Invoice inviata all'Admin</Text>
-                <Text style={{ fontSize: 11, color: "#059669" }}>Tocca per vedere conferma · {submittedId}</Text>
+                <Text style={[styles.submittedText, { marginBottom: 1 }]}>Invoice sent to Admin</Text>
+                <Text style={{ fontSize: 11, color: "#059669" }}>Tap to view confirmation · {submittedId}</Text>
               </View>
               <Ionicons name="chevron-forward" size={14} color="#059669" />
             </Pressable>
@@ -830,12 +887,12 @@ export default function OperatorInvoicing() {
               {submitting ? (
                 <>
                   <ActivityIndicator size="small" color="#FBBF24" />
-                  <Text style={styles.submitBtnText}>INVIO IN CORSO…</Text>
+                  <Text style={styles.submitBtnText}>SENDING…</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="paper-plane-outline" size={16} color="#FBBF24" />
-                  <Text style={styles.submitBtnText}>INVIA INVOICE ALL'ADMIN</Text>
+                  <Text style={styles.submitBtnText}>SEND INVOICE TO ADMIN</Text>
                 </>
               )}
             </Pressable>

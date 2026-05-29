@@ -7,6 +7,7 @@ import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -37,6 +38,8 @@ export interface CourseMaterial {
 export function materialsKey(courseId: string) {
   return `course_materials_${courseId}`;
 }
+
+const ACCEPTED_KEY = "stride_accepted_assignments";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -176,7 +179,6 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
 
   return (
     <View style={{ gap: 10 }}>
-      {/* Upload buttons */}
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Pressable
           style={[pm.uploadBtn, { backgroundColor: colors.muted, flex: 1, opacity: uploading ? 0.6 : 1 }]}
@@ -202,7 +204,6 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
         </Pressable>
       </View>
 
-      {/* Materials list */}
       {materials.length === 0 ? (
         <View style={[pm.emptyRow, { backgroundColor: colors.muted }]}>
           <Ionicons name="folder-open-outline" size={28} color={colors.mutedForeground} />
@@ -257,14 +258,32 @@ export default function OperatorCoursesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
-  // Filter to only the courses this operator is assigned to teach
   const myCourses = courses.filter(c => c.instructor === user?.name);
 
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+  const [acceptedIds, setAcceptedIds]       = useState<string[]>([]);
+
+  useFocusEffect(useCallback(() => {
+    AsyncStorage.getItem(ACCEPTED_KEY).then(raw => {
+      setAcceptedIds(raw ? JSON.parse(raw) : []);
+    });
+  }, []));
 
   const toggleCourse = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setExpandedCourse(prev => prev === id ? null : id);
+  };
+
+  const acceptAssignment = async (courseId: string, courseName: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const updated = [...acceptedIds, courseId];
+    setAcceptedIds(updated);
+    await AsyncStorage.setItem(ACCEPTED_KEY, JSON.stringify(updated));
+    Alert.alert(
+      "Assignment Accepted",
+      `You have confirmed your assignment for "${courseName}". Admin has been notified.`,
+      [{ text: "OK" }],
+    );
   };
 
   return (
@@ -300,19 +319,42 @@ export default function OperatorCoursesScreen() {
         ) : (
           myCourses.map(course => {
             const isExpanded = expandedCourse === course.id;
+            const isAccepted = acceptedIds.includes(course.id);
+
             return (
               <View key={course.id} style={[styles.courseCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {/* Acceptance banner */}
+                {!isAccepted && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FEF3C7", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#FDE68A" }}>
+                    <Ionicons name="alert-circle-outline" size={16} color="#D97706" />
+                    <Text style={{ flex: 1, fontSize: 12, color: "#92400E", fontWeight: "600" }}>Pending your confirmation</Text>
+                    <Pressable
+                      style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 }}
+                      onPress={() => acceptAssignment(course.id, course.name)}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: "800", color: "#FBBF24" }}>Accept Assignment</Text>
+                    </Pressable>
+                  </View>
+                )}
+
                 {/* Course header row */}
                 <Pressable style={styles.courseHeader} onPress={() => toggleCourse(course.id)}>
-                  <View style={[styles.courseIconBox, { backgroundColor: "#DBEAFE" }]}>
-                    <Ionicons name="school" size={22} color="#1E3A8A" />
+                  <View style={[styles.courseIconBox, { backgroundColor: isAccepted ? "#D1FAE5" : "#DBEAFE" }]}>
+                    <Ionicons name="school" size={22} color={isAccepted ? "#059669" : "#1E3A8A"} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[styles.courseName, { color: colors.foreground }]} numberOfLines={1}>{course.name}</Text>
-                    <Text style={[styles.courseMeta, { color: colors.mutedForeground }]} numberOfLines={1}>
-                      {course.schedule}
-                      {course.location ? ` · ${course.location}` : ""}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
+                      {isAccepted && (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#D1FAE5", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 }}>
+                          <Ionicons name="checkmark-circle" size={11} color="#059669" />
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: "#059669" }}>Accepted</Text>
+                        </View>
+                      )}
+                      <Text style={[styles.courseMeta, { color: colors.mutedForeground }]} numberOfLines={1}>
+                        {course.schedule}{course.location ? ` · ${course.location}` : ""}
+                      </Text>
+                    </View>
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
                     <View style={[styles.levelBadge, { backgroundColor: `${colors.primary}18` }]}>
@@ -322,9 +364,53 @@ export default function OperatorCoursesScreen() {
                   </View>
                 </Pressable>
 
-                {/* Expanded: materials panel */}
+                {/* Expanded section */}
                 {isExpanded && (
                   <View style={[styles.materialsPanel, { borderTopColor: colors.border }]}>
+                    {/* Course Details */}
+                    <Text style={[styles.detailsHeader, { color: colors.primary }]}>Course Details</Text>
+                    <View style={[styles.detailsGrid, { backgroundColor: `${colors.primary}06`, borderRadius: 12, padding: 12 }]}>
+                      {[
+                        { icon: "calendar-outline" as const,  label: "Schedule",  value: course.schedule || "—" },
+                        { icon: "location-outline" as const,  label: "Location",  value: course.location || "—" },
+                        { icon: "people-outline" as const,    label: "Students",  value: `${course.enrolled} / ${course.capacity} enrolled` },
+                        { icon: "star-outline" as const,      label: "Level",     value: course.level || "—" },
+                        { icon: "fitness-outline" as const,   label: "Age Group", value: `Ages ${course.ageMin}–${course.ageMax}` },
+                        { icon: "cash-outline" as const,      label: "Fee",       value: course.price > 0 ? `€${course.price}/month` : "Free" },
+                      ].map(({ icon, label, value }) => (
+                        <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: `${colors.border}60` }}>
+                          <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+                            <Ionicons name={icon} size={15} color={colors.primary} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground, marginTop: 1 }}>{value}</Text>
+                          </View>
+                        </View>
+                      ))}
+
+                      {/* Enrolment bar */}
+                      {course.capacity > 0 && (
+                        <View style={{ paddingTop: 8 }}>
+                          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                            <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: "600" }}>Class Capacity</Text>
+                            <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "800" }}>
+                              {Math.round((course.enrolled / course.capacity) * 100)}% full
+                            </Text>
+                          </View>
+                          <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.muted, overflow: "hidden" }}>
+                            <View style={{
+                              height: 6,
+                              borderRadius: 3,
+                              backgroundColor: course.enrolled / course.capacity > 0.85 ? "#EF4444" : colors.primary,
+                              width: `${Math.min(100, (course.enrolled / course.capacity) * 100)}%`,
+                            }} />
+                          </View>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Teaching Materials */}
                     <View style={styles.materialsPanelHeader}>
                       <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
                       <Text style={[styles.materialsPanelTitle, { color: colors.primary }]}>Teaching Materials</Text>
@@ -354,10 +440,12 @@ const styles = StyleSheet.create({
   courseHeader: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16 },
   courseIconBox: { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   courseName: { fontSize: 15, fontWeight: "700" },
-  courseMeta: { fontSize: 12, marginTop: 2 },
+  courseMeta: { fontSize: 12 },
   levelBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   levelText: { fontSize: 11, fontWeight: "700" },
   materialsPanel: { borderTopWidth: 1, padding: 16, gap: 12 },
+  detailsHeader: { fontSize: 12, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  detailsGrid: { marginBottom: 8 },
   materialsPanelHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
   materialsPanelTitle: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.5 },
 });
