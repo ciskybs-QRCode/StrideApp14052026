@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api, setToken, clearToken, getToken } from "../lib/api";
 
-export type UserRole = "parent" | "operator" | "admin";
+export type UserRole = "parent" | "operator" | "admin" | "kiosk";
 
 export interface User {
   id: string;
@@ -38,6 +38,7 @@ const USER_KEY = "stride_user";
 function rolesForPrimary(primary: UserRole): UserRole[] {
   if (primary === "admin")    return ["admin", "operator", "parent"];
   if (primary === "operator") return ["operator", "parent"];
+  if (primary === "kiosk")   return ["kiosk"];
   return ["parent"];
 }
 
@@ -69,6 +70,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string): Promise<User> => {
+    // Kiosk device account: bypass API and set role locally
+    if (email.toLowerCase() === "kiosk@test.com") {
+      const kioskUser: User = {
+        id: "kiosk-device",
+        name: "Kiosk Device",
+        email,
+        role: "kiosk",
+        roles: ["kiosk"],
+      };
+      await setToken("kiosk-demo-token");
+      try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(kioskUser)); } catch { /* localStorage blocked */ }
+      setUser(kioskUser);
+      return kioskUser;
+    }
+
     const { token, user: apiUser } = await api.login(email, password);
     await setToken(token);
     const primaryRole = apiUser.role as UserRole;

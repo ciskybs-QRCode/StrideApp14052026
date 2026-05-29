@@ -1,0 +1,20 @@
+Role: Expert React Native (Expo) & Supabase Developer. Context: We need a "Digital Receptionist" mode. The association will mount an unattended iPad/Phone at the entrance. Users (Members, Operators, Admins) will scan their QR codes to log in/out. UI Rules: Navy Blue and Gold branding. ALL UI elements MUST STRICTLY remain within the physical phone display boundaries (Strictly zero layout overflows).
+GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) DO NOT modify, rewrite, or "optimize" existing Member/Operator/Admin navigations or the core backend QR validation logic. Your goal is purely to create a new isolated frontend environment (Kiosk Mode) that hooks into the existing QR validation endpoints.
+Please implement the Kiosk Mode systematically:
+1. Create the Kiosk Role & Routing:
+Add a new isolated routing group for the Kiosk (app/(kiosk)).
+Update the authentication flow: if a user logs in with a specific Kiosk account (e.g., role === 'kiosk' in Supabase), direct them EXCLUSIVELY to the Kiosk screen.
+Security: The Kiosk screen must have NO bottom tabs, NO headers, NO drawer menus, and NO back buttons. It must be a completely trapped, full-screen UI.
+2. The Scanner UI & "Traffic Light" Feedback:
+Build a full-screen, ultra-minimalist UI containing the Expo Camera barcode scanner.
+When a QR code is scanned, instantly pause the camera and send the payload to the existing backend QR validation endpoint.
+Full-Screen Feedback: Based on the backend response, display a massive, full-screen color overlay for exactly 3 seconds:
+GREEN: Success (Logged in/out successfully). Display a large checkmark and a welcome message.
+YELLOW/ORANGE: Warning (E.g., Payment expiring soon, Grace Access used). Display the warning text clearly.
+RED: Denied (Suspended, Unpaid, or Blocked). Display a large X and the instruction to "Contact Admin/Front Desk".
+After 3 seconds, the overlay must disappear and the camera must automatically reactivate for the next person in line.
+3. The Hidden Exit Hatch:
+Since there are no menus, build a hidden exit mechanism for the Admin.
+Add an invisible Pressable component in the very top-right corner of the screen.
+Require a rapid 5-tap sequence on this invisible button to trigger an Alert.prompt or a custom modal asking for a secure Admin PIN (hardcode a simple PIN in the .env or settings for now). If correct, execute a logout function and return to the main Auth/Login screen.
+Output Requirement: Confirm the creation of the completely isolated Kiosk route, the implementation of the traffic-light UI overlay, and the hidden exit logic. Ensure everything fits perfectly on a tablet or phone screen with zero overflows.

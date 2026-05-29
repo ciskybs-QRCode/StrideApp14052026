@@ -41,9 +41,10 @@ export default function LoginScreen() {
   };
 
   const navigateAfterLogin = (role: UserRole) => {
-    if (role === "admin")    router.replace("/(admin)/stats" as never);
+    if (role === "kiosk")         router.replace("/(kiosk)/" as never);
+    else if (role === "admin")    router.replace("/(admin)/stats" as never);
     else if (role === "operator") router.replace("/(operator)/dashboard" as never);
-    else                     router.replace("/(parent)/home" as never);
+    else                          router.replace("/(parent)/home" as never);
   };
 
   // Demo auto-login: ?demo=parent|operator|admin auto-signs in for canvas previews
@@ -158,6 +159,7 @@ export default function LoginScreen() {
               { role: "Member",   email: "genitore@test.com"  },
               { role: "Operator", email: "operatore@test.com" },
               { role: "Admin",    email: "admin@test.com"     },
+              { role: "Kiosk",    email: "kiosk@test.com"     },
             ].map(c => (
               <Pressable
                 key={c.role}

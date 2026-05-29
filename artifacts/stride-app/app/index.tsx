@@ -25,6 +25,8 @@ export default function Index() {
 
     if (!user) {
       router.replace("/login");
+    } else if (user.role === "kiosk") {
+      router.replace("/(kiosk)/" as never);
     } else if (user.role === "admin") {
       router.replace("/(admin)/stats");
     } else if (user.role === "operator") {

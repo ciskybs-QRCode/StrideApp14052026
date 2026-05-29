@@ -86,6 +86,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(parent)" />
         <Stack.Screen name="(operator)" />
         <Stack.Screen name="(admin)" />
+        <Stack.Screen name="(kiosk)" />
       </Stack>
       <OfflineBanner />
     </>
