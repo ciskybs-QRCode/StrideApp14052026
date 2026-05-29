@@ -8,11 +8,14 @@ import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -40,6 +43,36 @@ export function materialsKey(courseId: string) {
 }
 
 const ACCEPTED_KEY = "stride_accepted_assignments";
+const PROPOSALS_KEY = "stride_workshop_proposals";
+
+type WLevel = "beginner" | "intermediate" | "advanced" | "all";
+type WDay   = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+
+interface WorkshopProposal {
+  id: string;
+  title: string;
+  proposedBy: string;
+  level: WLevel;
+  ageMin: number;
+  ageMax: number;
+  day: WDay;
+  startTime: string;
+  campusName: string;
+  room: string;
+  duration: number;
+  capacity: number;
+  notes: string;
+  status: "pending" | "approved" | "rejected";
+  proposedAt: string;
+}
+
+const BLANK_PROPOSAL = (name: string): Omit<WorkshopProposal, "id" | "status" | "proposedAt"> => ({
+  title: "", proposedBy: name, level: "all",
+  ageMin: 5, ageMax: 99,
+  day: "Sat", startTime: "10:00",
+  campusName: "Main Studio", room: "",
+  duration: 60, capacity: 15, notes: "",
+});
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -263,11 +296,50 @@ export default function OperatorCoursesScreen() {
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
   const [acceptedIds, setAcceptedIds]       = useState<string[]>([]);
 
+  // ── Workshop Proposals ────────────────────────────────────────────────────────
+  const [myProposals, setMyProposals]       = useState<WorkshopProposal[]>([]);
+  const [showProposeModal, setShowProposeModal] = useState(false);
+  const [propDraft, setPropDraft]           = useState(BLANK_PROPOSAL(user?.name ?? "Operator"));
+  const DAYS: WDay[] = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const DURATION_OPTS = [30, 45, 60, 90, 120];
+
+  const loadProposals = useCallback(async () => {
+    const raw = await AsyncStorage.getItem(PROPOSALS_KEY);
+    const all: WorkshopProposal[] = raw ? JSON.parse(raw) : [];
+    setMyProposals(all.filter(p => p.proposedBy === user?.name));
+  }, [user?.name]);
+
   useFocusEffect(useCallback(() => {
     AsyncStorage.getItem(ACCEPTED_KEY).then(raw => {
       setAcceptedIds(raw ? JSON.parse(raw) : []);
     });
-  }, []));
+    loadProposals();
+  }, [loadProposals]));
+
+  const submitProposal = async () => {
+    if (!propDraft.title.trim()) {
+      Alert.alert("Required", "Please enter a workshop title.");
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const proposal: WorkshopProposal = {
+      ...propDraft,
+      id: `wp-${Date.now()}`,
+      status: "pending",
+      proposedAt: new Date().toISOString(),
+    };
+    const raw = await AsyncStorage.getItem(PROPOSALS_KEY);
+    const all: WorkshopProposal[] = raw ? JSON.parse(raw) : [];
+    await AsyncStorage.setItem(PROPOSALS_KEY, JSON.stringify([...all, proposal]));
+    await loadProposals();
+    setShowProposeModal(false);
+    setPropDraft(BLANK_PROPOSAL(user?.name ?? "Operator"));
+    Alert.alert(
+      "Proposal Submitted",
+      `"${proposal.title}" has been sent for Admin approval. You'll be notified once it's reviewed.`,
+      [{ text: "OK" }],
+    );
+  };
 
   const toggleCourse = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -423,6 +495,149 @@ export default function OperatorCoursesScreen() {
           })
         )}
       </ScrollView>
+
+      {/* Workshop Proposal FAB */}
+      <Pressable
+        style={{ position: "absolute", right: 20, bottom: insets.bottom + 90, width: 56, height: 56, borderRadius: 28, backgroundColor: "#D97706", alignItems: "center", justifyContent: "center", shadowColor: "#D97706", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 }}
+        onPress={() => { setPropDraft(BLANK_PROPOSAL(user?.name ?? "Operator")); setShowProposeModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+      >
+        <Ionicons name="add" size={28} color="#FFF" />
+      </Pressable>
+
+      {/* My Proposals status banner */}
+      {myProposals.length > 0 && myProposals[0] && (
+        <View style={{ position: "absolute", top: insets.top + (Platform.OS === "web" ? 67 : 16), left: 16, right: 16, borderRadius: 12, padding: 10, backgroundColor: myProposals[0].status === "approved" ? "#D1FAE5" : myProposals[0].status === "rejected" ? "#FEE2E2" : "#FEF3C7", flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Ionicons name={myProposals[0].status === "approved" ? "checkmark-circle" : myProposals[0].status === "rejected" ? "close-circle" : "time-outline"} size={15} color={myProposals[0].status === "approved" ? "#059669" : myProposals[0].status === "rejected" ? "#EF4444" : "#D97706"} />
+          <Text style={{ fontSize: 12, fontWeight: "700", color: myProposals[0].status === "approved" ? "#065F46" : myProposals[0].status === "rejected" ? "#991B1B" : "#92400E", flex: 1 }} numberOfLines={1}>
+            {myProposals[0].status === "approved" ? "✓ Approved: " : myProposals[0].status === "rejected" ? "✗ Rejected: " : "⏳ Pending review: "}{myProposals[0].title}
+          </Text>
+        </View>
+      )}
+
+      {/* ── Workshop Proposal Modal ── */}
+      <Modal visible={showProposeModal} animationType="slide" onRequestClose={() => setShowProposeModal(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: insets.top + (Platform.OS === "web" ? 80 : 20), paddingBottom: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <Pressable onPress={() => setShowProposeModal(false)} hitSlop={10}>
+              <Ionicons name="close" size={24} color={colors.mutedForeground} />
+            </Pressable>
+            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.primary, flex: 1, textAlign: "center" }}>Propose Workshop</Text>
+            <Pressable onPress={submitProposal} style={{ backgroundColor: "#D97706", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 }}>
+              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Submit</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 60 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#FEF3C7", borderRadius: 12, padding: 12, marginBottom: 16 }}>
+              <Ionicons name="information-circle-outline" size={16} color="#D97706" style={{ marginTop: 1 }} />
+              <Text style={{ fontSize: 12, color: "#92400E", flex: 1, lineHeight: 17 }}>
+                Your proposal will be sent to Admin for review. Members will be notified automatically once approved.
+              </Text>
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.5, color: colors.mutedForeground, marginBottom: 8, marginTop: 4 }}>BASIC INFORMATION</Text>
+            <TextInput
+              style={{ borderRadius: 14, padding: 14, fontSize: 16, fontWeight: "600", borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, marginBottom: 12 }}
+              placeholder="Workshop title…"
+              placeholderTextColor={colors.mutedForeground}
+              value={propDraft.title}
+              onChangeText={v => setPropDraft(d => ({ ...d, title: v }))}
+            />
+
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Skill Level</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+              {(["beginner","intermediate","advanced","all"] as WLevel[]).map(l => (
+                <Pressable key={l} onPress={() => setPropDraft(d => ({ ...d, level: l }))}
+                  style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.level === l ? "#1E3A8A" : colors.border, backgroundColor: propDraft.level === l ? "#DBEAFE" : colors.card }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.level === l ? "#1E3A8A" : colors.mutedForeground }}>
+                    {l.charAt(0).toUpperCase() + l.slice(1)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Age Range</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <TextInput
+                style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, width: 70, textAlign: "center" }}
+                placeholder="Min"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="numeric"
+                value={propDraft.ageMin > 0 ? String(propDraft.ageMin) : ""}
+                onChangeText={v => setPropDraft(d => ({ ...d, ageMin: Number(v) || 0 }))}
+              />
+              <Text style={{ color: colors.mutedForeground, fontSize: 16, fontWeight: "600" }}>–</Text>
+              <TextInput
+                style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, width: 70, textAlign: "center" }}
+                placeholder="Max"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="numeric"
+                value={propDraft.ageMax < 99 ? String(propDraft.ageMax) : ""}
+                onChangeText={v => setPropDraft(d => ({ ...d, ageMax: Number(v) || 99 }))}
+              />
+              <Text style={{ fontSize: 12, color: colors.mutedForeground }}>years</Text>
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.5, color: colors.mutedForeground, marginBottom: 8, marginTop: 4 }}>SCHEDULE</Text>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Day</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+              {DAYS.map(d => (
+                <Pressable key={d} onPress={() => setPropDraft(p => ({ ...p, day: d }))}
+                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.day === d ? "#1E3A8A" : colors.border, backgroundColor: propDraft.day === d ? "#DBEAFE" : colors.card }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.day === d ? "#1E3A8A" : colors.mutedForeground }}>{d}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Start Time</Text>
+            <TextInput
+              style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, marginBottom: 12, width: 120 }}
+              placeholder="HH:MM"
+              placeholderTextColor={colors.mutedForeground}
+              value={propDraft.startTime}
+              onChangeText={v => setPropDraft(d => ({ ...d, startTime: v }))}
+            />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Duration</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+              {DURATION_OPTS.map(m => (
+                <Pressable key={m} onPress={() => setPropDraft(d => ({ ...d, duration: m }))}
+                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.duration === m ? "#1E3A8A" : colors.border, backgroundColor: propDraft.duration === m ? "#DBEAFE" : colors.card }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.duration === m ? "#1E3A8A" : colors.mutedForeground }}>
+                    {m < 60 ? `${m}m` : `${m / 60}h`}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: "700", letterSpacing: 1.5, color: colors.mutedForeground, marginBottom: 8, marginTop: 4 }}>LOGISTICS</Text>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Room / Location</Text>
+            <TextInput
+              style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, marginBottom: 12 }}
+              placeholder="e.g. Studio B"
+              placeholderTextColor={colors.mutedForeground}
+              value={propDraft.room}
+              onChangeText={v => setPropDraft(d => ({ ...d, room: v }))}
+            />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Max Capacity</Text>
+            <TextInput
+              style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, marginBottom: 12, width: 100 }}
+              placeholder="e.g. 20"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="numeric"
+              value={propDraft.capacity > 0 ? String(propDraft.capacity) : ""}
+              onChangeText={v => setPropDraft(d => ({ ...d, capacity: Number(v) || 0 }))}
+            />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Notes for Admin</Text>
+            <TextInput
+              style={{ borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, minHeight: 80, textAlignVertical: "top" }}
+              placeholder="Why this workshop? Any special requirements…"
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              value={propDraft.notes}
+              onChangeText={v => setPropDraft(d => ({ ...d, notes: v }))}
+            />
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -1,17 +1,8 @@
-import { pgTable, serial, integer, text, boolean, timestamp, check, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
-import { sql } from "drizzle-orm";
 
 // ── Notification types ────────────────────────────────────────────────────────
-//
-//  booking_request       Operator ← parent books a slot
-//  booking_confirmed     Parent  ← operator confirms
-//  booking_cancelled     Both    ← either side cancels
-//  availability_approved Operator ← admin approves slot
-//  availability_rejected Operator ← admin rejects slot
-//  lesson_reminder       Parent  ← pre-lesson alert (scheduled)
-//  payment_received      Both    ← checkout complete
 
 export const notificationTypeValues = [
   "booking_request",
@@ -21,11 +12,16 @@ export const notificationTypeValues = [
   "availability_rejected",
   "lesson_reminder",
   "payment_received",
+  "workshop_created",
+  "workshop_approved",
+  "workshop_rejected",
+  "schedule_change",
+  "lesson_cancelled",
+  "lesson_postponed",
 ] as const;
 export type NotificationType = (typeof notificationTypeValues)[number];
 
 // ── notifications ─────────────────────────────────────────────────────────────
-// Drives both polling and Supabase Realtime push on the client.
 
 export const notifications = pgTable(
   "notifications",
@@ -43,26 +39,32 @@ export const notifications = pgTable(
     title:     text("title").notNull(),
     body:      text("body").notNull(),
 
-    /** Optional back-reference to the relevant booking. */
-    bookingId: integer("booking_id"),
+    /** Optional back-reference to the relevant booking or workshop. */
+    bookingId:  integer("booking_id"),
+    workshopId: text("workshop_id"),
 
-    read:      boolean("read").notNull().default(false),
+    /**
+     * Target criteria used for broadcast notifications (workshops, schedule
+     * changes). Stored as JSON string: { ageMin, ageMax, level, discipline }.
+     */
+    targetCriteria: text("target_criteria"),
+
+    read:   boolean("read").notNull().default(false),
+    readAt: timestamp("read_at", { withTimezone: true }),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    check(
-      "notifications_type_check",
-      sql`${t.type} IN ('booking_request','booking_confirmed','booking_cancelled','availability_approved','availability_rejected','lesson_reminder','payment_received')`,
-    ),
     index("notifications_recipient_read_idx").on(t.recipientId, t.read),
     index("notifications_org_idx").on(t.organizationId),
+    index("notifications_type_idx").on(t.type),
   ],
 );
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
 
 export const insertNotificationSchema = createInsertSchema(notifications)
-  .omit({ id: true, createdAt: true, read: true })
+  .omit({ id: true, createdAt: true, read: true, readAt: true })
   .extend({
     type:  z.enum(notificationTypeValues),
     title: z.string().min(1).max(200),
@@ -70,6 +72,10 @@ export const insertNotificationSchema = createInsertSchema(notifications)
   });
 
 export const selectNotificationSchema = createSelectSchema(notifications);
+
+export const markReadSchema = z.object({
+  readAt: z.string().datetime().optional(),
+});
 
 // ── TypeScript types ──────────────────────────────────────────────────────────
 

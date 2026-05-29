@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
   Modal,
@@ -14,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useSubstitution, type RescheduleAction, MOCK_SUBS } from "@/context/SubstitutionContext";
 
@@ -42,6 +45,8 @@ interface Activity {
   type: ActivityType;
   level: Level;
   ageGroup: AgeGroup;
+  ageMin?: number;
+  ageMax?: number;
   schedule: ScheduleSlot[];
   campusId: string;
   campusName: string;
@@ -54,7 +59,33 @@ interface Activity {
   status: ActivityStatus;
   enrollment: EnrollmentConfig;
   color: string;
+  keyInstructions?: string;
+  alarmCode?: string;
+  doorPin?: string;
+  devicePin?: string;
 }
+
+type WorkshopApprovalStatus = "pending" | "approved" | "rejected";
+
+interface WorkshopProposal {
+  id: string;
+  title: string;
+  proposedBy: string;
+  level: Level;
+  ageMin: number;
+  ageMax: number;
+  schedule: ScheduleSlot[];
+  campusId: string;
+  campusName: string;
+  room: string;
+  duration: number;
+  capacity: number;
+  notes: string;
+  status: WorkshopApprovalStatus;
+  proposedAt: string;
+}
+
+const PROPOSALS_KEY = "stride_workshop_proposals";
 
 interface AdminScheduleItem {
   id: string;
@@ -158,11 +189,13 @@ const INITIAL_ADMIN_ITEMS: AdminScheduleItem[] = [
 
 const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
   title: "", type: "lesson", level: "all", ageGroup: "all",
+  ageMin: 0, ageMax: 99,
   schedule: [{ day: "Mon", startTime: "09:00" }],
   campusId: "c1", campusName: "Main Studio", room: "",
   teacherId: "t1", teacherName: "Emma Wilson",
   duration: 60, capacity: 15, status: "active",
   enrollment: { dropIn: true, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0 },
+  keyInstructions: "", alarmCode: "", doorPin: "", devicePin: "",
 });
 
 const BLANK_ADMIN_ITEM = (): Omit<AdminScheduleItem, "id"> => ({
@@ -216,6 +249,70 @@ export default function ActivityScreen() {
   const focusedAlertId = activeAlert?.id ?? alerts[0]?.id ?? null;
   const focusedAlert   = focusedAlertId ? (alerts.find(a => a.id === focusedAlertId) ?? null) : null;
   const unresolved = alerts.filter(a => !a.resolved);
+
+  const { user } = useAuth();
+  const isPrivileged = user?.role === "admin" || user?.role === "operator";
+
+  // ── Workshop Proposals ────────────────────────────────────────────────────────
+  const [proposals, setProposals] = useState<WorkshopProposal[]>([]);
+
+  useFocusEffect(useCallback(() => {
+    AsyncStorage.getItem(PROPOSALS_KEY).then(raw => {
+      setProposals(raw ? JSON.parse(raw) : []);
+    });
+  }, []));
+
+  const pendingProposals = proposals.filter(p => p.status === "pending");
+
+  const approveProposal = async (p: WorkshopProposal) => {
+    const newA: Activity = {
+      id: `approved-${p.id}`,
+      title: p.title,
+      type: "workshop",
+      level: p.level,
+      ageGroup: "all",
+      ageMin: p.ageMin,
+      ageMax: p.ageMax,
+      schedule: p.schedule,
+      campusId: p.campusId,
+      campusName: p.campusName,
+      room: p.room,
+      teacherId: "t1",
+      teacherName: p.proposedBy,
+      duration: p.duration,
+      capacity: p.capacity,
+      enrolled: 0,
+      status: "active",
+      enrollment: { dropIn: true, dropInPrice: 25, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0 },
+      color: "#D97706",
+      keyInstructions: "", alarmCode: "", doorPin: "", devicePin: "",
+    };
+    setActivities(prev => [...prev, newA]);
+    const updated = proposals.map(pr => pr.id === p.id ? { ...pr, status: "approved" as const } : pr);
+    setProposals(updated);
+    await AsyncStorage.setItem(PROPOSALS_KEY, JSON.stringify(updated));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert(
+      "Workshop Approved",
+      `"${p.title}" is now live. Members aged ${p.ageMin}–${p.ageMax} (${p.level}) have been notified automatically.`,
+      [{ text: "OK" }],
+    );
+  };
+
+  const rejectProposal = (p: WorkshopProposal) => {
+    Alert.alert("Reject Proposal", `Reject "${p.title}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Reject", style: "destructive",
+        onPress: async () => {
+          const updated = proposals.map(pr => pr.id === p.id ? { ...pr, status: "rejected" as const } : pr);
+          setProposals(updated);
+          await AsyncStorage.setItem(PROPOSALS_KEY, JSON.stringify(updated));
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        },
+      },
+    ]);
+  };
 
   const doReschedule = () => {
     if (!focusedAlert) return;
@@ -548,6 +645,61 @@ export default function ActivityScreen() {
             ) : (
               filtered.map(a => <ActivityCard key={a.id} a={a} />)
             )}
+
+            {/* ── PENDING WORKSHOP PROPOSALS ── */}
+            {pendingProposals.length > 0 && (
+              <View style={{ marginTop: 8 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10, paddingHorizontal: 4 }}>
+                  <View style={{ backgroundColor: "#FEF3C7", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Ionicons name="time-outline" size={13} color="#D97706" />
+                    <Text style={{ fontSize: 11, fontWeight: "800", color: "#D97706", letterSpacing: 0.5 }}>
+                      PENDING APPROVAL · {pendingProposals.length}
+                    </Text>
+                  </View>
+                </View>
+                {pendingProposals.map(p => (
+                  <View key={p.id} style={{ backgroundColor: colors.card, borderRadius: 18, borderWidth: 2, borderColor: "#FBBF24", padding: 16, marginBottom: 10 }}>
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground, marginBottom: 3 }}>{p.title}</Text>
+                        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                          Proposed by {p.proposedBy}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                          Ages {p.ageMin}–{p.ageMax} · {p.level.charAt(0).toUpperCase() + p.level.slice(1)}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                          {p.schedule.map(s => `${s.day} ${s.startTime}`).join("  ·  ")} · {p.duration < 60 ? `${p.duration}m` : `${p.duration / 60}h`} · Cap {p.capacity}
+                        </Text>
+                        {p.notes ? (
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4, fontStyle: "italic" }} numberOfLines={2}>{p.notes}</Text>
+                        ) : null}
+                      </View>
+                      <View style={{ backgroundColor: "#FEF3C7", borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: 10, fontWeight: "800", color: "#D97706" }}>WORKSHOP</Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <Pressable
+                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, paddingVertical: 11, backgroundColor: "#FEE2E2" }}
+                        onPress={() => rejectProposal(p)}
+                      >
+                        <Ionicons name="close" size={16} color="#EF4444" />
+                        <Text style={{ fontSize: 13, fontWeight: "700", color: "#EF4444" }}>Reject</Text>
+                      </Pressable>
+                      <Pressable
+                        style={{ flex: 2, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, paddingVertical: 11, backgroundColor: "#D1FAE5" }}
+                        onPress={() => approveProposal(p)}
+                      >
+                        <Ionicons name="checkmark" size={16} color="#059669" />
+                        <Text style={{ fontSize: 13, fontWeight: "700", color: "#059669" }}>Approve & Publish</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
             <View style={{ height: 120 }} />
           </ScrollView>
         </>
@@ -877,6 +1029,30 @@ export default function ActivityScreen() {
               />
             )}
 
+            {/* Age Range (precise, for workshop matching) */}
+            {draft.type === "workshop" && renderRow("Precise Age Range",
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <TextInput
+                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, width: 70 }]}
+                  placeholder="Min"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="numeric"
+                  value={(draft.ageMin ?? 0) > 0 ? String(draft.ageMin) : ""}
+                  onChangeText={v => setDraft(d => ({ ...d, ageMin: Number(v) || 0 }))}
+                />
+                <Text style={{ color: colors.mutedForeground, fontSize: 16, fontWeight: "600" }}>–</Text>
+                <TextInput
+                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, width: 70 }]}
+                  placeholder="Max"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="numeric"
+                  value={(draft.ageMax ?? 99) < 99 ? String(draft.ageMax) : ""}
+                  onChangeText={v => setDraft(d => ({ ...d, ageMax: Number(v) || 99 }))}
+                />
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>years</Text>
+              </View>
+            )}
+
             {/* Schedule */}
             {renderSectionHeader("SCHEDULE")}
             {draft.schedule.map((slot, i) => (
@@ -1038,6 +1214,60 @@ export default function ActivityScreen() {
                 value={draft.status}
                 onSelect={v => setDraft(d => ({ ...d, status: v }))}
               />
+            )}
+
+            {/* Secure Operations Notes — admin/operator only */}
+            {isPrivileged && (
+              <>
+                {renderSectionHeader("SECURE OPERATIONS")}
+                <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#FEF3C7", borderRadius: 12, padding: 12, marginBottom: 12 }}>
+                  <Ionicons name="lock-closed" size={14} color="#D97706" style={{ marginTop: 1 }} />
+                  <Text style={{ fontSize: 12, color: "#92400E", flex: 1, lineHeight: 17 }}>
+                    These details are only visible to Admins and Operators. Members cannot see or access this section.
+                  </Text>
+                </View>
+                {renderRow("Key Retrieval Instructions",
+                  <TextInput
+                    style={[styles.notesInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24" }]}
+                    placeholder="e.g. Key in lock box at front desk, code 1234"
+                    placeholderTextColor={colors.mutedForeground}
+                    multiline
+                    value={draft.keyInstructions ?? ""}
+                    onChangeText={v => setDraft(d => ({ ...d, keyInstructions: v }))}
+                  />
+                )}
+                {renderRow("Alarm Code",
+                  <TextInput
+                    style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24", fontFamily: "monospace" }]}
+                    placeholder="e.g. 5678#"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numeric"
+                    secureTextEntry={false}
+                    value={draft.alarmCode ?? ""}
+                    onChangeText={v => setDraft(d => ({ ...d, alarmCode: v }))}
+                  />
+                )}
+                {renderRow("Door PIN",
+                  <TextInput
+                    style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24", fontFamily: "monospace" }]}
+                    placeholder="e.g. 9021"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numeric"
+                    value={draft.doorPin ?? ""}
+                    onChangeText={v => setDraft(d => ({ ...d, doorPin: v }))}
+                  />
+                )}
+                {renderRow("Device Unlock PIN",
+                  <TextInput
+                    style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24", fontFamily: "monospace" }]}
+                    placeholder="e.g. 0000"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numeric"
+                    value={draft.devicePin ?? ""}
+                    onChangeText={v => setDraft(d => ({ ...d, devicePin: v }))}
+                  />
+                )}
+              </>
             )}
 
             <View style={{ height: 40 }} />

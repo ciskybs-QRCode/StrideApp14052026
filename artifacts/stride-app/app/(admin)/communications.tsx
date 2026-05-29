@@ -2,7 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -46,6 +48,19 @@ interface SentMessage {
   signatureRequired: boolean;
   attachments: string[];
 }
+
+interface NotifReceipt {
+  id: string;
+  notifTitle: string;
+  notifType: string;
+  recipientName: string;
+  recipientRole: "parent" | "operator" | "student";
+  sentAt: string;
+  isRead: boolean;
+  readAt: string | null;
+}
+
+const RECEIPTS_KEY = "stride_notif_receipts";
 
 type AttachmentType = "pdf" | "image" | "video" | "audio" | "doc" | "excel" | "gdrive" | "dropbox";
 type RecipientMode = "all" | "group" | "course" | "individuals";
@@ -131,6 +146,52 @@ export default function AdminCommunications() {
   const { addDocument, courses } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+
+  // ── Tab ──────────────────────────────────────────────────────────────────────
+  const [commTab, setCommTab] = useState<"messages" | "receipts">("messages");
+
+  // ── Read Receipts ─────────────────────────────────────────────────────────────
+  const [receipts, setReceipts] = useState<NotifReceipt[]>([]);
+  const [receiptFilter, setReceiptFilter] = useState<"all" | "read" | "unread">("all");
+
+  useFocusEffect(useCallback(() => {
+    AsyncStorage.getItem(RECEIPTS_KEY).then(raw => {
+      if (raw) {
+        setReceipts(JSON.parse(raw));
+      } else {
+        const seed: NotifReceipt[] = [
+          { id: "r1", notifTitle: "May 2026 Newsletter", notifType: "broadcast", recipientName: "Sarah Miller", recipientRole: "parent",  sentAt: "2026-05-20T09:00:00Z", isRead: true,  readAt: "2026-05-20T09:14:22Z" },
+          { id: "r2", notifTitle: "May 2026 Newsletter", notifType: "broadcast", recipientName: "James O'Brien",   recipientRole: "parent",  sentAt: "2026-05-20T09:00:00Z", isRead: false, readAt: null },
+          { id: "r3", notifTitle: "May 2026 Newsletter", notifType: "broadcast", recipientName: "Emma Wilson",    recipientRole: "operator", sentAt: "2026-05-20T09:00:00Z", isRead: true,  readAt: "2026-05-20T10:05:00Z" },
+          { id: "r4", notifTitle: "Workshop Approved: Salsa Fusion", notifType: "workshop_approved", recipientName: "Louis Ford", recipientRole: "operator", sentAt: "2026-05-22T14:30:00Z", isRead: true,  readAt: "2026-05-22T14:32:00Z" },
+          { id: "r5", notifTitle: "Workshop Approved: Salsa Fusion", notifType: "workshop_approved", recipientName: "Sarah Miller", recipientRole: "parent", sentAt: "2026-05-22T14:30:00Z", isRead: false, readAt: null },
+          { id: "r6", notifTitle: "Schedule Change: Monday Ballet", notifType: "schedule_change", recipientName: "Anna Parker",  recipientRole: "operator", sentAt: "2026-05-24T08:00:00Z", isRead: true,  readAt: "2026-05-24T08:10:00Z" },
+          { id: "r7", notifTitle: "Schedule Change: Monday Ballet", notifType: "schedule_change", recipientName: "James O'Brien",  recipientRole: "parent",  sentAt: "2026-05-24T08:00:00Z", isRead: false, readAt: null },
+          { id: "r8", notifTitle: "Payment Reminder", notifType: "payment", recipientName: "Sarah Miller", recipientRole: "parent",  sentAt: "2026-05-28T08:00:00Z", isRead: true,  readAt: "2026-05-28T11:42:00Z" },
+        ];
+        setReceipts(seed);
+        AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(seed));
+      }
+    });
+  }, []));
+
+  const filteredReceipts = receipts.filter(r =>
+    receiptFilter === "all"    ? true :
+    receiptFilter === "read"   ? r.isRead :
+    !r.isRead
+  );
+
+  const markReceiptRead = async (id: string) => {
+    const ts = new Date().toISOString();
+    const updated = receipts.map(r => r.id === id ? { ...r, isRead: true, readAt: ts } : r);
+    setReceipts(updated);
+    await AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(updated));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const readCount   = receipts.filter(r => r.isRead).length;
+  const unreadCount = receipts.filter(r => !r.isRead).length;
+  const readRate    = receipts.length > 0 ? Math.round((readCount / receipts.length) * 100) : 0;
 
   const [commUsers, setCommUsers] = useState<CommUser[]>([]);
 
@@ -321,78 +382,178 @@ export default function AdminCommunications() {
       >
         <View style={styles.headerRow}>
           <Text style={[styles.pageTitle, { color: colors.primary }]}>Communications</Text>
-          <Pressable
-            style={[styles.composeBtn, { backgroundColor: colors.primary }]}
-            onPress={() => { resetCompose(); setShowCompose(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
-          >
-            <Ionicons name="create-outline" size={18} color="#FFF" />
-            <Text style={styles.composeBtnText}>New Message</Text>
-          </Pressable>
+          {commTab === "messages" && (
+            <Pressable
+              style={[styles.composeBtn, { backgroundColor: colors.primary }]}
+              onPress={() => { resetCompose(); setShowCompose(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+            >
+              <Ionicons name="create-outline" size={18} color="#FFF" />
+              <Text style={styles.composeBtnText}>New Message</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Tab Switcher */}
+        <View style={[styles.commTabBar, { backgroundColor: colors.card }]}>
+          {(["messages", "receipts"] as const).map(t => (
+            <Pressable key={t} onPress={() => setCommTab(t)}
+              style={[styles.commTabBtn, t === commTab && { backgroundColor: colors.primary }]}>
+              <Ionicons
+                name={t === "messages" ? "mail-outline" : "eye-outline"}
+                size={14} color={t === commTab ? "#FFF" : colors.mutedForeground}
+              />
+              <Text style={[styles.commTabText, { color: t === commTab ? "#FFF" : colors.mutedForeground }]}>
+                {t === "messages" ? "Messages" : "Read Receipts"}
+              </Text>
+              {t === "receipts" && unreadCount > 0 && (
+                <View style={styles.commTabBadge}>
+                  <Text style={styles.commTabBadgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          ))}
         </View>
 
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
-            <Text style={styles.statNum}>{sentMessages.length}</Text>
-            <Text style={styles.statLabel}>Sent</Text>
+            <Text style={styles.statNum}>{commTab === "messages" ? sentMessages.length : receipts.length}</Text>
+            <Text style={styles.statLabel}>{commTab === "messages" ? "Sent" : "Tracked"}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: "#10B981" }]}>
-            <Text style={styles.statNum}>{userCounts.total || "—"}</Text>
-            <Text style={styles.statLabel}>Recipients</Text>
+            <Text style={styles.statNum}>{commTab === "messages" ? (userCounts.total || "—") : readCount}</Text>
+            <Text style={styles.statLabel}>{commTab === "messages" ? "Recipients" : "Read"}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.secondary }]}>
-            <Text style={[styles.statNum, { color: colors.primary }]}>92%</Text>
+            <Text style={[styles.statNum, { color: colors.primary }]}>{commTab === "messages" ? "92%" : `${readRate}%`}</Text>
             <Text style={[styles.statLabel, { color: colors.primary }]}>Read Rate</Text>
           </View>
         </View>
 
-        {/* Send History */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Send History</Text>
-        {sentMessages.map(item => (
-          <Pressable
-            key={item.id}
-            style={[styles.commCard, { backgroundColor: colors.card, borderLeftWidth: item.urgent ? 4 : 0, borderLeftColor: "#EF4444" }]}
-            onPress={() => setShowDetail(item)}
-          >
-            <View style={styles.commHeader}>
-              <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                {item.urgent && <Ionicons name="warning" size={14} color="#EF4444" />}
-                <Text style={[styles.commTitle, { color: colors.primary }]} numberOfLines={1}>{item.title}</Text>
-              </View>
-              <Text style={[styles.commDate, { color: colors.mutedForeground }]}>{item.date}</Text>
-            </View>
-            <Text style={[styles.commPreview, { color: colors.mutedForeground }]} numberOfLines={2}>{item.body}</Text>
-            <View style={styles.commStats}>
-              <View style={styles.commStat}>
-                <Ionicons name="people-outline" size={13} color={colors.mutedForeground} />
-                <Text style={[styles.commStatText, { color: colors.mutedForeground }]}>{item.recipients} sent</Text>
-              </View>
-              <View style={styles.commStat}>
-                <Ionicons name="eye-outline" size={13} color="#10B981" />
-                <Text style={[styles.commStatText, { color: "#10B981" }]}>{item.read} read</Text>
-              </View>
-              {item.signatureRequired && (
-                <View style={styles.commStat}>
-                  <Ionicons name="create-outline" size={13} color="#7C3AED" />
-                  <Text style={[styles.commStatText, { color: "#7C3AED" }]}>Sig. req.</Text>
+        {/* ── MESSAGES TAB ── */}
+        {commTab === "messages" && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Send History</Text>
+            {sentMessages.map(item => (
+              <Pressable
+                key={item.id}
+                style={[styles.commCard, { backgroundColor: colors.card, borderLeftWidth: item.urgent ? 4 : 0, borderLeftColor: "#EF4444" }]}
+                onPress={() => setShowDetail(item)}
+              >
+                <View style={styles.commHeader}>
+                  <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    {item.urgent && <Ionicons name="warning" size={14} color="#EF4444" />}
+                    <Text style={[styles.commTitle, { color: colors.primary }]} numberOfLines={1}>{item.title}</Text>
+                  </View>
+                  <Text style={[styles.commDate, { color: colors.mutedForeground }]}>{item.date}</Text>
                 </View>
-              )}
-              {item.attachments.length > 0 && (
-                <View style={styles.commStat}>
-                  <Ionicons name="attach-outline" size={13} color={colors.mutedForeground} />
-                  <Text style={[styles.commStatText, { color: colors.mutedForeground }]}>{item.attachments.length} file{item.attachments.length > 1 ? "s" : ""}</Text>
+                <Text style={[styles.commPreview, { color: colors.mutedForeground }]} numberOfLines={2}>{item.body}</Text>
+                <View style={styles.commStats}>
+                  <View style={styles.commStat}>
+                    <Ionicons name="people-outline" size={13} color={colors.mutedForeground} />
+                    <Text style={[styles.commStatText, { color: colors.mutedForeground }]}>{item.recipients} sent</Text>
+                  </View>
+                  <View style={styles.commStat}>
+                    <Ionicons name="eye-outline" size={13} color="#10B981" />
+                    <Text style={[styles.commStatText, { color: "#10B981" }]}>{item.read} read</Text>
+                  </View>
+                  {item.signatureRequired && (
+                    <View style={styles.commStat}>
+                      <Ionicons name="create-outline" size={13} color="#7C3AED" />
+                      <Text style={[styles.commStatText, { color: "#7C3AED" }]}>Sig. req.</Text>
+                    </View>
+                  )}
+                  {item.attachments.length > 0 && (
+                    <View style={styles.commStat}>
+                      <Ionicons name="attach-outline" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.commStatText, { color: colors.mutedForeground }]}>{item.attachments.length} file{item.attachments.length > 1 ? "s" : ""}</Text>
+                    </View>
+                  )}
                 </View>
-              )}
+                <View style={[styles.readBar, { backgroundColor: colors.muted }]}>
+                  <View style={[styles.readBarFill, { width: `${Math.min((item.read / Math.max(item.recipients, 1)) * 100, 100)}%` as `${number}%`, backgroundColor: "#10B981" }]} />
+                </View>
+                <View style={styles.tapHint}>
+                  <Ionicons name="open-outline" size={11} color={colors.mutedForeground} />
+                  <Text style={[styles.tapHintText, { color: colors.mutedForeground }]}>Tap to read & copy</Text>
+                </View>
+              </Pressable>
+            ))}
+          </>
+        )}
+
+        {/* ── READ RECEIPTS TAB ── */}
+        {commTab === "receipts" && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notification Tracking</Text>
+
+            {/* Filter chips */}
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+              {(["all", "read", "unread"] as const).map(f => (
+                <Pressable key={f} onPress={() => setReceiptFilter(f)}
+                  style={[styles.receiptFilterChip, { backgroundColor: receiptFilter === f ? colors.primary : colors.card, borderColor: receiptFilter === f ? colors.primary : colors.border }]}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: receiptFilter === f ? "#FFF" : colors.mutedForeground }}>
+                    {f === "all" ? `All (${receipts.length})` : f === "read" ? `Read (${readCount})` : `Unread (${unreadCount})`}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-            <View style={[styles.readBar, { backgroundColor: colors.muted }]}>
-              <View style={[styles.readBarFill, { width: `${Math.min((item.read / Math.max(item.recipients, 1)) * 100, 100)}%` as `${number}%`, backgroundColor: "#10B981" }]} />
-            </View>
-            <View style={styles.tapHint}>
-              <Ionicons name="open-outline" size={11} color={colors.mutedForeground} />
-              <Text style={[styles.tapHintText, { color: colors.mutedForeground }]}>Tap to read & copy</Text>
-            </View>
-          </Pressable>
-        ))}
+
+            {filteredReceipts.length === 0 ? (
+              <View style={{ alignItems: "center", paddingVertical: 40, gap: 10 }}>
+                <Ionicons name="eye-off-outline" size={40} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 14, color: colors.mutedForeground, fontWeight: "600" }}>No receipts</Text>
+              </View>
+            ) : (
+              filteredReceipts.map(r => {
+                const roleColors = { parent: { bg: "#DBEAFE", text: "#1E3A8A" }, operator: { bg: "#EDE9FE", text: "#7C3AED" }, student: { bg: "#D1FAE5", text: "#059669" } };
+                const rc = roleColors[r.recipientRole];
+                const sentDate = new Date(r.sentAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                const readDate = r.readAt ? new Date(r.readAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
+                return (
+                  <View key={r.id} style={[styles.receiptCard, { backgroundColor: colors.card, borderLeftColor: r.isRead ? "#10B981" : "#F59E0B", borderLeftWidth: 4 }]}>
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginBottom: 2 }} numberOfLines={1}>{r.notifTitle}</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                          <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{r.recipientName}</Text>
+                          <View style={[styles.receiptRoleBadge, { backgroundColor: rc.bg }]}>
+                            <Text style={{ fontSize: 10, fontWeight: "700", color: rc.text }}>{r.recipientRole.toUpperCase()}</Text>
+                          </View>
+                        </View>
+                        <View style={{ flexDirection: "row", gap: 14 }}>
+                          <View style={styles.commStat}>
+                            <Ionicons name="send-outline" size={11} color={colors.mutedForeground} />
+                            <Text style={[styles.commStatText, { color: colors.mutedForeground }]}>{sentDate}</Text>
+                          </View>
+                          {r.isRead ? (
+                            <View style={styles.commStat}>
+                              <Ionicons name="checkmark-done" size={11} color="#10B981" />
+                              <Text style={[styles.commStatText, { color: "#10B981" }]}>{readDate}</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.commStat}>
+                              <Ionicons name="time-outline" size={11} color="#F59E0B" />
+                              <Text style={[styles.commStatText, { color: "#F59E0B" }]}>Not yet read</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      {!r.isRead && (
+                        <Pressable
+                          style={{ backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                          onPress={() => markReceiptRead(r.id)}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>Mark Read</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </>
+        )}
       </ScrollView>
 
       {/* ══════════════════════════════════════════════════
@@ -884,4 +1045,16 @@ const styles = StyleSheet.create({
   linkModalHint: { fontSize: 13, lineHeight: 18, marginBottom: 14 },
   linkInputRow: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12 },
   linkInput: { flex: 1, fontSize: 14 },
+
+  // Tab bar
+  commTabBar: { flexDirection: "row", borderRadius: 14, padding: 3, gap: 3, marginBottom: 20 },
+  commTabBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 12 },
+  commTabText: { fontSize: 13, fontWeight: "700" },
+  commTabBadge: { backgroundColor: "#EF4444", borderRadius: 10, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  commTabBadgeText: { color: "#FFF", fontSize: 10, fontWeight: "800" },
+
+  // Read Receipts
+  receiptFilterChip: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1.5 },
+  receiptCard: { borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  receiptRoleBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
 });
