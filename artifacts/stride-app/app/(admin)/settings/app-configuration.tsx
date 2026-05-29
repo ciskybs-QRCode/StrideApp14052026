@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -16,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 import { api } from "@/lib/api";
+import { type PayoutFrequency, PAYOUT_FREQUENCY_KEY } from "@/lib/strideChannel";
 
 const CONFIG_ITEMS = [
   {
@@ -74,6 +77,8 @@ const CONFIG_ITEMS = [
   },
 ];
 
+const GRACE_KEY = "stride_grace_access";
+
 export default function AppConfigurationPage() {
   const router = useRouter();
   const colors = useColors();
@@ -88,6 +93,54 @@ export default function AppConfigurationPage() {
   const [secondaryInput, setSecondaryInput] = useState(secondaryRoleName);
   const [savingTerms, setSavingTerms] = useState(false);
   const [termsSaved, setTermsSaved] = useState(false);
+
+  // Grace Access
+  const [graceEnabled, setGraceEnabled] = useState(false);
+  const [loadingGrace, setLoadingGrace] = useState(true);
+  const [savingGrace, setSavingGrace]   = useState(false);
+
+  // Finance
+  const [payoutFrequency, setPayoutFrequency] = useState<PayoutFrequency>("monthly");
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const data = await api.getAdminSettings();
+      const serverValue = data.allow_one_time_grace_access ?? false;
+      setGraceEnabled(serverValue);
+      await AsyncStorage.setItem(GRACE_KEY, JSON.stringify(serverValue));
+    } catch {
+      try {
+        const stored = await AsyncStorage.getItem(GRACE_KEY);
+        if (stored !== null) setGraceEnabled(JSON.parse(stored) as boolean);
+      } catch { /* ignore */ }
+    }
+    setLoadingGrace(false);
+  }, []);
+
+  useEffect(() => { loadSettings(); }, [loadSettings]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(PAYOUT_FREQUENCY_KEY).then(v => {
+      if (v) setPayoutFrequency(v as PayoutFrequency);
+    });
+  }, []);
+
+  const handleSetPayoutFrequency = useCallback(async (f: PayoutFrequency) => {
+    setPayoutFrequency(f);
+    try { await AsyncStorage.setItem(PAYOUT_FREQUENCY_KEY, f); } catch { /* ignore */ }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  const handleGraceToggle = useCallback(async (value: boolean) => {
+    setSavingGrace(true);
+    setGraceEnabled(value);
+    try { await AsyncStorage.setItem(GRACE_KEY, JSON.stringify(value)); } catch { /* ignore */ }
+    try {
+      await api.updateAdminSettings({ allow_one_time_grace_access: value, grace_used_child_ids: [], organization_id: 1 });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { /* keep local value */ }
+    setSavingGrace(false);
+  }, []);
 
   const DEFAULT_BIRTHDAY_MSG = "Happy Birthday to {member_name}! Wishing you a wonderful day from all of us at {association_name}.";
   const [birthdayMsg, setBirthdayMsg] = useState(DEFAULT_BIRTHDAY_MSG);
@@ -276,6 +329,94 @@ export default function AppConfigurationPage() {
           </View>
         </View>
 
+        {/* ── Grace Access ── */}
+        <View style={[styles.sectionHeaderRow, { marginBottom: 12 }]}>
+          <View style={[styles.sectionDot, { backgroundColor: "#D97706" }]} />
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Access Control</Text>
+        </View>
+        <View style={[styles.row, { backgroundColor: colors.card, borderRadius: 18, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }]}>
+          <View style={[styles.rowIcon, { backgroundColor: "#FEF3C7" }]}>
+            <Ionicons name="time-outline" size={18} color="#D97706" />
+          </View>
+          <View style={styles.rowText}>
+            <Text style={[styles.rowLabel, { color: colors.foreground }]}>Grace Access</Text>
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+              Allow ONE access for members with expired subscriptions before blocking
+            </Text>
+          </View>
+          {loadingGrace ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Switch
+              value={graceEnabled}
+              onValueChange={handleGraceToggle}
+              disabled={savingGrace}
+              trackColor={{ false: "#D1D5DB", true: "#FBBF24" }}
+              thumbColor={graceEnabled ? "#1E3A8A" : "#F3F4F6"}
+            />
+          )}
+        </View>
+
+        {/* ── Finance ── */}
+        <View style={[styles.sectionHeaderRow, { marginBottom: 12 }]}>
+          <View style={[styles.sectionDot, { backgroundColor: "#7C3AED" }]} />
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Finance</Text>
+        </View>
+
+        {/* Payout Frequency */}
+        <View style={[{ backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3, gap: 12 }]}>
+          <View style={styles.row}>
+            <View style={[styles.rowIcon, { backgroundColor: "#EDE9FE" }]}>
+              <Ionicons name="repeat-outline" size={18} color="#7C3AED" />
+            </View>
+            <View style={styles.rowText}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Payout Frequency</Text>
+              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Sets billing cycle & operator invoice reminders</Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 4 }}>
+            {(["weekly", "fortnightly", "monthly"] as PayoutFrequency[]).map(f => (
+              <Pressable
+                key={f}
+                style={{ flex: 1, backgroundColor: payoutFrequency === f ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 10, alignItems: "center" }}
+                onPress={() => handleSetPayoutFrequency(f)}
+              >
+                <Text style={{ fontSize: 11, fontWeight: "800", color: payoutFrequency === f ? "#FBBF24" : colors.mutedForeground }}>
+                  {f === "fortnightly" ? "Bi-weekly" : f.charAt(0).toUpperCase() + f.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 12, opacity: pressed ? 0.88 : 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/invoices" as never); }}
+        >
+          <View style={[styles.rowIcon, { backgroundColor: "#DBEAFE", width: 42, height: 42, borderRadius: 12 }]}>
+            <Ionicons name="document-text-outline" size={20} color="#1E3A8A" />
+          </View>
+          <View style={styles.rowText}>
+            <Text style={[styles.rowLabel, { color: colors.foreground }]}>Invoices</Text>
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Review and approve operator payment requests</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 16, opacity: pressed ? 0.88 : 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/reimbursements" as never); }}
+        >
+          <View style={[styles.rowIcon, { backgroundColor: "#D1FAE5", width: 42, height: 42, borderRadius: 12 }]}>
+            <Ionicons name="cash-outline" size={20} color="#059669" />
+          </View>
+          <View style={styles.rowText}>
+            <Text style={[styles.rowLabel, { color: colors.foreground }]}>Reimbursements</Text>
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Manage expense claims from all members</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#059669" />
+        </Pressable>
+
         {/* Info box */}
         <View style={[styles.infoBox, { backgroundColor: colors.card }]}>
           <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
@@ -342,6 +483,9 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   infoText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  sectionDot: { width: 4, height: 20, borderRadius: 2 },
+  sectionTitle: { fontSize: 17, fontWeight: "700" },
   termInput: {
     borderWidth: 1,
     borderRadius: 10,

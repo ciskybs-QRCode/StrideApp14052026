@@ -383,6 +383,31 @@ export default function LegalPrivacyPage() {
           ))}
         </View>
 
+        {/* Anti-Fraud Security */}
+        <View style={[styles.sectionHeader, { marginTop: 4 }]}>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Anti-Fraud Security</Text>
+        </View>
+        <Pressable
+          style={({ pressed }) => [{
+            flexDirection: "row" as const, alignItems: "center" as const, gap: 16,
+            backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 16,
+            opacity: pressed ? 0.88 : 1,
+            shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+          }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/blacklist" as never); }}
+        >
+          <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="ban-outline" size={22} color="#DC2626" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground, fontSize: 15, fontWeight: "700" }]}>Blacklist</Text>
+            <Text style={{ fontSize: 12, marginTop: 2, lineHeight: 16, color: colors.mutedForeground }}>
+              Manage and block individuals from new registrations
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+        </Pressable>
+
         {/* Section header */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.primary }]}>Documents</Text>

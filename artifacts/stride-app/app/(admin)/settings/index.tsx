@@ -1,15 +1,12 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from "react-native";
@@ -17,10 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { api } from "@/lib/api";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
-import { type PayoutFrequency, PAYOUT_FREQUENCY_KEY } from "@/lib/strideChannel";
 
 const GRID_ITEMS = [
   {
@@ -63,56 +58,6 @@ export default function SettingsIndex() {
   const { legalAdminDocs } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [graceEnabled, setGraceEnabled]     = useState(false);
-  const [loadingGrace, setLoadingGrace]     = useState(true);
-  const [savingGrace, setSavingGrace]       = useState(false);
-  const [payoutFrequency, setPayoutFrequency] = useState<PayoutFrequency>("monthly");
-
-  const GRACE_KEY = "stride_grace_access";
-
-  const loadSettings = useCallback(async () => {
-    try {
-      const data = await api.getAdminSettings();
-      const serverValue = data.allow_one_time_grace_access ?? false;
-      setGraceEnabled(serverValue);
-      await AsyncStorage.setItem(GRACE_KEY, JSON.stringify(serverValue));
-    } catch {
-      // API unavailable — use locally persisted value
-      try {
-        const stored = await AsyncStorage.getItem(GRACE_KEY);
-        if (stored !== null) setGraceEnabled(JSON.parse(stored) as boolean);
-      } catch { /* ignore */ }
-    }
-    setLoadingGrace(false);
-  }, []);
-
-  useEffect(() => { loadSettings(); }, [loadSettings]);
-
-  useEffect(() => {
-    AsyncStorage.getItem(PAYOUT_FREQUENCY_KEY).then(v => {
-      if (v) setPayoutFrequency(v as PayoutFrequency);
-    });
-  }, []);
-
-  const handleSetPayoutFrequency = useCallback(async (f: PayoutFrequency) => {
-    setPayoutFrequency(f);
-    try { await AsyncStorage.setItem(PAYOUT_FREQUENCY_KEY, f); } catch { /* ignore */ }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
-
-  const handleGraceToggle = useCallback(async (value: boolean) => {
-    setSavingGrace(true);
-    setGraceEnabled(value);
-    // Persist locally first so the toggle survives regardless of API status
-    try { await AsyncStorage.setItem(GRACE_KEY, JSON.stringify(value)); } catch { /* ignore */ }
-    try {
-      await api.updateAdminSettings({ allow_one_time_grace_access: value, grace_used_child_ids: [], organization_id: 1 });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      // API failed but we keep the local value — no revert, no alert
-    }
-    setSavingGrace(false);
-  }, []);
 
   const unsignedCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
 
@@ -217,113 +162,6 @@ export default function SettingsIndex() {
           </View>
           <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
         </Pressable>
-
-        {/* Finance section */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Finance</Text>
-
-        {/* Payout Frequency */}
-        <View style={[styles.featuredCard, { backgroundColor: colors.card }]}>
-          <View style={[styles.featuredIconBox, { backgroundColor: "#EDE9FE" }]}>
-            <Ionicons name="repeat-outline" size={30} color="#7C3AED" />
-          </View>
-          <View style={{ flex: 1, gap: 10 }}>
-            <View>
-              <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Payout Frequency</Text>
-              <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
-                Sets billing cycle & operator invoice reminders
-              </Text>
-            </View>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {(["weekly", "fortnightly", "monthly"] as PayoutFrequency[]).map(f => (
-                <Pressable
-                  key={f}
-                  style={{ flex: 1, backgroundColor: payoutFrequency === f ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 10, alignItems: "center" }}
-                  onPress={() => handleSetPayoutFrequency(f)}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: payoutFrequency === f ? "#FBBF24" : colors.mutedForeground, textTransform: "capitalize" }}>
-                    {f === "fortnightly" ? "Bi-weekly" : f.charAt(0).toUpperCase() + f.slice(1)}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [styles.featuredCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/invoices" as never); }}
-        >
-          <View style={[styles.featuredIconBox, { backgroundColor: "#DBEAFE" }]}>
-            <Ionicons name="document-text-outline" size={30} color="#1E3A8A" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Invoices</Text>
-            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
-              Review and approve operator payment requests
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [styles.featuredCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/reimbursements" as never); }}
-        >
-          <View style={[styles.featuredIconBox, { backgroundColor: "#D1FAE5" }]}>
-            <Ionicons name="cash-outline" size={30} color="#059669" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Reimbursements</Text>
-            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
-              Manage expense claims from all members
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#059669" />
-        </Pressable>
-
-        {/* Anti-Fraud Security section */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Anti-Fraud Security</Text>
-
-        {/* Blacklist Card */}
-        <Pressable
-          style={({ pressed }) => [styles.featuredCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/blacklist" as never); }}
-        >
-          <View style={[styles.featuredIconBox, { backgroundColor: "#FEE2E2" }]}>
-            <Ionicons name="ban-outline" size={30} color="#DC2626" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Blacklist</Text>
-            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
-              Manage and block individuals from new registrations
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#DC2626" />
-        </Pressable>
-
-        {/* Grace Access Toggle Card */}
-        <View style={[styles.featuredCard, { backgroundColor: colors.card }]}>
-          <View style={[styles.featuredIconBox, { backgroundColor: "#FEF3C7" }]}>
-            <Ionicons name="time-outline" size={30} color="#D97706" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Grace Access</Text>
-            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
-              Allow ONE access to members with expired subscriptions before blocking
-            </Text>
-          </View>
-          {loadingGrace ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <Switch
-              value={graceEnabled}
-              onValueChange={handleGraceToggle}
-              disabled={savingGrace}
-              trackColor={{ false: "#D1D5DB", true: "#FBBF24" }}
-              thumbColor={graceEnabled ? "#1E3A8A" : "#F3F4F6"}
-            />
-          )}
-        </View>
 
         <RoleSwitcherRow />
         <AccountSettingsCard />
