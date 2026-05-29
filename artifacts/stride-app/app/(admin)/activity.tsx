@@ -74,13 +74,16 @@ interface WorkshopProposal {
   level: Level;
   ageMin: number;
   ageMax: number;
-  schedule: ScheduleSlot[];
+  /** Operator stores a single day+time; admin reads this shape from AsyncStorage */
+  day: string;
+  startTime: string;
   campusId: string;
   campusName: string;
   room: string;
   duration: number;
   capacity: number;
   notes: string;
+  discipline?: string;
   status: WorkshopApprovalStatus;
   proposedAt: string;
 }
@@ -273,7 +276,7 @@ export default function ActivityScreen() {
       ageGroup: "all",
       ageMin: p.ageMin,
       ageMax: p.ageMax,
-      schedule: p.schedule,
+      schedule: [{ day: p.day, startTime: p.startTime }],
       campusId: p.campusId,
       campusName: p.campusName,
       room: p.room,
@@ -669,7 +672,7 @@ export default function ActivityScreen() {
                           Ages {p.ageMin}–{p.ageMax} · {p.level.charAt(0).toUpperCase() + p.level.slice(1)}
                         </Text>
                         <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
-                          {p.schedule.map(s => `${s.day} ${s.startTime}`).join("  ·  ")} · {p.duration < 60 ? `${p.duration}m` : `${p.duration / 60}h`} · Cap {p.capacity}
+                          {p.day} {p.startTime} · {p.duration < 60 ? `${p.duration}m` : `${p.duration / 60}h`} · Cap {p.capacity}
                         </Text>
                         {p.notes ? (
                           <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4, fontStyle: "italic" }} numberOfLines={2}>{p.notes}</Text>
