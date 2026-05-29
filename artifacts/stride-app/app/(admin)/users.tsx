@@ -291,7 +291,7 @@ export default function AdminUsers() {
               groupUsers.length > 0 ? (
                 <View key={groupName}>
                   <View style={styles.groupHeader}>
-                    <View style={[styles.groupDot, { backgroundColor: groupName === "Admins" ? "#B45309" : groupName === "Operators" ? "#7C3AED" : groupName.endsWith("s") && !["Admins","Operators","Students"].includes(groupName) ? "#10B981" : "#F59E0B" }]} />
+                    <View style={[styles.groupDot, { backgroundColor: groupName === "Admins" ? "#B45309" : groupName === "Operators" ? "#7C3AED" : groupName === `${primaryRoleName}s` ? "#10B981" : "#F59E0B" }]} />
                     <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{groupName} ({groupUsers.length})</Text>
                   </View>
                   {groupUsers.map(user => (
@@ -336,7 +336,7 @@ export default function AdminUsers() {
                   <View style={styles.modalBadgeRow}>
                     <View style={[styles.roleBadge, { backgroundColor: rc.bg }]}>
                       <Text style={[styles.roleText, { color: rc.text }]}>
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        {roleLabel(user.role, primaryRoleName, secondaryRoleName)}
                       </Text>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
@@ -565,9 +565,17 @@ export default function AdminUsers() {
 
 type Colors = { card: string; primary: string; mutedForeground: string; foreground: string; muted: string; border: string; background: string; secondary: string };
 
+function roleLabel(role: UserRole, primary: string, secondary: string): string {
+  if (role === "parent")   return primary;
+  if (role === "student")  return secondary;
+  if (role === "operator") return "Operator";
+  return "Admin";
+}
+
 function UserCard({ user, colors, onPress }: { user: UserRecord; colors: Colors; onPress: () => void }) {
   const rc = ROLE_COLORS[user.role];
   const sc = STATUS_CONFIG[user.status];
+  const { primaryRoleName, secondaryRoleName } = useTerminology();
   return (
     <Pressable
       style={[
@@ -591,7 +599,7 @@ function UserCard({ user, colors, onPress }: { user: UserRecord; colors: Colors;
         <View style={styles.userMeta}>
           <View style={[styles.roleBadge, { backgroundColor: rc.bg }]}>
             <Text style={[styles.roleText, { color: rc.text }]}>
-              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+              {roleLabel(user.role, primaryRoleName, secondaryRoleName)}
             </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
