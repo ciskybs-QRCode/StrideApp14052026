@@ -28,6 +28,7 @@ import { PromoProvider } from "@/context/PromoContext";
 import { SubstitutionProvider } from "@/context/SubstitutionContext";
 import { SecurityEscalationProvider } from "@/context/SecurityEscalationContext";
 import { TerminologyProvider } from "@/context/TerminologyContext";
+import { UnreadProvider } from "@/context/UnreadContext";
 
 // ── Safe localStorage polyfill ───────────────────────────────────────────────
 // Inside sandboxed iframes (e.g. Replit canvas preview) the browser blocks
@@ -118,6 +119,7 @@ export default function RootLayout() {
           <OfflineSyncProvider>
             <AuthProvider>
               <AppDataProvider>
+                <UnreadProvider>
                 <CartProvider>
                 <PaidLessonsProvider>
                 <PromoProvider>
@@ -136,6 +138,7 @@ export default function RootLayout() {
                 </PromoProvider>
                 </PaidLessonsProvider>
                 </CartProvider>
+                </UnreadProvider>
               </AppDataProvider>
             </AuthProvider>
           </OfflineSyncProvider>

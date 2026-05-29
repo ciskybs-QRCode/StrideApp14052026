@@ -47,6 +47,32 @@ router.post("/documents", requireAuth, async (req, res) => {
     .select()
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
+
+  // ── Push Notification Stub ────────────────────────────────────────────────
+  // TODO: When expo-server-sdk is available, notify all members of this org
+  // that a new document requires their attention. Example implementation:
+  //
+  //   import { Expo } from "expo-server-sdk";
+  //   const expo = new Expo();
+  //
+  //   const { data: tokens } = await supabase
+  //     .from("push_tokens")
+  //     .select("token, user_id")
+  //     .eq("organization_id", user.orgId);
+  //
+  //   const messages = (tokens ?? [])
+  //     .filter(t => Expo.isExpoPushToken(t.token))
+  //     .map(t => ({
+  //       to: t.token,
+  //       sound: "default" as const,
+  //       title: "New document requires your signature",
+  //       body: `"${body.title ?? "Document"}" has been added and needs your review.`,
+  //       data: { screen: "documents", documentId: (data as { id?: number })?.id },
+  //     }));
+  //
+  //   await expo.sendPushNotificationsAsync(messages);
+  // ─────────────────────────────────────────────────────────────────────────
+
   res.status(201).json(data);
 });
 

@@ -11,6 +11,29 @@ import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { useTerminology } from "@/context/TerminologyContext";
+import { useUnread } from "@/context/UnreadContext";
+
+function DocsTabIcon({ color, size }: { color: string; size: number }) {
+  const { hasUnreadDocs } = useUnread();
+  return (
+    <View style={{ position: "relative" }}>
+      <Ionicons name="settings-sharp" size={size} color={color} />
+      {hasUnreadDocs && (
+        <View style={{
+          position: "absolute",
+          top: -3,
+          right: -6,
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: "#FBBF24",
+          borderWidth: 1.5,
+          borderColor: "#FFFFFF",
+        }} />
+      )}
+    </View>
+  );
+}
 
 function CartTabIcon({ color, size, count }: { color: string; size: number; count: number }) {
   return (
@@ -90,7 +113,7 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="courses" options={{ title: "Courses", tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes" size={size} color={color} /> }} />
         <Tabs.Screen name="wallet" options={{ title: "Wallet", tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} /> }} />
         <Tabs.Screen name="cart" options={{ title: "Cart", tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
-        <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-sharp" size={size} color={color} /> }} />
+        <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />
         <Tabs.Screen name="checkout" options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />
         <Tabs.Screen name="alerts" options={{ href: null }} />

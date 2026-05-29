@@ -82,6 +82,7 @@ export interface Document {
   sentBy?: string;
   sentAt?: string;
   fileUrl?: string;
+  createdAt?: string;
 }
 
 export interface LegalAdminDoc {

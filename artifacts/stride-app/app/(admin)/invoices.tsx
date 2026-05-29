@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { useUnread } from "@/context/UnreadContext";
 import { supabase } from "@/lib/supabase";
 import {
   type InvoiceSubmittedPayload,
@@ -85,6 +86,8 @@ export default function AdminInvoicesScreen() {
   const { user } = useAuth();
   const schoolName = user?.schoolName ?? "Dance Village";
 
+  const { markInvoicesRead, notifyNewInvoice } = useUnread();
+
   const [invoices, setInvoices]       = useState<SubmittedInvoice[]>([]);
   const [confirmPay, setConfirmPay]   = useState<string | null>(null);
   const [newInvoiceBanner, setNewInvoiceBanner] = useState<InvoiceSubmittedPayload | null>(null);
@@ -101,7 +104,7 @@ export default function AdminInvoicesScreen() {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(useCallback(() => { load(); markInvoicesRead(); }, [load, markInvoicesRead]));
 
   // ── Supabase Realtime: listen for new invoice submissions ─────────────────
   useEffect(() => {
@@ -114,6 +117,7 @@ export default function AdminInvoicesScreen() {
           const p = payload as InvoiceSubmittedPayload;
           setNewInvoiceBanner(p);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          notifyNewInvoice();
           load();
         })
         .subscribe();
