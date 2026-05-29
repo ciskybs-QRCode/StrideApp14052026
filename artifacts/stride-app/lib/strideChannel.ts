@@ -7,6 +7,7 @@ export type PayoutFrequency = "weekly" | "fortnightly" | "monthly";
 // ── AsyncStorage keys ─────────────────────────────────────────────────────────
 
 export const PAYOUT_FREQUENCY_KEY       = "admin_payout_frequency";
+export const RECEIPT_THRESHOLD_KEY      = "admin_receipt_threshold";
 export const ADMIN_NOTIFICATIONS_KEY    = "admin_invoice_notifications";
 export const OPERATOR_NOTIFICATIONS_KEY = "operator_payment_notifications";
 

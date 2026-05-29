@@ -1,0 +1,13 @@
+Role: Expert React Native & Express.js Developer. Context: Fixing broken functionality in the Promo Codes and Reimbursement sections. UI Rules: Strictly zero layout overflows. Navy Blue/Gold branding.
+ GLOBAL STRICT ISOLATION DIRECTIVE  DO NOT modify unrelated components. Your changes must be simple, fast, and secure.
+Please execute these specific functional fixes:
+1. Promo Codes Fixes (admin/settings/promo-codes):
+Action Buttons: Fix the broken "Reactivate" button. Add a new functional "Delete" (trash) icon to permanently remove a promo code with a confirmation alert. Fix the broken "Create code" submit button so it successfully saves to the database.
+Dynamic Terminology: Replace hardcoded "parents" and "students" in the creation form with dynamic labels (fallback to "Members" and "Dependent Members") based on the admin's app customisation settings.
+Granular Target Selection: When creating a code, if the admin selects "Members" or "Dependent Members", reveal a sub-selection UI (a list or dropdown) allowing the admin to specifically choose WHICH member/dependent, and WHICH specific course(s) (one, multiple, or all) the discount applies to. Send this structured payload to the database.
+2. Reimbursement Feature Update:
+Dynamic Name: Remove the hardcoded text "Admin Dance Village" on the Request Reimbursement screen. Bind it dynamically to the Association Name set in the database settings.
+Upload Fix & Threshold Logic: Fix the "Upload Photo / PDF" button using Expo DocumentPicker.
+Settings Integration: Add two new configuration fields in the backend/Admin Settings (App Configuration): "Payment Frequency" (Weekly, Bi-weekly, Monthly) and "Receipt Threshold Amount" (number).
+Validation: In the Reimbursement form, require the file upload ONLY IF the requested amount is strictly greater than the "Receipt Threshold Amount". If the admin leaves the threshold empty or 0, the upload is mandatory for ANY amount (even $0.10).
+Output: Ensure the form submission works, state is managed correctly, and the buttons are fully functional.

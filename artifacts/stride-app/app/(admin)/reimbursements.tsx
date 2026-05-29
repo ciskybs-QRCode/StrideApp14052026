@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { api } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -81,9 +82,10 @@ interface RequestFormProps {
   claimantName: string;
   claimantRole: ClaimantRole;
   receiptThresholdCents?: number;
+  schoolName?: string;
 }
 
-export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantName, claimantRole, receiptThresholdCents = 0 }: RequestFormProps) {
+export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantName, claimantRole, receiptThresholdCents = 0, schoolName }: RequestFormProps) {
   const colors = useColors();
   const [description, setDescription] = useState("");
   const [amountStr, setAmountStr] = useState("");
@@ -92,18 +94,22 @@ export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantN
   const [submitting, setSubmitting] = useState(false);
 
   const amountCents = Math.round(parseFloat(amountStr || "0") * 100);
-  const needsReceipt = receiptThresholdCents > 0 && amountCents > receiptThresholdCents;
+  // Require receipt when threshold=0 (always) or when amount exceeds threshold
+  const needsReceipt = amountCents > 0 && (receiptThresholdCents === 0 || amountCents > receiptThresholdCents);
   const hasReceipt = receiptUri.trim().length > 0;
   const canSubmit = description.trim().length > 0 && amountCents > 0 && (!needsReceipt || hasReceipt);
 
   const handlePickFile = async () => {
-    if (Platform.OS !== "web") {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") { Alert.alert("Permission needed", "Please allow photo library access."); return; }
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) {
-      setReceiptUri(result.assets[0].uri);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/*", "application/pdf"],
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setReceiptUri(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert("Upload failed", "Could not open the file picker. Please try the Paste Link option instead.");
     }
   };
 
@@ -131,7 +137,7 @@ export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantN
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={[formStyles.title, { color: colors.primary }]}>Request Reimbursement</Text>
             <Text style={[formStyles.subtitle, { color: colors.mutedForeground }]}>
-              {ROLE_LABELS[claimantRole]} · {claimantName}
+              {ROLE_LABELS[claimantRole]} · {claimantName}{schoolName ? ` · ${schoolName}` : ""}
             </Text>
 
             <Text style={[formStyles.label, { color: colors.foreground }]}>What did you purchase?</Text>
@@ -246,6 +252,8 @@ export default function AdminReimbursementsScreen() {
   const [requests, setRequests] = useState<ReimbursementRequest[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: "paid" | "rejected" } | null>(null);
+  const [receiptThresholdCents, setReceiptThresholdCents] = useState(0);
+  const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     try {
@@ -255,6 +263,16 @@ export default function AdminReimbursementsScreen() {
     } catch {
       setRequests(DEMO_REQUESTS);
     }
+    // Load receipt threshold from AsyncStorage
+    try {
+      const t = await AsyncStorage.getItem("admin_receipt_threshold");
+      if (t) setReceiptThresholdCents(Math.round(parseFloat(t) * 100));
+    } catch { /* ignore */ }
+    // Load school name from API
+    try {
+      const org = await api.getOrg();
+      if (org.name) setSchoolName(org.name);
+    } catch { /* ignore */ }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -445,7 +463,8 @@ export default function AdminReimbursementsScreen() {
         onSubmit={handleSubmitRequest}
         claimantName={user?.name ?? "Admin"}
         claimantRole="admin"
-        receiptThresholdCents={5000}
+        receiptThresholdCents={receiptThresholdCents}
+        schoolName={schoolName}
       />
     </View>
   );

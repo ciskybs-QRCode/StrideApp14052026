@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 import { api } from "@/lib/api";
-import { type PayoutFrequency, PAYOUT_FREQUENCY_KEY } from "@/lib/strideChannel";
+import { type PayoutFrequency, PAYOUT_FREQUENCY_KEY, RECEIPT_THRESHOLD_KEY } from "@/lib/strideChannel";
 
 const CONFIG_ITEMS = [
   {
@@ -101,6 +101,8 @@ export default function AppConfigurationPage() {
 
   // Finance
   const [payoutFrequency, setPayoutFrequency] = useState<PayoutFrequency>("monthly");
+  const [receiptThresholdInput, setReceiptThresholdInput] = useState("");
+  const [thresholdSaved, setThresholdSaved] = useState(false);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -123,6 +125,9 @@ export default function AppConfigurationPage() {
     AsyncStorage.getItem(PAYOUT_FREQUENCY_KEY).then(v => {
       if (v) setPayoutFrequency(v as PayoutFrequency);
     });
+    AsyncStorage.getItem(RECEIPT_THRESHOLD_KEY).then(v => {
+      if (v) setReceiptThresholdInput(v);
+    });
   }, []);
 
   const handleSetPayoutFrequency = useCallback(async (f: PayoutFrequency) => {
@@ -130,6 +135,14 @@ export default function AppConfigurationPage() {
     try { await AsyncStorage.setItem(PAYOUT_FREQUENCY_KEY, f); } catch { /* ignore */ }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
+
+  const handleSaveThreshold = useCallback(async () => {
+    const trimmed = receiptThresholdInput.trim();
+    try { await AsyncStorage.setItem(RECEIPT_THRESHOLD_KEY, trimmed); } catch { /* ignore */ }
+    setThresholdSaved(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setThresholdSaved(false), 2500);
+  }, [receiptThresholdInput]);
 
   const handleGraceToggle = useCallback(async (value: boolean) => {
     setSavingGrace(true);
@@ -386,6 +399,36 @@ export default function AppConfigurationPage() {
                 </Text>
               </Pressable>
             ))}
+          </View>
+        </View>
+
+        {/* Receipt Threshold Amount */}
+        <View style={[{ backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3, gap: 12 }]}>
+          <View style={styles.row}>
+            <View style={[styles.rowIcon, { backgroundColor: "#FEE2E2", width: 42, height: 42, borderRadius: 12 }]}>
+              <Ionicons name="receipt-outline" size={20} color="#DC2626" />
+            </View>
+            <View style={styles.rowText}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Receipt Threshold</Text>
+              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Receipt required for reimbursements above this amount. Set to 0 to always require one.</Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 }}>
+            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.mutedForeground }}>$</Text>
+            <TextInput
+              style={[styles.termInput, { flex: 1, color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+              value={receiptThresholdInput}
+              onChangeText={setReceiptThresholdInput}
+              placeholder="50.00"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="decimal-pad"
+            />
+            <Pressable
+              style={[{ backgroundColor: thresholdSaved ? "#10B981" : colors.primary, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12 }]}
+              onPress={handleSaveThreshold}
+            >
+              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>{thresholdSaved ? "Saved ✓" : "Save"}</Text>
+            </Pressable>
           </View>
         </View>
 

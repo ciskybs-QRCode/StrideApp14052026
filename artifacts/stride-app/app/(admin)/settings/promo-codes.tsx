@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useRealtime } from "@/context/RealtimeContext";
+import { useTerminology } from "@/context/TerminologyContext";
 import { useColors } from "@/hooks/useColors";
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -47,6 +48,7 @@ interface PromoCode {
   createdAt: string; expiresAt: string | null; targetType: TargetType;
   targetStudentName?: string; targetStudentParent?: string;
   targetCourseNames?: string[]; targetLocationNames?: string[];
+  targetParentNames?: string[];
   restrictedCourses?: string[];
 }
 
@@ -86,6 +88,8 @@ export default function PromoCodesPage() {
   const [showDetail, setShowDetail] = useState<PromoCode | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
+  const { primaryRoleName, secondaryRoleName } = useTerminology();
+
   const [newCode, setNewCode] = useState("");
   const [newDiscountType, setNewDiscountType] = useState<DiscountType>("percent");
   const [newDiscountValue, setNewDiscountValue] = useState("");
@@ -96,17 +100,24 @@ export default function PromoCodesPage() {
   const [targetStudentId, setTargetStudentId] = useState<string | null>(null);
   const [targetCourseIds, setTargetCourseIds] = useState<string[]>([]);
   const [targetLocations, setTargetLocations] = useState<string[]>([]);
+  const [targetParentSearch, setTargetParentSearch] = useState("");
+  const [targetParentNames, setTargetParentNames] = useState<string[]>([]);
+  const [targetMemberCourseIds, setTargetMemberCourseIds] = useState<string[]>([]);
 
   const activeCount = promos.filter(p => !isExpired(p)).length;
   const filtered = promos.filter(p => !search || p.code.toLowerCase().includes(search.toLowerCase()));
   const selectedStudent = students.find(s => s.id === targetStudentId);
   const filteredStudents = students.filter(s => !targetStudentSearch || s.name.toLowerCase().includes(targetStudentSearch.toLowerCase()));
 
+  const uniqueParents = Array.from(new Set(students.map(s => s.parentName))).sort();
+  const filteredParents = uniqueParents.filter(n => !targetParentSearch || n.toLowerCase().includes(targetParentSearch.toLowerCase()));
+
   const resetCreate = () => {
     setNewCode(""); setNewDiscountType("percent"); setNewDiscountValue("");
     setNewDuration(""); setNewMaxUses("1"); setTargetType("all");
     setTargetStudentSearch(""); setTargetStudentId(null);
     setTargetCourseIds([]); setTargetLocations([]);
+    setTargetParentSearch(""); setTargetParentNames([]); setTargetMemberCourseIds([]);
   };
 
   const handleCreate = () => {
@@ -125,8 +136,13 @@ export default function PromoCodesPage() {
       targetType,
       targetStudentName: selectedStudent?.name,
       targetStudentParent: selectedStudent?.parentName,
-      targetCourseNames: targetType === "courses" ? courses.filter(c => targetCourseIds.includes(c.id)).map(c => c.name) : undefined,
+      targetCourseNames: targetType === "courses"
+        ? courses.filter(c => targetCourseIds.includes(c.id)).map(c => c.name)
+        : targetType === "parents" && targetMemberCourseIds.length > 0
+          ? courses.filter(c => targetMemberCourseIds.includes(c.id)).map(c => c.name)
+          : undefined,
       targetLocationNames: targetType === "locations" ? targetLocations : undefined,
+      targetParentNames: targetType === "parents" && targetParentNames.length > 0 ? targetParentNames : undefined,
       restrictedCourses: selectedStudent ? selectedStudent.courses : undefined,
     };
     setPromos(prev => [newPromo, ...prev]);
@@ -168,7 +184,26 @@ export default function PromoCodesPage() {
   };
 
   const handleToggle = (id: string) => {
-    setPromos(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+    setPromos(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const becomingActive = !p.active;
+      // Reset usage counter if reactivating a fully-exhausted code
+      return { ...p, active: becomingActive, usedCount: becomingActive && p.usedCount >= p.maxUses ? 0 : p.usedCount };
+    }));
+  };
+
+  const handleDeleteWithConfirm = (id: string, code: string) => {
+    Alert.alert(
+      "Delete Promo Code?",
+      `"${code}" will be permanently removed. This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => {
+          setPromos(prev => prev.filter(p => p.id !== id));
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        }},
+      ]
+    );
   };
 
   const handleDelete = (id: string) => setConfirmDelete(id);
@@ -260,7 +295,7 @@ export default function PromoCodesPage() {
                   <Text style={[styles.actionChipText, { color: colors.primary }]}>Copy</Text>
                 </Pressable>
                 {expired && (
-                  <Pressable style={[styles.actionChip, { backgroundColor: "#D1FAE5" }]} onPress={() => handleToggle(p.id)}>
+                  <Pressable style={[styles.actionChip, { backgroundColor: "#D1FAE5" }]} onPress={() => { handleToggle(p.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}>
                     <Ionicons name="play-circle-outline" size={13} color="#10B981" />
                     <Text style={[styles.actionChipText, { color: "#10B981" }]}>Reactivate</Text>
                   </Pressable>
@@ -269,10 +304,14 @@ export default function PromoCodesPage() {
                   <View style={[styles.actionChip, { backgroundColor: "#EDE9FE" }]}>
                     <Ionicons name="people-outline" size={13} color="#7C3AED" />
                     <Text style={[styles.actionChipText, { color: "#7C3AED" }]} numberOfLines={1}>
-                      {p.targetType === "student" ? p.targetStudentName : p.targetType === "courses" ? "Courses" : p.targetType === "locations" ? "Locations" : "Parents"}
+                      {p.targetType === "student" ? (p.targetStudentName ?? secondaryRoleName) : p.targetType === "courses" ? "Courses" : p.targetType === "locations" ? "Locations" : (p.targetParentNames?.length ? p.targetParentNames[0] : primaryRoleName + "s")}
                     </Text>
                   </View>
                 )}
+                <Pressable style={[styles.actionChip, { backgroundColor: "#FEE2E2" }]} onPress={() => handleDeleteWithConfirm(p.id, p.code)}>
+                  <Ionicons name="trash-outline" size={13} color="#EF4444" />
+                  <Text style={[styles.actionChipText, { color: "#EF4444" }]}>Delete</Text>
+                </Pressable>
               </View>
             </View>
           );
@@ -331,8 +370,14 @@ export default function PromoCodesPage() {
               <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 0, marginBottom: 0 }]}>Smart Targeting</Text>
             </View>
             <View style={styles.targetGrid}>
-              {([{ v: "all" as TargetType, l: "All Users", i: "people-outline" as const }, { v: "parents" as TargetType, l: "Parents", i: "person-outline" as const }, { v: "courses" as TargetType, l: "Courses", i: "musical-notes-outline" as const }, { v: "locations" as TargetType, l: "Locations", i: "location-outline" as const }, { v: "student" as TargetType, l: "Student", i: "person-add-outline" as const }]).map(t => (
-                <Pressable key={t.v} style={[styles.targetChip, targetType === t.v && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => { setTargetType(t.v); setTargetStudentId(null); setTargetStudentSearch(""); setTargetCourseIds([]); setTargetLocations([]); }}>
+              {([
+                { v: "all" as TargetType, l: "All Users", i: "people-outline" as const },
+                { v: "parents" as TargetType, l: `${primaryRoleName}s`, i: "person-outline" as const },
+                { v: "courses" as TargetType, l: "Courses", i: "musical-notes-outline" as const },
+                { v: "locations" as TargetType, l: "Locations", i: "location-outline" as const },
+                { v: "student" as TargetType, l: `${secondaryRoleName}s`, i: "person-add-outline" as const },
+              ]).map(t => (
+                <Pressable key={t.v} style={[styles.targetChip, targetType === t.v && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => { setTargetType(t.v); setTargetStudentId(null); setTargetStudentSearch(""); setTargetCourseIds([]); setTargetLocations([]); setTargetParentSearch(""); setTargetParentNames([]); setTargetMemberCourseIds([]); }}>
                   <Ionicons name={t.i} size={13} color={targetType === t.v ? "#FFF" : colors.mutedForeground} />
                   <Text style={[styles.targetChipText, { color: targetType === t.v ? "#FFF" : colors.mutedForeground }]}>{t.l}</Text>
                 </Pressable>
@@ -352,6 +397,44 @@ export default function PromoCodesPage() {
                 <Text style={[styles.checkRowText, { color: colors.foreground }]}>{loc}</Text>
               </Pressable>
             ))}
+
+            {targetType === "parents" && (
+              <View style={{ marginTop: 8 }}>
+                <View style={[styles.searchBar, { backgroundColor: colors.muted, borderColor: colors.border, marginBottom: 8 }]}>
+                  <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
+                  <TextInput style={[styles.searchInput, { color: colors.foreground }]} value={targetParentSearch} onChangeText={setTargetParentSearch} placeholder={`Search ${primaryRoleName.toLowerCase()}s...`} placeholderTextColor={colors.mutedForeground} />
+                </View>
+                {filteredParents.length === 0 ? (
+                  <View style={[styles.infoBox, { backgroundColor: colors.muted }]}>
+                    <Ionicons name="people-outline" size={16} color={colors.mutedForeground} />
+                    <Text style={[styles.infoText, { color: colors.mutedForeground }]}>No {primaryRoleName.toLowerCase()}s found. Leave unselected to target all {primaryRoleName.toLowerCase()}s.</Text>
+                  </View>
+                ) : (
+                  filteredParents.map(name => (
+                    <Pressable key={name} style={[styles.checkRow, { borderColor: targetParentNames.includes(name) ? colors.primary : colors.border, backgroundColor: targetParentNames.includes(name) ? "#EEF2FF" : colors.card }]} onPress={() => setTargetParentNames(prev => prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name])}>
+                      <Ionicons name={targetParentNames.includes(name) ? "checkbox" : "square-outline"} size={18} color={targetParentNames.includes(name) ? colors.primary : colors.mutedForeground} />
+                      <Text style={[styles.checkRowText, { color: colors.foreground }]}>{name}</Text>
+                    </Pressable>
+                  ))
+                )}
+                <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Restrict to Courses (optional)</Text>
+                {courses.map(c => (
+                  <Pressable key={c.id} style={[styles.checkRow, { borderColor: targetMemberCourseIds.includes(c.id) ? "#7C3AED" : colors.border, backgroundColor: targetMemberCourseIds.includes(c.id) ? "#EDE9FE" : colors.card }]} onPress={() => setTargetMemberCourseIds(prev => prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id])}>
+                    <Ionicons name={targetMemberCourseIds.includes(c.id) ? "checkbox" : "square-outline"} size={18} color={targetMemberCourseIds.includes(c.id) ? "#7C3AED" : colors.mutedForeground} />
+                    <Text style={[styles.checkRowText, { color: colors.foreground }]}>{c.name}</Text>
+                  </Pressable>
+                ))}
+                {(targetParentNames.length > 0 || targetMemberCourseIds.length > 0) && (
+                  <View style={[styles.infoBox, { backgroundColor: "#FEF3C7", marginTop: 8 }]}>
+                    <Ionicons name="information-circle-outline" size={16} color="#F59E0B" />
+                    <Text style={[styles.infoText, { color: "#92400E" }]}>
+                      {targetParentNames.length > 0 ? `Targeted: ${targetParentNames.join(", ")}` : `All ${primaryRoleName.toLowerCase()}s`}
+                      {targetMemberCourseIds.length > 0 ? ` · Courses: ${courses.filter(c => targetMemberCourseIds.includes(c.id)).map(c => c.name).join(", ")}` : ""}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
 
             {targetType === "student" && (
               <View style={{ marginTop: 8 }}>
