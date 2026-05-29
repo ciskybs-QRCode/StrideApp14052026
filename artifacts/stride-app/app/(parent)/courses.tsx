@@ -419,7 +419,7 @@ export default function CoursesScreen() {
   // Enroll modal state
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrollCourse, setEnrollCourse] = useState<(typeof courses)[0] | null>(null);
-  const [enrollParticipant, setEnrollParticipant] = useState<string | null>(null);
+  const [enrollParticipants, setEnrollParticipants] = useState<string[]>([]);
   const [enrollPackage, setEnrollPackage] = useState<"dropIn" | "fixedBlock" | null>(null);
 
   const course = courses.find(c => c.id === selectedCourse);
@@ -450,35 +450,45 @@ export default function CoursesScreen() {
 
   const isInCart = (courseId: string) => cartItems.some(i => i.courseId === courseId);
 
+  const toggleParticipant = (name: string) => {
+    setEnrollParticipants(prev =>
+      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+    );
+  };
+
   const handleOpenEnroll = (c: (typeof courses)[0]) => {
     setEnrollCourse(c);
-    setEnrollParticipant(participantOptions[0] ?? null);
+    setEnrollParticipants(participantOptions[0] ? [participantOptions[0]] : []);
     setEnrollPackage(c.fixedBlockEnabled ? "fixedBlock" : "dropIn");
     setShowEnrollModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleAddToCart = () => {
-    if (!enrollCourse || !enrollPackage) return;
+    if (!enrollCourse || !enrollPackage || enrollParticipants.length === 0) return;
     const isDropIn = enrollPackage === "dropIn";
     const price = isDropIn ? enrollCourse.dropInPrice : enrollCourse.fixedBlockPrice;
     const label = isDropIn
       ? "Single Lesson"
       : `Full Package (${enrollCourse.fixedBlockLessons} lessons)`;
-    addItem({
-      courseId: enrollCourse.id,
-      courseName: enrollCourse.name,
-      courseSchedule: enrollCourse.schedule,
-      packageType: enrollPackage,
-      label,
-      price,
-      participantName: enrollParticipant ?? user?.name ?? "You",
+    enrollParticipants.forEach(participantName => {
+      addItem({
+        courseId: enrollCourse.id,
+        courseName: enrollCourse.name,
+        courseSchedule: enrollCourse.schedule,
+        packageType: enrollPackage,
+        label,
+        price,
+        participantName,
+      });
     });
     setShowEnrollModal(false);
     setEnrollCourse(null);
     setEnrollPackage(null);
+    setEnrollParticipants([]);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showSnack("Added to cart! Tap the cart icon to review.");
+    const count = enrollParticipants.length;
+    showSnack(count > 1 ? `${count} participants added to cart!` : "Added to cart! Tap the cart icon to review.");
   };
 
   const resetPrivate = () => {
@@ -826,9 +836,9 @@ export default function CoursesScreen() {
                 </Text>
               )}
 
-              {/* Selezione pacchetto */}
+              {/* Package Selection */}
               <View style={{ marginTop: 12 }}>
-                <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>SELEZIONA PACCHETTO</Text>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>SELECT PACKAGE</Text>
                 {enrollCourse?.dropInEnabled && (
                   <Pressable
                     style={[
@@ -876,47 +886,57 @@ export default function CoursesScreen() {
                 )}
               </View>
 
-              {/* Selezione partecipante */}
+              {/* Participant Selection */}
               <View style={{ marginTop: 14 }}>
-                <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>CHI SI ISCRIVE?</Text>
-                {participantOptions.map((name, idx) => (
-                  <Pressable
-                    key={name}
-                    style={[
-                      styles.participantRow,
-                      { borderColor: enrollParticipant === name ? colors.primary : colors.border,
-                        backgroundColor: enrollParticipant === name ? colors.muted : colors.background,
-                        marginTop: idx > 0 ? 8 : 0 },
-                    ]}
-                    onPress={() => setEnrollParticipant(name)}
-                  >
-                    <Ionicons
-                      name={enrollParticipant === name ? "radio-button-on" : "radio-button-off"}
-                      size={18}
-                      color={enrollParticipant === name ? colors.primary : colors.mutedForeground}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.participantName, { color: colors.foreground }]}>{name}</Text>
-                      {idx === 0 ? (
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>Titolare account · predefinito</Text>
-                      ) : (
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>{secondaryRoleName}</Text>
-                      )}
-                    </View>
-                    {idx === 0 && (
-                      <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
-                        <Text style={[styles.youBadgeText, { color: colors.primary }]}>Tu</Text>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>SELECT PARTICIPANTS</Text>
+                {participantOptions.map((name, idx) => {
+                  const checked = enrollParticipants.includes(name);
+                  return (
+                    <Pressable
+                      key={name}
+                      style={[
+                        styles.participantRow,
+                        { borderColor: checked ? colors.primary : colors.border,
+                          backgroundColor: checked ? colors.muted : colors.background,
+                          marginTop: idx > 0 ? 8 : 0 },
+                      ]}
+                      onPress={() => toggleParticipant(name)}
+                    >
+                      <Ionicons
+                        name={checked ? "checkbox" : "square-outline"}
+                        size={20}
+                        color={checked ? colors.primary : colors.mutedForeground}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.participantName, { color: colors.foreground }]}>{name}</Text>
+                        {idx === 0 ? (
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>Account holder · default</Text>
+                        ) : (
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>{secondaryRoleName}</Text>
+                        )}
                       </View>
-                    )}
-                  </Pressable>
-                ))}
+                      {idx === 0 && (
+                        <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
+                          <Text style={[styles.youBadgeText, { color: colors.primary }]}>You</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+                {enrollParticipants.length === 0 && (
+                  <Text style={{ fontSize: 12, color: "#EF4444", marginTop: 6 }}>Please select at least one participant.</Text>
+                )}
               </View>
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
                 <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowEnrollModal(false)}>
                   <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                 </Pressable>
-                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleAddToCart}>
+                <Pressable
+                  style={[styles.closeBtn, { flex: 1, backgroundColor: enrollParticipants.length > 0 ? colors.primary : colors.border }]}
+                  onPress={handleAddToCart}
+                  disabled={enrollParticipants.length === 0}
+                >
                   <Ionicons name="cart-outline" size={16} color="#FFF" />
                   <Text style={styles.closeBtnText}>Add to Cart</Text>
                 </Pressable>
