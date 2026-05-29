@@ -306,7 +306,7 @@ export default function AdminUsers() {
               groupUsers.length > 0 ? (
                 <View key={groupName}>
                   <View style={styles.groupHeader}>
-                    <View style={[styles.groupDot, { backgroundColor: groupName === "Admins" ? "#B45309" : groupName === "Operators" ? "#7C3AED" : groupName === "Parents" ? "#10B981" : "#F59E0B" }]} />
+                    <View style={[styles.groupDot, { backgroundColor: groupName === "Admins" ? "#B45309" : groupName === "Operators" ? "#7C3AED" : groupName.endsWith("s") && !["Admins","Operators","Students"].includes(groupName) ? "#10B981" : "#F59E0B" }]} />
                     <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{groupName} ({groupUsers.length})</Text>
                   </View>
                   {groupUsers.map(user => (
@@ -487,7 +487,7 @@ export default function AdminUsers() {
                           onPress={() => handleRoleChange(user, "parent")}
                         >
                           <Ionicons name="arrow-down-circle" size={16} color="#1E3A8A" />
-                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Parent</Text>
+                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Member</Text>
                         </Pressable>
                       </>
                     )}
@@ -505,7 +505,7 @@ export default function AdminUsers() {
                           onPress={() => handleRoleChange(user, "parent")}
                         >
                           <Ionicons name="arrow-down-circle" size={16} color="#1E3A8A" />
-                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Parent</Text>
+                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Member</Text>
                         </Pressable>
                       </>
                     )}

@@ -516,7 +516,7 @@ export default function DocumentsScreen() {
                 </Pressable>
               </View>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground, paddingHorizontal: 16, paddingBottom: 12, marginTop: 0 }]}>
-                Go to "My Children" for medical info and emergency contacts.
+                Go to "My Dependent Members" for medical info and emergency contacts.
               </Text>
             </View>
 

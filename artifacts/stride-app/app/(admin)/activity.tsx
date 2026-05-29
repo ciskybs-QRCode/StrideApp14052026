@@ -82,7 +82,7 @@ const TYPE_CONFIG: Record<ActivityType, { label: string; icon: keyof typeof Ioni
 const ADMIN_TYPE_CONFIG: Record<AdminItemType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
   secretary_hours:  { label: "Secretary Hours",       icon: "time",         color: "#1E3A8A", bg: "#DBEAFE" },
   staff_meeting:    { label: "Staff Meeting",         icon: "people",       color: "#7C3AED", bg: "#EDE9FE" },
-  parent_teacher:   { label: "Parent-Teacher",        icon: "chatbubbles",  color: "#D97706", bg: "#FEF3C7" },
+  parent_teacher:   { label: "Member Consultation",   icon: "chatbubbles",  color: "#D97706", bg: "#FEF3C7" },
 };
 
 const STATUS_CONFIG: Record<ActivityStatus, { label: string; color: string; bg: string }> = {
@@ -151,7 +151,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
 const INITIAL_ADMIN_ITEMS: AdminScheduleItem[] = [
   { id: "s1", title: "Front Desk Coverage", type: "secretary_hours", date: "19/05/2026", startTime: "09:00", duration: 480, participants: "Sara Chen", notes: "Covers registration and payments", status: "scheduled" },
   { id: "s2", title: "Weekly Staff Briefing", type: "staff_meeting", date: "20/05/2026", startTime: "08:30", duration: 30, participants: "All instructors", notes: "Discuss schedule changes", status: "scheduled" },
-  { id: "s3", title: "Parent Consultation — Smith", type: "parent_teacher", date: "21/05/2026", startTime: "17:00", duration: 45, participants: "Emma Wilson, Mr & Mrs Smith", notes: "Progress review for Jane", status: "scheduled" },
+  { id: "s3", title: "Member Consultation — Smith", type: "parent_teacher", date: "21/05/2026", startTime: "17:00", duration: 45, participants: "Emma Wilson, Mr & Mrs Smith", notes: "Progress review for Jane", status: "scheduled" },
 ];
 
 // ── Blank drafts ───────────────────────────────────────────────────────────────
@@ -1083,7 +1083,7 @@ export default function ActivityScreen() {
                 options={[
                   { value: "secretary_hours" as const, label: "Secretary",    color: "#1E3A8A", bg: "#DBEAFE" },
                   { value: "staff_meeting" as const, label: "Staff Meeting", color: "#7C3AED", bg: "#EDE9FE" },
-                  { value: "parent_teacher" as const, label: "Parent-Teacher", color: "#D97706", bg: "#FEF3C7" },
+                  { value: "parent_teacher" as const, label: "Member Consultation", color: "#D97706", bg: "#FEF3C7" },
                 ]}
                 value={adminDraft.type}
                 onSelect={v => setAdminDraft(d => ({ ...d, type: v }))}

@@ -243,7 +243,7 @@ export default function AdminLessonsScreen() {
   const approveSlot = async (status: "approved" | "rejected") => {
     if (!reviewSlot) return;
     if (status === "approved" && !reviewPrice.trim()) {
-      Alert.alert("Parent price required", "Enter the price to charge parents before approving.");
+      Alert.alert("Member price required", "Enter the price to charge members before approving.");
       return;
     }
     setSaving(true);
@@ -522,7 +522,7 @@ export default function AdminLessonsScreen() {
                       <View style={{ flexDirection: "row", gap: 12, marginTop: 2 }}>
                         {s.parent_price_cents != null && (
                           <Text style={[styles.cardSub, { color: "#065F46", fontWeight: "700" }]}>
-                            Parent: {fmt(s.parent_price_cents)}
+                            Member: {fmt(s.parent_price_cents)}
                           </Text>
                         )}
                         {s.operator_pay_cents != null && s.operator_pay_cents > 0 && (
@@ -775,7 +775,7 @@ export default function AdminLessonsScreen() {
                   style={[styles.textArea, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
                   value={profileBio}
                   onChangeText={setProfileBio}
-                  placeholder="Short bio shown to parents when booking…"
+                  placeholder="Short bio shown to members when booking…"
                   placeholderTextColor={colors.mutedForeground}
                   multiline
                   numberOfLines={3}
@@ -930,9 +930,9 @@ export default function AdminLessonsScreen() {
                     ) : null}
                   </View>
 
-                  {/* Parent price */}
+                  {/* Member price */}
                   <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
-                    Parent Price per Lesson *
+                    Member Price per Lesson *
                   </Text>
                   <View style={styles.priceInputRow}>
                     <Text style={[styles.rateCurrency, { color: colors.mutedForeground }]}>$</Text>

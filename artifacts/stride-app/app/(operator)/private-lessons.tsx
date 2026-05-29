@@ -435,7 +435,7 @@ export default function OperatorPrivateLessonsScreen() {
                     </Text>
                     {s.parent_price_cents != null && (
                       <Text style={[styles.cardSub, { color: colors.primary, fontWeight: "700" }]}>
-                        Parent price: {fmt(s.parent_price_cents)}/lesson
+                        Member price: {fmt(s.parent_price_cents)}/lesson
                       </Text>
                     )}
                     {s.operator_pay_cents != null && s.operator_pay_cents > 0 && (

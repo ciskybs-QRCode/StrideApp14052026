@@ -98,7 +98,7 @@ function AlertItem({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =
             <Ionicons name="time-outline" size={11} color={colors.mutedForeground} />
             <Text style={[styles.alertMetaText, { color: colors.mutedForeground }]}>
               {minsAgo <= 0 ? "just now" : `${minsAgo} min ago`}
-              {alert.delayMinutes ? `  · Parent: ${alert.delayMinutes} min delay` : ""}
+              {alert.delayMinutes ? `  · Member: ${alert.delayMinutes} min delay` : ""}
             </Text>
           </View>
         </View>

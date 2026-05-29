@@ -74,7 +74,7 @@ export default function OperatorStudents() {
       setApprovalRequests(prev =>
         prev.map(r => r.id === id ? { ...r, status: decision, updated_at: new Date().toISOString() } : r),
       );
-      showSnack(decision === "approved" ? "Enrollment approved! Parent will be notified." : "Enrollment rejected. Parent will be notified.");
+      showSnack(decision === "approved" ? "Enrollment approved! Member will be notified." : "Enrollment rejected. Member will be notified.");
       Haptics.notificationAsync(
         decision === "approved"
           ? Haptics.NotificationFeedbackType.Success

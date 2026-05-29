@@ -89,7 +89,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               const row = payload.new as Record<string, string>;
               const notif: BookingNotification = {
                 id: `rt-${row.id ?? Date.now()}`,
-                parentName: "Parent",
+                parentName: "Member",
                 studentName: row.child_id ? `Student #${row.child_id}` : "Student",
                 discipline: row.discipline_id ? `Discipline #${row.discipline_id}` : "Private Lesson",
                 date: row.slot_date ?? "",

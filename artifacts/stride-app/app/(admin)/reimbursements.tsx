@@ -41,7 +41,7 @@ const ROLE_LABELS: Record<ClaimantRole, string> = {
   admin: "Admin",
   paid_operator: "Paid Operator",
   volunteer: "Volunteer",
-  parent: "Parent / Associate",
+  parent: "Member / Associate",
 };
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; icon: React.ComponentProps<typeof Ionicons>["name"] }> = {

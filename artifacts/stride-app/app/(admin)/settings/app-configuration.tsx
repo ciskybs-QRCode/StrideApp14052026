@@ -270,12 +270,12 @@ export default function AppConfigurationPage() {
             </View>
           </View>
           <View style={[styles.card, { backgroundColor: colors.card, padding: 16 }]}>
-            <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Account Holder (e.g. Parent, Member)</Text>
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Account Holder (e.g. Member, Associate)</Text>
             <TextInput
               style={[styles.termInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
               value={primaryInput}
               onChangeText={setPrimaryInput}
-              placeholder="Parent"
+              placeholder="Member"
               placeholderTextColor={colors.mutedForeground}
               returnKeyType="next"
             />

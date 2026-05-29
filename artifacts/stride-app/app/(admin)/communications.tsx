@@ -121,10 +121,10 @@ function getRecipientLabel(r: RecipientSelection): string {
   switch (r.mode) {
     case "all":         return "All Users (45)";
     case "group":
-      if (r.groupRole === "parents")   return "All Parents (30)";
+      if (r.groupRole === "parents")   return "All Members (30)";
       if (r.groupRole === "operators") return "All Operators (15)";
       return "All Students (8)";
-    case "course":      return `Parents: ${r.courseName} (${r.courseCount})`;
+    case "course":      return `Members: ${r.courseName} (${r.courseCount})`;
     case "individuals": return `${r.individualIds?.length || 0} specific recipient${r.individualIds?.length !== 1 ? "s" : ""}`;
     default:            return "Select recipients";
   }
@@ -506,7 +506,7 @@ export default function AdminCommunications() {
                 <Ionicons name="create-outline" size={18} color="#7C3AED" />
                 <View>
                   <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Signature Required</Text>
-                  <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Parents must sign before reading</Text>
+                  <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Members must sign before reading</Text>
                 </View>
               </View>
               <Switch value={signatureRequired} onValueChange={setSignatureRequired} trackColor={{ false: "#E5E7EB", true: "#C4B5FD" }} thumbColor={signatureRequired ? "#7C3AED" : "#9CA3AF"} />

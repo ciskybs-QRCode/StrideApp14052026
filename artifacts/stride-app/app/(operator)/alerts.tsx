@@ -35,7 +35,7 @@ function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =>
     const tel = `tel:${PARENT_PHONE.replace(/\s/g, "")}`;
     Linking.canOpenURL(tel).then(ok => {
       if (ok) Linking.openURL(tel);
-      else Alert.alert("Call Parent", PARENT_PHONE);
+      else Alert.alert("Call Member", PARENT_PHONE);
     });
   };
 
@@ -65,7 +65,7 @@ function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =>
         </Text>
         <Text style={[styles.rowTime, { color: colors.mutedForeground }]}>
           {minsAgo <= 0 ? "Just now" : `${minsAgo} min ago`}
-          {alert.delayMinutes ? ` · Parent: ${alert.delayMinutes} min delay` : ""}
+          {alert.delayMinutes ? ` · Member: ${alert.delayMinutes} min delay` : ""}
         </Text>
       </View>
 
@@ -168,9 +168,9 @@ export default function OperatorAlerts() {
             <Ionicons name="information-circle" size={18} color={PHASE_COLOR[maxPhase] ?? "#9CA3AF"} />
             <Text style={[styles.infoText, { color: PHASE_COLOR[maxPhase] ?? "#9CA3AF" }]}>
               {maxPhase === 1
-                ? "Notification sent to parents and administrators. Monitor the situation."
+                ? "Notification sent to members and administrators. Monitor the situation."
                 : maxPhase === 2
-                ? "Second high-priority alert sent. Contact parent immediately."
+                ? "Second high-priority alert sent. Contact member immediately."
                 : "AUDIO ALARM ACTIVE — Immediate action required. Contact authorities if necessary."}
             </Text>
           </View>

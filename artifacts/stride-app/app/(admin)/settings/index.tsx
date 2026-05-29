@@ -135,9 +135,9 @@ export default function SettingsIndex() {
             <Ionicons name="qr-code-outline" size={30} color="#FBBF24" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: "#FFFFFF" }]}>School Setup & Parent QR</Text>
+            <Text style={[styles.featuredTitle, { color: "#FFFFFF" }]}>School Setup & Member QR</Text>
             <Text style={[styles.featuredDesc, { color: "rgba(255,255,255,0.75)" }]}>
-              Branding, colours and invite QR code for parents
+              Branding, colours and invite QR code for members
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
