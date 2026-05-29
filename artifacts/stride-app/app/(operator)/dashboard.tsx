@@ -264,7 +264,7 @@ export default function OperatorDashboard() {
   const { user } = useAuth();
   const { lessons, students, updateStudentPresence } = useAppData();
   const { reportAbsence, reportDelay, respondToSub, activeAlert, cascadeCountdown } = useSubstitution();
-  const { unreadCount, notifications, markAllRead, markRead } = usePrivateLessons();
+  const { unreadCount, notifications, markAllRead, markRead, myBookings } = usePrivateLessons();
   const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts, triggerAccessAlert } = useSecurityEscalation();
   const { isOnline, enqueue, pendingCount: offlinePendingCount } = useOfflineSync();
   const colors = useColors();
@@ -290,6 +290,7 @@ export default function OperatorDashboard() {
   const [lessonScanResult, setLessonScanResult] = useState<{
     discipline: string; student: string; earnings_cents: number; invoice_number: string; attended_at: string;
   } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<import("@/lib/api").ApiPrivateBooking | null>(null);
   const [lessonScanning,  setLessonScanning]  = useState(false);
   const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
   const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string } | null>(null);
@@ -757,21 +758,19 @@ export default function OperatorDashboard() {
           </View>
         </View>
 
-        {/* ── Active Alert Banner ── */}
-        {activeAlert && !activeAlert.resolved && (
+        {/* ── Active Alert Banner (substitution cascade only — red alert goes to Admin) ── */}
+        {activeAlert && !activeAlert.resolved && activeAlert.cascadeStep < 4 && (
           <Pressable
-            style={[styles.alertBanner, { backgroundColor: activeAlert.cascadeStep === 4 ? "#DC2626" : "#F59E0B" }]}
+            style={[styles.alertBanner, { backgroundColor: "#F59E0B" }]}
             onPress={() => setShowCascade(true)}
           >
-            <Ionicons name={activeAlert.cascadeStep === 4 ? "warning" : "alert-circle"} size={20} color="#FFF" />
+            <Ionicons name="alert-circle" size={20} color="#FFF" />
             <View style={{ flex: 1 }}>
               <Text style={styles.alertBannerTitle}>
-                {activeAlert.cascadeStep === 4 ? "🔴 RED ALERT — No subs available" : `⚡ Substitution in progress — ${activeAlert.lessonName}`}
+                ⚡ Substitution in progress — {activeAlert.lessonName}
               </Text>
               <Text style={styles.alertBannerSub}>
-                {activeAlert.cascadeStep === 4
-                  ? "Awaiting Admin decision"
-                  : `Sub ${activeAlert.cascadeStep} notified · Tap to view`}
+                Sub {activeAlert.cascadeStep} notified · Tap to view
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#FFF" />
@@ -817,25 +816,60 @@ export default function OperatorDashboard() {
           </View>
         )}
 
-        {/* ── Private Lessons Entry ── */}
-        <Pressable
-          style={({ pressed }) => [styles.privateLessonCard, { backgroundColor: colors.primary, opacity: pressed ? 0.92 : 1 }]}
-          onPress={() => router.push("/(operator)/private-lessons")}
-        >
-          <View style={[styles.privateLessonIcon, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="school-outline" size={24} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.privateLessonTitle}>Private Lessons</Text>
-            <Text style={styles.privateLessonSub}>Manage your availability, bookings & earnings</Text>
-          </View>
-          {unreadCount > 0 && (
-            <View style={styles.privateLessonBadge}>
-              <Text style={styles.privateLessonBadgeText}>{unreadCount}</Text>
+        {/* ── Private Lessons Box ── */}
+        <View style={[styles.privateLessonCard, { backgroundColor: colors.primary }]}>
+          {/* Header row — tappable to go to full management screen */}
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            onPress={() => router.push("/(operator)/private-lessons")}
+          >
+            <View style={[styles.privateLessonIcon, { backgroundColor: colors.secondary }]}>
+              <Ionicons name="school-outline" size={24} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.privateLessonTitle}>Private Lessons</Text>
+              <Text style={styles.privateLessonSub}>
+                {myBookings.filter(b => b.status === "confirmed" || b.status === "pending").length} active booking{myBookings.filter(b => b.status === "confirmed" || b.status === "pending").length !== 1 ? "s" : ""}
+              </Text>
+            </View>
+            {unreadCount > 0 && (
+              <View style={styles.privateLessonBadge}>
+                <Text style={styles.privateLessonBadgeText}>{unreadCount}</Text>
+              </View>
+            )}
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+          </Pressable>
+
+          {/* Active bookings list */}
+          {myBookings.filter(b => b.status === "confirmed" || b.status === "pending").slice(0, 3).map((bk) => (
+            <Pressable
+              key={bk.id}
+              style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 12, padding: 12 }}
+              onPress={() => setSelectedBooking(bk)}
+            >
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.secondary, alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="person-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }} numberOfLines={1}>
+                  {bk.discipline?.name ?? "Private Lesson"} — {bk.child?.name ?? "Student"}
+                </Text>
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
+                  {bk.slot_date} · {bk.start_time} – {bk.end_time}
+                </Text>
+              </View>
+              <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: bk.status === "confirmed" ? "#10B981" : "#F59E0B" }}>
+                <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "700" }}>{bk.status.toUpperCase()}</Text>
+              </View>
+            </Pressable>
+          ))}
+
+          {myBookings.filter(b => b.status === "confirmed" || b.status === "pending").length === 0 && (
+            <View style={{ marginTop: 12, alignItems: "center", paddingVertical: 8 }}>
+              <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>No active bookings</Text>
             </View>
           )}
-          <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
-        </Pressable>
+        </View>
 
         {/* ── Notifiche Lezioni Private ── */}
         {unreadCount > 0 && (
@@ -939,6 +973,59 @@ export default function OperatorDashboard() {
           </View>
         ))}
       </ScrollView>
+
+      {/* ══════════════════════════════════════════════════
+          PRIVATE LESSON BOOKING DETAIL MODAL
+      ══════════════════════════════════════════════════ */}
+      <Modal visible={!!selectedBooking} transparent animationType="fade" onRequestClose={() => setSelectedBooking(null)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setSelectedBooking(null)}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 }}>
+              <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: `${colors.primary}15`, alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="school-outline" size={24} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 0 }]}>
+                  {selectedBooking?.discipline?.name ?? "Private Lesson"}
+                </Text>
+                <Text style={{ color: colors.mutedForeground, fontSize: 13, marginTop: 2 }}>
+                  Student: {selectedBooking?.child?.name ?? "—"}
+                </Text>
+              </View>
+              <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: selectedBooking?.status === "confirmed" ? "#D1FAE5" : "#FEF3C7" }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: selectedBooking?.status === "confirmed" ? "#059669" : "#D97706" }}>
+                  {(selectedBooking?.status ?? "").toUpperCase()}
+                </Text>
+              </View>
+            </View>
+
+            {[
+              { icon: "calendar-outline" as const, label: "Date",     value: selectedBooking?.slot_date ?? "—" },
+              { icon: "time-outline"     as const, label: "Time",     value: selectedBooking ? `${selectedBooking.start_time} – ${selectedBooking.end_time}` : "—" },
+              { icon: "location-outline" as const, label: "Location", value: selectedBooking?.location ?? "—" },
+              { icon: "person-outline"   as const, label: "Student",  value: selectedBooking?.child?.name ?? "—" },
+              { icon: "cash-outline"     as const, label: "Fee",      value: selectedBooking ? `€${((selectedBooking.price_cents ?? 0) / 100).toFixed(2)}` : "—" },
+            ].map(({ icon, label, value }) => (
+              <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${colors.primary}10`, alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name={icon} size={18} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: "600" }}>{label}</Text>
+                  <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: "600", marginTop: 1 }}>{value}</Text>
+                </View>
+              </View>
+            ))}
+
+            <Pressable
+              style={{ marginTop: 16, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
+              onPress={() => setSelectedBooking(null)}
+            >
+              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Close</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* ══════════════════════════════════════════════════
           ABSENCE REPORT MODAL

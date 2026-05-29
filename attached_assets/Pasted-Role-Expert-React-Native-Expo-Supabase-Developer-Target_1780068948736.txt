@@ -1,0 +1,14 @@
+Role: Expert React Native (Expo) & Supabase Developer. Target Screens: Operator Dashboard (app/(operator)/index.tsx) and Operator Calendar (app/(operator)/calendar.tsx). UI Rules: Navy Blue and Gold branding. All UI elements MUST STRICTLY remain within the physical phone display boundaries (Strictly zero layout overflows).
+GLOBAL STRICT ISOLATION DIRECTIVE Focus purely on the Operator Dashboard and Calendar. Keep existing database schemas intact unless adding new columns for logic.
+Please implement these features:
+1. Home Dashboard Adjustments:
+Alert Relocation: Remove the "Red alert - no subs available" from the Operator side entirely. Relocate this specific alert component to the Admin Dashboard.
+Private Lessons Box: Update this box to display actively booked private lessons for the logged-in Operator. Clicking a lesson must open a modal with full details (Date, Time, Location, Discipline, Student Name). Ensure these sync to the Operator's personal calendar array. Set up the logic/trigger for push reminders (1 day before, 1 hour before).
+Activity Log: Replicate the exact Activity Log component/UI from the Member side onto the Operator Home page (showing logins, logouts, etc.).
+2. Calendar Page Transformation:
+Visuals: Implement a monthly calendar view. Fetch discipline colors from the database settings and display colored dots (e.g., Blue for Ballet, Yellow for Contemporary) on days with scheduled classes.
+Interaction: Clicking a day opens a detailed popup (Course type, Student names, Campus, Room floor, etc.) with a "Navigate/GPS" button.
+Cancel/Postpone Logic: The "Postpone" and "Cancel" buttons must NO LONGER act directly. Instead, they must trigger an "Approval Request" sent to the Admin. The class remains pending until the Admin reassigns or approves the cancellation.
+3. Italian Translation Sweep:
+On the "New Workshop" operator screen, translate Italian strings under the dates: change "Inizio" to "Start (DD/MM/YYYY)", "Fine" to "End (Max +7 days)", and completely remove the text "Giornata singola".
+Output Requirement: Confirm when these UI/UX changes and calendar logics are implemented without breaking boundaries.
