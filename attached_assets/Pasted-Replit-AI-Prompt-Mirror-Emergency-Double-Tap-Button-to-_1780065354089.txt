@@ -1,0 +1,13 @@
+Replit AI Prompt: Mirror Emergency Double-Tap Button to Admin Side
+Role: Expert React Native (Expo) Developer. Target Screen: Admin Side -> Main Dashboard / Home Screen (and Header if globally accessible). UI Rules: Navy Blue and Gold branding. The Emergency element must be clear but styled elegantly within the physical phone display boundaries.
+ GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY)  DO NOT modify, rewrite, or "optimize" ANY backend emergency broadcast logic, SMS/notification gateways, or database tables. Your changes must be simple, fast, and secure. DO NOT change ANYTHING that is not explicitly involved in mirroring this frontend button behavior. Keep the existing codebase 100% intact.
+Context: We already have a functioning Emergency Button on the Operator side that triggers on a double-tap. We need to replicate this exact UI component and interaction logic onto the Admin side.
+Please execute this addition:
+1. Replicate Emergency Button UI & Double-Tap Gesture
+Action: Locate the working Emergency Button component from the Operator dashboard. Copy its styling and interaction logic to the Admin main dashboard screen.
+Interaction Logic: The button MUST strictly require a Double-Tap (two rapid clicks) to trigger. A single accidental click must do nothing (to prevent false alarms).
+UI Placement: Position it in a highly accessible yet safe area on the Admin home screen (or header), ensuring it respects all safe-area contexts and never overlaps or overflows other vital Admin metrics.
+2. Connect to Existing Emergency State/Function
+Action: Bind the Admin's double-tap trigger to the exact same global function or API call used by the Operator (e.g., triggerEmergency() from your context or state manager).
+Payload: Ensure it passes the correct user.id and user.role ('admin') so the system logs who initiated the alert.
+Output Requirement: Integrate the double-tap emergency button onto the Admin dashboard, ensure it calls the correct active trigger function, and confirm which file was updated.

@@ -1,10 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   Image,
+  Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -14,11 +17,71 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { api } from "@/lib/api";
 import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { useColors } from "@/hooks/useColors";
+
+// ── SOS Emergency (mirrored from Operator dashboard) ─────────────────────────
+
+type SosType = "fire" | "medical" | "police";
+type SosPhase = "type" | "call" | "procedure";
+
+interface SosProcStep {
+  text: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  letter?: string;
+}
+interface SosProcedure { label: string; emoji: string; color: string; callLabel: string; steps: SosProcStep[]; }
+
+const SOS_PROCEDURES: Record<SosType, SosProcedure> = {
+  fire: {
+    label: "Fire", emoji: "🔥", color: "#EF4444", callLabel: "Fire Brigade",
+    steps: [
+      { icon: "alarm-outline",     text: "Activate the fire alarm immediately." },
+      { icon: "walk-outline",      text: "Evacuate the room in an orderly fashion — no running." },
+      { icon: "people-outline",    text: "Escort all students to the designated assembly point." },
+      { icon: "call",              text: "Call the fire brigade using the emergency number." },
+      { icon: "megaphone-outline", text: "Notify administration and await further instructions." },
+    ],
+  },
+  medical: {
+    label: "Medical Emergency", emoji: "🏥", color: "#F59E0B", callLabel: "Ambulance",
+    steps: [
+      { icon: "shield-outline",         letter: "D", text: "DANGER — Ensure the area is safe for you, bystanders, and the patient." },
+      { icon: "hand-left-outline",      letter: "R", text: "RESPONSE — Call their name and squeeze their shoulders gently." },
+      { icon: "call",                   letter: "S", text: "SEND HELP — Emergency services called. Send someone to find the nearest AED." },
+      { icon: "fitness-outline",        letter: "A", text: "AIRWAY — Open mouth and check for obstructions. Tilt head back and lift chin." },
+      { icon: "ear-outline",            letter: "B", text: "BREATHING — Look, listen, and feel for normal breathing for 10 seconds." },
+      { icon: "heart",                  letter: "C", text: "CPR — 30 compressions then 2 rescue breaths. Rate: 100–120/min." },
+      { icon: "flash",                  letter: "D", text: "DEFIBRILLATOR — Turn on AED and follow voice prompts while continuing CPR." },
+      { icon: "refresh-circle-outline",              text: "RECOVERY — Place in recovery position. Monitor breathing continuously." },
+      { icon: "document-text-outline",              text: "DOCUMENT — Stay with the patient. Log this incident." },
+    ],
+  },
+  police: {
+    label: "Police", emoji: "🚔", color: "#1E3A8A", callLabel: "Police",
+    steps: [
+      { icon: "shield-checkmark-outline", text: "Keep all persons calm. Do not allow anyone to leave or enter." },
+      { icon: "lock-closed-outline",      text: "Lock all entrances. Secure the area and account for all students." },
+      { icon: "eye-off-outline",          text: "Do not confront any threat. Observe and document safely." },
+      { icon: "call",                     text: "Police already called. Provide location and description of the situation." },
+      { icon: "document-text-outline",    text: "Log all witnesses and events. Await police instructions." },
+    ],
+  },
+};
+
+function detectAdminEmergency(address: string): { number: string; country: string; flag: string } {
+  const a = address.toLowerCase();
+  if (/\b(nsw|vic|qld|wa|sa|tas|act|nt)\b|australia/.test(a)) return { number: "000", country: "Australia", flag: "🇦🇺" };
+  if (/singapore/.test(a))                                       return { number: "995", country: "Singapore", flag: "🇸🇬" };
+  if (/new zealand|nz 0/.test(a))                               return { number: "111", country: "New Zealand", flag: "🇳🇿" };
+  if (/\b(england|scotland|wales|london|birmingham|manchester|united kingdom)\b/.test(a)) return { number: "999", country: "United Kingdom", flag: "🇬🇧" };
+  if (/\b(usa|united states|canada)\b/.test(a))                  return { number: "911", country: "US / Canada", flag: "🇺🇸" };
+  return { number: "112", country: "International", flag: "🌍" };
+}
 
 const PRESET_COLORS = [
   { primary: "#1E3A8A", secondary: "#FBBF24", name: "Stride Classic" },
@@ -48,6 +111,74 @@ export default function AdminSetup() {
   const [logoFileName, setLogoFileName] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
   const [qrGenerated, setQrGenerated] = useState(false);
+
+  // ── SOS state ────────────────────────────────────────────────────────────
+  const [showSOS, setShowSOS]               = useState(false);
+  const [sosCount, setSosCount]             = useState(0);
+  const [sosPhase, setSosPhase]             = useState<SosPhase>("type");
+  const [sosType, setSosType]               = useState<SosType | null>(null);
+  const [sosProcStep, setSosProcStep]       = useState(0);
+  const [sosProcDone, setSosProcDone]       = useState(false);
+  const [sosProcLogging, setSosProcLogging] = useState(false);
+  const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pulseAnim     = useRef(new Animated.Value(1)).current;
+
+  const emergency = detectAdminEmergency(schoolName);
+
+  useEffect(() => {
+    if (sosPhase !== "call") return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.08, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 600, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [sosPhase, pulseAnim]);
+
+  const handleSOSPress = () => {
+    if (sosPressTimer.current) clearTimeout(sosPressTimer.current);
+    const newCount = sosCount + 1;
+    setSosCount(newCount);
+    if (newCount >= 2) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setSosPhase("type");
+      setSosType(null);
+      setSosProcStep(0);
+      setSosProcDone(false);
+      setShowSOS(true);
+      setSosCount(0);
+    } else {
+      Alert.alert("SOS", "Press again quickly to confirm the emergency.");
+      sosPressTimer.current = setTimeout(() => setSosCount(0), 3000);
+    }
+  };
+
+  const closeSOS = () => {
+    setShowSOS(false);
+    setSosCount(0);
+    setSosPhase("type");
+    setSosType(null);
+    setSosProcStep(0);
+    setSosProcDone(false);
+  };
+
+  const handleSosProcStep = async () => {
+    if (!sosType || sosProcLogging) return;
+    setSosProcLogging(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const proc = SOS_PROCEDURES[sosType];
+    api.logEmergencyStep({
+      protocol_id: sosType,
+      protocol_title: proc.label,
+      step_index: sosProcStep,
+      step_text: proc.steps[sosProcStep]?.text ?? "",
+    }).catch(() => {});
+    const next = sosProcStep + 1;
+    if (next >= proc.steps.length) { setSosProcDone(true); } else { setSosProcStep(next); }
+    setSosProcLogging(false);
+  };
 
   // Editable custom hex — seeded from branding context, then preset selection
   const [customPrimary, setCustomPrimary] = useState(
@@ -492,7 +623,162 @@ export default function AdminSetup() {
             </>
           )}
         </View>
+
+        {/* ── SOS Emergency Button ── */}
+        <Pressable
+          style={({ pressed }) => [adminSos.sosBtn, { opacity: pressed ? 0.88 : 1 }]}
+          onPress={handleSOSPress}
+        >
+          <Ionicons name="warning" size={22} color="#FFF" />
+          <Text style={adminSos.sosBtnText}>SOS EMERGENCY · press twice to activate</Text>
+        </Pressable>
+
       </ScrollView>
+
+      {/* ── SOS Modal ── */}
+      <Modal visible={showSOS} transparent animationType="fade" onRequestClose={closeSOS}>
+        <View style={adminSos.overlay}>
+          <View style={adminSos.card}>
+
+            {/* Header */}
+            <View style={adminSos.topRow}>
+              <Ionicons name="warning" size={24} color="#FFF" />
+              <Text style={adminSos.title}>EMERGENCY MODE</Text>
+              <Pressable onPress={closeSOS} hitSlop={12}>
+                <Ionicons name="close" size={22} color="rgba(255,255,255,0.7)" />
+              </Pressable>
+            </View>
+
+            {/* Phase 1 — Type */}
+            {sosPhase === "type" && (
+              <>
+                <Text style={adminSos.phaseLabel}>Select emergency type</Text>
+                <View style={adminSos.typeGrid}>
+                  {(["fire", "medical", "police"] as SosType[]).map(t => {
+                    const p = SOS_PROCEDURES[t];
+                    return (
+                      <Pressable
+                        key={t}
+                        style={({ pressed }) => [adminSos.typeBtn, { borderLeftColor: p.color, opacity: pressed ? 0.88 : 1 }]}
+                        onPress={() => {
+                          setSosType(t);
+                          setSosPhase("call");
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                        }}
+                      >
+                        <View style={[adminSos.typeIconBox, { backgroundColor: `${p.color}33` }]}>
+                          <Text style={adminSos.typeEmoji}>{p.emoji}</Text>
+                        </View>
+                        <Text style={adminSos.typeLabel}>{p.label}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={p.color} />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <View style={adminSos.divider} />
+                <Text style={adminSos.flagLabel}>{emergency.flag}  {emergency.country} · {emergency.number}</Text>
+                <Pressable style={adminSos.resolveBtn} onPress={closeSOS}>
+                  <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                  <Text style={adminSos.resolveBtnText}>Situation Resolved — Close</Text>
+                </Pressable>
+              </>
+            )}
+
+            {/* Phase 2 — Call */}
+            {sosPhase === "call" && sosType && (() => {
+              const proc = SOS_PROCEDURES[sosType];
+              return (
+                <>
+                  <Text style={adminSos.phaseLabel}>{proc.emoji}  {proc.label}</Text>
+                  <Text style={[adminSos.desc, { marginBottom: 16 }]}>Call {proc.callLabel} now</Text>
+                  <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                    <Pressable
+                      style={[adminSos.callBtn, { backgroundColor: proc.color }]}
+                      onPress={() => Linking.openURL(`tel:${emergency.number}`)}
+                    >
+                      <Ionicons name="call" size={34} color="#FFF" />
+                      <Text style={adminSos.callNumber}>{emergency.number}</Text>
+                      <Text style={adminSos.callLabel}>TAP TO CALL · {emergency.flag} {emergency.country}</Text>
+                    </Pressable>
+                  </Animated.View>
+                  <View style={adminSos.divider} />
+                  <Pressable
+                    style={[adminSos.proceedBtn, { backgroundColor: proc.color }]}
+                    onPress={() => { setSosProcStep(0); setSosProcDone(false); setSosPhase("procedure"); }}
+                  >
+                    <Ionicons name="arrow-forward-circle" size={20} color="#FFF" />
+                    <Text style={adminSos.proceedBtnText}>Start Procedure</Text>
+                  </Pressable>
+                  <Pressable style={[adminSos.resolveBtn, { marginTop: 8 }]} onPress={() => setSosPhase("type")}>
+                    <Ionicons name="arrow-back" size={16} color="rgba(255,255,255,0.6)" />
+                    <Text style={[adminSos.resolveBtnText, { color: "rgba(255,255,255,0.6)" }]}>Back</Text>
+                  </Pressable>
+                </>
+              );
+            })()}
+
+            {/* Phase 3 — Procedure */}
+            {sosPhase === "procedure" && sosType && (() => {
+              const proc = SOS_PROCEDURES[sosType];
+              const step  = proc.steps[sosProcStep];
+              const total = proc.steps.length;
+              return (
+                <>
+                  {sosProcDone ? (
+                    <View style={{ alignItems: "center", gap: 12 }}>
+                      <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="checkmark-circle" size={48} color="#10B981" />
+                      </View>
+                      <Text style={{ color: "#FFF", fontSize: 18, fontWeight: "800" }}>Protocol Complete</Text>
+                      <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, textAlign: "center" }}>
+                        All {total} steps for "{proc.label}" have been logged with your admin ID and timestamp.
+                      </Text>
+                      <Pressable style={[adminSos.proceedBtn, { backgroundColor: "#10B981", marginTop: 8 }]} onPress={closeSOS}>
+                        <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+                        <Text style={adminSos.proceedBtnText}>Situation Resolved — Close</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={adminSos.phaseLabel}>{proc.emoji}  {proc.label}  ·  Step {sosProcStep + 1}/{total}</Text>
+                      <View style={adminSos.progressBar}>
+                        <View style={[adminSos.progressFill, { backgroundColor: proc.color, width: `${((sosProcStep + 1) / total) * 100}%` as `${number}%` }]} />
+                      </View>
+                      <View style={[adminSos.stepBox, { borderColor: `${proc.color}60` }]}>
+                        <View style={[adminSos.stepLeft, { backgroundColor: proc.color }]}>
+                          {step?.letter
+                            ? <Text style={adminSos.stepLetter}>{step.letter}</Text>
+                            : <Text style={adminSos.stepNum}>{sosProcStep + 1}</Text>}
+                        </View>
+                        <View style={adminSos.stepRight}>
+                          <Ionicons name={step?.icon ?? "information-circle"} size={22} color={proc.color} style={{ marginBottom: 6 }} />
+                          <Text style={adminSos.stepText}>{step?.text}</Text>
+                        </View>
+                      </View>
+                      <Pressable
+                        style={[adminSos.proceedBtn, { backgroundColor: proc.color, opacity: sosProcLogging ? 0.6 : 1 }]}
+                        onPress={handleSosProcStep}
+                        disabled={sosProcLogging}
+                      >
+                        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                        <Text style={adminSos.proceedBtnText}>
+                          {sosProcLogging ? "Logging..." : sosProcStep + 1 < total ? "Done — Next Step" : "Done — Complete Protocol"}
+                        </Text>
+                      </Pressable>
+                      <Pressable style={[adminSos.resolveBtn, { marginTop: 6 }]} onPress={closeSOS}>
+                        <Ionicons name="close-circle-outline" size={16} color="rgba(255,255,255,0.5)" />
+                        <Text style={[adminSos.resolveBtnText, { color: "rgba(255,255,255,0.5)" }]}>Close Wizard</Text>
+                      </Pressable>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -562,4 +848,37 @@ const styles = StyleSheet.create({
   shareHintLabel: { fontSize: 10, fontWeight: "600" },
   qrInfoBox: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 12, padding: 12 },
   qrInfoText: { flex: 1, fontSize: 12, lineHeight: 17 },
+});
+
+const adminSos = StyleSheet.create({
+  sosBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#EF4444", borderRadius: 18, paddingVertical: 16, marginTop: 8, marginBottom: 32 },
+  sosBtnText:   { fontSize: 13, fontWeight: "800", color: "#FFF" },
+  overlay:      { flex: 1, backgroundColor: "rgba(120,0,0,0.96)", alignItems: "center", justifyContent: "center", padding: 20 },
+  card:         { backgroundColor: "#7F1D1D", borderRadius: 28, padding: 24, width: "100%", alignItems: "center", gap: 12 },
+  topRow:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" },
+  title:        { color: "#FFF", fontSize: 18, fontWeight: "900", letterSpacing: 2 },
+  phaseLabel:   { color: "rgba(255,255,255,0.75)", fontSize: 13, fontWeight: "600", letterSpacing: 0.5, textAlign: "center" },
+  desc:         { color: "rgba(255,255,255,0.8)", fontSize: 14, textAlign: "center" },
+  divider:      { width: "100%", height: 1, backgroundColor: "rgba(255,255,255,0.15)" },
+  flagLabel:    { color: "#FFF", fontSize: 15, fontWeight: "700", textAlign: "center" },
+  typeGrid:     { flexDirection: "column", gap: 10, width: "100%", marginVertical: 8 },
+  typeBtn:      { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 16, backgroundColor: "rgba(255,255,255,0.09)", borderLeftWidth: 4 },
+  typeIconBox:  { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  typeEmoji:    { fontSize: 24 },
+  typeLabel:    { flex: 1, fontSize: 15, fontWeight: "800", color: "#FFF", letterSpacing: 0.2 },
+  callBtn:      { borderRadius: 100, width: 160, height: 160, alignItems: "center", justifyContent: "center", gap: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 12 },
+  callNumber:   { color: "#FFF", fontSize: 36, fontWeight: "900" },
+  callLabel:    { color: "rgba(255,255,255,0.8)", fontSize: 11, letterSpacing: 1.5, textAlign: "center", paddingHorizontal: 10 },
+  proceedBtn:   { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 15, width: "100%" },
+  proceedBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  resolveBtn:   { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 12, paddingHorizontal: 18, paddingVertical: 11 },
+  resolveBtnText: { color: "#10B981", fontWeight: "700", fontSize: 14 },
+  progressBar:  { width: "100%", height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.15)", overflow: "hidden", marginBottom: 12 },
+  progressFill: { height: 5, borderRadius: 3 },
+  stepBox:      { flexDirection: "row", borderRadius: 16, overflow: "hidden", borderWidth: 1, width: "100%", marginBottom: 12 },
+  stepLeft:     { width: 52, alignItems: "center", justifyContent: "center", paddingVertical: 16 },
+  stepLetter:   { color: "#FFF", fontSize: 22, fontWeight: "900" },
+  stepNum:      { color: "#FFF", fontSize: 16, fontWeight: "900" },
+  stepRight:    { flex: 1, padding: 14 },
+  stepText:     { color: "rgba(255,255,255,0.9)", fontSize: 14, lineHeight: 20 },
 });
