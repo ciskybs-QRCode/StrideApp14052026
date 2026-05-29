@@ -24,6 +24,7 @@ import blacklistRouter from "./blacklist.js";
 import adminSettingsRouter from "./admin-settings.js";
 import accessCheckRouter from "./access-check.js";
 import meetingAvailabilityRouter from "./meeting-availability.js";
+import reimbursementsRouter from "./reimbursements.js";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(blacklistRouter);
 router.use(adminSettingsRouter);
 router.use(accessCheckRouter);
 router.use(meetingAvailabilityRouter);
+router.use(reimbursementsRouter);
 
 export default router;

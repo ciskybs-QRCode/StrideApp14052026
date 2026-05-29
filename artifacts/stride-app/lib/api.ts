@@ -336,6 +336,15 @@ export const api = {
   updateOrg: (data: Partial<ApiOrg> & { member_label?: string }) => request<ApiOrg>("PATCH", "/org", data),
   getTerminology: () => request<{ primaryRoleName: string; secondaryRoleName: string }>("GET", "/terminology"),
 
+  // Reimbursements
+  getReimbursements: () => request<ApiReimbursement[]>("GET", "/reimbursements"),
+  createReimbursement: (data: {
+    claimantName: string; claimantRole: string;
+    description: string; amountCents: number; receiptUri?: string;
+  }) => request<ApiReimbursement>("POST", "/reimbursements", data),
+  updateReimbursement: (id: string, data: { status?: string; adminNote?: string }) =>
+    request<ApiReimbursement>("PATCH", `/reimbursements/${id}`, data),
+
   // Profile (parent self-update)
   updateProfile: (data: { name?: string; phone?: string }) =>
     request<ApiUser>("PATCH", "/profile", data),
@@ -616,6 +625,21 @@ export interface ApiPromoCode {
   valid_until?: string;
   kind?: string;
   target_type?: string;
+}
+
+export interface ApiReimbursement {
+  id: number;
+  organization_id: number;
+  claimant_user_id: number;
+  claimant_name: string;
+  claimant_role: "admin" | "paid_operator" | "volunteer" | "parent";
+  description: string;
+  amount_cents: number;
+  receipt_uri?: string;
+  status: "pending" | "approved" | "paid" | "rejected";
+  admin_note?: string;
+  submitted_at: string;
+  updated_at: string;
 }
 
 export interface ApiMessage {

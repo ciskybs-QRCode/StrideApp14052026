@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect } from "expo-router";
@@ -51,27 +50,6 @@ const STATUS_META: Record<string, { label: string; bg: string; text: string; ico
   rejected: { label: "Rejected", bg: "#FEE2E2", text: "#991B1B", icon: "close-circle" },
 };
 
-const DEMO_REQUESTS: ReimbursementRequest[] = [
-  {
-    id: "RMB-001",
-    claimantName: "Maria Chen",
-    claimantRole: "paid_operator",
-    description: "Ballet floor barres — 2 units for recital practice",
-    amountCents: 18500,
-    receiptUri: "https://drive.google.com/file/d/example",
-    status: "pending",
-    submittedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: "RMB-002",
-    claimantName: "Tom Davis",
-    claimantRole: "volunteer",
-    description: "Printed music sheets for contemporary class",
-    amountCents: 2400,
-    status: "paid",
-    submittedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
-  },
-];
 
 // ── Reimbursement Request Form (shared component) ─────────────────────────────
 
@@ -257,17 +235,20 @@ export default function AdminReimbursementsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const raw = await AsyncStorage.getItem("reimbursement_requests");
-      const stored: ReimbursementRequest[] = raw ? JSON.parse(raw) : [];
-      setRequests([...stored, ...DEMO_REQUESTS]);
+      const data = await api.getReimbursements();
+      setRequests(data.map(r => ({
+        id: String(r.id),
+        claimantName: r.claimant_name,
+        claimantRole: r.claimant_role,
+        description: r.description,
+        amountCents: r.amount_cents,
+        receiptUri: r.receipt_uri,
+        status: r.status,
+        submittedAt: r.submitted_at,
+      })));
     } catch {
-      setRequests(DEMO_REQUESTS);
+      setRequests([]);
     }
-    // Load receipt threshold from AsyncStorage
-    try {
-      const t = await AsyncStorage.getItem("admin_receipt_threshold");
-      if (t) setReceiptThresholdCents(Math.round(parseFloat(t) * 100));
-    } catch { /* ignore */ }
     // Load school name from API
     try {
       const org = await api.getOrg();
@@ -278,39 +259,37 @@ export default function AdminReimbursementsScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const handleSubmitRequest = async (req: Omit<ReimbursementRequest, "id" | "status" | "submittedAt">) => {
-    const newReq: ReimbursementRequest = {
-      ...req,
-      id: `RMB-${Date.now()}`,
-      status: "pending",
-      submittedAt: new Date().toISOString(),
-    };
     try {
-      const raw = await AsyncStorage.getItem("reimbursement_requests");
-      const stored: ReimbursementRequest[] = raw ? JSON.parse(raw) : [];
-      stored.unshift(newReq);
-      await AsyncStorage.setItem("reimbursement_requests", JSON.stringify(stored));
+      await api.createReimbursement({
+        claimantName: req.claimantName,
+        claimantRole: req.claimantRole,
+        description: req.description,
+        amountCents: req.amountCents,
+        receiptUri: req.receiptUri,
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch { /* local only */ }
-    await load();
+      await load();
+    } catch {
+      // Optimistic fallback — show the item locally if API is unavailable
+      setRequests(prev => [{
+        ...req,
+        id: `RMB-${Date.now()}`,
+        status: "pending",
+        submittedAt: new Date().toISOString(),
+      }, ...prev]);
+    }
   };
 
   const handleStatusUpdate = async (id: string, status: "paid" | "rejected") => {
     Haptics.notificationAsync(
       status === "paid" ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
     );
-    const update = (list: ReimbursementRequest[]) =>
-      list.map(r => r.id === id ? { ...r, status } : r);
-
-    setRequests(prev => update(prev));
+    // Optimistic update
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
     setConfirmAction(null);
-
     try {
-      const raw = await AsyncStorage.getItem("reimbursement_requests");
-      if (raw) {
-        const stored: ReimbursementRequest[] = JSON.parse(raw);
-        await AsyncStorage.setItem("reimbursement_requests", JSON.stringify(update(stored)));
-      }
-    } catch { /* local only */ }
+      await api.updateReimbursement(id, { status });
+    } catch { /* ignore — optimistic update already applied */ }
   };
 
   const pending = requests.filter(r => r.status === "pending" || r.status === "approved");

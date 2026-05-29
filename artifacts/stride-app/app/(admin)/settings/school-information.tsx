@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { api } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -88,10 +89,7 @@ const DAYS_OF_WEEK: HoursEntry[] = [
   { day: "Sunday",    isOpen: false, openTime: "10:00", closeTime: "14:00" },
 ];
 
-const INITIAL_CAMPUSES: CampusLocation[] = [
-  { id: "c1", name: "Main Studio", address: "1 Main Street, Sydney NSW 2000", type: "studio", phone: "+61 2 9123 4567", isMain: true },
-  { id: "c2", name: "East Wing Studio", address: "22 Park Ave, Sydney NSW 2001", type: "studio", phone: "+61 2 9123 4568", isMain: false },
-];
+const CAMPUSES_KEY = "stride_campuses_v2";
 
 const DEFAULT_INFO: SchoolInfo = {
   name:    "Dance Village",
@@ -120,7 +118,7 @@ export default function SchoolInformationPage() {
   const [draftInfo, setDraftInfo] = useState<SchoolInfo>(info);
 
   // Campus locations
-  const [campuses, setCampuses] = useState<CampusLocation[]>(INITIAL_CAMPUSES);
+  const [campuses, setCampuses] = useState<CampusLocation[]>([]);
   const [showCampusModal, setShowCampusModal] = useState(false);
   const [editingCampus, setEditingCampus] = useState<CampusLocation | null>(null);
   const [campusDraft, setCampusDraft] = useState<Omit<CampusLocation, "id">>({ name: "", address: "", type: "studio", phone: "", isMain: false });
@@ -135,9 +133,40 @@ export default function SchoolInformationPage() {
   const [editingHours, setEditingHours] = useState(false);
   const [hoursDraft, setHoursDraft] = useState<HoursEntry[]>(DAYS_OF_WEEK);
 
+  // ── Org data load ─────────────────────────────────────────────────────────
+
+  const loadOrgData = useCallback(async () => {
+    // Load core identity fields from Supabase via Express API
+    try {
+      const org = await api.getOrg();
+      setInfo(prev => ({
+        ...prev,
+        name:    org.name             || prev.name,
+        address: org.legal_address    || prev.address,
+        phone:   org.contact_phone    || prev.phone,
+        email:   org.official_email   || prev.email,
+      }));
+    } catch { /* keep defaults */ }
+    // Load campuses from AsyncStorage (no dedicated DB table yet)
+    try {
+      const raw = await AsyncStorage.getItem(CAMPUSES_KEY);
+      if (raw) setCampuses(JSON.parse(raw) as CampusLocation[]);
+    } catch { /* keep empty */ }
+  }, []);
+
+  useEffect(() => { loadOrgData(); }, [loadOrgData]);
+
   // ── Main Info handlers ────────────────────────────────────────────────────
 
   const handleSaveInfo = async () => {
+    try {
+      await api.updateOrg({
+        name:           draftInfo.name     || undefined,
+        legal_address:  draftInfo.address  || undefined,
+        contact_phone:  draftInfo.phone    || undefined,
+        official_email: draftInfo.email    || undefined,
+      } as Parameters<typeof api.updateOrg>[0]);
+    } catch { /* ignore network error — still update locally */ }
     await updateUser({ schoolName: draftInfo.name });
     setInfo(draftInfo);
     setEditingInfo(false);
@@ -175,22 +204,23 @@ export default function SchoolInformationPage() {
     if (!campusDraft.name.trim()) { Alert.alert("Error", "Please enter a campus name."); return; }
     if (!campusDraft.address.trim()) { Alert.alert("Error", "Please enter an address."); return; }
 
+    let updated: CampusLocation[];
     if (editingCampus) {
-      setCampuses(prev => prev.map(c => {
+      updated = campuses.map(c => {
         if (campusDraft.isMain && c.id !== editingCampus.id) return { ...c, isMain: false };
         if (c.id === editingCampus.id) return { ...c, ...campusDraft };
         return c;
-      }));
+      });
     } else {
       const newC: CampusLocation = { id: Date.now().toString(), ...campusDraft };
-      setCampuses(prev => {
-        const updated = campusDraft.isMain ? prev.map(c => ({ ...c, isMain: false })) : prev;
-        return [...updated, newC];
-      });
+      const base = campusDraft.isMain ? campuses.map(c => ({ ...c, isMain: false })) : campuses;
+      updated = [...base, newC];
     }
+    setCampuses(updated);
     if (campusDraft.isMain && campusDraft.address.trim()) {
       await AsyncStorage.setItem("stride_campus_address", campusDraft.address.trim());
     }
+    await AsyncStorage.setItem(CAMPUSES_KEY, JSON.stringify(updated));
     setShowCampusModal(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -201,7 +231,12 @@ export default function SchoolInformationPage() {
       "Are you sure you want to remove this campus location?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => { setCampuses(prev => prev.filter(c => c.id !== id)); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } },
+        { text: "Delete", style: "destructive", onPress: async () => {
+          const updated = campuses.filter(c => c.id !== id);
+          setCampuses(updated);
+          await AsyncStorage.setItem(CAMPUSES_KEY, JSON.stringify(updated));
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        } },
       ]
     );
   };

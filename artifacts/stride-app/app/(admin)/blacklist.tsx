@@ -28,26 +28,13 @@ interface AddForm {
 
 const EMPTY_FORM: AddForm = { email: "", phone_number: "", first_name: "", last_name: "", reason: "" };
 
-const DEMO_USERS = [
-  { id: "u1", name: "John Smith",      email: "john.smith@example.com",      role: "parent",   phone: "+1 310 123 4567" },
-  { id: "u2", name: "Julia Davis",     email: "julia.davis@example.com",     role: "parent",   phone: "+1 310 234 5678" },
-  { id: "u3", name: "Chris Carter",    email: "chris.carter@example.com",    role: "parent",   phone: "+1 310 345 6789" },
-  { id: "u4", name: "Amy Parker",      email: "amy.parker@example.com",      role: "parent",   phone: "+1 310 456 7890" },
-  { id: "u5", name: "Carl Brooks",     email: "carl.brooks@example.com",     role: "parent",   phone: "+1 310 567 8901" },
-  { id: "u6", name: "Sara Wilson",     email: "sara.wilson@example.com",     role: "parent",   phone: "+1 310 678 9012" },
-  { id: "u7", name: "Peter Collins",   email: "peter.collins@example.com",   role: "parent",   phone: "+1 310 789 0123" },
-  { id: "u8", name: "Laura Harris",    email: "laura.harris@example.com",    role: "parent",   phone: "+1 310 890 1234" },
-  { id: "u9", name: "Maria Chen",      email: "operatore@test.com",          role: "operator", phone: "+1 310 901 2345" },
-  { id: "u10",name: "Louis Ford",      email: "genitore@test.com",           role: "parent",   phone: "+1 310 012 3456" },
-] as const;
-
 export default function BlacklistScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const [entries, setEntries]   = useState<ApiBlacklistEntry[]>([]);
-  const [allUsers, setAllUsers] = useState<ApiUser[]>([...DEMO_USERS]);
+  const [allUsers, setAllUsers] = useState<ApiUser[]>([]);
   const [loading, setLoading]   = useState(true);
   const [showAdd, setShowAdd]   = useState(false);
   const [saving, setSaving]     = useState(false);
@@ -68,14 +55,9 @@ export default function BlacklistScreen() {
     try {
       const [data, users] = await Promise.allSettled([api.getBlacklist(), api.getUsers()]);
       if (data.status === "fulfilled") setEntries(data.value);
-      if (users.status === "fulfilled" && users.value.length > 0) {
-        // Merge: real API users first, then any demo user not already present
-        const realUsers = users.value;
-        const realEmails = new Set(realUsers.map(u => u.email));
-        const extras = ([...DEMO_USERS] as ApiUser[]).filter(u => !realEmails.has(u.email));
-        setAllUsers([...realUsers, ...extras]);
+      if (users.status === "fulfilled") {
+        setAllUsers(users.value);
       }
-      // else keep the DEMO_USERS already initialised in state
     } catch {}
     setLoading(false);
   }, []);

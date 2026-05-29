@@ -18,15 +18,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiDiscipline } from "@/lib/api";
 
-// ── Fallback mock so the screen is usable in demo mode ─────────────────────────
-const MOCK_DISCIPLINES: ApiDiscipline[] = [
-  { id: 1, organization_id: 1, name: "Ballet",       description: "Classical ballet technique for all levels", active: true,  created_at: "" },
-  { id: 2, organization_id: 1, name: "Hip Hop",      description: "Street dance and urban choreography",        active: true,  created_at: "" },
-  { id: 3, organization_id: 1, name: "Zumba",        description: "High-energy Latin dance fitness",            active: true,  created_at: "" },
-  { id: 4, organization_id: 1, name: "Contemporary", description: "Modern expressive movement",                 active: true,  created_at: "" },
-  { id: 5, organization_id: 1, name: "Jazz",         description: "Theatrical jazz dance",                      active: false, created_at: "" },
-  { id: 6, organization_id: 1, name: "Archery",      description: "Target archery coaching",                    active: true,  created_at: "" },
-];
 
 // Icon palette — cycles through fixed colours for visual variety
 const ICON_PALETTE = [
@@ -66,8 +57,7 @@ export default function DisciplinesScreen() {
       const data = await api.getDisciplines();
       setDisciplines(data);
     } catch {
-      // Demo/offline fallback
-      setDisciplines(MOCK_DISCIPLINES);
+      setDisciplines([]);
     }
   }, []);
 

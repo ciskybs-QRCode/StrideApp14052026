@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -18,6 +18,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { useTerminology } from "@/context/TerminologyContext";
 import { useColors } from "@/hooks/useColors";
+import { api, type ApiPromoCode } from "@/lib/api";
 
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -52,12 +53,27 @@ interface PromoCode {
   restrictedCourses?: string[];
 }
 
-const INITIAL_PROMOS: PromoCode[] = [
-  { id: "p1", code: "STRIDE2026",  discountType: "percent",     discountValue: 20, durationMonths: 3,    maxUses: 50,  usedCount: 12,  active: true,  createdAt: "01/01/2026", expiresAt: "31/03/2026", targetType: "all" },
-  { id: "p2", code: "STRIVEFREE1", discountType: "lessons",     discountValue: 1,  durationMonths: null, maxUses: 1,   usedCount: 0,   active: true,  createdAt: "15/02/2026", expiresAt: null,         targetType: "parents" },
-  { id: "p3", code: "ASSOC3FREE",  discountType: "months_free", discountValue: 3,  durationMonths: null, maxUses: 1,   usedCount: 1,   active: false, createdAt: "10/03/2026", expiresAt: null,         targetType: "all" },
-  { id: "p4", code: "WELCOME10",   discountType: "percent",     discountValue: 10, durationMonths: 12,   maxUses: 200, usedCount: 134, active: false, createdAt: "01/01/2026", expiresAt: "31/12/2026", targetType: "all" },
-];
+function apiToLocal(p: ApiPromoCode): PromoCode {
+  const hasValidUntil = Boolean(p.valid_until);
+  const active = Boolean(p.valid_from && (!hasValidUntil || new Date(p.valid_until!) > new Date()));
+  const discountType: DiscountType =
+    p.kind === "months_free" ? "months_free" : p.kind === "lessons" ? "lessons" : "percent";
+  const discountValue =
+    discountType === "percent" ? (p.discount_percent ?? 0) : (p.discount_amount ?? 0);
+  return {
+    id: String(p.id),
+    code: p.code,
+    discountType,
+    discountValue,
+    durationMonths: null,
+    maxUses: p.max_uses ?? 0,
+    usedCount: p.uses,
+    active,
+    createdAt: p.valid_from ? new Date(p.valid_from).toLocaleDateString("en-AU") : todayStr(),
+    expiresAt: p.valid_until ? new Date(p.valid_until).toLocaleDateString("en-AU") : null,
+    targetType: (p.target_type ?? "all") as TargetType,
+  };
+}
 
 const DISCOUNT_ICON: Record<DiscountType, keyof typeof Ionicons.glyphMap> = {
   percent: "pricetag-outline", lessons: "musical-notes-outline", months_free: "calendar-outline",
@@ -82,7 +98,8 @@ export default function PromoCodesPage() {
   const { students, courses } = useAppData();
   const { triggerPromoReceived } = useRealtime();
 
-  const [promos, setPromos] = useState<PromoCode[]>(INITIAL_PROMOS);
+  const [promos, setPromos] = useState<PromoCode[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<PromoCode | null>(null);
@@ -104,6 +121,19 @@ export default function PromoCodesPage() {
   const [targetParentNames, setTargetParentNames] = useState<string[]>([]);
   const [targetMemberCourseIds, setTargetMemberCourseIds] = useState<string[]>([]);
 
+  const loadPromos = useCallback(async () => {
+    try {
+      const data = await api.getPromoCodes();
+      setPromos(data.map(apiToLocal));
+    } catch {
+      setPromos([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadPromos(); }, [loadPromos]);
+
   const activeCount = promos.filter(p => !isExpired(p)).length;
   const filtered = promos.filter(p => !search || p.code.toLowerCase().includes(search.toLowerCase()));
   const selectedStudent = students.find(s => s.id === targetStudentId);
@@ -120,7 +150,7 @@ export default function PromoCodesPage() {
     setTargetParentSearch(""); setTargetParentNames([]); setTargetMemberCourseIds([]);
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const code = newCode.trim().toUpperCase();
     if (!code) { Alert.alert("Error", "Please enter a code name."); return; }
     if (promos.some(p => p.code === code)) { Alert.alert("Error", "This code already exists."); return; }
@@ -129,23 +159,23 @@ export default function PromoCodesPage() {
     const mu = parseInt(newMaxUses, 10);
     if (isNaN(mu) || mu < 1) { Alert.alert("Error", "Max uses must be at least 1."); return; }
 
-    const newPromo: PromoCode = {
-      id: Date.now().toString(), code, discountType: newDiscountType, discountValue: dv,
-      durationMonths: newDuration.trim() ? parseInt(newDuration, 10) : null,
-      maxUses: mu, usedCount: 0, active: true, createdAt: todayStr(), expiresAt: null,
-      targetType,
-      targetStudentName: selectedStudent?.name,
-      targetStudentParent: selectedStudent?.parentName,
-      targetCourseNames: targetType === "courses"
-        ? courses.filter(c => targetCourseIds.includes(c.id)).map(c => c.name)
-        : targetType === "parents" && targetMemberCourseIds.length > 0
-          ? courses.filter(c => targetMemberCourseIds.includes(c.id)).map(c => c.name)
-          : undefined,
-      targetLocationNames: targetType === "locations" ? targetLocations : undefined,
-      targetParentNames: targetType === "parents" && targetParentNames.length > 0 ? targetParentNames : undefined,
-      restrictedCourses: selectedStudent ? selectedStudent.courses : undefined,
-    };
-    setPromos(prev => [newPromo, ...prev]);
+    let newPromo: PromoCode;
+    try {
+      const created = await api.addPromoCode({
+        code,
+        discount_percent: newDiscountType === "percent" ? dv : undefined,
+        discount_amount: newDiscountType !== "percent" ? dv : undefined,
+        kind: newDiscountType !== "percent" ? newDiscountType : undefined,
+        max_uses: mu,
+        target_type: targetType,
+        valid_from: new Date().toISOString(),
+      });
+      newPromo = apiToLocal(created);
+      setPromos(prev => [newPromo, ...prev]);
+    } catch {
+      Alert.alert("Error", "Could not save promo code. Please try again.");
+      return;
+    }
     resetCreate(); setShowCreate(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -183,13 +213,19 @@ export default function PromoCodesPage() {
     Alert.alert("Copied", ok ? `"${code}" copied.` : `Code: ${code}`);
   };
 
-  const handleToggle = (id: string) => {
-    setPromos(prev => prev.map(p => {
-      if (p.id !== id) return p;
-      const becomingActive = !p.active;
-      // Reset usage counter if reactivating a fully-exhausted code
-      return { ...p, active: becomingActive, usedCount: becomingActive && p.usedCount >= p.maxUses ? 0 : p.usedCount };
-    }));
+  const handleToggle = async (id: string) => {
+    const promo = promos.find(p => p.id === id);
+    if (!promo) return;
+    try {
+      await api.togglePromoCode(id, !promo.active);
+      setPromos(prev => prev.map(p => {
+        if (p.id !== id) return p;
+        const becomingActive = !p.active;
+        return { ...p, active: becomingActive, usedCount: becomingActive && p.usedCount >= p.maxUses ? 0 : p.usedCount };
+      }));
+    } catch {
+      Alert.alert("Error", "Could not update promo code.");
+    }
   };
 
   const handleDeleteWithConfirm = (id: string, code: string) => {
@@ -198,7 +234,8 @@ export default function PromoCodesPage() {
       `"${code}" will be permanently removed. This cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => {
+        { text: "Delete", style: "destructive", onPress: async () => {
+          try { await api.deletePromoCode(id); } catch { /* ignore — still remove from UI */ }
           setPromos(prev => prev.filter(p => p.id !== id));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         }},
@@ -208,8 +245,9 @@ export default function PromoCodesPage() {
 
   const handleDelete = (id: string) => setConfirmDelete(id);
 
-  const executeDelete = () => {
+  const executeDelete = async () => {
     if (!confirmDelete) return;
+    try { await api.deletePromoCode(confirmDelete); } catch { /* ignore — still remove from UI */ }
     setPromos(prev => prev.filter(p => p.id !== confirmDelete));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setConfirmDelete(null);

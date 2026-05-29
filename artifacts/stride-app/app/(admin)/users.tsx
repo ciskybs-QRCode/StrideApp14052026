@@ -35,20 +35,6 @@ interface UserRecord {
   childName?: string;
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────────────
-
-const MOCK_USERS: UserRecord[] = [
-  { id: "u1", name: "John Smith",    email: "genitore@test.com",  phone: "+61411111111", role: "parent",   status: "active",  joinDate: "01/01/2026", childName: "Jane Smith" },
-  { id: "u2", name: "Sara Wilson",   email: "operatore@test.com", phone: "+61422222222", role: "operator", status: "active",  joinDate: "15/01/2026" },
-  { id: "u3", name: "Louis Ford",    email: "louis@test.com",     phone: "+61433333333", role: "parent",   status: "active",  joinDate: "10/02/2026", childName: "Tom Davis" },
-  { id: "u4", name: "Elena Walsh",   email: "elena@test.com",     phone: "+61444444444", role: "operator", status: "pending", joinDate: "05/04/2026" },
-  { id: "u5", name: "Amy Parker",    email: "amy@test.com",       phone: "+61455555555", role: "parent",   status: "active",  joinDate: "20/03/2026", childName: "Julia Parker" },
-  { id: "u6", name: "Jane Smith",    email: "jane.s@test.com",    phone: "+61466666666", role: "student",  status: "active",  joinDate: "01/01/2026" },
-  { id: "u7", name: "Tom Davis",     email: "tom.d@test.com",     phone: "+61477777777", role: "student",  status: "active",  joinDate: "10/02/2026" },
-  { id: "u8", name: "Julia Parker",  email: "julia.p@test.com",   phone: "+61488888888", role: "student",  status: "active",  joinDate: "20/03/2026" },
-  { id: "u9", name: "Matt Brooks",   email: "matt.b@test.com",    phone: "+61499999999", role: "student",  status: "pending", joinDate: "02/05/2026" },
-];
-
 const ROLE_COLORS: Record<UserRole, { bg: string; text: string }> = {
   parent:   { bg: "#DBEAFE", text: "#1E3A8A" },
   operator: { bg: "#EDE9FE", text: "#7C3AED" },
@@ -94,7 +80,7 @@ export default function AdminUsers() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { primaryRoleName, secondaryRoleName } = useTerminology();
-  const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
+  const [users, setUsers] = useState<UserRecord[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "parent" | "operator" | "admin" | "student">("all");
@@ -118,19 +104,18 @@ export default function AdminUsers() {
             ? profilesRes.value.map(p => String(p.user_id))
             : []
         );
-        const userRecords = usersRes.status === "fulfilled" && usersRes.value.length > 0
+        const userRecords = usersRes.status === "fulfilled"
           ? usersRes.value.map(u => {
               const record = apiUserToRecord(u);
-              // If the user has an operator profile but their role column isn't "operator", fix it
               if (operatorUserIds.has(String(u.id)) && record.role !== "operator") {
                 return { ...record, role: "operator" as UserRole };
               }
               return record;
             })
-          : MOCK_USERS.filter(u => u.role !== "student");
+          : [];
         const studentRecords = studentsRes.status === "fulfilled"
           ? (studentsRes.value as ApiStudent[]).map(apiStudentToRecord)
-          : MOCK_USERS.filter(u => u.role === "student");
+          : [];
         setUsers([...userRecords, ...studentRecords]);
       })
       .catch(() => {})
