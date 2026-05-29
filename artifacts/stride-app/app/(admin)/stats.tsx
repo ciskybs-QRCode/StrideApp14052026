@@ -59,13 +59,6 @@ const AGE_GROUPS = [
   { label: "18+ yrs",   count: 9,  color: "#EF4444" },
 ];
 
-const RECENT_ACTIVITY = [
-  { name: "Jane Smith",   action: "Payment received",  amount: "€120", time: "2 hrs ago",  icon: "checkmark-circle", color: "#10B981" },
-  { name: "Tom Davis",    action: "New registration",  amount: "€85",  time: "5 hrs ago",  icon: "person-add",       color: "#3B82F6" },
-  { name: "Anna Harris",  action: "Monthly renewal",   amount: "€95",  time: "Yesterday",  icon: "refresh-circle",   color: "#7C3AED" },
-  { name: "Chris Carter", action: "Payment pending",   amount: "€110", time: "Yesterday",  icon: "time",             color: "#F59E0B" },
-  { name: "Julia Brooks", action: "Payment received",  amount: "€75",  time: "2 days ago", icon: "checkmark-circle", color: "#10B981" },
-];
 
 type ScanResult = {
   type: "success" | "warning" | "error";
@@ -124,6 +117,19 @@ export default function AdminStats() {
   }, []);
 
   const emergency = detectEmergencyInfo(campusAddress);
+
+  const recentActivity = payments
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5)
+    .map(p => ({
+      name: p.description || "Payment",
+      action: p.status === "paid" ? "Payment received" : "Payment pending",
+      amount: `€${p.amount}`,
+      time: p.date,
+      icon: p.status === "paid" ? "checkmark-circle" : "time",
+      color: p.status === "paid" ? "#10B981" : "#F59E0B",
+    }));
 
   const totalRevenue  = payments.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const pendingRevenue = payments.filter(p => p.status === "pending").reduce((s, p) => s + p.amount, 0);
@@ -409,8 +415,8 @@ export default function AdminStats() {
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={[styles.modalSectionTitle, { color: colors.primary }]}>Recent Activity</Text>
             <View style={[styles.card, { backgroundColor: colors.card }]}>
-              {RECENT_ACTIVITY.map((r, i) => (
-                <View key={i} style={[styles.actRow, i < RECENT_ACTIVITY.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+              {recentActivity.map((r, i) => (
+                <View key={i} style={[styles.actRow, i < recentActivity.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
                   <View style={[styles.actIcon, { backgroundColor: `${r.color}15` }]}>
                     <Ionicons name={r.icon as keyof typeof Ionicons.glyphMap} size={20} color={r.color} />
                   </View>

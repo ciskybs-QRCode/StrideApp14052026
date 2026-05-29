@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { api } from "@/lib/api";
 
 // ── Clipboard helper ───────────────────────────────────────────────────────────
 
@@ -65,27 +66,6 @@ interface CommUser {
   childName?: string;
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────────────
-
-const COMM_USERS: CommUser[] = [
-  { id: "u1", name: "John Smith",   role: "parent",   childName: "Jane Smith" },
-  { id: "u2", name: "Sara Wilson",  role: "operator" },
-  { id: "u3", name: "Louis Ford",   role: "parent",   childName: "Tom Davis" },
-  { id: "u4", name: "Elena Walsh",  role: "operator" },
-  { id: "u5", name: "Amy Parker",   role: "parent",   childName: "Julia Parker" },
-  { id: "u6", name: "Jane Smith",   role: "student" },
-  { id: "u7", name: "Tom Davis",    role: "student" },
-  { id: "u8", name: "Julia Parker", role: "student" },
-];
-
-const MOCK_COURSES = [
-  { id: "c1", name: "Ballet Beginners",    parentIds: ["u1", "u3"],        emoji: "🩰" },
-  { id: "c2", name: "Jazz Advanced",       parentIds: ["u1", "u5"],        emoji: "🎷" },
-  { id: "c3", name: "Contemporary",        parentIds: ["u5"],              emoji: "💃" },
-  { id: "c4", name: "Hip Hop",             parentIds: ["u3", "u5"],        emoji: "🎤" },
-  { id: "c5", name: "Tap Dance",           parentIds: ["u1"],              emoji: "👠" },
-  { id: "c6", name: "Acrobatics",          parentIds: ["u1", "u3", "u5"], emoji: "🤸" },
-];
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -109,34 +89,30 @@ const ATTACHMENT_TYPES: { type: AttachmentType; label: string; icon: keyof typeo
   { type: "dropbox", label: "Dropbox", icon: "cloud-upload-outline",  color: "#0061FE" },
 ];
 
-const INITIAL_SENT: SentMessage[] = [
-  { id: "1", title: "April 2026 Newsletter", body: "Dear families,\n\nHere is our April 2026 newsletter. This month we celebrated our mid-year showcase with over 120 students performing across 3 venues. It was a wonderful event and we are so proud of all the hard work put in by students and teachers alike.\n\nLooking forward, we have end-of-year enrolments opening on 1 May. Please ensure you re-enrol by 15 May to secure your spot.\n\nThank you for your continued support of Dance Village.", date: "01 Apr", recipients: 45, read: 38, type: "newsletter", urgent: false, signatureRequired: false, attachments: [] },
-  { id: "2", title: "End-of-Year Recital Reminder", body: "Dear parents,\n\nThis is a reminder that the End-of-Year Recital is scheduled for Saturday 28 June at the Riverside Theatre.\n\nAll students are required to arrive at 4:00 PM for a costume check and warm-up. The performance begins at 6:00 PM sharp.\n\nTickets must be collected from the front desk before Friday.", date: "28 Mar", recipients: 45, read: 42, type: "reminder", urgent: false, signatureRequired: false, attachments: ["program.pdf"] },
-  { id: "3", title: "Easter Holiday Closure", body: "Dear families,\n\nPlease be advised that Dance Village will be CLOSED from Friday 18 April through Monday 21 April for the Easter long weekend.\n\nAll classes will resume as normal from Tuesday 22 April.\n\nWe wish you and your families a safe and happy Easter break!", date: "20 Mar", recipients: 45, read: 45, type: "info", urgent: false, signatureRequired: false, attachments: [] },
-];
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getRecipientLabel(r: RecipientSelection): string {
+interface UserCounts { total: number; parents: number; operators: number; students: number; }
+
+function getRecipientLabel(r: RecipientSelection, counts: UserCounts): string {
   switch (r.mode) {
-    case "all":         return "All Users (45)";
+    case "all":         return `All Users (${counts.total})`;
     case "group":
-      if (r.groupRole === "parents")   return "All Members (30)";
-      if (r.groupRole === "operators") return "All Operators (15)";
-      return "All Students (8)";
+      if (r.groupRole === "parents")   return `All Members (${counts.parents})`;
+      if (r.groupRole === "operators") return `All Operators (${counts.operators})`;
+      return `All Students (${counts.students})`;
     case "course":      return `Members: ${r.courseName} (${r.courseCount})`;
     case "individuals": return `${r.individualIds?.length || 0} specific recipient${r.individualIds?.length !== 1 ? "s" : ""}`;
     default:            return "Select recipients";
   }
 }
 
-function getRecipientCount(r: RecipientSelection): number {
+function getRecipientCount(r: RecipientSelection, counts: UserCounts): number {
   switch (r.mode) {
-    case "all":         return 45;
+    case "all":         return counts.total;
     case "group":
-      if (r.groupRole === "parents")   return 30;
-      if (r.groupRole === "operators") return 15;
-      return 8;
+      if (r.groupRole === "parents")   return counts.parents;
+      if (r.groupRole === "operators") return counts.operators;
+      return counts.students;
     case "course":      return r.courseCount || 0;
     case "individuals": return r.individualIds?.length || 0;
     default:            return 0;
@@ -152,11 +128,29 @@ const ROLE_COLORS: Record<CommUser["role"], { bg: string; text: string }> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AdminCommunications() {
-  const { addDocument } = useAppData();
+  const { addDocument, courses } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
-  const [sentMessages, setSentMessages] = useState<SentMessage[]>(INITIAL_SENT);
+  const [commUsers, setCommUsers] = useState<CommUser[]>([]);
+
+  useEffect(() => {
+    api.getUsers().then(raw => {
+      const mapped: CommUser[] = raw.map(u => ({
+        id: String(u.id),
+        name: u.name,
+        role: (["parent", "operator", "student"].includes(u.role ?? "") ? u.role : "parent") as CommUser["role"],
+      }));
+      setCommUsers(mapped);
+    }).catch(() => {});
+  }, []);
+
+  const memberCount   = commUsers.filter(u => u.role === "parent").length;
+  const operatorCount = commUsers.filter(u => u.role === "operator").length;
+  const studentCount  = commUsers.filter(u => u.role === "student").length;
+  const userCounts: UserCounts = { total: commUsers.length, parents: memberCount, operators: operatorCount, students: studentCount };
+
+  const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
   const [showCompose, setShowCompose] = useState(false);
   const [showDetail, setShowDetail] = useState<SentMessage | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -264,8 +258,8 @@ export default function AdminCommunications() {
     setShowRecipientPicker(false);
   };
 
-  const selectCourse = (course: typeof MOCK_COURSES[0]) => {
-    setRecipientSel({ mode: "course", courseId: course.id, courseName: course.name, courseCount: course.parentIds.length });
+  const selectCourse = (course: { id: string; name: string; enrolled: number }) => {
+    setRecipientSel({ mode: "course", courseId: course.id, courseName: course.name, courseCount: course.enrolled });
     setShowRecipientPicker(false);
   };
 
@@ -287,7 +281,7 @@ export default function AdminCommunications() {
     if (signatureRequired) {
       await addDocument({ title, type: "communication", signed: false, required: true, sentBy: "admin", sentAt: new Date().toISOString().split("T")[0] });
     }
-    const count = getRecipientCount(recipientSel);
+    const count = getRecipientCount(recipientSel, userCounts);
     const newMsg: SentMessage = {
       id: Date.now().toString(),
       title: isUrgent ? `🔴 ${title}` : title,
@@ -304,7 +298,7 @@ export default function AdminCommunications() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowCompose(false);
     resetCompose();
-    Alert.alert("Sent!", `Message delivered to ${getRecipientLabel(recipientSel)}.`);
+    Alert.alert("Sent!", `Message delivered to ${getRecipientLabel(recipientSel, userCounts)}.`);
   };
 
   const handleCopy = async (text: string) => {
@@ -315,7 +309,7 @@ export default function AdminCommunications() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
-  const filteredPeople = COMM_USERS.filter(u =>
+  const filteredPeople = commUsers.filter(u =>
     u.name.toLowerCase().includes(individualSearch.toLowerCase())
   );
 
@@ -343,7 +337,7 @@ export default function AdminCommunications() {
             <Text style={styles.statLabel}>Sent</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: "#10B981" }]}>
-            <Text style={styles.statNum}>45</Text>
+            <Text style={styles.statNum}>{userCounts.total || "—"}</Text>
             <Text style={styles.statLabel}>Recipients</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.secondary }]}>
@@ -453,13 +447,13 @@ export default function AdminCommunications() {
             >
               <Ionicons name="people-outline" size={18} color={colors.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.recipientSelectorText, { color: colors.primary }]}>{getRecipientLabel(recipientSel)}</Text>
+                <Text style={[styles.recipientSelectorText, { color: colors.primary }]}>{getRecipientLabel(recipientSel, userCounts)}</Text>
                 {recipientSel.mode === "course" && (
                   <Text style={[styles.recipientSelectorSub, { color: colors.mutedForeground }]}>Filtered by course</Text>
                 )}
                 {recipientSel.mode === "individuals" && (
                   <Text style={[styles.recipientSelectorSub, { color: colors.mutedForeground }]}>
-                    {COMM_USERS.filter(u => recipientSel.individualIds?.includes(u.id)).map(u => u.name).join(", ")}
+                    {commUsers.filter(u => recipientSel.individualIds?.includes(u.id)).map(u => u.name).join(", ")}
                   </Text>
                 )}
               </View>
@@ -588,10 +582,10 @@ export default function AdminCommunications() {
               {recipientTab === "quick" && (
                 <>
                   {[
-                    { sel: { mode: "all" as const },                                        label: "All Users",      sub: "All members, operators and students", icon: "people" as const,       bg: "#DBEAFE", color: colors.primary },
-                    { sel: { mode: "group" as const, groupRole: "parents" as const },       label: "All Members",    sub: "30 members registered",                icon: "person" as const,       bg: "#D1FAE5", color: "#10B981" },
-                    { sel: { mode: "group" as const, groupRole: "operators" as const },     label: "All Operators",  sub: "15 operators registered",              icon: "briefcase" as const,    bg: "#EDE9FE", color: "#7C3AED" },
-                    { sel: { mode: "group" as const, groupRole: "students" as const },      label: "All Students",   sub: "8 students registered",                icon: "school" as const,       bg: "#FEF3C7", color: "#F59E0B" },
+                    { sel: { mode: "all" as const },                                        label: "All Users",      sub: userCounts.total ? `${userCounts.total} users registered` : "All members, operators and students", icon: "people" as const,       bg: "#DBEAFE", color: colors.primary },
+                    { sel: { mode: "group" as const, groupRole: "parents" as const },       label: "All Members",    sub: `${userCounts.parents} members registered`,    icon: "person" as const,       bg: "#D1FAE5", color: "#10B981" },
+                    { sel: { mode: "group" as const, groupRole: "operators" as const },     label: "All Operators",  sub: `${userCounts.operators} operators registered`, icon: "briefcase" as const,    bg: "#EDE9FE", color: "#7C3AED" },
+                    { sel: { mode: "group" as const, groupRole: "students" as const },      label: "All Students",   sub: `${userCounts.students} students registered`,   icon: "school" as const,       bg: "#FEF3C7", color: "#F59E0B" },
                   ].map(({ sel, label, sub, icon, bg, color }) => (
                     <Pressable
                       key={label}
@@ -617,18 +611,20 @@ export default function AdminCommunications() {
                   <Text style={[styles.pickerSectionHint, { color: colors.mutedForeground }]}>
                     Send to members whose dependent members are enrolled in a specific course.
                   </Text>
-                  {MOCK_COURSES.map(course => (
+                  {courses.length === 0 ? (
+                    <Text style={[styles.pickerSectionHint, { color: colors.mutedForeground }]}>No courses available.</Text>
+                  ) : courses.map(course => (
                     <Pressable
                       key={course.id}
                       style={[styles.pickerGroupRow, { borderColor: colors.border, backgroundColor: colors.background }]}
                       onPress={() => selectCourse(course)}
                     >
                       <View style={[styles.pickerGroupIcon, { backgroundColor: "#DBEAFE" }]}>
-                        <Text style={{ fontSize: 18 }}>{course.emoji}</Text>
+                        <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.pickerGroupLabel, { color: colors.foreground }]}>{course.name}</Text>
-                        <Text style={[styles.pickerGroupSub, { color: colors.mutedForeground }]}>{course.parentIds.length} parent{course.parentIds.length !== 1 ? "s" : ""} enrolled</Text>
+                        <Text style={[styles.pickerGroupSub, { color: colors.mutedForeground }]}>{course.enrolled} enrolled</Text>
                       </View>
                       <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
                     </Pressable>

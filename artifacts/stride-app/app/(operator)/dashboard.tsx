@@ -84,12 +84,6 @@ function nowTime(): string {
   return new Date().toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-const INITIAL_LOG: LogEntry[] = [
-  { time: "15:48", action: "Check-in: Emma Parker",            type: "success" },
-  { time: "15:35", action: "Check-in: Tom Davis",              type: "success" },
-  { time: "15:32", action: "Delegated: Amy Carter for Jane",   type: "warning" },
-  { time: "15:20", action: "Session started: Classical Dance", type: "info"    },
-];
 
 // ── SOS Emergency Procedures ───────────────────────────────────────────────────
 
@@ -292,7 +286,7 @@ export default function OperatorDashboard() {
   const [orgLogoUri, setOrgLogoUri]       = useState<string | null>(null);
   const pulseAnim  = useRef(new Animated.Value(1)).current;
   const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [activityLog, setActivityLog]     = useState<LogEntry[]>(INITIAL_LOG);
+  const [activityLog, setActivityLog]     = useState<LogEntry[]>([]);
   const [lessonScanResult, setLessonScanResult] = useState<{
     discipline: string; student: string; earnings_cents: number; invoice_number: string; attended_at: string;
   } | null>(null);

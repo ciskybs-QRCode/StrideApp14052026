@@ -1,0 +1,26 @@
+Role: Expert React Native (Expo) Developer. Target Screens: Member Side Dashboard (app/(member)/index.tsx), Dependent Management (app/(member)/dependents), and Settings Screens. UI Rules: Navy Blue and Gold branding. All UI elements MUST STRICTLY remain within the physical phone display boundaries (Strictly zero layout overflows, text truncation, or clipping).
+GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) DO NOT modify, rewrite, or "optimize" ANY backend core database structures, authentication flows, or Admin/Operator screens. Keep the existing codebase 100% intact. Focus purely on these frontend Member-side enhancements.
+Please implement the following updates systematically:
+1. Home Dashboard Enhancements (Next Activity & History Log)
+Next Activity Box: Update the logic so it scans and displays the absolute next scheduled activity/class, even if it is scheduled 3 or more weeks in the future (remove any hardcoded 7-day limits).
+Notifications & Alerts (History Log): Add a "View Recent History" button. When clicked, present a dedicated history log interface where users can track actions (logins, logouts, signed documents, reminders).
+Banking-Style Filters: Inside this history view, add a clean filter layout:
+Two date picker fields ("From" and "To").
+A dropdown or multi-select component to filter by log type (e.g., 'Signed Documents', 'Logins/Logouts', 'Reminders').
+2. Quick Actions & Dependent Form Alignment
+Quick Actions: Rename the text on the QR button from "SHOW - QR PASS" to "SHOW - QR CODE".
+Add Dependent Member Form: * Fix the Date of Birth (DOB) input field styling. It must perfectly match the font, color, borders, and weight of the other standard input fields (it must NOT be bold).
+Unified Onboarding: Move the entire "Health & Consent" form (Photo/Video Consent, Ambulance Authorization, Allergies/Medical Notes) directly into the "+ Add Dependent Member" creation screen, right below the basic info. Users must fill this out before saving for the first time. Ensure all fields remain 100% editable later via an "Edit" button.
+3. Settings Restructuring & Document Archive
+Layout Order: Rearrange the main Settings screen so that Profile Settings, Photo/Video Consent, and Account blocks are pinned neatly at the top of the page.
+New Documents Sub-Page: Move "New Documents" and "Document Archive" out of the main settings screen. Create a dedicated sub-page icon labeled "Documents & Paperwork".
+Document Viewer: Inside this sub-page, each document row must be clickable. Clicking it opens a clean viewer/modal with options to view, download, or trigger the native device print layout (expo-print).
+4. GPS-Based Dynamic Localization (Profile Setup)
+First Access Gate: Ensure that a new Member is forced to complete their profile data upon their very first login before accessing the home dashboard.
+International Phone Prefix: Use device location/GPS coordinates to auto-detect the country and pre-select the correct international phone prefix (e.g., +61 for Australia, +39 for Italy), but allow the user to manually change it via a dropdown list.
+Dynamic Bank Details: The bank details input form must automatically adapt its structure based on the current GPS country coordinates:
+If in Australia: Show fields for BSB, Account Number, and Account Name.
+If in Italy/Europe: Show a single field for IBAN.
+Fallback to standard routing/account formats for other global zones.
+Override: Always allow the user to manually switch the bank country format via a dropdown menu (e.g., if they are setting up the app while physically traveling or on vacation in Japan, they shouldn't be forced to enter Japanese banking formats).
+Output Requirement: Apply all layout, routing, and form state changes within the strict phone container layout boundaries, and confirm which files were updated.
