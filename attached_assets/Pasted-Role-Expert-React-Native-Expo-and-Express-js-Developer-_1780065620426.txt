@@ -1,0 +1,22 @@
+Role: Expert React Native (Expo) and Express.js Developer working with Supabase. Target Screen: Admin Side -> Settings -> School Information (app/(admin)/settings/school-info or corresponding sub-screens handling Contact Details, Campuses, and Opening Hours). UI Rules: Navy Blue and Gold branding. Clean typography, consistent margins, and STRICTLY ZERO screen overflows or text truncation. Every element must fit inside the physical device borders.
+ GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY)  DO NOT modify, rewrite, or "optimize" ANY backend authentication, billing, courses, or unrelated dashboard components. Your changes must be simple, fast, and secure. DO NOT change ANYTHING that is not explicitly involved in these specific UI/UX updates and the campus delete action. Keep the existing codebase 100% intact.
+Please execute these functional and visual upgrades:
+1. Fix Delete Button for Campus Locations
+Action: Bind the trash can icon next to individual Campus Locations to a functioning onPress trigger.
+Safety Confirmation Alert: Before deleting, show a native Alert.alert (strictly in English):
+Title: "Delete Location"
+Message: "Are you sure you want to remove this campus location?"
+Buttons: Cancel (abort) and Delete (destructive style, executes the deletion).
+State Sync: On success, immediately remove the item from the local state list so it disappears instantly from the screen without requiring a refresh.
+2. Complete UI/UX Restructuring of "School Information"
+Transform the page into a clean, professional dashboard divided into three distinct, elegant visual sections:
+Section A: Contact Details
+Group the organization Name, Email, and Phone into a clean card layout.
+Use a subtle Navy Blue background (or border) with Gold icon accents for each detail. Ensure input fields or text strings are perfectly aligned.
+Section B: Campus Locations (The List)
+Convert the messy list into structured, independent horizontal rows.
+Each campus should look like a small neat badge or card containing the Location Name, Address, and the fixed functional trash icon on the far right.
+Section C: Opening Hours
+Clean up the schedule grid. Display days of the week (Monday - Friday, Saturday, etc.) aligned to the left, and corresponding hours (09:00 AM - 06:00 PM) aligned neatly to the right.
+Use clear spacing between rows to avoid a dense "wall of text" feel.
+Output Requirement: Fix the delete function, restructure the entire screen UI into beautiful card layouts following the branding, ensure full mobile responsiveness within display limits, and notify me which files were updated.

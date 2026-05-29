@@ -196,10 +196,14 @@ export default function SchoolInformationPage() {
   };
 
   const handleDeleteCampus = (id: string) => {
-    Alert.alert("Delete Campus", "Remove this campus location?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => { setCampuses(prev => prev.filter(c => c.id !== id)); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } },
-    ]);
+    Alert.alert(
+      "Delete Location",
+      "Are you sure you want to remove this campus location?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => { setCampuses(prev => prev.filter(c => c.id !== id)); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } },
+      ]
+    );
   };
 
   const handleSetMainCampus = (id: string) => {
@@ -253,6 +257,14 @@ export default function SchoolInformationPage() {
               Contact details, campuses and opening hours
             </Text>
           </View>
+        </View>
+
+        {/* ── Section A: Contact Details ── */}
+        <View style={[styles.sectionHeaderRow, { marginTop: 4 }]}>
+          <View style={styles.sectionLabelRow}>
+            <View style={[styles.sectionAccentDot, { backgroundColor: "#1E3A8A" }]} />
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Contact Details</Text>
+          </View>
           {!editingInfo && (
             <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => { setDraftInfo(info); setEditingInfo(true); }}>
               <Ionicons name="pencil-outline" size={14} color={colors.primary} />
@@ -260,10 +272,7 @@ export default function SchoolInformationPage() {
             </Pressable>
           )}
         </View>
-
-        {/* ── Main Contact Info ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact Details</Text>
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: "#1E3A8A" }]}>
           {MAIN_FIELDS.map((field, i) => (
             <View
               key={field.key}
@@ -287,7 +296,7 @@ export default function SchoolInformationPage() {
                     autoCorrect={false}
                   />
                 ) : (
-                  <Text style={[styles.fieldValue, { color: colors.foreground }]}>{info[field.key]}</Text>
+                  <Text style={[styles.fieldValue, { color: colors.foreground }]} numberOfLines={2}>{info[field.key]}</Text>
                 )}
               </View>
             </View>
@@ -364,69 +373,61 @@ export default function SchoolInformationPage() {
           })}
         </View>
 
-        {/* ── Campus Locations ── */}
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Campus Locations</Text>
+        {/* ── Section B: Campus Locations ── */}
+        <View style={[styles.sectionHeaderRow, { marginTop: 8 }]}>
+          <View style={styles.sectionLabelRow}>
+            <View style={[styles.sectionAccentDot, { backgroundColor: "#FBBF24" }]} />
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Campus Locations</Text>
+          </View>
           <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openAddCampus}>
             <Ionicons name="add" size={15} color="#FFF" />
             <Text style={styles.addBtnText}>Add</Text>
           </Pressable>
         </View>
 
-        {campuses.map((campus, i) => {
+        {campuses.map((campus) => {
           const typeInfo = campusTypeInfo(campus.type);
           return (
-            <View key={campus.id} style={[styles.campusCard, { backgroundColor: colors.card }]}>
-              <View style={styles.campusHeader}>
-                <View style={[styles.campusTypeIcon, { backgroundColor: typeInfo.bg }]}>
-                  <Ionicons name={typeInfo.icon} size={18} color={typeInfo.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Text style={[styles.campusName, { color: colors.foreground }]}>{campus.name}</Text>
-                    {campus.isMain && (
-                      <View style={[styles.mainBadge, { backgroundColor: colors.secondary }]}>
-                        <Ionicons name="star" size={9} color={colors.primary} />
-                        <Text style={[styles.mainBadgeText, { color: colors.primary }]}>Main</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={[styles.campusTypeBadge, { backgroundColor: typeInfo.bg }]}>
-                    <Text style={[styles.campusTypeBadgeText, { color: typeInfo.color }]}>{typeInfo.label}</Text>
-                  </View>
-                </View>
-                <View style={{ flexDirection: "row", gap: 6 }}>
-                  <Pressable style={[styles.iconBtn, { backgroundColor: colors.muted }]} onPress={() => openEditCampus(campus)}>
-                    <Ionicons name="pencil-outline" size={14} color={colors.primary} />
-                  </Pressable>
-                  <Pressable style={[styles.iconBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => handleDeleteCampus(campus.id)}>
-                    <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                  </Pressable>
-                </View>
+            <View
+              key={campus.id}
+              style={[styles.campusRow, { backgroundColor: colors.card, borderLeftColor: typeInfo.color }]}
+            >
+              {/* Left: icon */}
+              <View style={[styles.campusRowIcon, { backgroundColor: typeInfo.bg }]}>
+                <Ionicons name={typeInfo.icon} size={18} color={typeInfo.color} />
               </View>
 
-              <View style={[styles.campusDetail, { borderTopColor: colors.border }]}>
-                <View style={styles.campusDetailRow}>
-                  <Ionicons name="location-outline" size={14} color={colors.mutedForeground} />
-                  <Text style={[styles.campusDetailText, { color: colors.foreground }]}>{campus.address}</Text>
+              {/* Centre: name + address */}
+              <View style={styles.campusRowBody}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <Text style={[styles.campusRowName, { color: colors.foreground }]} numberOfLines={1}>{campus.name}</Text>
+                  {campus.isMain && (
+                    <View style={[styles.mainBadge, { backgroundColor: "#FEF3C7" }]}>
+                      <Ionicons name="star" size={9} color="#FBBF24" />
+                      <Text style={[styles.mainBadgeText, { color: "#92400E" }]}>Main</Text>
+                    </View>
+                  )}
                 </View>
-                {campus.phone ? (
-                  <View style={styles.campusDetailRow}>
-                    <Ionicons name="call-outline" size={14} color={colors.mutedForeground} />
-                    <Text style={[styles.campusDetailText, { color: colors.foreground }]}>{campus.phone}</Text>
-                  </View>
-                ) : null}
+                <Text style={[styles.campusRowAddr, { color: colors.mutedForeground }]} numberOfLines={2}>{campus.address}</Text>
               </View>
 
-              {!campus.isMain && (
+              {/* Right: edit + delete */}
+              <View style={styles.campusRowActions}>
                 <Pressable
-                  style={[styles.setMainBtn, { borderTopColor: colors.border }]}
-                  onPress={() => handleSetMainCampus(campus.id)}
+                  style={[styles.iconBtn, { backgroundColor: colors.muted }]}
+                  onPress={() => openEditCampus(campus)}
+                  hitSlop={6}
                 >
-                  <Ionicons name="star-outline" size={13} color={colors.primary} />
-                  <Text style={[styles.setMainBtnText, { color: colors.primary }]}>Set as Main Campus</Text>
+                  <Ionicons name="pencil-outline" size={14} color={colors.primary} />
                 </Pressable>
-              )}
+                <Pressable
+                  style={[styles.iconBtn, { backgroundColor: "#FEE2E2" }]}
+                  onPress={() => handleDeleteCampus(campus.id)}
+                  hitSlop={6}
+                >
+                  <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                </Pressable>
+              </View>
             </View>
           );
         })}
@@ -442,9 +443,12 @@ export default function SchoolInformationPage() {
           </View>
         )}
 
-        {/* ── Opening Hours ── */}
-        <View style={[styles.sectionRow, { marginTop: 8 }]}>
-          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Opening Hours</Text>
+        {/* ── Section C: Opening Hours ── */}
+        <View style={[styles.sectionHeaderRow, { marginTop: 8 }]}>
+          <View style={styles.sectionLabelRow}>
+            <View style={[styles.sectionAccentDot, { backgroundColor: "#10B981" }]} />
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Opening Hours</Text>
+          </View>
           {!editingHours ? (
             <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => { setHoursDraft([...hours.map(h => ({ ...h }))]); setEditingHours(true); }}>
               <Ionicons name="pencil-outline" size={14} color={colors.primary} />
@@ -476,7 +480,7 @@ export default function SchoolInformationPage() {
           </View>
         )}
 
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: "#10B981" }]}>
           {(editingHours ? hoursDraft : hours).map((entry, i) => (
             <View
               key={entry.day}
@@ -487,7 +491,7 @@ export default function SchoolInformationPage() {
             >
               <View style={styles.hoursDay}>
                 <Text style={[styles.hoursDayText, { color: entry.isOpen ? colors.foreground : colors.mutedForeground, fontWeight: entry.isOpen ? "600" : "400" }]}>
-                  {entry.day.slice(0, 3)}
+                  {entry.day}
                 </Text>
               </View>
 
@@ -706,8 +710,17 @@ const styles = StyleSheet.create({
   quickSetLabel: { flex: 1, fontSize: 12, fontWeight: "600" },
   quickSetBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   quickSetBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
-  hoursRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
-  hoursDay: { width: 36 },
+  sectionHeaderRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  sectionLabelRow:   { flexDirection: "row", alignItems: "center", gap: 8 },
+  sectionAccentDot:  { width: 4, height: 20, borderRadius: 2 },
+  campusRow:         { flexDirection: "row", alignItems: "center", backgroundColor: "#FFF", borderRadius: 16, marginBottom: 10, borderLeftWidth: 4, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  campusRowIcon:     { width: 48, alignSelf: "stretch", minHeight: 64, alignItems: "center", justifyContent: "center" },
+  campusRowBody:     { flex: 1, paddingVertical: 12, paddingRight: 8, gap: 3 },
+  campusRowName:     { fontSize: 14, fontWeight: "700" },
+  campusRowAddr:     { fontSize: 12, lineHeight: 17 },
+  campusRowActions:  { flexDirection: "column", gap: 6, paddingRight: 12, alignItems: "center" },
+  hoursRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13, gap: 10 },
+  hoursDay: { width: 90 },
   hoursDayText: { fontSize: 13 },
   hoursTimeView: { flex: 1, flexDirection: "row", alignItems: "center", gap: 7 },
   openDot: { width: 7, height: 7, borderRadius: 4 },
