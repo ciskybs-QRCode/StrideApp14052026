@@ -288,25 +288,37 @@ export default function AdminLessonsScreen() {
           </View>
         </View>
 
-        {/* ── Tab switcher ── */}
-        <View style={[styles.tabBar, { backgroundColor: colors.card }]}>
+        {/* ── Tab switcher — underline style ── */}
+        <View style={[styles.tabBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           {([
             { key: "operators",    label: "Operators",    icon: "people-outline"   as const },
             { key: "disciplines",  label: "Disciplines",  icon: "barbell-outline"  as const },
             { key: "availability", label: "Availability", icon: "calendar-outline" as const },
-          ]).map(t => (
-            <Pressable
-              key={t.key}
-              style={[styles.tabBtn, tab === t.key && { backgroundColor: colors.primary }]}
-              onPress={() => setTab(t.key as Tab)}
-            >
-              <Ionicons name={t.icon} size={13} color={tab === t.key ? "#FFF" : colors.mutedForeground} />
-              <Text style={[styles.tabBtnText, { color: tab === t.key ? "#FFF" : colors.mutedForeground }]}>{t.label}</Text>
-              {t.key === "availability" && pendingSlots.length > 0 && (
-                <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{pendingSlots.length}</Text></View>
-              )}
-            </Pressable>
-          ))}
+          ]).map(t => {
+            const active = tab === t.key;
+            return (
+              <Pressable
+                key={t.key}
+                style={styles.tabBtn}
+                onPress={() => setTab(t.key as Tab)}
+              >
+                <View style={styles.tabBtnInner}>
+                  <View style={{ position: "relative" }}>
+                    <Ionicons name={t.icon} size={22} color={active ? colors.primary : colors.mutedForeground} />
+                    {t.key === "availability" && pendingSlots.length > 0 && (
+                      <View style={styles.tabBadge}>
+                        <Text style={styles.tabBadgeText}>{pendingSlots.length}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.tabBtnText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                    {t.label}
+                  </Text>
+                </View>
+                {active && <View style={[styles.tabUnderline, { backgroundColor: colors.primary }]} />}
+              </Pressable>
+            );
+          })}
         </View>
 
         {/* ══ OPERATORS TAB ══ */}
@@ -1059,12 +1071,14 @@ const styles = StyleSheet.create({
   pageTitle:          { fontSize: 28, fontWeight: "800" },
   pageSub:            { fontSize: 13, marginTop: 2 },
   headerBadge:        { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  // Pill tab switcher on card background
-  tabBar:             { flexDirection: "row", gap: 4, borderRadius: 14, padding: 4, marginHorizontal: 20, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
-  tabBtn:             { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 10, paddingHorizontal: 6, borderRadius: 10 },
+  // Underline-style tab bar
+  tabBar:             { flexDirection: "row", marginHorizontal: 20, marginBottom: 20, borderRadius: 18, borderBottomWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  tabBtn:             { flex: 1, alignItems: "center", paddingTop: 16, paddingBottom: 0 },
+  tabBtnInner:        { alignItems: "center", gap: 6, paddingBottom: 14 },
   tabBtnActive:       { },
-  tabBtnText:         { fontSize: 11, fontWeight: "700" },
-  tabBadge:           { width: 16, height: 16, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
+  tabBtnText:         { fontSize: 12, fontWeight: "700", letterSpacing: 0.2 },
+  tabUnderline:       { height: 3, width: "60%", borderRadius: 2, marginTop: 0 },
+  tabBadge:           { position: "absolute", top: -4, right: -8, width: 16, height: 16, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
   tabBadgeText:       { fontSize: 9, fontWeight: "800", color: "#FFF" },
   scroll:             { paddingHorizontal: 16, gap: 10 },
   addBtn:             { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 14, marginBottom: 4 },
