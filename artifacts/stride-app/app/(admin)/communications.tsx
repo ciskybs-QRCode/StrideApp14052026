@@ -7,6 +7,7 @@ import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -366,6 +367,29 @@ export default function AdminCommunications() {
     const ok = await copyToClipboard(text);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Copied", ok ? "Message copied to clipboard." : "Please select and copy the text manually.");
+  };
+
+  const handleOpenAttachment = (a: string) => {
+    const urlMatch = a.match(/https?:\/\/\S+/);
+    if (urlMatch) {
+      Linking.openURL(urlMatch[0]).catch(() =>
+        Alert.alert("Cannot Open", "This link could not be opened on this device.")
+      );
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      return;
+    }
+    Alert.alert("File Attached", `"${a}" was attached when sent.\n\nLocal files are stored on the sender's device and cannot be previewed from here.`);
+  };
+
+  const attachmentIcon = (a: string): { icon: keyof typeof Ionicons.glyphMap; color: string } => {
+    if (a.startsWith("G Drive:"))   return { icon: "cloud-outline",         color: "#EA4335" };
+    if (a.startsWith("Dropbox:"))   return { icon: "cloud-upload-outline",  color: "#0061FE" };
+    if (/\.(jpg|jpeg|png|gif|webp)/i.test(a)) return { icon: "image-outline",   color: "#3B82F6" };
+    if (/\.(mp4|mov|avi)/i.test(a)) return { icon: "videocam-outline",      color: "#8B5CF6" };
+    if (/\.(mp3|wav|ogg)/i.test(a)) return { icon: "musical-note-outline",  color: "#F59E0B" };
+    if (/\.(xls|xlsx)/i.test(a))    return { icon: "grid-outline",          color: "#16A34A" };
+    if (/\.(doc|docx)/i.test(a))    return { icon: "document-text-outline", color: "#2563EB" };
+    return { icon: "document-attach-outline", color: "#EF4444" };
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -932,13 +956,36 @@ export default function AdminCommunications() {
                   <Text style={[styles.detailBodyText, { color: colors.foreground }]}>{showDetail.body}</Text>
                   {showDetail.attachments.length > 0 && (
                     <View style={[styles.detailAttachments, { backgroundColor: colors.muted }]}>
-                      <Text style={[styles.detailAttachLabel, { color: colors.mutedForeground }]}>Attachments:</Text>
-                      {showDetail.attachments.map((a, i) => (
-                        <View key={i} style={styles.attachedItem}>
-                          <Ionicons name="document-attach-outline" size={14} color={colors.primary} />
-                          <Text style={[styles.attachedItemText, { color: colors.primary }]}>{a}</Text>
-                        </View>
-                      ))}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <Ionicons name="attach-outline" size={14} color={colors.mutedForeground} />
+                        <Text style={[styles.detailAttachLabel, { color: colors.mutedForeground }]}>
+                          {showDetail.attachments.length} attachment{showDetail.attachments.length > 1 ? "s" : ""}
+                        </Text>
+                      </View>
+                      {showDetail.attachments.map((a, i) => {
+                        const { icon, color } = attachmentIcon(a);
+                        const hasUrl = /https?:\/\//.test(a);
+                        return (
+                          <Pressable
+                            key={i}
+                            style={({ pressed }) => [
+                              styles.attachedItem,
+                              { backgroundColor: pressed ? `${color}18` : "transparent", borderRadius: 8, paddingVertical: 6, paddingHorizontal: 4 },
+                            ]}
+                            onPress={() => handleOpenAttachment(a)}
+                          >
+                            <View style={[{ width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" }, { backgroundColor: `${color}20` }]}>
+                              <Ionicons name={icon} size={16} color={color} />
+                            </View>
+                            <Text style={[styles.attachedItemText, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>{a}</Text>
+                            <Ionicons
+                              name={hasUrl ? "open-outline" : "information-circle-outline"}
+                              size={16}
+                              color={hasUrl ? color : colors.mutedForeground}
+                            />
+                          </Pressable>
+                        );
+                      })}
                     </View>
                   )}
                 </ScrollView>
