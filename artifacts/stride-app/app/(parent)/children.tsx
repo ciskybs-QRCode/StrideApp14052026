@@ -405,16 +405,17 @@ export default function ChildrenScreen() {
         </View>
 
         {/* ── Linked Secondary Profiles ── */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Linked {secondaryRoleName}s</Text>
-          <Pressable
-            style={[styles.addBtn, { backgroundColor: colors.primary }]}
-            onPress={() => { setShowAddChild(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          >
-            <Ionicons name="add" size={18} color="#FFF" />
-            <Text style={styles.addBtnText}>Add {secondaryRoleName}</Text>
-          </Pressable>
-        </View>
+        <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 12 }]}>Linked {secondaryRoleName}s</Text>
+        <Pressable
+          style={({ pressed }) => [styles.addMemberCard, { borderColor: colors.primary, opacity: pressed ? 0.75 : 1 }]}
+          onPress={() => { setShowAddChild(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        >
+          <View style={[styles.addMemberIconCircle, { backgroundColor: "#EEF2FF" }]}>
+            <Ionicons name="person-add-outline" size={22} color={colors.primary} />
+          </View>
+          <Text style={[styles.addMemberCardText, { color: colors.primary }]}>Add {secondaryRoleName}</Text>
+          <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+        </Pressable>
 
         {children.length > 0 && (
           <View style={styles.childSelectorRow}>
@@ -1044,6 +1045,9 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: "700" },
   addBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   addBtnText: { color: "#FFF", fontWeight: "600", fontSize: 13 },
+  addMemberCard: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 1.5, borderStyle: "dashed", borderRadius: 16, padding: 16, marginBottom: 20 },
+  addMemberIconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  addMemberCardText: { flex: 1, fontSize: 15, fontWeight: "700" },
   emptyState: { borderRadius: 16, padding: 32, alignItems: "center", gap: 10 },
   emptyText: { fontSize: 14 },
   delegateCard: { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
