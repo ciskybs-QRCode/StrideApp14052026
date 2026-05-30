@@ -641,11 +641,14 @@ export default function AdminSetup() {
 
         {/* ── SOS Emergency Button ── */}
         <Pressable
-          style={({ pressed }) => [adminSos.sosBtn, { opacity: pressed ? 0.88 : 1 }]}
+          style={({ pressed }) => [adminSos.sosBtn, { opacity: pressed ? 0.92 : 1 }]}
           onPress={handleSOSPress}
         >
-          <Ionicons name="warning" size={22} color="#FFF" />
-          <Text style={adminSos.sosBtnText}>SOS EMERGENCY · press twice to activate</Text>
+          <View style={adminSos.sosIconRing}>
+            <Ionicons name="warning" size={32} color="#EF4444" />
+          </View>
+          <Text style={adminSos.sosBtnLabel}>SOS EMERGENCY</Text>
+          <Text style={adminSos.sosBtnHint}>Press twice to activate</Text>
         </Pressable>
 
       </ScrollView>
@@ -866,7 +869,10 @@ const styles = StyleSheet.create({
 });
 
 const adminSos = StyleSheet.create({
-  sosBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#EF4444", borderRadius: 18, paddingVertical: 16, marginTop: 8, marginBottom: 32 },
+  sosBtn:       { alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#EF4444", borderRadius: 20, paddingVertical: 24, marginTop: 8, marginBottom: 32 },
+  sosIconRing:  { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFF", alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  sosBtnLabel:  { fontSize: 20, fontWeight: "900", color: "#FFF", letterSpacing: 1.5 },
+  sosBtnHint:   { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.75)", letterSpacing: 0.3 },
   sosBtnText:   { fontSize: 13, fontWeight: "800", color: "#FFF" },
   overlay:      { flex: 1, backgroundColor: "rgba(120,0,0,0.96)", alignItems: "center", justifyContent: "center", padding: 20 },
   card:         { backgroundColor: "#7F1D1D", borderRadius: 28, padding: 24, width: "100%", alignItems: "center", gap: 12 },

@@ -328,11 +328,14 @@ export default function AdminHome() {
 
         {/* ── SOS BUTTON ── */}
         <Pressable
-          style={({ pressed }) => [styles.sosStandaloneBtn, { opacity: pressed ? 0.88 : 1 }]}
+          style={({ pressed }) => [styles.sosStandaloneBtn, { opacity: pressed ? 0.92 : 1 }]}
           onPress={handleSOSPress}
         >
-          <Ionicons name="warning" size={22} color="#FFF" />
-          <Text style={styles.sosStandaloneBtnText}>SOS EMERGENCY · press twice to activate</Text>
+          <View style={styles.sosIconRing}>
+            <Ionicons name="warning" size={32} color="#EF4444" />
+          </View>
+          <Text style={styles.sosStandaloneBtnLabel}>SOS EMERGENCY</Text>
+          <Text style={styles.sosStandaloneBtnHint}>Press twice to activate</Text>
         </Pressable>
 
         {/* ── ANALYTICS ENTRY CARD ── */}
@@ -689,8 +692,11 @@ const styles = StyleSheet.create({
   quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 20, gap: 8, borderWidth: 2 },
   quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
 
-  sosStandaloneBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#EF4444", borderRadius: 18, paddingVertical: 16, marginBottom: 16 },
-  sosStandaloneBtnText: { fontSize: 13, fontWeight: "800", color: "#FFF" },
+  sosStandaloneBtn:      { alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#EF4444", borderRadius: 20, paddingVertical: 24, marginBottom: 16 },
+  sosIconRing:           { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFF", alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  sosStandaloneBtnLabel: { fontSize: 20, fontWeight: "900", color: "#FFF", letterSpacing: 1.5 },
+  sosStandaloneBtnHint:  { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.75)", letterSpacing: 0.3 },
+  sosStandaloneBtnText:  { fontSize: 13, fontWeight: "800", color: "#FFF" },
 
   analyticsCard: { flexDirection: "row", alignItems: "center", borderRadius: 18, padding: 16, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },
   analyticsCardLeft: { flexDirection: "row", alignItems: "center", gap: 14, flex: 1 },

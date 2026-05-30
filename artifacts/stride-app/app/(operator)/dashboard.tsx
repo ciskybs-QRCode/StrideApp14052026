@@ -990,11 +990,14 @@ export default function OperatorDashboard() {
 
         {/* ── SOS Button — below Quick Actions ── */}
         <Pressable
-          style={({ pressed }) => [styles.sosStandaloneBtn, { opacity: pressed ? 0.88 : 1 }]}
+          style={({ pressed }) => [styles.sosStandaloneBtn, { opacity: pressed ? 0.92 : 1 }]}
           onPress={handleSOSPress}
         >
-          <Ionicons name="warning" size={22} color="#FFF" />
-          <Text style={styles.sosStandaloneBtnText}>SOS EMERGENCY · press twice to activate</Text>
+          <View style={styles.sosIconRing}>
+            <Ionicons name="warning" size={32} color="#EF4444" />
+          </View>
+          <Text style={styles.sosStandaloneBtnLabel}>SOS EMERGENCY</Text>
+          <Text style={styles.sosStandaloneBtnHint}>Press twice to activate</Text>
         </Pressable>
 
         {/* ── Operator QR Code Panel ── */}
@@ -1818,7 +1821,10 @@ const styles = StyleSheet.create({
   quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
 
   // SOS standalone button — below Quick Actions
-  sosStandaloneBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#EF4444", borderRadius: 18, paddingVertical: 16, marginBottom: 24 },
+  sosStandaloneBtn:      { alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#EF4444", borderRadius: 20, paddingVertical: 24, marginBottom: 24 },
+  sosIconRing:           { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFF", alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  sosStandaloneBtnLabel: { fontSize: 20, fontWeight: "900", color: "#FFF", letterSpacing: 1.5 },
+  sosStandaloneBtnHint:  { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.75)", letterSpacing: 0.3 },
   secAlertBtn: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#7F1D1D", borderRadius: 16, padding: 16, marginBottom: 12 },
   secAlertBtnTitle: { color: "#FFF", fontWeight: "800", fontSize: 14 },
   secAlertBtnSub: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 },
