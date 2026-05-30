@@ -577,17 +577,25 @@ export default function AdminLessonsScreen() {
           >
             <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
 
-              {/* Modal header */}
-              <View style={[styles.modalHeaderStrip, { backgroundColor: colors.primary }]}>
-                <View style={[styles.modalHeaderIcon, { backgroundColor: colors.secondary }]}>
-                  <Ionicons name={editingProfile ? "pencil-outline" : "person-add-outline"} size={20} color={colors.primary} />
+              {/* Modal header — clean light style */}
+              <View style={styles.modalCleanHeader}>
+                <View style={[styles.modalCleanIconBox, { backgroundColor: `${colors.primary}14` }]}>
+                  <Ionicons name={editingProfile ? "pencil-outline" : "person-add-outline"} size={22} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.modalHeaderTitle}>{editingProfile ? "Edit Profile" : "New Operator Profile"}</Text>
-                  <Text style={styles.modalHeaderSub}>{editingProfile ? (editingProfile.user?.name ?? "Operator") : "Configure instructor settings"}</Text>
+                  <Text style={[styles.modalCleanTitle, { color: colors.primary }]}>
+                    {editingProfile ? "Edit Profile" : "New Operator Profile"}
+                  </Text>
+                  <Text style={[styles.modalCleanSub, { color: colors.mutedForeground }]}>
+                    {editingProfile ? (editingProfile.user?.name ?? "Operator") : "Configure instructor settings"}
+                  </Text>
                 </View>
-                <Pressable onPress={() => { setShowProfileModal(false); resetProfileForm(); }} hitSlop={8}>
-                  <Ionicons name="close" size={22} color="rgba(255,255,255,0.8)" />
+                <Pressable
+                  style={[styles.modalCloseBtn, { backgroundColor: colors.muted }]}
+                  onPress={() => { setShowProfileModal(false); resetProfileForm(); }}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close" size={18} color={colors.mutedForeground} />
                 </Pressable>
               </View>
 
@@ -626,41 +634,58 @@ export default function AdminLessonsScreen() {
                   </>
                 )}
 
-                {/* ── Step 2: Paid / Volunteer toggle ── */}
-                <View style={[styles.toggleRow, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-                  {/* Paid side */}
+                {/* ── Step 2: Paid / Volunteer — stacked card selector ── */}
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>Contract Type</Text>
+                <View style={styles.typeCardGroup}>
+                  {/* Paid */}
                   <Pressable
-                    style={[styles.toggleSide, !isVolunteer && { backgroundColor: colors.primary, borderRadius: 12 }]}
+                    style={[
+                      styles.typeCard,
+                      { borderColor: !isVolunteer ? colors.primary : colors.border,
+                        backgroundColor: !isVolunteer ? `${colors.primary}10` : colors.background },
+                    ]}
                     onPress={() => setIsVolunteer(false)}
                   >
-                    <Ionicons name="cash-outline" size={16} color={!isVolunteer ? "#FFF" : colors.mutedForeground} />
-                    <View>
-                      <Text style={[styles.toggleLabel, { color: !isVolunteer ? "#FFF" : colors.foreground }]}>Paid</Text>
-                      <Text style={[styles.toggleSub, { color: !isVolunteer ? "rgba(255,255,255,0.75)" : colors.mutedForeground }]}>
-                        Set hourly rates
+                    <View style={[styles.typeCardIcon, { backgroundColor: !isVolunteer ? colors.primary : colors.muted }]}>
+                      <Ionicons name="cash-outline" size={18} color={!isVolunteer ? "#FFF" : colors.mutedForeground} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.typeCardTitle, { color: !isVolunteer ? colors.primary : colors.foreground }]}>
+                        Paid Instructor
                       </Text>
+                      <Text style={[styles.typeCardSub, { color: colors.mutedForeground }]}>
+                        Hourly rates set per discipline
+                      </Text>
+                    </View>
+                    <View style={[styles.typeRadio, { borderColor: !isVolunteer ? colors.primary : colors.border,
+                      backgroundColor: !isVolunteer ? colors.primary : "transparent" }]}>
+                      {!isVolunteer && <Ionicons name="checkmark" size={13} color="#FFF" />}
                     </View>
                   </Pressable>
 
-                  {/* Switch */}
-                  <Switch
-                    value={isVolunteer}
-                    onValueChange={setIsVolunteer}
-                    trackColor={{ false: colors.primary, true: "#7C3AED" }}
-                    thumbColor="#FFF"
-                  />
-
-                  {/* Volunteer side */}
+                  {/* Volunteer */}
                   <Pressable
-                    style={[styles.toggleSide, isVolunteer && { backgroundColor: "#7C3AED", borderRadius: 12 }]}
+                    style={[
+                      styles.typeCard,
+                      { borderColor: isVolunteer ? "#7C3AED" : colors.border,
+                        backgroundColor: isVolunteer ? "#F5F3FF" : colors.background },
+                    ]}
                     onPress={() => setIsVolunteer(true)}
                   >
-                    <Ionicons name="heart-outline" size={16} color={isVolunteer ? "#FFF" : colors.mutedForeground} />
-                    <View>
-                      <Text style={[styles.toggleLabel, { color: isVolunteer ? "#FFF" : colors.foreground }]}>Volunteer</Text>
-                      <Text style={[styles.toggleSub, { color: isVolunteer ? "rgba(255,255,255,0.75)" : colors.mutedForeground }]}>
-                        Unpaid, no rates
+                    <View style={[styles.typeCardIcon, { backgroundColor: isVolunteer ? "#7C3AED" : colors.muted }]}>
+                      <Ionicons name="heart-outline" size={18} color={isVolunteer ? "#FFF" : colors.mutedForeground} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.typeCardTitle, { color: isVolunteer ? "#7C3AED" : colors.foreground }]}>
+                        Volunteer
                       </Text>
+                      <Text style={[styles.typeCardSub, { color: colors.mutedForeground }]}>
+                        Unpaid — no hourly rates needed
+                      </Text>
+                    </View>
+                    <View style={[styles.typeRadio, { borderColor: isVolunteer ? "#7C3AED" : colors.border,
+                      backgroundColor: isVolunteer ? "#7C3AED" : "transparent" }]}>
+                      {isVolunteer && <Ionicons name="checkmark" size={13} color="#FFF" />}
                     </View>
                   </Pressable>
                 </View>
@@ -1066,12 +1091,26 @@ const styles = StyleSheet.create({
   modalCard:          { width: "100%", maxWidth: 460, borderRadius: 24, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
   standaloneModalTitle: { fontSize: 18, fontWeight: "800", marginBottom: 16, paddingHorizontal: 24, paddingTop: 24 },
 
-  // Operator profile modal header strip
+  // Modal — clean light header (replaces old navy strip)
+  modalCleanHeader:   { flexDirection: "row", alignItems: "center", gap: 14, padding: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
+  modalCleanIconBox:  { width: 46, height: 46, borderRadius: 13, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  modalCleanTitle:    { fontSize: 17, fontWeight: "800" },
+  modalCleanSub:      { fontSize: 12, marginTop: 2 },
+  modalCloseBtn:      { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  // Old navy strip kept as dead style (no longer used)
   modalHeaderStrip:   { flexDirection: "row", alignItems: "center", gap: 12, padding: 20 },
   modalHeaderIcon:    { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   modalHeaderTitle:   { fontSize: 18, fontWeight: "800", color: "#FFF" },
   modalHeaderSub:     { fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 1 },
   modalBody:          { padding: 20 },
+
+  // Paid / Volunteer stacked card selector
+  typeCardGroup:      { gap: 8, marginBottom: 16 },
+  typeCard:           { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1.5, borderRadius: 14, padding: 14 },
+  typeCardIcon:       { width: 40, height: 40, borderRadius: 11, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  typeCardTitle:      { fontSize: 14, fontWeight: "700", marginBottom: 2 },
+  typeCardSub:        { fontSize: 12, lineHeight: 16 },
+  typeRadio:          { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: "center", justifyContent: "center", flexShrink: 0 },
 
   // Field labels
   fieldLabel:         { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 },
