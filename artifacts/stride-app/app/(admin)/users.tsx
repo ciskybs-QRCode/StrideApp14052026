@@ -227,14 +227,18 @@ export default function AdminUsers() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <Text style={[styles.pageTitle, { color: colors.primary, marginBottom: 0 }]}>User Management</Text>
+        {/* Page header — clean light style */}
+        <View style={styles.pageHeaderRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>Members</Text>
+            <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>User management</Text>
+          </View>
           <Pressable
-            style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#1E3A8A", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 }}
+            style={[styles.badgePdfBtn, { backgroundColor: colors.primary }]}
             onPress={() => router.push("/(admin)/pdf-badges" as Parameters<typeof router.push>[0])}
           >
-            <Ionicons name="print-outline" size={16} color="#FBBF24" />
-            <Text style={{ color: "#FBBF24", fontWeight: "700", fontSize: 13 }}>Badge PDF</Text>
+            <Ionicons name="print-outline" size={18} color="#FBBF24" />
+            <Text style={styles.badgePdfBtnText}>Badge PDF</Text>
           </Pressable>
         </View>
 
@@ -419,80 +423,56 @@ export default function AdminUsers() {
                     </Pressable>
                   )}
 
-                  {/* Actions */}
+                  {/* Actions — full-width stacked buttons */}
                   <View style={styles.modalActions}>
-                    {user.status === "suspended" ? (
-                      <Pressable
-                        style={[styles.modalActionBtn, { backgroundColor: "#D1FAE5", flex: 1 }]}
-                        onPress={() => handleReactivate(user)}
-                      >
-                        <Ionicons name="checkmark-circle-outline" size={16} color="#10B981" />
-                        <Text style={[styles.modalActionText, { color: "#10B981" }]}>Reactivate</Text>
-                      </Pressable>
-                    ) : (
-                      <Pressable
-                        style={[styles.modalActionBtn, { backgroundColor: "#FEE2E2" }]}
-                        onPress={() => handleSuspend(user)}
-                      >
-                        <Ionicons name="ban" size={16} color="#EF4444" />
-                        <Text style={[styles.modalActionText, { color: "#EF4444" }]}>Suspend</Text>
-                      </Pressable>
-                    )}
-
                     {user.status === "pending" && (
-                      <Pressable
-                        style={[styles.modalActionBtn, { backgroundColor: "#D1FAE5" }]}
-                        onPress={() => handleApprove(user)}
-                      >
-                        <Ionicons name="checkmark-circle-outline" size={16} color="#10B981" />
-                        <Text style={[styles.modalActionText, { color: "#10B981" }]}>Approve</Text>
+                      <Pressable style={[styles.modalActionBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => handleApprove(user)}>
+                        <Ionicons name="checkmark-circle-outline" size={18} color="#059669" />
+                        <Text style={[styles.modalActionText, { color: "#059669" }]}>Approve Access</Text>
                       </Pressable>
                     )}
 
                     {user.role === "parent" && user.status !== "suspended" && (
-                      <Pressable
-                        style={[styles.modalActionBtn, { backgroundColor: "#EDE9FE" }]}
-                        onPress={() => handleRoleChange(user, "operator")}
-                      >
-                        <Ionicons name="arrow-up-circle" size={16} color="#7C3AED" />
-                        <Text style={[styles.modalActionText, { color: "#7C3AED" }]}>→ Operator</Text>
+                      <Pressable style={[styles.modalActionBtn, { backgroundColor: "#EDE9FE" }]} onPress={() => handleRoleChange(user, "operator")}>
+                        <Ionicons name="arrow-up-circle" size={18} color="#7C3AED" />
+                        <Text style={[styles.modalActionText, { color: "#7C3AED" }]}>Promote to Operator</Text>
                       </Pressable>
                     )}
                     {user.role === "operator" && user.status !== "suspended" && (
                       <>
-                        <Pressable
-                          style={[styles.modalActionBtn, { backgroundColor: "#FEF3C7" }]}
-                          onPress={() => handleRoleChange(user, "admin")}
-                        >
-                          <Ionicons name="arrow-up-circle" size={16} color="#B45309" />
-                          <Text style={[styles.modalActionText, { color: "#B45309" }]}>→ Admin</Text>
+                        <Pressable style={[styles.modalActionBtn, { backgroundColor: "#FEF3C7" }]} onPress={() => handleRoleChange(user, "admin")}>
+                          <Ionicons name="arrow-up-circle" size={18} color="#B45309" />
+                          <Text style={[styles.modalActionText, { color: "#B45309" }]}>Promote to Admin</Text>
                         </Pressable>
-                        <Pressable
-                          style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]}
-                          onPress={() => handleRoleChange(user, "parent")}
-                        >
-                          <Ionicons name="arrow-down-circle" size={16} color="#1E3A8A" />
-                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Member</Text>
+                        <Pressable style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]} onPress={() => handleRoleChange(user, "parent")}>
+                          <Ionicons name="arrow-down-circle" size={18} color="#1E3A8A" />
+                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>Move to Member</Text>
                         </Pressable>
                       </>
                     )}
                     {user.role === "admin" && user.status !== "suspended" && (
                       <>
-                        <Pressable
-                          style={[styles.modalActionBtn, { backgroundColor: "#EDE9FE" }]}
-                          onPress={() => handleRoleChange(user, "operator")}
-                        >
-                          <Ionicons name="arrow-down-circle" size={16} color="#7C3AED" />
-                          <Text style={[styles.modalActionText, { color: "#7C3AED" }]}>→ Operator</Text>
+                        <Pressable style={[styles.modalActionBtn, { backgroundColor: "#EDE9FE" }]} onPress={() => handleRoleChange(user, "operator")}>
+                          <Ionicons name="arrow-down-circle" size={18} color="#7C3AED" />
+                          <Text style={[styles.modalActionText, { color: "#7C3AED" }]}>Move to Operator</Text>
                         </Pressable>
-                        <Pressable
-                          style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]}
-                          onPress={() => handleRoleChange(user, "parent")}
-                        >
-                          <Ionicons name="arrow-down-circle" size={16} color="#1E3A8A" />
-                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>→ Member</Text>
+                        <Pressable style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]} onPress={() => handleRoleChange(user, "parent")}>
+                          <Ionicons name="arrow-down-circle" size={18} color="#1E3A8A" />
+                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>Move to Member</Text>
                         </Pressable>
                       </>
+                    )}
+
+                    {user.status === "suspended" ? (
+                      <Pressable style={[styles.modalActionBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => handleReactivate(user)}>
+                        <Ionicons name="checkmark-circle-outline" size={18} color="#059669" />
+                        <Text style={[styles.modalActionText, { color: "#059669" }]}>Reactivate Account</Text>
+                      </Pressable>
+                    ) : (
+                      <Pressable style={[styles.modalActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => handleSuspend(user)}>
+                        <Ionicons name="ban" size={18} color="#EF4444" />
+                        <Text style={[styles.modalActionText, { color: "#EF4444" }]}>Suspend Access</Text>
+                      </Pressable>
                     )}
                   </View>
 
@@ -618,7 +598,11 @@ function UserCard({ user, colors, onPress }: { user: UserRecord; colors: Colors;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
+  pageHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  pageTitle: { fontSize: 28, fontWeight: "800" },
+  pageSub: { fontSize: 13, marginTop: 2 },
+  badgePdfBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
+  badgePdfBtnText: { color: "#FBBF24", fontWeight: "700", fontSize: 13 },
   statCard: { borderRadius: 14, padding: 16, alignItems: "center", marginRight: 10, minWidth: 80 },
   statNum: { fontSize: 26, fontWeight: "800", color: "#FFF" },
   statLabel: { fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 2 },
@@ -657,9 +641,9 @@ const styles = StyleSheet.create({
   joinDateText: { fontSize: 12, marginBottom: 16 },
   contactBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24, marginBottom: 16, width: "85%", justifyContent: "center" },
   contactBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
-  modalActions: { flexDirection: "row", gap: 10, width: "85%", marginBottom: 12, flexWrap: "wrap" },
-  modalActionBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
-  modalActionText: { fontWeight: "700", fontSize: 13 },
+  modalActions: { flexDirection: "column", gap: 10, width: "85%", marginBottom: 12 },
+  modalActionBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 15 },
+  modalActionText: { fontWeight: "700", fontSize: 15 },
   closeBtn: { borderRadius: 14, paddingVertical: 14, alignItems: "center", width: "85%" },
   closeBtnText: { fontWeight: "700", fontSize: 15 },
   confirmPanel: { width: "85%", backgroundColor: "#FFF8F0", borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#FDE8C8", gap: 10 },
