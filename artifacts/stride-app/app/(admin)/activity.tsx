@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
@@ -225,6 +225,7 @@ const adminStatusConfig: Record<AdminItemStatus, { color: string; bg: string; la
 export default function ActivityScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { alerts, activeAlert, cascadeCountdown, respondToSub, rescheduleLesson, dismissAlert, clearAll } = useSubstitution();
 
   const [tab, setTab]           = useState<"courses" | "admin">("courses");
@@ -576,6 +577,10 @@ export default function ActivityScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: pt, backgroundColor: colors.background }]}>
         <View>
+          <Pressable style={styles.backNavRow} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={18} color={colors.primary} />
+            <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
+          </Pressable>
           <Text style={[styles.pageTitle, { color: colors.primary }]}>Activity</Text>
           <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
             {tab === "courses" ? `${activities.length} activities` : `${adminItems.length} scheduled items`}
@@ -1450,6 +1455,8 @@ const styles = StyleSheet.create({
   modalContainer: { flex: 1 },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1 },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  backNavRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 },
+  backNavLabel: { fontSize: 15, fontWeight: "600" },
   modalTitle: { fontSize: 18, fontWeight: "700", flex: 1, textAlign: "center" },
   modalHeaderRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   deleteBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },

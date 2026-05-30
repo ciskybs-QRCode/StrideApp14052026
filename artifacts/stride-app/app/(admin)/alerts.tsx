@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   Platform,
@@ -157,6 +158,7 @@ export default function AdminAlerts() {
   const { activeAlerts, alerts, dismissAlert, maxPhase } = useSecurityEscalation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const resolvedAlerts = alerts.filter(a => a.resolvedAt);
 
@@ -169,6 +171,11 @@ export default function AdminAlerts() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        <Pressable style={styles.backNavRow} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={18} color={colors.primary} />
+          <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
+        </Pressable>
+
         {/* Header */}
         <View style={styles.header}>
           <Ionicons
@@ -237,6 +244,8 @@ export default function AdminAlerts() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll:    { paddingHorizontal: 20, gap: 0 },
+  backNavRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 12 },
+  backNavLabel: { fontSize: 15, fontWeight: "600" },
   header:    { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
   title:     { fontSize: 22, fontWeight: "800" },
   subtitle:  { fontSize: 13, marginTop: 2 },

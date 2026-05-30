@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -38,6 +39,7 @@ function getColor(index: number) {
 export default function DisciplinesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [disciplines, setDisciplines] = useState<ApiDiscipline[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -173,6 +175,9 @@ export default function DisciplinesScreen() {
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
         <View style={styles.headerRow}>
+          <Pressable onPress={() => router.back()} style={styles.backBtnNav} hitSlop={8}>
+            <Ionicons name="arrow-back" size={22} color="#FFF" />
+          </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>Global Disciplines</Text>
             <Text style={styles.headerSub}>
@@ -431,7 +436,8 @@ const styles = StyleSheet.create({
   container:      { flex: 1 },
   loader:         { flex: 1, alignItems: "center", justifyContent: "center" },
   header:         { paddingHorizontal: 20, paddingBottom: 16 },
-  headerRow:      { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  headerRow:      { flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 8 },
+  backBtnNav:     { width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, backgroundColor: "rgba(255,255,255,0.15)" },
   headerTitle:    { fontSize: 22, fontWeight: "800", color: "#FFF" },
   headerSub:      { fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 },
   headerBadge:    { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
