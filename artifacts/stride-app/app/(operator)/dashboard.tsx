@@ -406,7 +406,7 @@ export default function OperatorDashboard() {
 
   // ── QR Scanner ────────────────────────────────────────────────────────────
   const handleScan = async () => {
-    if (Platform.OS !== "web" && !permission?.granted) {
+    if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) { Alert.alert("Camera Permission", "Enable camera access in Settings to scan QR codes."); return; }
     }
@@ -1400,25 +1400,29 @@ export default function OperatorDashboard() {
             <View style={{ width: 28 }} />
           </View>
 
-          {Platform.OS === "web" ? (
-            <View style={styles.scannerPreview}>
-              <Ionicons name="qr-code-outline" size={72} color="rgba(255,255,255,0.5)" />
-              <Text style={{ color: "rgba(255,255,255,0.7)", marginTop: 12, textAlign: "center", marginBottom: 16 }}>
-                QR Scanner unavailable in web preview.{"\n"}Simulate a scan:
+          {!permission?.granted ? (
+            <View style={[styles.scannerPreview, { alignItems: "center", justifyContent: "center", gap: 12 }]}>
+              <Ionicons name="camera-outline" size={72} color="rgba(255,255,255,0.5)" />
+              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", fontSize: 15, fontWeight: "600" }}>
+                Camera access required
               </Text>
-              <Pressable style={styles.simulateBtn} onPress={simulateScan}>
+              <Pressable style={styles.simulateBtn} onPress={requestPermission}>
+                <Text style={styles.simulateBtnText}>📷 Enable Camera</Text>
+              </Pressable>
+              <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 8 }}>or simulate a scan:</Text>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#374151" }]} onPress={simulateScan}>
                 <Text style={styles.simulateBtnText}>Simulate Member Check-in</Text>
               </Pressable>
-              <Pressable style={[styles.simulateBtn, { backgroundColor: "#10B981", marginTop: 10 }]} onPress={simulateLessonScan}>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#10B981" }]} onPress={simulateLessonScan}>
                 <Text style={styles.simulateBtnText}>Simulate Private Lesson QR</Text>
               </Pressable>
-              <Pressable style={[styles.simulateBtn, { backgroundColor: "#7C3AED", marginTop: 10 }]} onPress={simulateGuardianScan}>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#7C3AED" }]} onPress={simulateGuardianScan}>
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
-              <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C" }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
                 <Text style={styles.simulateBtnText}>⚠ Simulate Absent Member</Text>
               </Pressable>
-              <Pressable style={[styles.simulateBtn, { backgroundColor: "#DC2626", marginTop: 10 }]} onPress={simulateAccessDenied}>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#DC2626" }]} onPress={simulateAccessDenied}>
                 <Text style={styles.simulateBtnText}>✗ Simulate Access Denied</Text>
               </Pressable>
             </View>

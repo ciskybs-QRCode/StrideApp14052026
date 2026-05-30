@@ -9,7 +9,6 @@ import {
   Animated,
   Dimensions,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -195,51 +194,9 @@ export default function KioskScreen() {
     void processQrPayload(webInput.trim());
   }, [webInput, processQrPayload]);
 
-  const handleWebDemo = useCallback((scenario: "success" | "warning" | "denied") => {
-    if (scanned) return;
-    setScanned(true);
-
-    const demos: Record<"success" | "warning" | "denied", FeedbackState> = {
-      success: { type: "success", headline: "Welcome!", subtext: "Check-in recorded. Have a great class!", name: "Maria Rossi" },
-      warning: { type: "warning", headline: "Welcome — Action Required", subtext: "Your membership expires in 3 days. Please renew at the front desk.", name: "Luca Ferrari" },
-      denied:  { type: "denied",  headline: "Access Denied", subtext: "Membership suspended. Please contact the front desk or admin.", name: "Anna Bianchi" },
-    };
-    showFeedback(demos[scenario]);
-  }, [scanned, showFeedback]);
-
   // ── Permission gate ─────────────────────────────────────────────────────────
 
   const renderCameraArea = () => {
-    if (Platform.OS === "web") {
-      return (
-        <View style={styles.webDemo}>
-          <Ionicons name="qr-code-outline" size={80} color="rgba(255,255,255,0.3)" />
-          <Text style={styles.webDemoLabel}>Camera not available in web preview</Text>
-          <Text style={styles.webDemoSub}>Tap a scenario below to test the kiosk UI</Text>
-          <View style={styles.webDemoRow}>
-            {(["success", "warning", "denied"] as const).map(s => (
-              <Pressable key={s} onPress={() => handleWebDemo(s)} style={[styles.webDemoBtn, { backgroundColor: FEEDBACK_COLORS[s].bg }]}>
-                <Ionicons name={FEEDBACK_ICONS[s]} size={20} color="#FFF" />
-                <Text style={styles.webDemoBtnText}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <View style={styles.webInputRow}>
-            <TextInput
-              style={styles.webInput}
-              value={webInput}
-              onChangeText={setWebInput}
-              placeholder="Member ID (e.g. child-001)"
-              placeholderTextColor="rgba(255,255,255,0.4)"
-            />
-            <Pressable onPress={handleWebScan} style={styles.webScanBtn}>
-              <Text style={styles.webScanBtnText}>Scan</Text>
-            </Pressable>
-          </View>
-        </View>
-      );
-    }
-
     if (!permission) {
       return (
         <View style={styles.permissionBox}>
@@ -257,6 +214,18 @@ export default function KioskScreen() {
           <Pressable style={styles.permBtn} onPress={requestPermission}>
             <Text style={styles.permBtnText}>Grant Permission</Text>
           </Pressable>
+          <View style={styles.webInputRow}>
+            <TextInput
+              style={styles.webInput}
+              value={webInput}
+              onChangeText={setWebInput}
+              placeholder="Member ID (e.g. child-001)"
+              placeholderTextColor="rgba(255,255,255,0.4)"
+            />
+            <Pressable onPress={handleWebScan} style={styles.webScanBtn}>
+              <Text style={styles.webScanBtnText}>Scan</Text>
+            </Pressable>
+          </View>
         </View>
       );
     }
@@ -296,7 +265,7 @@ export default function KioskScreen() {
       </View>
 
       {/* ── Scan frame ── */}
-      {Platform.OS !== "web" && (
+      {permission?.granted && (
         <View style={styles.frameWrapper} pointerEvents="none">
           <View style={styles.frame}>
             <View style={[styles.corner, styles.cornerTL]} />
@@ -643,43 +612,6 @@ const styles = StyleSheet.create({
   pinConfirmText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
 
   // Web demo
-  webDemo: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-    gap: 16,
-  },
-  webDemoLabel: {
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  webDemoSub: {
-    color: "rgba(255,255,255,0.45)",
-    fontSize: 12,
-    textAlign: "center",
-  },
-  webDemoRow: {
-    flexDirection: "row",
-    gap: 10,
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-  webDemoBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  webDemoBtnText: {
-    color: "#FFF",
-    fontWeight: "700",
-    fontSize: 14,
-  },
   webInputRow: {
     flexDirection: "row",
     gap: 8,

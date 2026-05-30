@@ -1,0 +1,2 @@
+- [Stride app backend](stride-backend.md) — API server + Supabase is live; all 3 test users return real JWTs; EXPO_PUBLIC_DOMAIN is already set in the dev script.
+- [Stride QR camera](stride-qr-camera.md) — expo-camera v55 (version mismatch vs SDK54 expected ~17); Platform.OS==="web" checks were bypassing CameraView — fixed to gate on permission only.
