@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/landing/"
+title = "Stride Landing Page"
+version = "1.0.0"
+id = "artifacts/stride-landing"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/landing/" ]
+localPort = 22428
+
+[services.development]
+run = "pnpm --filter @workspace/stride-landing run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/stride-landing", "run", "build" ]
+publicDir = "artifacts/stride-landing/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22428"
+BASE_PATH = "/landing/"

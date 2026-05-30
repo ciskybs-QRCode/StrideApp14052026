@@ -5,8 +5,10 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -75,9 +77,22 @@ export default function LoginScreen() {
       navigateAfterLogin(loggedInUser.role);
     } catch (e: unknown) {
       const err = e as Error;
-      setError(err.message || "Invalid credentials");
+      const msg = (err.message ?? "").toLowerCase();
+      const isUnverified =
+        msg.includes("not confirmed") ||
+        msg.includes("email_not_confirmed") ||
+        (msg.includes("email") && msg.includes("confirm"));
+      if (isUnverified) {
+        Alert.alert(
+          "Verification Required",
+          "Please check your inbox and click the verification link sent to your email before logging in.",
+          [{ text: "Got it" }]
+        );
+      } else {
+        setError(err.message || "Invalid credentials");
+        shake();
+      }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      shake();
     } finally { setLoading(false); }
   };
 
@@ -149,6 +164,16 @@ export default function LoginScreen() {
               disabled={loading}
             >
               {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.loginBtnText}>SIGN IN</Text>}
+            </Pressable>
+
+            <Pressable
+              onPress={() => Linking.openURL("https://strideapp.com/register")}
+              style={styles.registerLink}
+            >
+              <Text style={styles.registerLinkText}>
+                Don't have an account?{" "}
+                <Text style={styles.registerLinkHighlight}>Register on our web portal</Text>
+              </Text>
             </Pressable>
           </Animated.View>
 
@@ -258,4 +283,7 @@ const styles = StyleSheet.create({
   testRole: { fontSize: 13, fontWeight: "700", color: "#1E3A8A", width: 72 },
   testEmail: { fontSize: 12, color: "#374151", flex: 1, textAlign: "right" },
   testPw: { fontSize: 11, color: "#6B7BA4", textAlign: "center", marginTop: 10 },
+  registerLink: { marginTop: 18, alignItems: "center", paddingVertical: 4 },
+  registerLinkText: { fontSize: 13, color: "#6B7BA4", textAlign: "center" },
+  registerLinkHighlight: { color: "#FBBF24", fontWeight: "700" },
 });

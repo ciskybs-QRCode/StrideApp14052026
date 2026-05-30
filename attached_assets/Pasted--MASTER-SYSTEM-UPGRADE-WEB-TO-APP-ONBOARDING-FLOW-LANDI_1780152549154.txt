@@ -1,0 +1,99 @@
+🚨 MASTER SYSTEM UPGRADE: WEB-TO-APP ONBOARDING FLOW & LANDING PAGE 🚨
+Role: Expert React Native (Expo Router) and Frontend Web Developer.
+
+Branding Rules: Strict adherence to Navy Blue (primary/backgrounds) and Gold (accents/buttons/links) UI identity.
+
+UI Constraint: All mobile elements MUST strictly remain within device boundaries (Zero layout overflows). Web layouts must be 100% responsive.
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT touch, rewrite, or optimize any backend database schemas (Supabase tables), core billing engines, or existing dashboard features. Your changes must be isolated to the entry login screen and the creation of the new landing page file. Keep the rest of the codebase 100% intact.
+
+PART 1: MOBILE APP AUTHENTICATION REFACTOR
+Target File: Mobile Login Screen (e.g., app/auth/login.tsx or your active login entry file).
+
+Enforce "Login-Only" flow:
+
+Completely remove any in-app "Sign Up", "Register", or account creation forms/buttons.
+
+Below the Email/Password inputs and the main "Login" button, add a premium text link styled in Gold: "Don't have an account? Register on our web portal".
+
+Use Expo Linking to make this text open an external web URL point (use https://strideapp.com/register as a placeholder).
+
+Handle Unverified Email State (Supabase Auth Error):
+
+Review the supabase.auth.signInWithPassword login submission block.
+
+When a user attempts to log in with an unverified email, intercept the specific Supabase error instance (e.g., where the error message indicates email confirmation is pending).
+
+Instead of a generic alert, trigger a clean native Alert.alert in English:
+
+Title: "Verification Required"
+
+Message: "Please check your inbox and click the verification link sent to your email before logging in."
+
+Button: "Got it"
+
+PART 2: MARKETING LANDING PAGE CREATION
+Target Action: Create a new standalone static web file named index.html (or place it in your web public folder) using Tailwind CSS via CDN for styling.
+
+Integrate the following exact structural sections and English copy text into the page:
+
+[HTML Document Configuration]
+Sfondo primario: Rich Navy Blue (#0A192F o simile).
+
+Accenti, bottoni principali e bordi attivi: Premium Gold (#D4AF37 o simile).
+
+Font pulito e moderno (es. Inter via Google Fonts).
+
+[Section 1: Navigation Bar]
+Left side: App Logo Placeholder (Stride). Center/Right side: Links for "Features", "How it Works" and a solid Gold button labeled "Contact Us".
+
+[Section 2: Hero Section - Above the Fold]
+Left Text Column:
+
+H1 Title: "The Ultimate Management Platform for Modern Associations."
+
+Subtitle: "Streamline your registrations, coordinate your staff, and give parents a premium mobile experience. All wrapped in one powerful, custom-branded ecosystem."
+
+Action Buttons: Render two professional side-by-side app download store badges (App Store & Google Play styling).
+
+Right Column: An elegant floating mockup frame displaying a smartphone silhouette (where the app UI will be showcased).
+
+[Section 3: "How it Works" 3-Step Grid]
+H2 Section Title: "Getting Started is Simple"
+
+Section Subtitle: "Switch from messy spreadsheets to automated mobile tracking in just three steps."
+
+Card 1: * Title: "1. Register Online"
+
+Body: "Click your association's unique invite link to create your parent or member profile securely on our web portal using any desktop or mobile device."
+
+Card 2: * Title: "2. Download Stride"
+
+Body: "Grab the official Stride application from the Apple App Store or Google Play Store and log in instantly using your verified credentials."
+
+Card 3: * Title: "3. Scan & Go"
+
+Body: "Access your digital QR code, sign your registration paperwork digitally, add dependent family members, and manage your private lesson bookings on the fly."
+
+[Section 4: Features & Benefits]
+H2 Section Title: "Built for Operators. Loved by Parents."
+
+Grid Item 1: “Dynamic Profile Switching” -> "Admins, operators, and parents share the exact same mobile interface layout. Seamlessly switch roles with a single tap to view data, track attendance, or manage schedules without continuous logging out."
+
+Grid Item 2: “Granular Privacy & Safety First” -> "Take total control of your data compliance. Set individual, independent photo and video consent rules for each dependent member right inside the profile setup."
+
+Grid Item 3: “Automated Financial Workflows” -> "Manage course packages, book private lessons with native map routing updates, and issue structured operator invoice reports with custom payment threshold rules."
+
+Grid Item 4: “Double-Tap Emergency Alerts” -> "Safety is our core priority. Both admins and operators have immediate access to a secure, double-tap emergency broadcast trigger to handle critical situations instantly without false alarms."
+
+[Section 5: Contact Form & Footer]
+H2 Section Title: "Ready to Elevate Your Association?"
+
+Form Inputs: Styled with Navy backgrounds and crisp Gold borders: Your Name, Email Address, Association Name, Message.
+
+Submit Button: Solid Gold with Navy text labeled "Submit Request".
+
+Footer: Clean copyright notice with placeholder links for Privacy Policy and Terms of Service.
+
+Output Requirement: Refactor the mobile authentication logic safely, output the complete responsive HTML file structure for the landing page, and confirm which paths were modified/created.
