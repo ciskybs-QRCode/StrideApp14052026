@@ -11,8 +11,8 @@ export const adminSettings = pgTable("admin_settings", {
   allowOneTimeGraceAccess:  boolean("allow_one_time_grace_access").notNull().default(false),
   graceUsedChildIds:        jsonb("grace_used_child_ids").$type<number[]>().notNull().default([]),
 
-  /** Payroll payout cycle: weekly | fortnightly | monthly */
-  payoutFrequency: text("payout_frequency").$type<"weekly" | "fortnightly" | "monthly">(),
+  /** Payroll payout cycle: weekly | fortnightly | monthly | quarterly | semi-annual | custom */
+  payoutFrequency: text("payout_frequency").$type<"weekly" | "fortnightly" | "monthly" | "quarterly" | "semi-annual" | "custom">(),
 
   /** Minimum amount (cents) above which a receipt is required for reimbursements */
   receiptMandatoryThresholdCents: integer("receipt_mandatory_threshold_cents").notNull().default(0),

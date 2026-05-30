@@ -26,6 +26,7 @@ import {
   type PaymentConfirmedPayload,
   type InvoiceSubmittedPayload,
   PAYOUT_FREQUENCY_KEY,
+  PAYOUT_CUSTOM_DAYS_KEY,
   PAYMENT_CHANNEL_NAME,
   INVOICE_CHANNEL_NAME,
   ADMIN_NOTIFICATIONS_KEY,
@@ -33,6 +34,7 @@ import {
   getPayoutDateRange,
   isReminderDue,
   reminderMessage,
+  frequencyLabel,
 } from "@/lib/strideChannel";
 import { ReimbursementRequestForm, type ClaimantRole } from "@/app/(admin)/reimbursements";
 
@@ -376,6 +378,7 @@ export default function OperatorInvoicing() {
 
   // Billing cycle
   const [payoutFrequency, setPayoutFrequency] = useState<PayoutFrequency>("monthly");
+  const [customDays, setCustomDays] = useState(30);
 
   // Notification banners
   const [paymentBanner, setPaymentBanner]         = useState<PaymentConfirmedPayload | null>(null);
@@ -395,6 +398,10 @@ export default function OperatorInvoicing() {
     });
     AsyncStorage.getItem(PAYOUT_FREQUENCY_KEY).then(v => {
       if (v) setPayoutFrequency(v as PayoutFrequency);
+    });
+    AsyncStorage.getItem(PAYOUT_CUSTOM_DAYS_KEY).then(v => {
+      const n = parseInt(v ?? "", 10);
+      if (!isNaN(n) && n > 0) setCustomDays(n);
     });
   }, []);
 
@@ -464,8 +471,8 @@ export default function OperatorInvoicing() {
   );
 
   const dateRange = useMemo(
-    () => getPayoutDateRange(selectedMonth, payoutFrequency),
-    [selectedMonth, payoutFrequency],
+    () => getPayoutDateRange(selectedMonth, payoutFrequency, customDays),
+    [selectedMonth, payoutFrequency, customDays],
   );
 
   const filteredDailyLog = useMemo(() => {
@@ -510,7 +517,7 @@ export default function OperatorInvoicing() {
   const totalEur = (filteredTotalCents / 100).toFixed(2);
 
   // ── Reminder + last-day push notification ────────────────────────────────
-  const showReminder = isReminderDue(payoutFrequency) && !submitted && !reminderDismissed;
+  const showReminder = isReminderDue(payoutFrequency, customDays) && !submitted && !reminderDismissed;
 
   // Last-day-of-month in-app reminder (shown once per session)
   const [showLastDayBanner, setShowLastDayBanner] = useState(false);
@@ -658,7 +665,7 @@ export default function OperatorInvoicing() {
         {showReminder && (
           <InAppBanner
             type="warning"
-            message={reminderMessage(payoutFrequency)}
+            message={reminderMessage(payoutFrequency, customDays)}
             onDismiss={() => setReminderDismissed(true)}
           />
         )}
@@ -721,7 +728,7 @@ export default function OperatorInvoicing() {
         <View style={[styles.frequencyBadge, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
           <Ionicons name="repeat-outline" size={14} color={colors.primary} />
           <Text style={[styles.frequencyText, { color: colors.primary }]}>
-            {payoutFrequency === "weekly" ? "Weekly" : payoutFrequency === "fortnightly" ? "Fortnightly" : "Monthly"} payout cycle
+            {frequencyLabel(payoutFrequency, customDays)} payout cycle
             {" · "}
             <Text style={{ fontWeight: "400" }}>{dateRange.label}</Text>
           </Text>

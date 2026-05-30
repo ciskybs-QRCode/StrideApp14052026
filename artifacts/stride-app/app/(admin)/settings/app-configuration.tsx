@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 import { api } from "@/lib/api";
-import { type PayoutFrequency, PAYOUT_FREQUENCY_KEY, RECEIPT_THRESHOLD_KEY } from "@/lib/strideChannel";
+import { type PayoutFrequency, PAYOUT_FREQUENCY_KEY, PAYOUT_CUSTOM_DAYS_KEY, RECEIPT_THRESHOLD_KEY } from "@/lib/strideChannel";
 
 const CONFIG_ITEMS = [
   {
@@ -101,6 +101,8 @@ export default function AppConfigurationPage() {
 
   // Finance
   const [payoutFrequency, setPayoutFrequency] = useState<PayoutFrequency>("monthly");
+  const [customDaysInput, setCustomDaysInput] = useState("30");
+  const [customDaysSaved, setCustomDaysSaved] = useState(false);
   const [receiptThresholdInput, setReceiptThresholdInput] = useState("");
   const [thresholdSaved, setThresholdSaved] = useState(false);
 
@@ -125,6 +127,9 @@ export default function AppConfigurationPage() {
     AsyncStorage.getItem(PAYOUT_FREQUENCY_KEY).then(v => {
       if (v) setPayoutFrequency(v as PayoutFrequency);
     });
+    AsyncStorage.getItem(PAYOUT_CUSTOM_DAYS_KEY).then(v => {
+      if (v) setCustomDaysInput(v);
+    });
     AsyncStorage.getItem(RECEIPT_THRESHOLD_KEY).then(v => {
       if (v) setReceiptThresholdInput(v);
     });
@@ -135,6 +140,16 @@ export default function AppConfigurationPage() {
     try { await AsyncStorage.setItem(PAYOUT_FREQUENCY_KEY, f); } catch { /* ignore */ }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
+
+  const handleSaveCustomDays = useCallback(async () => {
+    const n = parseInt(customDaysInput, 10);
+    const clamped = isNaN(n) || n < 1 ? "30" : String(Math.min(n, 365));
+    setCustomDaysInput(clamped);
+    try { await AsyncStorage.setItem(PAYOUT_CUSTOM_DAYS_KEY, clamped); } catch { /* ignore */ }
+    setCustomDaysSaved(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setCustomDaysSaved(false), 2500);
+  }, [customDaysInput]);
 
   const handleSaveThreshold = useCallback(async () => {
     const trimmed = receiptThresholdInput.trim();
@@ -387,19 +402,58 @@ export default function AppConfigurationPage() {
               <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Sets billing cycle & operator invoice reminders</Text>
             </View>
           </View>
-          <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 4 }}>
-            {(["weekly", "fortnightly", "monthly"] as PayoutFrequency[]).map(f => (
-              <Pressable
-                key={f}
-                style={{ flex: 1, backgroundColor: payoutFrequency === f ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 10, alignItems: "center" }}
-                onPress={() => handleSetPayoutFrequency(f)}
-              >
-                <Text style={{ fontSize: 11, fontWeight: "800", color: payoutFrequency === f ? "#FBBF24" : colors.mutedForeground }}>
-                  {f === "fortnightly" ? "Bi-weekly" : f.charAt(0).toUpperCase() + f.slice(1)}
-                </Text>
-              </Pressable>
-            ))}
+          {/* 2-column grid of frequency chips */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 4 }}>
+            {([
+              { value: "weekly",      label: "Weekly" },
+              { value: "fortnightly", label: "Bi-weekly" },
+              { value: "monthly",     label: "Monthly" },
+              { value: "quarterly",   label: "Quarterly" },
+              { value: "semi-annual", label: "6 Months" },
+              { value: "custom",      label: "Custom" },
+            ] as { value: PayoutFrequency; label: string }[]).map(({ value, label }) => {
+              const active = payoutFrequency === value;
+              return (
+                <Pressable
+                  key={value}
+                  style={{ width: "31%", backgroundColor: active ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 11, alignItems: "center" }}
+                  onPress={() => handleSetPayoutFrequency(value)}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: active ? "#FBBF24" : colors.mutedForeground }}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
+          {/* Custom days input — shown only when "custom" is selected */}
+          {payoutFrequency === "custom" && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, paddingTop: 4 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>
+                  Every how many days?
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <TextInput
+                    style={[styles.termInput, { flex: 1, color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+                    value={customDaysInput}
+                    onChangeText={setCustomDaysInput}
+                    placeholder="e.g. 45"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    returnKeyType="done"
+                    onSubmitEditing={handleSaveCustomDays}
+                  />
+                  <Pressable
+                    style={{ backgroundColor: customDaysSaved ? "#10B981" : "#1E3A8A", borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12 }}
+                    onPress={handleSaveCustomDays}
+                  >
+                    <Text style={{ color: "#FBBF24", fontWeight: "700", fontSize: 13 }}>{customDaysSaved ? "Saved ✓" : "Save"}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Receipt Threshold Amount */}
