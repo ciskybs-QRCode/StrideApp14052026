@@ -18,6 +18,12 @@ export interface User {
   secondaryColor?: string;
   logoUri?: string;
   profilePhotoUri?: string;
+  phone?: string;
+  /**
+   * Explicitly false only for accounts created via /join that have not yet completed
+   * the onboarding wizard. Undefined = existing account, treated as complete.
+   */
+  onboardingComplete?: boolean;
 }
 
 interface AuthContextType {

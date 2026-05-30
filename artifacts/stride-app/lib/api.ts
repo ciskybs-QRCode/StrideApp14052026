@@ -349,6 +349,28 @@ export const api = {
   updateProfile: (data: { name?: string; phone?: string }) =>
     request<ApiUser>("PATCH", "/profile", data),
 
+  // Full profile update for onboarding (includes address + onboarding_complete)
+  updateFullProfile: (data: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    address: { street: string; city: string; zip: string; state: string; country: string };
+  }) =>
+    request<ApiUser>("PATCH", "/profile", {
+      name: `${data.firstName} ${data.lastName}`.trim(),
+      phone: data.phone,
+      address_street:  data.address.street,
+      address_city:    data.address.city,
+      address_zip:     data.address.zip,
+      address_state:   data.address.state,
+      address_country: data.address.country,
+      onboarding_complete: true,
+    }),
+
+  // Sign a document and attach drawn signature SVG
+  signDocumentWithSignature: (id: string, signatureData: string) =>
+    request<{ ok: boolean }>("POST", `/documents/${id}/sign`, { signature_data: signatureData }),
+
   // Audit Logs
   logPdfGeneration: (data: { period: string; month: string; total_amount: number; action: "generated" | "shared" }) =>
     request<{ ok: boolean }>("POST", "/pdf-logs", data),

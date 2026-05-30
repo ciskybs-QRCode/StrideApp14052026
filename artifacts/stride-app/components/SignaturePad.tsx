@@ -10,12 +10,14 @@ import Svg, { Path } from "react-native-svg";
 
 interface SignaturePadProps {
   onHasSignatureChange: (has: boolean) => void;
+  onSave?: (svgData: string) => void;
   strokeColor?: string;
   strokeWidth?: number;
 }
 
 export function SignaturePad({
   onHasSignatureChange,
+  onSave,
   strokeColor = "#1E3A8A",
   strokeWidth = 3,
 }: SignaturePadProps) {
@@ -58,6 +60,19 @@ export function SignaturePad({
     setDrawTick(t => t + 1);
   };
 
+  const handleConfirm = () => {
+    if (!onSave || !completedPaths.length) return;
+    const pathMarkup = completedPaths
+      .map(
+        d =>
+          `<path d="${d}" stroke="${strokeColor}" stroke-width="${strokeWidth}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      )
+      .join("\n");
+    onSave(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="170" viewBox="0 0 400 170">\n${pathMarkup}\n</svg>`
+    );
+  };
+
   const isEmpty = completedPaths.length === 0 && !currentPath.current;
 
   return (
@@ -93,19 +108,38 @@ export function SignaturePad({
           </View>
         )}
       </View>
-      <Pressable
-        style={({ pressed }) => [
-          styles.clearBtn,
-          pressed && { opacity: 0.7 },
-          isEmpty && styles.clearBtnDisabled,
-        ]}
-        onPress={handleClear}
-        disabled={isEmpty}
-      >
-        <Text style={[styles.clearText, isEmpty && styles.clearTextDisabled]}>
-          Reset Signature
-        </Text>
-      </Pressable>
+
+      <View style={styles.actions}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.clearBtn,
+            pressed && { opacity: 0.7 },
+            isEmpty && styles.clearBtnDisabled,
+          ]}
+          onPress={handleClear}
+          disabled={isEmpty}
+        >
+          <Text style={[styles.clearText, isEmpty && styles.clearTextDisabled]}>
+            Reset
+          </Text>
+        </Pressable>
+
+        {onSave ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.confirmBtn,
+              pressed && { opacity: 0.85 },
+              isEmpty && styles.confirmBtnDisabled,
+            ]}
+            onPress={handleConfirm}
+            disabled={isEmpty}
+          >
+            <Text style={[styles.confirmText, isEmpty && styles.confirmTextDisabled]}>
+              ✓ Confirm Signature
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -121,6 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F6FF",
     overflow: "hidden",
     marginBottom: 10,
+    cursor: "crosshair" as "auto",
   },
   hint: {
     flex: 1,
@@ -132,15 +167,21 @@ const styles = StyleSheet.create({
     color: "#93C5FD",
     fontWeight: "600",
   },
+  actions: {
+    flexDirection: "row",
+    gap: 10,
+  },
   clearBtn: {
-    alignSelf: "flex-end",
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
   },
   clearBtnDisabled: {
     backgroundColor: "#F3F4F6",
+    borderColor: "#E5E7EB",
   },
   clearText: {
     fontSize: 13,
@@ -149,5 +190,25 @@ const styles = StyleSheet.create({
   },
   clearTextDisabled: {
     color: "#D1D5DB",
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#1E3A8A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmBtnDisabled: {
+    backgroundColor: "#E2E8F0",
+  },
+  confirmText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFF",
+  },
+  confirmTextDisabled: {
+    color: "#94A3B8",
   },
 });

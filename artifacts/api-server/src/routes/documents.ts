@@ -31,10 +31,32 @@ router.get("/documents", requireAuth, async (req, res) => {
 router.post("/documents/:id/sign", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
   const docId = parseInt(String(req.params.id));
+  const { signature_data } = req.body as { signature_data?: string };
+
+  // Core upsert — always-safe columns
+  const record: Record<string, unknown> = {
+    document_id: docId,
+    user_id: parseInt(user.id),
+    signed_at: new Date().toISOString(),
+  };
+
   const { error } = await supabase
     .from("document_signatures")
-    .upsert({ document_id: docId, user_id: parseInt(user.id), signed_at: new Date().toISOString() });
+    .upsert(record);
   if (error) { res.status(500).json({ error: error.message }); return; }
+
+  // Best-effort: also store the drawn SVG if the column exists
+  if (signature_data) {
+    const { error: sigErr } = await supabase
+      .from("document_signatures")
+      .update({ signature_data })
+      .eq("document_id", docId)
+      .eq("user_id", parseInt(user.id));
+    if (sigErr) {
+      req.log.warn({ sigErr }, "signature_data not saved (column may not exist)");
+    }
+  }
+
   res.json({ ok: true });
 });
 

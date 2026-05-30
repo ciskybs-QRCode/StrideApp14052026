@@ -35,35 +35,35 @@ export default function JoinScreen() {
   const primary   = params.primary  ? decodeURIComponent(params.primary)   : "#1E3A8A";
   const secondary = params.secondary ? decodeURIComponent(params.secondary) : "#FBBF24";
 
-  const [name,     setName]     = useState("");
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [showPwd,  setShowPwd]  = useState(false);
   const [loading,  setLoading]  = useState(false);
-  const [step,     setStep]     = useState<"register" | "success">("register");
 
   const handleRegister = async () => {
-    if (!name.trim())     { Alert.alert("Missing field", "Please enter your name.");    return; }
     if (!email.trim())    { Alert.alert("Missing field", "Please enter your email.");   return; }
     if (password.length < 6) { Alert.alert("Weak password", "Password must be at least 6 characters."); return; }
 
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const { token, user } = await api.register(name.trim(), email.trim(), password, orgSlug || undefined);
+      const defaultName = email.split("@")[0].replace(/[._+-]/g, " ").trim() || "New Member";
+      const { token, user } = await api.register(defaultName, email.trim().toLowerCase(), password, orgSlug || undefined);
       await setToken(token);
       await updateUser({
         id: String(user.id),
         name: user.name,
         email: user.email,
         role: "parent",
+        roles: ["parent"],
         orgId: user.orgId,
         schoolName,
         primaryColor: primary,
         secondaryColor: secondary,
+        onboardingComplete: false,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setStep("success");
+      router.replace("/onboarding" as never);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Registration failed. Please try again.";
       Alert.alert("Error", msg);
@@ -73,31 +73,6 @@ export default function JoinScreen() {
   };
 
   const goToLogin = () => router.replace("/login");
-  const goToHome  = () => router.replace("/(parent)/home");
-
-  if (step === "success") {
-    return (
-      <View style={[styles.successContainer, { backgroundColor: primary }]}>
-        <View style={[styles.successCard, { paddingTop: insets.top + 40 }]}>
-          <View style={[styles.successIconWrap, { backgroundColor: `${primary}20` }]}>
-            <Ionicons name="checkmark-circle" size={72} color={primary} />
-          </View>
-          <Text style={[styles.successTitle, { color: primary }]}>Welcome!</Text>
-          <Text style={[styles.successSchool, { color: primary }]}>{schoolName}</Text>
-          <Text style={[styles.successBody, { color: "#6B7280" }]}>
-            Your account has been created. You are now registered as a parent of {schoolName}.
-          </Text>
-          <Pressable
-            style={[styles.successBtn, { backgroundColor: primary }]}
-            onPress={goToHome}
-          >
-            <Ionicons name="home-outline" size={20} color="#FFF" />
-            <Text style={styles.successBtnText}>Go to Dashboard</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <KeyboardAvoidingView
@@ -125,19 +100,6 @@ export default function JoinScreen() {
         {/* Card */}
         <View style={styles.card}>
           <Text style={[styles.cardTitle, { color: primary }]}>Create account</Text>
-
-          <Text style={[styles.label, { color: primary }]}>Full Name</Text>
-          <View style={[styles.inputWrap, { borderColor: "#E5E7EB" }]}>
-            <Ionicons name="person-outline" size={18} color="#9CA3AF" />
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g. John Smith"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="words"
-            />
-          </View>
 
           <Text style={[styles.label, { color: primary }]}>Email</Text>
           <View style={[styles.inputWrap, { borderColor: "#E5E7EB" }]}>
@@ -228,12 +190,4 @@ const styles = StyleSheet.create({
   loginBtnText: { fontWeight: "700", fontSize: 15 },
   infoBox: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12 },
   infoText: { flex: 1, fontSize: 12, lineHeight: 18 },
-  successContainer: { flex: 1 },
-  successCard: { flex: 1, backgroundColor: "#FFF", margin: 20, borderRadius: 28, alignItems: "center", justifyContent: "center", gap: 14, padding: 32 },
-  successIconWrap: { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  successTitle: { fontSize: 36, fontWeight: "900" },
-  successSchool: { fontSize: 20, fontWeight: "700" },
-  successBody: { fontSize: 14, textAlign: "center", lineHeight: 22, maxWidth: 280 },
-  successBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 32, marginTop: 8 },
-  successBtnText: { color: "#FFF", fontWeight: "800", fontSize: 16 },
 });

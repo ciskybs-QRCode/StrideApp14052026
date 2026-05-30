@@ -31,6 +31,8 @@ export default function Index() {
       router.replace("/(admin)/stats");
     } else if (user.role === "operator") {
       router.replace("/(operator)/dashboard");
+    } else if (user.role === "parent" && user.onboardingComplete === false) {
+      router.replace("/onboarding" as never);
     } else {
       router.replace("/(parent)/home");
     }

@@ -10,8 +10,10 @@ import { useColors } from "@/hooks/useColors";
 import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
+import { SignaturePad } from "@/components/SignaturePad";
 import { useTerminology } from "@/context/TerminologyContext";
 import { useUnread } from "@/context/UnreadContext";
+import { api } from "@/lib/api";
 
 function DocsTabIcon({ color, size }: { color: string; size: number }) {
   const { hasUnreadDocs } = useUnread();
@@ -71,15 +73,36 @@ export default function ParentTabLayout() {
   const { cartBadgeCount } = useRealtime();
   const { legalAdminDocs, signedAdminDocIds, signAdminDoc } = useAppData();
   const { secondaryRoleName } = useTerminology();
-  const [signingDoc, setSigningDoc] = useState<string | null>(null);
+  const [signingDoc,     setSigningDoc]     = useState<string | null>(null);
+  const [padDocId,       setPadDocId]       = useState<string | null>(null);
+  const [padHasContent,  setPadHasContent]  = useState(false);
 
   const unsignedMandatoryDocs = legalAdminDocs.filter(
     d => d.mandatorySignature && !signedAdminDocIds.includes(d.id)
   );
   const blocked = unsignedMandatoryDocs.length > 0;
 
-  const handleSign = async (id: string) => {
+  const openPad = (id: string) => {
+    setPadHasContent(false);
+    setPadDocId(id);
+  };
+
+  const closePad = () => {
+    setPadDocId(null);
+    setPadHasContent(false);
+  };
+
+  const handleSignatureConfirmed = async (svgData: string) => {
+    if (!padDocId) return;
+    const id = padDocId;
+    setPadDocId(null);
+    setPadHasContent(false);
     setSigningDoc(id);
+    try {
+      await api.signDocumentWithSignature(id, svgData);
+    } catch {
+      // fall back to simple sign if extended endpoint fails
+    }
     await signAdminDoc(id);
     setSigningDoc(null);
   };
@@ -157,11 +180,11 @@ export default function ParentTabLayout() {
                     </View>
                     <Pressable
                       style={({ pressed }) => [styles.signBtn, { backgroundColor: isSigning ? "#D1FAE5" : colors.primary, opacity: pressed ? 0.85 : 1 }]}
-                      onPress={() => handleSign(doc.id)}
+                      onPress={() => openPad(doc.id)}
                       disabled={isSigning}
                     >
                       <Ionicons name={isSigning ? "checkmark-circle" : "pencil"} size={14} color="#FFF" />
-                      <Text style={styles.signBtnText}>{isSigning ? "Signed!" : "Sign"}</Text>
+                      <Text style={styles.signBtnText}>{isSigning ? "Signing…" : "Sign"}</Text>
                     </Pressable>
                   </View>
                 );
@@ -180,6 +203,36 @@ export default function ParentTabLayout() {
             <Text style={[styles.blockNote, { color: colors.mutedForeground }]}>
               You must sign all mandatory documents before accessing the app. Contact your school for more information.
             </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Signature pad modal */}
+      <Modal visible={padDocId !== null} transparent animationType="slide" statusBarTranslucent onRequestClose={closePad}>
+        <View style={styles.padOverlay}>
+          <View style={[styles.padSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.padHandle} />
+            <View style={styles.padHeader}>
+              <View style={[styles.padIconWrap, { backgroundColor: colors.primary }]}>
+                <Ionicons name="create-outline" size={20} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.padTitle, { color: colors.foreground }]}>Draw Your Signature</Text>
+                <Text style={[styles.padSubtitle, { color: colors.mutedForeground }]}>
+                  {unsignedMandatoryDocs.find(d => d.id === padDocId)?.title ?? "Document"}
+                </Text>
+              </View>
+              <Pressable onPress={closePad} hitSlop={10}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <Text style={[styles.padInstructions, { color: colors.mutedForeground }]}>
+              Use your finger to draw your signature below, then tap <Text style={{ fontWeight: "700" }}>Confirm Signature</Text> to submit.
+            </Text>
+            <SignaturePad
+              onHasSignatureChange={setPadHasContent}
+              onSave={handleSignatureConfirmed}
+            />
           </View>
         </View>
       </Modal>
@@ -206,4 +259,12 @@ const styles = StyleSheet.create({
   progressFill: { height: 8, borderRadius: 4 },
   progressText: { fontSize: 12, fontWeight: "600" },
   blockNote: { fontSize: 11, textAlign: "center", lineHeight: 16 },
+  padOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  padSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingTop: 12, gap: 16 },
+  padHandle: { width: 36, height: 4, backgroundColor: "#E2E8F0", borderRadius: 2, alignSelf: "center", marginBottom: 8 },
+  padHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  padIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  padTitle: { fontSize: 16, fontWeight: "800" },
+  padSubtitle: { fontSize: 13, marginTop: 1 },
+  padInstructions: { fontSize: 13, lineHeight: 19 },
 });
