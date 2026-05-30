@@ -376,7 +376,7 @@ export default function CheckoutScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Pressable style={styles.backBtn} onPress={() => router.navigate("/(parent)/cart" as never)}>
             <Ionicons name="arrow-back" size={22} color={colors.primary} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Checkout</Text>
@@ -385,7 +385,7 @@ export default function CheckoutScreen() {
         <View style={styles.emptyCenter}>
           <Ionicons name="cart-outline" size={56} color={colors.mutedForeground} />
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No items ready for checkout.</Text>
-          <Pressable style={[styles.backHomeBtnSmall, { borderColor: colors.primary }]} onPress={() => router.back()}>
+          <Pressable style={[styles.backHomeBtnSmall, { borderColor: colors.primary }]} onPress={() => router.navigate("/(parent)/cart" as never)}>
             <Text style={[styles.backHomeBtnSmallText, { color: colors.primary }]}>Go Back</Text>
           </Pressable>
         </View>
@@ -516,7 +516,7 @@ export default function CheckoutScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()} disabled={processing}>
+        <Pressable style={styles.backBtn} onPress={() => router.navigate("/(parent)/cart" as never)} disabled={processing}>
           <Ionicons name="arrow-back" size={22} color={processing ? colors.border : colors.primary} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.primary }]}>Checkout</Text>

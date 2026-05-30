@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -296,6 +297,12 @@ export default function AdminReimbursementsScreen() {
   const pending = requests.filter(r => r.status === "pending" || r.status === "approved");
   const history = requests.filter(r => r.status === "paid" || r.status === "rejected");
 
+  const handleViewReceipt = useCallback((uri: string) => {
+    Linking.openURL(uri).catch(() =>
+      Alert.alert("Cannot Open", "The receipt file could not be opened on this device.")
+    );
+  }, []);
+
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 
@@ -305,7 +312,7 @@ export default function AdminReimbursementsScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 72 : 20), paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backNavRow} onPress={() => router.back()}>
+        <Pressable style={styles.backNavRow} onPress={() => router.navigate("/(admin)/settings/app-configuration" as never)}>
           <Ionicons name="chevron-back" size={18} color={colors.primary} />
           <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
         </Pressable>
@@ -346,12 +353,13 @@ export default function AdminReimbursementsScreen() {
                     <Text style={[styles.description, { color: colors.foreground }]}>{req.description}</Text>
                     <Text style={[styles.dateText, { color: colors.mutedForeground }]}>{fmtDate(req.submittedAt)}</Text>
                     {req.receiptUri && (
-                      <View style={styles.receiptRow}>
+                      <Pressable style={styles.receiptRow} onPress={() => handleViewReceipt(req.receiptUri!)}>
                         <Ionicons name="attach-outline" size={12} color="#059669" />
                         <Text style={styles.receiptText} numberOfLines={1}>
                           {req.receiptUri.startsWith("http") ? "Link attached" : "Receipt attached"}
                         </Text>
-                      </View>
+                        <Text style={{ fontSize: 11, color: "#059669", fontWeight: "700", marginLeft: 4 }}>View →</Text>
+                      </Pressable>
                     )}
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 6 }}>
@@ -422,6 +430,15 @@ export default function AdminReimbursementsScreen() {
                       <Text style={[styles.claimantName, { color: colors.foreground }]}>{req.claimantName}</Text>
                       <Text style={[styles.rolePill, { color: colors.mutedForeground }]}>{ROLE_LABELS[req.claimantRole]}</Text>
                       <Text style={[styles.description, { color: colors.foreground }]} numberOfLines={2}>{req.description}</Text>
+                      {req.receiptUri && (
+                        <Pressable style={styles.receiptRow} onPress={() => handleViewReceipt(req.receiptUri!)}>
+                          <Ionicons name="attach-outline" size={12} color="#059669" />
+                          <Text style={styles.receiptText} numberOfLines={1}>
+                            {req.receiptUri.startsWith("http") ? "Link attached" : "Receipt attached"}
+                          </Text>
+                          <Text style={{ fontSize: 11, color: "#059669", fontWeight: "700", marginLeft: 4 }}>View →</Text>
+                        </Pressable>
+                      )}
                     </View>
                     <View style={{ alignItems: "flex-end", gap: 6 }}>
                       <Text style={[styles.amount, { color: colors.foreground }]}>

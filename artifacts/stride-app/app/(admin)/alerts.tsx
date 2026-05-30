@@ -171,7 +171,7 @@ export default function AdminAlerts() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backNavRow} onPress={() => router.back()}>
+        <Pressable style={styles.backNavRow} onPress={() => router.navigate("/(admin)/stats" as never)}>
           <Ionicons name="chevron-back" size={18} color={colors.primary} />
           <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
         </Pressable>

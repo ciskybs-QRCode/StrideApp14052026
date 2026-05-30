@@ -31,7 +31,7 @@ export default function ChangeEmailPage() {
     setNewEmail("");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Email Updated", "Your email address has been changed successfully.", [
-      { text: "OK", onPress: () => router.back() },
+      { text: "OK", onPress: () => router.navigate("/(admin)/settings" as never) },
     ]);
   };
 
@@ -46,7 +46,7 @@ export default function ChangeEmailPage() {
           },
         ]}
       >
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
+        <Pressable style={styles.backRow} onPress={() => router.navigate("/(admin)/settings" as never)}>
           <Ionicons name="chevron-back" size={20} color={colors.primary} />
           <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
         </Pressable>

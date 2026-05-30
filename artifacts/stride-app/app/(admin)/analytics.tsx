@@ -138,7 +138,7 @@ export default function AdminAnalytics() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border, paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.navigate("/(admin)/stats" as never)} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>

@@ -646,7 +646,7 @@ export default function OperatorInvoicing() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backNavRow} onPress={() => router.back()}>
+        <Pressable style={styles.backNavRow} onPress={() => router.navigate("/(operator)/settings" as never)}>
           <Ionicons name="chevron-back" size={18} color={colors.primary} />
           <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
         </Pressable>

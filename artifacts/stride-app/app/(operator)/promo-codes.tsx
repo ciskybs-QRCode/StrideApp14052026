@@ -156,7 +156,7 @@ export default function OperatorPromoCodesScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={styles.backBtn} onPress={() => router.navigate("/(operator)/settings" as never)} hitSlop={10}>
           <Ionicons name="arrow-back" size={22} color="#FFF" />
         </Pressable>
         <View style={{ flex: 1, marginLeft: 12 }}>

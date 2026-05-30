@@ -175,7 +175,7 @@ export default function DisciplinesScreen() {
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
         <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} style={styles.backBtnNav} hitSlop={8}>
+          <Pressable onPress={() => router.navigate("/(admin)/lessons" as never)} style={styles.backBtnNav} hitSlop={8}>
             <Ionicons name="arrow-back" size={22} color="#FFF" />
           </Pressable>
           <View style={{ flex: 1 }}>

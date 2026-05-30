@@ -213,7 +213,7 @@ export default function BookLessonScreen() {
     const order: Step[] = ["operator", "style", "location", "time", "student"];
     const idx = order.indexOf(step);
     if (idx > 0) setStep(order[idx - 1]);
-    else router.back();
+    else router.navigate("/(parent)/courses" as never);
   };
 
   // ── Book ─────────────────────────────────────────────────────────────────────

@@ -305,7 +305,7 @@ export default function OperatorPrivateLessonsScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Pressable style={styles.backBtn} onPress={() => router.navigate("/(operator)/dashboard" as never)}>
             <Ionicons name="arrow-back" size={20} color="#FFF" />
           </Pressable>
           <View style={{ flex: 1, marginLeft: 12 }}>

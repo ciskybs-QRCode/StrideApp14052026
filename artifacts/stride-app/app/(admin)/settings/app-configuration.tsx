@@ -227,7 +227,7 @@ export default function AppConfigurationPage() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
+        <Pressable style={styles.backRow} onPress={() => router.navigate("/(admin)/settings" as never)}>
           <Ionicons name="chevron-back" size={20} color={colors.primary} />
           <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
         </Pressable>
@@ -402,56 +402,50 @@ export default function AppConfigurationPage() {
               <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Sets billing cycle & operator invoice reminders</Text>
             </View>
           </View>
-          {/* 2-column grid of frequency chips */}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 4 }}>
-            {([
-              { value: "weekly",      label: "Weekly" },
-              { value: "fortnightly", label: "Bi-weekly" },
-              { value: "monthly",     label: "Monthly" },
-              { value: "quarterly",   label: "Quarterly" },
-              { value: "semi-annual", label: "6 Months" },
-              { value: "custom",      label: "Custom" },
-            ] as { value: PayoutFrequency; label: string }[]).map(({ value, label }) => {
-              const active = payoutFrequency === value;
+          {/* Row 1: Weekly · Bi-weekly · Monthly */}
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {(["weekly", "fortnightly", "monthly"] as PayoutFrequency[]).map(f => {
+              const active = payoutFrequency === f;
+              const label = f === "fortnightly" ? "Bi-weekly" : f === "weekly" ? "Weekly" : "Monthly";
               return (
-                <Pressable
-                  key={value}
-                  style={{ width: "31%", backgroundColor: active ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 11, alignItems: "center" }}
-                  onPress={() => handleSetPayoutFrequency(value)}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: active ? "#FBBF24" : colors.mutedForeground }}>
-                    {label}
-                  </Text>
+                <Pressable key={f} style={{ flex: 1, backgroundColor: active ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 10, alignItems: "center" }} onPress={() => handleSetPayoutFrequency(f)}>
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: active ? "#FBBF24" : colors.mutedForeground }}>{label}</Text>
                 </Pressable>
               );
             })}
           </View>
-          {/* Custom days input — shown only when "custom" is selected */}
+          {/* Row 2: Quarterly · 6 Months · Custom */}
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {(["quarterly", "semi-annual", "custom"] as PayoutFrequency[]).map(f => {
+              const active = payoutFrequency === f;
+              const label = f === "quarterly" ? "Quarterly" : f === "semi-annual" ? "6 Months" : "Custom";
+              return (
+                <Pressable key={f} style={{ flex: 1, backgroundColor: active ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 10, alignItems: "center" }} onPress={() => handleSetPayoutFrequency(f)}>
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: active ? "#FBBF24" : colors.mutedForeground }}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {/* Custom days — compact inline row */}
           {payoutFrequency === "custom" && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, paddingTop: 4 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>
-                  Every how many days?
-                </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <TextInput
-                    style={[styles.termInput, { flex: 1, color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-                    value={customDaysInput}
-                    onChangeText={setCustomDaysInput}
-                    placeholder="e.g. 45"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    returnKeyType="done"
-                    onSubmitEditing={handleSaveCustomDays}
-                  />
-                  <Pressable
-                    style={{ backgroundColor: customDaysSaved ? "#10B981" : "#1E3A8A", borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12 }}
-                    onPress={handleSaveCustomDays}
-                  >
-                    <Text style={{ color: "#FBBF24", fontWeight: "700", fontSize: 13 }}>{customDaysSaved ? "Saved ✓" : "Save"}</Text>
-                  </Pressable>
-                </View>
-              </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 2 }}>
+              <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: "500" }}>Every</Text>
+              <TextInput
+                style={{ width: 60, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, fontWeight: "700", textAlign: "center", color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }}
+                value={customDaysInput}
+                onChangeText={setCustomDaysInput}
+                keyboardType="number-pad"
+                maxLength={3}
+                returnKeyType="done"
+                onSubmitEditing={handleSaveCustomDays}
+              />
+              <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: "500", flex: 1 }}>days</Text>
+              <Pressable
+                style={{ backgroundColor: customDaysSaved ? "#10B981" : "#1E3A8A", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 9 }}
+                onPress={handleSaveCustomDays}
+              >
+                <Text style={{ color: "#FBBF24", fontWeight: "700", fontSize: 13 }}>{customDaysSaved ? "✓ Saved" : "Save"}</Text>
+              </Pressable>
             </View>
           )}
         </View>

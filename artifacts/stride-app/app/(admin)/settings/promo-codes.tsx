@@ -258,7 +258,7 @@ export default function PromoCodesPage() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: insets.bottom + 100 }]} showsVerticalScrollIndicator={false}>
 
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
+        <Pressable style={styles.backRow} onPress={() => router.navigate("/(admin)/settings" as never)}>
           <Ionicons name="chevron-back" size={20} color={colors.primary} />
           <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
         </Pressable>

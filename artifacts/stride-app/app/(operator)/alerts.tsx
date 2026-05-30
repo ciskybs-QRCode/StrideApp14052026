@@ -134,7 +134,7 @@ export default function OperatorAlerts() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backNavRow} onPress={() => router.back()}>
+        <Pressable style={styles.backNavRow} onPress={() => router.navigate("/(operator)/dashboard" as never)}>
           <Ionicons name="chevron-back" size={18} color={colors.primary} />
           <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
         </Pressable>

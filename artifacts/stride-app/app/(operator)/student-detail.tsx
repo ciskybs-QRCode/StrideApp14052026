@@ -57,7 +57,7 @@ export default function StudentDetail() {
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
         <Ionicons name="person-outline" size={48} color={colors.mutedForeground} />
         <Text style={[styles.notFoundText, { color: colors.mutedForeground }]}>Student not found</Text>
-        <Pressable style={[styles.backFallback, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
+        <Pressable style={[styles.backFallback, { backgroundColor: colors.primary }]} onPress={() => router.navigate("/(operator)/students" as never)}>
           <Text style={styles.backFallbackText}>Go Back</Text>
         </Pressable>
       </View>
@@ -88,7 +88,7 @@ export default function StudentDetail() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+        <Pressable style={styles.backBtn} onPress={() => router.navigate("/(operator)/students" as never)}>
           <Ionicons name="chevron-back" size={22} color={colors.primary} />
           <Text style={[styles.backText, { color: colors.primary }]}>Students</Text>
         </Pressable>

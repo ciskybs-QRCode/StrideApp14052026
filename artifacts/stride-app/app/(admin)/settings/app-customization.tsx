@@ -75,7 +75,7 @@ export default function AppCustomizationPage() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable style={styles.backRow} onPress={() => router.back()}>
+        <Pressable style={styles.backRow} onPress={() => router.navigate("/(admin)/settings" as never)}>
           <Ionicons name="chevron-back" size={20} color={colors.primary} />
           <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
         </Pressable>
