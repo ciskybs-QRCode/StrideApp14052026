@@ -270,47 +270,44 @@ export default function AdminLessonsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
-      {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>Operators & Availability</Text>
-            <Text style={styles.headerSub}>Manage instructors and their lesson slots</Text>
+      {/* ── Content ── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 120 }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Page header ── */}
+        <View style={styles.pageHeaderRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>Activity</Text>
+            <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>Operators, disciplines & availability</Text>
           </View>
-          <View style={[styles.headerBadge, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="people" size={18} color={colors.primary} />
+          <View style={[styles.headerBadge, { backgroundColor: `${colors.primary}14` }]}>
+            <Ionicons name="people-outline" size={20} color={colors.primary} />
           </View>
         </View>
 
-        {/* Tab bar */}
-        <View style={styles.tabBar}>
+        {/* ── Tab switcher ── */}
+        <View style={[styles.tabBar, { backgroundColor: colors.card }]}>
           {([
-            { key: "operators",    label: "Operators",    icon: "people-outline"      },
-            { key: "disciplines",  label: "Disciplines",  icon: "barbell-outline"     },
-            { key: "availability", label: "Availability", icon: "calendar-outline"    },
-          ] as const).map(t => (
+            { key: "operators",    label: "Operators",    icon: "people-outline"   as const },
+            { key: "disciplines",  label: "Disciplines",  icon: "barbell-outline"  as const },
+            { key: "availability", label: "Availability", icon: "calendar-outline" as const },
+          ]).map(t => (
             <Pressable
               key={t.key}
-              style={[styles.tabBtn, tab === t.key && styles.tabBtnActive]}
-              onPress={() => setTab(t.key)}
+              style={[styles.tabBtn, tab === t.key && { backgroundColor: colors.primary }]}
+              onPress={() => setTab(t.key as Tab)}
             >
-              <Ionicons name={t.icon} size={13} color={tab === t.key ? colors.primary : "rgba(255,255,255,0.65)"} />
-              <Text style={[styles.tabBtnText, tab === t.key && { color: colors.primary }]}>{t.label}</Text>
+              <Ionicons name={t.icon} size={13} color={tab === t.key ? "#FFF" : colors.mutedForeground} />
+              <Text style={[styles.tabBtnText, { color: tab === t.key ? "#FFF" : colors.mutedForeground }]}>{t.label}</Text>
               {t.key === "availability" && pendingSlots.length > 0 && (
                 <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{pendingSlots.length}</Text></View>
               )}
             </Pressable>
           ))}
         </View>
-      </View>
-
-      {/* ── Content ── */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        showsVerticalScrollIndicator={false}
-      >
 
         {/* ══ OPERATORS TAB ══ */}
         {tab === "operators" && (
@@ -1032,18 +1029,19 @@ export default function AdminLessonsScreen() {
 
 const styles = StyleSheet.create({
   container:          { flex: 1 },
-  header:             { paddingHorizontal: 20, paddingBottom: 4 },
-  headerRow:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 12 },
-  headerTitle:        { fontSize: 22, fontWeight: "800", color: "#FFF" },
-  headerSub:          { fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 },
-  headerBadge:        { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  tabBar:             { flexDirection: "row", gap: 4, paddingBottom: 12 },
-  tabBtn:             { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.12)" },
-  tabBtnActive:       { backgroundColor: "#FFFFFF" },
-  tabBtnText:         { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.65)" },
+  // Clean light header (no navy bleed)
+  pageHeaderRow:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingHorizontal: 20 },
+  pageTitle:          { fontSize: 28, fontWeight: "800" },
+  pageSub:            { fontSize: 13, marginTop: 2 },
+  headerBadge:        { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  // Pill tab switcher on card background
+  tabBar:             { flexDirection: "row", gap: 4, borderRadius: 14, padding: 4, marginHorizontal: 20, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  tabBtn:             { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 10, paddingHorizontal: 6, borderRadius: 10 },
+  tabBtnActive:       { },
+  tabBtnText:         { fontSize: 11, fontWeight: "700" },
   tabBadge:           { width: 16, height: 16, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
   tabBadgeText:       { fontSize: 9, fontWeight: "800", color: "#FFF" },
-  scroll:             { padding: 16, gap: 10 },
+  scroll:             { paddingHorizontal: 16, gap: 10 },
   addBtn:             { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 14, marginBottom: 4 },
   addBtnText:         { color: "#FFF", fontWeight: "700", fontSize: 15 },
   card:               { borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
