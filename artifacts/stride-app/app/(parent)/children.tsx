@@ -1078,8 +1078,8 @@ const styles = StyleSheet.create({
   dobGrid: { flexDirection: "row", alignItems: "flex-end", gap: 6, marginBottom: 4 },
   dobField: { flex: 1, alignItems: "center" },
   dobFieldLabel: { fontSize: 11, fontWeight: "600", marginBottom: 4, letterSpacing: 0.5, textTransform: "uppercase" },
-  dobInput: { borderWidth: 1.5, borderRadius: 10, paddingVertical: 10, fontSize: 17, fontWeight: "700", textAlign: "center", width: "100%" },
-  dobSep: { fontSize: 20, fontWeight: "700", paddingBottom: 10 },
+  dobInput: { borderWidth: 1.5, borderRadius: 10, paddingVertical: 10, fontSize: 15, fontWeight: "400", textAlign: "center", width: "100%" },
+  dobSep: { fontSize: 16, fontWeight: "400", paddingBottom: 10 },
   // Empty state
   emptyStateCard: { borderRadius: 24, padding: 32, alignItems: "center", gap: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4, width: "100%" },
   emptyStateIconBox: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center" },
