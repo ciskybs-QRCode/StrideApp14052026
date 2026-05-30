@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
   Platform,
   Pressable,
@@ -17,40 +17,37 @@ import { useColors } from "@/hooks/useColors";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
-const GRID_ITEMS = [
-  {
-    key: "app-configuration",
-    title: "App Configuration",
-    description: "Notifications, invoicing and alerts",
-    icon: "settings-outline" as const,
-    color: "#1E3A8A",
-    bg: "#DBEAFE",
-  },
+// ── Settings navigation rows ──────────────────────────────────────────────────
+
+const NAV_ROWS = [
   {
     key: "school-information",
     title: "School Information",
     description: "Contact details and campus data",
-    icon: "school-outline" as const,
+    icon: "school-outline"            as const,
     color: "#0D9488",
     bg: "#CCFBF1",
+  },
+  {
+    key: "app-configuration",
+    title: "App Configuration",
+    description: "Notifications, invoicing and alerts",
+    icon: "settings-outline"          as const,
+    color: "#1E3A8A",
+    bg: "#DBEAFE",
   },
   {
     key: "legal-privacy",
     title: "Legal & Privacy",
     description: "Terms, policies and signatures",
-    icon: "shield-checkmark-outline" as const,
+    icon: "shield-checkmark-outline"  as const,
     color: "#7C3AED",
     bg: "#EDE9FE",
-  },
-  {
-    key: "app-customization",
-    title: "App Customisation",
-    description: "Branding, colours and themes",
-    icon: "color-palette-outline" as const,
-    color: "#EA580C",
-    bg: "#FFEDD5",
+    badge: true,
   },
 ] as const;
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SettingsIndex() {
   const router = useRouter();
@@ -80,91 +77,119 @@ export default function SettingsIndex() {
       >
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Settings</Text>
 
-        {/* Profile card */}
+        {/* ── PROFILE CARD ── */}
         <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{user?.name?.charAt(0) ?? "A"}</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.profileName}>Administrator</Text>
-            {!!user?.schoolName && <Text style={styles.profileSchool}>{user.schoolName}</Text>}
+          <View style={styles.profileCenter}>
+            <Text style={styles.profileName} numberOfLines={1}>Administrator</Text>
+            {!!user?.schoolName && (
+              <Text style={styles.profileSchool} numberOfLines={1}>{user.schoolName}</Text>
+            )}
           </View>
           <View style={[styles.adminBadge, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="shield-checkmark" size={13} color={colors.primary} />
+            <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
             <Text style={[styles.adminBadgeText, { color: colors.primary }]}>Admin</Text>
           </View>
         </View>
 
-        {/* 2-column grid */}
-        <View style={styles.grid}>
-          {GRID_ITEMS.map(item => (
-            <Pressable
-              key={item.key}
-              style={({ pressed }) => [
-                styles.gridCard,
-                { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 },
-              ]}
-              onPress={() => navigate(item.key)}
-            >
-              <View style={[styles.gridIconBox, { backgroundColor: item.bg }]}>
-                <Ionicons name={item.icon} size={28} color={item.color} />
-              </View>
-              <Text style={[styles.gridTitle, { color: colors.foreground }]}>{item.title}</Text>
-              <Text style={[styles.gridDesc, { color: colors.mutedForeground }]}>{item.description}</Text>
-              <View style={styles.gridFooter}>
-                {item.key === "legal-privacy" && unsignedCount > 0 && (
-                  <View style={[styles.gridBadge, { backgroundColor: "#EDE9FE" }]}>
-                    <Text style={[styles.gridBadgeText, { color: "#7C3AED" }]}>{legalAdminDocs.length} docs</Text>
-                  </View>
-                )}
-                <Ionicons name="chevron-forward" size={14} color={item.color} style={{ marginLeft: "auto" }} />
-              </View>
-            </Pressable>
-          ))}
-        </View>
+        {/* ══════════════════════════════════════════════════
+            ACCOUNT — Change Email, Password, Log Out, Delete
+        ══════════════════════════════════════════════════ */}
+        <AccountSettingsCard />
 
-        {/* School Setup & Parent QR — full-width featured card */}
+        {/* ── SWITCH ROLE ── */}
+        <RoleSwitcherRow />
+
+        {/* ── DIVIDER LABEL ── */}
+        <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>SCHOOL</Text>
+
+        {/* ── SCHOOL SETUP & MEMBER QR — highlighted primary card ── */}
         <Pressable
           style={({ pressed }) => [
-            styles.featuredCard,
+            styles.navRow,
+            styles.navRowPrimary,
             { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 },
           ]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/setup" as never); }}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(admin)/setup" as never);
+          }}
         >
-          <View style={[styles.featuredIconBox, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-            <Ionicons name="qr-code-outline" size={30} color="#FBBF24" />
+          <View style={[styles.navIcon, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
+            <Ionicons name="qr-code-outline" size={22} color="#FBBF24" />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: "#FFFFFF" }]}>School Setup & Member QR</Text>
-            <Text style={[styles.featuredDesc, { color: "rgba(255,255,255,0.75)" }]}>
-              Branding, colours and invite QR code for members
+          <View style={styles.navText}>
+            <Text style={[styles.navTitle, { color: "#FFFFFF" }]} numberOfLines={1}>
+              School Setup & Member QR
+            </Text>
+            <Text style={[styles.navDesc, { color: "rgba(255,255,255,0.72)" }]} numberOfLines={1}>
+              Branding, colours and invite QR code
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
         </Pressable>
 
-        {/* Promo Codes — full-width featured card */}
+        {/* ── PROMO CODES ── */}
         <Pressable
           style={({ pressed }) => [
-            styles.featuredCard,
+            styles.navRow,
             { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 },
           ]}
           onPress={() => navigate("promo-codes")}
         >
-          <View style={[styles.featuredIconBox, { backgroundColor: "#FEF3C7" }]}>
-            <Ionicons name="pricetag-outline" size={30} color="#F59E0B" />
+          <View style={[styles.navIcon, { backgroundColor: "#FEF3C7" }]}>
+            <Ionicons name="pricetag-outline" size={22} color="#F59E0B" />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.featuredTitle, { color: colors.foreground }]}>Promo Codes</Text>
-            <Text style={[styles.featuredDesc, { color: colors.mutedForeground }]}>
-              Generate, target and manage discount codes
+          <View style={styles.navText}>
+            <Text style={[styles.navTitle, { color: colors.foreground }]} numberOfLines={1}>
+              Promo Codes
+            </Text>
+            <Text style={[styles.navDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
+              Generate, target and manage discounts
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
         </Pressable>
 
-        <RoleSwitcherRow />
-        <AccountSettingsCard />
+        {/* ── DIVIDER LABEL ── */}
+        <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
+
+        {/* ── 3 SETTINGS ROWS ── */}
+        <View style={[styles.rowGroup, { backgroundColor: colors.card }]}>
+          {NAV_ROWS.map((item, i) => (
+            <Pressable
+              key={item.key}
+              style={({ pressed }) => [
+                styles.groupRow,
+                i < NAV_ROWS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                { opacity: pressed ? 0.75 : 1 },
+              ]}
+              onPress={() => navigate(item.key)}
+            >
+              <View style={[styles.navIcon, { backgroundColor: item.bg }]}>
+                <Ionicons name={item.icon} size={20} color={item.color} />
+              </View>
+              <View style={styles.navText}>
+                <Text style={[styles.navTitle, { color: colors.foreground }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={[styles.navDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  {item.description}
+                </Text>
+              </View>
+              {item.key === "legal-privacy" && unsignedCount > 0 && (
+                <View style={[styles.countBadge, { backgroundColor: "#EDE9FE" }]}>
+                  <Text style={[styles.countBadgeText, { color: "#7C3AED" }]}>
+                    {legalAdminDocs.length}
+                  </Text>
+                </View>
+              )}
+              <Ionicons name="chevron-forward" size={16} color={item.color} />
+            </Pressable>
+          ))}
+        </View>
 
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` · ${user.schoolName}` : ""}
@@ -174,75 +199,88 @@ export default function SettingsIndex() {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
+
+  // Profile card
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 12,
     borderRadius: 20,
-    padding: 20,
+    padding: 18,
     marginBottom: 24,
   },
   avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: "rgba(255,255,255,0.25)",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  avatarText: { color: "#FFF", fontSize: 22, fontWeight: "700" },
-  profileName: { color: "#FFF", fontSize: 17, fontWeight: "700" },
-  profileRole: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
+  avatarText: { color: "#FFF", fontSize: 20, fontWeight: "700" },
+  profileCenter: { flex: 1, minWidth: 0 },
+  profileName: { color: "#FFF", fontSize: 16, fontWeight: "700" },
   profileSchool: { color: "#FBBF24", fontSize: 12, fontWeight: "600", marginTop: 2 },
   adminBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 20,
+    flexShrink: 0,
   },
   adminBadgeText: { fontSize: 11, fontWeight: "700" },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 12,
+
+  // Group label
+  groupLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.1,
+    marginBottom: 10,
+    marginTop: 4,
   },
-  gridCard: {
-    width: "47.5%",
-    borderRadius: 18,
+
+  // Navigation rows (standalone full-width)
+  navRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    borderRadius: 16,
     padding: 16,
+    marginBottom: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
-    gap: 8,
   },
-  gridIconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+  navRowPrimary: {
+    marginBottom: 10,
+  },
+  navIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
+    flexShrink: 0,
   },
-  gridTitle: { fontSize: 14, fontWeight: "700", lineHeight: 18 },
-  gridDesc: { fontSize: 11, lineHeight: 15 },
-  gridFooter: { flexDirection: "row", alignItems: "center", marginTop: 4 },
-  gridBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
-  gridBadgeText: { fontSize: 10, fontWeight: "700" },
-  featuredCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    borderRadius: 18,
-    padding: 18,
+  navText: { flex: 1, minWidth: 0 },
+  navTitle: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  navDesc: { fontSize: 12, lineHeight: 16 },
+
+  // Grouped rows card
+  rowGroup: {
+    borderRadius: 16,
+    overflow: "hidden",
     marginBottom: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -250,41 +288,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  featuredIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+  groupRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 14,
+    padding: 16,
   },
-  featuredTitle: { fontSize: 16, fontWeight: "700", marginBottom: 3 },
-  featuredDesc: { fontSize: 12, lineHeight: 16 },
-  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
-  accountCard: {
-    borderRadius: 18,
-    overflow: "hidden",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  accountRow: { flexDirection: "row", alignItems: "center", padding: 16, gap: 12 },
-  accountIconBox: {
-    width: 34,
-    height: 34,
+
+  // Badge for legal docs count
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
+    marginRight: 4,
+    flexShrink: 0,
   },
-  accountLabel: { fontSize: 15, fontWeight: "500" },
-  accountSub: { fontSize: 12, marginTop: 1 },
-  version: { fontSize: 12, textAlign: "center", marginBottom: 20, marginTop: 4 },
-  confirmPanel: { borderRadius: 16, padding: 16, backgroundColor: "#FFFBEB", borderWidth: 1, borderColor: "#FDE68A", gap: 8, marginBottom: 16 },
-  confirmTitle: { fontWeight: "700", fontSize: 15, color: "#111827" },
-  confirmBody: { fontSize: 13, lineHeight: 18 },
-  confirmButtons: { flexDirection: "row", gap: 10, marginTop: 4 },
-  confirmBtn: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: "center" },
-  confirmBtnText: { fontWeight: "700", fontSize: 14 },
+  countBadgeText: { fontSize: 11, fontWeight: "700" },
+
+  version: { fontSize: 12, textAlign: "center", marginBottom: 20 },
 });
