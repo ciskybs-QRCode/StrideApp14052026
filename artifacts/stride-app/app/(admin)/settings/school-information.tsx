@@ -516,74 +516,81 @@ export default function SchoolInformationPage() {
         )}
 
         <View style={[styles.card, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: "#10B981" }]}>
-          {(editingHours ? hoursDraft : hours).map((entry, i) => (
-            <View
-              key={entry.day}
-              style={[
-                styles.hoursRow,
-                i < hours.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-              ]}
-            >
-              <View style={styles.hoursDay}>
-                <Text style={[styles.hoursDayText, { color: entry.isOpen ? colors.foreground : colors.mutedForeground, fontWeight: entry.isOpen ? "600" : "400" }]}>
-                  {entry.day}
-                </Text>
-              </View>
-
-              {editingHours ? (
-                <>
-                  <Switch
-                    value={entry.isOpen}
-                    onValueChange={v => updateHoursDraft(i, "isOpen", v)}
-                    trackColor={{ false: colors.muted, true: colors.secondary }}
-                    thumbColor={entry.isOpen ? colors.primary : "#9CA3AF"}
-                    style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
-                  />
-                  {entry.isOpen ? (
-                    <View style={styles.hoursTimeEdit}>
-                      <TextInput
-                        style={[styles.timeInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                        value={entry.openTime}
-                        onChangeText={v => updateHoursDraft(i, "openTime", v)}
-                        placeholder="09:00"
-                        placeholderTextColor={colors.mutedForeground}
-                        maxLength={5}
-                        keyboardType="numbers-and-punctuation"
-                      />
-                      <Text style={[styles.timeSep, { color: colors.mutedForeground }]}>–</Text>
-                      <TextInput
-                        style={[styles.timeInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                        value={entry.closeTime}
-                        onChangeText={v => updateHoursDraft(i, "closeTime", v)}
-                        placeholder="18:00"
-                        placeholderTextColor={colors.mutedForeground}
-                        maxLength={5}
-                        keyboardType="numbers-and-punctuation"
-                      />
-                    </View>
-                  ) : (
-                    <Text style={[styles.closedText, { color: colors.mutedForeground }]}>Closed</Text>
-                  )}
-                </>
-              ) : (
-                <View style={styles.hoursTimeView}>
-                  {entry.isOpen ? (
-                    <>
-                      <View style={[styles.openDot, { backgroundColor: "#10B981" }]} />
-                      <Text style={[styles.hoursTimeText, { color: colors.foreground }]}>
-                        {entry.openTime} – {entry.closeTime}
+          {(editingHours ? hoursDraft : hours).map((entry, i) => {
+            const list = editingHours ? hoursDraft : hours;
+            const isLast = i === list.length - 1;
+            return (
+              <View
+                key={entry.day}
+                style={[
+                  styles.hoursRow,
+                  !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                ]}
+              >
+                {/* ── Top line: day name + open/closed pill ── */}
+                <View style={styles.hoursRowTop}>
+                  <Text style={[styles.hoursDayText, { color: entry.isOpen ? colors.foreground : colors.mutedForeground, fontWeight: entry.isOpen ? "700" : "400" }]}>
+                    {entry.day}
+                  </Text>
+                  {editingHours ? (
+                    <Pressable
+                      style={[styles.openClosedPill, { backgroundColor: entry.isOpen ? "#DCFCE7" : "#FEE2E2" }]}
+                      onPress={() => updateHoursDraft(i, "isOpen", !entry.isOpen)}
+                    >
+                      <View style={[styles.openClosedDot, { backgroundColor: entry.isOpen ? "#10B981" : "#EF4444" }]} />
+                      <Text style={[styles.openClosedPillText, { color: entry.isOpen ? "#059669" : "#DC2626" }]}>
+                        {entry.isOpen ? "Open" : "Closed"}
                       </Text>
-                    </>
+                      <Ionicons name={entry.isOpen ? "chevron-up" : "chevron-down"} size={13} color={entry.isOpen ? "#059669" : "#DC2626"} />
+                    </Pressable>
                   ) : (
-                    <>
-                      <View style={[styles.openDot, { backgroundColor: "#EF4444" }]} />
-                      <Text style={[styles.closedText, { color: colors.mutedForeground }]}>Closed</Text>
-                    </>
+                    <View style={styles.hoursTimeView}>
+                      {entry.isOpen ? (
+                        <>
+                          <View style={[styles.openDot, { backgroundColor: "#10B981" }]} />
+                          <Text style={[styles.hoursTimeText, { color: colors.foreground }]}>
+                            {entry.openTime} – {entry.closeTime}
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <View style={[styles.openDot, { backgroundColor: "#EF4444" }]} />
+                          <Text style={[styles.closedText, { color: colors.mutedForeground }]}>Closed</Text>
+                        </>
+                      )}
+                    </View>
                   )}
                 </View>
-              )}
-            </View>
-          ))}
+
+                {/* ── Second line: time inputs (edit mode + open only) ── */}
+                {editingHours && entry.isOpen && (
+                  <View style={styles.hoursTimeEdit}>
+                    <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
+                    <TextInput
+                      style={[styles.timeInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                      value={entry.openTime}
+                      onChangeText={v => updateHoursDraft(i, "openTime", v)}
+                      placeholder="09:00"
+                      placeholderTextColor={colors.mutedForeground}
+                      maxLength={5}
+                      keyboardType="numbers-and-punctuation"
+                    />
+                    <Text style={[styles.timeSep, { color: colors.mutedForeground }]}>–</Text>
+                    <TextInput
+                      style={[styles.timeInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                      value={entry.closeTime}
+                      onChangeText={v => updateHoursDraft(i, "closeTime", v)}
+                      placeholder="18:00"
+                      placeholderTextColor={colors.mutedForeground}
+                      maxLength={5}
+                      keyboardType="numbers-and-punctuation"
+                    />
+                    <Text style={[{ fontSize: 12, color: colors.mutedForeground }]}>HH:MM</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -754,16 +761,19 @@ const styles = StyleSheet.create({
   campusRowName:     { fontSize: 14, fontWeight: "700" },
   campusRowAddr:     { fontSize: 12, lineHeight: 17 },
   campusRowActions:  { flexDirection: "column", gap: 6, paddingRight: 12, alignItems: "center" },
-  hoursRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13, gap: 10 },
-  hoursDay: { width: 90 },
-  hoursDayText: { fontSize: 13 },
-  hoursTimeView: { flex: 1, flexDirection: "row", alignItems: "center", gap: 7 },
+  hoursRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
+  hoursRowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  hoursDayText: { fontSize: 14 },
+  hoursTimeView: { flexDirection: "row", alignItems: "center", gap: 7 },
   openDot: { width: 7, height: 7, borderRadius: 4 },
   hoursTimeText: { fontSize: 13, fontWeight: "500" },
-  hoursTimeEdit: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 6 },
-  timeInput: { borderWidth: 1.5, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6, fontSize: 13, width: 64, textAlign: "center" },
+  hoursTimeEdit: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
+  timeInput: { borderWidth: 1.5, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 7, fontSize: 14, width: 68, textAlign: "center" },
   timeSep: { fontSize: 16, fontWeight: "700" },
-  closedText: { fontSize: 13, flex: 1 },
+  closedText: { fontSize: 13 },
+  openClosedPill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 11, paddingVertical: 5, borderRadius: 20 },
+  openClosedDot: { width: 7, height: 7, borderRadius: 4 },
+  openClosedPillText: { fontSize: 13, fontWeight: "700" },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "92%" },
   sheetHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 },
