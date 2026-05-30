@@ -17,7 +17,7 @@ import { useColors } from "@/hooks/useColors";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
-// ── Settings navigation rows ──────────────────────────────────────────────────
+// ── Nav rows shown under CONFIGURATION ───────────────────────────────────────
 
 const NAV_ROWS = [
   {
@@ -75,88 +75,78 @@ export default function SettingsIndex() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Settings</Text>
 
-        {/* ── PROFILE CARD ── */}
-        <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0) ?? "A"}</Text>
-          </View>
-          <View style={styles.profileCenter}>
-            <Text style={styles.profileName} numberOfLines={1}>Administrator</Text>
-            {!!user?.schoolName && (
-              <Text style={styles.profileSchool} numberOfLines={1}>{user.schoolName}</Text>
-            )}
-          </View>
+        {/* ── PAGE TITLE ROW — "Settings" + Admin badge ── */}
+        <View style={styles.titleRow}>
+          <Text style={[styles.pageTitle, { color: colors.primary }]}>Settings</Text>
           <View style={[styles.adminBadge, { backgroundColor: colors.secondary }]}>
             <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
             <Text style={[styles.adminBadgeText, { color: colors.primary }]}>Admin</Text>
           </View>
         </View>
 
-        {/* ══════════════════════════════════════════════════
-            ACCOUNT — Change Email, Password, Log Out, Delete
-        ══════════════════════════════════════════════════ */}
+        {/* ── PROFILE CARD ── */}
+        <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{user?.name?.charAt(0) ?? "A"}</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>Administrator</Text>
+            {!!user?.schoolName && (
+              <Text style={styles.profileSchool} numberOfLines={1}>{user.schoolName}</Text>
+            )}
+            {!!user?.email && (
+              <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
+            )}
+          </View>
+        </View>
+
+        {/* ── ACCOUNT ── */}
         <AccountSettingsCard />
 
         {/* ── SWITCH ROLE ── */}
         <RoleSwitcherRow />
 
-        {/* ── DIVIDER LABEL ── */}
+        {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>SCHOOL</Text>
 
-        {/* ── SCHOOL SETUP & MEMBER QR — highlighted primary card ── */}
+        {/* ── SCHOOL SETUP & MEMBER QR ── */}
         <Pressable
-          style={({ pressed }) => [
-            styles.navRow,
-            styles.navRowPrimary,
-            { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 },
-          ]}
+          style={({ pressed }) => [styles.featCard, styles.featCardNavy, { opacity: pressed ? 0.88 : 1 }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push("/(admin)/setup" as never);
           }}
         >
-          <View style={[styles.navIcon, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
+          <View style={styles.featIconNavy}>
             <Ionicons name="qr-code-outline" size={22} color="#FBBF24" />
           </View>
-          <View style={styles.navText}>
-            <Text style={[styles.navTitle, { color: "#FFFFFF" }]} numberOfLines={1}>
-              School Setup & Member QR
-            </Text>
-            <Text style={[styles.navDesc, { color: "rgba(255,255,255,0.72)" }]} numberOfLines={1}>
-              Branding, colours and invite QR code
-            </Text>
+          <View style={styles.featText}>
+            <Text style={styles.featTitleNavy} numberOfLines={1}>School Setup & Member QR</Text>
+            <Text style={styles.featDescNavy} numberOfLines={1}>Branding, colours and invite QR code</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
         </Pressable>
 
         {/* ── PROMO CODES ── */}
         <Pressable
-          style={({ pressed }) => [
-            styles.navRow,
-            { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 },
-          ]}
+          style={({ pressed }) => [styles.featCard, styles.featCardAmber, { opacity: pressed ? 0.88 : 1 }]}
           onPress={() => navigate("promo-codes")}
         >
-          <View style={[styles.navIcon, { backgroundColor: "#FEF3C7" }]}>
-            <Ionicons name="pricetag-outline" size={22} color="#F59E0B" />
+          <View style={styles.featIconAmber}>
+            <Ionicons name="pricetag-outline" size={22} color="#92400E" />
           </View>
-          <View style={styles.navText}>
-            <Text style={[styles.navTitle, { color: colors.foreground }]} numberOfLines={1}>
-              Promo Codes
-            </Text>
-            <Text style={[styles.navDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
-              Generate, target and manage discounts
-            </Text>
+          <View style={styles.featText}>
+            <Text style={styles.featTitleAmber} numberOfLines={1}>Promo Codes</Text>
+            <Text style={styles.featDescAmber} numberOfLines={1}>Generate, target and manage discounts</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
+          <Ionicons name="chevron-forward" size={18} color="#92400E" />
         </Pressable>
 
-        {/* ── DIVIDER LABEL ── */}
+        {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
 
-        {/* ── 3 SETTINGS ROWS ── */}
+        {/* ── 3 GROUPED CONFIG ROWS ── */}
         <View style={[styles.rowGroup, { backgroundColor: colors.card }]}>
           {NAV_ROWS.map((item, i) => (
             <Pressable
@@ -168,14 +158,14 @@ export default function SettingsIndex() {
               ]}
               onPress={() => navigate(item.key)}
             >
-              <View style={[styles.navIcon, { backgroundColor: item.bg }]}>
+              <View style={[styles.rowIconBox, { backgroundColor: item.bg }]}>
                 <Ionicons name={item.icon} size={20} color={item.color} />
               </View>
-              <View style={styles.navText}>
-                <Text style={[styles.navTitle, { color: colors.foreground }]} numberOfLines={1}>
+              <View style={styles.rowText}>
+                <Text style={[styles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>
                   {item.title}
                 </Text>
-                <Text style={[styles.navDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
+                <Text style={[styles.rowDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
                   {item.description}
                 </Text>
               </View>
@@ -203,43 +193,51 @@ export default function SettingsIndex() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingHorizontal: 20 },
-  pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
+  scroll:    { paddingHorizontal: 20 },
 
-  // Profile card
+  // Page title row
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  pageTitle: { fontSize: 28, fontWeight: "800" },
+  adminBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  adminBadgeText: { fontSize: 12, fontWeight: "700" },
+
+  // Profile card — no badge inside, no truncation
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 16,
     borderRadius: 20,
-    padding: 18,
+    padding: 20,
     marginBottom: 24,
   },
   avatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(255,255,255,0.22)",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  avatarText: { color: "#FFF", fontSize: 20, fontWeight: "700" },
-  profileCenter: { flex: 1, minWidth: 0 },
-  profileName: { color: "#FFF", fontSize: 16, fontWeight: "700" },
-  profileSchool: { color: "#FBBF24", fontSize: 12, fontWeight: "600", marginTop: 2 },
-  adminBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 20,
-    flexShrink: 0,
-  },
-  adminBadgeText: { fontSize: 11, fontWeight: "700" },
+  avatarText: { color: "#FFF", fontSize: 22, fontWeight: "700" },
+  profileInfo: { flex: 1 },
+  profileName:  { color: "#FFF",    fontSize: 18, fontWeight: "700", marginBottom: 2 },
+  profileSchool:{ color: "#FBBF24", fontSize: 13, fontWeight: "600" },
+  profileEmail: { color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 2 },
 
-  // Group label
+  // Section group label
   groupLabel: {
     fontSize: 11,
     fontWeight: "700",
@@ -248,36 +246,34 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // Navigation rows (standalone full-width)
-  navRow: {
+  // Featured full-width cards (School Setup, Promo Codes)
+  featCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     marginBottom: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
   },
-  navRowPrimary: {
-    marginBottom: 10,
-  },
-  navIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  navText: { flex: 1, minWidth: 0 },
-  navTitle: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
-  navDesc: { fontSize: 12, lineHeight: 16 },
+  // Navy variant (School Setup)
+  featCardNavy:  { backgroundColor: "#1E3A8A" },
+  featIconNavy:  { width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  featTitleNavy: { color: "#FFFFFF", fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  featDescNavy:  { color: "rgba(255,255,255,0.70)", fontSize: 12 },
+  // Amber variant (Promo Codes)
+  featCardAmber: { backgroundColor: "#FFFBEB", borderWidth: 1.5, borderColor: "#FDE68A" },
+  featIconAmber: { width: 46, height: 46, borderRadius: 13, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  featTitleAmber:{ color: "#78350F", fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  featDescAmber: { color: "#92400E", fontSize: 12 },
 
-  // Grouped rows card
+  featText: { flex: 1, minWidth: 0 },
+
+  // Grouped config rows
   rowGroup: {
     borderRadius: 16,
     overflow: "hidden",
@@ -294,15 +290,20 @@ const styles = StyleSheet.create({
     gap: 14,
     padding: 16,
   },
-
-  // Badge for legal docs count
-  countBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginRight: 4,
+  rowIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
   },
+  rowText:  { flex: 1, minWidth: 0 },
+  rowTitle: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  rowDesc:  { fontSize: 12 },
+
+  // Doc count badge
+  countBadge:     { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginRight: 4, flexShrink: 0 },
   countBadgeText: { fontSize: 11, fontWeight: "700" },
 
   version: { fontSize: 12, textAlign: "center", marginBottom: 20 },
