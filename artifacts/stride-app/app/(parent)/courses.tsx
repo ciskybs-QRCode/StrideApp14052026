@@ -542,18 +542,26 @@ export default function CoursesScreen() {
           </Pressable>
         </View>
 
-        <View style={[styles.tabBar, { backgroundColor: colors.muted }]}>
-          {(["courses", "private"] as const).map(tab => (
-            <Pressable
-              key={tab}
-              style={[styles.tabItem, selectedTab === tab && { backgroundColor: colors.primary }]}
-              onPress={() => setSelectedTab(tab)}
-            >
-              <Text style={[styles.tabText, selectedTab === tab && { color: "#FFF" }]}>
-                {tab === "courses" ? "Courses & Workshops" : "Private Lessons"}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={[styles.tabBar, { backgroundColor: colors.card }]}>
+          {(["courses", "private"] as const).map(tab => {
+            const active = selectedTab === tab;
+            return (
+              <Pressable
+                key={tab}
+                style={[styles.tabItem, active && styles.tabItemActive]}
+                onPress={() => setSelectedTab(tab)}
+              >
+                <Ionicons
+                  name={tab === "courses" ? "musical-notes-outline" : "person-outline"}
+                  size={20}
+                  color={active ? colors.primary : colors.mutedForeground}
+                />
+                <Text style={[styles.tabText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                  {tab === "courses" ? "Courses & Workshops" : "Private Lessons"}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {selectedTab === "courses" ? (
@@ -1126,9 +1134,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
-  tabBar: { flexDirection: "row", borderRadius: 12, padding: 4, marginBottom: 20 },
-  tabItem: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
-  tabText: { fontWeight: "600", fontSize: 13, color: "#6B7BA4" },
+  tabBar: { flexDirection: "row", borderRadius: 16, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  tabItem: { flex: 1, alignItems: "center", paddingVertical: 14, gap: 4, borderBottomWidth: 2, borderBottomColor: "transparent", borderRadius: 0 },
+  tabItemActive: { borderBottomColor: "#1E3A8A" },
+  tabText: { fontWeight: "600", fontSize: 12 },
   sectionHeading: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
 
   // Enrolled course card
