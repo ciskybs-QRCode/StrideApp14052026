@@ -467,21 +467,25 @@ export default function AppConfigurationPage() {
               <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Receipt required for reimbursements above this amount. Set to 0 to always require one.</Text>
             </View>
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.mutedForeground }}>$</Text>
-            <TextInput
-              style={[styles.termInput, { flex: 1, color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-              value={receiptThresholdInput}
-              onChangeText={setReceiptThresholdInput}
-              placeholder="50.00"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="decimal-pad"
-            />
+          <View style={{ gap: 10, paddingHorizontal: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text style={{ fontSize: 20, fontWeight: "700", color: colors.mutedForeground }}>$</Text>
+              <TextInput
+                style={[styles.termInput, { flex: 1, color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+                value={receiptThresholdInput}
+                onChangeText={setReceiptThresholdInput}
+                placeholder="50.00"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+                onSubmitEditing={handleSaveThreshold}
+              />
+            </View>
             <Pressable
-              style={[{ backgroundColor: thresholdSaved ? "#10B981" : colors.primary, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12 }]}
+              style={{ backgroundColor: thresholdSaved ? "#10B981" : colors.primary, borderRadius: 12, paddingVertical: 13, alignItems: "center" }}
               onPress={handleSaveThreshold}
             >
-              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>{thresholdSaved ? "Saved ✓" : "Save"}</Text>
+              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>{thresholdSaved ? "Saved ✓" : "Save"}</Text>
             </Pressable>
           </View>
         </View>
