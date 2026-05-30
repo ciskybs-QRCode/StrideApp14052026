@@ -297,14 +297,6 @@ export default function AdminHome() {
               {user?.schoolName || "Stride"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </Text>
           </View>
-          <View style={[styles.periodToggle, { backgroundColor: colors.muted }]}>
-            <Pressable style={[styles.periodBtn, period === "month" && { backgroundColor: colors.primary }]} onPress={() => setPeriod("month")}>
-              <Text style={[styles.periodBtnText, { color: period === "month" ? "#FFF" : colors.mutedForeground }]}>Month</Text>
-            </Pressable>
-            <Pressable style={[styles.periodBtn, period === "year" && { backgroundColor: colors.primary }]} onPress={() => setPeriod("year")}>
-              <Text style={[styles.periodBtnText, { color: period === "year" ? "#FFF" : colors.mutedForeground }]}>Year</Text>
-            </Pressable>
-          </View>
         </View>
 
         {/* ── QUICK ACTIONS ── */}
@@ -358,7 +350,24 @@ export default function AdminHome() {
         {/* ── HERO KPI BANNER ── */}
         <View style={[styles.heroBanner, { backgroundColor: colors.primary }]}>
           <View style={styles.heroMain}>
-            <Text style={styles.heroLabel}>{period === "month" ? "Monthly" : "Annual"} Revenue</Text>
+            {/* Label + Month/Year toggle in same row */}
+            <View style={styles.heroTopRow}>
+              <Text style={styles.heroLabel}>{period === "month" ? "Monthly" : "Annual"} Revenue</Text>
+              <View style={styles.heroPeriodToggle}>
+                <Pressable
+                  style={[styles.heroPeriodBtn, period === "month" && styles.heroPeriodBtnActive]}
+                  onPress={() => setPeriod("month")}
+                >
+                  <Text style={[styles.heroPeriodBtnText, { color: period === "month" ? colors.primary : "rgba(255,255,255,0.7)" }]}>Month</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.heroPeriodBtn, period === "year" && styles.heroPeriodBtnActive]}
+                  onPress={() => setPeriod("year")}
+                >
+                  <Text style={[styles.heroPeriodBtnText, { color: period === "year" ? colors.primary : "rgba(255,255,255,0.7)" }]}>Year</Text>
+                </Pressable>
+              </View>
+            </View>
             <Text style={styles.heroValue}>€{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
             <View style={styles.heroTrend}>
               <Ionicons name="trending-up" size={16} color="#FBBF24" />
@@ -706,7 +715,12 @@ const styles = StyleSheet.create({
 
   heroBanner: { borderRadius: 24, padding: 22, marginBottom: 16 },
   heroMain: { marginBottom: 18 },
+  heroTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
   heroLabel: { color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: "600", letterSpacing: 0.5 },
+  heroPeriodToggle: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 8, padding: 2, gap: 2 },
+  heroPeriodBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  heroPeriodBtnActive: { backgroundColor: "#FFFFFF" },
+  heroPeriodBtnText: { fontSize: 12, fontWeight: "700" },
   heroValue: { color: "#FFF", fontSize: 40, fontWeight: "800", marginTop: 4 },
   heroTrend: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
   heroTrendText: { color: "#FBBF24", fontSize: 13, fontWeight: "600" },

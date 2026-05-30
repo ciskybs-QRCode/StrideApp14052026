@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   titleRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 24, gap: 12 },
-  pageTitle: { fontSize: 26, fontWeight: "800", marginBottom: 2 },
+  pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 2 },
   pageSubtitle: { fontSize: 13 },
   addBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginTop: 4 },
   addBtnText: { color: "#FBBF24", fontWeight: "800", fontSize: 13 },

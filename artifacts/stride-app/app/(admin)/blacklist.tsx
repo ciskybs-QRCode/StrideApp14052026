@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   pageHeader: { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 12 },
   backBtn: { padding: 4 },
-  pageTitle: { fontSize: 24, fontWeight: "800" },
+  pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSubtitle: { fontSize: 12, marginTop: 1 },
   addBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
   addBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },

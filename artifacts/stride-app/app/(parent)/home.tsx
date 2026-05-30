@@ -150,10 +150,12 @@ export default function ParentHome() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerCenter}>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Hello,</Text>
-            <Text style={[styles.userName, { color: colors.primary }]}>{firstName}</Text>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>Hello, {firstName}</Text>
+            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
+              {user?.schoolName || "Stride"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </Text>
           </View>
           <Pressable
             style={({ pressed }) => [styles.avatarCircle, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
@@ -596,12 +598,9 @@ export default function ParentHome() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  headerLeft: { width: 56 },
-  headerLogo: { width: 52, height: 36 },
-  headerCenter: { flex: 1, alignItems: "center" },
-  greeting: { fontSize: 14, fontWeight: "500" },
-  userName: { fontSize: 24, fontWeight: "800" },
+  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  pageTitle: { fontSize: 28, fontWeight: "800" },
+  pageSubtitle: { fontSize: 13, marginTop: 2 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   avatarPhoto: { width: 44, height: 44, borderRadius: 22 },
   avatarText: { color: "#FFF", fontWeight: "700", fontSize: 18 },

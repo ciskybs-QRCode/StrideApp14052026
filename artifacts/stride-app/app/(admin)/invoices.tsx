@@ -318,7 +318,7 @@ export default function AdminInvoicesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  pageTitle: { fontSize: 26, fontWeight: "800", marginBottom: 4 },
+  pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
   pageSubtitle: { fontSize: 13, marginBottom: 24 },
   sectionTitle: { fontSize: 15, fontWeight: "700", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 },
   emptyCard: { borderRadius: 16, padding: 28, alignItems: "center", gap: 10, borderWidth: 1, marginBottom: 20 },

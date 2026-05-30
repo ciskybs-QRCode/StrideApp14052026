@@ -983,7 +983,7 @@ export default function OperatorInvoicing() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  pageTitle: { fontSize: 26, fontWeight: "900", letterSpacing: -0.5, marginBottom: 16 },
+  pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 16 },
   sectionTitle: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 },
 
   profileCard: { borderRadius: 20, padding: 20, marginBottom: 20 },

@@ -645,7 +645,7 @@ export default function OperatorCoursesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 16 },
-  pageTitle: { fontSize: 26, fontWeight: "900", letterSpacing: -0.5, marginBottom: 4 },
+  pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
   pageSubtitle: { fontSize: 13, marginBottom: 16 },
   accessNote: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1 },
   emptyCard: { borderRadius: 18, padding: 32, alignItems: "center", gap: 10, borderWidth: 1, marginTop: 8 },

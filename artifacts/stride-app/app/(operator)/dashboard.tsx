@@ -800,18 +800,14 @@ export default function OperatorDashboard() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header — identical to Parent ── */}
-        <View style={styles.header}>
-          {logoSource ? (
-            <View style={styles.headerLeft}>
-              <Image source={{ uri: logoSource }} style={styles.headerLogo} contentFit="contain" />
-            </View>
-          ) : null}
-          <View style={styles.headerCenter}>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Hi,</Text>
-            <Text style={[styles.userName, { color: colors.primary }]}>{firstName}</Text>
+        {/* ── Header ── */}
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi, {firstName}</Text>
+            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
+              {user?.schoolName || "Stride"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </Text>
           </View>
-          {/* GPS badge replaces avatar */}
           <View style={[styles.gpsBadge, { backgroundColor: isGPS ? "#D1FAE5" : "#FEE2E2" }]}>
             <Ionicons name="location" size={14} color={isGPS ? "#10B981" : "#EF4444"} />
             <Text style={[styles.gpsText, { color: isGPS ? "#10B981" : "#EF4444" }]}>
@@ -1776,12 +1772,9 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
 
   // Header — exact copy of Parent
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  headerLeft: { width: 56 },
-  headerLogo: { width: 52, height: 36 },
-  headerCenter: { flex: 1, alignItems: "center" },
-  greeting: { fontSize: 14, fontWeight: "500" },
-  userName: { fontSize: 24, fontWeight: "800" },
+  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  pageTitle: { fontSize: 28, fontWeight: "800" },
+  pageSubtitle: { fontSize: 13, marginTop: 2 },
   gpsBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   gpsText: { fontSize: 13, fontWeight: "700" },
 
