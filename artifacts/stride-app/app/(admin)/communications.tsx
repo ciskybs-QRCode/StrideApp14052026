@@ -380,18 +380,26 @@ export default function AdminCommunications() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          <Text style={[styles.pageTitle, { color: colors.primary }]}>Communications</Text>
-          {commTab === "messages" && (
-            <Pressable
-              style={[styles.composeBtn, { backgroundColor: colors.primary }]}
-              onPress={() => { resetCompose(); setShowCompose(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
-            >
-              <Ionicons name="create-outline" size={18} color="#FFF" />
-              <Text style={styles.composeBtnText}>New Message</Text>
-            </Pressable>
-          )}
-        </View>
+        {/* ── PAGE HEADER ── */}
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Messages</Text>
+
+        {commTab === "messages" && (
+          <Pressable
+            style={[styles.composeBtn, { backgroundColor: colors.primary }]}
+            onPress={() => { resetCompose(); setShowCompose(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+          >
+            <View style={styles.composeBtnLeft}>
+              <View style={styles.composeBtnIconBox}>
+                <Ionicons name="create-outline" size={20} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.composeBtnTitle}>New Message</Text>
+                <Text style={styles.composeBtnSub}>Broadcast, group or individual</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
+          </Pressable>
+        )}
 
         {/* Tab Switcher */}
         <View style={[styles.commTabBar, { backgroundColor: colors.card }]}>
@@ -957,10 +965,34 @@ export default function AdminCommunications() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
-  pageTitle: { fontSize: 22, fontWeight: "800" },
-  composeBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
-  composeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }, // kept for safety
+  pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 16 },
+  composeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  composeBtnLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
+  composeBtnIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  composeBtnTitle: { color: "#FFF", fontWeight: "800", fontSize: 15 },
+  composeBtnSub: { color: "rgba(255,255,255,0.72)", fontSize: 12, marginTop: 1 },
+  composeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 }, // legacy
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
   statsRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
   statCard: { flex: 1, borderRadius: 14, padding: 14, alignItems: "center" },
