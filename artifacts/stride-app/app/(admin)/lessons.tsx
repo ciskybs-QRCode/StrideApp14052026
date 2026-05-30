@@ -360,9 +360,9 @@ export default function AdminLessonsScreen() {
                     )}
                   </View>
                   {p.bio ? <Text style={[styles.cardSub, { color: colors.mutedForeground, marginTop: 2 }]} numberOfLines={1}>{p.bio}</Text> : null}
-                  {p.rates && p.rates.length > 0 && (
+                  {p.rates && p.rates.filter(r => r.discipline?.name).length > 0 && (
                     <View style={styles.ratesRow}>
-                      {p.rates.map(r => (
+                      {p.rates.filter(r => r.discipline?.name).map(r => (
                         <View key={r.id} style={[styles.rateChip, { backgroundColor: colors.muted }]}>
                           <Text style={[styles.rateChipText, { color: colors.foreground }]}>
                             {r.discipline?.name}: {fmt(r.hourly_rate_cents)}/hr

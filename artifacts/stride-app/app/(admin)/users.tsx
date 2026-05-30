@@ -393,7 +393,7 @@ export default function AdminUsers() {
                         </Text>
                       ) : (
                         <View style={styles.disciplinesChips}>
-                          {operatorProfile.rates.map(r => (
+                          {operatorProfile.rates.filter(r => r.discipline?.name).map(r => (
                             <View key={r.id} style={[styles.disciplineChip, { backgroundColor: colors.primary }]}>
                               <Text style={[styles.disciplineChipText, { color: "#FFF" }]}>{r.discipline?.name}</Text>
                               <Ionicons name="checkmark" size={11} color="#FFF" />
