@@ -16,8 +16,12 @@ export default function App() {
       {/* ── Navbar ── */}
       <nav className="sticky top-0 z-50 bg-[#0A192F]/95 backdrop-blur border-b border-[#D4AF37]/20">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="text-xl font-black tracking-tight text-white">
-            <span className="text-[#D4AF37]">S</span>tride
+          <span className="flex items-center gap-2.5">
+            <svg height="36" width="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Association Logo">
+              <rect width="36" height="36" rx="8" fill="#D4AF37" fillOpacity="0.15"/>
+              <path d="M10 18h16M18 11l7 7-7 7" stroke="#D4AF37" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="text-base font-bold text-slate-300 tracking-wide hidden sm:inline">Management Platform</span>
           </span>
 
           {/* Desktop nav */}
@@ -164,8 +168,8 @@ export default function App() {
             },
             {
               step: "02",
-              title: "Download Stride",
-              desc: "Grab the official Stride application from the Apple App Store or Google Play Store and log in instantly using your verified credentials.",
+              title: "Download the App",
+              desc: "Grab the official management app from the Apple App Store or Google Play Store and log in instantly using your verified credentials.",
               icon: (
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
@@ -200,7 +204,7 @@ export default function App() {
       <section id="features" className="bg-[#0d1f3c] border-y border-[#D4AF37]/10">
         <div className="max-w-6xl mx-auto px-6 py-24">
           <div className="text-center mb-16">
-            <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">Why Stride</div>
+            <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">Why Choose Us</div>
             <h2 className="text-3xl md:text-4xl font-black text-white">Built for Operators.<br />Loved by Parents.</h2>
           </div>
 
@@ -302,8 +306,14 @@ export default function App() {
       {/* ── Footer ── */}
       <footer className="border-t border-[#D4AF37]/15 bg-[#060f1e]">
         <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <span className="font-black text-lg text-white"><span className="text-[#D4AF37]">S</span>tride</span>
-          <span>© {new Date().getFullYear()} Stride. All rights reserved.</span>
+          <span className="flex items-center gap-2">
+            <svg height="30" width="30" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Association Logo">
+              <rect width="36" height="36" rx="8" fill="#D4AF37" fillOpacity="0.15"/>
+              <path d="M10 18h16M18 11l7 7-7 7" stroke="#D4AF37" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="text-sm font-semibold text-slate-400">Association Platform</span>
+          </span>
+          <span>© {new Date().getFullYear()} Association Platform. All rights reserved.</span>
           <div className="flex gap-6">
             <a href="#" className="hover:text-[#D4AF37] transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-[#D4AF37] transition-colors">Terms of Service</a>
