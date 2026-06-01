@@ -1,0 +1,43 @@
+Role: Expert Full-Stack Developer (React Native Expo Router, Node.js Express & Supabase).
+Branding & UI Constraints: Strictly Navy Blue and Gold. All elements, new buttons, alert modals, and image review screens MUST stay 100% within device screen boundaries (Zero layout overflows). Use ScrollViews where necessary.
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨 DO NOT alter core user registration flows, database security keys, or existing course customisation menus. Isolate all modifications strictly to the Absence Report flow, the Substitution backend logic, the Payroll ledger database synchronization, and the Admin Invoice/Reimbursement approval layouts.
+PART 1: OPERATOR PANEL - DUAL ABSENCE BUTTONS
+Target Screen: Operator Class / Session View -> "Report Absence" trigger.
+Replace the single generic absence button with two distinct, high-visibility operational buttons:
+Button 1 (Gold Accent): "Full Absence - First Lesson Only"
+Button 2 (Red/Navy Styling): "Full Absence - Entire Day"
+Clicking either button logs the absence row into a teacher_absences Supabase table with a flag indicating the scope (single_class vs full_day) and immediately triggers the Substitution Cascade Engine.
+PART 2: THE 5-MINUTE SUBSTITUTION CASCADE ENGINE & NOTIFICATIONS
+Target Logic: Backend notification loop and timeout handler.
+The Timer: Set the substitution request expiration window to exactly 5 minutes (300,000 ms) per targeted operator before automatically forwarding the offer to the next qualified operator in the queue.
+Scenario A: Substitution ACCEPTED:
+If an available backup operator clicks "Accept", instantly halt the cascade loop and update the course record status.
+Dispatch three automated transactional push notifications:
+To Course Members (Parents): "Your class schedule is confirmed! [New Operator Name] will be teaching today at [Class Time]." (Target primary member if minor).
+To Absent Operator: "Your substitution request was covered by [New Operator Name]."
+To Admin: "Notice: [Class Name] at [Class Time] is now covered by [New Operator Name] following an absence alert."
+Scenario B: Substitution FAILED (No Backup Found):
+If the cascade list is exhausted with zero acceptances, trigger an urgent, high-priority LOUD critical audio alert directly to the Admin’s device.
+Present the Admin with an exclusive Emergency Resolution Modal containing 3 instant action options:
+Postpone: Flags the session as on-hold.
+Cancel: Strikingly wipes the session for that day and notifies parents of the cancellation.
+Reschedule Tool: Opens a compact calendar configuration layout displaying real-time operator availability arrays to select a New Date, New Time, and New Operator immediately.
+If the Admin executes a Reschedule and the newly selected operator accepts, broadcast confirmation push alerts instantly to all enrolled Course Members (Parents), the accepting operator, and update the Admin log.
+PART 3: PAYROLL LEDGER SYNC & RECONCILIATION DOUBLE-CHECK
+Target Module: Backend Payroll Schema and Admin/Operator Ledger interfaces.
+Database Ledger Updates: Every absence and successful substitution must write an absolute row entry into the payroll_transactions table:
+Deduct / Zero out the payable hours/credits for the operator who reported absent.
+Credit the full payable hours (plus any active substitution bonus) to the backup operator who accepted the coverage.
+The Double-Check Interface: Build a matching cross-reference summary card view in both the Admin Payroll screen and the Operator's private earnings tab:
+Display a line-by-line verification ledger: [Date] | [Class Name] | [Status: Substituted/Covered] | [Hours Transferred].
+This ensures explicit visual synchronization between what the operator expects to be paid and what the Admin sees on screen to avoid manual recording discrepancies.
+PART 4: ADMIN ONE-CLICK "PAY" FLOW FOR INVOICES & REIMBURSEMENTS
+Target Screen: Admin Finance / Pending Approvals View (app/(admin)/settings/finance or equivalent file).
+The Verification Card: Render custom layout items for pending Invoices and Reimbursement requests showing the uploaded receipt images or PDF files cleanly alongside the requested total.
+The "Pay" Button: Add a prominent Gold action button labeled "Pay Now".
+Execution Flow: * Clicking "Pay Now" must dispatch an Express API route request (POST /api/finance/execute-payout) carrying the target user's ID, payment type, destination IBAN string placeholder, and currency amount.
+Update the transaction record in the Supabase database state from 'Pending Approval' to 'Paid' instantly upon a 200 OK network feedback loop.
+Success Notifications: Once marked Paid, trigger two instant feedback alerts:
+To Admin: A native notification confirmation: "Payment successfully processed."
+To Recipient (Operator/Member): A premium push notification: "Your payout request for [Invoice Number / Reimbursement Description] has been approved and successfully transferred to your bank account."
+Output Requirement: Refactor the absence buttons and cascade timing code, build the admin emergency resolution workflow, wire up the payroll deduction/credit database mapping, implement the frontend payout button triggers, and provide the modified file architecture list.
