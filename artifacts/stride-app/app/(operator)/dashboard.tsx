@@ -27,7 +27,7 @@ import { type QrScanParams, useOfflineSync } from "@/context/OfflineSyncContext"
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
-import { api } from "@/lib/api";
+import { api, type ApiScheduledCourse } from "@/lib/api";
 import {
   CASCADE_TIMEOUT_SECS,
   MOCK_SUBS,
@@ -295,6 +295,9 @@ export default function OperatorDashboard() {
   const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
   const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string } | null>(null);
 
+  // ── Pending scheduled-course requests (operator must confirm or decline) ─────
+  const [pendingCourses, setPendingCourses]           = useState<ApiScheduledCourse[]>([]);
+
   // ── Clock-Out / QR logout state ─────────────────────────────────────────────
   const [showClockOutModal, setShowClockOutModal]     = useState(false);
   const [clockOutStatus, setClockOutStatus]           = useState<"idle" | "confirming" | "done">("idle");
@@ -342,6 +345,40 @@ export default function OperatorDashboard() {
       setShowCascade(true);
     }
   }, [activeAlert?.id]);
+
+  // ── Load pending scheduled-course requests for this operator ─────────────
+  useEffect(() => {
+    api.getScheduledCourses()
+      .then(courses => setPendingCourses(courses.filter(c => c.status === "pending_confirmation")))
+      .catch(() => {});
+  }, []);
+
+  const handleCourseConfirm = async (id: number) => {
+    try {
+      await api.confirmScheduledCourse(id);
+      setPendingCourses(prev => prev.filter(c => c.id !== id));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { /* ignore */ }
+  };
+
+  const handleCourseDecline = (id: number) => {
+    Alert.alert(
+      "Decline Course",
+      "Are you sure you want to decline this scheduled course request?",
+      [
+        { text: "Keep", style: "cancel" },
+        {
+          text: "Decline", style: "destructive",
+          onPress: async () => {
+            try {
+              await api.declineScheduledCourse(id);
+              setPendingCourses(prev => prev.filter(c => c.id !== id));
+            } catch { /* ignore */ }
+          },
+        },
+      ],
+    );
+  };
 
   // ── Clock-Out / QR-logout handler ────────────────────────────────────────
   const handleClockOut = async () => {
@@ -939,6 +976,53 @@ export default function OperatorDashboard() {
             onOpenNotif={(id) => { markRead(id); router.push("/(operator)/private-lessons"); }}
             onViewAll={() => router.push("/(operator)/private-lessons")}
           />
+        )}
+
+        {/* ── Pending Scheduled-Course Requests ── */}
+        {pendingCourses.length > 0 && (
+          <View style={{ backgroundColor: "#FEF3C7", borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#F59E0B" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <Ionicons name="alert-circle" size={20} color="#B45309" />
+              <Text style={{ fontSize: 15, fontWeight: "800", color: "#92400E" }}>
+                Course Requests ({pendingCourses.length})
+              </Text>
+            </View>
+            {pendingCourses.map(course => {
+              const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+              const disc = (course.discipline as { name?: string } | undefined)?.name ?? "Course";
+              return (
+                <View key={course.id} style={{ backgroundColor: "#FFF", borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: "#FDE68A" }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A" }}>
+                    {disc} — {DOW[course.day_of_week]}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
+                    {String(course.start_time).slice(0, 5)} – {String(course.end_time).slice(0, 5)}
+                    {" · "}Ages {course.age_min}–{course.age_max}
+                    {" · "}{course.skill_level.charAt(0).toUpperCase() + course.skill_level.slice(1)}
+                  </Text>
+                  {course.notes ? (
+                    <Text style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }} numberOfLines={2}>
+                      "{course.notes}"
+                    </Text>
+                  ) : null}
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                    <Pressable
+                      style={({ pressed }) => [{ flex: 1, backgroundColor: "#10B981", borderRadius: 8, padding: 10, alignItems: "center", opacity: pressed ? 0.8 : 1 }]}
+                      onPress={() => handleCourseConfirm(course.id)}
+                    >
+                      <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>✓ Accept</Text>
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [{ flex: 1, backgroundColor: "#EF4444", borderRadius: 8, padding: 10, alignItems: "center", opacity: pressed ? 0.8 : 1 }]}
+                      onPress={() => handleCourseDecline(course.id)}
+                    >
+                      <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>✗ Decline</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         )}
 
         {/* ── Quick Actions — identical 2-col grid as Parent ── */}

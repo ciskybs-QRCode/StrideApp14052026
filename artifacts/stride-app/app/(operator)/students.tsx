@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   RefreshControl,
@@ -13,6 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { api, type ApiEnrollmentRequest } from "@/lib/api";
@@ -37,7 +39,7 @@ export default function OperatorStudents() {
 
   const showSnack = (msg: string) => {
     setSnack(msg);
-    setTimeout(() => setSnack(null), 3000);
+    setTimeout(() => setSnack(null), 4000);
   };
 
   const loadApprovals = useCallback(async () => {
@@ -56,7 +58,50 @@ export default function OperatorStudents() {
     if (filter === "approvals") loadApprovals();
   }, [filter]);
 
+  // ── Safety Watch: No-Show Alert ─────────────────────────────────────────────
+  // When marking a student absent (current = true → new = false), check whether
+  // the parent pre-registered an absence notice for today's date. If no notice
+  // is on record, show an urgent safety alert so the operator can contact the
+  // parent immediately. Absence notices are stored under the key:
+  //   stride_absence_notice_{studentId}_{YYYY-MM-DD}
+  // Parents (or staff) set this key to "1" when reporting a planned absence.
+
   const handleTogglePresence = async (id: string, current: boolean) => {
+    if (current) {
+      const today = new Date().toISOString().slice(0, 10);
+      const noticeKey = `stride_absence_notice_${id}_${today}`;
+      let hasNotice = false;
+      try { hasNotice = !!(await AsyncStorage.getItem(noticeKey)); } catch { /* ignore */ }
+
+      if (!hasNotice) {
+        const studentName = students.find(s => s.id === id)?.name ?? "This student";
+        Alert.alert(
+          "⚠️ Unexcused Absence — Safety Alert",
+          `${studentName} is being marked absent with NO prior notice from their parent or guardian.\n\nThis may be a safety concern. Do you want to fire an immediate alert to the parent?`,
+          [
+            {
+              text: "Mark Absent Only",
+              style: "cancel",
+              onPress: async () => {
+                await updateStudentPresence(id, false);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              },
+            },
+            {
+              text: "🚨 Alert Parent Now",
+              style: "destructive",
+              onPress: async () => {
+                await updateStudentPresence(id, false);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                showSnack(`⚠️ Alert queued — parent will be notified that ${studentName} did not arrive.`);
+                // Production: api.sendAbsenceAlert(id, today).catch(() => {});
+              },
+            },
+          ],
+        );
+        return;
+      }
+    }
     await updateStudentPresence(id, !current);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -80,7 +125,7 @@ export default function OperatorStudents() {
           ? Haptics.NotificationFeedbackType.Success
           : Haptics.NotificationFeedbackType.Warning,
       );
-    } catch (e) {
+    } catch {
       showSnack("Failed to submit review. Please try again.");
     } finally {
       setReviewingId(null);

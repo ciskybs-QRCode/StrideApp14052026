@@ -8,3 +8,5 @@ export * from "./admin-settings";
 export * from "./blacklist";
 export * from "./invoices";
 export * from "./reimbursements";
+export * from "./scheduled-courses";
+export * from "./operator-course-avail";

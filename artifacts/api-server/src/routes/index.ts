@@ -26,6 +26,8 @@ import accessCheckRouter from "./access-check.js";
 import meetingAvailabilityRouter from "./meeting-availability.js";
 import reimbursementsRouter from "./reimbursements.js";
 import workshopProposalsRouter from "./workshop-proposals.js";
+import scheduledCoursesRouter from "./scheduled-courses.js";
+import courseAvailabilityRouter from "./course-availability.js";
 
 const router: IRouter = Router();
 
@@ -56,5 +58,7 @@ router.use(accessCheckRouter);
 router.use(meetingAvailabilityRouter);
 router.use(reimbursementsRouter);
 router.use(workshopProposalsRouter);
+router.use(scheduledCoursesRouter);
+router.use(courseAvailabilityRouter);
 
 export default router;

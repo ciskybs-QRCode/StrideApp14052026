@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiAvailabilitySlot, type ApiDiscipline, type ApiLocation, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
+import { api, type ApiAvailabilitySlot, type ApiCourseAvailTemplate, type ApiDiscipline, type ApiLocation, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
 
 // ── Date / time helpers ───────────────────────────────────────────────────────
 
@@ -87,24 +87,46 @@ export default function OperatorPrivateLessonsScreen() {
   const [slotNotes, setSlotNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Mode B — Regular Courses availability
+  const [availMode, setAvailMode] = useState<"private" | "courses">("private");
+  const [courseAvailTemplates, setCourseAvailTemplates] = useState<ApiCourseAvailTemplate[]>([]);
+  // Draft: disciplineId → { days (weekdays selected), startTime, endTime }
+  const [courseAvailDraft, setCourseAvailDraft] = useState<Record<number, { days: number[]; startTime: string; endTime: string }>>({});
+  const [courseAvailSaving, setCourseAvailSaving] = useState(false);
+
   // QR scan
   const [showQrEntry, setShowQrEntry] = useState(false);
   const [qrInput, setQrInput] = useState("");
   const [scanResult, setScanResult] = useState<{ ok: boolean; earnings_cents?: number; invoice_number?: string; error?: string } | null>(null);
 
   const load = useCallback(async () => {
-    const [disc, locs, avail, bk, notifs] = await Promise.allSettled([
+    const [disc, locs, avail, bk, notifs, courseAvail] = await Promise.allSettled([
       api.getDisciplines(),
       api.getLocations(),
       api.getAvailability(),
       api.getPrivateBookings(),
       api.getPrivateNotifications(),
+      api.getCourseAvailability(),
     ]);
-    if (disc.status   === "fulfilled") setDisciplines(disc.value);
-    if (locs.status   === "fulfilled") setLocations(locs.value);
-    if (avail.status  === "fulfilled") setSlots(avail.value);
-    if (bk.status     === "fulfilled") setBookings(bk.value);
-    if (notifs.status === "fulfilled") setNotifications(notifs.value);
+    if (disc.status      === "fulfilled") setDisciplines(disc.value);
+    if (locs.status      === "fulfilled") setLocations(locs.value);
+    if (avail.status     === "fulfilled") setSlots(avail.value);
+    if (bk.status        === "fulfilled") setBookings(bk.value);
+    if (notifs.status    === "fulfilled") setNotifications(notifs.value);
+    if (courseAvail.status === "fulfilled") {
+      const templates = courseAvail.value;
+      setCourseAvailTemplates(templates);
+      const draftInit: Record<number, { days: number[]; startTime: string; endTime: string }> = {};
+      for (const t of templates) {
+        if (!draftInit[t.discipline_id]) {
+          draftInit[t.discipline_id] = { days: [], startTime: t.start_time.slice(0, 5), endTime: t.end_time.slice(0, 5) };
+        }
+        if (!draftInit[t.discipline_id].days.includes(t.day_of_week)) {
+          draftInit[t.discipline_id].days.push(t.day_of_week);
+        }
+      }
+      setCourseAvailDraft(draftInit);
+    }
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -126,6 +148,31 @@ export default function OperatorPrivateLessonsScreen() {
     setDayTimeSlots({});
     setActiveDayEdit(null);
     setSlotNotes("");
+  };
+
+  // Mode B — Save regular course weekly availability templates
+  const saveCourseAvail = async () => {
+    setCourseAvailSaving(true);
+    try {
+      for (const [discIdStr, { days, startTime, endTime }] of Object.entries(courseAvailDraft)) {
+        const disciplineId = parseInt(discIdStr, 10);
+        if (isNaN(disciplineId) || !days.length || !startTime || !endTime) continue;
+        for (const dayOfWeek of days) {
+          await api.upsertCourseAvailability({ disciplineId, dayOfWeek, startTime, endTime });
+        }
+      }
+      for (const t of courseAvailTemplates) {
+        const draft = courseAvailDraft[t.discipline_id];
+        if (!draft || !draft.days.includes(t.day_of_week)) {
+          await api.deleteCourseAvailability(t.id).catch(() => {});
+        }
+      }
+      const updated = await api.getCourseAvailability();
+      setCourseAvailTemplates(updated);
+      Alert.alert("Saved", "Your regular course availability has been updated.");
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "Save failed");
+    } finally { setCourseAvailSaving(false); }
   };
 
   // Generate next N occurrences of a given day-of-week (0=Sun…6=Sat)
@@ -398,62 +445,181 @@ export default function OperatorPrivateLessonsScreen() {
         {/* ── AVAILABILITY TAB ── */}
         {tab === "availability" && (
           <>
-            <Pressable
-              style={[styles.addBtn, { backgroundColor: colors.primary }]}
-              onPress={() => { resetForm(); setShowSlotModal(true); }}
-            >
-              <Ionicons name="add-circle-outline" size={18} color="#FFF" />
-              <Text style={styles.addBtnText}>Submit Availability</Text>
-            </Pressable>
+            {/* ── Mode A / B toggle ── */}
+            <View style={{ flexDirection: "row", backgroundColor: colors.muted, borderRadius: 12, padding: 4, marginBottom: 16, gap: 4 }}>
+              {(["private", "courses"] as const).map(m => (
+                <Pressable
+                  key={m}
+                  style={[{ flex: 1, borderRadius: 10, paddingVertical: 9, alignItems: "center" },
+                    availMode === m && { backgroundColor: colors.card, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 }]}
+                  onPress={() => setAvailMode(m)}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: availMode === m ? colors.primary : colors.mutedForeground }}>
+                    {m === "private" ? "🎯 Private Lessons" : "📅 Regular Courses"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-            {slots.length === 0 && (
-              <View style={styles.emptyCard}>
-                <Ionicons name="time-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Slots Submitted</Text>
-                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-                  Submit your availability and the admin will review and approve your slots.
-                </Text>
-              </View>
+            {/* ── MODE A: Private lesson one-off / recurring slots ── */}
+            {availMode === "private" && (
+              <>
+                <Pressable
+                  style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => { resetForm(); setShowSlotModal(true); }}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color="#FFF" />
+                  <Text style={styles.addBtnText}>Submit Availability</Text>
+                </Pressable>
+
+                {slots.length === 0 && (
+                  <View style={styles.emptyCard}>
+                    <Ionicons name="time-outline" size={44} color={colors.mutedForeground} />
+                    <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Slots Submitted</Text>
+                    <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+                      Submit your availability and the admin will review and approve your slots.
+                    </Text>
+                  </View>
+                )}
+
+                {slots.map(s => {
+                  const d = new Date(s.slot_date + "T00:00:00");
+                  return (
+                    <View
+                      key={s.id}
+                      style={[styles.slotCard, { backgroundColor: colors.card, borderLeftColor: slotBorderColor(s.status) }]}
+                    >
+                      <View style={[styles.slotDateBox, { backgroundColor: slotStatusColor(s.status) }]}>
+                        <Text style={[styles.slotDayName,  { color: slotStatusText(s.status) }]}>{DAY_NAMES[d.getDay()]}</Text>
+                        <Text style={[styles.slotDayNum,   { color: slotStatusText(s.status) }]}>{d.getDate()}</Text>
+                        <Text style={[styles.slotMonthTxt, { color: slotStatusText(s.status) }]}>{MONTH_SHORT[d.getMonth()]}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.cardTitle, { color: colors.foreground }]}>{s.discipline?.name ?? "Discipline"}</Text>
+                        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                          {fmtTime(s.start_time)} – {fmtTime(s.end_time)} · {s.location}
+                        </Text>
+                        {s.parent_price_cents != null && (
+                          <Text style={[styles.cardSub, { color: colors.primary, fontWeight: "700" }]}>
+                            Member price: {fmt(s.parent_price_cents)}/lesson
+                          </Text>
+                        )}
+                        {s.operator_pay_cents != null && s.operator_pay_cents > 0 && (
+                          <Text style={[styles.cardSub, { color: "#059669", fontWeight: "700" }]}>
+                            Your pay: {fmt(s.operator_pay_cents)}/lesson
+                          </Text>
+                        )}
+                        {s.notes ? (
+                          <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>"{s.notes}"</Text>
+                        ) : null}
+                      </View>
+                      <View style={[styles.statusPill, { backgroundColor: slotStatusColor(s.status) }]}>
+                        <Ionicons name={slotStatusIcon(s.status)} size={11} color={slotStatusText(s.status)} />
+                        <Text style={[styles.statusText, { color: slotStatusText(s.status) }]}>{s.status}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
             )}
 
-            {slots.map(s => {
-              const d = new Date(s.slot_date + "T00:00:00");
-              return (
-                <View
-                  key={s.id}
-                  style={[styles.slotCard, { backgroundColor: colors.card, borderLeftColor: slotBorderColor(s.status) }]}
-                >
-                  <View style={[styles.slotDateBox, { backgroundColor: slotStatusColor(s.status) }]}>
-                    <Text style={[styles.slotDayName,  { color: slotStatusText(s.status) }]}>{DAY_NAMES[d.getDay()]}</Text>
-                    <Text style={[styles.slotDayNum,   { color: slotStatusText(s.status) }]}>{d.getDate()}</Text>
-                    <Text style={[styles.slotMonthTxt, { color: slotStatusText(s.status) }]}>{MONTH_SHORT[d.getMonth()]}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>{s.discipline?.name ?? "Discipline"}</Text>
-                    <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-                      {fmtTime(s.start_time)} – {fmtTime(s.end_time)} · {s.location}
-                    </Text>
-                    {s.parent_price_cents != null && (
-                      <Text style={[styles.cardSub, { color: colors.primary, fontWeight: "700" }]}>
-                        Member price: {fmt(s.parent_price_cents)}/lesson
-                      </Text>
-                    )}
-                    {s.operator_pay_cents != null && s.operator_pay_cents > 0 && (
-                      <Text style={[styles.cardSub, { color: "#059669", fontWeight: "700" }]}>
-                        Your pay: {fmt(s.operator_pay_cents)}/lesson
-                      </Text>
-                    )}
-                    {s.notes ? (
-                      <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>"{s.notes}"</Text>
-                    ) : null}
-                  </View>
-                  <View style={[styles.statusPill, { backgroundColor: slotStatusColor(s.status) }]}>
-                    <Ionicons name={slotStatusIcon(s.status)} size={11} color={slotStatusText(s.status)} />
-                    <Text style={[styles.statusText, { color: slotStatusText(s.status) }]}>{s.status}</Text>
-                  </View>
+            {/* ── MODE B: Regular course weekly availability ── */}
+            {availMode === "courses" && (
+              <>
+                <View style={{ backgroundColor: `${colors.primary}10`, borderRadius: 14, padding: 14, marginBottom: 16, flexDirection: "row", gap: 10 }}>
+                  <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 1 }} />
+                  <Text style={{ flex: 1, fontSize: 13, color: colors.primary, lineHeight: 18 }}>
+                    Select the disciplines you can teach as a regular weekly course and which days work for you. Admins will use this data to schedule courses.
+                  </Text>
                 </View>
-              );
-            })}
+
+                {disciplines.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <Ionicons name="barbell-outline" size={40} color={colors.mutedForeground} />
+                    <Text style={[styles.emptyTitle, { color: colors.primary }]}>No disciplines</Text>
+                    <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>No disciplines are configured yet. Contact the admin.</Text>
+                  </View>
+                ) : (
+                  disciplines.map(disc => {
+                    const draft = courseAvailDraft[disc.id] ?? { days: [], startTime: "09:00", endTime: "10:00" };
+                    const hasAnyDay = draft.days.length > 0;
+                    const DOW_LABELS = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+                    return (
+                      <View key={disc.id} style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: hasAnyDay ? colors.primary : colors.border }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                          <Ionicons name="barbell-outline" size={18} color={colors.primary} />
+                          <Text style={{ flex: 1, fontSize: 16, fontWeight: "800", color: colors.primary }}>{disc.name}</Text>
+                          {hasAnyDay && (
+                            <View style={{ backgroundColor: `${colors.primary}18`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
+                              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "700" }}>{draft.days.length}d/wk</Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={{ flexDirection: "row", gap: 6, marginBottom: 12 }}>
+                          {DOW_LABELS.map((lbl, idx) => {
+                            const active = draft.days.includes(idx);
+                            return (
+                              <Pressable
+                                key={idx}
+                                onPress={() => {
+                                  setCourseAvailDraft(prev => {
+                                    const d = prev[disc.id] ?? { days: [], startTime: "09:00", endTime: "10:00" };
+                                    const newDays = d.days.includes(idx)
+                                      ? d.days.filter(x => x !== idx)
+                                      : [...d.days, idx].sort();
+                                    return { ...prev, [disc.id]: { ...d, days: newDays } };
+                                  });
+                                }}
+                                style={{ flex: 1, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: active ? colors.primary : colors.muted }}
+                              >
+                                <Text style={{ fontSize: 11, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{lbl}</Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                        {hasAnyDay && (
+                          <View style={{ flexDirection: "row", gap: 12 }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 4 }}>Start time</Text>
+                              <TextInput
+                                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
+                                value={draft.startTime}
+                                onChangeText={v => setCourseAvailDraft(prev => ({ ...prev, [disc.id]: { ...(prev[disc.id] ?? { days: [], startTime: "09:00", endTime: "10:00" }), startTime: v } }))}
+                                placeholder="09:00"
+                                placeholderTextColor={colors.mutedForeground}
+                                keyboardType="numbers-and-punctuation"
+                              />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 4 }}>End time</Text>
+                              <TextInput
+                                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
+                                value={draft.endTime}
+                                onChangeText={v => setCourseAvailDraft(prev => ({ ...prev, [disc.id]: { ...(prev[disc.id] ?? { days: [], startTime: "09:00", endTime: "10:00" }), endTime: v } }))}
+                                placeholder="10:00"
+                                placeholderTextColor={colors.mutedForeground}
+                                keyboardType="numbers-and-punctuation"
+                              />
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
+                )}
+
+                <Pressable
+                  style={{ backgroundColor: colors.primary, borderRadius: 14, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, opacity: courseAvailSaving ? 0.7 : 1, marginTop: 8, marginBottom: 8 }}
+                  onPress={saveCourseAvail}
+                  disabled={courseAvailSaving}
+                >
+                  {courseAvailSaving
+                    ? <ActivityIndicator size="small" color="#FFF" />
+                    : <Ionicons name="save-outline" size={18} color="#FFF" />}
+                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Save Availability</Text>
+                </Pressable>
+              </>
+            )}
           </>
         )}
 

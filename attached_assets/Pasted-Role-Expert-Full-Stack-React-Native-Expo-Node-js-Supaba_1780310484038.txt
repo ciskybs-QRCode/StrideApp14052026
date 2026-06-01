@@ -1,0 +1,67 @@
+Role: Expert Full-Stack React Native (Expo) & Node.js/Supabase Developer.
+
+Target Modules: Operator Availability Screen, Admin Course Organization Dashboard, Notification Engine, and Attendance Tracker.
+
+UI Identity: Navy Blue and Gold. Clean, highly visible calendars/grids. Strictly zero text or element layout overflows beyond device boundaries.
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT modify underlying user authentication, payment gateways, global application customisation settings, or unrelated profile tabs. Focus exclusively on the availability inputs, course generation forms, confirmation states, cron-based reminders, and attendance check-in triggers. Keep the remaining codebase 100% intact.
+
+Please implement the following end-to-end scheduling ecosystem:
+
+1. Operator Side: Differentiated Availability Input
+Refactor the Operator Availability screen to support two distinct routing modes via a clean toggle segment:
+
+Mode A: Private Lessons Availability: A general weekly schedule grid (Days and universal Time Slots) where the operator signals when they are available exclusively for 1-to-1 private bookings.
+
+Mode B: Regular Courses Availability:
+
+Allow the operator to multi-select specific disciplines (dynamically fetched from the active course types created by the Admin).
+
+For each selected discipline, allow them to map out independent Days and custom Time Slots (e.g., Operator A: Tuesday & Thursday 4 PM - 8 PM for Ballet and Contemporary; Saturday 9 AM - 12 PM for Character Dance). Save this distinct relational matrix to Supabase.
+
+2. Admin Side: Course Generation & Targeting
+Availability Aggregator: Build a dashboard view for the Admin that compiles all operators' sub-mapped availabilities, filterable by Day, Time, and Discipline.
+
+Course Creator Form: When the Admin sets up a course, they must specify:
+
+Selected Discipline, Day, and Time.
+
+Target Age Range: (Input fields: From Age ... To Age).
+
+Target Skill Level: (Dropdown selection: Beginner, Intermediate, Advanced, or Open Class).
+
+Operator Assignment: Select an available operator matching that criteria.
+
+State Management: Saving this form creates the course with an initial relational status string set to 'Pending Operator Confirmation'.
+
+3. The Confirmation & Push Notification Pipeline
+Operator Handshake: In the Operator dashboard, render a "Pending Requests" card. The operator must see the proposed course details and be able to click "Confirm" or "Decline".
+
+Post-Confirmation Triggers: Once the operator clicks "Confirm", update the course status to 'Active' and instantly fire three targeted notifications:
+
+To Admin: Push alert + dashboard indicator confirming the operator locked the schedule.
+
+To Operator: Calendar block confirmation notification.
+
+To Eligible Members (Parents): Query the database for any dependent members (minors) whose Age and Skill Level match the course criteria perfectly. Send their primary parent account an automated push notification: "A new course matching your profile is open for enrollment!"
+
+4. Automated Reminders (24-Hour & 1-Hour Windows)
+Action: Set up a scheduled backend function stub/cron logic framework (using Supabase Edge Functions or an Express background worker package) that scans active course enrollments daily/hourly.
+
+Logic: Automatically push automated class reminders to both the enrolled Members (Parents) and assigned Operators at exactly:
+
+24 hours prior to the class start time.
+
+1 hour prior to the class start time.
+
+5. Safety Watch: Anti-Fraud No-Show Alert System
+Context: Protect minors under association care.
+
+Logic Trigger: Inside the Operator Attendance/Check-In interface for an active class session:
+
+If a dependent member (child) is marked "Absent" by the operator during roll call, check if there is an active user-submitted absence/tardy notice logged in the system for that specific date.
+
+The Alert: If NO prior notice exists from the parent, instantly bypass normal queues and fire an immediate, high-priority Safety Push Notification / Emergency Alert directly to that specific Parent's mobile device: "Urgent: [Child Name] was marked absent from [Course Name] without prior notification. Please check in."
+
+Output Requirement: Code the modified availability selection fields, create the Admin targeted scheduler form, implement the conditional confirmation workflow hooks, set up the reminder logic checkpoints, attach the unexcused absence alert to the attendance logger, and list the structural files updated.

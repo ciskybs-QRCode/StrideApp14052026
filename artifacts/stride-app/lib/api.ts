@@ -538,6 +538,33 @@ export const api = {
     request<ApiAccessCheck>("GET", `/access-check/${childId}`),
   updateChildPayment: (childId: string, data: { payment_status?: string; is_blocked?: boolean; block_reason?: string }) =>
     request<ApiAccessCheck>("PATCH", `/access-check/${childId}/payment`, data),
+
+  // ── Course Availability Templates (Operator weekly regular-course schedule) ──
+  getCourseAvailability: () =>
+    request<ApiCourseAvailTemplate[]>("GET", "/course-availability"),
+  upsertCourseAvailability: (data: { disciplineId: number; dayOfWeek: number; startTime: string; endTime: string }) =>
+    request<ApiCourseAvailTemplate>("PUT", "/course-availability", data),
+  deleteCourseAvailability: (id: number) =>
+    request<void>("DELETE", `/course-availability/${id}`),
+
+  // ── Scheduled Courses (Admin-created targeted recurring courses) ─────────────
+  getScheduledCourses: () =>
+    request<ApiScheduledCourse[]>("GET", "/scheduled-courses"),
+  createScheduledCourse: (data: {
+    disciplineId: number;
+    operatorProfileId?: number;
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    ageMin?: number;
+    ageMax?: number;
+    skillLevel?: string;
+    notes?: string;
+  }) => request<ApiScheduledCourse>("POST", "/scheduled-courses", data),
+  confirmScheduledCourse: (id: number) =>
+    request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/confirm`, {}),
+  declineScheduledCourse: (id: number) =>
+    request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/decline`, {}),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -889,4 +916,47 @@ export interface ApiAccessCheck {
   childId: string;
   childName: string;
   blockReason?: string;
+}
+
+// ── Scheduling Ecosystem ──────────────────────────────────────────────────────
+
+/** Operator's weekly recurring course-teaching availability template. */
+export interface ApiCourseAvailTemplate {
+  id: number;
+  operator_id: number;
+  organization_id: number;
+  discipline_id: number;
+  /** ISO weekday 0=Sunday…6=Saturday */
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  created_at: string;
+  discipline?: { id: number; name: string };
+  operator?: { id: number; name: string };
+}
+
+/** Admin-created targeted recurring course. Requires operator confirmation before going active. */
+export interface ApiScheduledCourse {
+  id: number;
+  organization_id: number;
+  discipline_id: number;
+  operator_profile_id?: number;
+  /** ISO weekday 0=Sunday…6=Saturday */
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  age_min: number;
+  age_max: number;
+  skill_level: "beginner" | "intermediate" | "advanced" | "open";
+  status: "pending_confirmation" | "active" | "declined" | "cancelled";
+  notes?: string;
+  created_by_admin_id?: number;
+  created_at: string;
+  confirmed_at?: string;
+  discipline?: { id: number; name: string };
+  operator?: {
+    id: number;
+    profile_type: "paid" | "volunteer";
+    user?: { id: number; name: string };
+  };
 }

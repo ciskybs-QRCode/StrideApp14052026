@@ -10,6 +10,7 @@ import { useColors } from "@/hooks/useColors";
 import {
   api,
   type ApiDiscipline, type ApiOperatorProfile, type ApiAvailabilitySlot, type ApiUser,
+  type ApiScheduledCourse, type ApiCourseAvailTemplate,
 } from "@/lib/api";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -21,7 +22,7 @@ function fmtDate(d: string) {
   catch { return d; }
 }
 
-type Tab = "operators" | "disciplines" | "availability";
+type Tab = "operators" | "disciplines" | "availability" | "scheduler";
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
@@ -64,19 +65,38 @@ export default function AdminLessonsScreen() {
   const [confirmDeleteDiscId, setConfirmDeleteDiscId] = useState<number | null>(null);
   const [confirmDeleteProfileId, setConfirmDeleteProfileId] = useState<number | null>(null);
 
+  // ── Scheduler tab state ───────────────────────────────────────────────────────
+  const [scheduledCourses,     setScheduledCourses]     = useState<ApiScheduledCourse[]>([]);
+  const [courseAvailTemplates, setCourseAvailTemplates] = useState<ApiCourseAvailTemplate[]>([]);
+  const [scDisciplineId,       setScDisciplineId]       = useState<number | null>(null);
+  const [scOperatorId,         setScOperatorId]         = useState<number | null>(null);
+  const [scDayOfWeek,          setScDayOfWeek]          = useState<number>(1);
+  const [scStartTime,          setScStartTime]          = useState("09:00");
+  const [scEndTime,            setScEndTime]            = useState("10:00");
+  const [scAgeMin,             setScAgeMin]             = useState("5");
+  const [scAgeMax,             setScAgeMax]             = useState("18");
+  const [scSkillLevel,         setScSkillLevel]         = useState<"beginner"|"intermediate"|"advanced"|"open">("open");
+  const [scNotes,              setScNotes]              = useState("");
+  const [scSaving,             setScSaving]             = useState(false);
+  const [scFilterDay,          setScFilterDay]          = useState<number | null>(null);
+
   // ── Data loading ──────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
-    const [disc, prof, avail, usrList] = await Promise.allSettled([
+    const [disc, prof, avail, usrList, sched, templates] = await Promise.allSettled([
       api.getDisciplines(),
       api.getOperatorProfiles(),
       api.getAvailability(),
       api.getUsers(),
+      api.getScheduledCourses(),
+      api.getCourseAvailability(),
     ]);
-    if (disc.status    === "fulfilled") setDisciplines(disc.value);
-    if (prof.status    === "fulfilled") setProfiles(prof.value);
-    if (avail.status   === "fulfilled") setSlots(avail.value);
-    if (usrList.status === "fulfilled") setUsers(usrList.value);
+    if (disc.status      === "fulfilled") setDisciplines(disc.value);
+    if (prof.status      === "fulfilled") setProfiles(prof.value);
+    if (avail.status     === "fulfilled") setSlots(avail.value);
+    if (usrList.status   === "fulfilled") setUsers(usrList.value);
+    if (sched.status     === "fulfilled") setScheduledCourses(sched.value);
+    if (templates.status === "fulfilled") setCourseAvailTemplates(templates.value);
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -291,9 +311,10 @@ export default function AdminLessonsScreen() {
         {/* ── Tab switcher — underline style ── */}
         <View style={[styles.tabBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           {([
-            { key: "operators",    label: "Operators",    icon: "people-outline"   as const },
-            { key: "disciplines",  label: "Disciplines",  icon: "barbell-outline"  as const },
-            { key: "availability", label: "Availability", icon: "calendar-outline" as const },
+            { key: "operators",    label: "Operators",    icon: "people-outline"          as const },
+            { key: "disciplines",  label: "Disciplines",  icon: "barbell-outline"         as const },
+            { key: "availability", label: "Availability", icon: "calendar-outline"        as const },
+            { key: "scheduler",    label: "Scheduler",    icon: "calendar-number-outline" as const },
           ]).map(t => {
             const active = tab === t.key;
             return (
@@ -567,6 +588,262 @@ export default function AdminLessonsScreen() {
                 <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
                 <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No availability slots submitted yet</Text>
               </View>
+            )}
+          </>
+        )}
+
+        {/* ══ SCHEDULER TAB ══ */}
+        {tab === "scheduler" && (
+          <>
+            {/* ── Operator course availability aggregator ── */}
+            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>Operator Course Availability</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", gap: 8, paddingBottom: 4 }}>
+                {([null, 1, 2, 3, 4, 5, 6, 0] as (number | null)[]).map(d => {
+                  const label = d === null ? "All" : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d];
+                  const active = scFilterDay === d;
+                  return (
+                    <Pressable
+                      key={String(d)}
+                      onPress={() => setScFilterDay(d)}
+                      style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: active ? colors.primary : colors.muted }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {courseAvailTemplates.filter(t => scFilterDay === null || t.day_of_week === scFilterDay).length === 0 ? (
+              <View style={[styles.emptyCard, { marginBottom: 16 }]}>
+                <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
+                <Text style={[styles.emptyText, { color: colors.mutedForeground, textAlign: "center" }]}>
+                  No operator course availability yet.{"\n"}Operators can set their weekly schedule from their app.
+                </Text>
+              </View>
+            ) : (
+              courseAvailTemplates
+                .filter(t => scFilterDay === null || t.day_of_week === scFilterDay)
+                .map(t => {
+                  const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+                  const opName   = (t.operator as { name?: string } | null)?.name ?? "Unknown operator";
+                  const discName = (t.discipline as { name?: string } | null)?.name ?? "Unknown";
+                  return (
+                    <View key={t.id} style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.cardTitle, { color: colors.foreground }]}>{opName}</Text>
+                        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                          {discName} · {DOW[t.day_of_week]} · {fmtTime(t.start_time)}–{fmtTime(t.end_time)}
+                        </Text>
+                      </View>
+                      <Pressable
+                        style={{ backgroundColor: `${colors.primary}18`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                        onPress={() => {
+                          setScDisciplineId(t.discipline_id);
+                          setScOperatorId(t.operator_id);
+                          setScDayOfWeek(t.day_of_week);
+                          setScStartTime(t.start_time.slice(0, 5));
+                          setScEndTime(t.end_time.slice(0, 5));
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Use →</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })
+            )}
+
+            {/* ── Schedule new course form ── */}
+            <Text style={[styles.sectionHeader, { color: colors.mutedForeground, marginTop: 8 }]}>Schedule New Course</Text>
+            <View style={[styles.card, { backgroundColor: colors.card, gap: 14 }]}>
+              {/* Discipline */}
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Discipline *</Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {activeDiscs.map(d => (
+                    <Pressable
+                      key={d.id}
+                      onPress={() => setScDisciplineId(d.id)}
+                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: scDisciplineId === d.id ? colors.primary : colors.muted }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: scDisciplineId === d.id ? "#FFF" : colors.mutedForeground }}>{d.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              {/* Operator */}
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Operator (optional)</Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {profiles.map(p => {
+                    const opUser = users.find(u => u.id === p.user_id);
+                    const label = opUser?.name ?? `Operator #${p.id}`;
+                    return (
+                      <Pressable
+                        key={p.id}
+                        onPress={() => setScOperatorId(scOperatorId === p.id ? null : p.id)}
+                        style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: scOperatorId === p.id ? "#10B981" : colors.muted }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: "600", color: scOperatorId === p.id ? "#FFF" : colors.mutedForeground }}>{label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+              {/* Day of week */}
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Day *</Text>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  {["Su","Mo","Tu","We","Th","Fr","Sa"].map((lbl, idx) => (
+                    <Pressable
+                      key={idx}
+                      onPress={() => setScDayOfWeek(idx)}
+                      style={{ flex: 1, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: scDayOfWeek === idx ? colors.primary : colors.muted }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: scDayOfWeek === idx ? "#FFF" : colors.mutedForeground }}>{lbl}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              {/* Start / End time */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Start *</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
+                    value={scStartTime} onChangeText={setScStartTime}
+                    placeholder="09:00" placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numbers-and-punctuation"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>End *</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
+                    value={scEndTime} onChangeText={setScEndTime}
+                    placeholder="10:00" placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numbers-and-punctuation"
+                  />
+                </View>
+              </View>
+              {/* Age range */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Min Age</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
+                    value={scAgeMin} onChangeText={setScAgeMin}
+                    placeholder="5" placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Max Age</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
+                    value={scAgeMax} onChangeText={setScAgeMax}
+                    placeholder="18" placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                  />
+                </View>
+              </View>
+              {/* Skill level */}
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Skill Level</Text>
+                <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                  {(["open","beginner","intermediate","advanced"] as const).map(lvl => (
+                    <Pressable
+                      key={lvl}
+                      onPress={() => setScSkillLevel(lvl)}
+                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: scSkillLevel === lvl ? "#FBBF24" : colors.muted }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: scSkillLevel === lvl ? "#1E3A8A" : colors.mutedForeground }}>
+                        {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              {/* Notes */}
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Notes (optional)</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: colors.foreground, backgroundColor: colors.background, height: 72, textAlignVertical: "top" }}
+                  value={scNotes} onChangeText={setScNotes}
+                  placeholder="Additional notes for the operator..."
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                />
+              </View>
+              {/* Submit */}
+              <Pressable
+                style={[styles.addBtn, { backgroundColor: scSaving ? colors.mutedForeground : colors.primary }]}
+                disabled={scSaving}
+                onPress={async () => {
+                  if (!scDisciplineId) { Alert.alert("Missing", "Please select a discipline."); return; }
+                  if (!scStartTime || !scEndTime) { Alert.alert("Missing", "Please enter start and end times."); return; }
+                  setScSaving(true);
+                  try {
+                    await api.createScheduledCourse({
+                      disciplineId:      scDisciplineId,
+                      operatorProfileId: scOperatorId ?? undefined,
+                      dayOfWeek:         scDayOfWeek,
+                      startTime:         scStartTime,
+                      endTime:           scEndTime,
+                      ageMin:            parseInt(scAgeMin, 10) || 5,
+                      ageMax:            parseInt(scAgeMax, 10) || 18,
+                      skillLevel:        scSkillLevel,
+                      notes:             scNotes || undefined,
+                    });
+                    await load();
+                    setScDisciplineId(null); setScOperatorId(null); setScDayOfWeek(1);
+                    setScStartTime("09:00"); setScEndTime("10:00");
+                    setScAgeMin("5"); setScAgeMax("18"); setScSkillLevel("open"); setScNotes("");
+                    Alert.alert("✓ Sent", "Course request sent to the operator for confirmation.");
+                  } catch (e: unknown) {
+                    Alert.alert("Error", e instanceof Error ? e.message : "Failed to create course");
+                  } finally { setScSaving(false); }
+                }}
+              >
+                {scSaving
+                  ? <ActivityIndicator size="small" color="#FFF" />
+                  : <Ionicons name="calendar-number-outline" size={18} color="#FFF" />}
+                <Text style={styles.addBtnText}>Send to Operator</Text>
+              </Pressable>
+            </View>
+
+            {/* ── Existing scheduled courses list ── */}
+            {scheduledCourses.length > 0 && (
+              <>
+                <Text style={[styles.sectionHeader, { color: colors.mutedForeground, marginTop: 4 }]}>All Scheduled Courses</Text>
+                {scheduledCourses.map(sc => {
+                  const DOW  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+                  const statusColor = sc.status === "active" ? "#10B981" : sc.status === "declined" ? "#EF4444" : "#F59E0B";
+                  const discName    = (sc.discipline as { name?: string } | null)?.name ?? "Course";
+                  const opName      = (sc.operator as { user?: { name?: string } } | null)?.user?.name ?? "Unassigned";
+                  return (
+                    <View key={sc.id} style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                          {discName} — {DOW[sc.day_of_week]}
+                        </Text>
+                        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                          {sc.start_time.slice(0, 5)}–{sc.end_time.slice(0, 5)} · Ages {sc.age_min}–{sc.age_max} · {sc.skill_level}
+                        </Text>
+                        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                          👤 {opName}
+                        </Text>
+                      </View>
+                      <View style={{ backgroundColor: `${statusColor}18`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: statusColor }}>
+                          {sc.status.replace("_", " ")}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
             )}
           </>
         )}
