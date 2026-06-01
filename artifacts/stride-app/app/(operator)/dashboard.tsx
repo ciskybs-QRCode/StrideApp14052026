@@ -922,7 +922,7 @@ export default function OperatorDashboard() {
               <Ionicons name="school-outline" size={24} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.privateLessonTitle}>Private Lessons</Text>
+              <Text style={styles.privateLessonTitle}>Availability</Text>
               <Text style={styles.privateLessonSub}>
                 {myBookings.filter(b => b.status === "confirmed" || b.status === "pending").length} active booking{myBookings.filter(b => b.status === "confirmed" || b.status === "pending").length !== 1 ? "s" : ""}
               </Text>
