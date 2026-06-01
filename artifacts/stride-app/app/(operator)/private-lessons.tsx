@@ -90,8 +90,8 @@ export default function OperatorPrivateLessonsScreen() {
   // Mode B — Regular Courses availability
   const [availMode, setAvailMode] = useState<"private" | "courses">("private");
   const [courseAvailTemplates, setCourseAvailTemplates] = useState<ApiCourseAvailTemplate[]>([]);
-  // Draft: disciplineId → { days (weekdays selected), startTime, endTime }
-  const [courseAvailDraft, setCourseAvailDraft] = useState<Record<number, { days: number[]; startTime: string; endTime: string }>>({});
+  // Draft: disciplineId → daySlots (dayOfWeek → { start, end })
+  const [courseAvailDraft, setCourseAvailDraft] = useState<Record<number, { daySlots: Record<number, { start: string; end: string }> }>>({});
   const [courseAvailSaving, setCourseAvailSaving] = useState(false);
 
   // QR scan
@@ -116,14 +116,13 @@ export default function OperatorPrivateLessonsScreen() {
     if (courseAvail.status === "fulfilled") {
       const templates = courseAvail.value;
       setCourseAvailTemplates(templates);
-      const draftInit: Record<number, { days: number[]; startTime: string; endTime: string }> = {};
+      const draftInit: Record<number, { daySlots: Record<number, { start: string; end: string }> }> = {};
       for (const t of templates) {
-        if (!draftInit[t.discipline_id]) {
-          draftInit[t.discipline_id] = { days: [], startTime: t.start_time.slice(0, 5), endTime: t.end_time.slice(0, 5) };
-        }
-        if (!draftInit[t.discipline_id].days.includes(t.day_of_week)) {
-          draftInit[t.discipline_id].days.push(t.day_of_week);
-        }
+        if (!draftInit[t.discipline_id]) draftInit[t.discipline_id] = { daySlots: {} };
+        draftInit[t.discipline_id].daySlots[t.day_of_week] = {
+          start: t.start_time.slice(0, 5),
+          end:   t.end_time.slice(0, 5),
+        };
       }
       setCourseAvailDraft(draftInit);
     }
@@ -150,26 +149,29 @@ export default function OperatorPrivateLessonsScreen() {
     setSlotNotes("");
   };
 
-  // Mode B — Save regular course weekly availability templates
+  // Mode B — Save regular course weekly availability templates (per-day slots)
   const saveCourseAvail = async () => {
     setCourseAvailSaving(true);
     try {
-      for (const [discIdStr, { days, startTime, endTime }] of Object.entries(courseAvailDraft)) {
+      for (const [discIdStr, { daySlots }] of Object.entries(courseAvailDraft)) {
         const disciplineId = parseInt(discIdStr, 10);
-        if (isNaN(disciplineId) || !days.length || !startTime || !endTime) continue;
-        for (const dayOfWeek of days) {
-          await api.upsertCourseAvailability({ disciplineId, dayOfWeek, startTime, endTime });
+        if (isNaN(disciplineId)) continue;
+        for (const [dowStr, { start, end }] of Object.entries(daySlots)) {
+          const dayOfWeek = parseInt(dowStr, 10);
+          if (!start || !end) continue;
+          await api.upsertCourseAvailability({ disciplineId, dayOfWeek, startTime: start, endTime: end });
         }
       }
+      // Delete templates that were de-selected
       for (const t of courseAvailTemplates) {
         const draft = courseAvailDraft[t.discipline_id];
-        if (!draft || !draft.days.includes(t.day_of_week)) {
+        if (!draft || !draft.daySlots[t.day_of_week]) {
           await api.deleteCourseAvailability(t.id).catch(() => {});
         }
       }
       const updated = await api.getCourseAvailability();
       setCourseAvailTemplates(updated);
-      Alert.alert("Saved", "Your regular course availability has been updated.");
+      Alert.alert("Saved", "Your course availability has been updated.");
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "Save failed");
     } finally { setCourseAvailSaving(false); }
@@ -455,7 +457,7 @@ export default function OperatorPrivateLessonsScreen() {
                   onPress={() => setAvailMode(m)}
                 >
                   <Text style={{ fontSize: 13, fontWeight: "700", color: availMode === m ? colors.primary : colors.mutedForeground }}>
-                    {m === "private" ? "🎯 Private Lessons" : "📅 Regular Courses"}
+                    {m === "private" ? "🎯 General Availability" : "📅 Regular Courses"}
                   </Text>
                 </Pressable>
               ))}
@@ -541,33 +543,41 @@ export default function OperatorPrivateLessonsScreen() {
                   </View>
                 ) : (
                   disciplines.map(disc => {
-                    const draft = courseAvailDraft[disc.id] ?? { days: [], startTime: "09:00", endTime: "10:00" };
-                    const hasAnyDay = draft.days.length > 0;
-                    const DOW_LABELS = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+                    const draft = courseAvailDraft[disc.id] ?? { daySlots: {} };
+                    const activeDays = Object.keys(draft.daySlots).map(Number).sort((a, b) => a - b);
+                    const hasAnyDay  = activeDays.length > 0;
+                    const DOW_SHORT  = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+                    const DOW_FULL   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
                     return (
                       <View key={disc.id} style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: hasAnyDay ? colors.primary : colors.border }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                        {/* Header */}
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
                           <Ionicons name="barbell-outline" size={18} color={colors.primary} />
                           <Text style={{ flex: 1, fontSize: 16, fontWeight: "800", color: colors.primary }}>{disc.name}</Text>
                           {hasAnyDay && (
                             <View style={{ backgroundColor: `${colors.primary}18`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
-                              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "700" }}>{draft.days.length}d/wk</Text>
+                              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "700" }}>{activeDays.length}d/wk</Text>
                             </View>
                           )}
                         </View>
-                        <View style={{ flexDirection: "row", gap: 6, marginBottom: 12 }}>
-                          {DOW_LABELS.map((lbl, idx) => {
-                            const active = draft.days.includes(idx);
+
+                        {/* Day-of-week toggle pills */}
+                        <View style={{ flexDirection: "row", gap: 5, marginBottom: hasAnyDay ? 14 : 0 }}>
+                          {DOW_SHORT.map((lbl, idx) => {
+                            const active = !!draft.daySlots[idx];
                             return (
                               <Pressable
                                 key={idx}
                                 onPress={() => {
                                   setCourseAvailDraft(prev => {
-                                    const d = prev[disc.id] ?? { days: [], startTime: "09:00", endTime: "10:00" };
-                                    const newDays = d.days.includes(idx)
-                                      ? d.days.filter(x => x !== idx)
-                                      : [...d.days, idx].sort();
-                                    return { ...prev, [disc.id]: { ...d, days: newDays } };
+                                    const d = prev[disc.id] ?? { daySlots: {} };
+                                    const newSlots = { ...d.daySlots };
+                                    if (newSlots[idx]) {
+                                      delete newSlots[idx];
+                                    } else {
+                                      newSlots[idx] = { start: "09:00", end: "10:00" };
+                                    }
+                                    return { ...prev, [disc.id]: { daySlots: newSlots } };
                                   });
                                 }}
                                 style={{ flex: 1, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: active ? colors.primary : colors.muted }}
@@ -577,32 +587,57 @@ export default function OperatorPrivateLessonsScreen() {
                             );
                           })}
                         </View>
-                        {hasAnyDay && (
-                          <View style={{ flexDirection: "row", gap: 12 }}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 4 }}>Start time</Text>
-                              <TextInput
-                                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
-                                value={draft.startTime}
-                                onChangeText={v => setCourseAvailDraft(prev => ({ ...prev, [disc.id]: { ...(prev[disc.id] ?? { days: [], startTime: "09:00", endTime: "10:00" }), startTime: v } }))}
-                                placeholder="09:00"
-                                placeholderTextColor={colors.mutedForeground}
-                                keyboardType="numbers-and-punctuation"
-                              />
+
+                        {/* Per-day independent time rows */}
+                        {activeDays.map((dow, i) => {
+                          const slot = draft.daySlots[dow] ?? { start: "09:00", end: "10:00" };
+                          return (
+                            <View
+                              key={dow}
+                              style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10,
+                                borderTopWidth: i === 0 ? 1 : 0, borderTopColor: colors.border }}
+                            >
+                              {/* Day label chip */}
+                              <View style={{ width: 88, backgroundColor: `${colors.primary}12`, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8, alignItems: "center" }}>
+                                <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary }}>{DOW_FULL[dow]}</Text>
+                              </View>
+
+                              {/* Start time */}
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 10, fontWeight: "600", color: colors.mutedForeground, marginBottom: 3, textAlign: "center" }}>FROM</Text>
+                                <TextInput
+                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 8, fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
+                                  value={slot.start}
+                                  onChangeText={v => setCourseAvailDraft(prev => {
+                                    const d = prev[disc.id] ?? { daySlots: {} };
+                                    return { ...prev, [disc.id]: { daySlots: { ...d.daySlots, [dow]: { ...(d.daySlots[dow] ?? { start: "09:00", end: "10:00" }), start: v } } } };
+                                  })}
+                                  placeholder="09:00"
+                                  placeholderTextColor={colors.mutedForeground}
+                                  keyboardType="numbers-and-punctuation"
+                                />
+                              </View>
+
+                              <Text style={{ fontSize: 16, color: colors.mutedForeground, fontWeight: "300" }}>–</Text>
+
+                              {/* End time */}
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 10, fontWeight: "600", color: colors.mutedForeground, marginBottom: 3, textAlign: "center" }}>TO</Text>
+                                <TextInput
+                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 8, fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
+                                  value={slot.end}
+                                  onChangeText={v => setCourseAvailDraft(prev => {
+                                    const d = prev[disc.id] ?? { daySlots: {} };
+                                    return { ...prev, [disc.id]: { daySlots: { ...d.daySlots, [dow]: { ...(d.daySlots[dow] ?? { start: "09:00", end: "10:00" }), end: v } } } };
+                                  })}
+                                  placeholder="10:00"
+                                  placeholderTextColor={colors.mutedForeground}
+                                  keyboardType="numbers-and-punctuation"
+                                />
+                              </View>
                             </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 4 }}>End time</Text>
-                              <TextInput
-                                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
-                                value={draft.endTime}
-                                onChangeText={v => setCourseAvailDraft(prev => ({ ...prev, [disc.id]: { ...(prev[disc.id] ?? { days: [], startTime: "09:00", endTime: "10:00" }), endTime: v } }))}
-                                placeholder="10:00"
-                                placeholderTextColor={colors.mutedForeground}
-                                keyboardType="numbers-and-punctuation"
-                              />
-                            </View>
-                          </View>
-                        )}
+                          );
+                        })}
                       </View>
                     );
                   })

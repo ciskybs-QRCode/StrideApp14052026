@@ -1,0 +1,32 @@
+Role: Expert React Native (Expo Router) UI/UX Developer.
+
+Target Screen: Operator Availability Screen (app/(operator)/availability or relevant settings file).
+
+Branding & Design Rules: Navy Blue (primary) and Gold (accents/buttons). Clean, premium typography. All elements MUST strictly remain within the physical screen boundaries (Zero horizontal or vertical layout overflows). Wrap the entire form in a responsive <ScrollView> to guarantee layout safety.
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE 🚨
+DO NOT modify backend Supabase schemas, Admin-side processing logic, or other operator tracking features. Focus 100% on the frontend input architecture and state management of this specific availability screen.
+
+Please execute the following UI/UX refactors:
+
+1. Label Renaming:
+
+Change the section/button entry named "Private Lessons" to "General Availability". This will now represent the universal control center for the operator's time blocks.
+
+2. Granular Per-Day "Regular Courses" Scheduler:
+
+Inside the Regular Courses availability section, completely eliminate any global time selector that applies the same hours to all selected days.
+
+Implement a dynamic, per-day scheduling row pattern. When an operator selects or activates specific days of the week (e.g., Tuesday, Wednesday, Thursday, Sunday), render a dedicated configuration card/row for each active day individually.
+
+For every active day row, provide independent, fully customisable Start Time and End Time picker elements.
+
+Ensure the operator can select completely different asynchronous time frames for any day without restrictions (e.g., Tuesday & Wednesday: 15:00 - 19:00; Thursday: 16:00 - 21:00; Sunday: 09:00 - 15:00).
+
+3. State Management & Visual Safety:
+
+Store this structured timetable matrix locally in the component state as an array of objects (e.g., [{ day: 'Tuesday', start: '15:00', end: '19:00' }, ...]) before packaging it for the save request.
+
+Ensure time pickers display elegantly on mobile screens (using clean native modal pickers or inline compact layouts) so that selecting times does not push other UI components off the viewport boundaries or cause layout overlap.
+
+Output: Refactor the form layout, structure the state object to support granular per-day time mappings, verify scrolling safety, and confirm completion.
