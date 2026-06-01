@@ -1,0 +1,683 @@
+/**
+ * UnifiedProfileView — Single shared profile screen for all roles.
+ *
+ * Layout is 100% identical across admin / operator / parent.
+ * Role-specific panels are gated on `currentRole`.
+ *
+ * Shared:      Avatar + identity card, Member QR code, AccountSettingsCard, RoleSwitcherRow
+ * Admin only:  School Setup quick-link, Promo Codes, Configuration rows
+ * Operator:    Schedule quick-links (Availability, Calendar, Courses)
+ * Parent:      Dependent members list + Documents summary
+ */
+
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import QRCode from "react-native-qrcode-svg";
+import React from "react";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AccountSettingsCard } from "@/components/AccountSettingsCard";
+import { RoleSwitcherRow } from "@/components/RoleSwitcher";
+import { useAppData } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
+import { useColors } from "@/hooks/useColors";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export type ProfileRole = "admin" | "operator" | "parent";
+
+interface Props {
+  currentRole: ProfileRole;
+}
+
+// ── Role badge config ─────────────────────────────────────────────────────────
+
+const ROLE_BADGE: Record<
+  ProfileRole,
+  {
+    label: string;
+    color: string;
+    bg: string;
+    icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
+  }
+> = {
+  admin:    { label: "Admin",    color: "#6D28D9", bg: "#EDE9FE", icon: "shield-checkmark" },
+  operator: { label: "Operator", color: "#0369A1", bg: "#DBEAFE", icon: "school"           },
+  parent:   { label: "Member",   color: "#047857", bg: "#D1FAE5", icon: "person"           },
+};
+
+// ── Admin configuration rows ──────────────────────────────────────────────────
+
+const ADMIN_CONFIG_ROWS = [
+  {
+    key:   "school-information",
+    title: "School Information",
+    desc:  "Contact details and campus data",
+    icon:  "school-outline"            as const,
+    color: "#0D9488",
+    bg:    "#CCFBF1",
+  },
+  {
+    key:   "app-configuration",
+    title: "App Configuration",
+    desc:  "Notifications, invoicing and alerts",
+    icon:  "settings-outline"          as const,
+    color: "#1E3A8A",
+    bg:    "#DBEAFE",
+  },
+  {
+    key:   "fee-settings",
+    title: "Membership Fees",
+    desc:  "Billing cycle and pro-rata policy",
+    icon:  "cash-outline"              as const,
+    color: "#D97706",
+    bg:    "#FEF3C7",
+  },
+  {
+    key:   "legal-privacy",
+    title: "Legal & Privacy",
+    desc:  "Terms, policies and signatures",
+    icon:  "shield-checkmark-outline"  as const,
+    color: "#7C3AED",
+    bg:    "#EDE9FE",
+  },
+] as const;
+
+// ── Operator schedule rows ────────────────────────────────────────────────────
+
+const OPERATOR_SCHEDULE_ROWS = [
+  {
+    key:   "avail",
+    title: "General Availability",
+    desc:  "Set discipline-level time slots",
+    icon:  "time-outline"              as const,
+    color: "#0369A1",
+    bg:    "#DBEAFE",
+    route: "/(operator)/private-lessons",
+  },
+  {
+    key:   "calendar",
+    title: "Calendar",
+    desc:  "View upcoming lessons and events",
+    icon:  "calendar-outline"          as const,
+    color: "#0D9488",
+    bg:    "#CCFBF1",
+    route: "/(operator)/calendar",
+  },
+  {
+    key:   "courses",
+    title: "Regular Courses",
+    desc:  "Manage recurring course schedule",
+    icon:  "layers-outline"            as const,
+    color: "#7C3AED",
+    bg:    "#EDE9FE",
+    route: "/(operator)/courses",
+  },
+] as const;
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function UnifiedProfileView({ currentRole }: Props) {
+  const router  = useRouter();
+  const { user } = useAuth();
+  const { children, documents, legalAdminDocs, signedAdminDocIds } = useAppData();
+  const colors  = useColors();
+  const insets  = useSafeAreaInsets();
+
+  const badge    = ROLE_BADGE[currentRole];
+  const initials = (user?.name ?? "?")
+    .split(" ")
+    .map(w => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const signedCount  = documents.filter(d => d.signed).length;
+  const pendingDocs  = legalAdminDocs.filter(d => !signedAdminDocIds.includes(d.id));
+  const qrValue      = user ? `MBR-${user.id}` : "MBR-0";
+
+  const nav = (path: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(path as never);
+  };
+
+  return (
+    <View style={[s.container, { backgroundColor: colors.background }]}>
+      <ScrollView
+        contentContainerStyle={[
+          s.scroll,
+          {
+            paddingTop:    insets.top + (Platform.OS === "web" ? 67 : 20),
+            paddingBottom: insets.bottom + 100,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* ── PAGE TITLE ROW ── */}
+        <View style={s.titleRow}>
+          <Text style={[s.pageTitle, { color: colors.primary }]}>Profile</Text>
+          <View style={[s.badge, { backgroundColor: badge.bg }]}>
+            <Ionicons name={badge.icon} size={12} color={badge.color} />
+            <Text style={[s.badgeText, { color: badge.color }]}>{badge.label}</Text>
+          </View>
+        </View>
+
+        {/* ── HERO IDENTITY CARD ── */}
+        <View style={[s.heroCard, { backgroundColor: colors.primary }]}>
+          <View style={s.avatarCircle}>
+            <Text style={s.avatarText}>{initials}</Text>
+          </View>
+          <View style={s.heroInfo}>
+            <Text style={s.heroName} numberOfLines={1}>{user?.name ?? "—"}</Text>
+            {!!user?.schoolName && (
+              <Text style={s.heroSchool} numberOfLines={1}>{user.schoolName}</Text>
+            )}
+            {!!user?.email && (
+              <Text style={s.heroMeta} numberOfLines={1}>{user.email}</Text>
+            )}
+            {!!user?.phone && (
+              <Text style={s.heroMeta} numberOfLines={1}>{user.phone}</Text>
+            )}
+          </View>
+        </View>
+
+        {/* ── MEMBER ID + QR CODE ── */}
+        <View style={[s.qrCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={s.qrLeft}>
+            <Text style={[s.qrLabel, { color: colors.mutedForeground }]}>MEMBER ID</Text>
+            <Text style={[s.qrId, { color: colors.primary }]}>{qrValue}</Text>
+            <Text style={[s.qrSub, { color: colors.mutedForeground }]}>
+              Present for access verification
+            </Text>
+          </View>
+          <View style={[s.qrBox, { borderColor: colors.border }]}>
+            <QRCode
+              value={qrValue}
+              size={78}
+              color={colors.primary}
+              backgroundColor={colors.card}
+            />
+          </View>
+        </View>
+
+        {/* ── ACCOUNT (shared across all roles) ── */}
+        <AccountSettingsCard />
+
+        {/* ── ROLE SWITCHER (only shown when multiple roles) ── */}
+        <RoleSwitcherRow />
+
+        {/* ════════════════════════════════════════════════════════════════
+            ADMIN-ONLY SECTION
+        ════════════════════════════════════════════════════════════════ */}
+        {currentRole === "admin" && (
+          <>
+            <Text style={[s.groupLabel, { color: colors.mutedForeground }]}>ADMINISTRATION</Text>
+
+            {/* School Setup */}
+            <Pressable
+              style={({ pressed }) => [s.featCard, s.featNavy, { opacity: pressed ? 0.88 : 1 }]}
+              onPress={() => nav("/(admin)/setup")}
+            >
+              <View style={s.featIconNavy}>
+                <Ionicons name="qr-code-outline" size={22} color="#FBBF24" />
+              </View>
+              <View style={s.featText}>
+                <Text style={s.featTitleNavy} numberOfLines={1}>School Setup & Member QR</Text>
+                <Text style={s.featDescNavy}  numberOfLines={1}>Branding, colours and invite code</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
+            </Pressable>
+
+            {/* Promo Codes */}
+            <Pressable
+              style={({ pressed }) => [s.featCard, s.featAmber, { opacity: pressed ? 0.88 : 1 }]}
+              onPress={() => nav("/(admin)/settings/promo-codes")}
+            >
+              <View style={s.featIconAmber}>
+                <Ionicons name="pricetag-outline" size={22} color="#92400E" />
+              </View>
+              <View style={s.featText}>
+                <Text style={s.featTitleAmber} numberOfLines={1}>Promo Codes</Text>
+                <Text style={s.featDescAmber}  numberOfLines={1}>Generate, target and manage discounts</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#92400E" />
+            </Pressable>
+
+            <Text style={[s.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
+
+            <View style={[s.rowGroup, { backgroundColor: colors.card }]}>
+              {ADMIN_CONFIG_ROWS.map((item, i) => (
+                <Pressable
+                  key={item.key}
+                  style={({ pressed }) => [
+                    s.groupRow,
+                    i < ADMIN_CONFIG_ROWS.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
+                    { opacity: pressed ? 0.75 : 1 },
+                  ]}
+                  onPress={() => nav(`/(admin)/settings/${item.key}`)}
+                >
+                  <View style={[s.rowIconBox, { backgroundColor: item.bg }]}>
+                    <Ionicons name={item.icon} size={20} color={item.color} />
+                  </View>
+                  <View style={s.rowText}>
+                    <Text style={[s.rowTitle, { color: colors.foreground }]} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={[s.rowDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
+                      {item.desc}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={item.color} />
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════
+            OPERATOR-ONLY SECTION
+        ════════════════════════════════════════════════════════════════ */}
+        {currentRole === "operator" && (
+          <>
+            <Text style={[s.groupLabel, { color: colors.mutedForeground }]}>MY SCHEDULE</Text>
+
+            <View style={[s.rowGroup, { backgroundColor: colors.card }]}>
+              {OPERATOR_SCHEDULE_ROWS.map((item, i) => (
+                <Pressable
+                  key={item.key}
+                  style={({ pressed }) => [
+                    s.groupRow,
+                    i < OPERATOR_SCHEDULE_ROWS.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
+                    { opacity: pressed ? 0.75 : 1 },
+                  ]}
+                  onPress={() => nav(item.route)}
+                >
+                  <View style={[s.rowIconBox, { backgroundColor: item.bg }]}>
+                    <Ionicons name={item.icon} size={20} color={item.color} />
+                  </View>
+                  <View style={s.rowText}>
+                    <Text style={[s.rowTitle, { color: colors.foreground }]} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={[s.rowDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
+                      {item.desc}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={item.color} />
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════
+            PARENT / MEMBER-ONLY SECTION
+        ════════════════════════════════════════════════════════════════ */}
+        {currentRole === "parent" && (
+          <>
+            {/* ── Dependent Members ── */}
+            <Text style={[s.groupLabel, { color: colors.mutedForeground }]}>DEPENDENT MEMBERS</Text>
+
+            {children.length === 0 ? (
+              <Pressable
+                style={({ pressed }) => [
+                  s.emptyCard,
+                  { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
+                ]}
+                onPress={() => nav("/(parent)/children")}
+              >
+                <Ionicons name="people-outline" size={28} color={colors.mutedForeground} />
+                <Text style={[s.emptyTitle, { color: colors.mutedForeground }]}>No dependents added yet</Text>
+                <View style={[s.emptyBtn, { borderColor: colors.primary }]}>
+                  <Text style={[s.emptyBtnText, { color: colors.primary }]}>Manage Dependents</Text>
+                </View>
+              </Pressable>
+            ) : (
+              <>
+                <View style={[s.rowGroup, { backgroundColor: colors.card }]}>
+                  {children.slice(0, 4).map((child, i) => {
+                    const skillLabel =
+                      child.skillLevel ??
+                      (child.stars >= 50 ? "Advanced" : child.stars >= 20 ? "Intermediate" : "Beginner");
+                    const consentColor =
+                      child.mediaConsent === "full"
+                        ? "#10B981"
+                        : child.mediaConsent === "internal"
+                        ? "#F59E0B"
+                        : "#EF4444";
+                    return (
+                      <Pressable
+                        key={child.id}
+                        style={({ pressed }) => [
+                          s.groupRow,
+                          i < Math.min(children.length, 4) - 1 && {
+                            borderBottomWidth: 1,
+                            borderBottomColor: colors.border,
+                          },
+                          { opacity: pressed ? 0.75 : 1 },
+                        ]}
+                        onPress={() => nav("/(parent)/children")}
+                      >
+                        <View style={s.childAvatar}>
+                          <Text style={s.childAvatarText}>
+                            {child.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={s.rowText}>
+                          <Text style={[s.rowTitle, { color: colors.foreground }]} numberOfLines={1}>
+                            {child.name}
+                          </Text>
+                          <Text style={[s.rowDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
+                            Age {child.age} · {skillLabel}
+                          </Text>
+                        </View>
+                        <View style={[s.consentDot, { backgroundColor: consentColor }]} />
+                        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {children.length > 4 && (
+                  <Pressable style={s.seeAllRow} onPress={() => nav("/(parent)/children")}>
+                    <Text style={[s.seeAllText, { color: colors.primary }]}>
+                      See all {children.length} dependents
+                    </Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                  </Pressable>
+                )}
+              </>
+            )}
+
+            {/* ── Documents ── */}
+            <Text style={[s.groupLabel, { color: colors.mutedForeground }]}>MY DOCUMENTS</Text>
+
+            <Pressable
+              style={({ pressed }) => [
+                s.docCard,
+                { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
+              ]}
+              onPress={() => nav("/(parent)/documents")}
+            >
+              {/* Stats row */}
+              <View style={s.docStats}>
+                <View style={s.docStatItem}>
+                  <Text style={[s.docStatValue, { color: "#10B981" }]}>{signedCount}</Text>
+                  <Text style={[s.docStatLabel, { color: colors.mutedForeground }]}>Signed</Text>
+                </View>
+                <View style={[s.docStatDivider, { backgroundColor: colors.border }]} />
+                <View style={s.docStatItem}>
+                  <Text style={[
+                    s.docStatValue,
+                    { color: pendingDocs.length > 0 ? "#EF4444" : colors.mutedForeground },
+                  ]}>
+                    {pendingDocs.length}
+                  </Text>
+                  <Text style={[s.docStatLabel, { color: colors.mutedForeground }]}>Pending</Text>
+                </View>
+                <View style={[s.docStatDivider, { backgroundColor: colors.border }]} />
+                <View style={s.docStatItem}>
+                  <Text style={[s.docStatValue, { color: colors.foreground }]}>{documents.length}</Text>
+                  <Text style={[s.docStatLabel, { color: colors.mutedForeground }]}>Total</Text>
+                </View>
+              </View>
+
+              {/* Warning banner if docs need signing */}
+              {pendingDocs.length > 0 && (
+                <View style={s.docWarning}>
+                  <Ionicons name="alert-circle" size={14} color="#EF4444" />
+                  <Text style={s.docWarningText}>
+                    {pendingDocs.length} document{pendingDocs.length > 1 ? "s" : ""} require your signature
+                  </Text>
+                </View>
+              )}
+
+              <View style={[s.docCardFooter, { borderTopColor: colors.border }]}>
+                <Text style={[s.docCardAction, { color: colors.primary }]}>View all documents</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+              </View>
+            </Pressable>
+          </>
+        )}
+
+        {/* ── VERSION FOOTER ── */}
+        <Text style={[s.version, { color: colors.mutedForeground }]}>
+          v1.0.0{user?.schoolName ? ` · ${user.schoolName}` : ""}
+        </Text>
+
+      </ScrollView>
+    </View>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  container: { flex: 1 },
+  scroll:    { paddingHorizontal: 20 },
+
+  // Title row
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  pageTitle: { fontSize: 28, fontWeight: "800" },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  badgeText: { fontSize: 12, fontWeight: "700" },
+
+  // Hero card
+  heroCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 14,
+  },
+  avatarCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  avatarText:  { color: "#FFF", fontSize: 22, fontWeight: "700" },
+  heroInfo:    { flex: 1, minWidth: 0 },
+  heroName:    { color: "#FFF",                fontSize: 18, fontWeight: "700", marginBottom: 2 },
+  heroSchool:  { color: "#FBBF24",             fontSize: 13, fontWeight: "600" },
+  heroMeta:    { color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 2 },
+
+  // QR card
+  qrCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  qrLeft:  { flex: 1 },
+  qrLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1.1, marginBottom: 6 },
+  qrId:    { fontSize: 17, fontWeight: "800", marginBottom: 4 },
+  qrSub:   { fontSize: 12, lineHeight: 16 },
+  qrBox:   { borderRadius: 12, borderWidth: 1, padding: 8 },
+
+  // Shared section label
+  groupLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.1,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+
+  // Featured full-width cards (admin)
+  featCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  featNavy:       { backgroundColor: "#1E3A8A" },
+  featIconNavy:   { width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  featTitleNavy:  { color: "#FFF",                   fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  featDescNavy:   { color: "rgba(255,255,255,0.70)", fontSize: 12 },
+  featAmber:      { backgroundColor: "#FFFBEB", borderWidth: 1.5, borderColor: "#FDE68A" },
+  featIconAmber:  { width: 46, height: 46, borderRadius: 13, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  featTitleAmber: { color: "#78350F", fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  featDescAmber:  { color: "#92400E", fontSize: 12 },
+  featText:       { flex: 1, minWidth: 0 },
+
+  // Grouped rows card (shared for admin config + operator schedule)
+  rowGroup: {
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  groupRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 16,
+  },
+  rowIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  rowText:  { flex: 1, minWidth: 0 },
+  rowTitle: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  rowDesc:  { fontSize: 12 },
+
+  // Dependents - empty state card
+  emptyCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    padding: 28,
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 24,
+  },
+  emptyTitle:   { fontSize: 14, fontWeight: "600" },
+  emptyBtn:     { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 9, marginTop: 4 },
+  emptyBtnText: { fontSize: 13, fontWeight: "700" },
+
+  // Dependents - child avatar circle
+  childAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#DBEAFE",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  childAvatarText: { color: "#1E3A8A", fontSize: 16, fontWeight: "700" },
+
+  // Consent dot on child row
+  consentDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+
+  // "See all" link row
+  seeAllRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 10,
+    marginTop: -18,
+    marginBottom: 24,
+  },
+  seeAllText: { fontSize: 13, fontWeight: "700" },
+
+  // Documents summary card
+  docCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: "hidden",
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  docStats: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  docStatItem:    { flex: 1, alignItems: "center" },
+  docStatValue:   { fontSize: 22, fontWeight: "800", marginBottom: 2 },
+  docStatLabel:   { fontSize: 11, fontWeight: "600" },
+  docStatDivider: { width: 1, height: 36 },
+  docWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    backgroundColor: "#FEF2F2",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  docWarningText: { fontSize: 12, fontWeight: "600", color: "#EF4444", flex: 1 },
+  docCardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 13,
+    borderTopWidth: 1,
+  },
+  docCardAction: { fontSize: 13, fontWeight: "700" },
+
+  // Version footer
+  version: { fontSize: 12, textAlign: "center", marginTop: 4, marginBottom: 20 },
+});
