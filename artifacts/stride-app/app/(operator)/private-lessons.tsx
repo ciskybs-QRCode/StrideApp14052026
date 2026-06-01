@@ -87,6 +87,13 @@ export default function OperatorPrivateLessonsScreen() {
   const [slotNotes, setSlotNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Mode A — General Availability accordion (discipline-first private lesson setup)
+  const [plDraft, setPlDraft] = useState<Record<number, { daySlots: Record<number, { start: string; end: string }> }>>({});
+  const [plLocation, setPlLocation] = useState("");
+  const [plNotes, setPlNotes] = useState("");
+  const [plSubmitting, setPlSubmitting] = useState(false);
+  const [plExpanded, setPlExpanded] = useState<number | null>(null);
+
   // Mode B — Regular Courses availability
   const [availMode, setAvailMode] = useState<"private" | "courses">("private");
   const [courseAvailTemplates, setCourseAvailTemplates] = useState<ApiCourseAvailTemplate[]>([]);
@@ -147,6 +154,46 @@ export default function OperatorPrivateLessonsScreen() {
     setDayTimeSlots({});
     setActiveDayEdit(null);
     setSlotNotes("");
+  };
+
+  // Mode A — Submit private lesson availability from accordion draft
+  const submitPlDraft = async () => {
+    if (!plLocation.trim()) { Alert.alert("Missing field", "Please select or enter a location first."); return; }
+    const activeEntries = Object.entries(plDraft).filter(([, d]) => Object.keys(d.daySlots).length > 0);
+    if (activeEntries.length === 0) { Alert.alert("Nothing selected", "Please expand a discipline and activate at least one day."); return; }
+    setPlSubmitting(true);
+    try {
+      const submissions: Promise<ApiAvailabilitySlot>[] = [];
+      for (const [discIdStr, { daySlots }] of activeEntries) {
+        const disciplineId = parseInt(discIdStr, 10);
+        for (const [dowStr, { start, end }] of Object.entries(daySlots)) {
+          const dayOfWeek = parseInt(dowStr, 10);
+          if (!start || !end) continue;
+          for (const d of nextOccurrences(dayOfWeek, 4)) {
+            submissions.push(api.submitAvailability({
+              disciplineId,
+              location:  plLocation.trim(),
+              slotDate:  toISODate(d),
+              startTime: start.length === 5 ? start + ":00" : start,
+              endTime:   end.length   === 5 ? end   + ":00" : end,
+              notes:     plNotes.trim() || undefined,
+            }));
+          }
+        }
+      }
+      const results = await Promise.allSettled(submissions);
+      const failed  = results.filter(r => r.status === "rejected").length;
+      const ok      = results.length - failed;
+      await load();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPlDraft({}); setPlNotes("");
+      Alert.alert(
+        "✓ Submitted",
+        `${ok} slot${ok !== 1 ? "s" : ""} sent for admin review${failed > 0 ? ` (${failed} failed)` : ""}.`,
+      );
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "Failed to submit availability");
+    } finally { setPlSubmitting(false); }
   };
 
   // Mode B — Save regular course weekly availability templates (per-day slots)
@@ -463,65 +510,277 @@ export default function OperatorPrivateLessonsScreen() {
               ))}
             </View>
 
-            {/* ── MODE A: Private lesson one-off / recurring slots ── */}
+            {/* ── MODE A: Discipline-first accordion availability scheduler ── */}
             {availMode === "private" && (
               <>
-                <Pressable
-                  style={[styles.addBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => { resetForm(); setShowSlotModal(true); }}
-                >
-                  <Ionicons name="add-circle-outline" size={18} color="#FFF" />
-                  <Text style={styles.addBtnText}>Submit Availability</Text>
-                </Pressable>
+                {/* Location picker */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                    Location
+                  </Text>
+                  {locations.length > 0 ? (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                      {locations.map(loc => (
+                        <Pressable
+                          key={loc.id}
+                          onPress={() => setPlLocation(loc.name)}
+                          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5,
+                            borderColor: plLocation === loc.name ? colors.primary : colors.border,
+                            backgroundColor: plLocation === loc.name ? `${colors.primary}12` : colors.card }}
+                        >
+                          <Text style={{ fontSize: 13, fontWeight: "600",
+                            color: plLocation === loc.name ? colors.primary : colors.mutedForeground }}>
+                            {loc.name}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  ) : (
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12,
+                        paddingVertical: 10, fontSize: 14, color: colors.foreground, backgroundColor: colors.card }}
+                      value={plLocation}
+                      onChangeText={setPlLocation}
+                      placeholder="e.g. Studio 1"
+                      placeholderTextColor={colors.mutedForeground}
+                    />
+                  )}
+                </View>
 
-                {slots.length === 0 && (
+                {/* Discipline accordion cards */}
+                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                  Disciplines & Schedule
+                </Text>
+
+                {disciplines.length === 0 ? (
                   <View style={styles.emptyCard}>
-                    <Ionicons name="time-outline" size={44} color={colors.mutedForeground} />
-                    <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Slots Submitted</Text>
-                    <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-                      Submit your availability and the admin will review and approve your slots.
-                    </Text>
+                    <Ionicons name="barbell-outline" size={40} color={colors.mutedForeground} />
+                    <Text style={[styles.emptyTitle, { color: colors.primary }]}>No disciplines</Text>
+                    <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Contact your admin to set up disciplines.</Text>
                   </View>
+                ) : (
+                  disciplines.map(disc => {
+                    const draft      = plDraft[disc.id] ?? { daySlots: {} };
+                    const activeDays = Object.keys(draft.daySlots).map(Number).sort((a, b) => a - b);
+                    const hasAny     = activeDays.length > 0;
+                    const isOpen     = plExpanded === disc.id;
+                    const DOW_SHORT  = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+                    const DOW_FULL   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+                    return (
+                      <View key={disc.id} style={{ marginBottom: 10, borderRadius: 16, borderWidth: 1.5,
+                        borderColor: hasAny ? colors.primary : colors.border,
+                        backgroundColor: colors.card, overflow: "hidden" }}>
+
+                        {/* Header / toggle */}
+                        <Pressable
+                          onPress={() => setPlExpanded(isOpen ? null : disc.id)}
+                          style={{ flexDirection: "row", alignItems: "center", padding: 14, gap: 10 }}
+                        >
+                          <View style={{ width: 38, height: 38, borderRadius: 10,
+                            backgroundColor: hasAny ? colors.primary : colors.muted,
+                            alignItems: "center", justifyContent: "center" }}>
+                            <Ionicons name="barbell-outline" size={18} color={hasAny ? "#FFF" : colors.mutedForeground} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 15, fontWeight: "800",
+                              color: hasAny ? colors.primary : colors.foreground }}>
+                              {disc.name}
+                            </Text>
+                            {hasAny && (
+                              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>
+                                {activeDays.map(d => DOW_SHORT[d]).join(" · ")}
+                              </Text>
+                            )}
+                          </View>
+                          {hasAny && (
+                            <View style={{ backgroundColor: `${colors.primary}15`, borderRadius: 8,
+                              paddingHorizontal: 8, paddingVertical: 3 }}>
+                              <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>
+                                {activeDays.length}d
+                              </Text>
+                            </View>
+                          )}
+                          <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
+                        </Pressable>
+
+                        {/* Expanded body */}
+                        {isOpen && (
+                          <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: 14 }}>
+                            {/* Day toggle pills */}
+                            <View style={{ flexDirection: "row", gap: 5, marginBottom: hasAny ? 14 : 2 }}>
+                              {DOW_SHORT.map((lbl, idx) => {
+                                const active = !!draft.daySlots[idx];
+                                return (
+                                  <Pressable
+                                    key={idx}
+                                    onPress={() => {
+                                      setPlDraft(prev => {
+                                        const d = prev[disc.id] ?? { daySlots: {} };
+                                        const s = { ...d.daySlots };
+                                        if (s[idx]) { delete s[idx]; }
+                                        else { s[idx] = { start: "09:00", end: "10:00" }; }
+                                        return { ...prev, [disc.id]: { daySlots: s } };
+                                      });
+                                    }}
+                                    style={{ flex: 1, height: 36, borderRadius: 8,
+                                      alignItems: "center", justifyContent: "center",
+                                      backgroundColor: active ? colors.primary : colors.muted }}
+                                  >
+                                    <Text style={{ fontSize: 11, fontWeight: "700",
+                                      color: active ? "#FFF" : colors.mutedForeground }}>
+                                      {lbl}
+                                    </Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+
+                            {/* Per-day independent time rows */}
+                            {activeDays.map((dow, i) => {
+                              const slot = draft.daySlots[dow] ?? { start: "09:00", end: "10:00" };
+                              return (
+                                <View key={dow} style={{ flexDirection: "row", alignItems: "center", gap: 8,
+                                  paddingVertical: 10,
+                                  borderTopWidth: i === 0 ? 1 : 0, borderTopColor: colors.border }}>
+                                  {/* Day chip */}
+                                  <View style={{ width: 78, backgroundColor: `${colors.primary}12`,
+                                    borderRadius: 8, paddingVertical: 7, alignItems: "center" }}>
+                                    <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>
+                                      {DOW_FULL[dow]}
+                                    </Text>
+                                  </View>
+                                  {/* FROM */}
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 9, fontWeight: "700", color: colors.mutedForeground,
+                                      marginBottom: 3, textAlign: "center", textTransform: "uppercase" }}>From</Text>
+                                    <TextInput
+                                      style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 9,
+                                        paddingHorizontal: 4, paddingVertical: 8, fontSize: 15, fontWeight: "700",
+                                        color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
+                                      value={slot.start}
+                                      onChangeText={v => setPlDraft(prev => {
+                                        const d = prev[disc.id] ?? { daySlots: {} };
+                                        return { ...prev, [disc.id]: { daySlots: {
+                                          ...d.daySlots,
+                                          [dow]: { ...(d.daySlots[dow] ?? { start: "09:00", end: "10:00" }), start: v },
+                                        } } };
+                                      })}
+                                      placeholder="09:00"
+                                      placeholderTextColor={colors.mutedForeground}
+                                      keyboardType="numbers-and-punctuation"
+                                    />
+                                  </View>
+                                  <Text style={{ fontSize: 15, color: colors.mutedForeground }}>–</Text>
+                                  {/* TO */}
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 9, fontWeight: "700", color: colors.mutedForeground,
+                                      marginBottom: 3, textAlign: "center", textTransform: "uppercase" }}>To</Text>
+                                    <TextInput
+                                      style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 9,
+                                        paddingHorizontal: 4, paddingVertical: 8, fontSize: 15, fontWeight: "700",
+                                        color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
+                                      value={slot.end}
+                                      onChangeText={v => setPlDraft(prev => {
+                                        const d = prev[disc.id] ?? { daySlots: {} };
+                                        return { ...prev, [disc.id]: { daySlots: {
+                                          ...d.daySlots,
+                                          [dow]: { ...(d.daySlots[dow] ?? { start: "09:00", end: "10:00" }), end: v },
+                                        } } };
+                                      })}
+                                      placeholder="10:00"
+                                      placeholderTextColor={colors.mutedForeground}
+                                      keyboardType="numbers-and-punctuation"
+                                    />
+                                  </View>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
                 )}
 
-                {slots.map(s => {
-                  const d = new Date(s.slot_date + "T00:00:00");
-                  return (
-                    <View
-                      key={s.id}
-                      style={[styles.slotCard, { backgroundColor: colors.card, borderLeftColor: slotBorderColor(s.status) }]}
-                    >
-                      <View style={[styles.slotDateBox, { backgroundColor: slotStatusColor(s.status) }]}>
-                        <Text style={[styles.slotDayName,  { color: slotStatusText(s.status) }]}>{DAY_NAMES[d.getDay()]}</Text>
-                        <Text style={[styles.slotDayNum,   { color: slotStatusText(s.status) }]}>{d.getDate()}</Text>
-                        <Text style={[styles.slotMonthTxt, { color: slotStatusText(s.status) }]}>{MONTH_SHORT[d.getMonth()]}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.cardTitle, { color: colors.foreground }]}>{s.discipline?.name ?? "Discipline"}</Text>
-                        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-                          {fmtTime(s.start_time)} – {fmtTime(s.end_time)} · {s.location}
-                        </Text>
-                        {s.parent_price_cents != null && (
-                          <Text style={[styles.cardSub, { color: colors.primary, fontWeight: "700" }]}>
-                            Member price: {fmt(s.parent_price_cents)}/lesson
-                          </Text>
-                        )}
-                        {s.operator_pay_cents != null && s.operator_pay_cents > 0 && (
-                          <Text style={[styles.cardSub, { color: "#059669", fontWeight: "700" }]}>
-                            Your pay: {fmt(s.operator_pay_cents)}/lesson
-                          </Text>
-                        )}
-                        {s.notes ? (
-                          <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>"{s.notes}"</Text>
-                        ) : null}
-                      </View>
-                      <View style={[styles.statusPill, { backgroundColor: slotStatusColor(s.status) }]}>
-                        <Ionicons name={slotStatusIcon(s.status)} size={11} color={slotStatusText(s.status)} />
-                        <Text style={[styles.statusText, { color: slotStatusText(s.status) }]}>{s.status}</Text>
-                      </View>
+                {/* Notes */}
+                <View style={{ marginTop: 6, marginBottom: 14 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                    Notes (optional)
+                  </Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 12,
+                      paddingVertical: 10, fontSize: 14, color: colors.foreground, backgroundColor: colors.card,
+                      height: 64, textAlignVertical: "top" }}
+                    value={plNotes}
+                    onChangeText={setPlNotes}
+                    placeholder="Any notes for the admin..."
+                    placeholderTextColor={colors.mutedForeground}
+                    multiline
+                  />
+                </View>
+
+                {/* Submit */}
+                <Pressable
+                  style={{ backgroundColor: colors.primary, borderRadius: 14, padding: 16,
+                    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+                    marginBottom: 22, opacity: plSubmitting ? 0.7 : 1 }}
+                  disabled={plSubmitting}
+                  onPress={submitPlDraft}
+                >
+                  {plSubmitting
+                    ? <ActivityIndicator size="small" color="#FFF" />
+                    : <Ionicons name="send-outline" size={18} color="#FFF" />}
+                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Submit for Review</Text>
+                </Pressable>
+
+                {/* Submitted slots list */}
+                {slots.length > 0 && (
+                  <>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Submitted Slots
+                      </Text>
+                      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
                     </View>
-                  );
-                })}
+                    {slots.map(s => {
+                      const d = new Date(s.slot_date + "T00:00:00");
+                      return (
+                        <View key={s.id} style={[styles.slotCard, { backgroundColor: colors.card, borderLeftColor: slotBorderColor(s.status) }]}>
+                          <View style={[styles.slotDateBox, { backgroundColor: slotStatusColor(s.status) }]}>
+                            <Text style={[styles.slotDayName,  { color: slotStatusText(s.status) }]}>{DAY_NAMES[d.getDay()]}</Text>
+                            <Text style={[styles.slotDayNum,   { color: slotStatusText(s.status) }]}>{d.getDate()}</Text>
+                            <Text style={[styles.slotMonthTxt, { color: slotStatusText(s.status) }]}>{MONTH_SHORT[d.getMonth()]}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.cardTitle, { color: colors.foreground }]}>{s.discipline?.name ?? "Discipline"}</Text>
+                            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                              {fmtTime(s.start_time)} – {fmtTime(s.end_time)} · {s.location}
+                            </Text>
+                            {s.parent_price_cents != null && (
+                              <Text style={[styles.cardSub, { color: colors.primary, fontWeight: "700" }]}>
+                                Member price: {fmt(s.parent_price_cents)}/lesson
+                              </Text>
+                            )}
+                            {s.operator_pay_cents != null && s.operator_pay_cents > 0 && (
+                              <Text style={[styles.cardSub, { color: "#059669", fontWeight: "700" }]}>
+                                Your pay: {fmt(s.operator_pay_cents)}/lesson
+                              </Text>
+                            )}
+                            {s.notes ? (
+                              <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={1}>"{s.notes}"</Text>
+                            ) : null}
+                          </View>
+                          <View style={[styles.statusPill, { backgroundColor: slotStatusColor(s.status) }]}>
+                            <Ionicons name={slotStatusIcon(s.status)} size={11} color={slotStatusText(s.status)} />
+                            <Text style={[styles.statusText, { color: slotStatusText(s.status) }]}>{s.status}</Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </>
+                )}
               </>
             )}
 

@@ -1,0 +1,37 @@
+Role: Expert React Native (Expo Router) Lead Architect.
+
+Target View: Profile Screen Architecture across all role groups (app/(admin)/profile, app/(operator)/profile, app/(member)/profile).
+
+Branding Rules: Strict Navy Blue and Gold coordination. Zero layout boundaries overflow.
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT reset active Supabase user sessions, change database schemas, or alter navigation state controllers. This task is purely a frontend architectural refactor to enforce UI visual symmetry across roles.
+
+Context: We need to guarantee that when a user switches roles (Admin ⇄ Operator ⇄ Member), the underlying Profile interface looks 100% identical in styling, padding, and core text layouts. Only specific action elements should conditionally toggle based on the active role.
+
+Please audit the current profiles implementation and execute the following refactor:
+
+1. Centralize into a Shared Core Component
+Action: Check if the profile screen code is duplicated across different role directories. If it is, extract the layout entirely.
+
+Solution: Create a single, unified shared view component named UnifiedProfileView.tsx.
+
+Properties: This component must accept currentRole as a dynamic prop/parameter (e.g., 'admin', 'operator', or 'member').
+
+2. Implement Conditional Rendering for Role Features
+Inside this single UnifiedProfileView:
+
+Shared UI Structure (Identical for everyone): Avatar container, User Full Name, Email string, Member ID/QR code slot, and basic contact information card.
+
+Role-Specific Feature Gates:
+
+If currentRole === 'admin', render only the Admin configuration buttons and setup diagnostics.
+
+If currentRole === 'operator', render the "Manage Schedule / General Availability" panels.
+
+If currentRole === 'member', render the "Dependent Members (Minors) Management" and Signed Documents list.
+
+3. Mirror the Directory Entry Points
+Update the entry files inside (admin)/profile.tsx, (operator)/profile.tsx, and (member)/profile.tsx so that they do NOT contain independent UI styling. Instead, they must simply import and return <UnifiedProfileView currentRole="[respective_role]"/>.
+
+Output Requirement: Eliminate duplicated profile UI styling code, route all role profiles through the single centralized component, verify layout constraints inside device borders, and confirm that switching roles renders the exact same base UI instantly.

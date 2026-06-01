@@ -1,0 +1,29 @@
+Role: Expert React Native (Expo Router) UI/UX Developer.
+
+Target Screen: Operator Availability Screen -> Private Lessons Section (app/(operator)/availability or corresponding sub-component).
+
+Branding & UI Rules: Navy Blue (primary) and Gold (accents/buttons). Highly structured, scannable layout. STRICTLY ZERO screen layout overflows or text truncation. Use clean collapsible cards or accordions to manage nested selections safely within device boundaries.
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT modify backend data synchronization loops, database tables, Admin-side scheduling components, or unrelated profile modules. Focus 100% on the frontend user input experience and state composition for Private Lessons availability.
+
+Please implement this deep granular selection matrix:
+
+1. Restructure to Discipline-Centric Architecture
+Action: Instead of a generic calendar grid, allow the operator to first select which Disciplines they want to offer for Private Lessons (dynamically pulled from the Admin-defined course types).
+
+UI Pattern: Display each selected discipline as a neat, standalone expandable card (Accordion style) using Navy Blue backgrounds with Gold borders.
+
+2. Nested Per-Day and Per-Time Matrix Selection
+Inside each specific discipline's expanded card, implement the asynchronous scheduling logic:
+
+Day Multi-Select: Allow the operator to check/activate specific days of the week dedicated only to that discipline.
+
+Granular Time Slots: For every activated day row under that specific discipline, render independent Start Time and End Time input elements (e.g., Discipline "Ballet" -> Monday: 14:00 - 16:00; Discipline "Contemporary" -> Friday: 18:00 - 21:00).
+
+3. State Serialization & UI Boundary Controls
+State Management: Package this nested data cleanly into a local state array of objects (e.g., [{ discipline: 'Ballet', schedules: [{ day: 'Monday', start: '14:00', end: '16:00' }] }]) before triggering the final update request.
+
+Viewport Safety: Ensure the time/day elements are padded cleanly, use compact horizontal rows, and wrap the entire multi-level form in a native <ScrollView> so the layout remains 100% responsive, beautiful, and completely inside the visible screen phone borders.
+
+Output Requirement: Refactor the Private Lessons section into an accordion-based per-discipline scheduler, handle the multi-nested state mapping safely, and confirm which component files were updated.
