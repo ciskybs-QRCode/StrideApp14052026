@@ -37,6 +37,14 @@ const NAV_ROWS = [
     bg: "#DBEAFE",
   },
   {
+    key: "fee-settings",
+    title: "Membership Fees",
+    description: "Frequency, billing cycle and pro-rata policy",
+    icon: "cash-outline"              as const,
+    color: "#D97706",
+    bg: "#FEF3C7",
+  },
+  {
     key: "legal-privacy",
     title: "Legal & Privacy",
     description: "Terms, policies and signatures",

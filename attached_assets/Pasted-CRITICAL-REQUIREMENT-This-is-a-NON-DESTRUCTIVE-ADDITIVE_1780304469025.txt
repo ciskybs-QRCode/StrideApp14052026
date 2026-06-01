@@ -1,0 +1,37 @@
+CRITICAL REQUIREMENT: This is a NON-DESTRUCTIVE, ADDITIVE-ONLY update. Do NOT modify, delete, or break any existing code, models, or logic that are currently working in the app. All new features must be integrated seamlessly as new extensions, methods, helper classes, or separate UI views.
+
+Please implement a flexible and advanced Membership Fee Management system for our association app using Flutter/Dart and Firebase Firestore. 
+
+Here are the specific requirements for this new feature:
+
+1. FEE FREQUENCY (Enum: `FeeFrequency`):
+The association must be able to choose how often the fee is requested. Options: daily, weekly, biweekly, monthly, bimonthly, quarterly, semiannual, yearly.
+
+2. BILLING CYCLE START DATE (Enum: `BillingStartType`):
+The association must be able to choose when the billing cycle starts. Options:
+- Single member's joining date (`joining_date`)
+- January 1st (Calendar Year)
+- July 1st (Academic/Sports Year)
+- Custom Date (The admin chooses a specific day and month, e.g., March 15th)
+
+3. PRO-RATA / FRACTIONAL PAYMENT MANAGEMENT (Enum: `ProRataType`):
+If a member joins mid-cycle (e.g., joins on June 30th but the annual fee cycle renews on July 1st), the association needs to choose one of three policies:
+- Full Amount (`full_amount`): The member pays the full fee regardless of when they join.
+- Fixed Percentage (`fixed_percentage`): The member pays a fixed percentage decided by the association (e.g., 50%).
+- Calculated Pro-Rata (`pro_rata_calculated`): The app mathematically calculates the exact remaining days from the joining date to the end of the current cycle and charges a proportional amount.
+
+WHAT YOU NEED TO ADD (WITHOUT BREAKING EXISTING CODE):
+
+A. DATA MODELS (Dart & Firestore Schema Extensions):
+- Extend the association settings model (or create a new standalone `association_fee_settings` collection) to store these settings: fee_amount, fee_frequency, billing_start_type, pro_rata_type, and optional custom fields (like fixed_percentage_value or custom_start_month/day).
+- Add or extend a sub-collection under members called `fees` to track payment status per cycle: cycle_id, amount_due (calculated), status (paid/pending/overdue), valid_from, valid_to.
+
+B. CALCULATION LOGIC (Helper Function):
+Create a robust, isolated pure Dart helper function/service that accepts: `joiningDate`, `fullAmount`, `FeeFrequency`, `BillingStartType`, and `ProRataType`. It must calculate and return the exact `double` amount the member owes for their initial/current cycle.
+
+C. ADMIN USER INTERFACE (New Flutter View/Widget):
+Create a dedicated "Fee Settings" configuration screen for admins using Flutter forms. 
+- Use Form fields, Dropdowns, and Radio/Switch tiles.
+- Implement conditional UI: only show the percentage input field if "Fixed Percentage" is selected; only show the Day/Month pickers if "Custom Date" is selected.
+
+Please implement this step-by-step. Start by creating the isolated enums and helper functions, then show me how you will map them to Firestore without disrupting our current database structure.
