@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   Platform,
@@ -90,6 +91,8 @@ const DAYS_OF_WEEK: HoursEntry[] = [
 ];
 
 const CAMPUSES_KEY = "stride_campuses_v2";
+const SOCIAL_KEY   = "stride_social_links";
+const HOURS_KEY    = "stride_opening_hours";
 
 const DEFAULT_INFO: SchoolInfo = {
   name:    "Dance Village",
@@ -111,6 +114,9 @@ export default function SchoolInformationPage() {
   const { user, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+
+  // Loading state for initial data fetch
+  const [loadingOrg, setLoadingOrg] = useState(true);
 
   // Main info
   const [info, setInfo] = useState<SchoolInfo>({ ...DEFAULT_INFO, name: user?.schoolName || DEFAULT_INFO.name });
@@ -146,12 +152,33 @@ export default function SchoolInformationPage() {
         phone:   org.contact_phone    || prev.phone,
         email:   org.official_email   || prev.email,
       }));
-    } catch { /* keep defaults */ }
-    // Load campuses from AsyncStorage (no dedicated DB table yet)
+    } catch { /* keep defaults — API unavailable */ }
+    // Load campuses from AsyncStorage
     try {
       const raw = await AsyncStorage.getItem(CAMPUSES_KEY);
       if (raw) setCampuses(JSON.parse(raw) as CampusLocation[]);
     } catch { /* keep empty */ }
+    // Load social media links from AsyncStorage
+    try {
+      const rawSocial = await AsyncStorage.getItem(SOCIAL_KEY);
+      if (rawSocial) {
+        const saved = JSON.parse(rawSocial) as SocialLinks;
+        setSocial(saved);
+        setDraftSocial(saved);
+      }
+    } catch { /* keep defaults */ }
+    // Load opening hours from AsyncStorage
+    try {
+      const rawHours = await AsyncStorage.getItem(HOURS_KEY);
+      if (rawHours) {
+        const saved = JSON.parse(rawHours) as HoursEntry[];
+        if (Array.isArray(saved) && saved.length > 0) {
+          setHours(saved);
+          setHoursDraft(saved);
+        }
+      }
+    } catch { /* keep defaults */ }
+    setLoadingOrg(false);
   }, []);
 
   useEffect(() => { loadOrgData(); }, [loadOrgData]);
@@ -159,6 +186,7 @@ export default function SchoolInformationPage() {
   // ── Main Info handlers ────────────────────────────────────────────────────
 
   const handleSaveInfo = async () => {
+    let apiOk = true;
     try {
       await api.updateOrg({
         name:           draftInfo.name     || undefined,
@@ -166,22 +194,34 @@ export default function SchoolInformationPage() {
         contact_phone:  draftInfo.phone    || undefined,
         official_email: draftInfo.email    || undefined,
       } as Parameters<typeof api.updateOrg>[0]);
-    } catch { /* ignore network error — still update locally */ }
+    } catch {
+      apiOk = false;
+    }
     await updateUser({ schoolName: draftInfo.name });
     setInfo(draftInfo);
     setEditingInfo(false);
     if (draftInfo.address.trim()) {
       await AsyncStorage.setItem("stride_campus_address", draftInfo.address.trim());
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Saved", "School information updated.");
+    Haptics.notificationAsync(
+      apiOk ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
+    );
+    Alert.alert(
+      apiOk ? "Saved" : "Saved Locally",
+      apiOk
+        ? "School information updated successfully."
+        : "Could not sync with server — changes saved locally and will retry when connection is restored."
+    );
   };
 
   // ── Social media handlers ─────────────────────────────────────────────────
 
-  const handleSaveSocial = () => {
+  const handleSaveSocial = async () => {
     setSocial(draftSocial);
     setEditingSocial(false);
+    try {
+      await AsyncStorage.setItem(SOCIAL_KEY, JSON.stringify(draftSocial));
+    } catch { /* non-fatal */ }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Saved", "Social media links updated.");
   };
@@ -248,9 +288,12 @@ export default function SchoolInformationPage() {
 
   // ── Hours handlers ────────────────────────────────────────────────────────
 
-  const handleSaveHours = () => {
+  const handleSaveHours = async () => {
     setHours(hoursDraft);
     setEditingHours(false);
+    try {
+      await AsyncStorage.setItem(HOURS_KEY, JSON.stringify(hoursDraft));
+    } catch { /* non-fatal */ }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Saved", "Opening hours updated.");
   };
@@ -293,6 +336,16 @@ export default function SchoolInformationPage() {
             </Text>
           </View>
         </View>
+
+        {/* Loading banner — shown while fetching from Supabase + AsyncStorage */}
+        {loadingOrg && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FEF3C7", borderRadius: 12, padding: 12, marginBottom: 8 }}>
+            <ActivityIndicator size="small" color="#FBBF24" />
+            <Text style={{ fontSize: 13, fontWeight: "600", color: "#92400E" }}>
+              Loading school data…
+            </Text>
+          </View>
+        )}
 
         {/* ── Section A: Contact Details ── */}
         <View style={[styles.sectionHeaderRow, { marginTop: 4 }]}>

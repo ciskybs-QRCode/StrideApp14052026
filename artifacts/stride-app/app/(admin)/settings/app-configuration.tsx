@@ -77,7 +77,8 @@ const CONFIG_ITEMS = [
   },
 ];
 
-const GRACE_KEY = "stride_grace_access";
+const GRACE_KEY  = "stride_grace_access";
+const TOGGLE_KEY = "stride_config_toggles";
 
 export default function AppConfigurationPage() {
   const router = useRouter();
@@ -124,6 +125,16 @@ export default function AppConfigurationPage() {
   useEffect(() => { loadSettings(); }, [loadSettings]);
 
   useEffect(() => {
+    // Load persisted feature toggle states
+    AsyncStorage.getItem(TOGGLE_KEY).then(raw => {
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw) as Record<string, boolean>;
+          setValues(prev => ({ ...prev, ...saved }));
+        } catch { /* ignore corrupt storage */ }
+      }
+    }).catch(() => {});
+    // Load finance settings
     AsyncStorage.getItem(PAYOUT_FREQUENCY_KEY).then(v => {
       if (v) setPayoutFrequency(v as PayoutFrequency);
     });
@@ -211,8 +222,13 @@ export default function AppConfigurationPage() {
     }
   };
 
-  const toggle = (key: string) =>
-    setValues(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggle = (key: string) => {
+    setValues(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      AsyncStorage.setItem(TOGGLE_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

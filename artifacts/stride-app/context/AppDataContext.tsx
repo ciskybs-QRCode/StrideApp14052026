@@ -1,11 +1,15 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { useOfflineSync } from "./OfflineSyncContext";
 import { api } from "../lib/api";
+
 import type {
   ApiChild, ApiDelegate, ApiCourse, ApiEnrollment,
   ApiDocument, ApiPayment, ApiStudent, ApiLesson,
 } from "../lib/api";
+
+const LEGAL_DOCS_KEY = "stride_legal_docs_v2";
 
 export interface Child {
   id: string;
@@ -293,6 +297,20 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [mediaConsent, setMediaConsentState] = useState<"full" | "internal" | "none">("none");
   const loadedForUser = useRef<string | null>(null);
+
+  // Hydrate legal docs from AsyncStorage on first mount (persists across restarts)
+  useEffect(() => {
+    AsyncStorage.getItem(LEGAL_DOCS_KEY).then(raw => {
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw) as LegalAdminDoc[];
+          if (Array.isArray(saved) && saved.length > 0) {
+            setLegalAdminDocs(saved);
+          }
+        } catch { /* keep FALLBACK_LEGAL_DOCS */ }
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -607,15 +625,27 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
 
   const addLegalDoc = async (doc: Omit<LegalAdminDoc, "id">) => {
     const newDoc: LegalAdminDoc = { ...doc, id: Date.now().toString() };
-    setLegalAdminDocs(prev => [...prev, newDoc]);
+    setLegalAdminDocs(prev => {
+      const next = [...prev, newDoc];
+      AsyncStorage.setItem(LEGAL_DOCS_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
   };
 
   const updateLegalDoc = async (id: string, updates: Partial<LegalAdminDoc>) => {
-    setLegalAdminDocs(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+    setLegalAdminDocs(prev => {
+      const next = prev.map(d => d.id === id ? { ...d, ...updates } : d);
+      AsyncStorage.setItem(LEGAL_DOCS_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
   };
 
   const deleteLegalDoc = async (id: string) => {
-    setLegalAdminDocs(prev => prev.filter(d => d.id !== id));
+    setLegalAdminDocs(prev => {
+      const next = prev.filter(d => d.id !== id);
+      AsyncStorage.setItem(LEGAL_DOCS_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
   };
 
   const signAdminDoc = async (id: string) => {

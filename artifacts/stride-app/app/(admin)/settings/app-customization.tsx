@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -16,6 +18,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+
+const FONT_KEY      = "stride_theme_font";
+const BTN_STYLE_KEY = "stride_theme_button_style";
 
 const PRESET_COLORS = [
   { primary: "#1E3A8A", secondary: "#FBBF24", name: "Stride Classic" },
@@ -40,6 +45,17 @@ export default function AppCustomizationPage() {
   const [selectedFont, setSelectedFont] = useState("Montserrat");
   const [buttonStyle, setButtonStyle] = useState<"rounded" | "square">("rounded");
   const [applied, setApplied] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Rehydrate persisted theme prefs on mount
+  useEffect(() => {
+    AsyncStorage.getItem(FONT_KEY).then(v => {
+      if (v && FONTS.includes(v)) setSelectedFont(v);
+    }).catch(() => {});
+    AsyncStorage.getItem(BTN_STYLE_KEY).then(v => {
+      if (v === "rounded" || v === "square") setButtonStyle(v);
+    }).catch(() => {});
+  }, []);
 
   const handlePickLogo = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -56,14 +72,24 @@ export default function AppCustomizationPage() {
 
   const handleApply = async () => {
     if (!schoolName.trim()) { Alert.alert("Error", "Please enter the school name."); return; }
-    await updateUser({
-      schoolName,
-      primaryColor: PRESET_COLORS[selectedColorIdx].primary,
-      secondaryColor: PRESET_COLORS[selectedColorIdx].secondary,
-    });
-    setApplied(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Theme Applied!", `The "${PRESET_COLORS[selectedColorIdx].name}" theme is now active across all interfaces.`);
+    setSaving(true);
+    try {
+      await updateUser({
+        schoolName,
+        primaryColor: PRESET_COLORS[selectedColorIdx].primary,
+        secondaryColor: PRESET_COLORS[selectedColorIdx].secondary,
+      });
+      await AsyncStorage.setItem(FONT_KEY, selectedFont);
+      await AsyncStorage.setItem(BTN_STYLE_KEY, buttonStyle);
+      setApplied(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Theme Applied!", `The "${PRESET_COLORS[selectedColorIdx].name}" theme is now active across all interfaces.`);
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Error", "Could not save theme settings. Please check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const preset = PRESET_COLORS[selectedColorIdx];
@@ -194,11 +220,18 @@ export default function AppCustomizationPage() {
 
         {/* Apply */}
         <Pressable
-          style={({ pressed }) => [styles.applyBtn, { backgroundColor: applied ? "#10B981" : colors.primary, opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [styles.applyBtn, { backgroundColor: applied ? "#10B981" : colors.primary, opacity: (pressed || saving) ? 0.85 : 1 }]}
           onPress={handleApply}
+          disabled={saving}
         >
-          <Ionicons name={applied ? "checkmark-circle" : "rocket"} size={20} color="#FFF" />
-          <Text style={styles.applyBtnText}>{applied ? "THEME APPLIED!" : "APPLY THEME GLOBALLY"}</Text>
+          {saving ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Ionicons name={applied ? "checkmark-circle" : "rocket"} size={20} color="#FFF" />
+          )}
+          <Text style={styles.applyBtnText}>
+            {saving ? "SAVING…" : applied ? "THEME APPLIED!" : "APPLY THEME GLOBALLY"}
+          </Text>
         </Pressable>
 
         {/* Placeholder: Dark Mode */}

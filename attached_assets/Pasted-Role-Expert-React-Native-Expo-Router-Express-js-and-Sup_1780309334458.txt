@@ -1,0 +1,45 @@
+Role: Expert React Native (Expo Router), Express.js, and Supabase Developer.
+
+Target Architecture: Full Admin Settings Stack (app/(admin)/settings/ directory, including the main menu and all new sub-pages: App Configuration, School Information, Legal & Privacy, App Customisation, plus Promo Codes).
+
+UI/UX Rule: Maintain Navy Blue and Gold branding. Ensure all loading states and error messages remain strictly within the physical device boundaries (Zero screen layout overflows).
+
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨
+DO NOT refactor navigation routers, change active UI themes, or modify unrelated user workflows (such as Member check-ins or active billing checkouts). Your task is strictly an audit, repair, and stabilization of database queries and network connections for the Settings module. Keep the core codebase 100% intact.
+
+Context: We have successfully restructured the Admin Settings layout. Before starting live end-to-end testing, we need to ensure that every single toggle, text input, and delete action across all settings screens is perfectly hooked into our Supabase database or Express backend API endpoints.
+
+Please perform a comprehensive database connection audit and implement the following fixes:
+
+1. Read/Fetch Operations (Data Hydration)
+Action: Audit the onMount / useEffect data-fetching logic for every single settings screen.
+
+Requirement: Ensure all fields pull real-time configuration data from Supabase correctly when the screen opens. This includes:
+
+App Configuration: Fetching the active "Grace Access" toggle state, "Payment Frequency" values, and "Receipt Threshold Amount".
+
+School Information: Fetching organization contact data (Name, Email, Phone), opening hours matrix, and the current active array of Campus Locations.
+
+Promo Codes: Fetching the list of existing active or deactivated promo codes.
+
+2. Write/Mutation Operations (Data Persistence)
+Action: Verify that every "Save", "Create", "Update", or "Delete" button correctly executes its corresponding database mutation query.
+
+Requirement:
+
+Validate that updating text inputs or switching toggles triggers an optimized, successful .update() or .insert() operation on the backend.
+
+Ensure the Campus "Delete" button accurately triggers a functional destructive query targeting the correct table row ID.
+
+Ensure the Promo Code "Create" and "Reactivate" actions pass the updated granular target schemas seamlessly to the database without data dropouts.
+
+3. Production Readiness (Loading States & Robust Error Catching)
+Action: Wrap all network requests/database interactions in secure try/catch blocks.
+
+UX Enhancements:
+
+Add clean React Native <ActivityIndicator> loaders (styled in Gold) while data is being fetched or saved to prevent users from interacting with unhydrated input elements.
+
+If a database connection fails or a query timeouts, catch the error gracefully and present a clear native Alert.alert in English detailing the sync issue.
+
+Output Requirement: Audit all code blocks within the Admin Settings stack, explicitly fix any dead hooks or unmapped input bindings to Supabase, ensure state is updated instantly on mutations, and list which connection files were verified.
