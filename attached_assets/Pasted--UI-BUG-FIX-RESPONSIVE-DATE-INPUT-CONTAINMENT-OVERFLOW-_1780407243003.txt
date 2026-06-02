@@ -1,0 +1,26 @@
+🚨 UI BUG FIX: RESPONSIVE DATE INPUT CONTAINMENT & OVERFLOW RESOLUTION 🚨
+Role: Expert Frontend UI/UX Developer (React Native Expo).
+Objective: Fix the critical horizontal screen overflow bug inside the Future Absence modal layouts on both the Operator and Parent screens. The input fields for Day (DD), Month (MM), and Year (YYYY) are disproportionately large and leaking outside the viewport boundaries.
+🚨 TARGET FILES & LOCATIONS (FROM AUDIT) 🚨
+Operator Side: artifacts/stride-app/app/(operator)/dashboard.tsx (Lines 1375–1520 - Future Tab Modal UI)
+Parent/Member Side: artifacts/stride-app/app/(parent)/home.tsx (Lines 577–710 - Future Tab Modal UI)
+Please apply the following layout constraints immediately:
+THE VISUAL FIX SPECIFICATIONS
+The Row Wrapper: Locate the row container holding the future date inputs (Single Date DD/MM/YYYY inputs and Date Range Start/End inputs). Ensure this wrapper component uses:
+TypeScript
+flexDirection: 'row',
+justifyContent: 'space-between',
+alignItems: 'center',
+width: '100%',
+paddingHorizontal: 8
+
+
+
+
+Explicit Input Widths: Replace any fixed large widths or unbounded flex allocations on the individual text boxes. Each sub-input element (Day, Month, Year) must be strictly bounded. Use a percentage-based approach or compact fixed widths:
+Day (DD) Input Container: width: '22%' or maximum width constraint.
+Month (MM) Input Container: width: '22%'
+Year (YYYY) Input Container: width: '45%' (to account for the 4-digit layout comfortably).
+Typography & Density: Slightly reduce the font size of the input labels and placeholders if necessary to guarantee that all text elements, borders, and input fields remain neatly side-by-side on compact smartphone screens.
+Aesthetic Preservation: Maintain the exact Deep Navy Blue background (#0A1128) and Premium Gold border/accent styling (#D4AF37) currently implemented. Do not alter the functional state management or validation handlers.
+Output Requirement: Rewrite the exact component segments rendering the future date inputs within both target files, verifying that horizontal scrolling is completely eliminated and all fields are beautifully aligned within the device borders.
