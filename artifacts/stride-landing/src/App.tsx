@@ -3,204 +3,160 @@ import { Route, Switch } from "wouter";
 import Register from "./pages/Register";
 import Activate from "./pages/Activate";
 
-// ── Inline SVG Icons ──────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
 const IconEye = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
       d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
 );
 
 const IconBrain = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
       d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
   </svg>
 );
 
 const IconBolt = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
       d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
   </svg>
 );
 
 const IconQR = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
       d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
   </svg>
 );
 
 const IconShield = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
       d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
   </svg>
 );
 
 const IconBell = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
       d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
   </svg>
 );
 
 const IconCard = () => (
-  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
       d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
   </svg>
 );
 
+const IconArrow = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+  </svg>
+);
+
 const IconChevron = ({ open }: { open: boolean }) => (
-  <svg
-    className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-  >
+  <svg className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+    fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
 
 const Logo = () => (
-  <svg height="34" width="34" viewBox="0 0 36 36" fill="none" aria-hidden>
-    <rect width="36" height="36" rx="9" fill="#D4AF37" fillOpacity="0.18" />
-    <path d="M9 18h18M18 10l8 8-8 8" stroke="#D4AF37" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+  <svg height="32" width="32" viewBox="0 0 36 36" fill="none" aria-hidden>
+    <rect width="36" height="36" rx="9" fill="#1E3A8A" fillOpacity="0.12" />
+    <path d="M9 18h18M18 10l8 8-8 8" stroke="#1E3A8A" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 // ── Data ─────────────────────────────────────────────────────────────────────
-
-const PAIN_CARDS = [
-  {
-    emoji: "📋",
-    title: "Attendance Chaos",
-    desc: "Lost paper logbooks, endless roll calls, and zero real-time tracking. Every session starts five minutes late while the teacher hunts for the clipboard.",
-    border: "border-red-500/30",
-    badge: "bg-red-500/10 text-red-400",
-  },
-  {
-    emoji: "💸",
-    title: "Staff Payroll Nightmares",
-    desc: "Wasting hours manually matching hours, absences, and last-minute class covers at month-end. One miscalculation and trust breaks down overnight.",
-    border: "border-orange-500/30",
-    badge: "bg-orange-500/10 text-orange-400",
-  },
-  {
-    emoji: "⚖️",
-    title: "Untracked Liability",
-    desc: "Liability waivers and image consents left unsigned, exposing your organisation to heavy compliance risks and potential litigation.",
-    border: "border-yellow-500/30",
-    badge: "bg-yellow-500/10 text-yellow-400",
-  },
-  {
-    emoji: "🔗",
-    title: "SaaS Middlemen Tax",
-    desc: "Software platforms locking you into monthly fixed contracts and taking a percentage cut from your hard-earned member fees. Every single month.",
-    border: "border-purple-500/30",
-    badge: "bg-purple-500/10 text-purple-400",
-  },
-];
 
 const AI_CORES = [
   {
     Icon: IconEye,
     tag: "Vision AI",
     title: "Document Reader",
-    desc: "Zero Manual Review. Parents snap a photo of medical certificates or legal waivers; our integrated Vision AI extracts expiration dates, validates doctor signatures, and updates profiles instantly.",
+    desc: "Parents snap a photo of medical certificates or legal waivers. Our Vision AI extracts expiration dates, validates signatures, and updates profiles instantly — zero manual review.",
+    color: "bg-blue-50 text-blue-700 border-blue-100",
+    iconBg: "bg-blue-600",
   },
   {
     Icon: IconBrain,
     tag: "Predictive Engine",
     title: "Smart Rostering",
-    desc: "No More Last-Minute Panic. When an instructor schedules an absence, the AI analyzes historical records to recommend and notify the perfect pre-verified substitute in seconds.",
+    desc: "When an instructor schedules an absence, the AI analyzes historical records and notifies the best pre-verified substitute in seconds. No last-minute panic.",
+    color: "bg-amber-50 text-amber-700 border-amber-100",
+    iconBg: "bg-amber-500",
   },
   {
     Icon: IconBolt,
     tag: "Stripe Connect",
     title: "Real-Time Payouts",
-    desc: "1-Click Automated Payroll. Pay instructors, vendors, and operators instantly using secure platform routing with absolute transparency and zero administrative friction.",
+    desc: "1-click automated payroll. Pay instructors and operators instantly via secure platform routing. Absolute transparency, zero administrative friction.",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-100",
+    iconBg: "bg-emerald-600",
   },
 ];
 
 const PILLARS = [
   {
     Icon: IconQR,
-    title: "Locked-Down Kiosk",
-    tag: "Smart Check-In",
-    desc: "Drop an iPad at the door. Members scan their unique QR code, instantly marking attendance and updating the teacher's roster. Secure, simple, and tamper-proof.",
+    title: "Kiosk Check-In",
+    tag: "Smart Attendance",
+    desc: "Drop an iPad at the door. Members scan their QR code, instantly marking attendance. Secure, tamper-proof, and real-time.",
+    iconBg: "bg-blue-600",
   },
   {
     Icon: IconShield,
-    title: "High-Security Legal Gate",
+    title: "Legal Gate",
     tag: "Zero-Liability",
-    desc: "Enforce digital signature compliance for terms, privacy policies, and media releases directly on the parent's smartphone before they access the platform.",
+    desc: "Digital signature compliance for terms, privacy policies, and media releases — enforced on the parent's phone before first access.",
+    iconBg: "bg-indigo-600",
   },
   {
     Icon: IconBell,
     title: "Substitution Cascade",
     tag: "Auto-Dispatch",
-    desc: "When an instructor reports an absence, the backend triggers a 5-minute rolling notification cascade to qualified backup staff, filling the slot with zero admin stress.",
+    desc: "Absence reported → 5-minute rolling notification cascade to qualified backup staff. Slot filled, admin not bothered.",
+    iconBg: "bg-violet-600",
   },
   {
     Icon: IconCard,
     title: "Stripe Connect Direct",
     tag: "0% Platform Fee",
-    desc: "Connect your bank account. Member fees land directly into your school's balance. We take a 0% platform fee cut during your entire trial period.",
+    desc: "Member fees land directly into your school's balance. Zero platform commission during your entire trial period.",
+    iconBg: "bg-amber-500",
   },
+];
+
+const PAIN_POINTS = [
+  { emoji: "📋", title: "Attendance Chaos", desc: "Lost logbooks, endless roll calls, sessions starting late while the teacher hunts for the clipboard." },
+  { emoji: "💸", title: "Payroll Nightmares", desc: "Hours wasted matching hours, absences, and last-minute covers. One mistake and trust breaks down overnight." },
+  { emoji: "⚖️", title: "Untracked Liability", desc: "Waivers and consents left unsigned, exposing your organisation to compliance risks and potential litigation." },
+  { emoji: "🔗", title: "SaaS Middlemen", desc: "Fixed monthly contracts and percentage cuts on member fees — every single month, regardless of performance." },
 ];
 
 const COMPLIANCE_REGIONS = [
-  {
-    flag: "🇦🇺",
-    label: "AU Non-Profit",
-    sub: "WA Cultural Associations",
-    detail: "NFP-compliant invoicing, volunteer role differentiation, and state-level data residency for Western Australia regulations.",
-    currency: "AUD",
-  },
-  {
-    flag: "🇦🇺",
-    label: "AU Commercial",
-    sub: "ABN Studios & Gyms",
-    detail: "Full ABN framework support, GST-inclusive pricing tiers, and TFND withholding automation for independent contractors.",
-    currency: "AUD",
-  },
-  {
-    flag: "🇪🇺",
-    label: "EU Sportive",
-    sub: "ASD / SSD Legal Entities",
-    detail: "GDPR-native data handling, EUR billing, and compliance scaffolding for Italian and broader European ASD/SSD legal structures.",
-    currency: "EUR",
-  },
+  { flag: "🇦🇺", label: "AU Non-Profit", sub: "WA Cultural Associations", detail: "NFP-compliant invoicing, volunteer roles, and state-level data residency for WA regulations.", currency: "AUD" },
+  { flag: "🇦🇺", label: "AU Commercial", sub: "ABN Studios & Gyms", detail: "Full ABN framework, GST-inclusive pricing, and TFND withholding automation for contractors.", currency: "AUD" },
+  { flag: "🇪🇺", label: "EU Sportive", sub: "ASD / SSD Legal Entities", detail: "GDPR-native data handling, EUR billing, and compliance scaffolding for Italian and European ASD/SSD structures.", currency: "EUR" },
 ];
 
 const FAQS = [
-  {
-    q: "Do I need to enter a credit card to start the trial?",
-    a: "No. Complete and unrestricted access for 30 days, no strings attached. Your account activates instantly after registration with zero payment details required.",
-  },
-  {
-    q: "What happens if an entrance kiosk tablet gets stolen?",
-    a: "Instant protection. Use the Revoke Access button from your operator phone to force-logout and lock the device remotely. The stolen tablet loses all session access within seconds.",
-  },
-  {
-    q: "Can I manage multiple venues or classes simultaneously?",
-    a: "Yes, multi-location architecture is natively supported right out of the box. Create separate class schedules, staff pools, and attendance trackers per venue, all under one admin account.",
-  },
-  {
-    q: "How does the per-seat pricing actually work?",
-    a: "You pay only for active enrolled members each month. If a student unenrolls mid-month, they drop off your bill immediately. No flat fees, no surprise invoices, no minimum seat commitments.",
-  },
-  {
-    q: "Is my members' data private and secure?",
-    a: "Each school's data is stored in a fully isolated tenant environment. Cross-tenant data access is architecturally impossible. All traffic is encrypted in transit and at rest.",
-  },
+  { q: "Do I need a credit card to start the trial?", a: "No. Complete and unrestricted access for 30 days, no strings attached. Your account activates instantly with zero payment details required." },
+  { q: "What if an entrance kiosk tablet gets stolen?", a: "Use Revoke Access from your operator phone to force-logout and lock the device remotely. The tablet loses all session access within seconds." },
+  { q: "Can I manage multiple venues or classes?", a: "Yes, multi-location architecture is natively supported. Create separate schedules, staff pools, and attendance trackers per venue under one admin account." },
+  { q: "How does per-seat pricing work?", a: "You pay only for active enrolled members each month. If a student unenrolls mid-month, they drop off your bill immediately. No flat fees, no minimums." },
+  { q: "Is my members' data private and secure?", a: "Each school's data is in a fully isolated tenant environment. Cross-tenant access is architecturally impossible. All traffic is encrypted in transit and at rest." },
 ];
 
-// ── Landing Page ─────────────────────────────────────────────────────────────
+// ── Landing ───────────────────────────────────────────────────────────────────
 
 function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -212,36 +168,28 @@ function Landing() {
   const monthlyTotal = (members * 1.5).toFixed(2);
 
   return (
-    <div className="bg-[#0A1128] text-white min-h-screen overflow-x-hidden font-sans">
+    <div className="bg-white text-slate-900 min-h-screen overflow-x-hidden font-sans">
 
-      {/* ─── NAVBAR ────────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 bg-[#0A1128]/96 backdrop-blur-md border-b border-[#D4AF37]/15">
+      {/* ── NAVBAR ─────────────────────────────────────────────────────── */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5 no-underline">
             <Logo />
-            <span className="text-base font-bold text-white tracking-wide hidden sm:inline">Stride</span>
-            <span className="hidden sm:inline text-[#D4AF37]/60 text-base font-light">Platform</span>
+            <span className="text-base font-bold text-[#1E3A8A] tracking-wide">Stride</span>
+            <span className="hidden sm:inline text-slate-400 text-sm font-normal">Platform</span>
           </a>
 
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#pain-points" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">Why Us</a>
-            <a href="#ai-cores" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">AI Cores</a>
-            <a href="#features" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">Features</a>
-            <a href="#pricing" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">Pricing</a>
-            <a href="#faq" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">FAQ</a>
-            <a
-              href="/register"
-              className="bg-[#D4AF37] text-[#0A1128] text-sm font-bold px-5 py-2 rounded-lg hover:bg-[#e8c44b] transition-colors"
-            >
+          <div className="hidden md:flex items-center gap-7">
+            {[["#pain-points", "Why Us"], ["#ai-cores", "AI Cores"], ["#features", "Features"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
+              <a key={label} href={href} className="text-sm text-slate-600 hover:text-[#1E3A8A] font-medium transition-colors">{label}</a>
+            ))}
+            <a href="/register"
+              className="bg-[#1E3A8A] text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-[#1e3070] transition-colors">
               Get Started
             </a>
           </div>
 
-          <button
-            className="md:hidden text-slate-300 p-1"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
+          <button className="md:hidden text-slate-500 p-1" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen
                 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -251,16 +199,13 @@ function Landing() {
         </div>
 
         {menuOpen && (
-          <div className="md:hidden border-t border-[#D4AF37]/15 bg-[#0A1128] px-6 py-5 flex flex-col gap-4">
-            {["#pain-points:Why Us", "#ai-cores:AI Cores", "#features:Features", "#pricing:Pricing", "#faq:FAQ"].map(item => {
-              const [href, label] = item.split(":");
-              return (
-                <a key={label} href={href} className="text-sm text-slate-300 hover:text-[#D4AF37]"
-                  onClick={() => setMenuOpen(false)}>{label}</a>
-              );
-            })}
+          <div className="md:hidden border-t border-slate-100 bg-white px-6 py-5 flex flex-col gap-4 shadow-lg">
+            {[["#pain-points", "Why Us"], ["#ai-cores", "AI Cores"], ["#features", "Features"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
+              <a key={label} href={href} className="text-sm text-slate-600 hover:text-[#1E3A8A] font-medium"
+                onClick={() => setMenuOpen(false)}>{label}</a>
+            ))}
             <a href="/register"
-              className="bg-[#D4AF37] text-[#0A1128] text-sm font-bold px-5 py-3 rounded-lg text-center"
+              className="bg-[#1E3A8A] text-white text-sm font-bold px-5 py-3 rounded-lg text-center"
               onClick={() => setMenuOpen(false)}>
               Get Started / Schedule Pilot
             </a>
@@ -268,84 +213,95 @@ function Landing() {
         )}
       </nav>
 
-      {/* ─── S1: HERO ──────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-28">
+      {/* ── HERO ───────────────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-24">
         <div className="flex flex-col-reverse lg:flex-row items-center gap-14 lg:gap-20">
 
-          {/* Copy */}
           <div className="flex-1 w-full text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full px-4 py-1.5 mb-7">
-              <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse flex-shrink-0" />
-              <span className="text-[#D4AF37] text-xs font-semibold tracking-wider uppercase">Now in Early Access</span>
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 mb-7">
+              <span className="w-2 h-2 rounded-full bg-[#1E3A8A] animate-pulse flex-shrink-0" />
+              <span className="text-[#1E3A8A] text-xs font-semibold tracking-wider uppercase">Now in Early Access</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.2rem] font-black leading-[1.1] text-white mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.2rem] font-black leading-[1.1] text-slate-900 mb-6">
               Stop Managing.{" "}
-              <span className="text-[#D4AF37]">Start Automating.</span>{" "}
-              The Only AI-Driven Platform Built for Children's Academies &amp; Sports Associations.
+              <span className="text-[#1E3A8A]">Start Automating.</span>
+              <br className="hidden sm:block" />
+              The AI Platform for{" "}
+              <span className="relative inline-block">
+                <span className="relative z-10">Dance &amp; Sports Academies.</span>
+                <span className="absolute bottom-1 left-0 w-full h-3 bg-amber-300/40 -z-0 rounded" />
+              </span>
             </h1>
 
-            <p className="text-lg text-slate-300 leading-relaxed mb-2 max-w-2xl mx-auto lg:mx-0 font-medium">
+            <p className="text-lg text-slate-500 leading-relaxed mb-2 max-w-xl mx-auto lg:mx-0">
               We don't sell colored spreadsheets.
             </p>
-            <p className="text-lg text-slate-400 leading-relaxed mb-6 max-w-2xl mx-auto lg:mx-0">
-              We deliver absolute operational automation and total legal peace of mind in a single click.
+            <p className="text-lg text-slate-500 leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
+              Absolute operational automation and total legal peace of mind — in a single click.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mt-10">
-              <a
-                href="/register"
-                className="inline-flex items-center justify-center gap-2 bg-[#D4AF37] text-[#0A1128] font-black px-8 py-4 rounded-xl text-base hover:bg-[#e8c44b] transition-colors shadow-[0_0_40px_rgba(212,175,55,0.4)]"
-              >
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+              <a href="/register"
+                className="inline-flex items-center justify-center gap-2 bg-amber-400 text-slate-900 font-black px-8 py-4 rounded-xl text-base hover:bg-amber-300 transition-colors shadow-lg shadow-amber-200">
                 Get Started / Schedule Pilot
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
+                <IconArrow />
+              </a>
+              <a href="#features"
+                className="inline-flex items-center justify-center gap-2 bg-white border-2 border-slate-200 text-slate-700 font-semibold px-8 py-4 rounded-xl text-base hover:border-[#1E3A8A] hover:text-[#1E3A8A] transition-colors">
+                See how it works
               </a>
             </div>
 
-            <p className="mt-4 text-sm text-slate-500">
-              No credit card required. Setup in 60 seconds.
-            </p>
+            <p className="mt-4 text-sm text-slate-400">No credit card required. Setup in 60 seconds.</p>
           </div>
 
-          {/* Phone mockup */}
+          {/* Phone mockup — light version */}
           <div className="flex-shrink-0">
-            <div className="relative w-[230px] h-[460px] mx-auto">
-              <div className="absolute inset-0 bg-[#D4AF37]/15 rounded-[3rem] blur-3xl scale-110" />
-              <div className="relative w-full h-full bg-[#0d1a3e] border-[3px] border-[#D4AF37]/35 rounded-[3rem] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.7)] flex flex-col">
-                <div className="w-24 h-6 bg-[#0A1128] rounded-b-2xl mx-auto flex-shrink-0" />
-                <div className="flex-1 px-4 py-3 flex flex-col gap-2.5 overflow-hidden">
-                  <div className="bg-[#D4AF37] rounded-xl h-9 flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 bg-[#0A1128]/30 rounded" />
-                    <div className="w-20 h-2.5 bg-[#0A1128]/30 rounded-full" />
+            <div className="relative w-[240px] h-[480px] mx-auto">
+              <div className="absolute inset-0 bg-[#1E3A8A]/8 rounded-[3rem] blur-3xl scale-110" />
+              <div className="relative w-full h-full bg-[#0d1a3e] border-[3px] border-[#1E3A8A]/25 rounded-[3rem] overflow-hidden shadow-[0_24px_60px_rgba(30,58,138,0.18)] flex flex-col">
+                <div className="w-24 h-6 bg-[#0a1020] rounded-b-2xl mx-auto flex-shrink-0" />
+                {/* Status bar */}
+                <div className="px-5 pt-2 pb-1 flex items-center justify-between">
+                  <div className="text-white/40 text-[10px] font-medium">9:41</div>
+                  <div className="flex gap-1">
+                    <div className="w-3 h-1.5 bg-white/30 rounded-sm" />
+                    <div className="w-3 h-1.5 bg-white/30 rounded-sm" />
+                    <div className="w-4 h-1.5 bg-amber-400 rounded-sm" />
+                  </div>
+                </div>
+                <div className="flex-1 px-4 py-2 flex flex-col gap-2 overflow-hidden">
+                  <div className="bg-amber-400 rounded-xl h-10 flex items-center justify-center gap-2 mb-1">
+                    <div className="w-5 h-5 bg-[#0a1020]/20 rounded-lg" />
+                    <div className="w-24 h-2.5 bg-[#0a1020]/25 rounded-full" />
                   </div>
                   {[
-                    ["Sofia R.", "Checked in", "✅"],
-                    ["Marco B.", "Checked in", "✅"],
-                    ["Anna K.", "Pending", "⏳"],
-                    ["Luca M.", "Checked in", "✅"],
-                    ["Giulia F.", "Absent", "❌"],
-                  ].map(([name, status, icon]) => (
-                    <div key={name} className="bg-[#1a2d56]/70 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center flex-shrink-0 text-xs">{icon}</div>
+                    ["Sofia R.", "✅", "Checked in"],
+                    ["Marco B.", "✅", "Checked in"],
+                    ["Anna K.", "⏳", "Pending"],
+                    ["Luca M.", "✅", "Checked in"],
+                    ["Giulia F.", "❌", "Absent"],
+                  ].map(([name, icon]) => (
+                    <div key={name} className="bg-white/8 rounded-xl px-3 py-2.5 flex items-center gap-2.5 border border-white/5">
+                      <div className="w-8 h-8 rounded-lg bg-[#1E3A8A]/40 flex items-center justify-center flex-shrink-0 text-sm">{icon}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="h-2 bg-slate-300/50 rounded-full w-4/5 mb-1.5" />
-                        <div className="h-1.5 bg-slate-600/40 rounded-full w-1/2" />
+                        <div className="h-2 bg-white/40 rounded-full w-4/5 mb-1.5" />
+                        <div className="h-1.5 bg-white/20 rounded-full w-1/2" />
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="w-20 h-1 bg-[#D4AF37]/30 rounded-full mx-auto mb-3 flex-shrink-0" />
+                <div className="w-20 h-1 bg-white/20 rounded-full mx-auto mb-3 flex-shrink-0" />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats bar */}
-      <div className="bg-[#D4AF37]/5 border-y border-[#D4AF37]/12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      {/* ── STATS BAR ──────────────────────────────────────────────────── */}
+      <div className="bg-[#1E3A8A]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
             { n: "500+", label: "Schools Onboarded" },
             { n: "12k+", label: "Active Members" },
@@ -353,452 +309,384 @@ function Landing() {
             { n: "0%", label: "Commission on Trials" },
           ].map(({ n, label }) => (
             <div key={label}>
-              <div className="text-3xl font-black text-[#D4AF37]">{n}</div>
-              <div className="text-sm text-slate-400 mt-1">{label}</div>
+              <div className="text-3xl font-black text-amber-400">{n}</div>
+              <div className="text-sm text-blue-200 mt-1">{label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ─── S2: PAIN POINTS ───────────────────────────────────────────────── */}
-      <section id="pain-points" className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
-        <div className="text-center mb-14">
-          <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">The Problem</div>
-          <h2 className="text-3xl md:text-4xl font-black text-white">
-            The Administrative Chaos<br className="hidden sm:block" /> Holding Your School Back
-          </h2>
-          <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-            Sound familiar? These are the four operational failures draining your time, money, and peace of mind.
-          </p>
-        </div>
+      {/* ── PAIN POINTS ────────────────────────────────────────────────── */}
+      <section id="pain-points" className="bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+          <div className="text-center mb-14">
+            <span className="inline-block bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">The Problem</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+              4 Things Draining Your School Every Day
+            </h2>
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">
+              Sound familiar? These are the operational failures costing you time, money, and peace of mind.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {PAIN_CARDS.map(({ emoji, title, desc, border, badge }) => (
-            <div key={title}
-              className={`bg-[#0d1a3e] border ${border} rounded-2xl p-7 flex gap-5 hover:brightness-110 transition-all`}>
-              <div className={`w-12 h-12 rounded-xl ${badge} flex items-center justify-center text-2xl flex-shrink-0`}>
-                {emoji}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {PAIN_POINTS.map(({ emoji, title, desc }) => (
+              <div key={title} className="bg-white rounded-2xl p-6 flex gap-4 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-xl flex-shrink-0">{emoji}</div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 mb-1.5">{title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white mb-2">{title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ─── S3: 3 AI CORES ────────────────────────────────────────────────── */}
-      <section id="ai-cores" className="bg-[#080f22] border-y border-[#D4AF37]/10">
+      {/* ── AI CORES ───────────────────────────────────────────────────── */}
+      <section id="ai-cores" className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
           <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full px-4 py-1.5 mb-5">
-              <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse flex-shrink-0" />
-              <span className="text-[#D4AF37] text-xs font-semibold tracking-wider uppercase">AI Engine</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black text-white">
-              3 Intelligent Cores.<br className="hidden sm:block" />
-              <span className="text-[#D4AF37]"> Zero Manual Intervention.</span>
+            <span className="inline-block bg-blue-100 text-[#1E3A8A] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">AI Engine</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+              3 Intelligent Cores.{" "}
+              <span className="text-[#1E3A8A]">Zero Manual Intervention.</span>
             </h2>
-            <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-              Advanced AI architecture running silently in the background — so your team handles people, not paperwork.
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">
+              Advanced AI running silently in the background — so your team handles people, not paperwork.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {AI_CORES.map(({ Icon, tag, title, desc }) => (
+            {AI_CORES.map(({ Icon, tag, title, desc, color, iconBg }) => (
               <div key={title}
-                className="relative bg-[#0d1a3e] border border-[#D4AF37]/35 rounded-2xl p-8 flex flex-col hover:border-[#D4AF37]/70 transition-colors group overflow-hidden">
-                {/* Gold corner accent */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/5 rounded-bl-full pointer-events-none" />
-                <div className="w-14 h-14 bg-[#D4AF37]/12 border border-[#D4AF37]/35 rounded-2xl flex items-center justify-center text-[#D4AF37] mb-5 group-hover:bg-[#D4AF37]/22 transition-colors flex-shrink-0">
+                className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center text-white mb-5 flex-shrink-0`}>
                   <Icon />
                 </div>
-                <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-widest mb-2">{tag}</span>
-                <h3 className="text-lg font-black text-white mb-3">{title}</h3>
-                <p className="text-sm text-slate-300 leading-relaxed flex-1">{desc}</p>
-                <div className="mt-6 pt-5 border-t border-[#D4AF37]/15">
-                  <span className="text-xs text-[#D4AF37]/70 font-semibold uppercase tracking-wider">Live in Production</span>
-                </div>
+                <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-full border ${color} mb-3`}>{tag}</span>
+                <h3 className="text-lg font-black text-slate-900 mb-3">{title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── S4: HEADACHE ELIMINATOR COMPARISON ────────────────────────────── */}
-      <section id="comparison" className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
-        <div className="text-center mb-14">
-          <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">The Switch</div>
-          <h2 className="text-3xl md:text-4xl font-black text-white">
-            The Headache Eliminator
-          </h2>
-          <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-            Your old software isn't just slow — it's costing you money, liability exposure, and parent trust every single day.
-          </p>
-        </div>
+      {/* ── COMPARISON ─────────────────────────────────────────────────── */}
+      <section id="comparison" className="bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+          <div className="text-center mb-14">
+            <span className="inline-block bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">The Switch</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">The Headache Eliminator</h2>
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">Your old software isn't just slow — it's costing you money, liability exposure, and parent trust every single day.</p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Legacy column */}
-          <div className="bg-[#0d1a3e] border border-red-500/25 rounded-2xl p-7">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-9 h-9 rounded-xl bg-red-500/15 flex items-center justify-center text-lg flex-shrink-0">💀</div>
-              <div>
-                <div className="text-white font-black text-base">Legacy Competitors</div>
-                <div className="text-xs text-red-400 font-semibold uppercase tracking-wider mt-0.5">The Old World</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
+            {/* Legacy */}
+            <div className="bg-white rounded-2xl p-7 border border-red-100 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center text-lg flex-shrink-0">💀</div>
+                <div>
+                  <div className="text-slate-900 font-black text-base">Legacy Competitors</div>
+                  <div className="text-xs text-red-500 font-semibold uppercase tracking-wider mt-0.5">The Old World</div>
+                </div>
               </div>
+              <ul className="flex flex-col gap-3">
+                {[
+                  "Desktop-only software built in 2012 — no mobile, no kiosk",
+                  "Hundreds of paper forms reviewed by hand every week",
+                  "Endless phone tag to track down missing students",
+                  "Complex Excel payroll loops recalculated manually at month-end",
+                  "Zero legal gatekeeping — unsigned waivers slip through",
+                  "Flat monthly fees regardless of how many members are active",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-slate-500 leading-relaxed">
+                    <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="flex flex-col gap-3">
-              {[
-                "Desktop-only software built in 2012 — no mobile, no kiosk, no real-time",
-                "Hundreds of paper forms reviewed by hand every single week",
-                "Endless phone tag to track down missing or late students",
-                "Complex Excel payroll loops recalculated manually at month-end",
-                "Zero legal gatekeeping — unsigned waivers slip through unnoticed",
-                "Flat monthly SaaS fees regardless of how many members are active",
-              ].map((item, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-slate-400 leading-relaxed">
-                  <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
 
-          {/* Stride column */}
-          <div className="bg-[#0d1a3e] border border-[#D4AF37]/35 rounded-2xl p-7 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 rounded-bl-full pointer-events-none" />
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-lg flex-shrink-0">⚡</div>
-              <div>
-                <div className="text-[#D4AF37] font-black text-base">Stride Platform</div>
-                <div className="text-xs text-[#D4AF37]/60 font-semibold uppercase tracking-wider mt-0.5">The New Standard</div>
+            {/* Stride */}
+            <div className="bg-[#1E3A8A] rounded-2xl p-7 shadow-lg shadow-blue-200">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center text-lg flex-shrink-0">⚡</div>
+                <div>
+                  <div className="text-white font-black text-base">Stride Platform</div>
+                  <div className="text-xs text-blue-300 font-semibold uppercase tracking-wider mt-0.5">The New Standard</div>
+                </div>
               </div>
+              <ul className="flex flex-col gap-3">
+                {[
+                  "Mobile-First Kiosk Terminal tracking minors in real-time with QR precision",
+                  "Vision AI reads and validates certificates in under 3 seconds",
+                  "Automatic legal gatekeepers — unsigned docs block access instantly",
+                  "Predictive absence engine pre-stages substitutions before admin wakes up",
+                  "Instant Stripe Connect payouts — 1-click payroll, zero friction",
+                  "Pay only per active enrolled member — zero fees when they unenroll",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-blue-100 leading-relaxed">
+                    <svg className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="flex flex-col gap-3">
-              {[
-                "Mobile-First Kiosk Terminal tracking minors in real-time with QR precision",
-                "Vision AI reads and validates certificates and waivers in under 3 seconds",
-                "Automatic legal gatekeepers blocking access for any unsigned document",
-                "Predictive absence engine pre-stages substitutions before the admin wakes up",
-                "Instant Stripe Connect payouts — 1-click payroll, zero friction",
-                "Pay only per active enrolled member — zero fees when they unenroll",
-              ].map((item, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-slate-200 leading-relaxed">
-                  <svg className="w-4 h-4 text-[#D4AF37] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
-        </div>
 
-        {/* Switch CTA bar */}
-        <div className="mt-8 bg-[#D4AF37]/8 border border-[#D4AF37]/25 rounded-2xl px-7 py-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-          <div className="text-3xl flex-shrink-0">🚀</div>
-          <div className="min-w-0">
-            <div className="text-white font-bold mb-1">Ready to make the switch?</div>
-            <div className="text-sm text-slate-400">
-              Join hundreds of academies already running on Stride. No migration complexity. Up and running in under an hour.
+          <div className="mt-8 max-w-5xl mx-auto bg-white rounded-2xl px-7 py-5 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left border border-slate-100 shadow-sm">
+            <div className="text-3xl flex-shrink-0">🚀</div>
+            <div className="min-w-0">
+              <div className="text-slate-900 font-bold mb-1">Ready to make the switch?</div>
+              <div className="text-sm text-slate-500">Up and running in under an hour. No migration complexity.</div>
             </div>
+            <a href="/register"
+              className="flex-shrink-0 sm:ml-auto bg-amber-400 text-slate-900 font-bold px-6 py-3 rounded-xl text-sm hover:bg-amber-300 transition-colors whitespace-nowrap shadow-md shadow-amber-100">
+              Get Started / Schedule Pilot
+            </a>
           </div>
-          <a href="/register"
-            className="flex-shrink-0 sm:ml-auto bg-[#D4AF37] text-[#0A1128] font-bold px-6 py-3 rounded-xl text-sm hover:bg-[#e8c44b] transition-colors whitespace-nowrap shadow-[0_0_24px_rgba(212,175,55,0.25)]">
-            Get Started / Schedule Pilot
-          </a>
         </div>
       </section>
 
-      {/* ─── S5: 4 PILLARS ─────────────────────────────────────────────────── */}
-      <section id="features" className="bg-[#080f22] border-y border-[#D4AF37]/10">
+      {/* ── 4 PILLARS ──────────────────────────────────────────────────── */}
+      <section id="features" className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
           <div className="text-center mb-14">
-            <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">The Platform</div>
-            <h2 className="text-3xl md:text-4xl font-black text-white">
-              4 Pillars That Replace<br className="hidden sm:block" /> Your Entire Admin Stack
+            <span className="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">The Platform</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+              4 Pillars That Replace Your Entire Admin Stack
             </h2>
-            <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-              Each module is purpose-built for the specific realities of running a dance school, martial arts gym, or cultural association.
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">
+              Purpose-built for dance schools, martial arts gyms, and cultural associations.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-            {PILLARS.map(({ Icon, title, tag, desc }) => (
+            {PILLARS.map(({ Icon, title, tag, desc, iconBg }) => (
               <div key={title}
-                className="bg-[#0d1a3e] border border-[#D4AF37]/20 rounded-2xl p-7 flex flex-col hover:border-[#D4AF37]/50 transition-colors group">
-                <div className="w-14 h-14 bg-[#D4AF37]/10 border border-[#D4AF37]/25 rounded-2xl flex items-center justify-center text-[#D4AF37] mb-5 group-hover:bg-[#D4AF37]/18 transition-colors flex-shrink-0">
+                className="bg-white rounded-2xl p-7 flex flex-col border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center text-white mb-5 flex-shrink-0`}>
                   <Icon />
                 </div>
-                <span className="text-xs font-semibold text-[#D4AF37] uppercase tracking-widest mb-2">{tag}</span>
-                <h3 className="text-base font-bold text-white mb-3">{title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
+                <span className="text-xs font-bold text-[#1E3A8A] uppercase tracking-widest mb-2">{tag}</span>
+                <h3 className="text-base font-bold text-slate-900 mb-3">{title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── S6: LOCALIZATION & COMPLIANCE ─────────────────────────────────── */}
-      <section id="compliance" className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
-        <div className="text-center mb-14">
-          <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">Compliance</div>
-          <h2 className="text-3xl md:text-4xl font-black text-white">
-            Built for Your Legal Framework,<br className="hidden sm:block" /> Not Against It
-          </h2>
-          <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-            Automated infrastructure adaptabilities for three distinct regulatory environments.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {COMPLIANCE_REGIONS.map(({ flag, label, sub, detail, currency: cur }) => (
-            <div key={label}
-              className="bg-[#0d1a3e] border border-[#D4AF37]/20 rounded-2xl p-7 hover:border-[#D4AF37]/40 transition-colors">
-              <div className="flex items-center gap-3 mb-5">
-                <span className="text-4xl">{flag}</span>
-                <div>
-                  <div className="text-white font-bold">{label}</div>
-                  <div className="text-xs text-slate-500">{sub}</div>
-                </div>
-                <span className="ml-auto text-xs font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-2.5 py-1 rounded-full">
-                  {cur}
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 leading-relaxed">{detail}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8 bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-2xl px-7 py-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-          <div className="text-3xl flex-shrink-0">🌍</div>
-          <div>
-            <div className="text-white font-bold mb-1">Multi-currency billing is automatic</div>
-            <div className="text-sm text-slate-400">
-              Invoice currency follows your region. AUD for Australian entities, EUR for European ones. No manual conversion, no FX surprises.
-            </div>
+      {/* ── COMPLIANCE ─────────────────────────────────────────────────── */}
+      <section id="compliance" className="bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+          <div className="text-center mb-14">
+            <span className="inline-block bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">Compliance</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+              Built for Your Legal Framework, Not Against It
+            </h2>
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">Automated adaptations for three distinct regulatory environments.</p>
           </div>
-          <a href="/register"
-            className="flex-shrink-0 sm:ml-auto bg-[#D4AF37] text-[#0A1128] font-bold px-6 py-3 rounded-xl text-sm hover:bg-[#e8c44b] transition-colors whitespace-nowrap">
-            Get Started Free
-          </a>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {COMPLIANCE_REGIONS.map(({ flag, label, sub, detail, currency: cur }) => (
+              <div key={label} className="bg-white rounded-2xl p-7 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="text-3xl">{flag}</span>
+                  <div className="min-w-0">
+                    <div className="text-slate-900 font-bold">{label}</div>
+                    <div className="text-xs text-slate-400">{sub}</div>
+                  </div>
+                  <span className="ml-auto text-xs font-bold text-[#1E3A8A] bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full flex-shrink-0">{cur}</span>
+                </div>
+                <p className="text-sm text-slate-500 leading-relaxed">{detail}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 bg-white rounded-2xl px-7 py-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left border border-slate-100 shadow-sm">
+            <div className="text-3xl flex-shrink-0">🌍</div>
+            <div>
+              <div className="text-slate-900 font-bold mb-1">Multi-currency billing is automatic</div>
+              <div className="text-sm text-slate-500">AUD for Australian entities, EUR for European ones. No manual conversion, no FX surprises.</div>
+            </div>
+            <a href="/register"
+              className="flex-shrink-0 sm:ml-auto bg-[#1E3A8A] text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-[#1e3070] transition-colors whitespace-nowrap">
+              Get Started Free
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* ─── S7: PRICING SLIDER ────────────────────────────────────────────── */}
-      <section id="pricing" className="bg-[#080f22] border-y border-[#D4AF37]/10">
+      {/* ── PRICING ────────────────────────────────────────────────────── */}
+      <section id="pricing" className="bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-24">
           <div className="text-center mb-14">
-            <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">Pricing</div>
-            <h2 className="text-3xl md:text-4xl font-black text-white">
-              Pay Only for Active Members.
-            </h2>
-            <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-              No flat monthly fees. No minimum seats. No platform commission. The moment a member unenrolls, you stop paying for them.
-            </p>
+            <span className="inline-block bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">Pricing</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">Pay Only for Active Members.</h2>
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">No flat fees. No minimum seats. No commission. The moment a member unenrolls, you stop paying.</p>
           </div>
 
-          {/* Card */}
-          <div className="bg-[#0d1a3e] border border-[#D4AF37]/30 rounded-3xl p-8 sm:p-10">
-
-            {/* Free trial badge */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 shadow-lg shadow-slate-100">
             <div className="flex justify-center mb-8">
-              <div className="inline-flex items-center gap-2 bg-[#D4AF37]/15 border border-[#D4AF37]/40 rounded-full px-5 py-2">
-                <span className="text-[#D4AF37] text-lg">🎉</span>
-                <span className="text-[#D4AF37] font-bold text-sm">First 30 days: 100% Free. No credit card required.</span>
+              <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-5 py-2">
+                <span className="text-amber-500 text-lg">🎉</span>
+                <span className="text-amber-700 font-bold text-sm">First 30 days: 100% Free. No credit card required.</span>
               </div>
             </div>
 
-            {/* Currency toggle */}
             <div className="flex justify-center gap-2 mb-8">
               {(["AUD", "EUR"] as const).map(cur => (
-                <button
-                  key={cur}
-                  onClick={() => setCurrency(cur)}
+                <button key={cur} onClick={() => setCurrency(cur)}
                   className={`px-5 py-2 rounded-lg text-sm font-bold transition-colors ${
                     currency === cur
-                      ? "bg-[#D4AF37] text-[#0A1128]"
-                      : "bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/25 hover:bg-[#D4AF37]/20"
-                  }`}
-                >
+                      ? "bg-[#1E3A8A] text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}>
                   {cur === "AUD" ? "A$ AUD" : "\u20AC EUR"}
                 </button>
               ))}
             </div>
 
-            {/* Slider */}
             <div className="mb-8">
-              <div className="flex justify-between text-xs text-slate-500 mb-3">
+              <div className="flex justify-between text-xs text-slate-400 mb-3">
                 <span>0 members</span>
-                <span className="text-[#D4AF37] font-semibold text-sm">{members} active members</span>
+                <span className="text-[#1E3A8A] font-semibold text-sm">{members} active members</span>
                 <span>500 members</span>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={500}
-                step={1}
-                value={members}
+              <input type="range" min={0} max={500} step={1} value={members}
                 onChange={e => setMembers(Number(e.target.value))}
                 className="stride-slider w-full h-2 rounded-full appearance-none cursor-pointer"
-                style={{
-                  background: `linear-gradient(to right, #D4AF37 ${(members / 500) * 100}%, #1a2d56 ${(members / 500) * 100}%)`
-                }}
+                style={{ background: `linear-gradient(to right, #1E3A8A ${(members / 500) * 100}%, #e2e8f0 ${(members / 500) * 100}%)` }}
               />
             </div>
 
-            {/* Output */}
-            <div className="text-center bg-[#0A1128] border border-[#D4AF37]/20 rounded-2xl px-6 py-7 mb-6">
+            <div className="text-center bg-slate-50 border border-slate-100 rounded-2xl px-6 py-7 mb-6">
               {members === 0 ? (
                 <div>
-                  <div className="text-4xl font-black text-white mb-2">
-                    {symbol}0.00<span className="text-xl text-slate-400 font-normal">/mo</span>
-                  </div>
+                  <div className="text-4xl font-black text-slate-900 mb-2">{symbol}0.00<span className="text-xl text-slate-400 font-normal">/mo</span></div>
                   <p className="text-slate-400 text-sm">You pay nothing with 0 active members.</p>
                 </div>
               ) : (
                 <div>
-                  <div className="text-4xl sm:text-5xl font-black text-[#D4AF37] mb-2">
-                    {symbol}{monthlyTotal}<span className="text-xl text-white font-normal">/mo</span>
+                  <div className="text-4xl sm:text-5xl font-black text-[#1E3A8A] mb-2">
+                    {symbol}{monthlyTotal}<span className="text-xl text-slate-500 font-normal">/mo</span>
                   </div>
-                  <p className="text-slate-300 text-base leading-relaxed mt-2">
-                    Have <span className="font-bold text-white">{members}</span> active members?{" "}
-                    You only pay{" "}
-                    <span className="font-bold text-[#D4AF37]">{symbol}{monthlyTotal}/month</span>.
+                  <p className="text-slate-600 text-base leading-relaxed mt-2">
+                    Have <span className="font-bold text-slate-900">{members}</span> active members?{" "}
+                    You only pay <span className="font-bold text-[#1E3A8A]">{symbol}{monthlyTotal}/month</span>.
                   </p>
-                  <p className="text-slate-500 text-sm mt-2">
-                    If a member unenrolls, you instantly stop paying for them.
-                  </p>
+                  <p className="text-slate-400 text-sm mt-2">If a member unenrolls, you instantly stop paying for them.</p>
                 </div>
               )}
             </div>
 
-            {/* Rate breakdown */}
-            <div className="flex flex-col sm:flex-row gap-4 text-center">
-              <div className="flex-1 bg-[#D4AF37]/5 border border-[#D4AF37]/15 rounded-xl px-4 py-4">
-                <div className="text-[#D4AF37] font-black text-xl">{symbol}1.50</div>
-                <div className="text-slate-400 text-xs mt-1">per active seat / month</div>
-              </div>
-              <div className="flex-1 bg-[#D4AF37]/5 border border-[#D4AF37]/15 rounded-xl px-4 py-4">
-                <div className="text-[#D4AF37] font-black text-xl">0%</div>
-                <div className="text-slate-400 text-xs mt-1">platform commission</div>
-              </div>
-              <div className="flex-1 bg-[#D4AF37]/5 border border-[#D4AF37]/15 rounded-xl px-4 py-4">
-                <div className="text-[#D4AF37] font-black text-xl">30 days</div>
-                <div className="text-slate-400 text-xs mt-1">completely free trial</div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-4 text-center mb-8">
+              {[
+                { v: `${symbol}1.50`, sub: "per active seat / month" },
+                { v: "0%", sub: "platform commission" },
+                { v: "30 days", sub: "completely free trial" },
+              ].map(({ v, sub }) => (
+                <div key={sub} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-4">
+                  <div className="text-[#1E3A8A] font-black text-xl">{v}</div>
+                  <div className="text-slate-400 text-xs mt-1">{sub}</div>
+                </div>
+              ))}
             </div>
 
-            <div className="mt-8 text-center">
+            <div className="text-center">
               <a href="/register"
-                className="inline-flex items-center gap-2 bg-[#D4AF37] text-[#0A1128] font-black px-10 py-4 rounded-xl text-base hover:bg-[#e8c44b] transition-colors shadow-[0_0_32px_rgba(212,175,55,0.25)]">
+                className="inline-flex items-center gap-2 bg-amber-400 text-slate-900 font-black px-10 py-4 rounded-xl text-base hover:bg-amber-300 transition-colors shadow-lg shadow-amber-100">
                 Activate Your Free 30 Days
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
+                <IconArrow />
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── S8: FAQ ───────────────────────────────────────────────────────── */}
-      <section id="faq" className="max-w-3xl mx-auto px-4 sm:px-6 py-24">
-        <div className="text-center mb-14">
-          <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">FAQ</div>
-          <h2 className="text-3xl md:text-4xl font-black text-white">Common Questions</h2>
-          <p className="mt-4 text-slate-400">Everything you need to know before you start.</p>
-        </div>
+      {/* ── FAQ ────────────────────────────────────────────────────────── */}
+      <section id="faq" className="bg-slate-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-24">
+          <div className="text-center mb-14">
+            <span className="inline-block bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">FAQ</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">Common Questions</h2>
+            <p className="mt-4 text-slate-500">Everything you need to know before you start.</p>
+          </div>
 
-        <div className="flex flex-col gap-3">
-          {FAQS.map(({ q, a }, i) => (
-            <div key={i} className="bg-[#0d1a3e] border border-[#D4AF37]/20 rounded-2xl overflow-hidden">
-              <button
-                onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-[#D4AF37]/5 transition-colors"
-              >
-                <span className="font-semibold text-white text-sm sm:text-base">{q}</span>
-                <span className="text-[#D4AF37]">
-                  <IconChevron open={openFaq === i} />
-                </span>
-              </button>
-              <div
-                style={{
-                  maxHeight: openFaq === i ? "200px" : "0",
-                  overflow: "hidden",
-                  transition: "max-height 0.3s ease",
-                }}
-              >
-                <p className="px-6 pb-5 text-sm text-slate-400 leading-relaxed border-t border-[#D4AF37]/10 pt-4">
-                  {a}
-                </p>
+          <div className="flex flex-col gap-3">
+            {FAQS.map(({ q, a }, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-slate-50 transition-colors">
+                  <span className="font-semibold text-slate-900 text-sm sm:text-base">{q}</span>
+                  <span className="text-[#1E3A8A]"><IconChevron open={openFaq === i} /></span>
+                </button>
+                <div style={{ maxHeight: openFaq === i ? "200px" : "0", overflow: "hidden", transition: "max-height 0.3s ease" }}>
+                  <p className="px-6 pb-5 text-sm text-slate-500 leading-relaxed border-t border-slate-100 pt-4">{a}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ─── S9: FOOTER CTA + TERMINAL ─────────────────────────────────────── */}
-      <footer className="border-t border-[#D4AF37]/15">
+      {/* ── FOOTER CTA ─────────────────────────────────────────────────── */}
+      <footer className="bg-[#1E3A8A]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+            <span className="text-blue-100 text-xs font-semibold tracking-wider uppercase">Pioneer Access — Limited Slots</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
+            Stop Managing.<br className="hidden sm:block" />
+            <span className="text-amber-400"> Start Automating Today.</span>
+          </h2>
+          <p className="text-blue-200 text-lg mb-10 max-w-xl mx-auto">
+            Join hundreds of academies already running cleaner, faster, and legally bulletproof operations.
+          </p>
+          <a href="/register"
+            className="inline-flex items-center gap-3 bg-amber-400 text-slate-900 font-black px-10 py-5 rounded-xl text-lg hover:bg-amber-300 transition-colors shadow-xl shadow-black/20">
+            Get Started / Schedule Pilot
+            <IconArrow />
+          </a>
+          <p className="mt-5 text-sm text-blue-300">No credit card. No contracts. Cancel any time.</p>
 
-        {/* Terminal CTA band */}
-        <div className="bg-[#0d1a3e]">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
-            <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full px-4 py-1.5 mb-6">
-              <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse flex-shrink-0" />
-              <span className="text-[#D4AF37] text-xs font-semibold tracking-wider uppercase">Pioneer Access — Limited Slots</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
-              Stop Managing.<br className="hidden sm:block" />
-              <span className="text-[#D4AF37]"> Start Automating Today.</span>
-            </h2>
-            <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
-              Join hundreds of academies already running cleaner, faster, and legally bulletproof operations on Stride.
-            </p>
-            <a
-              href="/register"
-              className="inline-flex items-center gap-3 bg-[#D4AF37] text-[#0A1128] font-black px-10 py-5 rounded-xl text-lg hover:bg-[#e8c44b] transition-colors shadow-[0_0_60px_rgba(212,175,55,0.4)]"
-            >
-              Get Started / Schedule Pilot
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </a>
-            <p className="mt-5 text-sm text-slate-500">No credit card. No contracts. Cancel any time.</p>
-
-            {/* SaaS trust badges */}
-            <div className="flex flex-wrap justify-center gap-3 mt-10">
-              {[
-                { icon: "🔒", label: "SSL Encrypted" },
-                { icon: "☁️", label: "99.9% Uptime SLA" },
-                { icon: "💳", label: "Stripe Payments" },
-                { icon: "🏢", label: "Multi-Tenant Isolated" },
-                { icon: "🌍", label: "GDPR Compliant" },
-              ].map(({ icon, label }) => (
-                <div key={label} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs text-slate-400">
-                  <span>{icon}</span>
-                  <span>{label}</span>
-                </div>
-              ))}
-            </div>
+          <div className="flex flex-wrap justify-center gap-3 mt-10">
+            {[
+              { icon: "🔒", label: "SSL Encrypted" },
+              { icon: "☁️", label: "99.9% Uptime SLA" },
+              { icon: "💳", label: "Stripe Payments" },
+              { icon: "🏢", label: "Multi-Tenant Isolated" },
+              { icon: "🌍", label: "GDPR Compliant" },
+            ].map(({ icon, label }) => (
+              <div key={label} className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 text-xs text-blue-200">
+                <span>{icon}</span><span>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="bg-[#060e1e]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+        <div className="border-t border-white/10 bg-[#151f3e]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-blue-300">
             <a href="/" className="flex items-center gap-2 no-underline">
-              <Logo />
-              <span className="font-semibold text-slate-400">Stride</span>
+              <svg height="28" width="28" viewBox="0 0 36 36" fill="none">
+                <rect width="36" height="36" rx="9" fill="white" fillOpacity="0.1" />
+                <path d="M9 18h18M18 10l8 8-8 8" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="font-semibold text-white">Stride</span>
             </a>
             <span>{"\u00A9"} {new Date().getFullYear()} Stride Platform. All rights reserved.</span>
             <div className="flex gap-5">
-              <a href="#" className="hover:text-[#D4AF37] transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-[#D4AF37] transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-[#D4AF37] transition-colors">Contact</a>
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-white transition-colors">Contact</a>
             </div>
           </div>
         </div>
