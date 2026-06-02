@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Alert,
   Linking,
@@ -12,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
@@ -60,6 +62,18 @@ export default function ParentHome() {
   const [absenceType, setAbsenceType] = useState<AbsenceType>("absent");
   const [selectedChild, setSelectedChild] = useState<string>("self");
   const [qrTarget, setQrTarget] = useState<"parent" | string>("parent");
+
+  // Future absence state
+  const [absMode, setAbsMode] = useState<"today" | "future">("today");
+  const [futureAbsDay, setFutureAbsDay] = useState("");
+  const [futureAbsMonth, setFutureAbsMonth] = useState("");
+  const [futureAbsYear, setFutureAbsYear] = useState("");
+  const [futureAbsRangeMode, setFutureAbsRangeMode] = useState<"single" | "range">("single");
+  const [futureAbsEndDay, setFutureAbsEndDay] = useState("");
+  const [futureAbsEndMonth, setFutureAbsEndMonth] = useState("");
+  const [futureAbsEndYear, setFutureAbsEndYear] = useState("");
+  const [futureAbsNote, setFutureAbsNote] = useState("");
+  const [futureAbsSuccess, setFutureAbsSuccess] = useState(false);
   const [orgLogoUri, setOrgLogoUri] = useState<string | null>(null);
 
   const nextLesson = lessons[0];
@@ -130,6 +144,31 @@ export default function ParentHome() {
   const handleSendAbsence = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowAbsence(false);
+  };
+
+  const resetFutureAbsForm = () => {
+    setFutureAbsDay(""); setFutureAbsMonth(""); setFutureAbsYear("");
+    setFutureAbsRangeMode("single");
+    setFutureAbsEndDay(""); setFutureAbsEndMonth(""); setFutureAbsEndYear("");
+    setFutureAbsNote(""); setFutureAbsSuccess(false);
+  };
+
+  const handlePlanFutureAbsence = async () => {
+    if (!futureAbsDay || !futureAbsMonth) {
+      Alert.alert("Missing Date", "Please enter at least the day and month.");
+      return;
+    }
+    const year = futureAbsYear || new Date().getFullYear().toString();
+    const dateStr = `${year}-${futureAbsMonth.padStart(2, "0")}-${futureAbsDay.padStart(2, "0")}`;
+    try {
+      const raw = await AsyncStorage.getItem("stride_student_absences");
+      const list = raw ? JSON.parse(raw) : [];
+      list.unshift({ id: Date.now().toString(), childId: selectedChild, mode: futureAbsRangeMode, absence_date: dateStr, note: futureAbsNote.trim() || undefined, status: "scheduled" });
+      await AsyncStorage.setItem("stride_student_absences", JSON.stringify(list));
+    } catch {}
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setFutureAbsSuccess(true);
+    setTimeout(() => { setFutureAbsSuccess(false); setShowAbsence(false); resetFutureAbsForm(); setAbsMode("today"); }, 2200);
   };
 
   const openQR = (target: "parent" | string = "parent") => {
@@ -534,59 +573,127 @@ export default function ParentHome() {
             >
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Report Absence / Delay</Text>
 
-              {/* Reporting-for selector — always shown; account holder + any linked members */}
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Reporting for</Text>
-              <View style={styles.childRow}>
-                <Pressable
-                  style={[styles.childOption, selectedChild === "self" && { backgroundColor: colors.primary }]}
-                  onPress={() => setSelectedChild("self")}
-                >
-                  <Text style={[styles.childOptionText, selectedChild === "self" && { color: "#FFF" }]}>
-                    {user?.name?.split(" ")[0] ?? "Myself"} (me)
-                  </Text>
-                </Pressable>
-                {children.map(child => (
-                  <Pressable
-                    key={child.id}
-                    style={[styles.childOption, selectedChild === child.id && { backgroundColor: colors.primary }]}
-                    onPress={() => setSelectedChild(child.id)}
-                  >
-                    <Text style={[styles.childOptionText, selectedChild === child.id && { color: "#FFF" }]}>{child.name}</Text>
-                  </Pressable>
-                ))}
+              {/* TODAY / FUTURE tab selector */}
+              <View style={[styles.absSegControl, { backgroundColor: "#F0F4FF" }]}>
+                {(["Today", "Future"] as const).map((label, idx) => {
+                  const mode = idx === 0 ? "today" : "future";
+                  return (
+                    <Pressable
+                      key={label}
+                      style={[styles.absSegTab, absMode === mode && { backgroundColor: colors.primary }]}
+                      onPress={() => { setAbsMode(mode); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                    >
+                      <Ionicons name={idx === 0 ? "today" : "calendar"} size={13} color={absMode === mode ? "#FFF" : colors.mutedForeground} />
+                      <Text style={[styles.absSegTabText, { color: absMode === mode ? "#FFF" : colors.mutedForeground }]}>{label}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
-              {children.length === 0 && (
-                <Pressable
-                  style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, marginBottom: 4 }}
-                  onPress={() => { setShowAbsence(false); router.push("/(parent)/children"); }}
-                >
-                  <Ionicons name="add-circle-outline" size={15} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>Link a member</Text>
-                </Pressable>
+
+              {absMode === "today" ? (
+                <>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Reporting for</Text>
+                  <View style={styles.childRow}>
+                    <Pressable style={[styles.childOption, selectedChild === "self" && { backgroundColor: colors.primary }]} onPress={() => setSelectedChild("self")}>
+                      <Text style={[styles.childOptionText, selectedChild === "self" && { color: "#FFF" }]}>{user?.name?.split(" ")[0] ?? "Myself"} (me)</Text>
+                    </Pressable>
+                    {children.map(child => (
+                      <Pressable key={child.id} style={[styles.childOption, selectedChild === child.id && { backgroundColor: colors.primary }]} onPress={() => setSelectedChild(child.id)}>
+                        <Text style={[styles.childOptionText, selectedChild === child.id && { color: "#FFF" }]}>{child.name}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {children.length === 0 && (
+                    <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, marginBottom: 4 }} onPress={() => { setShowAbsence(false); router.push("/(parent)/children"); }}>
+                      <Ionicons name="add-circle-outline" size={15} color={colors.primary} />
+                      <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>Link a member</Text>
+                    </Pressable>
+                  )}
+                  <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Report type</Text>
+                  {ABSENCE_OPTIONS.map(opt => (
+                    <Pressable key={opt.value} style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => setAbsenceType(opt.value)}>
+                      <Ionicons name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === opt.value ? "#FFF" : colors.primary} />
+                      <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
+                    </Pressable>
+                  ))}
+                  <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+                    <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
+                      <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                    </Pressable>
+                    <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSendAbsence}>
+                      <Text style={styles.closeBtnText}>Send</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : (
+                <>
+                  {futureAbsSuccess ? (
+                    <View style={{ alignItems: "center", paddingVertical: 20, gap: 10 }}>
+                      <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="checkmark-circle" size={36} color="#10B981" />
+                      </View>
+                      <Text style={{ fontSize: 15, fontWeight: "800", color: "#10B981" }}>Absence Scheduled</Text>
+                      <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center" }}>The kiosk will mark this member as excused on the target date.</Text>
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={[styles.fieldLabel, { color: colors.primary }]}>Reporting for</Text>
+                      <View style={[styles.childRow, { marginBottom: 12 }]}>
+                        <Pressable style={[styles.childOption, selectedChild === "self" && { backgroundColor: colors.primary }]} onPress={() => setSelectedChild("self")}>
+                          <Text style={[styles.childOptionText, selectedChild === "self" && { color: "#FFF" }]}>{user?.name?.split(" ")[0] ?? "Myself"} (me)</Text>
+                        </Pressable>
+                        {children.map(child => (
+                          <Pressable key={child.id} style={[styles.childOption, selectedChild === child.id && { backgroundColor: colors.primary }]} onPress={() => setSelectedChild(child.id)}>
+                            <Text style={[styles.childOptionText, selectedChild === child.id && { color: "#FFF" }]}>{child.name}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                      <Text style={[styles.fieldLabel, { color: colors.primary }]}>Absence Type</Text>
+                      <View style={[styles.childRow, { marginBottom: 14 }]}>
+                        {(["single", "range"] as const).map(mode => (
+                          <Pressable key={mode} style={[styles.childOption, futureAbsRangeMode === mode && { backgroundColor: colors.primary }]} onPress={() => setFutureAbsRangeMode(mode)}>
+                            <Text style={[styles.childOptionText, futureAbsRangeMode === mode && { color: "#FFF" }]}>{mode === "single" ? "Single Date" : "Date Range"}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                      <Text style={[styles.fieldLabel, { color: colors.primary }]}>{futureAbsRangeMode === "range" ? "Start Date" : "Absence Date"}</Text>
+                      <View style={styles.absDateRow}>
+                        <TextInput style={[styles.absDateCell, { borderColor: colors.border, color: colors.foreground }]} value={futureAbsDay} onChangeText={t => setFutureAbsDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
+                        <Text style={[styles.absDateSep, { color: colors.mutedForeground }]}>/</Text>
+                        <TextInput style={[styles.absDateCell, { borderColor: colors.border, color: colors.foreground }]} value={futureAbsMonth} onChangeText={t => setFutureAbsMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
+                        <Text style={[styles.absDateSep, { color: colors.mutedForeground }]}>/</Text>
+                        <TextInput style={[styles.absDateCellWide, { borderColor: colors.border, color: colors.foreground }]} value={futureAbsYear} onChangeText={t => setFutureAbsYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={4} />
+                      </View>
+                      {futureAbsRangeMode === "range" && (
+                        <>
+                          <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>End Date</Text>
+                          <View style={styles.absDateRow}>
+                            <TextInput style={[styles.absDateCell, { borderColor: colors.border, color: colors.foreground }]} value={futureAbsEndDay} onChangeText={t => setFutureAbsEndDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
+                            <Text style={[styles.absDateSep, { color: colors.mutedForeground }]}>/</Text>
+                            <TextInput style={[styles.absDateCell, { borderColor: colors.border, color: colors.foreground }]} value={futureAbsEndMonth} onChangeText={t => setFutureAbsEndMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
+                            <Text style={[styles.absDateSep, { color: colors.mutedForeground }]}>/</Text>
+                            <TextInput style={[styles.absDateCellWide, { borderColor: colors.border, color: colors.foreground }]} value={futureAbsEndYear} onChangeText={t => setFutureAbsEndYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={4} />
+                          </View>
+                        </>
+                      )}
+                      <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Note (Optional)</Text>
+                      <TextInput style={[styles.absenceOption, { borderColor: colors.border, color: colors.foreground, height: 68, textAlignVertical: "top", paddingTop: 10 }]} value={futureAbsNote} onChangeText={setFutureAbsNote} placeholder="e.g. Family holiday, Medical..." placeholderTextColor={colors.mutedForeground} multiline />
+                      <View style={[styles.absKioskNote, { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0", marginTop: 10 }]}>
+                        <Ionicons name="shield-checkmark-outline" size={13} color="#10B981" />
+                        <Text style={styles.absKioskNoteText}>On the target date the kiosk auto-marks this member as Excused Absence.</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+                        <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => { setShowAbsence(false); resetFutureAbsForm(); }}>
+                          <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                        </Pressable>
+                        <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#FBBF24" }]} onPress={handlePlanFutureAbsence}>
+                          <Text style={[styles.closeBtnText, { color: "#1E3A8A" }]}>Schedule</Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  )}
+                </>
               )}
-              <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Report type</Text>
-              {ABSENCE_OPTIONS.map(opt => (
-                <Pressable
-                  key={opt.value}
-                  style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => setAbsenceType(opt.value)}
-                >
-                  <Ionicons
-                    name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"}
-                    size={18}
-                    color={absenceType === opt.value ? "#FFF" : colors.primary}
-                  />
-                  <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
-                </Pressable>
-              ))}
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
-                  <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
-                </Pressable>
-                <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSendAbsence}>
-                  <Text style={styles.closeBtnText}>Send</Text>
-                </Pressable>
-              </View>
             </ScrollView>
           </View>
         </View>
@@ -658,6 +765,15 @@ const styles = StyleSheet.create({
   absenceOptionText: { fontSize: 14, fontWeight: "500", color: "#1E3A8A" },
   closeBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  absSegControl: { flexDirection: "row", borderRadius: 14, overflow: "hidden", padding: 4, marginBottom: 16 },
+  absSegTab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 10 },
+  absSegTabText: { fontSize: 13, fontWeight: "700" },
+  absDateRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
+  absDateCell: { flex: 1, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 11, fontSize: 16, textAlign: "center" as const },
+  absDateCellWide: { flex: 1.8, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 11, fontSize: 16, textAlign: "center" as const },
+  absDateSep: { fontSize: 18, fontWeight: "700" },
+  absKioskNote: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderWidth: 1, borderRadius: 10, padding: 10 },
+  absKioskNoteText: { fontSize: 12, color: "#059669", flex: 1, lineHeight: 16 },
   paidLessonCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1.5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   paidLessonIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   paidLessonTitle: { fontSize: 15, fontWeight: "700", marginBottom: 1 },

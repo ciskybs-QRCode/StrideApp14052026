@@ -607,20 +607,6 @@ export default function ChildrenScreen() {
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
-              <Pressable
-                style={[styles.actionBtn, { backgroundColor: "#EEF2FF" }]}
-                onPress={() => {
-                  resetAbsenceForm();
-                  setAbsenceTab(0);
-                  setShowAbsenceModal(true);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <Ionicons name="calendar-outline" size={18} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Absence Schedule</Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-              </Pressable>
-
               {child.dateOfBirth && (
                 <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
                   <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Born:</Text>
