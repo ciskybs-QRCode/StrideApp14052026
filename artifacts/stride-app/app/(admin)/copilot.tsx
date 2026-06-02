@@ -261,8 +261,10 @@ export default function CopilotScreen() {
   const handleSend = () => sendMessage(input);
   const handleQuick = (q: string) => sendMessage(q);
 
+  const TAB_H = Platform.OS === "web" ? 84 : 49;
+
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+    <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom + TAB_H }]}>
       {/* ── Navbar ── */}
       <View style={s.navbar}>
         <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={10}>
