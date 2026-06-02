@@ -455,15 +455,17 @@ export default function OperatorDashboard() {
   };
 
   // ── QR Scanner ────────────────────────────────────────────────────────────
-  const handleScan = async () => {
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) { Alert.alert("Camera Permission", "Enable camera access in Settings to scan QR codes."); return; }
-    }
+  const handleScan = () => {
     setScanResult(null);
     setScanned(false);
     setShowScanner(true);
   };
+
+  useEffect(() => {
+    if (showScanner && !permission?.granted) {
+      requestPermission();
+    }
+  }, [showScanner]);
 
   const showScanResult = (result: ScanResult) => {
     setScanResult(result);
@@ -1651,7 +1653,7 @@ export default function OperatorDashboard() {
           ) : (
             <CameraView
               style={styles.scannerPreview}
-              facing="back"
+              facing={Platform.OS === "web" ? "front" : "back"}
               barcodeScannerSettings={{ barcodeTypes: ["qr", "ean13", "code128"] }}
               onBarcodeScanned={scanned ? undefined : handleBarcodeScan}
             >
