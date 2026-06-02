@@ -172,5 +172,40 @@ export async function ensureTables(): Promise<void> {
     )
   `).catch(() => {});
 
+  // Future absence planning — operator scheduling
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS operator_absences (
+      id            SERIAL PRIMARY KEY,
+      org_id        INTEGER,
+      operator_id   TEXT,
+      operator_name TEXT,
+      status        TEXT NOT NULL DEFAULT 'scheduled_future',
+      mode          TEXT NOT NULL,
+      absence_date  DATE NOT NULL,
+      end_date      DATE,
+      start_time    TEXT,
+      end_time      TEXT,
+      reason        TEXT,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).catch(() => {});
+
+  // Future absence planning — student/parent scheduling (kiosk excused flag)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS student_absences (
+      id           SERIAL PRIMARY KEY,
+      org_id       INTEGER,
+      student_id   TEXT,
+      student_name TEXT,
+      parent_id    TEXT,
+      status       TEXT NOT NULL DEFAULT 'scheduled_future',
+      mode         TEXT NOT NULL,
+      absence_date DATE NOT NULL,
+      end_date     DATE,
+      note         TEXT,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).catch(() => {});
+
   initialized = true;
 }

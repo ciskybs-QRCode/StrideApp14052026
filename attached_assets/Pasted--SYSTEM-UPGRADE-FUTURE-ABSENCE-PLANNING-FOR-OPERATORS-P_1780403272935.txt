@@ -1,0 +1,20 @@
+🚨 SYSTEM UPGRADE: FUTURE ABSENCE PLANNING FOR OPERATORS & PARENTS 🚨
+Role: Expert Full-Stack Developer & UI/UX Engineer (React Native Expo Router & Supabase).
+Target Screens: Operator Absence Module (Report Absence/Delay) and Parent Child-Dashboard Module.
+Branded Theme: Core Deep Navy Blue background, Premium Gold buttons/selectors, white dense typography. Strict containment inside viewport boundaries (ZERO text clipping or horizontal scrolling).
+🚨 GLOBAL STABILITY MANDATE (CRITICAL) 🚨 DO NOT modify, alter, or break the existing "Today/Emergency" immediate absence/delay reporting system. It works perfectly and must remain untouched. Isolate this feature expansion entirely to future scheduled dates.
+Please implement the following twin-layer upgrade:
+PART 1: OPERATOR UPGRADE (FUTURE AVAILABILITY CONSTRAINTS)
+The View Splitter: At the top of the Operator's "Report Absence" screen, add a clean segmented control or tab selector: [ Urgent (Today) ] and [ Plan Future Absence ].
+The Future Form Configuration: Clicking "Plan Future Absence" must open a bounded input form with 3 clear operational modes (use a clean dropdown or radio selector):
+Hourly Frame: Select a future Date + Start Time + End Time (e.g., "In 5 days, unavailable for 2 hours").
+Full Day Frame: Select a single future Date (e.g., "In 10 days, unavailable all day").
+Extended Range: Select a Start Date and an End Date (e.g., "In 1 month, unavailable for 3 weeks").
+Metadata Input: Add a text input field for "Reason/Notes" (Reason X).
+Submission Payload: On confirmation (Gold Button), write to the operator_absences table with a status of 'scheduled_future' and feed the data cleanly into the Admin control panel to allow early activation of the Substitution Cascade.
+PART 2: PARENT UPGRADE (FUTURE CHILD ABSENCE SCHEDULE)
+Target Screen: Parent's child management overview.
+The Interface: Implement the exact same segmented control logic: [ Report Today's Absence ] and [ Schedule Future Absence ].
+The Parent Form: Allow the parent to select which child (if multiple), the future target Date or Date Range, and an optional text note (e.g., "Family holiday" or "Medical appointment").
+The Kiosk Integration Hook: This data must write to the student_absences table. Ensure that when the targeted future date arrives, the Kiosk terminal reads this pre-approved state so it flags the student as [Excused Absence], avoiding any automated "missing child" emergency triggers.
+Output Requirement: Code the conditional layout selectors for both screens, map out the Date/Time picker bindings for hourly, full-day, and multi-week selections, and ensure all input structures prevent screen overflow.

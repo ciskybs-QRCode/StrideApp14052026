@@ -648,6 +648,26 @@ export const api = {
     request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/confirm`, {}),
   declineScheduledCourse: (id: number) =>
     request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/decline`, {}),
+
+  // ── Absence Planning ───────────────────────────────────────────────────────
+
+  reportOperatorFutureAbsence: (payload: {
+    mode: "hourly" | "full_day" | "range";
+    absence_date: string;
+    end_date?: string;
+    start_time?: string;
+    end_time?: string;
+    reason?: string;
+  }) => request<{ id: number }>("POST", "/absences/operator/future", payload),
+
+  reportStudentFutureAbsence: (payload: {
+    student_id: string;
+    student_name: string;
+    mode: "single" | "range";
+    absence_date: string;
+    end_date?: string;
+    note?: string;
+  }) => request<{ id: number }>("POST", "/absences/student/future", payload),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
