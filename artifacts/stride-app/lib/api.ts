@@ -1167,6 +1167,24 @@ export async function updateAssociation(
   return request<AssociationRecord>("PATCH", `/super-admin/associations/${id}`, data);
 }
 
+// ── Admin Copilot ─────────────────────────────────────────────────────────────
+
+export interface CopilotResponse {
+  intent: string;
+  summary: string;
+  columns: string[];
+  rows: string[][];
+  totalCount: number;
+  latencyMs: number;
+  executedAt: string;
+  meta: Record<string, unknown>;
+  intentResult: { intent: string; period: string; location?: string | null };
+}
+
+export async function adminCopilotQuery(query: string): Promise<CopilotResponse> {
+  return request<CopilotResponse>("POST", "/admin/copilot-query", { query });
+}
+
 // ── Predictive Substitutes ────────────────────────────────────────────────────
 
 export interface PredictiveSubstitute {

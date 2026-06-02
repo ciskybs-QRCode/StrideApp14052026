@@ -36,6 +36,7 @@ import superAdminRouter from "./super-admin.js";
 import billingRouter from "./billing.js";
 import absencesRouter from "./absences.js";
 import predictiveSubstitutesRouter from "./predictive-substitutes.js";
+import adminCopilotRouter from "./admin-copilot.js";
 
 const router: IRouter = Router();
 
@@ -76,5 +77,6 @@ router.use(superAdminRouter);
 router.use(billingRouter);
 router.use(absencesRouter);
 router.use(predictiveSubstitutesRouter);
+router.use(adminCopilotRouter);
 
 export default router;
