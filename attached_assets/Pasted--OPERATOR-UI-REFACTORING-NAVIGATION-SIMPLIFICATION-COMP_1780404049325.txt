@@ -1,0 +1,32 @@
+🚨 OPERATOR UI REFACTORING: NAVIGATION SIMPLIFICATION & COMPONENT CONSOLIDATION 🚨
+Role: Expert Frontend UI/UX Developer (React Native Expo Router).
+Objective: Clean up, merge, and streamline the Operator-side user interface to reduce cognitive load, enforce a strict 5-tab navigation bar, and eliminate layout redundancy.
+Branding Theme: Deep Navy Blue background (#0A1128), Premium Gold accents (#D4AF37), high content density, and strict viewport boundary enforcement (ZERO screen overflows).
+🚨 GLOBAL INTEGRATION DIRECTIVE (MANDATORY) 🚨 DO NOT alter or break the underlying data fetching logic, Supabase database connections, metadata states, or backend controller routes. This is strictly a navigation rewrite and interface consolidation sprint.
+Please execute the following structural updates:
+PART 1: THE 5-TAB BOTTOM NAVIGATION BAR FIXED STRUCTURE
+Refactor the core layout router (e.g., app/(operator)/_layout.tsx or your main navigation config file).
+DELETE the Roll Call tab entirely from the bottom navigation bar.
+Lock the bottom navigation bar to EXACTLY 5 core tabs with crisp iconography:
+Home (formerly Dashboard, icon changed accordingly)
+Calendar
+Members
+Course
+Settings (Consolidated hub)
+PART 2: CALENDAR PAGE DYNAMIC NOTICE BOX
+Open the Calendar screen component file.
+At the very top of the scrollable calendar content area (above or seamlessly integrated with the date picker headers), add a dedicated state-driven notification container.
+The Box Logic: If there are no classes/events scheduled for the selected or active day, render a highly visible, clean status card matching the app's structural aesthetic:
+Background: Slight lighter variant of Navy or semi-transparent Gold border.
+Content: An alert/calendar icon accompanied by dense English typography:
+Title: "No Sessions Today"
+Subtitle: "There are no scheduled classes for today."
+PART 3: PROFILE, SETTINGS & PROTOCOLS MERGE SUITE
+Deprecate the old independent profile view and consolidate its contents directly inside the central Settings screen.
+The New Settings Layout: Build a single high-density operational grid/list containing:
+Top Section: Compact Profile Summary (User Name, Avatar placeholder, Role: Operator/Teacher, Email, Bank Details layout).
+Middle Section (The Protocols Box): Create a dedicated navigation tile/box inside the settings grid matching the visual layout of the other cards.
+Aesthetic: Protocol-specific icon on the left, clear white text reading "Protocols & Directives", and a Gold chevron arrow on the right.
+Action: Clicking this box must trigger a clean router push linkage leading to the existing standalone Protocols sub-screen view.
+Bottom Section: Remaining app settings, notifications toggles, payroll preference logs, and the Logout button.
+Output Requirement: Provide the modified React Native layout code for the 5-tab bar, the updated template logic for the Calendar top notice banner, and the unified code structure for the new combined Settings/Profile interface. Enforce strict safety paddings.

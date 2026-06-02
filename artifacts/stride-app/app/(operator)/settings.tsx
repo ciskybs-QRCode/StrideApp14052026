@@ -365,6 +365,22 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color="#059669" />
         </Pressable>
 
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/support" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#EFF6FF" }]}>
+            <Ionicons name="shield-checkmark-outline" size={26} color="#1E3A8A" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>Protocols & Directives</Text>
+            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
+              Emergency SOS, absence reporting, and staff protocols
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#D4AF37" />
+        </Pressable>
+
         {/* ── Account ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
         <RoleSwitcherRow />

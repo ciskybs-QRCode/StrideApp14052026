@@ -366,9 +366,16 @@ export default function OperatorCalendar() {
             </Text>
 
             {todayLessons.length === 0 ? (
-              <View style={[styles.emptyBox, { backgroundColor: colors.card }]}>
-                <Ionicons name="calendar-outline" size={38} color={colors.mutedForeground} />
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No lessons today</Text>
+              <View style={[styles.noSessionCard, { backgroundColor: colors.card, borderColor: "#D4AF37" }]}>
+                <View style={styles.noSessionIconWrap}>
+                  <Ionicons name="calendar-clear-outline" size={30} color="#D4AF37" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.noSessionTitle, { color: colors.primary }]}>No Sessions Today</Text>
+                  <Text style={[styles.noSessionSub, { color: colors.mutedForeground }]}>
+                    There are no scheduled classes for {DAYS[selectedDay]}.
+                  </Text>
+                </View>
               </View>
             ) : (
               todayLessons.map((lesson, i) => (
@@ -1198,6 +1205,10 @@ const styles = StyleSheet.create({
   countPillText:     { fontSize: 12, fontWeight: "800" },
   emptyBox:          { borderRadius: 16, padding: 32, alignItems: "center", gap: 8, marginBottom: 20 },
   emptyText:         { fontSize: 14, fontWeight: "600" },
+  noSessionCard:     { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, borderWidth: 1.5, padding: 18, marginBottom: 20 },
+  noSessionIconWrap: { width: 52, height: 52, borderRadius: 14, backgroundColor: "rgba(212,175,55,0.12)", alignItems: "center", justifyContent: "center" },
+  noSessionTitle:    { fontSize: 15, fontWeight: "800", marginBottom: 3 },
+  noSessionSub:      { fontSize: 13, lineHeight: 18 },
   emptyHint:         { fontSize: 12 },
   lessonCard:        { flexDirection: "row", borderRadius: 16, overflow: "hidden", marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },
   lessonBar:         { width: 5 },
