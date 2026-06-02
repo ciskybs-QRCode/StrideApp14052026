@@ -4,8 +4,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-/** Seconds each sub has to respond before auto-timeout (30s demo / 300s prod) */
-export const CASCADE_TIMEOUT_SECS = 30;
+/** Seconds each sub has to respond before auto-timeout (300s = 5 minutes per spec) */
+export const CASCADE_TIMEOUT_SECS = 300;
 const STORAGE_KEY = "stride_absence_alerts_v2";
 
 // ─── Mock substitute teachers ─────────────────────────────────────────────────
@@ -39,6 +39,8 @@ export type CascadeStep = 0 | 1 | 2 | 3 | 4;
 
 export type AlertResolution = "sub_found" | "cancelled" | "shifted" | "makeup";
 
+export type AbsenceScope = "single_class" | "full_day";
+
 export interface AbsenceAlert {
   id: string;
   lessonId: string;
@@ -47,6 +49,7 @@ export interface AbsenceAlert {
   reportedBy: string;
   reportedAt: number;  // epoch ms
   type: "absent" | "delay";
+  absenceScope?: AbsenceScope;
   delayMinutes?: number;
   cascadeStep: CascadeStep;
   subResponses: SubResponse[];
@@ -65,7 +68,7 @@ interface SubstitutionContextType {
   alerts: AbsenceAlert[];
   activeAlert: AbsenceAlert | null;
   cascadeCountdown: number;        // seconds remaining for current sub
-  reportAbsence: (lessonId: string, lessonName: string, teacherName: string, reportedBy: string) => void;
+  reportAbsence: (lessonId: string, lessonName: string, teacherName: string, reportedBy: string, scope?: AbsenceScope) => void;
   reportDelay: (lessonId: string, lessonName: string, teacherName: string, reportedBy: string, delayMinutes: number) => void;
   respondToSub: (alertId: string, subId: string, status: "accepted" | "declined") => void;
   rescheduleLesson: (alertId: string, action: RescheduleAction) => void;
@@ -190,6 +193,7 @@ export function SubstitutionProvider({ children }: { children: React.ReactNode }
 
   const reportAbsence = useCallback((
     lessonId: string, lessonName: string, teacherName: string, reportedBy: string,
+    scope: AbsenceScope = "single_class",
   ) => {
     const id = `alert_${Date.now()}`;
     const subResponses = buildSubResponses();
@@ -199,6 +203,7 @@ export function SubstitutionProvider({ children }: { children: React.ReactNode }
       id, lessonId, lessonName, teacherName, reportedBy,
       reportedAt: Date.now(),
       type: "absent",
+      absenceScope: scope,
       cascadeStep: 1,
       subResponses,
       resolved: false,
@@ -238,6 +243,21 @@ export function SubstitutionProvider({ children }: { children: React.ReactNode }
         );
 
         if (status === "accepted") {
+          const acceptedSub = MOCK_SUBS.find(s => s.id === subId);
+          // Dispatch in-app notifications (AsyncStorage-based, best-effort)
+          const notifPayload = {
+            type: "substitution_accepted",
+            lessonName: a.lessonName,
+            substituteOpName: acceptedSub?.name ?? "A substitute",
+            absentOpName: a.teacherName,
+            classTime: new Date(a.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            at: now,
+          };
+          AsyncStorage.getItem("stride_sub_notifications").then(raw => {
+            const list = raw ? JSON.parse(raw) : [];
+            list.unshift(notifPayload);
+            AsyncStorage.setItem("stride_sub_notifications", JSON.stringify(list.slice(0, 50))).catch(() => {});
+          }).catch(() => {});
           return { ...a, subResponses, resolved: true, resolution: "sub_found" as AlertResolution, resolvedAt: now };
         }
 

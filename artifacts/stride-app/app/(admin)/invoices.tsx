@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { getToken } from "@/lib/api";
 import { useUnread } from "@/context/UnreadContext";
 import { supabase } from "@/lib/supabase";
 import {
@@ -56,6 +57,13 @@ function fmtDate(iso: string) {
 }
 
 // ── Demo data ─────────────────────────────────────────────────────────────────
+
+const SUBSTITUTION_LEDGER_DEMO: Array<{ date: string; className: string; status: string; hoursTransferred: string }> = [
+  { date: "02 Jun", className: "Ballet Intermediate", status: "Covered",    hoursTransferred: "+1.0h" },
+  { date: "01 Jun", className: "Latin Dances",        status: "Covered",    hoursTransferred: "+1.0h" },
+  { date: "28 May", className: "Contemporary",        status: "Cancelled",  hoursTransferred: "0.0h"  },
+  { date: "26 May", className: "Hip Hop Juniors",     status: "Rescheduled",hoursTransferred: "+1.0h" },
+];
 
 const DEMO_INVOICES: SubmittedInvoice[] = [
   { id: "INV-202604-1001", operatorName: "Maria Chen",    period: "2026-04", totalCents: 112000, status: "pending", submittedAt: new Date(Date.now() - 86400000).toISOString(),     schoolName: "Dance Village" },
@@ -146,7 +154,7 @@ export default function AdminInvoicesScreen() {
     return () => clearInterval(id);
   }, [load]));
 
-  // ── Mark as paid ───────────────────────────────────────────────────────────
+  // ── Mark as paid (Pay Now) ─────────────────────────────────────────────────
   const markPaid = async (inv: SubmittedInvoice) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const update = (list: SubmittedInvoice[]) =>
@@ -154,6 +162,20 @@ export default function AdminInvoicesScreen() {
 
     setInvoices(update(invoices));
     setConfirmPay(null);
+
+    // Fire POST /api/finance/execute-payout (best-effort)
+    const tok = await getToken().catch(() => null);
+    fetch("/api/finance/execute-payout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
+      body: JSON.stringify({
+        paymentType: "invoice",
+        referenceId: inv.id,
+        amountCents: inv.totalCents,
+        recipientName: inv.operatorName,
+        ibanPlaceholder: "IBAN_PLACEHOLDER",
+      }),
+    }).catch(() => { /* best-effort — offline graceful */ });
 
     // Persist
     try {
@@ -276,17 +298,39 @@ export default function AdminInvoicesScreen() {
                   </View>
                 ) : (
                   <Pressable
-                    style={[styles.payBtn, { backgroundColor: colors.primary }]}
+                    style={[styles.payBtn, { backgroundColor: "#FBBF24" }]}
                     onPress={() => { setConfirmPay(inv.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
                   >
-                    <Ionicons name="cash-outline" size={15} color="#FBBF24" />
-                    <Text style={styles.payBtnText}>Mark as Paid</Text>
+                    <Ionicons name="flash" size={15} color="#1E3A8A" />
+                    <Text style={[styles.payBtnText, { color: "#1E3A8A" }]}>Pay Now</Text>
                   </Pressable>
                 )}
               </View>
             );
           })
         )}
+
+        {/* ── Payroll / Substitution Ledger ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 16 }]}>Substitution Ledger</Text>
+        <View style={[{ borderRadius: 16, overflow: "hidden", borderWidth: 1, marginBottom: 20 }, { borderColor: "#E5E7EB" }]}>
+          <View style={{ flexDirection: "row", backgroundColor: "#1E3A8A", paddingHorizontal: 12, paddingVertical: 8 }}>
+            <Text style={{ flex: 1.5, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Date</Text>
+            <Text style={{ flex: 2, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Class</Text>
+            <Text style={{ flex: 1.5, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Status</Text>
+            <Text style={{ flex: 1, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase", textAlign: "right" }}>Hrs Xfer</Text>
+          </View>
+          {SUBSTITUTION_LEDGER_DEMO.map((row, idx) => (
+            <View key={idx} style={{ flexDirection: "row", alignItems: "center", backgroundColor: idx % 2 === 0 ? "#FFF" : "#F8FAFF", paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: "#E5E7EB" }}>
+              <Text style={{ flex: 1.5, fontSize: 12, color: "#374151" }}>{row.date}</Text>
+              <Text style={{ flex: 2, fontSize: 12, color: "#374151" }} numberOfLines={1}>{row.className}</Text>
+              <View style={{ flex: 1.5, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: row.status === "Covered" ? "#059669" : row.status === "Cancelled" ? "#6B7280" : "#EF4444" }} />
+                <Text style={{ fontSize: 11, fontWeight: "700", color: row.status === "Covered" ? "#059669" : row.status === "Cancelled" ? "#6B7280" : "#EF4444" }}>{row.status}</Text>
+              </View>
+              <Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: row.status === "Covered" ? "#059669" : "#6B7280", textAlign: "right" }}>{row.hoursTransferred}</Text>
+            </View>
+          ))}
+        </View>
 
         {/* ── Payment History ── */}
         {history.length > 0 && (

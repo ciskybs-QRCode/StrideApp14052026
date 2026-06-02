@@ -1,0 +1,36 @@
+🚨 MASTER SYSTEM INTEGRATION: STRIPE CONNECT ONBOARDING & REAL-TIME PAYOUT ENGINE 🚨
+Role: Expert Full-Stack Developer (React Native Expo Router, Node.js Express, and Supabase).
+Target Goal: Implement Stripe Connect (Option A) for automated user onboarding and 1-click Admin payouts.
+Branding & UI Rules: Strict Navy Blue and Gold theme. Universal use of <ActivityIndicator color="#D4AF37" /> during network requests. Absolute boundary containment on mobile viewports (Zero screen overflows).
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨 DO NOT touch, modify, or break the core authentication hooks, existing course management schedules, or attendance tracking databases. Isolate this upgrade strictly to the profile payment configurations, the financial approval dashboards, and the Stripe webhook/API routing files.
+PART 1: DATABASE SCHEMA EXPANSION (SUPABASE)
+Add a nullable string field named stripe_connect_id to the profiles table to store the unique Stripe account reference for Operators and Members.
+Ensure the payroll_transactions / reimbursements tables contain the fields: status (enum: 'pending', 'processing', 'paid', 'failed') and a nullable stripe_transfer_id string.
+PART 2: USER FRONTEND - STRIPE ACCOUNT LINKING FLOW
+Target Screen: Operator Earnings/Settings and Member Profile Section.
+The Payment State Switch: Read the active user’s profile from Supabase.
+State 1 (Not Configured): If stripe_connect_id is missing or null, display a card titled "Payout Settings" with a Gold button labeled "Configure Bank Account".
+Action: Clicking this button triggers a backend API call to POST /api/finance/stripe-onboarding. The API returns a Stripe-hosted onboarding URL. Use Expo Linking.openURL(url) to open this secure setup wizard in the device browser.
+State 2 (Configured): If stripe_connect_id is present, hide the setup button and display a clean status badge: 🟢 Payouts Active (Stripe Connected).
+PART 3: BACKEND API ARCHITECTURE (EXPRESS.JS + STRIPE SDK)
+Create a structured billing routing controller file (e.g., routes/stripeFinance.js) integrating the official Stripe Node.js SDK:
+Onboarding Endpoint (POST /api/finance/stripe-onboarding):
+Check if the requesting user already has a stripe_connect_id. If not, initialize a new Stripe Express Custom Account using stripe.accounts.create({ type: 'express' }). Save the returned account ID immediately to the user's Supabase profile row.
+Generate an instantiation link using stripe.accountLinks.create() targeting the newly created account. Set the refresh_url and return_url schemes back to your deep-linked app landing endpoint. Return the setup URL to the mobile app.
+Payout Execution Endpoint (POST /api/finance/execute-payout):
+This endpoint is invoked when the Admin clicks the Gold "Pay Now" button on an Invoice or Reimbursement request.
+Payload Requirements: Expect transaction_id, recipient_id, and amount.
+Verification: Query the profiles table to fetch the recipient's stripe_connect_id. If null, abort and return a clear error response.
+The Money Move: Trigger a secure platform transfer using:
+JavaScript
+await stripe.transfers.create({
+  amount: Math.round(amount * 100), // Convert to cents cleanly
+  currency: 'eur',
+  destination: recipientStripeConnectId,
+  transfer_group: `TX_${transaction_id}`,
+});
+State Resolution: Upon a successful transfer response, update the target table row status to 'paid', record the stripe_transfer_id, and hand off the pipeline execution to your push notification dispatcher to notify the Admin and the recipient instantly.
+PART 4: ADMIN ONE-CLICK APPROVAL UX BINDINGS
+Target Screen: Admin Finance Panel.
+Ensure that clicking the "Pay Now" button immediately disables itself, toggles a Gold loading spinner, fires the POST /api/finance/execute-payout request, and on a 200 OK response status, removes the card dynamically with a smooth native UI state layout transition.
+Output Requirement: Provide the database structural adjustment instructions, output the implementation files for the Express API endpoints, code the mobile conditional rendering layout logic for bank setups, and list all updated file endpoints.

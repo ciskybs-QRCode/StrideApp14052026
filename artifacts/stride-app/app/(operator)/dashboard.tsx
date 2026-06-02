@@ -157,8 +157,7 @@ const MOCK_OUTCOMES: ScanResult[] = [
 ];
 
 type AbsenceType = "absent" | "late15" | "late30" | "late45" | "late60";
-const ABSENCE_OPTIONS: { value: AbsenceType; label: string; delayMins: number }[] = [
-  { value: "absent", label: "Full absence",    delayMins: 0  },
+const DELAY_OPTIONS: { value: AbsenceType; label: string; delayMins: number }[] = [
   { value: "late15", label: "15 min delay",    delayMins: 15 },
   { value: "late30", label: "30 min delay",    delayMins: 30 },
   { value: "late45", label: "45 min delay",    delayMins: 45 },
@@ -306,7 +305,8 @@ export default function OperatorDashboard() {
 
   // ── Absence Report modal ────────────────────────────────────────────────────
   const [showAbsenceModal, setShowAbsenceModal] = useState(false);
-  const [absenceType, setAbsenceType]           = useState<AbsenceType>("absent");
+  const [absenceType, setAbsenceType]           = useState<AbsenceType>("late15");
+  const [absenceScope, setAbsenceScope]         = useState<"single_class" | "full_day">("single_class");
   const [absenceSent, setAbsenceSent]           = useState(false);
 
   // ── Cascade viewer modal ────────────────────────────────────────────────────
@@ -753,16 +753,22 @@ export default function OperatorDashboard() {
   };
 
   // ── Absence Report ────────────────────────────────────────────────────────
-  const handleSendAbsenceReport = () => {
-    const selected = ABSENCE_OPTIONS.find(o => o.value === absenceType)!;
+  const handleSendAbsenceReport = (scope?: "single_class" | "full_day") => {
     const lessonName = currentLesson?.courseName ?? "Current Lesson";
     const lessonId   = currentLesson?.id ?? "lesson_0";
-
     const myName = user?.name ?? "Operator";
-    if (absenceType === "absent") {
-      reportAbsence(lessonId, lessonName, myName, myName);
-      pushLog({ time: nowTime(), action: `Absence reported: ${myName} — ${lessonName}`, type: "error" });
+
+    if (scope) {
+      // Full-absence path — triggered by one of the two big absence buttons
+      setAbsenceType("absent");
+      setAbsenceScope(scope);
+      reportAbsence(lessonId, lessonName, myName, myName, scope);
+      const scopeLabel = scope === "single_class" ? "first lesson only" : "entire day";
+      pushLog({ time: nowTime(), action: `Full absence (${scopeLabel}) reported: ${myName} — ${lessonName}`, type: "error" });
     } else {
+      // Delay path
+      const selected = DELAY_OPTIONS.find(o => o.value === absenceType);
+      if (!selected) return;
       reportDelay(lessonId, lessonName, myName, myName, selected.delayMins);
       pushLog({ time: nowTime(), action: `Delay (${selected.delayMins}min) reported: ${myName}`, type: "warning" });
     }
@@ -773,7 +779,7 @@ export default function OperatorDashboard() {
     setTimeout(() => {
       setShowAbsenceModal(false);
       setAbsenceSent(false);
-      if (absenceType === "absent") setShowCascade(true);
+      if (scope) setShowCascade(true);
     }, 1800);
   };
 
@@ -1337,8 +1343,40 @@ export default function OperatorDashboard() {
                   </Text>
                 </View>
 
-                <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Type of report</Text>
-                {ABSENCE_OPTIONS.map(opt => (
+                {/* ── Dual Full-Absence Buttons ── */}
+                <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Full Absence</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.absenceBigBtn, { backgroundColor: "#FBBF24", opacity: pressed ? 0.88 : 1, marginBottom: 10 }]}
+                  onPress={() => handleSendAbsenceReport("single_class")}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#1E3A8A" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.absenceBigBtnTitle}>Full Absence – First Lesson Only</Text>
+                    <Text style={styles.absenceBigBtnHint}>Substitution cascade starts for this session</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.absenceBigBtn, { backgroundColor: "#1E3A8A", opacity: pressed ? 0.88 : 1, marginBottom: 16 }]}
+                  onPress={() => handleSendAbsenceReport("full_day")}
+                >
+                  <Ionicons name="warning-outline" size={20} color="#FBBF24" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.absenceBigBtnTitle, { color: "#FBBF24" }]}>Full Absence – Entire Day</Text>
+                    <Text style={[styles.absenceBigBtnHint, { color: "rgba(251,191,36,0.8)" }]}>Cascade triggers for all today's sessions</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
+                </Pressable>
+
+                {/* ── Divider ── */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                  <View style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }} />
+                  <Text style={{ fontSize: 11, color: "#9CA3AF", fontWeight: "600" }}>OR REPORT A DELAY</Text>
+                  <View style={{ flex: 1, height: 1, backgroundColor: "#E5E7EB" }} />
+                </View>
+
+                {/* ── Delay Options ── */}
+                {DELAY_OPTIONS.map(opt => (
                   <Pressable
                     key={opt.value}
                     style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]}
@@ -1351,16 +1389,9 @@ export default function OperatorDashboard() {
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
-                      {opt.value !== "absent" && opt.delayMins >= 15 && (
-                        <Text style={[styles.absenceOptionHint, absenceType === opt.value && { color: "rgba(255,255,255,0.75)" }]}>
-                          Triggers Smart Rescheduling for Admin
-                        </Text>
-                      )}
-                      {opt.value === "absent" && (
-                        <Text style={[styles.absenceOptionHint, absenceType === opt.value && { color: "rgba(255,255,255,0.75)" }]}>
-                          Triggers substitution cascade
-                        </Text>
-                      )}
+                      <Text style={[styles.absenceOptionHint, absenceType === opt.value && { color: "rgba(255,255,255,0.75)" }]}>
+                        Triggers Smart Rescheduling for Admin
+                      </Text>
                     </View>
                   </Pressable>
                 ))}
@@ -1369,10 +1400,8 @@ export default function OperatorDashboard() {
                   <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsenceModal(false)}>
                     <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
                   </Pressable>
-                  <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: absenceType === "absent" ? "#EF4444" : "#F59E0B" }]} onPress={handleSendAbsenceReport}>
-                    <Text style={styles.closeBtnText}>
-                      {absenceType === "absent" ? "Report & Alert" : "Report Delay"}
-                    </Text>
+                  <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F59E0B" }]} onPress={() => handleSendAbsenceReport()}>
+                    <Text style={styles.closeBtnText}>Report Delay</Text>
                   </Pressable>
                 </View>
               </>
@@ -1945,6 +1974,9 @@ const styles = StyleSheet.create({
   absenceOption: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 8, width: "100%" },
   absenceOptionText: { fontSize: 14, fontWeight: "600", color: "#1E3A8A" },
   absenceOptionHint: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
+  absenceBigBtn: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, width: "100%" },
+  absenceBigBtnTitle: { fontSize: 14, fontWeight: "800", color: "#1E3A8A" },
+  absenceBigBtnHint: { fontSize: 11, color: "rgba(30,58,138,0.65)", marginTop: 2 },
   closeBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
   sentCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },

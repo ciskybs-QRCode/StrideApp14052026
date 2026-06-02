@@ -28,6 +28,7 @@ import reimbursementsRouter from "./reimbursements.js";
 import workshopProposalsRouter from "./workshop-proposals.js";
 import scheduledCoursesRouter from "./scheduled-courses.js";
 import courseAvailabilityRouter from "./course-availability.js";
+import financeRouter from "./finance.js";
 
 const router: IRouter = Router();
 
@@ -60,5 +61,6 @@ router.use(reimbursementsRouter);
 router.use(workshopProposalsRouter);
 router.use(scheduledCoursesRouter);
 router.use(courseAvailabilityRouter);
+router.use(financeRouter);
 
 export default router;
