@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
+import QRCode from "react-native-qrcode-svg";
 import React from "react";
 import {
   Platform,
@@ -66,6 +67,15 @@ export default function SettingsIndex() {
 
   const unsignedCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
 
+  const initials = (user?.name ?? "A")
+    .split(" ")
+    .map((w: string) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const qrValue = user ? `MBR-${user.id}` : "MBR-0";
+
   const navigate = (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/(admin)/settings/${key}` as never);
@@ -96,16 +106,38 @@ export default function SettingsIndex() {
         {/* ── PROFILE CARD ── */}
         <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
           <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0) ?? "A"}</Text>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Administrator</Text>
+            <Text style={styles.profileName} numberOfLines={1}>{user?.name ?? "Administrator"}</Text>
             {!!user?.schoolName && (
               <Text style={styles.profileSchool} numberOfLines={1}>{user.schoolName}</Text>
             )}
             {!!user?.email && (
-              <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
+              <Text style={styles.profileMeta} numberOfLines={1}>{user.email}</Text>
             )}
+            {!!(user as any)?.phone && (
+              <Text style={styles.profileMeta} numberOfLines={1}>{(user as any).phone}</Text>
+            )}
+          </View>
+        </View>
+
+        {/* ── MEMBER ID + QR CODE ── */}
+        <View style={[styles.qrCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.qrLeft}>
+            <Text style={[styles.qrLabel, { color: colors.mutedForeground }]}>MEMBER ID</Text>
+            <Text style={[styles.qrId, { color: colors.primary }]}>{qrValue}</Text>
+            <Text style={[styles.qrSub, { color: colors.mutedForeground }]}>
+              Present for access verification
+            </Text>
+          </View>
+          <View style={[styles.qrBox, { borderColor: colors.border }]}>
+            <QRCode
+              value={qrValue}
+              size={78}
+              color={colors.primary}
+              backgroundColor={colors.card}
+            />
           </View>
         </View>
 
@@ -169,7 +201,7 @@ export default function SettingsIndex() {
         {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
 
-        {/* ── 3 GROUPED CONFIG ROWS ── */}
+        {/* ── CONFIG ROWS ── */}
         <View style={[styles.rowGroup, { backgroundColor: colors.card }]}>
           {NAV_ROWS.map((item, i) => (
             <Pressable
@@ -236,14 +268,14 @@ const styles = StyleSheet.create({
   },
   adminBadgeText: { fontSize: 12, fontWeight: "700" },
 
-  // Profile card — no badge inside, no truncation
+  // Profile card
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
     borderRadius: 20,
     padding: 20,
-    marginBottom: 24,
+    marginBottom: 14,
   },
   avatarCircle: {
     width: 54,
@@ -254,11 +286,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  avatarText: { color: "#FFF", fontSize: 22, fontWeight: "700" },
-  profileInfo: { flex: 1 },
-  profileName:  { color: "#FFF",    fontSize: 18, fontWeight: "700", marginBottom: 2 },
-  profileSchool:{ color: "#FBBF24", fontSize: 13, fontWeight: "600" },
-  profileEmail: { color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 2 },
+  avatarText:    { color: "#FFF", fontSize: 22, fontWeight: "700" },
+  profileInfo:   { flex: 1, minWidth: 0 },
+  profileName:   { color: "#FFF",                    fontSize: 18, fontWeight: "700", marginBottom: 2 },
+  profileSchool: { color: "#FBBF24",                 fontSize: 13, fontWeight: "600" },
+  profileMeta:   { color: "rgba(255,255,255,0.65)",  fontSize: 12, marginTop: 2 },
+
+  // Member ID + QR card
+  qrCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  qrLeft:  { flex: 1 },
+  qrLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1.1, marginBottom: 6 },
+  qrId:    { fontSize: 17, fontWeight: "800", marginBottom: 4 },
+  qrSub:   { fontSize: 12, lineHeight: 16 },
+  qrBox:   { borderRadius: 12, borderWidth: 1, padding: 8 },
 
   // Section group label
   groupLabel: {
@@ -269,7 +322,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // Featured full-width cards (School Setup, Promo Codes)
+  // Featured full-width cards
   featCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -283,21 +336,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  // Navy variant (School Setup)
-  featCardNavy:  { backgroundColor: "#1E3A8A" },
-  featIconNavy:  { width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  featTitleNavy: { color: "#FFFFFF", fontSize: 15, fontWeight: "700", marginBottom: 2 },
-  featDescNavy:  { color: "rgba(255,255,255,0.70)", fontSize: 12 },
-  // Amber variant (Promo Codes)
-  featCardAmber: { backgroundColor: "#FFFBEB", borderWidth: 1.5, borderColor: "#FDE68A" },
-  featIconAmber: { width: 46, height: 46, borderRadius: 13, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  featTitleAmber:{ color: "#78350F", fontSize: 15, fontWeight: "700", marginBottom: 2 },
-  featDescAmber: { color: "#92400E", fontSize: 12 },
-  // Terminal variant (Kiosks)
-  featCardTerminal: { backgroundColor: "#0F2660", borderWidth: 1.5, borderColor: "#FBBF24" },
-  featIconTerminal: { width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(251,191,36,0.18)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-
-  featText: { flex: 1, minWidth: 0 },
+  featCardNavy:    { backgroundColor: "#1E3A8A" },
+  featIconNavy:    { width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  featTitleNavy:   { color: "#FFFFFF", fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  featDescNavy:    { color: "rgba(255,255,255,0.70)", fontSize: 12 },
+  featCardAmber:   { backgroundColor: "#FFFBEB", borderWidth: 1.5, borderColor: "#FDE68A" },
+  featIconAmber:   { width: 46, height: 46, borderRadius: 13, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  featTitleAmber:  { color: "#78350F", fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  featDescAmber:   { color: "#92400E", fontSize: 12 },
+  featCardTerminal:{ backgroundColor: "#0F2660", borderWidth: 1.5, borderColor: "#FBBF24" },
+  featIconTerminal:{ width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(251,191,36,0.18)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  featText:        { flex: 1, minWidth: 0 },
 
   // Grouped config rows
   rowGroup: {
