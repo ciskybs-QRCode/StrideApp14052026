@@ -29,6 +29,7 @@ import workshopProposalsRouter from "./workshop-proposals.js";
 import scheduledCoursesRouter from "./scheduled-courses.js";
 import courseAvailabilityRouter from "./course-availability.js";
 import financeRouter from "./finance.js";
+import legalRouter from "./legal.js";
 
 const router: IRouter = Router();
 
@@ -62,5 +63,6 @@ router.use(workshopProposalsRouter);
 router.use(scheduledCoursesRouter);
 router.use(courseAvailabilityRouter);
 router.use(financeRouter);
+router.use(legalRouter);
 
 export default router;

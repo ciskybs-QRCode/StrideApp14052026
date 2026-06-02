@@ -101,6 +101,14 @@ export interface LegalAdminDoc {
   fileUri?: string;
   fileName?: string;
   fileSize?: string | number;
+  /** Full legal text shown in the signing gate */
+  content?: string;
+  /** Document version — signatures are locked to this version */
+  version?: string;
+  /** If true, signer must pick Option A/B/C before signing */
+  has_options?: boolean;
+  /** Custom labels for the three options */
+  option_labels?: { a: string; b: string; c: string };
 }
 
 export interface Student {
@@ -157,7 +165,13 @@ interface AppDataContextType {
   addLegalDoc: (doc: Omit<LegalAdminDoc, "id">) => Promise<void>;
   updateLegalDoc: (id: string, updates: Partial<LegalAdminDoc>) => Promise<void>;
   deleteLegalDoc: (id: string) => Promise<void>;
-  signAdminDoc: (id: string) => Promise<void>;
+  signAdminDoc: (id: string, auditPayload?: {
+    signature_svg: string;
+    document_content?: string;
+    document_version?: string;
+    selected_option?: string;
+    device_os?: string;
+  }) => Promise<void>;
   mediaConsent: "full" | "internal" | "none";
   setMediaConsent: (consent: "full" | "internal" | "none") => Promise<void>;
 }
@@ -275,9 +289,32 @@ function mapLesson(l: ApiLesson): Lesson {
 }
 
 const FALLBACK_LEGAL_DOCS: LegalAdminDoc[] = [
-  { id: "ld1", title: "Terms & Conditions", type: "terms", highPriority: false, mandatorySignature: true, createdAt: "01/01/2026", description: "General terms and conditions for use of the Stride platform and dance school services." },
-  { id: "ld2", title: "Privacy Policy", type: "privacy", highPriority: false, mandatorySignature: true, createdAt: "01/01/2026", description: "How we collect, store, and use your personal information in accordance with applicable law." },
-  { id: "ld3", title: "Cookie Policy", type: "cookies", highPriority: false, mandatorySignature: false, createdAt: "01/01/2026", description: "How we use cookies and similar tracking technologies on our platforms." },
+  {
+    id: "ld1", title: "Terms & Conditions", type: "terms", version: "1",
+    highPriority: false, mandatorySignature: true, createdAt: "01/01/2026",
+    description: "General terms and conditions for use of the Stride platform.",
+    content: `TERMS AND CONDITIONS OF USE\n\nEffective Date: 1 January 2026\n\n1. ACCEPTANCE OF TERMS\nBy accessing or using the Stride platform ("Service"), you agree to be bound by these Terms and Conditions. If you do not agree, you may not use the Service.\n\n2. USE OF THE SERVICE\nThe Service is provided exclusively for the management of dance school activities. You agree to use the Service only for lawful purposes and in accordance with these Terms.\n\n3. ACCOUNT RESPONSIBILITY\nYou are responsible for maintaining the confidentiality of your account credentials. You accept full responsibility for all activities that occur under your account.\n\n4. CHILDREN'S PRIVACY\nWe take the privacy of minors seriously. All data relating to children enrolled in our programmes is processed in strict accordance with applicable data protection legislation.\n\n5. INTELLECTUAL PROPERTY\nAll content, branding, and software within the Stride platform are the intellectual property of the service provider. Unauthorised reproduction is strictly prohibited.\n\n6. LIMITATION OF LIABILITY\nThe platform is provided on an "as is" basis. We do not accept liability for any indirect, incidental, or consequential damages arising from use of the Service.\n\n7. CHANGES TO TERMS\nWe reserve the right to update these Terms at any time. Continued use of the Service following notification of changes constitutes your acceptance of the revised Terms.\n\n8. GOVERNING LAW\nThese Terms are governed by and construed in accordance with applicable law. Any disputes shall be subject to the exclusive jurisdiction of the relevant courts.`,
+  },
+  {
+    id: "ld2", title: "Privacy Policy", type: "privacy", version: "1",
+    highPriority: false, mandatorySignature: true, createdAt: "01/01/2026",
+    description: "How we collect, store, and use your personal information.",
+    content: `PRIVACY POLICY\n\nEffective Date: 1 January 2026\n\n1. INTRODUCTION\nThis Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use the Stride platform.\n\n2. DATA WE COLLECT\nWe collect: (a) Account information — name, email address, phone number; (b) Children's information — name, date of birth, medical notes, attendance records; (c) Payment information — processed securely via third-party payment providers; (d) Usage data — app interactions, log files, device identifiers.\n\n3. HOW WE USE YOUR DATA\nYour data is used to: manage enrolment and attendance; process payments; communicate service updates; comply with legal obligations; improve our services.\n\n4. DATA SHARING\nWe do not sell your personal data. We may share data with: authorised service providers under strict confidentiality agreements; regulatory authorities where required by law.\n\n5. DATA RETENTION\nWe retain personal data for as long as necessary to fulfil the purposes described in this Policy or as required by law.\n\n6. YOUR RIGHTS\nYou have the right to: access your personal data; request correction or deletion; object to processing; lodge a complaint with a supervisory authority.\n\n7. SECURITY\nWe implement industry-standard security measures including encryption, access controls, and regular audits to protect your data.\n\n8. CONTACT US\nFor any privacy-related queries, please contact your dance school administrator directly.`,
+  },
+  {
+    id: "ld3", title: "Cookie Policy", type: "cookies", version: "1",
+    highPriority: false, mandatorySignature: false, createdAt: "01/01/2026",
+    description: "How we use cookies and tracking technologies.",
+    content: "This application uses essential cookies to maintain your session and preferences. No third-party advertising cookies are used.",
+  },
+  {
+    id: "ld4", title: "Media Release Consent", type: "waiver", version: "1",
+    highPriority: true, mandatorySignature: true, createdAt: "01/01/2026",
+    has_options: true,
+    option_labels: { a: "Full consent — photos & videos for all purposes", b: "Internal use only — school newsletters and internal records", c: "No consent — do not photograph or film my child" },
+    description: "Consent for photography and video recording of your child.",
+    content: `MEDIA RELEASE CONSENT\n\nThis consent form relates to the photography and video recording of students enrolled at this dance school.\n\nDuring classes, performances, showcases, and other school events, we may capture photographs and video footage. This media may be used for promotional, educational, and documentary purposes.\n\nYou are required to select one of the following consent options:\n\nOPTION A — Full Consent\nYou consent to photographs and videos of your child being used for all school purposes, including but not limited to: the school website, social media channels, printed promotional materials, and internal records.\n\nOPTION B — Internal Use Only\nYou consent to photographs and videos being used exclusively for internal purposes such as school newsletters, private parent communications, and internal training documentation. Media will not be published publicly.\n\nOPTION C — No Consent\nYou do not consent to your child being photographed or filmed. The school will make reasonable efforts to ensure your child is excluded from all media capture. Please note this may affect participation in certain group activities.\n\nThis consent applies for the duration of your child's enrolment and may be updated in writing at any time by contacting the school administrator.`,
+  },
 ];
 
 export function AppDataProvider({ children: childrenProp }: { children: React.ReactNode }) {
@@ -311,6 +348,16 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       }
     }).catch(() => {});
   }, []);
+
+  // Load signed document IDs from backend (persists across devices)
+  useEffect(() => {
+    if (!user) return;
+    api.legalSignedIds().then(result => {
+      if (result && Array.isArray(result.ids) && result.ids.length > 0) {
+        setSignedAdminDocIds(prev => [...new Set([...prev, ...result.ids])]);
+      }
+    }).catch(() => {});
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
@@ -648,8 +695,28 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     });
   };
 
-  const signAdminDoc = async (id: string) => {
-    setSignedAdminDocIds(prev => [...prev, id]);
+  const signAdminDoc = async (id: string, auditPayload?: {
+    signature_svg: string;
+    document_content?: string;
+    document_version?: string;
+    selected_option?: string;
+    device_os?: string;
+  }) => {
+    setSignedAdminDocIds(prev => [...new Set([...prev, id])]);
+    if (auditPayload) {
+      try {
+        await api.legalSign({
+          document_id: id,
+          document_version: auditPayload.document_version,
+          document_content: auditPayload.document_content,
+          selected_option: auditPayload.selected_option,
+          signature_svg: auditPayload.signature_svg,
+          device_os: auditPayload.device_os,
+        });
+      } catch {
+        // Audit log write is best-effort; local signature still recorded
+      }
+    }
   };
 
   const setMediaConsent = async (consent: "full" | "internal" | "none") => {

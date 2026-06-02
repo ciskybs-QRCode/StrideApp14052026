@@ -92,11 +92,24 @@ export default function LegalPrivacyPage() {
   const [newHighPriority, setNewHighPriority] = useState(false);
   const [newMandatory, setNewMandatory] = useState(false);
   const [newDescription, setNewDescription] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [newVersion, setNewVersion] = useState("1");
+  const [newHasOptions, setNewHasOptions] = useState(false);
   const [newSourceType, setNewSourceType] = useState<SourceType>("file");
   const [newFileUri, setNewFileUri] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState<string | null>(null);
   const [newFileSize, setNewFileSize] = useState<string | null>(null);
   const [newLinkUrl, setNewLinkUrl] = useState("");
+
+  // ── Audit log state ──
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [auditLog, setAuditLog] = useState<{
+    id: string; user_id: number; user_email: string | null; document_id: string;
+    document_version: string; selected_option: string | null;
+    timestamp: string; ip_address: string | null;
+    device_operating_system: string | null; document_text_hash: string;
+  }[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   // ── Detail / viewer / replace state ──
   // showDetail = doc currently open in the detail bottom sheet
@@ -151,7 +164,8 @@ export default function LegalPrivacyPage() {
 
   const resetAddForm = () => {
     setNewTitle(""); setNewType("terms"); setNewHighPriority(false);
-    setNewMandatory(false); setNewDescription(""); setNewSourceType("file");
+    setNewMandatory(false); setNewDescription(""); setNewContent("");
+    setNewVersion("1"); setNewHasOptions(false); setNewSourceType("file");
     setNewFileUri(null); setNewFileName(null); setNewFileSize(null); setNewLinkUrl("");
   };
 
@@ -167,6 +181,9 @@ export default function LegalPrivacyPage() {
       mandatorySignature: newMandatory,
       createdAt: todayStr(),
       description: newDescription.trim() || undefined,
+      content: newContent.trim() || undefined,
+      version: newVersion.trim() || "1",
+      has_options: newHasOptions || undefined,
       fileUri:  newSourceType === "file" ? (newFileUri ?? undefined)  : undefined,
       fileName: newSourceType === "file" ? (newFileName ?? undefined) : undefined,
       fileSize: newSourceType === "file" ? (newFileSize ?? undefined) : undefined,
@@ -486,17 +503,105 @@ export default function LegalPrivacyPage() {
           </View>
         )}
 
-        <View style={[styles.placeholderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="time-outline" size={24} color={colors.mutedForeground} />
+        <Pressable
+          style={({ pressed }) => [styles.placeholderCard, { backgroundColor: colors.card, borderColor: "#1E3A8A", opacity: pressed ? 0.85 : 1 }]}
+          onPress={async () => {
+            setAuditLoading(true);
+            setShowAuditLog(true);
+            try {
+              const { api } = await import("@/lib/api");
+              const rows = await api.legalAuditLog();
+              setAuditLog(rows ?? []);
+            } catch { setAuditLog([]); }
+            finally { setAuditLoading(false); }
+          }}
+        >
+          <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="shield-checkmark-outline" size={22} color="#1E3A8A" />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.placeholderTitle, { color: colors.foreground }]}>Consent Audit Log</Text>
-            <Text style={[styles.placeholderDesc, { color: colors.mutedForeground }]}>View timestamped signature history per user</Text>
+            <Text style={[styles.placeholderDesc, { color: colors.mutedForeground }]}>SHA-256 tamper-evident signature history</Text>
           </View>
-          <View style={[styles.soonBadge, { backgroundColor: colors.muted }]}>
-            <Text style={[styles.soonText, { color: colors.mutedForeground }]}>Soon</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
+      </ScrollView>
+
+      {/* ════════════════════════════════════════════════════
+          AUDIT LOG MODAL
+      ════════════════════════════════════════════════════ */}
+      <Modal visible={showAuditLog} transparent animationType="slide" onRequestClose={() => setShowAuditLog(false)}>
+        <View style={styles.overlay}>
+          <View style={[styles.sheet, { backgroundColor: colors.card, maxHeight: "90%", paddingBottom: 0 }]}>
+            {/* Header */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="shield-checkmark" size={20} color="#1E3A8A" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sheetTitle, { color: colors.foreground, marginBottom: 0 }]}>Signature Audit Log</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Tamper-evident SHA-256 ledger</Text>
+              </View>
+              <Pressable onPress={() => setShowAuditLog(false)} hitSlop={10}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            {auditLoading ? (
+              <View style={{ padding: 40, alignItems: "center", gap: 12 }}>
+                <Ionicons name="hourglass-outline" size={32} color={colors.mutedForeground} />
+                <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Loading audit records…</Text>
+              </View>
+            ) : auditLog.length === 0 ? (
+              <View style={{ padding: 40, alignItems: "center", gap: 12 }}>
+                <Ionicons name="document-outline" size={32} color={colors.mutedForeground} />
+                <Text style={{ color: colors.mutedForeground, fontSize: 13, textAlign: "center" }}>No signatures recorded yet. Records appear here once users complete mandatory signing.</Text>
+              </View>
+            ) : (
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 10 }} showsVerticalScrollIndicator>
+                {auditLog.map(row => (
+                  <View key={row.id} style={{ backgroundColor: colors.background, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border, gap: 6 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Ionicons name="person-circle-outline" size={16} color="#1E3A8A" />
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                        {row.user_email ?? `User ${row.user_id}`}
+                      </Text>
+                      {row.selected_option && (
+                        <View style={{ backgroundColor: "#EDE9FE", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 10, fontWeight: "700", color: "#7C3AED" }}>{row.selected_option.replace("_", " ")}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Ionicons name="document-text-outline" size={12} color={colors.mutedForeground} />
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground, flex: 1 }} numberOfLines={1}>Doc: {row.document_id} · v{row.document_version}</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                        {new Date(row.timestamp).toLocaleString()}
+                      </Text>
+                    </View>
+                    {row.ip_address && (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Ionicons name="globe-outline" size={12} color={colors.mutedForeground} />
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>IP: {row.ip_address} · {row.device_operating_system ?? "Unknown OS"}</Text>
+                      </View>
+                    )}
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 4, marginTop: 2 }}>
+                      <Ionicons name="lock-closed-outline" size={12} color="#059669" />
+                      <Text style={{ fontSize: 10, color: "#059669", flex: 1, fontFamily: "monospace" }} numberOfLines={2}>
+                        SHA-256: {row.document_text_hash}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+                <View style={{ height: 20 }} />
+              </ScrollView>
+            )}
           </View>
         </View>
-      </ScrollView>
+      </Modal>
 
       {/* ════════════════════════════════════════════════════
           ADD DOCUMENT MODAL
@@ -548,6 +653,26 @@ export default function LegalPrivacyPage() {
               multiline
             />
 
+            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Full Document Text (shown during signing)</Text>
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.foreground, height: 140 }]}
+              value={newContent}
+              onChangeText={setNewContent}
+              placeholder="Paste the full legal text here. Users will be required to scroll through this before signing."
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              textAlignVertical="top"
+            />
+
+            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Version</Text>
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+              value={newVersion}
+              onChangeText={setNewVersion}
+              placeholder="1"
+              placeholderTextColor={colors.mutedForeground}
+            />
+
             <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 16 }]}>Document Source</Text>
             <FileSourcePicker
               sourceType={newSourceType}
@@ -563,6 +688,21 @@ export default function LegalPrivacyPage() {
             />
 
             <View style={{ gap: 14, marginTop: 20 }}>
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Ionicons name="list-outline" size={16} color="#7C3AED" />
+                    <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Requires Option Selection</Text>
+                  </View>
+                  <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Signer must choose Option A, B, or C</Text>
+                </View>
+                <Switch
+                  value={newHasOptions}
+                  onValueChange={setNewHasOptions}
+                  trackColor={{ false: colors.muted, true: "#EDE9FE" }}
+                  thumbColor={newHasOptions ? "#7C3AED" : "#9CA3AF"}
+                />
+              </View>
               <View style={styles.toggleRow}>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>

@@ -65,5 +65,23 @@ export async function ensureTables(): Promise<void> {
     ADD COLUMN IF NOT EXISTS stripe_transfer_id TEXT;
   `).catch(() => {});
 
+  // Legal signatures audit log (tamper-evident ledger)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS legal_signatures_audit_log (
+      id                      UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id                 INTEGER NOT NULL,
+      document_id             TEXT NOT NULL,
+      document_version        TEXT NOT NULL DEFAULT '1',
+      selected_option         TEXT,
+      signature_svg           TEXT NOT NULL,
+      timestamp               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ip_address              TEXT,
+      device_operating_system TEXT,
+      document_text_hash      TEXT NOT NULL DEFAULT ''
+    );
+    CREATE INDEX IF NOT EXISTS lsal_user_doc_idx
+      ON legal_signatures_audit_log (user_id, document_id);
+  `).catch(() => {});
+
   initialized = true;
 }

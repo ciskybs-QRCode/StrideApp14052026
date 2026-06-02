@@ -371,6 +371,31 @@ export const api = {
   signDocumentWithSignature: (id: string, signatureData: string) =>
     request<{ ok: boolean }>("POST", `/documents/${id}/sign`, { signature_data: signatureData }),
 
+  // Legal Signature Audit Log
+  legalSign: (payload: {
+    document_id: string;
+    document_version?: string;
+    document_content?: string;
+    selected_option?: string;
+    signature_svg: string;
+    device_os?: string;
+  }) => request<{ ok: boolean; hash: string }>("POST", "/legal/sign", payload),
+
+  legalSignedIds: () => request<{ ids: string[] }>("GET", "/legal/signed-ids"),
+
+  legalAuditLog: () => request<{
+    id: string;
+    user_id: number;
+    document_id: string;
+    document_version: string;
+    selected_option: string | null;
+    timestamp: string;
+    ip_address: string | null;
+    device_operating_system: string | null;
+    document_text_hash: string;
+    user_email: string | null;
+  }[]>("GET", "/legal/audit-log"),
+
   // Audit Logs
   logPdfGeneration: (data: { period: string; month: string; total_amount: number; action: "generated" | "shared" }) =>
     request<{ ok: boolean }>("POST", "/pdf-logs", data),

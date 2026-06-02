@@ -2,3 +2,4 @@
 - [Stride QR camera](stride-qr-camera.md) — expo-camera v55 (version mismatch vs SDK54 expected ~17); Platform.OS==="web" checks were bypassing CameraView — fixed to gate on permission only.
 - [Stride onboarding flow](stride-onboarding.md) — full member onboarding: join page → 4-step wizard (details/address, phone, dependents, signature). Key design decisions documented.
 - [Stride absence/substitution/finance](stride-absence-finance.md) — dual absence buttons, 5-min cascade, payroll ledger, Pay Now flow. Key isolation and pattern decisions.
+- [Stride legal gate](stride-legal-gate.md) — mandatory sequential signature gate with SHA-256 audit, IP/device capture, options, checkbox, gold-bordered pad.

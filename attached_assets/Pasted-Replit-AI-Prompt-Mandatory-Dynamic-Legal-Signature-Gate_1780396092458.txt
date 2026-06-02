@@ -1,0 +1,38 @@
+Replit AI Prompt: Mandatory Dynamic Legal Signature Gate & High-Security Audit Trail
+Role: Expert Full-Stack Mobile & Supabase Developer.
+Objective: Audit the current onboarding/login flow. If a mandatory document signing system does not exist, create it. If it exists, upgrade it to the maximum legal security level described below. The system must be fully dynamic, adapting to whatever documents the Admin enables for their association. UI Design: Navy Blue and Gold theme. Clean typography. The signature pad and document viewer MUST use a scrollable layout and remain strictly within the physical device screen boundaries (Zero layout overflows).
+1. The Database Architecture (Dynamic & Tamper-Evident)
+Ensure the database has two core tables structured for high-security legal compliance:
+association_documents: Holds the templates uploaded by Admins.
+id (UUID), association_id (UUID), title (Text), content (Text) , version (Varchar/Integer), is_mandatory (Boolean), has_options (Boolean, e.g., for Media Release choices ), updated_at (Timestamp).
+legal_signatures_audit_log (The High-Security Ledger):
+id (UUID, Primary Key).
+user_id (UUID, Links to profiles).
+document_id (UUID, Links to the specific document signed).
+document_version (Ensures the signature is locked to that exact version text).
+selected_option (Text, Nullable - stores 'OPTION_A', 'OPTION_B', or 'OPTION_C' if the document requires a choice).
+signature_svg_path or signature_base64 (The actual biometric stroke data of the touch signature).
+Security Metadata (Mandatory for Maximum Legal Standing):
+timestamp (DateTime, automatic server-side now()).
+ip_address (Text, captured via backend request headers).
+device_operating_system (Text, e.g., iOS/Android version).
+document_text_hash (SHA-256 hash of the exact document content at the millisecond of signing to prove the text wasn't altered retrospectively).
+2. The Enforcement Gate (Check or Create)
+The Logic interceptor: Immediately after a user logs in (or completes registration), run a backend/database check.
+The Query: Compare the list of active, mandatory documents for that association against the legal_signatures_audit_log for that specific user_id and matching document_version.
+The Gate: If the user is missing a valid signature for any active mandatory document, completely intercept the routing. Block access to the Home app tabs and display the Mandatory Legal Signature Screen.
+3. Frontend High-Security Signing Interface (UI/UX)
+Render the unsigned documents sequentially. For each document:
+Document Viewer: Display the title and full legal text inside a smooth, constrained container.
+Conditional Options: If has_options is true, display a clean, native selection list (e.g., Option A, B, or C for image consent). The user must select an option before proceeding.
+Affirmative Action Checkbox: Include a mandatory checkbox: "I confirm that I am the legal guardian, and I explicitly read, understood, and accept this document in full".
+Biometric Signature Pad: Implement a clean touch-sensitive signature canvas canvas (styled with a sleek Gold border).
+Validation: The "Confirm & Sign" button must remain completely disabled until:
+The user has scrolled down the document text.
+An option is selected (if applicable).
+The checkbox is ticked.
+At least one continuous gesture/stroke is drawn on the signature pad.
+4. Execution & State Resolution
+Clicking "Confirm & Sign" triggers a secure transaction that packages the signature data, metadata (IP, Device Info), selected options, and document text checksum, saving it to legal_signatures_audit_log.
+Once all mandatory pending documents are successfully written to the audit log, clear the gate state, update the local context, and seamlessly transition the user into the main application.
+Output: Audit the code files, deploy the updated tamper-evident database schema mutations, implement the client-side signature interceptor block, and ensure perfect UI boundary alignment.
