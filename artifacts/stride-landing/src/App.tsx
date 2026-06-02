@@ -452,7 +452,7 @@ function Landing() {
                   {idx < 2 && (
                     <div className="md:hidden w-px h-8 bg-gradient-to-b from-[#D4AF37]/60 to-[#D4AF37]/10 mx-auto my-0" />
                   )}
-                  <div className="bg-white/5 border border-[#D4AF37]/20 hover:border-[#D4AF37]/50 rounded-2xl p-6 sm:p-7 flex flex-col gap-4 transition-all duration-200 hover:bg-white/8 md:mx-2">
+                  <div className="flex-1 bg-white/5 border border-[#D4AF37]/20 hover:border-[#D4AF37]/50 rounded-2xl p-6 sm:p-7 flex flex-col gap-4 transition-all duration-200 hover:bg-white/8 md:mx-2">
                     {/* Step number + icon row */}
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-[#D4AF37] flex items-center justify-center text-[#0A1128] flex-shrink-0 font-black text-sm shadow-lg shadow-[#D4AF37]/20">
