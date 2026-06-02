@@ -1,0 +1,32 @@
+🚨 GLOBAL SYSTEM ARCHITECTURE: FIRST-BOOT ADMIN PROVISIONING, INVITATION LOOPS, AND MULTI-ROLE PROFILE SYSTEM 🚨
+Role: Expert Full-Stack Mobile & Web Architect (React Native Expo Router, Supabase Auth, and Node.js backend).
+Branding Rules: Strict Navy Blue and Gold palette. Pure professional typography. All interfaces (including setup wizards and web forms) MUST be 100% bounded within viewport borders using native ScrollViews (Zero horizontal/vertical layout overflows).
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨 DO NOT clear existing database seeds for legal compliance logs or break Stripe Connect base webhooks. Isolate this upgrade to the authentication routing state machine, first-run database logic, and the web-to-mobile registration bridge.
+PHASE 1: FIRST-BOOT SYSTEM PROVISIONING (THE INITIAL ADMIN WIZARD)
+The Pioneer Interceptor: On mobile app launch, check the database profiles table. If the database is completely empty (zero users exist), automatically assign the very first user who signs up the permanent role of 'admin'.
+The Step-by-Step Configuration Wizard: Guide this Admin user through a mandatory, beautifully structured onboarding funnel inside the app:
+School/Association Metadata: Name, Western Australia regulatory registration numbers, primary contacts.
+Stripe Connect Integration: Automated link to activate the platform's payout engine.
+Branding Customization: Upload logo asset point and verify Navy Blue/Gold asset coordination.
+Studios & Venues: Define names, locations, and room capacities.
+Courses Core Setup: Define Age Targets, Skill Levels (Beginner to Open Class), and base timetables.
+Set an absolute database flag: system_configured: true upon successful completion.
+PHASE 2: INVITATION LOOP & WEB LANDING PAGE REGISTRATION BRIDGE
+The Invitation Generator: Inside the Admin Dashboard, build a tool to generate secure onboarding links (e.g., https://yourdomain.com/invite?assoc=[id]) that the Admin can share directly via communication channels.
+The Web Landing Page Funnel: When a contact clicks the link on a browser, render a step-by-step registration form matching the mobile UI density:
+Collect First Name, Last Name, Phone, Email, and Password.
+The Activation Guard: Upon web form submission, use Supabase Auth to trigger an automated verification email containing a secure activation link. The profile remains in a 'pending_activation' state and cannot log into any interface until the email link is clicked.
+PHASE 3: MOBILE APP AUTHENTICATION & LEGAL GATE
+Once activated via email, direct the user to download the physical Mobile App.
+Login Handler: Allow the user to authenticate using the exact Email and Password created during the web landing page stage.
+The Legal Gate: Immediately upon successful mobile login, run the Mandatory Legal Signature Check. The user must scroll, select media options, and digitally sign all mandatory active association documents before gaining access to the Member Home Dashboard.
+PHASE 4: OPERATOR PROMOTION & SCHEDULING HANDSHAKE LOOP
+Role Elevation: Inside the Admin Panel, provide a toggle to elevate any verified Member profile to the role of 'operator' while preserving their base member profile capabilities.
+Availability Mapping: Once elevated, the Operator's app unlocks the Availability modules:
+General Availability: Collapsible Accordion grids to map days/times per specific private discipline.
+Regular Class Availability: Daily time slot arrays for collective association courses.
+The Handshake Contract: When the Admin schedules a class matching an Operator's active availability grid, send a targeted push alert to the Operator. The course remains in a 'pending_acceptance' state until the Operator clicks "Accept Invite", officially locking them to the session and the cross-referenced Payroll ledger.
+PHASE 5: FAMILY ENGINE (DEPENDENT MEMBERS) & ENROLLMENT
+Dependent Node Creation: Any logged-in Member can access their account settings and add "Dependent Members" (Minors/Children) by filling out their Name, Date of Birth, and base experience levels.
+Smart Filter Enrollment: When a Member browses the association's active schedule, the app dynamically filters courses to show only options that strictly match the selected child's Age Target and Skill Level parameters.
+Output Requirement: Code the dynamic first-boot admin routing handler, deploy the web landing registration logic with Supabase verification webhooks, construct the operator availability acceptance handshake, and ensure clean layout containment across all screens.

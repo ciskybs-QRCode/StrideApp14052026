@@ -24,6 +24,8 @@ export interface User {
    * the onboarding wizard. Undefined = existing account, treated as complete.
    */
   onboardingComplete?: boolean;
+  /** 'pending_activation' = registered via web, awaiting email verification. */
+  activationStatus?: "active" | "pending_activation";
 }
 
 interface AuthContextType {

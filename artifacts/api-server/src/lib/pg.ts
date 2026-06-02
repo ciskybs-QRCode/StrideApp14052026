@@ -103,5 +103,43 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ocr_clock_in_idx ON operator_clock_records (clock_in);
   `).catch(() => {});
 
+  // Pioneer: activation_status for users ('active' | 'pending_activation')
+  await pool.query(`
+    ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS activation_status TEXT DEFAULT 'active';
+  `).catch(() => {});
+
+  // Pioneer: system_configured flag on organizations
+  await pool.query(`
+    ALTER TABLE IF EXISTS organizations
+    ADD COLUMN IF NOT EXISTS system_configured BOOLEAN DEFAULT FALSE;
+  `).catch(() => {});
+
+  // Invite tokens (admin-generated shareable registration links)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS invite_tokens (
+      id          SERIAL PRIMARY KEY,
+      token       TEXT NOT NULL UNIQUE,
+      org_id      INTEGER NOT NULL DEFAULT 1,
+      created_by  INTEGER,
+      expires_at  TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '30 days'),
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS inv_tok_idx ON invite_tokens (token);
+  `).catch(() => {});
+
+  // Activation tokens (email verification for web-registered users)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS activation_tokens (
+      id          SERIAL PRIMARY KEY,
+      user_id     INTEGER NOT NULL,
+      token       TEXT NOT NULL UNIQUE,
+      used        BOOLEAN NOT NULL DEFAULT FALSE,
+      expires_at  TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS act_tok_idx ON activation_tokens (token);
+  `).catch(() => {});
+
   initialized = true;
 }

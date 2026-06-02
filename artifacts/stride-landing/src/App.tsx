@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { Route, Switch } from "wouter";
+import Register from "./pages/Register";
+import Activate from "./pages/Activate";
 
-export default function App() {
+function Landing() {
   const [formData, setFormData] = useState({ name: "", email: "", association: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,7 +57,6 @@ export default function App() {
 
       {/* ── Hero ── */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-28 flex flex-col-reverse md:flex-row items-center gap-16">
-        {/* Left: Text */}
         <div className="flex-1 text-center md:text-left">
           <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full px-4 py-1.5 mb-6">
             <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse" />
@@ -72,7 +74,6 @@ export default function App() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-            {/* App Store Badge */}
             <a href="#" className="flex items-center gap-3 bg-white text-[#0A192F] px-5 py-3.5 rounded-xl font-semibold hover:bg-slate-100 transition-colors shadow-lg">
               <svg className="w-7 h-7 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
@@ -82,8 +83,6 @@ export default function App() {
                 <div className="text-base font-bold leading-tight">App Store</div>
               </div>
             </a>
-
-            {/* Google Play Badge */}
             <a href="#" className="flex items-center gap-3 bg-white text-[#0A192F] px-5 py-3.5 rounded-xl font-semibold hover:bg-slate-100 transition-colors shadow-lg">
               <svg className="w-7 h-7 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3.18 23.76c.3.17.64.26 1 .24l.13-.04L13.66 14 10 10.34 3.18 23.76zM20.74 10.76L18.1 9.28l-3.47 3.47 3.47 3.46 2.66-1.5a1.83 1.83 0 000-3.95zM2.25.86A1.85 1.85 0 002 1.7v20.6c0 .3.08.57.25.84L13.07 12 2.25.86zM13.66 10L4.31.27l-.13-.04a1.84 1.84 0 00-1 .24L13.66 10z"/>
@@ -96,16 +95,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right: Phone Mockup */}
+        {/* Phone Mockup */}
         <div className="flex-shrink-0 relative">
           <div className="relative w-[220px] h-[440px] mx-auto">
-            {/* Glow */}
             <div className="absolute inset-0 bg-[#D4AF37]/20 rounded-[3rem] blur-3xl scale-110" />
-            {/* Phone shell */}
             <div className="relative w-full h-full bg-[#112240] border-4 border-[#D4AF37]/40 rounded-[3rem] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.6)] flex flex-col items-center">
-              {/* Notch */}
               <div className="w-24 h-6 bg-[#0A192F] rounded-b-2xl mt-0 flex-shrink-0" />
-              {/* Screen content */}
               <div className="flex-1 w-full px-4 py-4 flex flex-col gap-3">
                 <div className="bg-[#D4AF37] rounded-2xl h-10 flex items-center justify-center">
                   <div className="w-20 h-3 bg-[#0A192F]/40 rounded-full" />
@@ -114,13 +109,12 @@ export default function App() {
                   <div key={i} className="bg-[#1e3a6e]/60 rounded-xl p-3 flex gap-2 items-center">
                     <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 flex-shrink-0" />
                     <div className="flex flex-col gap-1.5">
-                      <div className={`h-2 bg-slate-500/50 rounded-full`} style={{ width: `${w}%` }} />
+                      <div className="h-2 bg-slate-500/50 rounded-full" style={{ width: `${w}%` }} />
                       <div className="h-1.5 bg-slate-600/40 rounded-full w-3/5" />
                     </div>
                   </div>
                 ))}
               </div>
-              {/* Home indicator */}
               <div className="w-20 h-1 bg-[#D4AF37]/40 rounded-full mb-3" />
             </div>
           </div>
@@ -153,46 +147,15 @@ export default function App() {
             Switch from messy spreadsheets to automated mobile tracking in just three steps.
           </p>
         </div>
-
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            {
-              step: "01",
-              title: "Register Online",
-              desc: "Click your association's unique invite link to create your parent or member profile securely on our web portal using any desktop or mobile device.",
-              icon: (
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              ),
-            },
-            {
-              step: "02",
-              title: "Download the App",
-              desc: "Grab the official management app from the Apple App Store or Google Play Store and log in instantly using your verified credentials.",
-              icon: (
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                </svg>
-              ),
-            },
-            {
-              step: "03",
-              title: "Scan & Go",
-              desc: "Access your digital QR code, sign your registration paperwork digitally, add dependent family members, and manage your private lesson bookings on the fly.",
-              icon: (
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z" />
-                </svg>
-              ),
-            },
+            { step: "01", title: "Register Online", desc: "Click your association's unique invite link to create your parent or member profile securely on our web portal using any desktop or mobile device.", icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> },
+            { step: "02", title: "Verify Your Email", desc: "Check your inbox for an activation email. Click the link to verify your account and unlock access to the mobile app.", icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
+            { step: "03", title: "Download & Go", desc: "Grab the Stride app from the App Store or Google Play, log in with your verified credentials, sign your documents, and scan your QR code.", icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z" /></svg> },
           ].map(({ step, title, desc, icon }) => (
             <div key={step} className="relative group bg-[#112240] border border-[#D4AF37]/20 rounded-2xl p-8 hover:border-[#D4AF37]/50 transition-colors">
               <div className="absolute top-6 right-6 text-5xl font-black text-[#D4AF37]/8 select-none">{step}</div>
-              <div className="w-14 h-14 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-2xl flex items-center justify-center text-[#D4AF37] mb-6">
-                {icon}
-              </div>
+              <div className="w-14 h-14 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-2xl flex items-center justify-center text-[#D4AF37] mb-6">{icon}</div>
               <h3 className="text-lg font-bold text-white mb-3">{step}. {title}</h3>
               <p className="text-slate-400 leading-relaxed text-sm">{desc}</p>
             </div>
@@ -207,29 +170,12 @@ export default function App() {
             <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">Why Choose Us</div>
             <h2 className="text-3xl md:text-4xl font-black text-white">Built for Operators.<br />Loved by Parents.</h2>
           </div>
-
           <div className="grid md:grid-cols-2 gap-6">
             {[
-              {
-                title: "Dynamic Profile Switching",
-                desc: "Admins, operators, and parents share the exact same mobile interface layout. Seamlessly switch roles with a single tap to view data, track attendance, or manage schedules without continuous logging out.",
-                icon: "🔄",
-              },
-              {
-                title: "Granular Privacy & Safety First",
-                desc: "Take total control of your data compliance. Set individual, independent photo and video consent rules for each dependent member right inside the profile setup.",
-                icon: "🔒",
-              },
-              {
-                title: "Automated Financial Workflows",
-                desc: "Manage course packages, book private lessons with native map routing updates, and issue structured operator invoice reports with custom payment threshold rules.",
-                icon: "💳",
-              },
-              {
-                title: "Double-Tap Emergency Alerts",
-                desc: "Safety is our core priority. Both admins and operators have immediate access to a secure, double-tap emergency broadcast trigger to handle critical situations instantly without false alarms.",
-                icon: "🚨",
-              },
+              { title: "Dynamic Profile Switching", desc: "Admins, operators, and parents share the exact same mobile interface layout. Seamlessly switch roles with a single tap.", icon: "🔄" },
+              { title: "Granular Privacy & Safety First", desc: "Set individual, independent photo and video consent rules for each dependent member right inside the profile setup.", icon: "🔒" },
+              { title: "Automated Financial Workflows", desc: "Manage course packages, book private lessons, and issue structured operator invoice reports with custom payment threshold rules.", icon: "💳" },
+              { title: "Double-Tap Emergency Alerts", desc: "Both admins and operators have immediate access to a secure, double-tap emergency broadcast trigger for critical situations.", icon: "🚨" },
             ].map(({ title, desc, icon }) => (
               <div key={title} className="bg-[#112240] border border-[#D4AF37]/20 rounded-2xl p-8 flex gap-5 hover:border-[#D4AF37]/40 transition-colors">
                 <div className="text-3xl flex-shrink-0 mt-1">{icon}</div>
@@ -251,7 +197,6 @@ export default function App() {
             <h2 className="text-3xl md:text-4xl font-black text-white">Ready to Elevate Your Association?</h2>
             <p className="mt-4 text-slate-400">Tell us about your association and we'll set you up with a customised demo.</p>
           </div>
-
           {submitted ? (
             <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/40 rounded-2xl p-12 text-center">
               <div className="text-5xl mb-4">✅</div>
@@ -267,35 +212,22 @@ export default function App() {
               ].map(({ id, label, placeholder, type }) => (
                 <div key={id}>
                   <label htmlFor={id} className="block text-sm font-semibold text-slate-300 mb-2">{label}</label>
-                  <input
-                    id={id}
-                    type={type}
-                    placeholder={placeholder}
-                    required
+                  <input id={id} type={type} placeholder={placeholder} required
                     value={formData[id as keyof typeof formData]}
                     onChange={e => setFormData(p => ({ ...p, [id]: e.target.value }))}
                     className="w-full bg-[#0A192F] border border-[#D4AF37]/40 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-colors"
                   />
                 </div>
               ))}
-
               <div>
                 <label htmlFor="message" className="block text-sm font-semibold text-slate-300 mb-2">Message</label>
-                <textarea
-                  id="message"
-                  rows={4}
-                  placeholder="Tell us about your association and what you're looking for…"
-                  required
+                <textarea id="message" rows={4} placeholder="Tell us about your association and what you're looking for…" required
                   value={formData.message}
                   onChange={e => setFormData(p => ({ ...p, message: e.target.value }))}
                   className="w-full bg-[#0A192F] border border-[#D4AF37]/40 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-colors resize-none"
                 />
               </div>
-
-              <button
-                type="submit"
-                className="w-full bg-[#D4AF37] text-[#0A192F] font-bold py-4 rounded-xl text-sm uppercase tracking-wider hover:bg-[#e8c44b] transition-colors"
-              >
+              <button type="submit" className="w-full bg-[#D4AF37] text-[#0A192F] font-bold py-4 rounded-xl text-sm uppercase tracking-wider hover:bg-[#e8c44b] transition-colors">
                 Submit Request
               </button>
             </form>
@@ -307,10 +239,7 @@ export default function App() {
       <footer className="border-t border-[#D4AF37]/15 bg-[#060f1e]">
         <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
           <span className="flex items-center gap-2">
-            <svg height="30" width="30" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Association Logo">
-              <rect width="36" height="36" rx="8" fill="#D4AF37" fillOpacity="0.15"/>
-              <path d="M10 18h16M18 11l7 7-7 7" stroke="#D4AF37" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <svg height="30" width="30" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#D4AF37" fillOpacity="0.15"/><path d="M10 18h16M18 11l7 7-7 7" stroke="#D4AF37" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             <span className="text-sm font-semibold text-slate-400">Association Platform</span>
           </span>
           <span>© {new Date().getFullYear()} Association Platform. All rights reserved.</span>
@@ -320,7 +249,16 @@ export default function App() {
           </div>
         </div>
       </footer>
-
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Switch>
+      <Route path="/register" component={Register} />
+      <Route path="/activate" component={Activate} />
+      <Route component={Landing} />
+    </Switch>
   );
 }

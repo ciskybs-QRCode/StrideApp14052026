@@ -1,17 +1,28 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ActivityIndicator, View } from "react-native";
+import { api } from "@/lib/api";
 
 export default function Index() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams<{ org?: string; school?: string; primary?: string; secondary?: string }>();
 
-  useEffect(() => {
-    if (isLoading) return;
+  const [sysStatus, setSysStatus] = useState<{ configured: boolean; userCount: number } | null>(null);
+  const [sysLoading, setSysLoading] = useState(true);
 
-    // Deep-link invite: ?org=stelle-nascenti (from QR scan or link click)
+  useEffect(() => {
+    api.systemStatus()
+      .then(s => setSysStatus(s))
+      .catch(() => setSysStatus({ configured: true, userCount: 1, orgName: null } as never))
+      .finally(() => setSysLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (isLoading || sysLoading) return;
+
+    // Deep-link invite: ?org=... (from QR scan or link click)
     if (params.org) {
       const qs = new URLSearchParams({
         org: params.org,
@@ -23,8 +34,17 @@ export default function Index() {
       return;
     }
 
+    // Pioneer: no users in system yet → first-boot wizard
+    if (!user && (sysStatus?.userCount ?? 1) === 0) {
+      router.replace("/pioneer" as never);
+      return;
+    }
+
     if (!user) {
       router.replace("/login");
+    } else if (user.role === "admin" && sysStatus?.configured === false) {
+      // Admin logged in but hasn't completed the setup wizard
+      router.replace("/pioneer" as never);
     } else if (user.role === "kiosk") {
       router.replace("/(kiosk)/" as never);
     } else if (user.role === "admin") {
@@ -36,7 +56,7 @@ export default function Index() {
     } else {
       router.replace("/(parent)/home");
     }
-  }, [user, isLoading, params.org]);
+  }, [user, isLoading, params.org, sysStatus, sysLoading]);
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1E3A8A" }}>

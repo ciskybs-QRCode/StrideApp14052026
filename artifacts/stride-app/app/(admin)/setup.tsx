@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Image,
@@ -97,6 +98,97 @@ const FONTS = ["Montserrat", "Open Sans", "Poppins", "Roboto", "Lato", "Inter"];
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "school";
+}
+
+// ── Invite Link Generator (self-contained card) ───────────────────────────────
+function InviteCard() {
+  const colors = useColors();
+  const { user } = useAuth();
+  const [generating, setGenerating] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const { url } = await api.generateInvite();
+      setInviteUrl(url);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not generate invite link. Ensure you are connected.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!inviteUrl) return;
+    if (Platform.OS === "web" && typeof navigator !== "undefined") {
+      navigator.clipboard?.writeText(inviteUrl).catch(() => {});
+    }
+    Alert.alert("Copied!", "Secure invite link copied to clipboard.");
+  };
+
+  const handleShare = () => {
+    if (!inviteUrl) return;
+    Share.share({ message: inviteUrl, title: "Join our school on Stride" });
+  };
+
+  if (!user || user.role !== "admin") return null;
+
+  return (
+    <View style={[{ backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 }}>
+        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name="link-outline" size={22} color="#B45309" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 15, fontWeight: "800", color: colors.primary }}>Secure Invite Link</Text>
+          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+            Generate a tokenised link (30-day expiry) for new members to register via the web portal.
+          </Text>
+        </View>
+      </View>
+
+      {!inviteUrl ? (
+        <Pressable
+          style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 13, opacity: pressed ? 0.85 : 1 }]}
+          onPress={handleGenerate}
+          disabled={generating}
+        >
+          {generating ? <ActivityIndicator color="#FFF" size="small" /> : <>
+            <Ionicons name="key-outline" size={18} color="#FFF" />
+            <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Generate Invite Link</Text>
+          </>}
+        </Pressable>
+      ) : (
+        <>
+          <View style={{ backgroundColor: "#F0F4FF", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#DBEAFE" }}>
+            <Text style={{ fontSize: 10, fontWeight: "700", color: "#1E3A8A", marginBottom: 4, letterSpacing: 0.8 }}>SECURE INVITE URL</Text>
+            <Text style={{ fontSize: 12, color: "#1E3A8A", fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }} numberOfLines={2}>
+              {inviteUrl}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <Pressable style={[{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#DBEAFE", borderRadius: 12, paddingVertical: 11 }]} onPress={handleCopy}>
+              <Ionicons name="copy-outline" size={16} color="#1E3A8A" />
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" }}>Copy</Text>
+            </Pressable>
+            <Pressable style={[{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 11 }]} onPress={handleShare}>
+              <Ionicons name="share-social-outline" size={16} color="#FFF" />
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFF" }}>Share</Text>
+            </Pressable>
+            <Pressable style={[{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#F9FAFB", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: "#E5E7EB" }]} onPress={() => setInviteUrl(null)}>
+              <Ionicons name="refresh-outline" size={16} color="#6B7280" />
+            </Pressable>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#FFFBEB", borderRadius: 10, padding: 10, marginTop: 12, borderWidth: 1, borderColor: "#FDE68A" }}>
+            <Ionicons name="time-outline" size={14} color="#B45309" />
+            <Text style={{ flex: 1, fontSize: 11, color: "#92400E" }}>This link expires in 30 days. New members who register via this link will require email verification before logging in.</Text>
+          </View>
+        </>
+      )}
+    </View>
+  );
 }
 
 export default function AdminSetup() {
@@ -638,6 +730,9 @@ export default function AdminSetup() {
             </>
           )}
         </View>
+
+        {/* ── Secure Invite Link Generator ── */}
+        <InviteCard />
 
         {/* ── SOS Emergency Button ── */}
         <Pressable

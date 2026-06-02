@@ -78,6 +78,13 @@ export default function LoginScreen() {
     } catch (e: unknown) {
       const err = e as Error;
       const msg = (err.message ?? "").toLowerCase();
+
+      // Web-registered account awaiting email verification
+      if (msg === "pending_activation" || msg.includes("pending_activation")) {
+        router.replace("/pending-activation" as never);
+        return;
+      }
+
       const isUnverified =
         msg.includes("not confirmed") ||
         msg.includes("email_not_confirmed") ||

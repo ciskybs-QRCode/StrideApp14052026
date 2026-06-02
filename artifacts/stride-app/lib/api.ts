@@ -262,7 +262,25 @@ export const api = {
   },
 
   register: (name: string, email: string, password: string, org_slug?: string) =>
-    request<{ token: string; user: ApiUser }>("POST", "/auth/register", { name, email, password, org_slug }),
+    request<{ token: string; user: ApiUser; isPioneer?: boolean }>("POST", "/auth/register", { name, email, password, org_slug }),
+
+  systemStatus: () =>
+    request<{ configured: boolean; userCount: number; orgName: string | null }>("GET", "/auth/system-status"),
+
+  generateInvite: () =>
+    request<{ token: string; url: string }>("POST", "/auth/invite", {}),
+
+  validateInvite: (token: string) =>
+    request<{ valid: boolean; orgId: number; orgName: string }>("GET", `/auth/invite/${token}`),
+
+  pioneerComplete: (data: {
+    schoolName: string;
+    registrationNumber?: string;
+    contactPhone?: string;
+    studios?: { name: string; capacity: number }[];
+    ageGroups?: string[];
+    skillLevels?: string[];
+  }) => request<{ configured: boolean }>("POST", "/org/configure", data),
 
   // Children
   getChildren: async (): Promise<ApiChild[]> =>

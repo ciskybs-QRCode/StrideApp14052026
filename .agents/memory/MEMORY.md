@@ -4,3 +4,5 @@
 - [Stride absence/substitution/finance](stride-absence-finance.md) — dual absence buttons, 5-min cascade, payroll ledger, Pay Now flow. Key isolation and pattern decisions.
 - [Stride legal gate](stride-legal-gate.md) — mandatory sequential signature gate with SHA-256 audit, IP/device capture, options, checkbox, gold-bordered pad.
 - [Stride kiosk & sessions](stride-kiosk-sessions.md) — dual QR entity dispatch, operator clock, roll call roster, no-show disarm.
+- [Stride curly-quote parser bug](stride-curly-quotes.md) — Babel/Metro and Vite treat Unicode curly quotes U+201C/U+201D as string delimiters in JSX; always use ASCII alternatives or escape codes.
+- [Stride Global System Architecture](stride-pioneer.md) — Pioneer wizard, invite loop, pending_activation flow, system-status routing fully implemented.
