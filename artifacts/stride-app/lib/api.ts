@@ -547,6 +547,12 @@ export const api = {
   deleteCourseAvailability: (id: number) =>
     request<void>("DELETE", `/course-availability/${id}`),
 
+  // ── Stripe Connect ───────────────────────────────────────────────────────
+  stripeOnboarding: () =>
+    request<{ url: string; connectId: string }>("POST", "/finance/stripe-onboarding", {}),
+  stripeStatus: () =>
+    request<{ configured: boolean; connectId: string | null }>("GET", "/finance/stripe-status"),
+
   // ── Scheduled Courses (Admin-created targeted recurring courses) ─────────────
   getScheduledCourses: () =>
     request<ApiScheduledCourse[]>("GET", "/scheduled-courses"),

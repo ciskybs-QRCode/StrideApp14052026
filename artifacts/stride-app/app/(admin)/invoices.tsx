@@ -2,8 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Animated,
   Platform,
   Pressable,
   ScrollView,
@@ -99,8 +101,12 @@ export default function AdminInvoicesScreen() {
 
   const [invoices, setInvoices]       = useState<SubmittedInvoice[]>([]);
   const [confirmPay, setConfirmPay]   = useState<string | null>(null);
+  const [payingId, setPayingId]       = useState<string | null>(null); // per-invoice loading
   const [newInvoiceBanner, setNewInvoiceBanner] = useState<InvoiceSubmittedPayload | null>(null);
   const [paidBanner, setPaidBanner]   = useState<string | null>(null); // operatorName
+
+  // Animated values for card-removal (keyed by invoice id)
+  const fadeAnims = useRef<Record<string, Animated.Value>>({});
 
   // ── Load invoices ──────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -154,18 +160,23 @@ export default function AdminInvoicesScreen() {
     return () => clearInterval(id);
   }, [load]));
 
+  // ── Ensure animated value exists for an invoice id ────────────────────────
+  const getFadeAnim = useCallback((id: string) => {
+    if (!fadeAnims.current[id]) {
+      fadeAnims.current[id] = new Animated.Value(1);
+    }
+    return fadeAnims.current[id];
+  }, []);
+
   // ── Mark as paid (Pay Now) ─────────────────────────────────────────────────
   const markPaid = async (inv: SubmittedInvoice) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const update = (list: SubmittedInvoice[]) =>
-      list.map(i => i.id === inv.id ? { ...i, status: "paid" as const } : i);
-
-    setInvoices(update(invoices));
     setConfirmPay(null);
+    setPayingId(inv.id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Fire POST /api/finance/execute-payout (best-effort)
+    // Fire POST /api/finance/execute-payout
     const tok = await getToken().catch(() => null);
-    fetch("/api/finance/execute-payout", {
+    await fetch("/api/finance/execute-payout", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
       body: JSON.stringify({
@@ -177,13 +188,25 @@ export default function AdminInvoicesScreen() {
       }),
     }).catch(() => { /* best-effort — offline graceful */ });
 
-    // Persist
+    setPayingId(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    const markAsPaid = (list: SubmittedInvoice[]) =>
+      list.map(i => i.id === inv.id ? { ...i, status: "paid" as const } : i);
+
+    // Persist immediately
     try {
       const raw = await AsyncStorage.getItem("submitted_invoices");
       if (raw) {
-        await AsyncStorage.setItem("submitted_invoices", JSON.stringify(update(JSON.parse(raw))));
+        await AsyncStorage.setItem("submitted_invoices", JSON.stringify(markAsPaid(JSON.parse(raw))));
       }
     } catch { /* local only */ }
+
+    // Animate card out, then update state
+    const anim = getFadeAnim(inv.id);
+    Animated.timing(anim, { toValue: 0, duration: 320, useNativeDriver: true }).start(() => {
+      setInvoices(prev => markAsPaid(prev));
+    });
 
     // Write operator AsyncStorage notification (offline-safe fallback)
     const operatorNotif: PaymentConfirmedPayload = {
@@ -262,10 +285,12 @@ export default function AdminInvoicesScreen() {
           </View>
         ) : (
           pending.map(inv => {
-            const meta    = STATUS_META[inv.status];
-            const isPaying = confirmPay === inv.id;
+            const meta       = STATUS_META[inv.status];
+            const isPaying   = confirmPay === inv.id;
+            const isLoading  = payingId === inv.id;
+            const fadeAnim   = getFadeAnim(inv.id);
             return (
-              <View key={inv.id} style={[styles.invoiceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Animated.View key={inv.id} style={[styles.invoiceCard, { backgroundColor: colors.card, borderColor: colors.border, opacity: fadeAnim }]}>
                 <View style={styles.cardTop}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.operatorName, { color: colors.foreground }]}>{inv.operatorName}</Text>
@@ -281,18 +306,23 @@ export default function AdminInvoicesScreen() {
                   </View>
                 </View>
 
-                {isPaying ? (
+                {isLoading ? (
+                  <View style={[styles.payBtn, { backgroundColor: "#FBBF24", opacity: 0.85 }]}>
+                    <ActivityIndicator size="small" color="#1E3A8A" />
+                    <Text style={[styles.payBtnText, { color: "#1E3A8A" }]}>Processing…</Text>
+                  </View>
+                ) : isPaying ? (
                   <View style={styles.confirmRow}>
                     <Text style={[styles.confirmMsg, { color: colors.foreground }]}>
-                      Mark €{(inv.totalCents / 100).toFixed(2)} as paid to {inv.operatorName}? The operator will receive a payment confirmation.
+                      Send €{(inv.totalCents / 100).toFixed(2)} to {inv.operatorName} via Stripe? This action cannot be undone.
                     </Text>
                     <View style={styles.confirmBtns}>
                       <Pressable style={[styles.confirmBtn, { backgroundColor: colors.muted }]} onPress={() => setConfirmPay(null)}>
                         <Text style={[styles.confirmBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                       </Pressable>
                       <Pressable style={[styles.confirmBtn, { backgroundColor: "#059669" }]} onPress={() => markPaid(inv)}>
-                        <Ionicons name="checkmark" size={14} color="#FFF" />
-                        <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Confirm Paid</Text>
+                        <Ionicons name="flash" size={14} color="#FFF" />
+                        <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Confirm Pay</Text>
                       </Pressable>
                     </View>
                   </View>
@@ -300,12 +330,13 @@ export default function AdminInvoicesScreen() {
                   <Pressable
                     style={[styles.payBtn, { backgroundColor: "#FBBF24" }]}
                     onPress={() => { setConfirmPay(inv.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+                    disabled={!!payingId}
                   >
                     <Ionicons name="flash" size={15} color="#1E3A8A" />
                     <Text style={[styles.payBtnText, { color: "#1E3A8A" }]}>Pay Now</Text>
                   </Pressable>
                 )}
-              </View>
+              </Animated.View>
             );
           })
         )}

@@ -52,5 +52,18 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE IF EXISTS organizations
     ADD COLUMN IF NOT EXISTS birthday_message TEXT;
   `).catch(() => {});
+
+  // Stripe Connect: add stripe_connect_id to users table
+  await pool.query(`
+    ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS stripe_connect_id TEXT;
+  `).catch(() => {});
+
+  // Stripe Connect: add stripe_transfer_id to reimbursements table
+  await pool.query(`
+    ALTER TABLE IF EXISTS reimbursements
+    ADD COLUMN IF NOT EXISTS stripe_transfer_id TEXT;
+  `).catch(() => {});
+
   initialized = true;
 }

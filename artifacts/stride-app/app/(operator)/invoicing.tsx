@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -394,6 +395,10 @@ export default function OperatorInvoicing() {
   const [submitError, setSubmitError]             = useState<string | null>(null);
   const [generateError, setGenerateError]         = useState<string | null>(null);
 
+  // ── Stripe Connect payout settings ──────────────────────────────────────
+  const [stripeConfigured, setStripeConfigured]   = useState<boolean | null>(null); // null = loading
+  const [stripeLoading, setStripeLoading]         = useState(false);
+
   // ── Load persisted settings ──────────────────────────────────────────────
   useEffect(() => {
     AsyncStorage.getItem(HEADER_STORAGE_KEY).then(raw => {
@@ -406,7 +411,31 @@ export default function OperatorInvoicing() {
       const n = parseInt(v ?? "", 10);
       if (!isNaN(n) && n > 0) setCustomDays(n);
     });
+
+    // Check Stripe Connect status
+    api.stripeStatus()
+      .then(s => setStripeConfigured(s.configured))
+      .catch(() => setStripeConfigured(false));
   }, []);
+
+  const handleConfigureBankAccount = async () => {
+    setStripeLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const { url } = await api.stripeOnboarding();
+      await Linking.openURL(url);
+      // Refresh status after returning
+      setTimeout(() => {
+        api.stripeStatus()
+          .then(s => setStripeConfigured(s.configured))
+          .catch(() => {});
+      }, 3000);
+    } catch (err) {
+      // Silently ignore — stripe_not_configured in non-production
+    } finally {
+      setStripeLoading(false);
+    }
+  };
 
   const saveHeader = useCallback(async (h: InvoiceHeader) => {
     setInvoiceHeader(h);
@@ -928,6 +957,58 @@ export default function OperatorInvoicing() {
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
         </Pressable>
+
+        {/* ── Payout Settings (Stripe Connect) ── */}
+        <View style={{ marginTop: 8, marginBottom: 8 }}>
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 10 }]}>Payout Settings</Text>
+          {stripeConfigured === true ? (
+            /* State 2: Configured */
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#A7F3D0" }}>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="checkmark-circle" size={24} color="#059669" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#065F46" }}>🟢 Payouts Active</Text>
+                <Text style={{ fontSize: 12, color: "#059669", marginTop: 2 }}>Stripe Connected — direct transfers enabled</Text>
+              </View>
+            </View>
+          ) : stripeConfigured === null ? (
+            /* Loading */
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+              <ActivityIndicator size="small" color="#D4AF37" />
+              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Checking payout status…</Text>
+            </View>
+          ) : (
+            /* State 1: Not configured */
+            <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#FDE68A", gap: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", marginTop: 2 }}>
+                  <Ionicons name="card-outline" size={22} color="#D97706" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>Configure Bank Account</Text>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 3, lineHeight: 17 }}>
+                    Set up direct payouts via Stripe. Your earnings are transferred instantly once Admin approves.
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                onPress={handleConfigureBankAccount}
+                disabled={stripeLoading}
+                style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#FBBF24", borderRadius: 12, paddingVertical: 13, opacity: stripeLoading ? 0.7 : 1 }}
+              >
+                {stripeLoading ? (
+                  <ActivityIndicator size="small" color="#1E3A8A" />
+                ) : (
+                  <Ionicons name="flash" size={16} color="#1E3A8A" />
+                )}
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E3A8A" }}>
+                  {stripeLoading ? "Opening Secure Setup…" : "Configure Bank Account"}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
 
         {/* ── Substitution Ledger ── */}
         {alerts.length > 0 && (

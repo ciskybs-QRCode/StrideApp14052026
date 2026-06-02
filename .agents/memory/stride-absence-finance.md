@@ -26,6 +26,18 @@ description: Dual absence buttons, substitution cascade engine, payroll ledger, 
 
 **Why:** No `payroll_transactions` table exists in DB; ledger is driven by SubstitutionContext state (AsyncStorage-persisted).
 
+## Stripe Connect Integration
+- `stripe_connect_id` added to `users` table via `pg.ts` safe ALTER (idempotent).
+- `stripe_transfer_id` added to `reimbursements` table the same way.
+- `POST /api/finance/stripe-onboarding` — creates Stripe Express account if absent, saves `stripe_connect_id`, returns hosted onboarding URL.
+- `GET /api/finance/stripe-status` — returns `{ configured: boolean, connectId }` for the requesting user.
+- `POST /api/finance/execute-payout` — queries recipient's `stripe_connect_id`; if present triggers `stripe.transfers.create`; records `stripe_transfer_id`; always falls back gracefully (skips transfer, logs warn) if not configured.
+- Stripe SDK loaded via `require("stripe")` (dynamic, avoids bundling issues when key absent); same pattern as existing checkout.ts.
+- Operator invoicing screen: `stripeStatus()` called on mount; State 1 = Gold "Configure Bank Account" Pressable → opens Stripe URL via `expo-linking`; State 2 = 🟢 Payouts Active badge.
+- Admin invoices screen: `payingId` state + `Animated.Value` per card for gold spinner while processing + fade-out card removal on success (320ms).
+
+**Why:** Spec requires real money movement via Stripe transfers, not just status updates.
+
 ## Admin Pay Now (Part 4)
 - `markPaid` in `invoices.tsx` now fires `POST /api/finance/execute-payout` (best-effort fetch, swallows errors).
 - Auth token fetched via `getToken()` from `@/lib/api` (not from user object — user has no `.token` field).
