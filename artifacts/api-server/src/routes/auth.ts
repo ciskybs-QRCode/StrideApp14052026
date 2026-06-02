@@ -212,6 +212,16 @@ router.post("/auth/register", async (req, res) => {
         subscription_status: "trialing",
       }).eq("id", orgId);
     } catch { /* non-critical — trial will default via DB column */ }
+
+    // Fire platform event so super-admin notification feed picks it up
+    try {
+      await supabase.from("platform_events").insert({
+        event_type: "new_tenant_registered",
+        title: "New school registered",
+        description: `${resolvedName} completed pioneer registration`,
+        payload: { orgId, adminName: resolvedName, adminEmail: email.trim().toLowerCase() },
+      });
+    } catch { /* non-critical */ }
   }
 
   // Pending activation path

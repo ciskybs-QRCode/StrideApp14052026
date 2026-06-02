@@ -1,0 +1,22 @@
+🚨 MASTER SYSTEM UPGRADE: SECURE SUPER-ADMIN PORTAL & TENANT ONBOARDING NOTIFIER 🚨
+Role: Expert Full-Stack Multi-Tenant SaaS Engineer.
+Target Layouts: Hidden Super-Admin Routing (app/(superadmin)/), System Background Webhooks, and Tenant Notification Triggers.
+UI/UX Rules: Primary Navy Blue and Accent Gold theme. High professional monitoring density. STRICTLY ZERO screen overflows. All tenant directory metrics must use native bounded vertical scrolling.
+🚨 GLOBAL STABILITY DIRECTIVE (MANDATORY) 🚨 DO NOT expose this routing directory to users where role !== 'super_admin'. Do not disrupt the standard 30-day trial creation countdown or active client kiosk states.
+Please implement the hidden Super-Admin infrastructure:
+PART 1: THE HIDDEN ROUTE & IDENTITY ISOLATION
+Create a protected layout directory: app/(superadmin)/dashboard.tsx.
+Update the application's main navigation layout. If and only if the logged-in user’s profile contains role === 'super_admin', render an exclusive, high-visibility Gold settings row or tab icon labeled "Platform Control Panel".
+If any other user role attempts to deep-link or access this route, forcefully redirect them to their respective home dashboard with a silent security rejection log.
+PART 2: SUPER-ADMIN PLATFORM DIRECTORY (THE COMMAND CENTER)
+Inside this hidden screen, render a high-density, clean overview of the entire SaaS platform:
+Global Metrics Summary Card: Display total active schools/tenants, total active global members, and a live counter of systems currently in 'trialing' vs 'active' status.
+The Tenant Master List: Render a scrollable card index of every registered organization in the database. Each card must show:
+Association Name, Country, and localized Currency (AUD/EUR).
+Current Subscription Status ('trialing', 'active', 'expired').
+Days remaining before lockout payload triggers.
+The Discretionary Override Interface: Clicking any school card opens a bounded bottom-sheet modal. Provide an intuitive calendar/date-picker and a Gold confirmation button: "Override / Extend Trial Expiration". This writes directly to that association's trial_ends_at timestamp.
+PART 3: REAL-TIME SIGN-UP NOTIFICATION TRIGGER
+Create a Supabase Database Webhook or backend database trigger on the associations table listening for INSERT actions.
+The Action: Whenever a new school completes the registration wizard, the backend must instantly dispatch an automated high-priority system email and/or target a direct push notification to the user ID verified as the super_admin, containing the name and metadata of the newly registered business.
+Output Requirement: Code the conditional navigation gate restricting the super-admin panel, build the master tenant monitoring overview list with dynamic trial override hooks, implement the background sign-up notifier pipeline, and verify zero layout text-clipping.

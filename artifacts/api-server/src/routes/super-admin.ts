@@ -11,6 +11,47 @@ const _url = process.env["SUPABASE_URL"] ?? "";
 const _key = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_KEY"] ?? "";
 const sa = createClient(_url, _key);
 
+// ── GET /super-admin/metrics ───────────────────────────────────────────────────
+router.get(
+  "/super-admin/metrics",
+  requireAuth,
+  requireRole("super_admin"),
+  async (_req, res) => {
+    const [orgsResult, membersResult, eventsResult] = await Promise.all([
+      sa.from("organizations").select("id, subscription_status, trial_ends_at"),
+      sa.from("members").select("*", { count: "exact", head: true }),
+      sa.from("platform_events")
+        .select("id, event_type, title, description, payload, created_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+
+    const orgs = (orgsResult.data ?? []) as Array<{
+      id: number;
+      subscription_status?: string;
+      trial_ends_at?: string;
+    }>;
+    const now = new Date();
+    const totalOrgs    = orgs.length;
+    const totalMembers = membersResult.count ?? 0;
+    const activeCount  = orgs.filter(o => o.subscription_status === "active").length;
+    const expiredCount = orgs.filter(o =>
+      o.subscription_status === "expired" ||
+      (o.subscription_status !== "active" && !!o.trial_ends_at && new Date(o.trial_ends_at) <= now),
+    ).length;
+    const trialingCount = Math.max(0, totalOrgs - activeCount - expiredCount);
+
+    res.json({
+      totalOrgs,
+      totalMembers,
+      activeCount,
+      trialingCount,
+      expiredCount,
+      recentEvents: eventsResult.data ?? [],
+    });
+  },
+);
+
 // ── GET /super-admin/associations ─────────────────────────────────────────────
 router.get(
   "/super-admin/associations",
@@ -21,7 +62,8 @@ router.get(
       .from("organizations")
       .select(
         "id, name, currency, country, legal_framework, tenant_type, " +
-        "stripe_connect_account_id, trial_started_at, trial_ends_at, is_trial_extended",
+        "stripe_connect_account_id, trial_started_at, trial_ends_at, is_trial_extended, " +
+        "subscription_status, cost_per_seat_cents",
       )
       .order("id");
     if (error) { res.status(500).json({ error: error.message }); return; }
@@ -65,6 +107,17 @@ router.post(
 
     if (error) { res.status(500).json({ error: error.message }); return; }
     invalidateTrialCache(orgId);
+
+    // Log platform event
+    try {
+      await sa.from("platform_events").insert({
+        event_type: "trial_extended",
+        title: `Trial extended: ${(data as { name?: string }).name ?? "Unknown school"}`,
+        description: `Extended by ${months} month(s). New expiry: ${new Date(newEnd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`,
+        payload: { orgId, months, newEnd },
+      });
+    } catch { /* non-critical */ }
+
     res.json(data);
   },
 );

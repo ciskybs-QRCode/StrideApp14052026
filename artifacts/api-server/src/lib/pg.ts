@@ -160,5 +160,17 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS stripe_price_id_per_seat TEXT;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS cost_per_seat_cents INTEGER DEFAULT 150;`).catch(() => {});
 
+  // Platform-level event log — super-admin notification feed
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS platform_events (
+      id          SERIAL PRIMARY KEY,
+      event_type  TEXT NOT NULL,
+      title       TEXT NOT NULL,
+      description TEXT,
+      payload     JSONB DEFAULT '{}',
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `).catch(() => {});
+
   initialized = true;
 }

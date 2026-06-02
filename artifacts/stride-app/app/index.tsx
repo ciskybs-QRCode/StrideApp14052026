@@ -43,7 +43,7 @@ export default function Index() {
     if (!user) {
       router.replace("/login");
     } else if (user.role === "super_admin") {
-      router.replace("/(super_admin)/associations" as never);
+      router.replace("/(super_admin)/dashboard" as never);
     } else if (
       user.role === "admin" &&
       sysStatus?.trialExpired &&

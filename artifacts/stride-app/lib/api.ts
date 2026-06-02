@@ -1085,7 +1085,31 @@ export type AssociationRecord = {
   trial_started_at?: string;
   trial_ends_at?: string;
   is_trial_extended?: boolean;
+  subscription_status?: string;
+  cost_per_seat_cents?: number;
 };
+
+export type PlatformEvent = {
+  id: number;
+  event_type: string;
+  title: string;
+  description: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+};
+
+export type PlatformMetrics = {
+  totalOrgs: number;
+  totalMembers: number;
+  activeCount: number;
+  trialingCount: number;
+  expiredCount: number;
+  recentEvents: PlatformEvent[];
+};
+
+export async function getPlatformMetrics(): Promise<PlatformMetrics> {
+  return request<PlatformMetrics>("GET", "/super-admin/metrics");
+}
 
 export async function listAssociations(): Promise<AssociationRecord[]> {
   return request<AssociationRecord[]>("GET", "/super-admin/associations");
