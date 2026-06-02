@@ -76,6 +76,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="invoices"        options={{ href: null }} />
       <Tabs.Screen name="reimbursements"  options={{ href: null }} />
       <Tabs.Screen name="billing"         options={{ href: null }} />
+      <Tabs.Screen name="smart-roster"    options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <RoleSwitcher />

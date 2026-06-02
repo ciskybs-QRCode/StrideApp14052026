@@ -347,6 +347,28 @@ export default function AdminHome() {
           <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
         </Pressable>
 
+        {/* ── SMART ROSTERING ENTRY CARD ── */}
+        <Pressable
+          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#0F2457", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 20 }]}
+          onPress={() => { router.push("/(admin)/smart-roster"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        >
+          <View style={styles.analyticsCardLeft}>
+            <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(251,191,36,0.2)" }]}>
+              <Ionicons name="sparkles" size={24} color="#FBBF24" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                <Text style={[styles.analyticsCardTitle, { color: "#FFFFFF" }]}>Smart Rostering</Text>
+                <View style={{ backgroundColor: "rgba(251,191,36,0.2)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
+                  <Text style={{ color: "#FBBF24", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>AI</Text>
+                </View>
+              </View>
+              <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.55)" }]}>Find best substitute · Match score · Auto-notify</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+        </Pressable>
+
         {/* ── HERO KPI BANNER ── */}
         <View style={[styles.heroBanner, { backgroundColor: colors.primary }]}>
           <View style={styles.heroMain}>

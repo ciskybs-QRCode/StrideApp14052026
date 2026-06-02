@@ -1167,6 +1167,34 @@ export async function updateAssociation(
   return request<AssociationRecord>("PATCH", `/super-admin/associations/${id}`, data);
 }
 
+// ── Predictive Substitutes ────────────────────────────────────────────────────
+
+export interface PredictiveSubstitute {
+  id: string;
+  name: string;
+  email: string;
+  matchPercent: number;
+  availabilityScore: number;
+  courseMatchScore: number;
+  costScore: number;
+  reasons: string[];
+  hourlyRateCents: number | null;
+}
+
+export async function getPredictiveSubstitutes(params: {
+  missing_operator_id: string;
+  class_datetime: string;
+  discipline_id?: string;
+  org_id?: string;
+}): Promise<PredictiveSubstitute[]> {
+  const q = new URLSearchParams();
+  q.set("missing_operator_id", params.missing_operator_id);
+  q.set("class_datetime", params.class_datetime);
+  if (params.discipline_id) q.set("discipline_id", params.discipline_id);
+  if (params.org_id) q.set("org_id", params.org_id);
+  return request<PredictiveSubstitute[]>("GET", `/finance/predictive-substitutes?${q.toString()}`);
+}
+
 // ── Billing ───────────────────────────────────────────────────────────────────
 
 export type BillingStatus = {

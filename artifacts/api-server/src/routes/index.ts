@@ -35,6 +35,7 @@ import adminKioskRouter from "./admin-kiosk.js";
 import superAdminRouter from "./super-admin.js";
 import billingRouter from "./billing.js";
 import absencesRouter from "./absences.js";
+import predictiveSubstitutesRouter from "./predictive-substitutes.js";
 
 const router: IRouter = Router();
 
@@ -74,5 +75,6 @@ router.use(adminKioskRouter);
 router.use(superAdminRouter);
 router.use(billingRouter);
 router.use(absencesRouter);
+router.use(predictiveSubstitutesRouter);
 
 export default router;
