@@ -1043,3 +1043,31 @@ export interface ApiScheduledCourse {
     user?: { id: number; name: string };
   };
 }
+
+// ── Kiosk Provisioning ────────────────────────────────────────────────────────
+
+export type KioskAccount = {
+  id: number;
+  name: string;
+  email: string;
+  generatedEmail?: string;
+  created_at: string;
+};
+
+export async function listKiosks(): Promise<KioskAccount[]> {
+  return request<KioskAccount[]>("GET", "/admin/kiosks");
+}
+
+export async function createKiosk(
+  deviceName: string,
+  password: string,
+): Promise<KioskAccount & { generatedEmail: string }> {
+  return request<KioskAccount & { generatedEmail: string }>("POST", "/admin/create-kiosk", {
+    deviceName,
+    password,
+  });
+}
+
+export async function revokeKiosk(userId: number): Promise<void> {
+  return request<void>("DELETE", `/admin/revoke-kiosk/${userId}`);
+}

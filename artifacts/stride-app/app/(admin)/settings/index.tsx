@@ -151,6 +151,21 @@ export default function SettingsIndex() {
           <Ionicons name="chevron-forward" size={18} color="#92400E" />
         </Pressable>
 
+        {/* ── TERMINAL KIOSKS ── */}
+        <Pressable
+          style={({ pressed }) => [styles.featCard, styles.featCardTerminal, { opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => navigate("terminals")}
+        >
+          <View style={styles.featIconTerminal}>
+            <Ionicons name="tablet-landscape-outline" size={22} color="#FBBF24" />
+          </View>
+          <View style={styles.featText}>
+            <Text style={styles.featTitleNavy} numberOfLines={1}>Terminal Kiosks</Text>
+            <Text style={styles.featDescNavy} numberOfLines={1}>Provision and revoke check-in tablets</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
+        </Pressable>
+
         {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
 
@@ -278,6 +293,9 @@ const styles = StyleSheet.create({
   featIconAmber: { width: 46, height: 46, borderRadius: 13, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   featTitleAmber:{ color: "#78350F", fontSize: 15, fontWeight: "700", marginBottom: 2 },
   featDescAmber: { color: "#92400E", fontSize: 12 },
+  // Terminal variant (Kiosks)
+  featCardTerminal: { backgroundColor: "#0F2660", borderWidth: 1.5, borderColor: "#FBBF24" },
+  featIconTerminal: { width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(251,191,36,0.18)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
 
   featText: { flex: 1, minWidth: 0 },
 

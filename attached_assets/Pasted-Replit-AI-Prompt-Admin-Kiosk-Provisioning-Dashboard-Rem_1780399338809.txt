@@ -1,0 +1,28 @@
+Replit AI Prompt: Admin Kiosk Provisioning Dashboard & Remote Access Revocation Engine
+Role: Expert Full-Stack Developer (React Native Expo Router, Node.js Express, and Supabase).
+Target Module: Admin Terminals Settings Dashboard (app/(admin)/settings/terminals/) and Secure Provisioning Backend.
+Branding & UI Rules: Strict Navy Blue and Gold design language. Clean input forms and structural list rows wrapped inside an explicit responsive <ScrollView>. All modal layouts and alert components MUST stay 100% within device physical screen boundaries (Strictly Zero Layout Overflows).
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨 DO NOT break or alter standard user authentication states, client session persistent tokens, or active attendance logs. Isolate this upgrade explicitly to the Admin terminal management view and a dedicated admin-scoped backend router.
+Please implement the following administrative provisioning feature:
+PART 1: SECURE BACKEND USER PROVISIONING ENDPOINT
+Create a secure Express API endpoint: POST /api/admin/create-kiosk.
+The Challenge: In standard client-side auth, registering an account automatically logs the current user out. To prevent logging the Admin out of their app session, this endpoint must use the Supabase Service Role Admin Client (supabase.auth.admin.createUser) on the backend.
+Payload Requirements: Expects deviceName and password.
+Logic:
+Automatically format a clean, unique internal email string based on the device name (e.g., kiosk.${deviceName.toLowerCase().replace(/\s+/g, '')}@association-internal.com).
+Create the user authentication record with email_confirm: true (bypassing public verification loops).
+Write a row to the database profiles table setting the field role strictly to 'kiosk' and mapping the display_name to the chosen deviceName.
+PART 2: ADMIN TERMINAL MANAGEMENT DASHBOARD (UI/UX)
+Target View: app/(admin)/settings/terminals/index.tsx
+The Terminal List View: Display a scannable summary list of all currently active Kiosk accounts configured in the association database. Each row card must feature:
+Device Name & Auto-Generated Internal Email String.
+Creation Date Stamp.
+An Emergency Red/Gold Action Button: "Revoke Access".
+The Revocation Workflow: Clicking "Revoke Access" triggers a native verification alert modal. Upon final confirmation, call a backend route DELETE /api/admin/revoke-kiosk that uses the Supabase Admin API to completely delete the auth user instance and wipe the session, instantly lock-screening that specific physical tablet if it is ever lost or stolen.
+PART 3: THE "ADD NEW KIOSK" MANIFEST WIZARD
+On the same Admin Terminal Dashboard, place a prominent Gold action button labeled "+ Provision New Kiosk".
+Clicking it opens a beautifully spaced modal form inside the display boundaries:
+Input 1: Text field for Terminal/Device Name (e.g., "Main Entrance iPad", "Studio B Screen").
+Input 2: Secure password field for the terminal.
+The Action: Clicking "Generate Kiosk Account" triggers a Gold loading spinner, fires the backend endpoint, closes the modal smoothly upon a 200 OK response, and updates the active list in real-time. It must display a success card showing the exact generated credentials to be typed into the Kiosk device.
+Output Requirement: Code the backend Express service-role integration endpoints for automated provisioning/deletion, build the frontend Admin layout terminal manager view with responsive input forms, ensure perfect screen border containment, and list the altered file structural tree. 

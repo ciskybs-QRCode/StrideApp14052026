@@ -31,6 +31,7 @@ import courseAvailabilityRouter from "./course-availability.js";
 import financeRouter from "./finance.js";
 import legalRouter from "./legal.js";
 import operatorClockRouter from "./operator-clock.js";
+import adminKioskRouter from "./admin-kiosk.js";
 
 const router: IRouter = Router();
 
@@ -66,5 +67,6 @@ router.use(courseAvailabilityRouter);
 router.use(financeRouter);
 router.use(legalRouter);
 router.use(operatorClockRouter);
+router.use(adminKioskRouter);
 
 export default router;
