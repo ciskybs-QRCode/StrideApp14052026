@@ -5,6 +5,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -30,6 +31,18 @@ import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { api } from "@/lib/api";
 
 const PROFILE_EXTRA_KEY = "stride_profile_extra";
+
+interface CertResult {
+  record_id: number | null;
+  student_full_name: string;
+  expiration_date: string | null;
+  doctor_name: string;
+  certificate_type: "agonistico" | "non-agonistico" | "other";
+  classification_confidence: number;
+  potential_anomaly_detected: boolean;
+  anomaly_reasons: string | null;
+  status: "AI-Verified" | "Pending Admin Review";
+}
 
 interface ProfileExtra {
   firstName: string;
@@ -62,6 +75,10 @@ export default function DocumentsScreen() {
   const [showSign, setShowSign] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [expandedSection, setExpandedSection] = useState<"new" | "archive" | "consent" | null>(null);
+
+  // Medical certificate AI upload
+  const [certAnalyzing, setCertAnalyzing] = useState(false);
+  const [certResult, setCertResult] = useState<CertResult | null>(null);
 
   // Extra profile state (phone, address, etc.)
   const [profileExtra, setProfileExtra] = useState<ProfileExtra>(EMPTY_EXTRA);
@@ -105,6 +122,47 @@ export default function DocumentsScreen() {
   const handlePreview = async (doc: typeof documents[0]) => {
     if (doc.fileUrl) {
       await WebBrowser.openBrowserAsync(doc.fileUrl);
+    }
+  };
+
+  const handleUploadCertificate = async () => {
+    if (Platform.OS !== "web") {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Please allow access to your photo library to upload a certificate.");
+        return;
+      }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: false,
+      quality: 0.85,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    if (!asset.base64) {
+      Alert.alert("Error", "Could not read the image. Please try again.");
+      return;
+    }
+    const mimeType = asset.mimeType ?? "image/jpeg";
+    setCertAnalyzing(true);
+    setCertResult(null);
+    try {
+      const data = await api.analyzeMedicalCertificate({
+        image_base64: asset.base64,
+        mime_type: mimeType,
+      });
+      setCertResult(data);
+      Haptics.notificationAsync(
+        data.status === "AI-Verified"
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning
+      );
+    } catch {
+      Alert.alert("Analysis failed", "Could not process the certificate. Please try again or submit manually.");
+    } finally {
+      setCertAnalyzing(false);
     }
   };
 
@@ -296,6 +354,75 @@ export default function DocumentsScreen() {
               )}
               {newDocs.length === 0 && pendingDocs.length === 0 && (
                 <Text style={[styles.emptyTileText, { color: colors.mutedForeground }]}>No new documents</Text>
+              )}
+
+              {/* ── Upload Certificate ── */}
+              <View style={[styles.certDivider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.subSectionLabel, { color: colors.primary, marginTop: 8 }]}>Upload Certificate</Text>
+
+              {certAnalyzing ? (
+                <View style={styles.certAnalyzingBox}>
+                  <ActivityIndicator size="small" color="#D4AF37" />
+                  <Text style={[styles.certAnalyzingText, { color: colors.mutedForeground }]}>
+                    AI processing your document securely...
+                  </Text>
+                </View>
+              ) : certResult ? (
+                <View style={[styles.certResultCard, { backgroundColor: certResult.status === "AI-Verified" ? "#ECFDF5" : "#FEF3C7", borderColor: certResult.status === "AI-Verified" ? "#6EE7B7" : "#FCD34D" }]}>
+                  <View style={styles.certResultHeader}>
+                    <Ionicons
+                      name={certResult.status === "AI-Verified" ? "checkmark-circle" : "alert-circle"}
+                      size={20}
+                      color={certResult.status === "AI-Verified" ? "#059669" : "#D97706"}
+                    />
+                    <Text style={[styles.certResultStatus, { color: certResult.status === "AI-Verified" ? "#059669" : "#D97706" }]}>
+                      {certResult.status}
+                    </Text>
+                    <Text style={[styles.certResultConfidence, { color: colors.mutedForeground }]}>
+                      {Math.round(certResult.classification_confidence * 100)}% confidence
+                    </Text>
+                  </View>
+                  <View style={styles.certResultRow}>
+                    <Text style={[styles.certResultLabel, { color: colors.mutedForeground }]}>Name</Text>
+                    <Text style={[styles.certResultValue, { color: colors.foreground }]} numberOfLines={1}>{certResult.student_full_name || "—"}</Text>
+                  </View>
+                  <View style={styles.certResultRow}>
+                    <Text style={[styles.certResultLabel, { color: colors.mutedForeground }]}>Type</Text>
+                    <Text style={[styles.certResultValue, { color: colors.foreground }]}>{certResult.certificate_type}</Text>
+                  </View>
+                  <View style={styles.certResultRow}>
+                    <Text style={[styles.certResultLabel, { color: colors.mutedForeground }]}>Expires</Text>
+                    <Text style={[styles.certResultValue, { color: colors.foreground }]}>{certResult.expiration_date ?? "—"}</Text>
+                  </View>
+                  <View style={styles.certResultRow}>
+                    <Text style={[styles.certResultLabel, { color: colors.mutedForeground }]}>Doctor</Text>
+                    <Text style={[styles.certResultValue, { color: colors.foreground }]} numberOfLines={1}>{certResult.doctor_name || "—"}</Text>
+                  </View>
+                  {certResult.anomaly_reasons ? (
+                    <View style={[styles.certAnomalyBox, { backgroundColor: "#FEF3C7" }]}>
+                      <Ionicons name="warning-outline" size={14} color="#D97706" />
+                      <Text style={styles.certAnomalyText} numberOfLines={3}>{certResult.anomaly_reasons}</Text>
+                    </View>
+                  ) : null}
+                  <Pressable onPress={() => setCertResult(null)} style={[styles.certUploadAgainBtn, { borderColor: colors.border }]}>
+                    <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
+                    <Text style={[styles.certUploadAgainText, { color: colors.primary }]}>Upload another</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  style={[styles.certUploadBtn, { borderColor: colors.primary + "33", backgroundColor: colors.background }]}
+                  onPress={handleUploadCertificate}
+                >
+                  <View style={[styles.certUploadIconBox, { backgroundColor: "#EFF6FF" }]}>
+                    <Ionicons name="cloud-upload-outline" size={20} color="#1E3A8A" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.certUploadBtnTitle, { color: colors.foreground }]}>Upload Medical Certificate</Text>
+                    <Text style={[styles.certUploadBtnSub, { color: colors.mutedForeground }]}>AI reads expiry, doctor &amp; type instantly</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                </Pressable>
               )}
             </View>
           )}
@@ -717,4 +844,24 @@ const styles = StyleSheet.create({
   addChildRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 },
   addChildInput: { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
   addChildBtn: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+
+  // Certificate upload
+  certDivider: { height: 1, marginTop: 12, marginBottom: 4 },
+  certAnalyzingBox: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: "#FFFBEB", marginBottom: 8 },
+  certAnalyzingText: { fontSize: 13, fontWeight: "500", flex: 1 },
+  certUploadBtn: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, borderWidth: 1.5, borderStyle: "dashed" as const, padding: 14, marginBottom: 4 },
+  certUploadIconBox: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  certUploadBtnTitle: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
+  certUploadBtnSub: { fontSize: 12 },
+  certResultCard: { borderRadius: 14, borderWidth: 1.5, padding: 14, marginBottom: 4, gap: 8 },
+  certResultHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
+  certResultStatus: { fontSize: 14, fontWeight: "700", flex: 1 },
+  certResultConfidence: { fontSize: 11, fontWeight: "500" },
+  certResultRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  certResultLabel: { fontSize: 12, fontWeight: "600", width: 54 },
+  certResultValue: { fontSize: 13, fontWeight: "500", flex: 1 },
+  certAnomalyBox: { flexDirection: "row", alignItems: "flex-start", gap: 6, borderRadius: 8, padding: 10, marginTop: 4 },
+  certAnomalyText: { fontSize: 12, color: "#92400E", flex: 1, lineHeight: 16 },
+  certUploadAgainBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, borderWidth: 1, paddingVertical: 9, marginTop: 6 },
+  certUploadAgainText: { fontSize: 13, fontWeight: "600" },
 });

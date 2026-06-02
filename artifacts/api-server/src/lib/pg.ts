@@ -207,5 +207,25 @@ export async function ensureTables(): Promise<void> {
     )
   `).catch(() => {});
 
+  // Medical certificate AI analysis results
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS member_medical_certs (
+      id                        SERIAL PRIMARY KEY,
+      member_id                 INTEGER,
+      org_id                    INTEGER,
+      student_full_name         TEXT,
+      expiration_date           DATE,
+      doctor_name               TEXT,
+      certificate_type          TEXT CHECK (certificate_type IN ('agonistico','non-agonistico','other')),
+      classification_confidence REAL,
+      potential_anomaly_detected BOOLEAN NOT NULL DEFAULT FALSE,
+      status                    TEXT NOT NULL DEFAULT 'Pending Admin Review',
+      anomaly_reasons           TEXT,
+      analyzed_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS mmc_member_idx ON member_medical_certs (member_id);
+    CREATE INDEX IF NOT EXISTS mmc_org_idx    ON member_medical_certs (org_id);
+  `).catch(() => {});
+
   initialized = true;
 }

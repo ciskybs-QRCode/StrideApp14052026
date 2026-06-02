@@ -10,3 +10,5 @@ export * from "./invoices";
 export * from "./reimbursements";
 export * from "./scheduled-courses";
 export * from "./operator-course-avail";
+export * from "./conversations";
+export * from "./messages";

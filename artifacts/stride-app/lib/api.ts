@@ -668,6 +668,24 @@ export const api = {
     end_date?: string;
     note?: string;
   }) => request<{ id: number }>("POST", "/absences/student/future", payload),
+
+  // ── Vision AI ───────────────────────────────────────────────────────────────
+
+  analyzeMedicalCertificate: (payload: {
+    image_base64: string;
+    mime_type: string;
+    member_id?: string | number;
+  }) => request<{
+    record_id: number | null;
+    student_full_name: string;
+    expiration_date: string | null;
+    doctor_name: string;
+    certificate_type: "agonistico" | "non-agonistico" | "other";
+    classification_confidence: number;
+    potential_anomaly_detected: boolean;
+    anomaly_reasons: string | null;
+    status: "AI-Verified" | "Pending Admin Review";
+  }>("POST", "/documents/analyze-medical-certificate", payload),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
