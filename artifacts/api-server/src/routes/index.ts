@@ -33,6 +33,7 @@ import legalRouter from "./legal.js";
 import operatorClockRouter from "./operator-clock.js";
 import adminKioskRouter from "./admin-kiosk.js";
 import superAdminRouter from "./super-admin.js";
+import billingRouter from "./billing.js";
 
 const router: IRouter = Router();
 
@@ -70,5 +71,6 @@ router.use(legalRouter);
 router.use(operatorClockRouter);
 router.use(adminKioskRouter);
 router.use(superAdminRouter);
+router.use(billingRouter);
 
 export default router;

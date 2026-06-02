@@ -18,20 +18,22 @@ router.get("/auth/system-status", async (_req, res) => {
   try {
     const [{ count: userCount }, { data: orgs }] = await Promise.all([
       supabase.from("users").select("*", { count: "exact", head: true }),
-      supabase.from("organizations").select("id, name, system_configured, trial_ends_at").limit(1),
+      supabase.from("organizations").select("id, name, system_configured, trial_ends_at, subscription_status").limit(1),
     ]);
     const org = orgs?.[0];
-    const trialEndsAt = (org as { trial_ends_at?: string } | undefined)?.trial_ends_at ?? null;
-    const trialExpired = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
+    const trialEndsAt       = (org as { trial_ends_at?: string; subscription_status?: string } | undefined)?.trial_ends_at ?? null;
+    const subscriptionStatus = (org as { trial_ends_at?: string; subscription_status?: string } | undefined)?.subscription_status ?? "trialing";
+    const trialExpired       = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
     res.json({
       configured: org?.system_configured ?? false,
       userCount: userCount ?? 0,
       orgName: org?.name ?? null,
       trialEndsAt,
       trialExpired,
+      subscriptionStatus,
     });
   } catch {
-    res.json({ configured: false, userCount: 0, orgName: null, trialEndsAt: null, trialExpired: false });
+    res.json({ configured: false, userCount: 0, orgName: null, trialEndsAt: null, trialExpired: false, subscriptionStatus: "trialing" });
   }
 });
 
@@ -79,15 +81,17 @@ router.post("/auth/login", async (req, res) => {
   })();
   const effectiveRole = user.role || roles[0] || "parent";
 
-  // Trial expiry gate — super_admin is never blocked
+  // Trial expiry gate — super_admin and active subscribers are always allowed through
   if (effectiveRole !== "super_admin") {
     const { data: orgRow } = await supabase
       .from("organizations")
-      .select("trial_ends_at")
+      .select("trial_ends_at, subscription_status")
       .eq("id", user.organization_id ?? 1)
       .maybeSingle();
-    const trialEndsAt = (orgRow as { trial_ends_at?: string } | null)?.trial_ends_at;
-    if (trialEndsAt && new Date() > new Date(trialEndsAt)) {
+    const row = orgRow as { trial_ends_at?: string; subscription_status?: string } | null;
+    const trialEndsAt      = row?.trial_ends_at;
+    const subscriptionStatus = row?.subscription_status ?? "trialing";
+    if (trialEndsAt && new Date() > new Date(trialEndsAt) && subscriptionStatus !== "active") {
       res.status(402).json({
         error: "trial_expired",
         message: "Trial period concluded. Contact platform administration.",
@@ -195,6 +199,19 @@ router.post("/auth/register", async (req, res) => {
   if (insertError || !newUser) {
     res.status(500).json({ error: insertError?.message ?? "Registration failed" });
     return;
+  }
+
+  // 30-day trial provisioning for pioneer (first-ever admin registration)
+  if (isPioneer) {
+    const now      = new Date().toISOString();
+    const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    try {
+      await supabase.from("organizations").update({
+        trial_started_at: now,
+        trial_ends_at:    trialEnd,
+        subscription_status: "trialing",
+      }).eq("id", orgId);
+    } catch { /* non-critical — trial will default via DB column */ }
   }
 
   // Pending activation path

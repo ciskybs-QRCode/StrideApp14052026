@@ -265,7 +265,7 @@ export const api = {
     request<{ token: string; user: ApiUser; isPioneer?: boolean }>("POST", "/auth/register", { name, email, password, org_slug }),
 
   systemStatus: () =>
-    request<{ configured: boolean; userCount: number; orgName: string | null; trialEndsAt: string | null; trialExpired: boolean }>("GET", "/auth/system-status"),
+    request<{ configured: boolean; userCount: number; orgName: string | null; trialEndsAt: string | null; trialExpired: boolean; subscriptionStatus: string }>("GET", "/auth/system-status"),
 
   generateInvite: () =>
     request<{ token: string; url: string }>("POST", "/auth/invite", {}),
@@ -1103,6 +1103,33 @@ export async function updateAssociation(
   data: Partial<Pick<AssociationRecord, "currency" | "country" | "legal_framework" | "tenant_type" | "stripe_connect_account_id">>,
 ): Promise<AssociationRecord> {
   return request<AssociationRecord>("PATCH", `/super-admin/associations/${id}`, data);
+}
+
+// ── Billing ───────────────────────────────────────────────────────────────────
+
+export type BillingStatus = {
+  subscriptionStatus: string;
+  trialEndsAt: string | null;
+  trialExpired: boolean;
+  memberCount: number;
+  costPerSeatCents: number;
+  currency: string;
+  totalMonthlyCents: number;
+  hasActiveSubscription: boolean;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+};
+
+export async function getBillingStatus(): Promise<BillingStatus> {
+  return request<BillingStatus>("GET", "/billing/status");
+}
+
+export async function createCheckoutSession(): Promise<{ url: string; sessionId: string }> {
+  return request<{ url: string; sessionId: string }>("POST", "/billing/checkout-session", {});
+}
+
+export async function syncSeats(): Promise<{ success: boolean; memberCount: number }> {
+  return request<{ success: boolean; memberCount: number }>("POST", "/billing/sync-seats", {});
 }
 
 export async function seedSuperAdmin(

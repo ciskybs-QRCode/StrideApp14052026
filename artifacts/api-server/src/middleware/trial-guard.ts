@@ -2,28 +2,34 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import type { TokenPayload } from "../lib/auth.js";
 
-// In-memory cache: orgId → { trialEndsAt, cachedAt }
-const _cache = new Map<number, { trialEndsAt: string | null; cachedAt: number }>();
+type OrgBillingInfo = { trialEndsAt: string | null; subscriptionStatus: string; cachedAt: number };
+
+// In-memory cache: orgId → OrgBillingInfo
+const _cache = new Map<number, OrgBillingInfo>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-async function fetchTrialEndsAt(orgId: number): Promise<string | null> {
+async function fetchOrgBillingInfo(orgId: number): Promise<Omit<OrgBillingInfo, "cachedAt">> {
   const hit = _cache.get(orgId);
-  if (hit && Date.now() - hit.cachedAt < CACHE_TTL_MS) return hit.trialEndsAt;
+  if (hit && Date.now() - hit.cachedAt < CACHE_TTL_MS) {
+    return { trialEndsAt: hit.trialEndsAt, subscriptionStatus: hit.subscriptionStatus };
+  }
   try {
     const { createClient } = await import("@supabase/supabase-js");
-    const url  = process.env["SUPABASE_URL"]  ?? "";
-    const key  = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_KEY"] ?? "";
-    if (!url || !key) return null;
+    const url = process.env["SUPABASE_URL"]  ?? "";
+    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_KEY"] ?? "";
+    if (!url || !key) return { trialEndsAt: null, subscriptionStatus: "trialing" };
     const { data } = await createClient(url, key)
       .from("organizations")
-      .select("trial_ends_at")
+      .select("trial_ends_at, subscription_status")
       .eq("id", orgId)
       .maybeSingle();
-    const trialEndsAt = (data as { trial_ends_at?: string } | null)?.trial_ends_at ?? null;
-    _cache.set(orgId, { trialEndsAt, cachedAt: Date.now() });
-    return trialEndsAt;
+    const row = data as { trial_ends_at?: string; subscription_status?: string } | null;
+    const trialEndsAt       = row?.trial_ends_at       ?? null;
+    const subscriptionStatus = row?.subscription_status ?? "trialing";
+    _cache.set(orgId, { trialEndsAt, subscriptionStatus, cachedAt: Date.now() });
+    return { trialEndsAt, subscriptionStatus };
   } catch {
-    return null;
+    return { trialEndsAt: null, subscriptionStatus: "trialing" };
   }
 }
 
@@ -50,7 +56,11 @@ export async function trialGuard(req: Request, res: Response, next: NextFunction
   const orgId = payload.orgId;
   if (!orgId) { next(); return; }
 
-  const trialEndsAt = await fetchTrialEndsAt(orgId);
+  const { trialEndsAt, subscriptionStatus } = await fetchOrgBillingInfo(orgId);
+
+  // Active subscribers always pass through, even after trial date
+  if (subscriptionStatus === "active") { next(); return; }
+
   if (trialEndsAt && new Date() > new Date(trialEndsAt)) {
     res.status(402).json({
       error: "trial_expired",

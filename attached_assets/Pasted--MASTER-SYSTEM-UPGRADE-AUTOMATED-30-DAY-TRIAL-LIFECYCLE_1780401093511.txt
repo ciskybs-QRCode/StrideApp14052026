@@ -1,0 +1,27 @@
+🚨 MASTER SYSTEM UPGRADE: AUTOMATED 30-DAY TRIAL LIFECYCLE & PER-MEMBER BILLING ENGINE 🚨
+Role: Expert Full-Stack SaaS Developer & Stripe Billing Architect.
+Target Modules: Tenant Lifecycle Webhooks, Super-Admin Billing Configurations, Admin Paywall Screen (app/(admin)/billing/).
+UI/UX Constraints: Strict Navy Blue and Gold palette. Clean, high-density professional layout. STRICTLY ZERO horizontal or vertical screen overflows. All structural data rows and tier configurations must render safely within native bounded <ScrollView> boxes.
+🚨 GLOBAL STABILITY DIRECTIVE (MANDATORY) 🚨 DO NOT break the localized currency settings (AUD/EUR), the multi-tenant RLS privacy walls, or the active kiosk scanning pipelines. This module strictly layer-attaches to the automated trial countdown and the Stripe per-seat calculation logic.
+PART 1: THE REVENUE STATE MACHINE & AUTOMATED 30-DAY TIMELINE
+Standard Registration Baseline: Modify the organization/tenant registration pipeline. When a new school signs up publicly without a custom Super-Admin bypass token, automatically populate the database fields:
+trial_started_at = NOW()
+trial_ends_at = NOW() + INTERVAL '30 days'
+subscription_status = 'trialing'
+The Access Enforcement Interceptor: Update the main navigation route interceptor. If NOW() > trial_ends_at AND subscription_status !== 'active', instantly lock the Admin out of all operational, kiosk, and scheduling dashboards. Redirect them exclusively to the hard-bounded Admin Paywall View.
+PART 2: THE PER-MEMBER COUNT ENGINE (DYNAMIC SEATS CALENDAR)
+Build a database aggregation trigger or cron function that counts the total number of unique active enrolled members (or active dependent children nodes) registered under that specific association_id during the billing cycle.
+Stripe Per-Seat Integration: Link this count to a Stripe Subscription Model using Stripe Billing Quantities (Seats).
+The base subscription plan is structured as $X per enrolled member / month (Price token configured in Super-Admin metadata).
+The system must dynamically sync the quantity parameter of the Stripe Subscription whenever a new member successfully completes an enrollment or is archived/removed by the Admin.
+PART 3: THE HIGH-DENSITY ADMIN PAYWALL VIEW (LOCKOUT PREVENTER)
+Target Layout: app/(admin)/billing/paywall.tsx
+When an association enters the 'expired' or 'past_due' state, render a professional layout confined strictly to the physical device borders:
+Header: Emergency status notification in Navy Blue background with a clear Gold badge: [Trial Expired / Action Required].
+The Breakdown Card: Display a dynamic summary containing:
+Active Enrolled Members: Total count fetched live from the database engine.
+Cost Per Member: (e.g., $1.50 AUD or €1.50 EUR based on local tenant settings).
+Total Monthly Invoice Projection: (Active Members × Cost Per Member).
+The Checkout Trigger: Provide a prominent, full-width Gold button labeled "Activate System Access & Link Card". Clicking this button initializes a secure Stripe Checkout Session for a recurring monthly subscription, mapping the correct currency and seat quantity.
+Upon successful payment webhook confirmation (invoice.paid), flip subscription_status = 'active' and instantly unlock all application routes for that tenant.
+Output Requirement: Code the automated 30-day date provisioning triggers, draft the dynamic per-member calculation query, script the locked structural view for the paywall with zero boundary overflows, and document the Stripe seat-update webhook payload rules.

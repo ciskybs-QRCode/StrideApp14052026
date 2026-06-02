@@ -9,7 +9,7 @@ export default function Index() {
   const router = useRouter();
   const params = useLocalSearchParams<{ org?: string; school?: string; primary?: string; secondary?: string }>();
 
-  const [sysStatus, setSysStatus] = useState<{ configured: boolean; userCount: number; trialExpired?: boolean } | null>(null);
+  const [sysStatus, setSysStatus] = useState<{ configured: boolean; userCount: number; trialExpired?: boolean; subscriptionStatus?: string } | null>(null);
   const [sysLoading, setSysLoading] = useState(true);
 
   useEffect(() => {
@@ -44,7 +44,14 @@ export default function Index() {
       router.replace("/login");
     } else if (user.role === "super_admin") {
       router.replace("/(super_admin)/associations" as never);
-    } else if (sysStatus?.trialExpired) {
+    } else if (
+      user.role === "admin" &&
+      sysStatus?.trialExpired &&
+      sysStatus?.subscriptionStatus !== "active"
+    ) {
+      // Admin's trial has expired and no active subscription — lock to billing paywall
+      router.replace("/(admin)/billing/paywall" as never);
+    } else if (sysStatus?.trialExpired && sysStatus?.subscriptionStatus !== "active") {
       router.replace("/trial-expired" as never);
     } else if (user.role === "admin" && sysStatus?.configured === false) {
       router.replace("/pioneer" as never);
