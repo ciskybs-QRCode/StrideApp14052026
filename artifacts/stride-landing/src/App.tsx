@@ -524,6 +524,86 @@ function Landing() {
             </div>
           </div>
 
+          {/* Admin Copilot Preview */}
+          <div className="mt-8 relative rounded-2xl overflow-hidden border border-[#D4AF37]/25 bg-[#070F26]">
+            {/* Subtle glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 bg-[#D4AF37]/6 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative p-7 sm:p-9">
+              {/* Header row */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-7">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                        d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-white font-black text-xl">Admin Copilot AI</span>
+                      <span className="text-[10px] font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-2.5 py-1 rounded-full uppercase tracking-widest">Natural Language</span>
+                    </div>
+                    <p className="text-blue-200/55 text-sm mt-1">Ask questions about your school in plain English. The AI queries live data and answers instantly.</p>
+                  </div>
+                </div>
+                {/* Live badge */}
+                <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 self-start">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  LIVE ENGINE
+                </div>
+              </div>
+
+              {/* Chat examples */}
+              <div className="flex flex-col gap-3">
+                {[
+                  {
+                    q: "Who has an expired medical certificate?",
+                    a: "4 students are currently blocked at the Kiosk due to expired certificates.",
+                    intent: "expired_certs",
+                  },
+                  {
+                    q: "What is total revenue this month?",
+                    a: "\u20ac14,250 collected in May \u2014 up 12% compared to April.",
+                    intent: "revenue",
+                  },
+                  {
+                    q: "Which operators are absent next week?",
+                    a: "Operator Marco is absent Friday. AI-suggested substitute: Sara (94% match).",
+                    intent: "absences",
+                  },
+                ].map(({ q, a, intent }) => (
+                  <div key={intent} className="bg-white/4 hover:bg-white/6 border border-white/8 hover:border-[#D4AF37]/25 rounded-xl p-4 sm:p-5 transition-all duration-200 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+                    {/* Question */}
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#1E3A8A]/60 border border-blue-500/20 flex items-center justify-center mt-0.5">
+                        <svg className="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                        </svg>
+                      </div>
+                      <p className="text-blue-200/80 text-sm italic leading-relaxed">&quot;{q}&quot;</p>
+                    </div>
+                    {/* Answer */}
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center mt-0.5">
+                        <svg className="w-3.5 h-3.5 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                        </svg>
+                      </div>
+                      <p className="text-white text-sm font-medium leading-relaxed">{a}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer note */}
+              <p className="text-blue-200/40 text-xs text-center mt-5">
+                All answers are generated in real time from your live school database &mdash; no manual queries required.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
 
