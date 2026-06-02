@@ -734,18 +734,6 @@ export default function AdminSetup() {
         {/* ── Secure Invite Link Generator ── */}
         <InviteCard />
 
-        {/* ── SOS Emergency Button ── */}
-        <Pressable
-          style={({ pressed }) => [adminSos.sosBtn, { opacity: pressed ? 0.92 : 1 }]}
-          onPress={handleSOSPress}
-        >
-          <View style={adminSos.sosIconRing}>
-            <Ionicons name="warning" size={32} color="#EF4444" />
-          </View>
-          <Text style={adminSos.sosBtnLabel}>SOS EMERGENCY</Text>
-          <Text style={adminSos.sosBtnHint}>Press twice to activate</Text>
-        </Pressable>
-
       </ScrollView>
 
       {/* ── SOS Modal ── */}
