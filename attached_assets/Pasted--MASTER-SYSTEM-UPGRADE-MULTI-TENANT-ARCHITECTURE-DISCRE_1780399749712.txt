@@ -1,0 +1,20 @@
+🚨 MASTER SYSTEM UPGRADE: MULTI-TENANT ARCHITECTURE & DISCRETIONARY TRIAL ENGINE 🚨
+Role: Expert Full-Stack Multi-Tenant SaaS Architect (React Native Expo Router, Supabase, and Node.js Stripe Connect Expert).
+Platform Branding Rules: Core Platform Admin Interface uses Navy Blue and Gold palette. Pure professional layout density. STRICTLY ZERO horizontal or vertical screen overflows. All lists and form configurations must utilize native bounded <ScrollView> elements safely.
+🚨 GLOBAL STABILITY DIRECTIVE (MANDATORY) 🚨 DO NOT erase or overwrite existing functional kiosk code, legal audit trails, or individual operational session rosters. Your sole focus is refactoring the top-level database layers to support strict data separation (Multi-Tenancy) and injecting the Super-Admin Subscription Control Engine.
+PART 1: THE MULTI-TENANT DATABASE & LOCALIZATION MATRIX
+The Tenant Isolation Layer: Introduce a root associations (or tenants) table. Every single profile, course, session, kiosk terminal, and financial ledger row in the database MUST now include an association_id foreign key.
+Localization & Compliance Metadata: The associations table must support independent localized configurations to accommodate our 3 pilot testing environments:
+Tenant A (AU Non-Profit Cultural Association): Currency set to AUD, legal framework mapped to Associations Incorporation Act 2015 (WA).
+Tenant B (AU Commercial Dance School): Currency set to AUD, legal framework mapped to standard Australian Business Number (ABN) corporate regulations.
+Tenant C (IT Artistic Gymnastics Gym): Currency set to EUR, legal framework mapped to Italian ASD/SSD tax sport regulations.
+Restrict Row Level Security (RLS) so that users, operators, and kiosks can strictly read/write data ONLY matching their active association_id.
+PART 2: THE 6-MONTH DISCRETIONARY TRIAL ENGINE (SUPER-ADMIN CONTROL)
+Create a global Platform Owner role (role === 'super_admin') which belongs exclusively to you (the creator of the SaaS platform).
+Subscription State Machine: Inside the associations table, add tracking fields: trial_started_at (timestamp), trial_ends_at (timestamp), and is_trial_extended (boolean).
+The Access Interceptor: Build a global routing guard middleware. When any user logs into a specific association, check if current_timestamp > trial_ends_at. If the trial has expired, lock-screen the entire tenant app with a beautiful Gold message: "Trial Period Concluded. Contact Platform Administration."
+The Discretionary Override Interface: Build a secure dashboard view accessible ONLY to the super_admin. For each of the 3 active schools, provide a date-picker and a prominent Gold action button: "Extend Trial Manually". This allows you to extend the 6-month trial to 9, 12, or custom months at your total individual discretion.
+PART 3: STRIPE CONNECT DIRECT-CHARGE ROUTING (0% FEES DURING TRIAL)
+Refactor the checkout backend pipeline to use Stripe Connect Direct Charges. When a member pays for a course or subscription, the payment transaction must be processed directly against the specific Connected Account ID linked to that specific association_id.
+The Trial Fee Rule: Ensure that inside the payment processing API (stripe.charges.create or stripe.paymentIntents.create), the parameter application_fee_amount is dynamically set to 0 if the association's current timestamp is less than trial_ends_at. The money flows 100% cleanly from member to the school's bank account, bypassing your platform balance entirely during the trial.
+Output Requirement: Provide the refactored multi-tenant database schema topology, code the global super-admin trial extension interface with layout boundaries enforced, attach the expiration route interceptor, and summarize the security measures preventing cross-tenant data leaks.

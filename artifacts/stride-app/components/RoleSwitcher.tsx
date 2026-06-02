@@ -13,10 +13,11 @@ const ROLE_META: Record<UserRole, {
   homeRoute: string;
   color: string;
 }> = {
-  admin:    { label: "Admin",    icon: "shield-checkmark", homeRoute: "/(admin)/stats",        color: "#6D28D9" },
-  operator: { label: "Operator", icon: "school",           homeRoute: "/(operator)/dashboard", color: "#0369A1" },
-  parent:   { label: "Member",   icon: "person",           homeRoute: "/(parent)/home",        color: "#047857" },
-  kiosk:    { label: "Kiosk",    icon: "tv-outline",       homeRoute: "/(kiosk)/",             color: "#1E3A8A" },
+  super_admin: { label: "Platform", icon: "globe-outline",      homeRoute: "/(super_admin)/associations", color: "#FBBF24" },
+  admin:       { label: "Admin",    icon: "shield-checkmark",   homeRoute: "/(admin)/stats",             color: "#6D28D9" },
+  operator:    { label: "Operator", icon: "school",             homeRoute: "/(operator)/dashboard",      color: "#0369A1" },
+  parent:      { label: "Member",   icon: "person",             homeRoute: "/(parent)/home",             color: "#047857" },
+  kiosk:       { label: "Kiosk",    icon: "tv-outline",         homeRoute: "/(kiosk)/",                  color: "#1E3A8A" },
 };
 
 // ── Inline settings row (non-floating) ───────────────────────────────────────

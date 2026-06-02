@@ -18,16 +18,20 @@ router.get("/auth/system-status", async (_req, res) => {
   try {
     const [{ count: userCount }, { data: orgs }] = await Promise.all([
       supabase.from("users").select("*", { count: "exact", head: true }),
-      supabase.from("organizations").select("id, name, system_configured").limit(1),
+      supabase.from("organizations").select("id, name, system_configured, trial_ends_at").limit(1),
     ]);
     const org = orgs?.[0];
+    const trialEndsAt = (org as { trial_ends_at?: string } | undefined)?.trial_ends_at ?? null;
+    const trialExpired = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
     res.json({
       configured: org?.system_configured ?? false,
       userCount: userCount ?? 0,
       orgName: org?.name ?? null,
+      trialEndsAt,
+      trialExpired,
     });
   } catch {
-    res.json({ configured: false, userCount: 0, orgName: null });
+    res.json({ configured: false, userCount: 0, orgName: null, trialEndsAt: null, trialExpired: false });
   }
 });
 
@@ -74,6 +78,23 @@ router.post("/auth/login", async (req, res) => {
     try { return JSON.parse(user.roles ?? "[]"); } catch { return []; }
   })();
   const effectiveRole = user.role || roles[0] || "parent";
+
+  // Trial expiry gate — super_admin is never blocked
+  if (effectiveRole !== "super_admin") {
+    const { data: orgRow } = await supabase
+      .from("organizations")
+      .select("trial_ends_at")
+      .eq("id", user.organization_id ?? 1)
+      .maybeSingle();
+    const trialEndsAt = (orgRow as { trial_ends_at?: string } | null)?.trial_ends_at;
+    if (trialEndsAt && new Date() > new Date(trialEndsAt)) {
+      res.status(402).json({
+        error: "trial_expired",
+        message: "Trial period concluded. Contact platform administration.",
+      });
+      return;
+    }
+  }
 
   const token = signToken({
     id: String(user.id),

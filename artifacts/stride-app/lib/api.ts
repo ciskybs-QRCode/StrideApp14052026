@@ -265,7 +265,7 @@ export const api = {
     request<{ token: string; user: ApiUser; isPioneer?: boolean }>("POST", "/auth/register", { name, email, password, org_slug }),
 
   systemStatus: () =>
-    request<{ configured: boolean; userCount: number; orgName: string | null }>("GET", "/auth/system-status"),
+    request<{ configured: boolean; userCount: number; orgName: string | null; trialEndsAt: string | null; trialExpired: boolean }>("GET", "/auth/system-status"),
 
   generateInvite: () =>
     request<{ token: string; url: string }>("POST", "/auth/invite", {}),
@@ -1070,4 +1070,47 @@ export async function createKiosk(
 
 export async function revokeKiosk(userId: number): Promise<void> {
   return request<void>("DELETE", `/admin/revoke-kiosk/${userId}`);
+}
+
+// ── Super-Admin ───────────────────────────────────────────────────────────────
+
+export type AssociationRecord = {
+  id: number;
+  name: string;
+  currency?: string;
+  country?: string;
+  legal_framework?: string;
+  tenant_type?: string;
+  stripe_connect_account_id?: string;
+  trial_started_at?: string;
+  trial_ends_at?: string;
+  is_trial_extended?: boolean;
+};
+
+export async function listAssociations(): Promise<AssociationRecord[]> {
+  return request<AssociationRecord[]>("GET", "/super-admin/associations");
+}
+
+export async function extendTrial(
+  orgId: number,
+  months: number,
+): Promise<AssociationRecord> {
+  return request<AssociationRecord>("POST", "/super-admin/extend-trial", { orgId, months });
+}
+
+export async function updateAssociation(
+  id: number,
+  data: Partial<Pick<AssociationRecord, "currency" | "country" | "legal_framework" | "tenant_type" | "stripe_connect_account_id">>,
+): Promise<AssociationRecord> {
+  return request<AssociationRecord>("PATCH", `/super-admin/associations/${id}`, data);
+}
+
+export async function seedSuperAdmin(
+  name: string,
+  email: string,
+  password: string,
+): Promise<{ token: string; user: { id: string; name: string; email: string; role: string } }> {
+  return request<{ token: string; user: { id: string; name: string; email: string; role: string } }>(
+    "POST", "/super-admin/seed", { name, email, password },
+  );
 }

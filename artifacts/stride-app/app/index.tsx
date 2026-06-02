@@ -9,7 +9,7 @@ export default function Index() {
   const router = useRouter();
   const params = useLocalSearchParams<{ org?: string; school?: string; primary?: string; secondary?: string }>();
 
-  const [sysStatus, setSysStatus] = useState<{ configured: boolean; userCount: number } | null>(null);
+  const [sysStatus, setSysStatus] = useState<{ configured: boolean; userCount: number; trialExpired?: boolean } | null>(null);
   const [sysLoading, setSysLoading] = useState(true);
 
   useEffect(() => {
@@ -42,8 +42,11 @@ export default function Index() {
 
     if (!user) {
       router.replace("/login");
+    } else if (user.role === "super_admin") {
+      router.replace("/(super_admin)/associations" as never);
+    } else if (sysStatus?.trialExpired) {
+      router.replace("/trial-expired" as never);
     } else if (user.role === "admin" && sysStatus?.configured === false) {
-      // Admin logged in but hasn't completed the setup wizard
       router.replace("/pioneer" as never);
     } else if (user.role === "kiosk") {
       router.replace("/(kiosk)/" as never);

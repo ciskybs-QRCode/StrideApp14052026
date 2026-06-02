@@ -17,14 +17,37 @@ router.post("/checkout/stripe/intent", requireAuth, async (req, res) => {
   if (!amount || amount <= 0) { res.status(400).json({ error: "Invalid amount" }); return; }
 
   try {
+    // Fetch org's Stripe Connect account, trial status, and currency
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("stripe_connect_account_id, trial_ends_at, currency")
+      .eq("id", user.orgId ?? 1)
+      .maybeSingle();
+
+    const connectId   = (orgData as { stripe_connect_account_id?: string } | null)?.stripe_connect_account_id ?? null;
+    const trialEndsAt = (orgData as { trial_ends_at?: string }            | null)?.trial_ends_at             ?? null;
+    const currency    = (orgData as { currency?: string }                 | null)?.currency?.toLowerCase()   ?? "eur";
+    const isTrial     = !trialEndsAt || new Date() < new Date(trialEndsAt);
+
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeKey);
-    const intent = await stripe.paymentIntents.create({
+
+    type IntentParams = Parameters<typeof stripe.paymentIntents.create>[0];
+    const intentParams: IntentParams = {
       amount: Math.round(amount * 100),
-      currency: "eur",
+      currency,
       automatic_payment_methods: { enabled: true },
       metadata: { userId: String(user.id), orgId: String(user.orgId) },
-    });
+    };
+
+    // Stripe Connect: route to the school's connected account
+    if (connectId) {
+      intentParams.transfer_data = { destination: connectId };
+      // 0% platform fee during trial; 2% after
+      intentParams.application_fee_amount = isTrial ? 0 : Math.round(amount * 100 * 0.02);
+    }
+
+    const intent = await stripe.paymentIntents.create(intentParams);
     res.json({ clientSecret: intent.client_secret, intentId: intent.id });
   } catch (err) {
     req.log.error(err);

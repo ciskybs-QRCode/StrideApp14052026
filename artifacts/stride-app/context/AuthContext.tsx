@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api, setToken, clearToken, getToken } from "../lib/api";
 
-export type UserRole = "parent" | "operator" | "admin" | "kiosk";
+export type UserRole = "parent" | "operator" | "admin" | "kiosk" | "super_admin";
 
 export interface User {
   id: string;
@@ -44,9 +44,10 @@ const USER_KEY = "stride_user";
 
 /** Derive multi-role list from a primary role returned by the API */
 function rolesForPrimary(primary: UserRole): UserRole[] {
-  if (primary === "admin")    return ["admin", "operator", "parent"];
-  if (primary === "operator") return ["operator", "parent"];
-  if (primary === "kiosk")   return ["kiosk"];
+  if (primary === "super_admin") return ["super_admin"];
+  if (primary === "admin")       return ["admin", "operator", "parent"];
+  if (primary === "operator")    return ["operator", "parent"];
+  if (primary === "kiosk")       return ["kiosk"];
   return ["parent"];
 }
 

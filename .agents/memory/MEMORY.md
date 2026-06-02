@@ -1,4 +1,5 @@
 - [Stride app backend](stride-backend.md) — API server + Supabase is live; all 3 test users return real JWTs; EXPO_PUBLIC_DOMAIN is already set in the dev script.
+- [Stride multi-tenant architecture](stride-multi-tenant.md) — organizations table = tenant table; super_admin role; trial guard middleware; Stripe Connect per-org.
 - [Stride QR camera](stride-qr-camera.md) — expo-camera v55 (version mismatch vs SDK54 expected ~17); Platform.OS==="web" checks were bypassing CameraView — fixed to gate on permission only.
 - [Stride onboarding flow](stride-onboarding.md) — full member onboarding: join page → 4-step wizard (details/address, phone, dependents, signature). Key design decisions documented.
 - [Stride absence/substitution/finance](stride-absence-finance.md) — dual absence buttons, 5-min cascade, payroll ledger, Pay Now flow. Key isolation and pattern decisions.
