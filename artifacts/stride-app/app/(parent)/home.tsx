@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import {
   Alert,
   Linking,
@@ -160,15 +160,29 @@ export default function ParentHome() {
     }
     const year = futureAbsYear || new Date().getFullYear().toString();
     const dateStr = `${year}-${futureAbsMonth.padStart(2, "0")}-${futureAbsDay.padStart(2, "0")}`;
+    const endDateStr = futureAbsRangeMode === "range" && futureAbsEndDay && futureAbsEndMonth
+      ? `${futureAbsEndYear || year}-${futureAbsEndMonth.padStart(2, "0")}-${futureAbsEndDay.padStart(2, "0")}`
+      : undefined;
+    const reportingForChild = children.find(c => String(c.id) === selectedChild);
+    const studentId = selectedChild === "self" ? String(user?.id ?? "self") : selectedChild;
+    const studentName = selectedChild === "self"
+      ? (user?.name ?? "Account Holder")
+      : (reportingForChild?.name ?? selectedChild);
     try {
-      const raw = await AsyncStorage.getItem("stride_student_absences");
-      const list = raw ? JSON.parse(raw) : [];
-      list.unshift({ id: Date.now().toString(), childId: selectedChild, mode: futureAbsRangeMode, absence_date: dateStr, note: futureAbsNote.trim() || undefined, status: "scheduled" });
-      await AsyncStorage.setItem("stride_student_absences", JSON.stringify(list));
-    } catch {}
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setFutureAbsSuccess(true);
-    setTimeout(() => { setFutureAbsSuccess(false); setShowAbsence(false); resetFutureAbsForm(); setAbsMode("today"); }, 2200);
+      await api.reportStudentFutureAbsence({
+        student_id: studentId,
+        student_name: studentName,
+        mode: futureAbsRangeMode,
+        absence_date: dateStr,
+        ...(endDateStr ? { end_date: endDateStr } : {}),
+        ...(futureAbsNote.trim() ? { note: futureAbsNote.trim() } : {}),
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setFutureAbsSuccess(true);
+      setTimeout(() => { setFutureAbsSuccess(false); setShowAbsence(false); resetFutureAbsForm(); setAbsMode("today"); }, 2200);
+    } catch (err) {
+      Alert.alert("Could Not Schedule", err instanceof Error ? err.message : "Please try again.");
+    }
   };
 
   const openQR = (target: "parent" | string = "parent") => {

@@ -1,0 +1,34 @@
+🚨 SYSTEM MIGRATION: UPGRADE LOCAL ABSENCE STORAGE TO CLOUD DATABASE & CLEANUP 🚨
+Role: Expert Full-Stack Developer & Database Architect (Supabase/PostgreSQL & Express.js backend).
+
+Objective: Migrate the current client-side local AsyncStorage absence logging into a centralized, synchronized cloud database structure. Clean up legacy dead code from the repository.
+
+🚨 REPLIT INTEGRATION CONSTRAINTS (MANDATORY) 🚨
+Do NOT modify the frontend UI layouts, tab views, or state validation hooks in dashboard.tsx or home.tsx. They are fully functional. Only refactor their submission/fetch handlers from local storage to API endpoints.
+
+Please execute the following structural database and code upgrades:
+
+PART 1: CLEAN UP DEAD CODE
+Open artifacts/stride-app/app/(parent)/children.tsx.
+
+Remove the orphaned absence modal code (lines 1052–1260) and its unused state variables. Keep the file clean, lean, and strictly focused on its core child-card display purpose.
+
+PART 2: BACKEND & DATABASE PROVISIONING
+Create the missing database tables (Supabase/PostgreSQL) and implement secure backend API routing paths:
+
+Operator Absences Table (stride_operator_absences):
+
+Columns: id (UUID, Primary Key), operator_id (FK to profiles), mode (string: 'single'/'range'), start_date (DATE), end_date (DATE, nullable), notes (TEXT, nullable), status (string, default: 'scheduled'), created_at (TIMESTAMP).
+
+Student Absences Table (stride_student_absences):
+
+Columns: id (UUID, Primary Key), parent_id (FK to profiles), child_id (FK to students), mode (string), start_date (DATE), end_date (DATE, nullable), notes (TEXT, nullable), status (string, default: 'scheduled'), created_at (TIMESTAMP).
+
+API Endpoints: Create corresponding REST routing pathways (POST /api/absences/operator and POST /api/absences/student) that receive the form payloads securely and write directly to these tables.
+
+PART 3: FRONTEND API HOOK UP
+Operator Side (app/(operator)/dashboard.tsx): Replace the current AsyncStorage submission handler block (lines 799–825) with an axios or fetch call pointing directly to your new backend endpoint.
+
+Parent Side (app/(parent)/home.tsx): Replace the AsyncStorage submission handler block (lines 149–175) with an API call directing child absence logs to the server. Ensure the success state (Green checkmark auto-close) remains fully active upon a successful 200 OK server response.
+
+Output Requirement: Confirm database table creation, list the updated files, and verify that absence scheduling data now flows securely to the cloud database so it can actively feed into the Kiosk and Admin systems.

@@ -810,15 +810,22 @@ export default function OperatorDashboard() {
     }
     const year = futureAbsYear || new Date().getFullYear().toString();
     const dateStr = `${year}-${futureAbsMonth.padStart(2, "0")}-${futureAbsDay.padStart(2, "0")}`;
+    const endDateStr = futureAbsRangeMode === "range" && futureAbsEndDay && futureAbsEndMonth
+      ? `${futureAbsEndYear || year}-${futureAbsEndMonth.padStart(2, "0")}-${futureAbsEndDay.padStart(2, "0")}`
+      : undefined;
     try {
-      const raw = await AsyncStorage.getItem("stride_operator_absences");
-      const list = raw ? JSON.parse(raw) : [];
-      list.unshift({ id: Date.now().toString(), mode: futureAbsRangeMode, absence_date: dateStr, note: futureAbsNote.trim() || undefined, status: "scheduled" });
-      await AsyncStorage.setItem("stride_operator_absences", JSON.stringify(list));
-    } catch {}
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setFutureAbsSent(true);
-    setTimeout(() => { setFutureAbsSent(false); setShowAbsenceModal(false); resetFutureAbsForm(); setAbsMode("today"); }, 2200);
+      await api.reportOperatorFutureAbsence({
+        mode: futureAbsRangeMode === "range" ? "range" : "full_day",
+        absence_date: dateStr,
+        ...(endDateStr ? { end_date: endDateStr } : {}),
+        ...(futureAbsNote.trim() ? { reason: futureAbsNote.trim() } : {}),
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setFutureAbsSent(true);
+      setTimeout(() => { setFutureAbsSent(false); setShowAbsenceModal(false); resetFutureAbsForm(); setAbsMode("today"); }, 2200);
+    } catch (err) {
+      Alert.alert("Could Not Schedule", err instanceof Error ? err.message : "Please try again.");
+    }
   };
 
   // ── Render helpers ────────────────────────────────────────────────────────
