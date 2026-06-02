@@ -1,16 +1,10 @@
 import { Router, type Request } from "express";
-import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { supabase as supabaseAdmin } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
-
-// Service-role client — bypasses RLS so admin ops don't affect the session
-const _url = process.env["SUPABASE_URL"];
-const _svcKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
-if (!_url || !_svcKey) throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required");
-const supabaseAdmin = createClient(_url, _svcKey);
 
 // ── GET /admin/kiosks ─────────────────────────────────────────────────────────
 router.get(
