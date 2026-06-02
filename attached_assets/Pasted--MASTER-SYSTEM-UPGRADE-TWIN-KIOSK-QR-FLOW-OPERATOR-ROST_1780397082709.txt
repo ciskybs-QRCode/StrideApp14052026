@@ -1,0 +1,29 @@
+🚨 MASTER SYSTEM UPGRADE: TWIN KIOSK QR FLOW & OPERATOR ROSTER OVERRIDE 🚨
+Role: Expert Full-Stack React Native (Expo Router) and Supabase Architect.
+Target Modules: Kiosk Scanner Interface (app/kiosk/), Operator Session Roll Call Roster (app/(operator)/sessions/), and Background Attendance State Verification.
+UI/UX Design Rules: Primary Navy Blue and Accent Gold theme. Clear, highly visible user state badges. STRICTLY ZERO horizontal or vertical screen overflows. Roster elements must scroll within native viewport borders safely.
+🚨 GLOBAL STRICT ISOLATION DIRECTIVE (MANDATORY) 🚨 DO NOT alter database legal sign-off tables, Stripe Connect payout processing routes, or structural parent account dashboard settings. Focus 100% exclusively on the kiosk scanner decoding paths, operator manual attendance overrides, and automated absence alarm suppression logic.
+PART 1: THE KIOSK FRONTEND SCANNER PIPELINE
+Target View: Dedicated Kiosk Screen (app/kiosk/index.tsx or equivalent scanning layout).
+Ensure the camera scanner handles two distinct entity types via incoming QR payloads:
+Member/Dependent Member Scan: When scanned, match the unique ID to the association's daily scheduling roster. Instantly flip the member's session attendance flag to 'Present (QR Scan)' in the database. No further room-specific or class-specific scanning is required.
+Operator (Teacher) Scan: When scanned, record a high-precision clock_in timestamp for entry, and a clock_out timestamp for exit. Lock these records to the operator's profile for explicit automated Payroll validation.
+PART 2: OPERATOR INTERFACE - ROSTER ROLL CALL & FALLBACK OVERRIDE
+Target Screen: Operator Active Class / Session Management View.
+Build or verify a comprehensive list/roster containing all expected members (dependent children) registered for that specific class session.
+Dynamic Status Badges:
+If a child has successfully scanned into the physical venue via the Kiosk, display a distinct Green badge: [Present - QR Check-In].
+If the child has not scanned in, display a default Red badge: [Absent].
+The Manual Override Contingency (For Forgetting QR Codes):
+If a student arrives but forgot their QR code device or printed card, allow the operator to tap directly on the student’s name row.
+Trigger a clean native selection action sheet or confirmation dialog: "Mark [Student Name] Present Manually?".
+Upon confirmation, update the database record state directly to 'Present (Manual)' in real-time.
+PART 3: SAFETY NO-SHOW ALERT DISARM LOGIC
+Target Hook: Attendance Verification / Absence Dispatcher Background Engine.
+Review the trigger condition for the automated unexcused absence alert ("No-Show Safety Alert") sent to parents.
+The Rule: The system must evaluate the student’s state 10 minutes after the official class start time.
+The Constraint: If the student's status is either 'Present (QR Scan)' OR 'Present (Manual)', the background processor must instantly disarm/suppress the notification loop. The emergency text/push notification must ONLY fire if the state remains strictly marked as unexcused [Absent].
+PART 4: EXPEDITED EXIT SIGN-OUT & PAYROLL CROSS-REFERENCE
+Mass Operator Release Tool: At the conclusion of the session, provide the operator with a clean Gold button labeled "Session Sign-Out (All Active)" to bulk sign-out remaining children who might skip the exit Kiosk scanner.
+Payroll Validation Cross-Check: Ensure that the database ledger links the Operator's explicit Kiosk Clock-In/Out hours with their corresponding submitted roll-call rosters to prevent manual record adjustments or payout mismatches.
+Output Requirement: Verify all existing components against this spec, write the dynamic roster manual override code hooks, attach the safety notification disarm conditions, ensure beautiful layout containment inside phone screen borders, and summarize the changes.

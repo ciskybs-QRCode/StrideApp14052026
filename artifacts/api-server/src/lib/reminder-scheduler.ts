@@ -31,6 +31,7 @@ async function checkReminders(): Promise<void> {
     sendRemindersForWindow(60,      "1h"),
     sendScheduledCourseReminders(24 * 60, "24h"),
     sendScheduledCourseReminders(60,      "1h"),
+    checkNoShowAlerts(),
   ]);
 }
 
@@ -207,5 +208,96 @@ async function sendScheduledCourseReminders(
     //     read:            false,
     //   });
     // }
+  }
+}
+
+// ── Part C: No-Show Safety Alert (10 min after session start) ─────────────────
+// Fires a safety alert to the parent ONLY when a child's status is still
+// strictly "absent" (no attendance record at all) 10 minutes after class start.
+// If any attendance record (QR or manual) exists, the alert is suppressed.
+
+const NO_SHOW_WINDOW_MINUTES = 10;
+
+async function checkNoShowAlerts(): Promise<void> {
+  const now     = new Date();
+  const todayStr = now.toISOString().substring(0, 10);
+  const dayOfWeek = now.getDay();
+
+  // Window: courses whose start_time was 5–15 min ago
+  const lo = new Date(now.getTime() - (NO_SHOW_WINDOW_MINUTES + 5) * 60_000);
+  const hi = new Date(now.getTime() - (NO_SHOW_WINDOW_MINUTES - 5) * 60_000);
+  const loTime = lo.toTimeString().substring(0, 5);
+  const hiTime = hi.toTimeString().substring(0, 5);
+
+  const { data: courses, error } = await supabase
+    .from("scheduled_courses")
+    .select("id, name, start_time, organization_id, discipline_id, disciplines(name)")
+    .eq("day_of_week", dayOfWeek)
+    .eq("is_active", true)
+    .gte("start_time", loTime)
+    .lte("start_time", hiTime);
+
+  if (error || !courses?.length) return;
+
+  for (const course of courses) {
+    // Get active enrollments for this course
+    const { data: enrollments } = await supabase
+      .from("enrollments")
+      .select("child_id, child:children!child_id(id, first_name, last_name, parent_id)")
+      .eq("course_id", course.id)
+      .eq("status", "active");
+
+    if (!enrollments?.length) continue;
+
+    const discName = (course as Record<string,unknown>).disciplines as { name: string } | null;
+    const className = discName?.name ?? (course.name as string) ?? "Class";
+    const timeStr = (course.start_time as string).slice(0, 5);
+
+    for (const enroll of enrollments) {
+      const child = (enroll as Record<string,unknown>).child as {
+        id: number; first_name: string; last_name: string; parent_id: number;
+      } | null;
+      if (!child?.parent_id) continue;
+
+      // Check if the child has ANY attendance record today (QR or manual)
+      const { data: attendanceRows } = await supabase
+        .from("attendance_records")
+        .select("id, check_in_method")
+        .eq("child_id", child.id)
+        .gte("attended_at", `${todayStr}T00:00:00Z`)
+        .lte("attended_at", `${todayStr}T23:59:59Z`)
+        .limit(1);
+
+      // ▶ DISARM: child has checked in (any method) — skip alert
+      if (attendanceRows?.length) continue;
+
+      // Check we haven't already sent a no-show alert for this child + course today
+      const { data: existing } = await supabase
+        .from("private_notifications")
+        .select("id")
+        .eq("recipient_id", child.parent_id)
+        .eq("type", "no_show_alert")
+        .ilike("body", `%${todayStr}%course:${course.id}%`)
+        .limit(1);
+
+      if (existing?.length) continue;
+
+      // Fire the safety alert
+      const { error: insertErr } = await supabase.from("private_notifications").insert({
+        organization_id: course.organization_id,
+        recipient_id:    child.parent_id,
+        type:            "no_show_alert",
+        title:           `⚠️ Absence Alert — ${child.first_name} ${child.last_name}`,
+        body:            `${child.first_name} has not checked in for ${className} (${timeStr}). Please confirm their whereabouts. ref:${todayStr}|course:${course.id}`,
+        read:            false,
+      });
+
+      if (!insertErr) {
+        logger.info(
+          { childId: child.id, courseId: course.id, parentId: child.parent_id },
+          "no-show safety alert sent"
+        );
+      }
+    }
   }
 }

@@ -30,6 +30,7 @@ import scheduledCoursesRouter from "./scheduled-courses.js";
 import courseAvailabilityRouter from "./course-availability.js";
 import financeRouter from "./finance.js";
 import legalRouter from "./legal.js";
+import operatorClockRouter from "./operator-clock.js";
 
 const router: IRouter = Router();
 
@@ -64,5 +65,6 @@ router.use(scheduledCoursesRouter);
 router.use(courseAvailabilityRouter);
 router.use(financeRouter);
 router.use(legalRouter);
+router.use(operatorClockRouter);
 
 export default router;

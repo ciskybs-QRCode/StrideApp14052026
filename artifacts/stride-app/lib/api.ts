@@ -321,11 +321,45 @@ export const api = {
   getStudents: () => request<ApiStudent[]>("GET", "/students"),
   getAttendance: (sessionId?: string) =>
     request<ApiAttendance[]>("GET", sessionId ? `/attendance?sessionId=${sessionId}` : "/attendance"),
-  addAttendance: (data: Partial<ApiAttendance>) => request<ApiAttendance>("POST", "/attendance", data),
+  addAttendance: (data: Partial<ApiAttendance> & { check_in_method?: string; attended_at?: string }) =>
+    request<ApiAttendance>("POST", "/attendance", data),
   updateAttendance: (id: string, data: Partial<ApiAttendance>) =>
     request<ApiAttendance>("PATCH", `/attendance/${id}`, data),
   addStars: (studentId: string, delta: number) =>
     request<{ id: number; gold_stars: number }>("PATCH", `/students/${studentId}/stars`, { delta }),
+
+  // Sessions — roster & sign-out
+  todaySessions: () =>
+    request<{
+      id: number; name: string; start_time: string; end_time: string;
+      discipline_id: number; disciplines: { name: string } | null;
+    }[]>("GET", "/sessions/today"),
+  sessionRoster: (sessionId: number) =>
+    request<{
+      child_id: number; first_name: string; last_name: string;
+      allergies: string | null; gold_stars: number;
+      parent: { id: number; name: string; phone: string } | null;
+      attendance_id: number | null; check_in_method: string | null;
+      status: "present" | "absent" | "signed_out";
+    }[]>("GET", `/sessions/${sessionId}/roster`),
+  bulkSignOut: (sessionId: number) =>
+    request<{ updated: number }>("POST", `/sessions/${sessionId}/bulk-signout`, {}),
+
+  // Operator clock-in / clock-out
+  clockIn: (payload: { session_id?: number; notes?: string }) =>
+    request<{ id: number; clock_in: string; already_clocked_in?: boolean }>("POST", "/operator-clock/in", payload),
+  clockOut: (payload?: { notes?: string }) =>
+    request<{ id: number; clock_in: string; clock_out: string }>("POST", "/operator-clock/out", payload ?? {}),
+  clockStatus: () =>
+    request<{ clocked_in: boolean; record: { id: number; clock_in: string; session_id: number | null } | null }>(
+      "GET", "/operator-clock/status"
+    ),
+  clockRecords: (params?: { date?: string; operatorId?: string }) => {
+    const qs = params ? `?${new URLSearchParams(params as Record<string,string>).toString()}` : "";
+    return request<{
+      id: number; operator_id: number; clock_in: string; clock_out: string | null; session_id: number | null;
+    }[]>("GET", `/operator-clock${qs}`);
+  },
 
   // Lessons
   getLessons: (date?: string) =>

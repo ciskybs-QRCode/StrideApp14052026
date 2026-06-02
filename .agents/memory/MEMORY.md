@@ -3,3 +3,4 @@
 - [Stride onboarding flow](stride-onboarding.md) — full member onboarding: join page → 4-step wizard (details/address, phone, dependents, signature). Key design decisions documented.
 - [Stride absence/substitution/finance](stride-absence-finance.md) — dual absence buttons, 5-min cascade, payroll ledger, Pay Now flow. Key isolation and pattern decisions.
 - [Stride legal gate](stride-legal-gate.md) — mandatory sequential signature gate with SHA-256 audit, IP/device capture, options, checkbox, gold-bordered pad.
+- [Stride kiosk & sessions](stride-kiosk-sessions.md) — dual QR entity dispatch, operator clock, roll call roster, no-show disarm.

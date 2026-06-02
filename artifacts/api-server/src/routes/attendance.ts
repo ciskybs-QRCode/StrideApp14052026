@@ -66,6 +66,123 @@ router.patch("/students/:id/stars", requireAuth, requireRole("admin", "operator"
   res.json(data);
 });
 
+// ── Today's scheduled sessions ────────────────────────────────────────────────
+// Returns scheduled courses for today (day_of_week match), enriched with
+// a live attendance summary so the operator roster screen can show counts.
+
+router.get("/sessions/today", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=Sun … 6=Sat
+
+  const { data: courses, error } = await supabase
+    .from("scheduled_courses")
+    .select("id, name, start_time, end_time, discipline_id, organization_id, disciplines(name)")
+    .eq("day_of_week", dayOfWeek)
+    .eq("is_active", true);
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  res.json(courses ?? []);
+});
+
+// ── Session roster ─────────────────────────────────────────────────────────────
+// Returns all enrolled children for a scheduled_course session + today's
+// attendance status per child (qr / manual / absent).
+
+router.get("/sessions/:sessionId/roster", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const { sessionId } = req.params;
+  const sessionIdNum = parseInt(String(sessionId));
+  const todayStr = new Date().toISOString().substring(0, 10);
+
+  // Fetch all enrolled children (via course_enrollments or enrollments)
+  const { data: enrollments, error: enrollErr } = await supabase
+    .from("enrollments")
+    .select("child:children!child_id(id, first_name, last_name, allergies, gold_stars, parent:users!parent_id(id,name,phone))")
+    .eq("course_id", sessionIdNum)
+    .eq("status", "active");
+
+  if (enrollErr) { res.status(500).json({ error: enrollErr.message }); return; }
+
+  const enrolled = (enrollments ?? []) as unknown as {
+    child: {
+      id: number; first_name: string; last_name: string;
+      allergies: string | null; gold_stars: number;
+      parent: { id: number; name: string; phone: string } | null;
+    } | null;
+  }[];
+
+  const childIds = enrolled.map(e => e.child?.id).filter(Boolean) as number[];
+
+  // Fetch today's attendance records for these children
+  let attendanceMap: Record<number, { id: number; check_in_method: string }> = {};
+  if (childIds.length) {
+    const { data: records } = await supabase
+      .from("attendance_records")
+      .select("id, child_id, check_in_method")
+      .in("child_id", childIds)
+      .gte("attended_at", `${todayStr}T00:00:00Z`)
+      .lte("attended_at", `${todayStr}T23:59:59Z`);
+
+    (records ?? []).forEach((r: { child_id: number; id: number; check_in_method: string }) => {
+      attendanceMap[r.child_id] = { id: r.id, check_in_method: r.check_in_method ?? "qr" };
+    });
+  }
+
+  const roster = enrolled
+    .filter(e => e.child)
+    .map(e => {
+      const child = e.child!;
+      const att = attendanceMap[child.id];
+      return {
+        child_id: child.id,
+        first_name: child.first_name,
+        last_name: child.last_name,
+        allergies: child.allergies,
+        gold_stars: child.gold_stars,
+        parent: child.parent,
+        attendance_id: att?.id ?? null,
+        check_in_method: att?.check_in_method ?? null,
+        status: att ? (att.check_in_method === "signed_out" ? "signed_out" : "present") : "absent",
+      };
+    });
+
+  res.json(roster);
+});
+
+// ── Bulk session sign-out ──────────────────────────────────────────────────────
+// Mark all currently-present children in a session as signed_out.
+
+router.post("/sessions/:sessionId/bulk-signout", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const { sessionId } = req.params;
+  const sessionIdNum = parseInt(String(sessionId));
+  const todayStr = new Date().toISOString().substring(0, 10);
+
+  // Get today's present attendance records for this session
+  const { data: records, error } = await supabase
+    .from("attendance_records")
+    .select("id, child_id, check_in_method")
+    .eq("session_id", sessionIdNum)
+    .gte("attended_at", `${todayStr}T00:00:00Z`)
+    .lte("attended_at", `${todayStr}T23:59:59Z`)
+    .neq("check_in_method", "signed_out");
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  if (!records?.length) {
+    res.json({ updated: 0 });
+    return;
+  }
+
+  const ids = records.map((r: { id: number }) => r.id);
+  const { error: updateErr } = await supabase
+    .from("attendance_records")
+    .update({ check_in_method: "signed_out" })
+    .in("id", ids);
+
+  if (updateErr) { res.status(500).json({ error: updateErr.message }); return; }
+  req.log.info({ sessionId: sessionIdNum, count: ids.length, operator: user.id }, "bulk session sign-out");
+  res.json({ updated: ids.length });
+});
+
 // ── Batch offline sync endpoint ───────────────────────────────────────────────
 // Accepts an array of QR scans captured offline and inserts them with the
 // original local timestamp preserved.  If delay_ms > 30 min the reconciler

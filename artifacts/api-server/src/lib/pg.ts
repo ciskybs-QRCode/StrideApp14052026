@@ -83,5 +83,25 @@ export async function ensureTables(): Promise<void> {
       ON legal_signatures_audit_log (user_id, document_id);
   `).catch(() => {});
 
+  // Kiosk: check_in_method on attendance_records ('qr' | 'manual' | 'signed_out')
+  await pool.query(`
+    ALTER TABLE IF EXISTS attendance_records
+    ADD COLUMN IF NOT EXISTS check_in_method TEXT DEFAULT 'qr';
+  `).catch(() => {});
+
+  // Operator clock-in / clock-out ledger (payroll cross-reference)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS operator_clock_records (
+      id          SERIAL PRIMARY KEY,
+      operator_id INTEGER NOT NULL,
+      session_id  INTEGER,
+      clock_in    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      clock_out   TIMESTAMPTZ,
+      notes       TEXT
+    );
+    CREATE INDEX IF NOT EXISTS ocr_operator_idx ON operator_clock_records (operator_id);
+    CREATE INDEX IF NOT EXISTS ocr_clock_in_idx ON operator_clock_records (clock_in);
+  `).catch(() => {});
+
   initialized = true;
 }

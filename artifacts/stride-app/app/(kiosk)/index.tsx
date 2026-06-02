@@ -27,7 +27,7 @@ const { width: SW, height: SH } = Dimensions.get("window");
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type FeedbackType = "success" | "warning" | "denied";
+type FeedbackType = "success" | "warning" | "denied" | "clock_in" | "clock_out";
 
 interface FeedbackState {
   type: FeedbackType;
@@ -36,56 +36,63 @@ interface FeedbackState {
   name: string;
 }
 
+interface QrPayload {
+  type?: "child" | "operator";
+  id?: string;
+  userId?: string;
+  childId?: string;
+  operatorId?: string;
+}
+
 // ── Overlay colours ───────────────────────────────────────────────────────────
 
 const FEEDBACK_COLORS: Record<FeedbackType, { bg: string; icon: string }> = {
-  success: { bg: "rgba(5,150,105,0.97)",  icon: "#FFFFFF" },
-  warning: { bg: "rgba(217,119,6,0.97)",  icon: "#FFFFFF" },
-  denied:  { bg: "rgba(220,38,38,0.97)",  icon: "#FFFFFF" },
+  success:   { bg: "rgba(5,150,105,0.97)",   icon: "#FFFFFF" },
+  warning:   { bg: "rgba(217,119,6,0.97)",   icon: "#FFFFFF" },
+  denied:    { bg: "rgba(220,38,38,0.97)",   icon: "#FFFFFF" },
+  clock_in:  { bg: "rgba(30,58,138,0.97)",   icon: "#FBBF24" },
+  clock_out: { bg: "rgba(109,40,217,0.97)",  icon: "#FFFFFF" },
 };
 
 const FEEDBACK_ICONS: Record<FeedbackType, keyof typeof Ionicons.glyphMap> = {
-  success: "checkmark-circle",
-  warning: "warning",
-  denied:  "close-circle",
+  success:   "checkmark-circle",
+  warning:   "warning",
+  denied:    "close-circle",
+  clock_in:  "timer",
+  clock_out: "exit",
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Access response helpers ───────────────────────────────────────────────────
 
 interface AccessResponse {
   allowed?: boolean;
   name?: string;
+  childName?: string;
   payment_status?: string;
   is_blocked?: boolean;
   block_reason?: string;
   warning?: string;
   grace?: boolean;
+  verdict?: string;
 }
 
 function mapAccessToFeedback(res: AccessResponse): FeedbackState {
-  const name = res.name ?? "Member";
-  if (!res.allowed || res.is_blocked) {
-    return {
-      type: "denied",
-      headline: "Access Denied",
-      subtext: res.block_reason ?? "Please contact the front desk or admin.",
-      name,
-    };
+  const name = res.childName ?? res.name ?? "Member";
+  const verdict = res.verdict;
+
+  if (verdict === "suspended" || res.is_blocked) {
+    return { type: "denied", headline: "Access Denied", subtext: res.block_reason ?? "Please contact the front desk.", name };
   }
-  if (res.grace || res.warning || res.payment_status === "expiring_soon") {
-    return {
-      type: "warning",
-      headline: "Welcome — Action Required",
-      subtext: res.warning ?? "Your membership is expiring soon. Please renew at the front desk.",
-      name,
-    };
+  if (verdict === "overdue_denied") {
+    return { type: "denied", headline: "Payment Overdue", subtext: "Please settle your account at the front desk.", name };
   }
-  return {
-    type: "success",
-    headline: "Welcome!",
-    subtext: "Check-in recorded. Have a great class!",
-    name,
-  };
+  if (verdict === "grace_allowed" || res.grace) {
+    return { type: "warning", headline: "Welcome — Action Required", subtext: "Membership expired. One-time grace access granted. Please renew today.", name };
+  }
+  if (res.warning || res.payment_status === "expiring_soon") {
+    return { type: "warning", headline: "Welcome — Action Required", subtext: res.warning ?? "Membership expiring soon. Please renew at the front desk.", name };
+  }
+  return { type: "success", headline: "Welcome!", subtext: "Check-in recorded. Have a great class!", name };
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -103,14 +110,14 @@ export default function KioskScreen() {
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Hidden exit hatch
-  const tapCount    = useRef(0);
-  const tapTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [showPin,   setShowPin]   = useState(false);
-  const [pinInput,  setPinInput]  = useState("");
-  const [pinError,  setPinError]  = useState("");
+  const tapCount   = useRef(0);
+  const tapTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showPin,  setShowPin]   = useState(false);
+  const [pinInput, setPinInput]  = useState("");
+  const [pinError, setPinError]  = useState("");
 
   // Web demo
-  const [webInput,  setWebInput]  = useState("");
+  const [webInput, setWebInput]  = useState("");
 
   // ── Feedback display ────────────────────────────────────────────────────────
 
@@ -124,25 +131,55 @@ export default function KioskScreen() {
         setFeedback(null);
         setScanned(false);
       });
-    }, 3000);
+    }, 3500);
   }, [overlayOpacity]);
 
-  // ── QR validation ───────────────────────────────────────────────────────────
+  // ── Operator QR flow ────────────────────────────────────────────────────────
 
-  const processQrPayload = useCallback(async (data: string) => {
-    if (scanned) return;
-    setScanned(true);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
+  const handleOperatorScan = useCallback(async (operatorId: string) => {
     try {
-      // Parse payload — could be a plain ID or JSON like {"id":"123"}
-      let targetId = data;
-      try {
-        const parsed = JSON.parse(data) as { id?: string; userId?: string; childId?: string };
-        targetId = parsed.id ?? parsed.userId ?? parsed.childId ?? data;
-      } catch { /* raw string ID */ }
+      // Check if already clocked in today
+      const status = await api.clockStatus();
+      if (status.clocked_in) {
+        // Clock-out
+        const rec = await api.clockOut();
+        const inTime  = new Date(rec.clock_in).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+        const outTime = new Date(rec.clock_out).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+        const durationMs = new Date(rec.clock_out).getTime() - new Date(rec.clock_in).getTime();
+        const durationH  = Math.floor(durationMs / 3_600_000);
+        const durationM  = Math.floor((durationMs % 3_600_000) / 60_000);
+        const durationStr = durationH > 0 ? `${durationH}h ${durationM}m` : `${durationM}m`;
+        showFeedback({
+          type:     "clock_out",
+          headline: "Clocked Out",
+          subtext:  `Session: ${inTime} → ${outTime} (${durationStr}) · Payroll logged`,
+          name:     `Operator #${operatorId}`,
+        });
+      } else {
+        // Clock-in
+        const rec = await api.clockIn({});
+        const inTime = new Date(rec.clock_in).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+        showFeedback({
+          type:     "clock_in",
+          headline: "Clocked In",
+          subtext:  `Session started at ${inTime} · Payroll tracking active`,
+          name:     `Operator #${operatorId}`,
+        });
+      }
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      showFeedback({
+        type: "denied", headline: "Clock Error",
+        subtext: "Could not record clock event. Check network.", name: "",
+      });
+    }
+  }, [showFeedback]);
 
-      const res = await api.checkAccess(targetId) as AccessResponse;
+  // ── Child/member QR flow ────────────────────────────────────────────────────
+
+  const handleChildScan = useCallback(async (childId: string) => {
+    try {
+      const res = await api.checkAccess(childId) as AccessResponse;
       const fb  = mapAccessToFeedback(res);
       await Haptics.notificationAsync(
         fb.type === "success" ? Haptics.NotificationFeedbackType.Success :
@@ -150,16 +187,46 @@ export default function KioskScreen() {
                                 Haptics.NotificationFeedbackType.Error
       );
       showFeedback(fb);
+
+      // Log attendance for allowed / grace entries
+      if (fb.type === "success" || fb.type === "warning") {
+        void api.addAttendance({
+          child_id: parseInt(childId, 10) as unknown as never,
+          attended_at: new Date().toISOString(),
+          check_in_method: "qr",
+          notes: `kiosk_scan`,
+        });
+      }
     } catch {
-      // Network / API error → show as denied
-      showFeedback({
-        type: "denied",
-        headline: "Scan Error",
-        subtext: "Could not verify. Please try again or contact staff.",
-        name: "",
-      });
+      showFeedback({ type: "denied", headline: "Scan Error", subtext: "Could not verify. Please try again.", name: "" });
     }
-  }, [scanned, showFeedback]);
+  }, [showFeedback]);
+
+  // ── Main QR dispatch ─────────────────────────────────────────────────────────
+
+  const processQrPayload = useCallback(async (data: string) => {
+    if (scanned) return;
+    setScanned(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      let parsed: QrPayload = {};
+      try { parsed = JSON.parse(data) as QrPayload; } catch { /* raw string */ }
+
+      const entityType = parsed.type;
+
+      if (entityType === "operator") {
+        const opId = parsed.id ?? parsed.operatorId ?? parsed.userId ?? data;
+        await handleOperatorScan(opId);
+      } else {
+        // Default: child / member
+        const childId = parsed.id ?? parsed.childId ?? parsed.userId ?? data;
+        await handleChildScan(childId);
+      }
+    } catch {
+      showFeedback({ type: "denied", headline: "Scan Error", subtext: "Could not process QR code.", name: "" });
+    }
+  }, [scanned, handleOperatorScan, handleChildScan, showFeedback]);
 
   // ── Hidden exit hatch (5 rapid taps on top-right) ───────────────────────────
 
@@ -167,11 +234,9 @@ export default function KioskScreen() {
     tapCount.current += 1;
     if (tapTimer.current) clearTimeout(tapTimer.current);
     tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
-
     if (tapCount.current >= 5) {
       tapCount.current = 0;
-      setPinInput("");
-      setPinError("");
+      setPinInput(""); setPinError("");
       setShowPin(true);
     }
   }, []);
@@ -187,14 +252,14 @@ export default function KioskScreen() {
     }
   }, [pinInput, logout, router]);
 
-  // ── Web demo: simulate scan ──────────────────────────────────────────────────
+  // ── Web demo ─────────────────────────────────────────────────────────────────
 
   const handleWebScan = useCallback(() => {
     if (!webInput.trim()) return;
     void processQrPayload(webInput.trim());
   }, [webInput, processQrPayload]);
 
-  // ── Permission gate ─────────────────────────────────────────────────────────
+  // ── Camera area ──────────────────────────────────────────────────────────────
 
   const renderCameraArea = () => {
     if (!permission) {
@@ -205,7 +270,6 @@ export default function KioskScreen() {
         </View>
       );
     }
-
     if (!permission.granted) {
       return (
         <View style={styles.permissionBox}>
@@ -219,8 +283,8 @@ export default function KioskScreen() {
               style={styles.webInput}
               value={webInput}
               onChangeText={setWebInput}
-              placeholder="Member ID (e.g. child-001)"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholder='e.g. {"type":"child","id":"1"} or {"type":"operator","id":"2"}'
+              placeholderTextColor="rgba(255,255,255,0.35)"
             />
             <Pressable onPress={handleWebScan} style={styles.webScanBtn}>
               <Text style={styles.webScanBtnText}>Scan</Text>
@@ -229,7 +293,6 @@ export default function KioskScreen() {
         </View>
       );
     }
-
     return (
       <CameraView
         style={StyleSheet.absoluteFill}
@@ -240,21 +303,16 @@ export default function KioskScreen() {
     );
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <View style={styles.root}>
+      <View style={styles.cameraContainer}>{renderCameraArea()}</View>
 
-      {/* Camera / web demo layer */}
-      <View style={styles.cameraContainer}>
-        {renderCameraArea()}
-      </View>
-
-      {/* Dark overlay beneath HUD (only when no feedback) */}
       <View style={styles.topGradient} pointerEvents="none" />
       <View style={styles.bottomGradient} pointerEvents="none" />
 
-      {/* ── Top HUD ── */}
+      {/* Top HUD */}
       <View style={[styles.hud, { paddingTop: insets.top + 20 }]}>
         <Image source={LOGO} style={styles.logo} contentFit="contain" />
         <Text style={styles.hudTitle}>Digital Receptionist</Text>
@@ -264,7 +322,7 @@ export default function KioskScreen() {
         </View>
       </View>
 
-      {/* ── Scan frame ── */}
+      {/* Scan frame */}
       {permission?.granted && (
         <View style={styles.frameWrapper} pointerEvents="none">
           <View style={styles.frame}>
@@ -273,32 +331,39 @@ export default function KioskScreen() {
             <View style={[styles.corner, styles.cornerBL]} />
             <View style={[styles.corner, styles.cornerBR]} />
           </View>
+          <Text style={styles.scanHint}>Member or Instructor QR</Text>
         </View>
       )}
 
-      {/* ── Bottom instruction ── */}
+      {/* Bottom instruction */}
       <View style={[styles.bottomHud, { paddingBottom: insets.bottom + 20 }]} pointerEvents="none">
         <Ionicons name="qr-code-outline" size={22} color="rgba(251,191,36,0.85)" />
-        <Text style={styles.bottomText}>Scan your QR code to check in or check out</Text>
+        <Text style={styles.bottomText}>Scan your QR code to check in, check out, or clock in</Text>
       </View>
 
-      {/* ── Traffic Light Overlay ── */}
+      {/* Traffic Light Overlay */}
       {feedback && (
         <Animated.View
           style={[styles.overlay, { opacity: overlayOpacity, backgroundColor: FEEDBACK_COLORS[feedback.type].bg }]}
           pointerEvents="none"
         >
           <View style={styles.overlayInner}>
-            <Ionicons
-              name={FEEDBACK_ICONS[feedback.type]}
-              size={140}
-              color={FEEDBACK_COLORS[feedback.type].icon}
-            />
-            {feedback.name ? (
-              <Text style={styles.overlayName}>{feedback.name}</Text>
-            ) : null}
+            <Ionicons name={FEEDBACK_ICONS[feedback.type]} size={130} color={FEEDBACK_COLORS[feedback.type].icon} />
+            {feedback.name ? <Text style={styles.overlayName}>{feedback.name}</Text> : null}
             <Text style={styles.overlayHeadline}>{feedback.headline}</Text>
             <Text style={styles.overlaySubtext}>{feedback.subtext}</Text>
+
+            {/* Operator clock badge */}
+            {(feedback.type === "clock_in" || feedback.type === "clock_out") && (
+              <View style={[styles.clockBadge, { backgroundColor: feedback.type === "clock_in" ? "#FBBF24" : "rgba(255,255,255,0.2)" }]}>
+                <Ionicons name={feedback.type === "clock_in" ? "time-outline" : "checkmark-circle-outline"} size={16}
+                  color={feedback.type === "clock_in" ? "#1E3A8A" : "#FFF"} />
+                <Text style={[styles.clockBadgeText, { color: feedback.type === "clock_in" ? "#1E3A8A" : "#FFF" }]}>
+                  {feedback.type === "clock_in" ? "Payroll Timer Started" : "Payroll Record Saved"}
+                </Text>
+              </View>
+            )}
+
             {feedback.type === "denied" && (
               <View style={styles.denyBadge}>
                 <Ionicons name="person-outline" size={16} color="#FFF" />
@@ -306,23 +371,20 @@ export default function KioskScreen() {
               </View>
             )}
           </View>
-          {/* 3-second countdown dots */}
           <View style={styles.countdownRow}>
-            {[0, 1, 2].map(i => (
-              <View key={i} style={styles.countdownDot} />
-            ))}
+            {[0, 1, 2].map(i => <View key={i} style={styles.countdownDot} />)}
           </View>
         </Animated.View>
       )}
 
-      {/* ── Hidden Exit Hatch (top-right corner, 80×80, invisible) ── */}
+      {/* Hidden exit hatch */}
       <Pressable
         style={[styles.exitHatch, { top: insets.top, right: 0 }]}
         onPress={handleSecretTap}
         hitSlop={0}
       />
 
-      {/* ── PIN Modal ── */}
+      {/* PIN Modal */}
       <Modal visible={showPin} transparent animationType="fade" statusBarTranslucent>
         <View style={styles.pinBackdrop}>
           <View style={styles.pinCard}>
@@ -352,311 +414,123 @@ export default function KioskScreen() {
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Styles ─────────────────────────────────────────────────────────────────────
 
 const FRAME = Math.min(SW, SH) * 0.55;
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#0B1F4A",
-    overflow: "hidden",
-  },
-  cameraContainer: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  root:            { flex: 1, backgroundColor: "#0B1F4A", overflow: "hidden" },
+  cameraContainer: { ...StyleSheet.absoluteFillObject },
 
-  // Gradients
   topGradient: {
-    position: "absolute",
-    top: 0, left: 0, right: 0,
-    height: 200,
+    position: "absolute", top: 0, left: 0, right: 0, height: 200,
     backgroundColor: "rgba(11,31,74,0.82)",
   },
   bottomGradient: {
-    position: "absolute",
-    bottom: 0, left: 0, right: 0,
-    height: 160,
+    position: "absolute", bottom: 0, left: 0, right: 0, height: 160,
     backgroundColor: "rgba(11,31,74,0.82)",
   },
 
-  // Top HUD
   hud: {
-    position: "absolute",
-    top: 0, left: 0, right: 0,
-    alignItems: "center",
-    paddingHorizontal: 24,
+    position: "absolute", top: 0, left: 0, right: 0,
+    alignItems: "center", paddingHorizontal: 24,
   },
-  logo: { width: 120, height: 56, marginBottom: 4 },
-  hudTitle: {
-    color: "#FBBF24",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 2.5,
-    textTransform: "uppercase",
-    marginBottom: 10,
-  },
+  logo:     { width: 120, height: 56, marginBottom: 4 },
+  hudTitle: { color: "#FBBF24", fontSize: 13, fontWeight: "700", letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 },
   statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row", alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    gap: 7,
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, gap: 7,
   },
-  statusDot: {
-    width: 8, height: 8,
-    borderRadius: 4,
-    backgroundColor: "#22C55E",
-  },
-  statusText: {
-    color: "#FFF",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-  },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#22C55E" },
+  statusText: { color: "#FFF", fontSize: 11, fontWeight: "700", letterSpacing: 1.5 },
 
-  // Scan frame
   frameWrapper: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center", justifyContent: "center", gap: 16,
   },
-  frame: {
-    width: FRAME,
-    height: FRAME,
-    position: "relative",
+  frame: { width: FRAME, height: FRAME, position: "relative" },
+  scanHint: {
+    color: "rgba(251,191,36,0.7)", fontSize: 12, fontWeight: "600",
+    letterSpacing: 0.5, textAlign: "center",
   },
-  corner: {
-    position: "absolute",
-    width: 32,
-    height: 32,
-    borderColor: "#FBBF24",
-    borderWidth: 3,
-  },
+  corner: { position: "absolute", width: 32, height: 32, borderColor: "#FBBF24", borderWidth: 3 },
   cornerTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 6 },
   cornerTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 6 },
   cornerBL: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 6 },
   cornerBR: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 6 },
 
-  // Bottom HUD
   bottomHud: {
-    position: "absolute",
-    bottom: 0, left: 0, right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingHorizontal: 24,
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 10, paddingHorizontal: 24,
   },
-  bottomText: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 15,
-    fontWeight: "600",
-    textAlign: "center",
-    flexShrink: 1,
-  },
+  bottomText: { color: "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: "600", textAlign: "center", flexShrink: 1 },
 
-  // Traffic light overlay
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
+    alignItems: "center", justifyContent: "center", paddingHorizontal: 32,
   },
-  overlayInner: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
+  overlayInner: { alignItems: "center", flex: 1, justifyContent: "center" },
+  overlayName:     { color: "rgba(255,255,255,0.85)", fontSize: 22, fontWeight: "700", marginTop: 12, letterSpacing: 0.5 },
+  overlayHeadline: { color: "#FFFFFF", fontSize: 42, fontWeight: "800", textAlign: "center", marginTop: 8, lineHeight: 48 },
+  overlaySubtext:  { color: "rgba(255,255,255,0.88)", fontSize: 18, textAlign: "center", marginTop: 14, lineHeight: 26, maxWidth: 320 },
+
+  clockBadge: {
+    flexDirection: "row", alignItems: "center",
+    borderRadius: 24, paddingHorizontal: 18, paddingVertical: 10,
+    gap: 8, marginTop: 24,
   },
-  overlayName: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 22,
-    fontWeight: "700",
-    marginTop: 12,
-    letterSpacing: 0.5,
-  },
-  overlayHeadline: {
-    color: "#FFFFFF",
-    fontSize: 42,
-    fontWeight: "800",
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 48,
-  },
-  overlaySubtext: {
-    color: "rgba(255,255,255,0.88)",
-    fontSize: 18,
-    textAlign: "center",
-    marginTop: 14,
-    lineHeight: 26,
-    maxWidth: 320,
-  },
+  clockBadgeText: { fontSize: 14, fontWeight: "700", letterSpacing: 0.5 },
   denyBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.25)",
-    borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    gap: 8,
-    marginTop: 24,
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.25)", borderRadius: 24,
+    paddingHorizontal: 18, paddingVertical: 10, gap: 8, marginTop: 24,
   },
-  denyBadgeText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  countdownRow: {
-    flexDirection: "row",
-    gap: 10,
-    paddingBottom: 48,
-  },
-  countdownDot: {
-    width: 10, height: 10,
-    borderRadius: 5,
-    backgroundColor: "rgba(255,255,255,0.5)",
-  },
+  denyBadgeText: { color: "#FFF", fontSize: 14, fontWeight: "700", letterSpacing: 0.5 },
 
-  // Hidden exit hatch
-  exitHatch: {
-    position: "absolute",
-    width: 80,
-    height: 80,
-  },
+  countdownRow: { flexDirection: "row", gap: 10, paddingBottom: 48 },
+  countdownDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.5)" },
 
-  // PIN modal
-  pinBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
+  exitHatch: { position: "absolute", width: 80, height: 80 },
+
+  pinBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.75)", alignItems: "center", justifyContent: "center", padding: 24 },
   pinCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 32,
-    width: "100%",
-    maxWidth: 360,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.4,
-    shadowRadius: 40,
-    elevation: 20,
+    backgroundColor: "#FFFFFF", borderRadius: 24, padding: 32,
+    width: "100%", maxWidth: 360, alignItems: "center",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.4, shadowRadius: 40, elevation: 20,
   },
-  pinTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#1E3A8A",
-    marginBottom: 6,
-  },
-  pinSub: {
-    fontSize: 13,
-    color: "#6B7BA4",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 18,
-  },
+  pinTitle:  { fontSize: 22, fontWeight: "800", color: "#1E3A8A", marginBottom: 6 },
+  pinSub:    { fontSize: 13, color: "#6B7BA4", textAlign: "center", marginBottom: 24, lineHeight: 18 },
   pinInput: {
-    width: "100%",
-    height: 56,
-    backgroundColor: "#F0F4FF",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#D1D9F0",
-    textAlign: "center",
-    fontSize: 28,
-    letterSpacing: 12,
-    color: "#1E3A8A",
-    fontWeight: "700",
-    marginBottom: 8,
+    width: "100%", height: 56, backgroundColor: "#F0F4FF",
+    borderRadius: 14, borderWidth: 1, borderColor: "#D1D9F0",
+    textAlign: "center", fontSize: 28, letterSpacing: 12,
+    color: "#1E3A8A", fontWeight: "700", marginBottom: 8,
   },
-  pinError: {
-    color: "#EF4444",
-    fontSize: 13,
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  pinButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-    width: "100%",
-  },
-  pinCancel: {
-    flex: 1,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: "#F0F4FF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pinCancelText: { color: "#6B7BA4", fontWeight: "700", fontSize: 15 },
-  pinConfirm: {
-    flex: 1,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: "#1E3A8A",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  pinError:   { color: "#EF4444", fontSize: 13, marginBottom: 12, textAlign: "center" },
+  pinButtons: { flexDirection: "row", gap: 12, marginTop: 8, width: "100%" },
+  pinCancel:  { flex: 1, height: 50, borderRadius: 12, backgroundColor: "#F0F4FF", alignItems: "center", justifyContent: "center" },
+  pinCancelText:  { color: "#6B7BA4", fontWeight: "700", fontSize: 15 },
+  pinConfirm: { flex: 1, height: 50, borderRadius: 12, backgroundColor: "#1E3A8A", alignItems: "center", justifyContent: "center" },
   pinConfirmText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
 
-  // Web demo
-  webInputRow: {
-    flexDirection: "row",
-    gap: 8,
-    width: "100%",
-    maxWidth: 360,
-  },
+  webInputRow: { flexDirection: "row", gap: 8, width: "100%", maxWidth: 360 },
   webInput: {
-    flex: 1,
-    height: 46,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-    paddingHorizontal: 14,
-    color: "#FFF",
-    fontSize: 14,
+    flex: 1, height: 46, backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 14, color: "#FFF", fontSize: 13,
   },
-  webScanBtn: {
-    backgroundColor: "#FBBF24",
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  webScanBtn: { backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" },
   webScanBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 14 },
 
-  // Permission
-  permissionBox: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    padding: 32,
-  },
-  permText: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  permBtn: {
-    backgroundColor: "#FBBF24",
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
+  permissionBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, padding: 32 },
+  permText: { color: "rgba(255,255,255,0.7)", fontSize: 16, fontWeight: "600", textAlign: "center" },
+  permBtn:  { backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   permBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 15 },
 });
