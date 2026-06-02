@@ -47,7 +47,7 @@ router.post("/auth/login", async (req, res) => {
 
   const { data: users, error } = await supabase
     .from("users")
-    .select("id, name, email, password_hash, role, roles, organization_id, blocked, activation_status")
+    .select("id, name, email, password_hash, role, roles, organization_id, blocked")
     .ilike("email", email.trim())
     .limit(1);
 
@@ -59,14 +59,6 @@ router.post("/auth/login", async (req, res) => {
   const user = users[0];
   if (user.blocked) {
     res.status(403).json({ error: "Account suspended" });
-    return;
-  }
-
-  if (user.activation_status === "pending_activation") {
-    res.status(403).json({
-      error: "pending_activation",
-      message: "Please verify your email address before logging in.",
-    });
     return;
   }
 
@@ -188,7 +180,6 @@ router.post("/auth/register", async (req, res) => {
       password_hash,
       role,
       organization_id: orgId,
-      activation_status,
       ...(phone?.trim() ? { phone: phone.trim() } : {}),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
