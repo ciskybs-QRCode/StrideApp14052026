@@ -1,0 +1,22 @@
+🚨 MEMBER UI REFACTORING: CONSOLIDATE PROFILE/DOCUMENTS & INTEGRATE WALLET INTO CART 🚨
+Role: Expert Frontend UI/UX Developer (React Native Expo Router).
+Objective: Streamline the Member/Parent-side user interface by eliminating redundant screens, merging profile/settings functionality, and integrating the wallet management directly into the cart system.
+Branding Theme: Deep Navy Blue background (#0A1128), Premium Gold accents (#D4AF37), high content density, and strict viewport boundary enforcement (ZERO screen overflows or horizontal leakage).
+🚨 GLOBAL STABILITY DIRECTIVE (MANDATORY) 🚨 DO NOT touch, modify, or break the underlying backend database structures, Supabase tables, active Stripe checkout configurations, or the family/child attachment data states. This is strictly a navigation collapse and visual consolidation.
+Please execute the following UI updates on the Member/Parent side:
+PART 1: UNIFIED PROFILE & DOCUMENT CENTRE (SETTINGS HUB)
+The Consolidation: Merge the existing Profile screen and the Settings screen (currently styled as "Document Centre") into a single, unified screen component.
+The Unified Layout: Present a clean, high-density vertical layout containing:
+Top Section (Account Identity): Display parent metadata, profile image placeholder, and immediate administrative controls (Change Email, Change Password, Delete Account, and Log Out).
+Middle Section (The Document Centre Grid): Create a dedicated structural card layout titled "Document & Legal Centre". Inside this card, embed 3 distinct high-density interactive rows/tiles:
+New Documents (with a Gold indicator icon/badge for unread files)
+Document Archive (history of signed files)
+Photo/Video Consent (privacy/media distribution waivers toggles)
+Interaction: Clicking any of these 3 rows must route cleanly to their respective sub-views or expand them natively.
+PART 2: INTEGRATING WALLET INTO THE CART SCREEN
+The Navigation Change: Remove the standalone Wallet tab from the main navigation flow entirely.
+The Integrated Cart Layout: Open the main Cart (Carrello) screen.
+The Wallet Card Integration: At the bottom or top of the active cart items listing (just before the checkout summary calculations), embed a compact, premium-styled component block dedicated to the Wallet / Payment Methods:
+Aesthetic: Feature a clear Wallet icon on the left, an abbreviated reference to the currently active payment card on file (e.g., 🟢 Visa ending in **** 4242), and a Gold button/chevron on the right labeled "Manage / Edit".
+Action: Clicking "Manage / Edit" must launch a modal overlay or router link pushing to the wallet modification subsystem where the parent can update credit cards, review Stripe billing histories, or modify default payout accounts without leaving the shopping/cart ecosystem.
+Output Requirement: Provide the refactored layout routing structures reflecting these combined view setups, output the combined Profile/Document Centre interface component code, and render the newly structured Cart view with embedded Wallet profile parameters. Ensure absolute alignment inside mobile device borders.

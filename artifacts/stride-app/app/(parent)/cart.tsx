@@ -395,6 +395,29 @@ export default function CartScreen() {
             ) : null}
           </View>
 
+          {/* ── Wallet Block ── */}
+          <View style={[styles.walletBlock, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.walletLeft}>
+              <View style={[styles.walletIconBox, { backgroundColor: "#EFF6FF" }]}>
+                <Ionicons name="wallet-outline" size={22} color="#1E3A8A" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.walletLabel, { color: colors.foreground }]}>Payment Method</Text>
+                <View style={styles.walletCardRow}>
+                  <View style={styles.walletDot} />
+                  <Text style={[styles.walletCardText, { color: colors.mutedForeground }]}>VISA •••• •••• •••• 1234</Text>
+                </View>
+              </View>
+            </View>
+            <Pressable
+              style={styles.walletManageBtn}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/wallet" as never); }}
+            >
+              <Text style={styles.walletManageBtnText}>Manage</Text>
+              <Ionicons name="chevron-forward" size={13} color="#1E3A8A" />
+            </Pressable>
+          </View>
+
           {/* ── Checkout section ── */}
           <View style={[styles.checkoutSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {hasPendingItems && !hasPayable && (
@@ -633,6 +656,16 @@ const styles = StyleSheet.create({
   itemParticipantText: { fontSize: 13 },
   itemPrice: { fontSize: 22, fontWeight: "800" },
   itemLabel: { fontSize: 12, marginTop: 2 },
+
+  walletBlock: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 12 },
+  walletLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  walletIconBox: { width: 40, height: 40, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  walletLabel: { fontSize: 13, fontWeight: "700", marginBottom: 3 },
+  walletCardRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  walletDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#10B981" },
+  walletCardText: { fontSize: 12 },
+  walletManageBtn: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
+  walletManageBtnText: { fontSize: 12, fontWeight: "800", color: "#1E3A8A" },
 
   checkoutSection: { borderRadius: 20, borderWidth: 1, padding: 20, marginTop: 8 },
   awaitingRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },

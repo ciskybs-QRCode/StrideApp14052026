@@ -61,6 +61,7 @@ export default function DocumentsScreen() {
 
   const [showSign, setShowSign] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<"new" | "archive" | "consent" | null>(null);
 
   // Extra profile state (phone, address, etc.)
   const [profileExtra, setProfileExtra] = useState<ProfileExtra>(EMPTY_EXTRA);
@@ -190,134 +191,195 @@ export default function DocumentsScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Document Centre</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Settings</Text>
+
+        {/* ── Profile Identity Card ── */}
+        <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
+          <View style={styles.profileCardInner}>
+            <Pressable onPress={handlePickProfilePhoto} style={styles.avatarWrap}>
+              {user?.profilePhotoUri ? (
+                <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} />
+              ) : (
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarInitial}>{user?.name?.charAt(0) ?? "?"}</Text>
+                </View>
+              )}
+              <View style={styles.cameraOverlay}>
+                <Ionicons name="camera" size={11} color="#FFF" />
+              </View>
+            </Pressable>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName} numberOfLines={1}>{user?.name ?? "Member"}</Text>
+              {user?.email ? <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text> : null}
+              <View style={styles.roleBadge}>
+                <Ionicons name="person" size={11} color="#1E3A8A" />
+                <Text style={styles.roleBadgeText}>Member</Text>
+              </View>
+            </View>
+            <Pressable style={styles.editProfileBtn} onPress={openEditProfile} hitSlop={8}>
+              <Ionicons name="pencil-outline" size={14} color="#FFF" />
+              <Text style={styles.editProfileBtnText}>Edit</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ── Account Controls ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
+        <RoleSwitcherRow />
+        <AccountSettingsCard />
+
+        {/* ── Document & Legal Centre ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>Document & Legal Centre</Text>
 
         {pendingDocs.length > 0 && (
           <View style={styles.alertBanner}>
             <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
-            <Text style={styles.alertText}>{pendingDocs.length} document{pendingDocs.length !== 1 ? "s" : ""} to sign</Text>
+            <Text style={styles.alertText}>{pendingDocs.length} document{pendingDocs.length !== 1 ? "s" : ""} require{pendingDocs.length === 1 ? "s" : ""} your signature</Text>
           </View>
         )}
 
-        {pendingDocs.length > 0 && (
-          <>
-            <Text style={[styles.sectionTitle, { color: "#EF4444" }]}>Signature Required</Text>
-            {pendingDocs.map(doc => (
-              <View key={doc.id} style={[styles.docCard, { backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444", borderLeftWidth: 4 }]}>
-                <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#EF4444" />
-                <View style={styles.docInfo}>
-                  <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
-                  <Text style={[styles.docStatus, { color: "#EF4444" }]}>Signature required</Text>
-                </View>
-                <Pressable style={styles.signBtn} onPress={() => setShowSign(doc.id)}>
-                  <Text style={styles.signBtnText}>SIGN</Text>
-                </Pressable>
-              </View>
-            ))}
-          </>
-        )}
-
-        {newDocs.length > 0 && (
-          <>
-            <Text style={[styles.sectionTitle, { color: colors.primary }]}>New Documents</Text>
-            {newDocs.map(doc => (
-              <Pressable key={doc.id} style={[styles.docCard, { backgroundColor: colors.card }]} onPress={() => handlePreview(doc)}>
-                <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={colors.primary} />
-                <View style={styles.docInfo}>
-                  <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
-                  <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>
-                    From {doc.sentBy === "admin" ? "Administration" : "Teacher"} · {doc.sentAt}
-                  </Text>
-                </View>
-                <Pressable
-                  style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]}
-                  onPress={() => handlePreview(doc)}
-                  disabled={!doc.fileUrl}
-                >
-                  <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? colors.primary : colors.mutedForeground} />
-                </Pressable>
-              </Pressable>
-            ))}
-          </>
-        )}
-
-        {/* Document Archive — unchanged */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Document Archive</Text>
-        {archivedDocs.map(doc => (
-          <View key={doc.id} style={[styles.docCard, { backgroundColor: colors.card }]}>
-            <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#10B981" />
-            <View style={styles.docInfo}>
-              <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
-              <Text style={[styles.docStatus, { color: "#10B981" }]}>Signed on {doc.signedDate}</Text>
+        {/* Tile 1: New Documents */}
+        <View style={[styles.docTile, { backgroundColor: colors.card }]}>
+          <Pressable
+            style={styles.docTileHeader}
+            onPress={() => setExpandedSection(expandedSection === "new" ? null : "new")}
+          >
+            <View style={[styles.docTileIconBox, { backgroundColor: "#EFF6FF" }]}>
+              <Ionicons name="document-text-outline" size={22} color="#1E3A8A" />
             </View>
-            <Pressable style={[styles.downloadBtn, { backgroundColor: colors.muted }]} onPress={() => handleDownload(doc)}>
-              <Ionicons name="download-outline" size={16} color={colors.primary} />
-            </Pressable>
-          </View>
-        ))}
-        {archivedDocs.length === 0 && (
-          <View style={[styles.docCard, { backgroundColor: colors.card }]}>
-            <Ionicons name="folder-open-outline" size={20} color={colors.mutedForeground} />
-            <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>No archived documents yet</Text>
-          </View>
-        )}
-
-        {/* Photo/Video Consent — unchanged */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Photo/Video Consent</Text>
-        <View style={[styles.consentCard, { backgroundColor: colors.card }]}>
-          {([
-            { key: "full"     as const, label: "Full Consent (Social/Promo)",  icon: "camera"  as const },
-            { key: "internal" as const, label: "Internal Educational Use Only", icon: "school"  as const },
-            { key: "none"     as const, label: "No Consent",                    icon: "eye-off" as const },
-          ]).map(option => (
-            <Pressable
-              key={option.key}
-              style={[styles.consentOption, mediaConsent === option.key && { backgroundColor: colors.primary }]}
-              onPress={() => setMediaConsent(option.key)}
-            >
-              <Ionicons name={option.icon} size={18} color={mediaConsent === option.key ? "#FFF" : colors.primary} />
-              <Text style={[styles.consentText, mediaConsent === option.key && { color: "#FFF" }]}>{option.label}</Text>
-              <Ionicons
-                name={mediaConsent === option.key ? "radio-button-on" : "radio-button-off"}
-                size={18}
-                color={mediaConsent === option.key ? "#FFF" : colors.mutedForeground}
-              />
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Profile Settings — expanded */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Profile Settings</Text>
-
-        {/* Profile photo row */}
-        <Pressable style={[styles.profilePhotoRow, { backgroundColor: colors.card }]} onPress={handlePickProfilePhoto}>
-          <View style={[styles.photoCircle, { backgroundColor: colors.muted }]}>
-            {user?.profilePhotoUri ? (
-              <Image source={{ uri: user.profilePhotoUri }} style={styles.photoImg} />
-            ) : (
-              <Text style={[styles.photoInitial, { color: colors.primary }]}>{user?.name?.charAt(0) ?? "?"}</Text>
-            )}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.photoLabel, { color: colors.primary }]}>Profile Photo</Text>
-            <Text style={[styles.photoHint, { color: colors.mutedForeground }]}>
-              {user?.profilePhotoUri ? "Tap to change photo" : "Tap to upload a photo"}
-            </Text>
-          </View>
-          <Ionicons name="camera-outline" size={20} color={colors.primary} />
-        </Pressable>
-
-        <View style={[styles.settingsCard, { backgroundColor: colors.card }]}>
-          <Pressable style={styles.settingsItem} onPress={openEditProfile}>
-            <Ionicons name="person-outline" size={20} color={colors.primary} />
-            <Text style={[styles.settingsLabel, { color: colors.foreground }]}>Edit Profile</Text>
-            <Text style={[styles.settingsHint, { color: colors.mutedForeground }]}>Name, phone, address, dependent members</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>New Documents</Text>
+              <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>
+                {newDocs.length + pendingDocs.length} item{(newDocs.length + pendingDocs.length) !== 1 ? "s" : ""} available
+              </Text>
+            </View>
+            {(newDocs.length > 0 || pendingDocs.length > 0) && <View style={styles.unreadDot} />}
+            <Ionicons name={expandedSection === "new" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
           </Pressable>
+          {expandedSection === "new" && (
+            <View style={styles.docTileBody}>
+              {pendingDocs.length > 0 && (
+                <>
+                  <Text style={[styles.subSectionLabel, { color: "#EF4444" }]}>Signature Required</Text>
+                  {pendingDocs.map(doc => (
+                    <View key={doc.id} style={[styles.docCard, { backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444", borderLeftWidth: 4 }]}>
+                      <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#EF4444" />
+                      <View style={styles.docInfo}>
+                        <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                        <Text style={[styles.docStatus, { color: "#EF4444" }]}>Signature required</Text>
+                      </View>
+                      <Pressable style={styles.signBtn} onPress={() => setShowSign(doc.id)}>
+                        <Text style={styles.signBtnText}>SIGN</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </>
+              )}
+              {newDocs.length > 0 && (
+                <>
+                  <Text style={[styles.subSectionLabel, { color: colors.primary }]}>From School</Text>
+                  {newDocs.map(doc => (
+                    <Pressable key={doc.id} style={[styles.docCard, { backgroundColor: colors.background }]} onPress={() => handlePreview(doc)}>
+                      <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={colors.primary} />
+                      <View style={styles.docInfo}>
+                        <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                        <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>
+                          From {doc.sentBy === "admin" ? "Administration" : "Teacher"} · {doc.sentAt}
+                        </Text>
+                      </View>
+                      <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
+                        <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? colors.primary : colors.mutedForeground} />
+                      </Pressable>
+                    </Pressable>
+                  ))}
+                </>
+              )}
+              {newDocs.length === 0 && pendingDocs.length === 0 && (
+                <Text style={[styles.emptyTileText, { color: colors.mutedForeground }]}>No new documents</Text>
+              )}
+            </View>
+          )}
         </View>
 
-        <RoleSwitcherRow />
-        <AccountSettingsCard />
+        {/* Tile 2: Document Archive */}
+        <View style={[styles.docTile, { backgroundColor: colors.card }]}>
+          <Pressable
+            style={styles.docTileHeader}
+            onPress={() => setExpandedSection(expandedSection === "archive" ? null : "archive")}
+          >
+            <View style={[styles.docTileIconBox, { backgroundColor: "#D1FAE5" }]}>
+              <Ionicons name="folder-open-outline" size={22} color="#059669" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Document Archive</Text>
+              <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>
+                {archivedDocs.length} signed document{archivedDocs.length !== 1 ? "s" : ""}
+              </Text>
+            </View>
+            <Ionicons name={expandedSection === "archive" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
+          </Pressable>
+          {expandedSection === "archive" && (
+            <View style={styles.docTileBody}>
+              {archivedDocs.map(doc => (
+                <View key={doc.id} style={[styles.docCard, { backgroundColor: colors.background }]}>
+                  <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#10B981" />
+                  <View style={styles.docInfo}>
+                    <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                    <Text style={[styles.docStatus, { color: "#10B981" }]}>Signed on {doc.signedDate}</Text>
+                  </View>
+                  <Pressable style={[styles.downloadBtn, { backgroundColor: colors.muted }]} onPress={() => handleDownload(doc)}>
+                    <Ionicons name="download-outline" size={16} color={colors.primary} />
+                  </Pressable>
+                </View>
+              ))}
+              {archivedDocs.length === 0 && (
+                <Text style={[styles.emptyTileText, { color: colors.mutedForeground }]}>No archived documents yet</Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Tile 3: Photo/Video Consent */}
+        <View style={[styles.docTile, { backgroundColor: colors.card }]}>
+          <Pressable
+            style={styles.docTileHeader}
+            onPress={() => setExpandedSection(expandedSection === "consent" ? null : "consent")}
+          >
+            <View style={[styles.docTileIconBox, { backgroundColor: "#FEF3C7" }]}>
+              <Ionicons name="camera-outline" size={22} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Photo/Video Consent</Text>
+              <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>
+                {mediaConsent === "full" ? "Full consent granted" : mediaConsent === "internal" ? "Internal use only" : "No consent"}
+              </Text>
+            </View>
+            <Ionicons name={expandedSection === "consent" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
+          </Pressable>
+          {expandedSection === "consent" && (
+            <View style={[styles.docTileBody, { gap: 10 }]}>
+              {([
+                { key: "full"     as const, label: "Full Consent (Social/Promo)",   icon: "camera"  as const },
+                { key: "internal" as const, label: "Internal Educational Use Only",  icon: "school"  as const },
+                { key: "none"     as const, label: "No Consent",                     icon: "eye-off" as const },
+              ]).map(option => (
+                <Pressable
+                  key={option.key}
+                  style={[styles.consentOption, mediaConsent === option.key && { backgroundColor: colors.primary }]}
+                  onPress={() => setMediaConsent(option.key)}
+                >
+                  <Ionicons name={option.icon} size={18} color={mediaConsent === option.key ? "#FFF" : colors.primary} />
+                  <Text style={[styles.consentText, mediaConsent === option.key && { color: "#FFF" }]}>{option.label}</Text>
+                  <Ionicons
+                    name={mediaConsent === option.key ? "radio-button-on" : "radio-button-off"}
+                    size={18}
+                    color={mediaConsent === option.key ? "#FFF" : colors.mutedForeground}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* ── Sign Document Modal ── */}
@@ -546,7 +608,7 @@ const styles = StyleSheet.create({
   consentOption: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#D1D9F0" },
   consentText: { flex: 1, fontSize: 14, fontWeight: "500", color: "#1E3A8A" },
 
-  // Profile photo row
+  // Profile photo row (kept for edit modal usage)
   profilePhotoRow: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 14, marginBottom: 12 },
   photoCircle: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   photoImg: { width: 52, height: 52, borderRadius: 26 },
@@ -559,6 +621,33 @@ const styles = StyleSheet.create({
   settingsItem: { flexDirection: "row", alignItems: "center", padding: 16, gap: 12 },
   settingsLabel: { flex: 1, fontSize: 15, fontWeight: "500" },
   settingsHint: { fontSize: 12, maxWidth: 110 },
+
+  // Profile identity card
+  profileCard: { borderRadius: 20, marginBottom: 24, overflow: "hidden" },
+  profileCardInner: { flexDirection: "row", alignItems: "center", gap: 14, padding: 20 },
+  avatarWrap: { position: "relative" },
+  avatarCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
+  avatarPhoto: { width: 54, height: 54, borderRadius: 27 },
+  avatarInitial: { color: "#FFF", fontSize: 22, fontWeight: "700" },
+  cameraOverlay: { position: "absolute", bottom: 0, right: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
+  profileInfo: { flex: 1, minWidth: 0 },
+  profileName: { color: "#FFF", fontSize: 16, fontWeight: "700", marginBottom: 2 },
+  profileEmail: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginBottom: 6 },
+  roleBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FBBF24", alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  roleBadgeText: { fontSize: 10, fontWeight: "700", color: "#1E3A8A" },
+  editProfileBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8 },
+  editProfileBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
+
+  // Document tiles
+  docTile: { borderRadius: 16, marginBottom: 12, overflow: "hidden" },
+  docTileHeader: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16 },
+  docTileIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  docTileTitle: { fontSize: 15, fontWeight: "700" },
+  docTileSub: { fontSize: 12, marginTop: 2 },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#FBBF24", marginRight: 4 },
+  docTileBody: { paddingHorizontal: 16, paddingBottom: 16 },
+  subSectionLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase" as const, letterSpacing: 0.5, marginBottom: 8, marginTop: 2 },
+  emptyTileText: { fontSize: 13, textAlign: "center" as const, paddingVertical: 12 },
 
   deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 16, backgroundColor: "#FEF2F2", marginBottom: 20 },
   deleteBtnText: { color: "#EF4444", fontWeight: "700", fontSize: 14, letterSpacing: 1 },
