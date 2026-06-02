@@ -180,7 +180,7 @@ function Landing() {
           </a>
 
           <div className="hidden md:flex items-center gap-7">
-            {[["#pain-points", "Why Us"], ["#ai-cores", "AI Cores"], ["#features", "Features"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
+            {[["#pain-points", "Why Us"], ["#ai-cores", "AI Cores"], ["#how-it-works", "How It Works"], ["#features", "Features"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
               <a key={label} href={href} className="text-sm text-slate-600 hover:text-[#1E3A8A] font-medium transition-colors">{label}</a>
             ))}
             <a href="/register"
@@ -200,7 +200,7 @@ function Landing() {
 
         {menuOpen && (
           <div className="md:hidden border-t border-slate-100 bg-white px-6 py-5 flex flex-col gap-4 shadow-lg">
-            {[["#pain-points", "Why Us"], ["#ai-cores", "AI Cores"], ["#features", "Features"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
+            {[["#pain-points", "Why Us"], ["#ai-cores", "AI Cores"], ["#how-it-works", "How It Works"], ["#features", "Features"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
               <a key={label} href={href} className="text-sm text-slate-600 hover:text-[#1E3A8A] font-medium"
                 onClick={() => setMenuOpen(false)}>{label}</a>
             ))}
@@ -370,6 +370,160 @@ function Landing() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
+      <section id="how-it-works" className="bg-[#0A1128] overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+
+          {/* Header */}
+          <div className="text-center mb-16">
+            <span className="inline-block border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest mb-5">
+              Inside the AI Engine
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight mb-5">
+              How the Magic Works{" "}
+              <span className="block sm:inline text-[#D4AF37]">(Without the Friction)</span>
+            </h2>
+            <p className="text-blue-200/70 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              A behind-the-scenes look at how our background AI eliminates 90% of your daily administrative tasks in seconds.
+            </p>
+          </div>
+
+          {/* Vision AI Steps */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-white font-bold text-base">Vision AI — Document Verification</div>
+                <div className="text-blue-300/60 text-xs uppercase tracking-widest mt-0.5">3-step automated lifecycle</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-0 relative">
+              {/* Connector line — desktop only */}
+              <div className="hidden md:block absolute top-8 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-[#D4AF37]/20 via-[#D4AF37]/60 to-[#D4AF37]/20 z-0" />
+
+              {[
+                {
+                  n: "01",
+                  title: "The Parent Snaps & Sends",
+                  desc: "Parents take a quick photo of medical clearances or privacy waivers on their phone. No complex scanners or formatting rules required.",
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                        d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                    </svg>
+                  ),
+                },
+                {
+                  n: "02",
+                  title: "Multilingual Semantic Extraction",
+                  desc: "Our integrated engine instantly reads the document in English or Italian. It automatically locates the student's name, calculates the exact expiration date, and visually confirms the doctor's stamp and signature.",
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                    </svg>
+                  ),
+                },
+                {
+                  n: "03",
+                  title: "Automated Safeguard & Gatekeeper",
+                  desc: "High-confidence verifications instantly update student records and clear the Kiosk gate for entry. If a document is blurry or uncertain, it flags the exact detail for a 1-click human approval. You only intervene when strictly necessary.",
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                        d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                    </svg>
+                  ),
+                },
+              ].map(({ n, title, desc, icon }, idx) => (
+                <div key={n} className="relative z-10 flex flex-col">
+                  {/* Mobile connector */}
+                  {idx < 2 && (
+                    <div className="md:hidden w-px h-8 bg-gradient-to-b from-[#D4AF37]/60 to-[#D4AF37]/10 mx-auto my-0" />
+                  )}
+                  <div className="bg-white/5 border border-[#D4AF37]/20 hover:border-[#D4AF37]/50 rounded-2xl p-6 sm:p-7 flex flex-col gap-4 transition-all duration-200 hover:bg-white/8 md:mx-2">
+                    {/* Step number + icon row */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#D4AF37] flex items-center justify-center text-[#0A1128] flex-shrink-0 font-black text-sm shadow-lg shadow-[#D4AF37]/20">
+                        {icon}
+                      </div>
+                      <span className="text-[#D4AF37]/50 font-black text-3xl leading-none tracking-tight">{n}</span>
+                    </div>
+                    <h3 className="text-white font-bold text-base leading-snug">{title}</h3>
+                    <p className="text-blue-200/60 text-sm leading-relaxed">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Smart Rostering Card */}
+          <div className="relative rounded-2xl overflow-hidden border border-[#D4AF37]/25 bg-gradient-to-br from-[#0D1A3E] to-[#0A1128]">
+            {/* Gold corner accent */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4AF37]/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#D4AF37]/4 rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+
+            <div className="relative p-7 sm:p-9 flex flex-col sm:flex-row gap-7 items-start">
+              <div className="flex-shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6}
+                      d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  <span className="text-white font-black text-xl">Predictive Operations</span>
+                  <span className="text-[10px] font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-2.5 py-1 rounded-full uppercase tracking-widest">Smart Rostering</span>
+                </div>
+                <p className="text-blue-200/70 text-sm sm:text-base leading-relaxed">
+                  When an operator schedules a future absence, the system doesn't just send a generic alert. The engine cross-references historical schedules and payroll rates to instantly recommend the{" "}
+                  <span className="text-[#D4AF37] font-semibold">top 3 pre-verified substitutes</span>{" "}
+                  available for that specific hour, ready to be dispatched with one tap.
+                </p>
+              </div>
+
+              {/* Mini substitute mockup */}
+              <div className="flex-shrink-0 w-full sm:w-52">
+                <div className="bg-[#0A1128]/80 border border-white/10 rounded-xl p-4 flex flex-col gap-2.5">
+                  <div className="text-[10px] text-[#D4AF37]/70 font-bold uppercase tracking-widest mb-1">Top Substitutes</div>
+                  {[
+                    { name: "M. Rossi", match: "98%", avail: "Available" },
+                    { name: "L. Ferrari", match: "94%", avail: "Available" },
+                    { name: "G. Bianchi", match: "87%", avail: "On standby" },
+                  ].map(({ name, match, avail }) => (
+                    <div key={name} className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-[#1E3A8A]/60 flex-shrink-0 flex items-center justify-center">
+                        <div className="w-3 h-3 rounded-full bg-white/30" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white text-xs font-semibold">{name}</div>
+                        <div className="text-blue-300/50 text-[10px]">{avail}</div>
+                      </div>
+                      <div className="text-[#D4AF37] text-xs font-bold flex-shrink-0">{match}</div>
+                    </div>
+                  ))}
+                  <button className="mt-1 w-full bg-[#D4AF37] text-[#0A1128] text-xs font-black py-2 rounded-lg hover:bg-amber-300 transition-colors">
+                    Dispatch Top Match
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 

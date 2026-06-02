@@ -1,0 +1,30 @@
+🚨 LANDING PAGE EXPANSION: THE "HOW IT WORKS" AI MECHANICS SECTION 🚨
+
+Role: Expert Frontend Web Developer & Conversion Copywriter.
+Objective: Add a beautifully structured, high-conversion section to the public landing page titled "Inside the AI Engine" (or "Come Funziona"). This section must clearly explain the practical, high-value workflow of our Vision AI and Predictive features to prospects, without exposing proprietary backend code structures.
+Theme: Deep Navy Blue background (`#0A1128`), Premium Gold borders/accents (`#D4AF37`), absolute screen boundary containment (**ZERO text clipping or horizontal layout overflow on mobile screens**).
+
+🚨 TECHNICAL CONSTRAINT (MANDATORY) 🚨
+Do NOT modify backend processing routes, Supabase tables, or user authentication code. This is strictly a frontend copy and presentation layout update to the public marketing site.
+
+Please build and insert the following section:
+
+PART 1: SECTION HEADER
+- Title: "How the Magic Works (Without the Friction)"
+- Subtitle: "A behind-the-scenes look at how our background AI eliminates 90% of your daily administrative tasks in seconds."
+
+PART 2: THE VISION AI STEP-BY-STEP FLOW (HIGH-DENSITY CARD SYSTEM)
+Render a vertical timeline or horizontal responsive grid tracking the document verification lifecycle:
+1. Step 1: The Parent Snaps & Sends
+   - Description: "Parents take a quick photo of medical clearances or privacy waivers on their phone. No complex scanners or formatting rules required."
+2. Step 2: Multilingual Semantic Extraction
+   - Description: "Our integrated engine instantly reads the document in English or Italian. It automatically locates the student's name, calculates the exact expiration date, and visually confirms the doctor's stamp and signature."
+3. Step 3: Automated Safeguard & Gatekeeper
+   - Description: "High-confidence verifications instantly update student records and clear the Kiosk gate for entry. If a document is blurry or uncertain, it flags the exact detail for a 1-click human approval. You only intervene when strictly necessary."
+
+PART 3: THE SMART ROSTERING EXPLANATION BLOCK
+Add a clean secondary card focused on operational peace of mind:
+- Title: "Predictive Operations"
+- Description: "When an operator schedules a future absence, the system doesn't just send a generic alert. The engine cross-references historical schedules and payroll rates to instantly recommend the top 3 pre-verified substitutes available for that specific hour, ready to be dispatched with one tap."
+
+Output Requirement: Generate the fully responsive React/TSX component code for this new section, ensuring perfect vertical spacing, clean typography, and total alignment with the existing corporate Navy/Gold design standard.
