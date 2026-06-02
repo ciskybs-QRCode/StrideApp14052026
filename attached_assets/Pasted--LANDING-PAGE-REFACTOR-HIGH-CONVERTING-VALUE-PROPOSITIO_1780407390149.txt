@@ -1,0 +1,24 @@
+🚨 LANDING PAGE REFACTOR: HIGH-CONVERTING VALUE PROPOSITION & AI FEATURE SHOWCASE 🚨
+Role: Expert Full-Stack Web Developer, Conversion Rate Optimization (CRO) Specialist, and UX Copywriter.
+Objective: Overhaul the public landing page (marketing website) to aggressively position the platform as the ultimate AI-driven automation engine for children's associations, dance studios, and sports academies. Shift the messaging completely from a generic "management tool" to a high-value provider of "Automation and Legal Peace of Mind."
+Branding Theme: Strict Premium Deep Navy Blue background (#0A1128), Lustrous Gold accents (#D4AF37), high content density, and absolute boundary containment (ZERO horizontal screen overflows or text clipping on mobile responsive views).
+🚨 GLOBAL ISOLATION DIRECTIVE (MANDATORY) 🚨 DO NOT touch, modify, or break any existing public registration routes, login forms, Firebase/Supabase connection hooks, or backend authentication endpoints. This sprint is strictly dedicated to updating the frontend website layout, structural design components, and copywriting.
+Please implement the following web design and copy refactor:
+PART 1: THE HERO SECTION POLEMIC (THE VALUATION PIVOT)
+Rewrite the main header and subheaders with aggressive, premium, high-converting copy that directly attacks market status-quo:
+Main Hook (Title): "Stop Managing. Start Automating. The Only AI-Driven Platform Built for Children's Academies & Sports Associations."
+Sub-Hook (The Manifesto): "We don't sell colored spreadsheets. We deliver absolute operational automation and total legal peace of mind in a single click."
+Call to Action (CTA): A high-contrast Gold button labeled "Get Started / Schedule Pilot" that scales perfectly inside responsive screen viewports.
+PART 2: THE 3 INTERACTIVE AI CORES (FEATURE GRID)
+Create a high-density, beautifully structured structural card grid showcasing our advanced architectural capabilities. Each card must feature a distinct icon, white crisp text, and Gold borders:
+Vision AI Document Reader:
+Copy: "Zero Manual Review. Parents snap a photo of medical certificates or legal waivers; our integrated Vision AI extracts expiration dates, validates doctor signatures, and updates profiles instantly."
+Predictive Substitution Engine (Smart Rostering):
+Copy: "No More Last-Minute Panic. When an instructor schedules an absence, the AI analyzes historical records to recommend and notify the perfect pre-verified substitute in seconds."
+Stripe Connect Real-Time Payouts:
+Copy: "1-Click Automated Payroll. Pay instructors, vendors, and operators instantly using secure platform routing with absolute transparency and zero administrative friction."
+PART 3: THE "HEADACHE ELIMINATOR" COMPARISON ROW
+Implement a clean comparative table or functional list element contrasting our app with legacy competitor software:
+Legacy Competitors: "Macchinosi, desktop-only software built in 2012, manual checking of hundreds of papers, endless phone tag for missing kids, complex Excel payroll loops."
+Our Platform: "Mobile-First Kiosk Terminal tracking minors in real-time, automatic legal gatekeepers blocking access for unsigned forms, predictive operations, instant payouts."
+Output Requirement: Provide the modified landing page HTML/TSX component code, verify complete responsive layout scaling for smartphone screens, and ensure all marketing structures map to the precise Navy Blue and Gold visual standard.

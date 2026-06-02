@@ -5,6 +5,29 @@ import Activate from "./pages/Activate";
 
 // ── Inline SVG Icons ──────────────────────────────────────────────────────────
 
+const IconEye = () => (
+  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+      d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const IconBrain = () => (
+  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+      d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+  </svg>
+);
+
+const IconBolt = () => (
+  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+      d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+  </svg>
+);
+
 const IconQR = () => (
   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -79,6 +102,27 @@ const PAIN_CARDS = [
     desc: "Software platforms locking you into monthly fixed contracts and taking a percentage cut from your hard-earned member fees. Every single month.",
     border: "border-purple-500/30",
     badge: "bg-purple-500/10 text-purple-400",
+  },
+];
+
+const AI_CORES = [
+  {
+    Icon: IconEye,
+    tag: "Vision AI",
+    title: "Document Reader",
+    desc: "Zero Manual Review. Parents snap a photo of medical certificates or legal waivers; our integrated Vision AI extracts expiration dates, validates doctor signatures, and updates profiles instantly.",
+  },
+  {
+    Icon: IconBrain,
+    tag: "Predictive Engine",
+    title: "Smart Rostering",
+    desc: "No More Last-Minute Panic. When an instructor schedules an absence, the AI analyzes historical records to recommend and notify the perfect pre-verified substitute in seconds.",
+  },
+  {
+    Icon: IconBolt,
+    tag: "Stripe Connect",
+    title: "Real-Time Payouts",
+    desc: "1-Click Automated Payroll. Pay instructors, vendors, and operators instantly using secure platform routing with absolute transparency and zero administrative friction.",
   },
 ];
 
@@ -181,6 +225,7 @@ function Landing() {
 
           <div className="hidden md:flex items-center gap-8">
             <a href="#pain-points" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">Why Us</a>
+            <a href="#ai-cores" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">AI Cores</a>
             <a href="#features" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">Features</a>
             <a href="#pricing" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">Pricing</a>
             <a href="#faq" className="text-sm text-slate-300 hover:text-[#D4AF37] transition-colors">FAQ</a>
@@ -188,7 +233,7 @@ function Landing() {
               href="/register"
               className="bg-[#D4AF37] text-[#0A1128] text-sm font-bold px-5 py-2 rounded-lg hover:bg-[#e8c44b] transition-colors"
             >
-              Start Free Trial
+              Get Started
             </a>
           </div>
 
@@ -207,7 +252,7 @@ function Landing() {
 
         {menuOpen && (
           <div className="md:hidden border-t border-[#D4AF37]/15 bg-[#0A1128] px-6 py-5 flex flex-col gap-4">
-            {["#pain-points:Why Us", "#features:Features", "#pricing:Pricing", "#faq:FAQ"].map(item => {
+            {["#pain-points:Why Us", "#ai-cores:AI Cores", "#features:Features", "#pricing:Pricing", "#faq:FAQ"].map(item => {
               const [href, label] = item.split(":");
               return (
                 <a key={label} href={href} className="text-sm text-slate-300 hover:text-[#D4AF37]"
@@ -217,7 +262,7 @@ function Landing() {
             <a href="/register"
               className="bg-[#D4AF37] text-[#0A1128] text-sm font-bold px-5 py-3 rounded-lg text-center"
               onClick={() => setMenuOpen(false)}>
-              Start Free Trial
+              Get Started / Schedule Pilot
             </a>
           </div>
         )}
@@ -234,23 +279,25 @@ function Landing() {
               <span className="text-[#D4AF37] text-xs font-semibold tracking-wider uppercase">Now in Early Access</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-black leading-[1.1] text-white mb-6">
-              Stop the Paperwork.{" "}
-              <span className="text-[#D4AF37]">Manage Your Association, Dance Studio, or Gym</span>{" "}
-              in One Single Platform.
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.2rem] font-black leading-[1.1] text-white mb-6">
+              Stop Managing.{" "}
+              <span className="text-[#D4AF37]">Start Automating.</span>{" "}
+              The Only AI-Driven Platform Built for Children's Academies &amp; Sports Associations.
             </h1>
 
-            <p className="text-lg text-slate-400 leading-relaxed mb-4 max-w-2xl mx-auto lg:mx-0">
-              From QR Code Kiosk check-ins and digital legal waivers to automated staff payroll.
-              Everything streamlined, secure, and multi-tenant isolated.
+            <p className="text-lg text-slate-300 leading-relaxed mb-2 max-w-2xl mx-auto lg:mx-0 font-medium">
+              We don't sell colored spreadsheets.
+            </p>
+            <p className="text-lg text-slate-400 leading-relaxed mb-6 max-w-2xl mx-auto lg:mx-0">
+              We deliver absolute operational automation and total legal peace of mind in a single click.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mt-10">
               <a
                 href="/register"
-                className="inline-flex items-center justify-center gap-2 bg-[#D4AF37] text-[#0A1128] font-black px-8 py-4 rounded-xl text-base hover:bg-[#e8c44b] transition-colors shadow-[0_0_32px_rgba(212,175,55,0.3)]"
+                className="inline-flex items-center justify-center gap-2 bg-[#D4AF37] text-[#0A1128] font-black px-8 py-4 rounded-xl text-base hover:bg-[#e8c44b] transition-colors shadow-[0_0_40px_rgba(212,175,55,0.4)]"
               >
-                Start Your 30-Day Free Trial
+                Get Started / Schedule Pilot
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                 </svg>
@@ -341,11 +388,136 @@ function Landing() {
         </div>
       </section>
 
-      {/* ─── S3: 4 PILLARS ─────────────────────────────────────────────────── */}
+      {/* ─── S3: 3 AI CORES ────────────────────────────────────────────────── */}
+      <section id="ai-cores" className="bg-[#080f22] border-y border-[#D4AF37]/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full px-4 py-1.5 mb-5">
+              <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse flex-shrink-0" />
+              <span className="text-[#D4AF37] text-xs font-semibold tracking-wider uppercase">AI Engine</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black text-white">
+              3 Intelligent Cores.<br className="hidden sm:block" />
+              <span className="text-[#D4AF37]"> Zero Manual Intervention.</span>
+            </h2>
+            <p className="mt-4 text-slate-400 max-w-xl mx-auto">
+              Advanced AI architecture running silently in the background — so your team handles people, not paperwork.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {AI_CORES.map(({ Icon, tag, title, desc }) => (
+              <div key={title}
+                className="relative bg-[#0d1a3e] border border-[#D4AF37]/35 rounded-2xl p-8 flex flex-col hover:border-[#D4AF37]/70 transition-colors group overflow-hidden">
+                {/* Gold corner accent */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-[#D4AF37]/5 rounded-bl-full pointer-events-none" />
+                <div className="w-14 h-14 bg-[#D4AF37]/12 border border-[#D4AF37]/35 rounded-2xl flex items-center justify-center text-[#D4AF37] mb-5 group-hover:bg-[#D4AF37]/22 transition-colors flex-shrink-0">
+                  <Icon />
+                </div>
+                <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-widest mb-2">{tag}</span>
+                <h3 className="text-lg font-black text-white mb-3">{title}</h3>
+                <p className="text-sm text-slate-300 leading-relaxed flex-1">{desc}</p>
+                <div className="mt-6 pt-5 border-t border-[#D4AF37]/15">
+                  <span className="text-xs text-[#D4AF37]/70 font-semibold uppercase tracking-wider">Live in Production</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── S4: HEADACHE ELIMINATOR COMPARISON ────────────────────────────── */}
+      <section id="comparison" className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+        <div className="text-center mb-14">
+          <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">The Switch</div>
+          <h2 className="text-3xl md:text-4xl font-black text-white">
+            The Headache Eliminator
+          </h2>
+          <p className="mt-4 text-slate-400 max-w-xl mx-auto">
+            Your old software isn't just slow — it's costing you money, liability exposure, and parent trust every single day.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Legacy column */}
+          <div className="bg-[#0d1a3e] border border-red-500/25 rounded-2xl p-7">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-xl bg-red-500/15 flex items-center justify-center text-lg flex-shrink-0">💀</div>
+              <div>
+                <div className="text-white font-black text-base">Legacy Competitors</div>
+                <div className="text-xs text-red-400 font-semibold uppercase tracking-wider mt-0.5">The Old World</div>
+              </div>
+            </div>
+            <ul className="flex flex-col gap-3">
+              {[
+                "Desktop-only software built in 2012 — no mobile, no kiosk, no real-time",
+                "Hundreds of paper forms reviewed by hand every single week",
+                "Endless phone tag to track down missing or late students",
+                "Complex Excel payroll loops recalculated manually at month-end",
+                "Zero legal gatekeeping — unsigned waivers slip through unnoticed",
+                "Flat monthly SaaS fees regardless of how many members are active",
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm text-slate-400 leading-relaxed">
+                  <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Stride column */}
+          <div className="bg-[#0d1a3e] border border-[#D4AF37]/35 rounded-2xl p-7 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 rounded-bl-full pointer-events-none" />
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-lg flex-shrink-0">⚡</div>
+              <div>
+                <div className="text-[#D4AF37] font-black text-base">Stride Platform</div>
+                <div className="text-xs text-[#D4AF37]/60 font-semibold uppercase tracking-wider mt-0.5">The New Standard</div>
+              </div>
+            </div>
+            <ul className="flex flex-col gap-3">
+              {[
+                "Mobile-First Kiosk Terminal tracking minors in real-time with QR precision",
+                "Vision AI reads and validates certificates and waivers in under 3 seconds",
+                "Automatic legal gatekeepers blocking access for any unsigned document",
+                "Predictive absence engine pre-stages substitutions before the admin wakes up",
+                "Instant Stripe Connect payouts — 1-click payroll, zero friction",
+                "Pay only per active enrolled member — zero fees when they unenroll",
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm text-slate-200 leading-relaxed">
+                  <svg className="w-4 h-4 text-[#D4AF37] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Switch CTA bar */}
+        <div className="mt-8 bg-[#D4AF37]/8 border border-[#D4AF37]/25 rounded-2xl px-7 py-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <div className="text-3xl flex-shrink-0">🚀</div>
+          <div className="min-w-0">
+            <div className="text-white font-bold mb-1">Ready to make the switch?</div>
+            <div className="text-sm text-slate-400">
+              Join hundreds of academies already running on Stride. No migration complexity. Up and running in under an hour.
+            </div>
+          </div>
+          <a href="/register"
+            className="flex-shrink-0 sm:ml-auto bg-[#D4AF37] text-[#0A1128] font-bold px-6 py-3 rounded-xl text-sm hover:bg-[#e8c44b] transition-colors whitespace-nowrap shadow-[0_0_24px_rgba(212,175,55,0.25)]">
+            Get Started / Schedule Pilot
+          </a>
+        </div>
+      </section>
+
+      {/* ─── S5: 4 PILLARS ─────────────────────────────────────────────────── */}
       <section id="features" className="bg-[#080f22] border-y border-[#D4AF37]/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
           <div className="text-center mb-14">
-            <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">The Solution</div>
+            <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">The Platform</div>
             <h2 className="text-3xl md:text-4xl font-black text-white">
               4 Pillars That Replace<br className="hidden sm:block" /> Your Entire Admin Stack
             </h2>
@@ -370,7 +542,7 @@ function Landing() {
         </div>
       </section>
 
-      {/* ─── S4: LOCALIZATION & COMPLIANCE ─────────────────────────────────── */}
+      {/* ─── S6: LOCALIZATION & COMPLIANCE ─────────────────────────────────── */}
       <section id="compliance" className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
         <div className="text-center mb-14">
           <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">Compliance</div>
@@ -416,7 +588,7 @@ function Landing() {
         </div>
       </section>
 
-      {/* ─── S5: PRICING SLIDER ────────────────────────────────────────────── */}
+      {/* ─── S7: PRICING SLIDER ────────────────────────────────────────────── */}
       <section id="pricing" className="bg-[#080f22] border-y border-[#D4AF37]/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-24">
           <div className="text-center mb-14">
@@ -533,7 +705,7 @@ function Landing() {
         </div>
       </section>
 
-      {/* ─── S6: FAQ ───────────────────────────────────────────────────────── */}
+      {/* ─── S8: FAQ ───────────────────────────────────────────────────────── */}
       <section id="faq" className="max-w-3xl mx-auto px-4 sm:px-6 py-24">
         <div className="text-center mb-14">
           <div className="text-[#D4AF37] text-sm font-semibold uppercase tracking-widest mb-3">FAQ</div>
@@ -569,7 +741,7 @@ function Landing() {
         </div>
       </section>
 
-      {/* ─── S7: FOOTER CTA + TERMINAL ─────────────────────────────────────── */}
+      {/* ─── S9: FOOTER CTA + TERMINAL ─────────────────────────────────────── */}
       <footer className="border-t border-[#D4AF37]/15">
 
         {/* Terminal CTA band */}
@@ -580,17 +752,17 @@ function Landing() {
               <span className="text-[#D4AF37] text-xs font-semibold tracking-wider uppercase">Pioneer Access — Limited Slots</span>
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
-              Ready to Eliminate the<br className="hidden sm:block" />
-              <span className="text-[#D4AF37]"> Administrative Chaos?</span>
+              Stop Managing.<br className="hidden sm:block" />
+              <span className="text-[#D4AF37]"> Start Automating Today.</span>
             </h2>
             <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
-              Join hundreds of schools already running cleaner, faster, and more profitable operations.
+              Join hundreds of academies already running cleaner, faster, and legally bulletproof operations on Stride.
             </p>
             <a
               href="/register"
               className="inline-flex items-center gap-3 bg-[#D4AF37] text-[#0A1128] font-black px-10 py-5 rounded-xl text-lg hover:bg-[#e8c44b] transition-colors shadow-[0_0_60px_rgba(212,175,55,0.4)]"
             >
-              Activate Your 30 Days Free Now
+              Get Started / Schedule Pilot
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
               </svg>
