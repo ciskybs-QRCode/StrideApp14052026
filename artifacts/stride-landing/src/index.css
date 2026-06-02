@@ -9,11 +9,37 @@
   }
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #0A192F;
+    background-color: #0A1128;
     color: #ffffff;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
+}
+
+/* Pricing range slider */
+.stride-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #D4AF37;
+  cursor: pointer;
+  border: 2px solid #0A1128;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+  transition: box-shadow 0.2s;
+}
+.stride-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 6px rgba(212, 175, 55, 0.3);
+}
+.stride-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #D4AF37;
+  cursor: pointer;
+  border: 2px solid #0A1128;
 }

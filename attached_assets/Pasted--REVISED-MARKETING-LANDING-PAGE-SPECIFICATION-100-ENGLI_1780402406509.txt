@@ -1,0 +1,55 @@
+🚨 REVISED MARKETING LANDING PAGE SPECIFICATION: 100% ENGLISH LAUNCH BASE 🚨
+Role: Expert Frontend Developer & UI/UX Specialist (React, Tailwind CSS, or Expo Web responsive layout).
+Target Module: Public Web Marketing Landing Page (web/index.html or responsive frontend routing component).
+Branding Palette: Core Deep Navy Blue background (#0A1128), Premium Accent Gold buttons and badges (#D4AF37), with ultra-crisp white typography.
+🚨 STRICT VISUAL CONTAINMENT DIRECTIVE (MANDATORY) 🚨 DO NOT allow any horizontal screen leakage, text clipping, or broken grid elements on small mobile screens or large desktop viewports. Utilize perfect flex-wrap, native Tailwind responsive breakpoints (sm:, md:, lg:), and bounded hidden overflows. All copy strings must be strictly rendered in English.
+SECTION 1: HERO VIEW (THE INITIAL VALUE HOOK)
+Layout: Centered or elegant split-column structure on desktop; stacked on mobile devices.
+Content:
+H1 Title: "Stop the Paperwork. Manage Your Association, Dance Studio, or Gym in One Single Platform."
+H2 Subtitle: "From QR Code Kiosk check-ins and digital legal waivers to automated staff payroll. Everything streamlined, secure, and multi-tenant isolated."
+Main Action Button (CTA): Large, tactile Gold button labeled "Start Your 30-Day Free Trial ➔".
+Sub-text: "No credit card required. Setup in 60 seconds."
+SECTION 2: PAIN POINTS MATRIX (THE PROBLEMATICS GRID)
+Render a beautifully spaced 4-card grid highlighting current administrative operational failures:
+Card 1 (Attendance Chaos): Lost paper sheets at the entrance, endless roll calls, and anxious parents.
+Card 2 (Staff Nightmares): Manually calculating contractor hours at the end of the month while crossing out last-minute absences.
+Card 3 (Legal Liabilities): Missing media releases, registrations, and privacy waivers scattered across physical folders.
+Card 4 (Hidden Fees): Third-party management software taking an unfair percentage cut out of your members' fees.
+SECTION 3: THE 4 PILLARS OF PLATFORM SOLUTION
+Highlight the core structural modules of the application using distinct iconography:
+1. Secure Standalone Kiosk: Physical tablet QR check-in pipeline with an administrative operator roll-call backup.
+2. High-Security Legal Gate: Mandatory digital signature enforcement for terms, liability, and image consent before system access.
+3. Automated Substitution Cascade: A 5-minute automated replacement dispatcher loop for absent staff with loud emergency escalations.
+4. Stripe Connect Direct Charge: Direct localized fund processing where the platform retains 0% commission fees during your trial.
+SECTION 4: LOCALIZATION & COMPLIANCE SECTION
+A dedicated horizontal card displaying multi-currency compliance:
+Highlight automated infrastructure adaptabilities for AU Non-Profit Cultural Associations (WA regulations), AU Commercial Studios (ABN frameworks in AUD), and European Sportive ASD/SSD legal frameworks in EUR.
+SECTION 5: THE INTERACTIVE PER-MEMBER PRICE SLIDER
+Build an interactive dynamic pricing simulator component using a range input slider:
+The Input Metric: Active enrolled student/member count (Scale from 0 to 500 members).
+The Price Logic: Display clearly that the first 30 days are 100% Free. Then show a baseline price scale ($1.50 or €1.50 per active member seat per month based on a currency toggle).
+Real-time Math Output: Dynamically update the visual text: "Have [X] active members? You only pay [Total_Cost]/month. If a member unenrolls, you instantly stop paying for them."
+SECTION 6: ACCORDION-STYLE F.A.Q. CORE
+Build a seamless vertical accordion layout addressing standard conversion barriers:
+Q: Do I need to enter a credit card to start the trial? -> A: No. Complete and unrestricted access for 30 days, no strings attached.
+Q: What happens if an entrance Kiosk tablet gets stolen? -> A: Instant protection. Use the "Revoke Access" button from your phone to force-logout and lock the device remotely.
+Q: Can I manage multiple venues or classes simultaneously? -> A: Yes, multi-location architecture is natively supported right out of the box.
+SECTION 7: TERMINAL FOOTER
+Elegant baseline wrap-up layout featuring a final Gold CTA trigger: "Activate Your 30 Days Free Now ➔", linked copyright markers, and secure SaaS cloud operational badges.
+Output Requirement: Write the fully styled, responsive layout code incorporating the dynamic pricing simulator slider logic, enforce strict zero-overflow boundaries, and deploy clean English text alignment classes.
+TEXT BLUEPRINT FOR THE LANDING PAGE (ENGLISH DEFAULT)
+Hero Section
+H1: Stop the Paperwork. Manage Your Association, Dance Studio, or Gym in One Single Platform.
+H2: From QR Code Kiosk check-ins and digital legal waivers to automated staff payroll. Everything streamlined, secure, and multi-tenant isolated.
+CTA: Start Your 30-Day Free Trial ➔
+Pain Points
+Attendance Chaos: Lost paper logbooks, endless roll calls, and zero real-time tracking.
+Staff Payroll Nightmares: Wasting hours manually matching hours, absences, and last-minute class covers.
+Untracked Liability: Liability waivers and image consents left unsigned, exposing your organization to heavy compliance risks.
+SaaS Middlemen Tax: Software platforms locking you down with monthly fixed contracts and taking cuts from your hard-earned revenue.
+The Solutions
+Locked-Down Kiosk: Drop an iPad at the door. Members scan their unique QR code, instantly marking attendance and updating the teacher’s roster. Secure, simple, and tamper-proof.
+High-Security Legal Gate: Enforce digital signature compliance for terms, privacy policies, and media releases directly on the parent's smartphone before they can access the platform.
+The Substitution Cascade: When an instructor reports an absence, the backend automatically triggers a 5-minute rolling notification cascade to qualified backup staff, filling the slot with zero admin stress.
+Stripe Connect Integration: Connect your bank account. Member fees land directly into your school's balance. We take a 0% platform fee cut during your trial.
