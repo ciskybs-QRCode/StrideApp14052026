@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,9 +12,20 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColors } from "@/hooks/useColors";
 import SmartRosterPanel, { type SmartSubstitute } from "@/components/SmartRosterPanel";
 
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const NAVY   = "#0A1128";
+const NAVY_L = "#0F1E3C";
+const GOLD   = "#D4AF37";
+const GOLD_D = "rgba(212,175,55,0.25)";
+const GOLD_F = "rgba(212,175,55,0.10)";
+const WHITE  = "#FFFFFF";
+const MUTED  = "rgba(255,255,255,0.5)";
+const DIM    = "rgba(255,255,255,0.22)";
+const BORDER = "rgba(255,255,255,0.10)";
+
+// ── Demo data ─────────────────────────────────────────────────────────────────
 const DEMO_OPERATORS = [
   { id: "100", name: "Demo Operator" },
   { id: "200", name: "Sarah Chen" },
@@ -34,11 +46,11 @@ function nextISODateTime(daysAhead: number, hour = 14): string {
   return d.toISOString();
 }
 
+// ── Screen ────────────────────────────────────────────────────────────────────
 export default function SmartRosterScreen() {
-  const router   = useRouter();
-  const colors   = useColors();
-  const insets   = useSafeAreaInsets();
-  const params   = useLocalSearchParams<{
+  const router  = useRouter();
+  const insets  = useSafeAreaInsets();
+  const params  = useLocalSearchParams<{
     missing_operator_id?:   string;
     missing_operator_name?: string;
     discipline_id?:         string;
@@ -46,17 +58,17 @@ export default function SmartRosterScreen() {
     class_datetime?:        string;
   }>();
 
-  const [missingOpId,    setMissingOpId]    = useState(params.missing_operator_id   ?? DEMO_OPERATORS[0].id);
-  const [missingOpName,  setMissingOpName]  = useState(params.missing_operator_name ?? DEMO_OPERATORS[0].name);
-  const [disciplineId,   setDisciplineId]   = useState(params.discipline_id         ?? DEMO_COURSES[0].disciplineId);
-  const [courseName,     setCourseName]     = useState(params.course_name           ?? DEMO_COURSES[0].name);
-  const [classDatetime,  setClassDatetime]  = useState(params.class_datetime        ?? nextISODateTime(2));
-  const [committed,      setCommitted]      = useState(false);
-  const [datetimeError,  setDatetimeError]  = useState<string | null>(null);
+  const [missingOpId,   setMissingOpId]   = useState(params.missing_operator_id   ?? DEMO_OPERATORS[0].id);
+  const [missingOpName, setMissingOpName] = useState(params.missing_operator_name ?? DEMO_OPERATORS[0].name);
+  const [disciplineId,  setDisciplineId]  = useState(params.discipline_id         ?? DEMO_COURSES[0].disciplineId);
+  const [courseName,    setCourseName]    = useState(params.course_name           ?? DEMO_COURSES[0].name);
+  const [classDatetime, setClassDatetime] = useState(params.class_datetime        ?? nextISODateTime(2));
+  const [committed,     setCommitted]     = useState(false);
+  const [datetimeError, setDatetimeError] = useState<string | null>(null);
 
   const handleRun = () => {
     if (isNaN(new Date(classDatetime).getTime())) {
-      setDatetimeError("Invalid date — use format: 2026-06-10T14:00:00");
+      setDatetimeError("Invalid date — use ISO format: 2026-06-10T14:00:00");
       return;
     }
     setDatetimeError(null);
@@ -65,120 +77,130 @@ export default function SmartRosterScreen() {
   };
 
   const handleAssign = (sub: SmartSubstitute) => {
-    // Wire to existing notification dispatcher here in production
-    console.log("Substitute assigned:", sub.id, sub.name);
+    console.log("Substitute dispatched:", sub.id, sub.name);
   };
 
+  const TAB_H = Platform.OS === "web" ? 84 : 49;
+
   return (
-    <View style={[s.root, { backgroundColor: colors.background }]}>
-      {/* ── Navbar ── */}
-      <View style={[s.navbar, { paddingTop: insets.top + 14 }]}>
+    <View style={[s.root, { paddingTop: insets.top }]}>
+
+      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
+      <View style={s.navbar}>
         <Pressable
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={10}
           style={s.backBtn}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.55)" />
         </Pressable>
+
         <View style={{ flex: 1 }}>
-          <Text style={[s.navTitle, { color: colors.foreground }]}>Smart Rostering</Text>
-          <Text style={[s.navSub, { color: colors.mutedForeground }]}>Predictive Substitution Engine</Text>
-        </View>
-        <View style={[s.aiPill, { backgroundColor: "#DBEAFE" }]}>
-          <Ionicons name="sparkles" size={14} color="#1E3A8A" />
-          <Text style={s.aiPillText}>AI</Text>
+          <View style={s.navRow}>
+            <View style={s.navIcon}>
+              <Ionicons name="sparkles" size={12} color={GOLD} />
+            </View>
+            <Text style={s.navTitle}>Smart Rostering</Text>
+            <View style={s.aiPill}>
+              <View style={s.aiDot} />
+              <Text style={s.aiPillText}>AI LIVE</Text>
+            </View>
+          </View>
+          <Text style={s.navSub}>Predictive Substitution Engine</Text>
         </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + TAB_H + 20 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Config form ── */}
+        {/* ── CONFIG FORM (pre-commit) ─────────────────────────────────────── */}
         {!committed ? (
-          <View style={[s.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[s.formTitle, { color: colors.primary }]}>Configure Query</Text>
-            <Text style={[s.formSub, { color: colors.mutedForeground }]}>
-              Select the absent operator, course, and class time to generate AI recommendations.
-            </Text>
+          <View style={s.formCard}>
+            <View style={s.formHeaderRow}>
+              <View style={s.formIconWrap}>
+                <Ionicons name="settings-outline" size={18} color={GOLD} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.formTitle}>Configure Query</Text>
+                <Text style={s.formSub}>Select the absent operator, course, and class time.</Text>
+              </View>
+            </View>
 
-            <Text style={[s.label, { color: colors.mutedForeground }]}>Absent Operator</Text>
+            {/* Absent Operator */}
+            <Text style={s.label}>ABSENT OPERATOR</Text>
             <View style={s.chipWrap}>
               {DEMO_OPERATORS.map(o => (
                 <Pressable
                   key={o.id}
-                  style={[s.chip, missingOpId === o.id && s.chipSel, {
-                    borderColor: missingOpId === o.id ? "#1E3A8A" : colors.border,
-                    backgroundColor: missingOpId === o.id ? "#EEF2FF" : colors.background,
-                  }]}
+                  style={[s.chip, missingOpId === o.id && s.chipSel]}
                   onPress={() => { setMissingOpId(o.id); setMissingOpName(o.name); }}
                 >
-                  <Text style={[s.chipText, { color: missingOpId === o.id ? "#1E3A8A" : colors.mutedForeground }]}>
+                  {missingOpId === o.id && (
+                    <Ionicons name="person-circle" size={13} color={GOLD} />
+                  )}
+                  <Text style={[s.chipText, missingOpId === o.id && s.chipTextSel]}>
                     {o.name}
                   </Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={[s.label, { color: colors.mutedForeground }]}>Course / Discipline</Text>
+            {/* Course */}
+            <Text style={s.label}>COURSE / DISCIPLINE</Text>
             <View style={s.chipWrap}>
               {DEMO_COURSES.map(c => (
                 <Pressable
                   key={c.disciplineId}
-                  style={[s.chip, disciplineId === c.disciplineId && s.chipSel, {
-                    borderColor: disciplineId === c.disciplineId ? "#1E3A8A" : colors.border,
-                    backgroundColor: disciplineId === c.disciplineId ? "#EEF2FF" : colors.background,
-                  }]}
+                  style={[s.chip, disciplineId === c.disciplineId && s.chipSel]}
                   onPress={() => { setDisciplineId(c.disciplineId); setCourseName(c.name); }}
                 >
-                  <Text style={[s.chipText, { color: disciplineId === c.disciplineId ? "#1E3A8A" : colors.mutedForeground }]}>
+                  {disciplineId === c.disciplineId && (
+                    <Ionicons name="musical-notes" size={13} color={GOLD} />
+                  )}
+                  <Text style={[s.chipText, disciplineId === c.disciplineId && s.chipTextSel]}>
                     {c.name}
                   </Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={[s.label, { color: colors.mutedForeground }]}>Class Date & Time (ISO 8601)</Text>
+            {/* Date + Time */}
+            <Text style={s.label}>CLASS DATE & TIME (ISO 8601)</Text>
             <TextInput
-              style={[s.input, {
-                color: colors.foreground,
-                borderColor: datetimeError ? "#EF4444" : colors.border,
-                backgroundColor: colors.background,
-              }]}
+              style={[s.input, datetimeError ? s.inputError : null]}
               value={classDatetime}
               onChangeText={v => { setClassDatetime(v); setDatetimeError(null); }}
-              placeholder="e.g. 2026-06-10T14:00:00"
-              placeholderTextColor={colors.mutedForeground}
+              placeholder="2026-06-10T14:00:00"
+              placeholderTextColor={DIM}
               autoCapitalize="none"
               autoCorrect={false}
             />
             {datetimeError && (
-              <Text style={s.inputError}>{datetimeError}</Text>
+              <Text style={s.errorText}>{datetimeError}</Text>
             )}
 
+            {/* Run button */}
             <Pressable
               style={({ pressed }) => [s.runBtn, { opacity: pressed ? 0.85 : 1 }]}
               onPress={handleRun}
             >
-              <Ionicons name="sparkles" size={18} color="#1E3A8A" />
+              <Ionicons name="sparkles" size={18} color={NAVY} />
               <Text style={s.runBtnText}>Run AI Analysis</Text>
             </Pressable>
           </View>
         ) : (
-          /* Collapsed summary + edit toggle */
-          <Pressable
-            style={[s.editBar, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => setCommitted(false)}
-          >
-            <Ionicons name="create-outline" size={15} color={colors.mutedForeground} />
-            <Text style={[s.editBarText, { color: colors.mutedForeground }]} numberOfLines={1}>
+          /* ── Collapsed summary bar ── */
+          <Pressable style={s.editBar} onPress={() => setCommitted(false)}>
+            <Ionicons name="create-outline" size={14} color={MUTED} />
+            <Text style={s.editBarText} numberOfLines={1}>
               {missingOpName} · {courseName} · {new Date(classDatetime).toLocaleDateString("en-AU", { weekday: "short", month: "short", day: "numeric" })}
             </Text>
-            <Text style={[s.editBarChange, { color: colors.primary }]}>Change</Text>
+            <Text style={s.editBarChange}>Change</Text>
           </Pressable>
         )}
 
-        {/* ── AI Panel ── */}
+        {/* ── SMART ROSTER PANEL (3 sections) ─────────────────────────────── */}
         {committed && (
           <SmartRosterPanel
             missingOperatorId={missingOpId}
@@ -190,35 +212,26 @@ export default function SmartRosterScreen() {
           />
         )}
 
-        {/* ── How it works ── */}
+        {/* ── HOW SCORES ARE CALCULATED ───────────────────────────────────── */}
         {committed && (
-          <View style={[s.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={s.infoCard}>
             <View style={s.infoHeader}>
-              <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
-              <Text style={[s.infoTitle, { color: colors.primary }]}>How Scores Are Calculated</Text>
+              <Ionicons name="analytics-outline" size={16} color={GOLD} />
+              <Text style={s.infoTitle}>How Scores Are Calculated</Text>
             </View>
             {[
-              { pct: "40%", color: "#3B82F6", bg: "#DBEAFE", desc: "Historical availability — same weekday/time in the last 90 days" },
-              { pct: "35%", color: "#7C3AED", bg: "#EDE9FE", desc: "Discipline qualifications and prior completed sessions" },
-              { pct: "25%", color: "#10B981", bg: "#D1FAE5", desc: "Hourly rate vs. team average (cost optimisation)" },
+              { pct: "40%", icon: "time-outline"   as const, color: "#60A5FA", label: "Historical availability — same weekday / time in the last 90 days" },
+              { pct: "35%", icon: "school-outline"  as const, color: "#A78BFA", label: "Discipline qualifications and prior completed sessions" },
+              { pct: "25%", icon: "cash-outline"    as const, color: "#34D399", label: "Hourly rate vs. team average — cost optimisation signal" },
             ].map(item => (
               <View key={item.pct} style={s.infoRow}>
-                <View style={[s.infoPct, { backgroundColor: item.bg }]}>
-                  <Text style={[s.infoPctText, { color: item.color }]}>{item.pct}</Text>
+                <View style={s.infoPctBox}>
+                  <Ionicons name={item.icon} size={13} color={item.color} />
+                  <Text style={[s.infoPct, { color: item.color }]}>{item.pct}</Text>
                 </View>
-                <Text style={[s.infoDesc, { color: colors.mutedForeground }]}>{item.desc}</Text>
+                <Text style={s.infoDesc}>{item.label}</Text>
               </View>
             ))}
-          </View>
-        )}
-
-        {/* ── Isolation notice ── */}
-        {committed && (
-          <View style={[s.isolationBox, { borderColor: "#FBBF24" + "33", backgroundColor: "#FEFCE8" }]}>
-            <Ionicons name="shield-checkmark-outline" size={15} color="#92400E" />
-            <Text style={[s.isolationText, { color: "#92400E" }]}>
-              Read-only analysis. Course schedules and attendance records are not modified.
-            </Text>
           </View>
         )}
       </ScrollView>
@@ -226,66 +239,90 @@ export default function SmartRosterScreen() {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: NAVY },
 
+  // Navbar
   navbar: {
-    flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 20, paddingBottom: 16, gap: 12,
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 18, paddingVertical: 13,
+    borderBottomWidth: 1, borderBottomColor: "rgba(212,175,55,0.13)",
   },
   backBtn: { padding: 2 },
-  navTitle: { fontSize: 20, fontWeight: "800" },
-  navSub:   { fontSize: 12, marginTop: 1 },
-  aiPill: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6,
+  navRow:  { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 },
+  navIcon: {
+    width: 24, height: 24, borderRadius: 7,
+    backgroundColor: GOLD_F,
+    alignItems: "center", justifyContent: "center",
   },
-  aiPillText: { fontSize: 11, fontWeight: "800", color: "#1E3A8A" },
+  navTitle: { fontSize: 16, fontWeight: "800", color: WHITE, letterSpacing: -0.2 },
+  navSub:   { fontSize: 10.5, color: MUTED },
+  aiPill:   { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(16,185,129,0.13)", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2.5 },
+  aiDot:    { width: 5, height: 5, borderRadius: 3, backgroundColor: "#10B981" },
+  aiPillText: { color: "#10B981", fontSize: 8, fontWeight: "800", letterSpacing: 0.8 },
 
-  scroll: { paddingHorizontal: 20, paddingTop: 4, gap: 16 },
+  scroll: { paddingHorizontal: 16, paddingTop: 16, gap: 14 },
 
-  formCard: { borderRadius: 20, padding: 20, borderWidth: 1, gap: 10 },
-  formTitle: { fontSize: 16, fontWeight: "800", marginBottom: 2 },
-  formSub:   { fontSize: 13, lineHeight: 18, marginBottom: 4 },
-  label:     { fontSize: 11, fontWeight: "700", letterSpacing: 0.4, marginTop: 4 },
+  // Config form
+  formCard: {
+    backgroundColor: NAVY_L,
+    borderRadius: 22, padding: 18,
+    borderWidth: 1, borderColor: BORDER,
+    gap: 12,
+  },
+  formHeaderRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  formIconWrap:  { width: 42, height: 42, borderRadius: 12, backgroundColor: GOLD_F, alignItems: "center", justifyContent: "center" },
+  formTitle: { color: WHITE, fontSize: 15, fontWeight: "800", marginBottom: 2 },
+  formSub:   { color: MUTED, fontSize: 12, lineHeight: 17 },
 
-  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip:     { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 7 },
-  chipSel:  {},
-  chipText: { fontSize: 12, fontWeight: "600" },
+  label:    { color: GOLD, fontSize: 9, fontWeight: "800", letterSpacing: 1.2, marginTop: 2 },
+  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  chip: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    borderRadius: 10, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 11, paddingVertical: 8,
+  },
+  chipSel:     { borderColor: GOLD_D, backgroundColor: GOLD_F },
+  chipText:    { color: MUTED, fontSize: 12, fontWeight: "600" },
+  chipTextSel: { color: GOLD },
 
   input: {
-    borderRadius: 10, borderWidth: 1,
-    paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 13, fontFamily: "monospace",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 12, borderWidth: 1, borderColor: BORDER,
+    paddingHorizontal: 14, paddingVertical: 11,
+    color: WHITE, fontSize: 13,
   },
-  inputError: { color: "#EF4444", fontSize: 12, marginTop: -4 },
+  inputError: { borderColor: "rgba(239,68,68,0.55)" },
+  errorText:  { color: "#F87171", fontSize: 11, marginTop: -6 },
 
   runBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, backgroundColor: "#FBBF24", borderRadius: 14,
-    paddingVertical: 14, marginTop: 6,
+    gap: 8, backgroundColor: GOLD, borderRadius: 14,
+    paddingVertical: 15, marginTop: 4,
+    shadowColor: GOLD, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
   },
-  runBtnText: { color: "#1E3A8A", fontWeight: "800", fontSize: 15 },
+  runBtnText: { color: NAVY, fontWeight: "900", fontSize: 15 },
 
+  // Edit bar
   editBar: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10,
+    backgroundColor: NAVY_L, borderRadius: 14, borderWidth: 1, borderColor: BORDER,
+    paddingHorizontal: 14, paddingVertical: 11,
   },
-  editBarText:   { flex: 1, fontSize: 13 },
-  editBarChange: { fontSize: 13, fontWeight: "700" },
+  editBarText:   { flex: 1, fontSize: 12, color: MUTED },
+  editBarChange: { fontSize: 12, fontWeight: "700", color: GOLD },
 
-  infoBox:    { borderRadius: 18, padding: 18, borderWidth: 1, gap: 12 },
-  infoHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  infoTitle:  { fontSize: 14, fontWeight: "700" },
+  // Score info card
+  infoCard: {
+    backgroundColor: NAVY_L, borderRadius: 20, padding: 18,
+    borderWidth: 1, borderColor: BORDER, gap: 12,
+  },
+  infoHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  infoTitle:  { color: WHITE, fontSize: 13, fontWeight: "800" },
   infoRow:    { flexDirection: "row", alignItems: "center", gap: 12 },
-  infoPct:    { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  infoPctText:{ fontSize: 12, fontWeight: "800" },
-  infoDesc:   { flex: 1, fontSize: 12, lineHeight: 18 },
-
-  isolationBox: {
-    flexDirection: "row", alignItems: "flex-start", gap: 8,
-    borderRadius: 12, borderWidth: 1, padding: 12,
-  },
-  isolationText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  infoPctBox: { width: 48, height: 40, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center", gap: 2, flexShrink: 0 },
+  infoPct:    { fontSize: 11, fontWeight: "800" },
+  infoDesc:   { flex: 1, color: MUTED, fontSize: 11, lineHeight: 17 },
 });
