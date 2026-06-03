@@ -383,6 +383,10 @@ export const api = {
   getLessons: (date?: string) =>
     request<ApiLesson[]>("GET", date ? `/lessons?date=${date}` : "/lessons"),
 
+  // QR verification
+  verifyMemberQr: (qrData: string) =>
+    request<{ name: string; subscription: "active" | "expired" | "none"; medical: "valid" | "expiring" | "expired"; payment: "paid" | "overdue" | "pending"; type: "success" | "warning" | "error" }>("POST", "/verify-member-qr", { qrData }),
+
   // Org
   getOrg: () => request<ApiOrg>("GET", "/org"),
   updateOrg: (data: Partial<ApiOrg> & { member_label?: string }) => request<ApiOrg>("PATCH", "/org", data),

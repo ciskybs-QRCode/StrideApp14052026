@@ -1,0 +1,25 @@
+🚨 CRITICAL CODE UPDATE: REAL DATABASE BINDING & COPILOT REFURBISHMENT 🚨
+
+Role: Expert Senior Full-Stack Developer.
+Objective: Implement 3 precise production-ready updates to the Admin workflow. 
+
+CRITICAL CONSTRAINT: Do NOT modify, delete, or refactor any existing database schemas, authentication layers, state management logic, or UI components unless explicitly requested below. Maintain 100% architectural continuity.
+
+Please process the following modifications:
+
+---
+
+1. ADMIN HOMEPAGE: REAL QR CODE SCANNING
+- Component: "Scan QR Code" Button on the Admin Home screen.
+- Requirement: Remove the simulated/mock scanning behavior. Integrate a real, functioning camera-based QR code scanner utility. When tapped, it must trigger the device camera, capture a physical QR code, and pass the scanned payload into our active backend verification endpoint.
+
+2. ADMIN COPILOT: UI BRIGHTENING & STRICT ENGLISH ENFORCEMENT
+- Component: Admin Copilot Chat View.
+- Requirements:
+  - Brighten the interface. The current screen is too dark. Increase contrast and visibility across the chat window, backgrounds, and message containers while respecting the established Navy Blue and Gold visual identity.
+  - STRICT 100% ENGLISH LANGUAGE. Remove any remaining Italian strings, fallback texts, quick-tap suggestion chips, or mock responses. Absolutely EVERYTHING on this screen must be in English (e.g., change suggestion chips to "Who has an expired certificate?", "Show this month's revenue", etc.).
+
+3. ADMIN "YOUR QR CODE": REAL LIVE DATABASE CONNECTION
+- Component: Admin "Your QR Code" Display Screen.
+- Current State: Hardcoded placeholder reading "Admin Dance Village".
+- Requirement: Completely eliminate the hardcoded "Admin Dance Village" text. Dynamically query the database to fetch the real, unique association name linked to the active account. Generate a genuine, unique QR Code dynamically bound to this specific fetched association profile. Ensure the entire view is fully wired to live backend data.

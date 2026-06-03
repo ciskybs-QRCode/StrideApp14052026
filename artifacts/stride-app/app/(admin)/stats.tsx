@@ -146,6 +146,7 @@ export default function AdminHome() {
   const [sosProcLogging, setSosProcLogging] = useState(false);
   const [showQRFullscreen, setShowQRFullscreen] = useState(false);
   const [campusAddress, setCampusAddress]   = useState("1 Main Street, Sydney NSW 2000");
+  const [orgName, setOrgName]               = useState<string>("");
   const pulseAnim     = useRef(new Animated.Value(1)).current;
   const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -153,6 +154,9 @@ export default function AdminHome() {
     AsyncStorage.getItem("stride_campus_address").catch(() => null).then(addr => {
       if (addr) setCampusAddress(addr);
     });
+    api.getOrg().then(org => {
+      if (org?.name) setOrgName(org.name);
+    }).catch(() => {});
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.08, duration: 600, useNativeDriver: true }),
@@ -171,7 +175,7 @@ export default function AdminHome() {
   const totalStudents  = students.length;
   const avgPerStudent  = totalStudents > 0 ? Math.round(totalRevenue / totalStudents) : 0;
 
-  const qrValue = `STRIDE:ADMIN:${user?.id || "admin"}:${user?.email || "admin@test.com"}`;
+  const qrValue = `STRIDE:ORG:${user?.orgId || 1}:ADMIN:${user?.id || "admin"}`;
 
   // ── QR Scanner ───────────────────────────────────────────────────────────────
 
@@ -185,12 +189,6 @@ export default function AdminHome() {
     setShowScanner(true);
   };
 
-  const MOCK_OUTCOMES: ScanResult[] = [
-    { type: "success", name: "Jane Smith",   subscription: "active",  medical: "valid",    payment: "paid" },
-    { type: "warning", name: "Tom Davis",    subscription: "active",  medical: "expiring", payment: "paid" },
-    { type: "error",   name: "Chris Carter", subscription: "expired", medical: "expired",  payment: "overdue" },
-  ];
-
   const showScanResult = (r: ScanResult) => {
     setScanResult(r);
     setScanned(true);
@@ -202,16 +200,16 @@ export default function AdminHome() {
     setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 3500);
   };
 
-  const simulateScan = () => showScanResult(MOCK_OUTCOMES[Math.floor(Math.random() * MOCK_OUTCOMES.length)]);
+  const simulateScan = () => showScanResult({ type: "success", name: "Demo Member", subscription: "active", medical: "valid", payment: "paid" });
 
-  const handleBarcodeScan = ({ data }: { data: string }) => {
+  const handleBarcodeScan = async ({ data }: { data: string }) => {
     if (scanned) return;
-    if (data.startsWith("STRIDE:")) {
-      const parts = data.split(":");
-      const name = parts[3] || "Unknown Member";
-      showScanResult({ type: "success", name, subscription: "active", medical: "valid", payment: "paid" });
-    } else {
-      showScanResult(MOCK_OUTCOMES[Math.floor(Math.random() * MOCK_OUTCOMES.length)]);
+    setScanned(true);
+    try {
+      const result = await api.verifyMemberQr(data);
+      showScanResult(result);
+    } catch {
+      showScanResult({ type: "error", name: "Unrecognized QR Code", subscription: "none", medical: "expired", payment: "overdue" });
     }
   };
 
@@ -519,10 +517,7 @@ export default function AdminHome() {
 
           {!scanResult && Platform.OS !== "web" && (
             <View style={styles.scannerFooter}>
-              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center" }}>Point at member's QR Code</Text>
-              <Pressable style={styles.simulateBtn} onPress={simulateScan}>
-                <Text style={styles.simulateBtnText}>Simulate Scan</Text>
-              </Pressable>
+              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center" }}>Point at a member QR Code</Text>
             </View>
           )}
         </View>
@@ -714,6 +709,9 @@ export default function AdminHome() {
             </View>
             <View style={styles.qrFullscreenInfo}>
               <Text style={styles.qrFullscreenName}>{user?.name}</Text>
+              {(orgName || user?.schoolName) ? (
+                <Text style={styles.qrFullscreenOrg}>{orgName || user?.schoolName}</Text>
+              ) : null}
               <View style={[styles.qrRoleBadge, { backgroundColor: "#DBEAFE", alignSelf: "center" }]}>
                 <Ionicons name="shield-checkmark" size={13} color="#1E3A8A" />
                 <Text style={[styles.qrRoleText, { color: "#1E3A8A" }]}>Administrator</Text>
@@ -808,6 +806,7 @@ const styles = StyleSheet.create({
   qrFullscreenBox: { padding: 16, backgroundColor: "#FFF", borderRadius: 16 },
   qrFullscreenInfo: { alignItems: "center", gap: 8, width: "100%" },
   qrFullscreenName: { fontSize: 20, fontWeight: "800", color: "#1E3A8A", textAlign: "center" },
+  qrFullscreenOrg:  { fontSize: 13, fontWeight: "600", color: "#6B7BA4", textAlign: "center", letterSpacing: 0.3 },
   qrRoleBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
   qrRoleText: { fontSize: 13, fontWeight: "700" },
   qrFullscreenHint: { fontSize: 12, color: "#6B7BA4", textAlign: "center", lineHeight: 18 },

@@ -31,18 +31,18 @@ interface Message {
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const CLR = {
-  bg:        "#0A1128",
-  navBg:     "#070D1E",
-  surface:   "#0D1A3A",
-  surfaceAlt:"#090F20",
+  bg:        "#0F1F40",
+  navBg:     "#0A1830",
+  surface:   "#162A50",
+  surfaceAlt:"#0C1A35",
   userBubble:"#1E3A8A",
   gold:      "#D4AF37",
-  goldDim:   "rgba(212,175,55,0.22)",
-  goldFaint: "rgba(212,175,55,0.08)",
-  border:    "rgba(255,255,255,0.07)",
+  goldDim:   "rgba(212,175,55,0.30)",
+  goldFaint: "rgba(212,175,55,0.13)",
+  border:    "rgba(255,255,255,0.13)",
   text:      "#F1F5F9",
-  textMuted: "rgba(241,245,249,0.42)",
-  textDim:   "rgba(241,245,249,0.2)",
+  textMuted: "rgba(241,245,249,0.62)",
+  textDim:   "rgba(241,245,249,0.38)",
   green:     "#10B981",
 } as const;
 
@@ -338,9 +338,9 @@ const ab = StyleSheet.create({
   badgeText:    { fontSize: 8, fontWeight: "800", letterSpacing: 1 },
   intentBadge:  { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 5, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2.5 },
   intentText:   { fontSize: 10, fontWeight: "700" },
-  summary:      { color: "#CBD5E1", fontSize: 13.5, lineHeight: 20 },
-  footer:       { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)" },
-  footerText:   { color: "rgba(255,255,255,0.27)", fontSize: 10 },
+  summary:      { color: "#E8EEFF", fontSize: 13.5, lineHeight: 20 },
+  footer:       { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.14)" },
+  footerText:   { color: "rgba(255,255,255,0.50)", fontSize: 10 },
   ts:           { color: CLR.textDim, fontSize: 10, marginTop: 4, marginLeft: 13 },
 });
 
@@ -373,8 +373,8 @@ const wb = StyleSheet.create({
   title:   { color: CLR.text, fontSize: 17, fontWeight: "800", marginBottom: 6 },
   body:    { color: CLR.textMuted, fontSize: 13, lineHeight: 19, textAlign: "center", marginBottom: 14 },
   pills:   { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center" },
-  pill:    { backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 6, paddingHorizontal: 9, paddingVertical: 3 },
-  pillText:{ color: "rgba(241,245,249,0.4)", fontSize: 10.5, fontWeight: "600" },
+  pill:    { backgroundColor: "rgba(255,255,255,0.10)", borderRadius: 6, paddingHorizontal: 9, paddingVertical: 3 },
+  pillText:{ color: "rgba(241,245,249,0.65)", fontSize: 10.5, fontWeight: "600" },
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────

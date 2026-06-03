@@ -37,6 +37,7 @@ import billingRouter from "./billing.js";
 import absencesRouter from "./absences.js";
 import predictiveSubstitutesRouter from "./predictive-substitutes.js";
 import adminCopilotRouter from "./admin-copilot.js";
+import verifyQrRouter from "./verify-qr.js";
 
 const router: IRouter = Router();
 
@@ -78,5 +79,6 @@ router.use(billingRouter);
 router.use(absencesRouter);
 router.use(predictiveSubstitutesRouter);
 router.use(adminCopilotRouter);
+router.use(verifyQrRouter);
 
 export default router;
