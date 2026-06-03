@@ -60,12 +60,12 @@ const INTENT_META: Record<string, { label: string; color: string; icon: keyof ty
 // ─── Quick suggestions ────────────────────────────────────────────────────────
 
 const QUICK_PROMPTS = [
-  { emoji: "💳", label: "Pagamenti mancanti",  query: "Show all missing payments this month" },
-  { emoji: "📋", label: "Certificati scaduti", query: "List all expired medical certificates" },
-  { emoji: "👤", label: "Assenze operatori",   query: "Show operator absences this month" },
-  { emoji: "💰", label: "Incassi del mese",    query: "Revenue summary for this month" },
-  { emoji: "👥", label: "Riepilogo soci",      query: "How many members are registered?" },
-  { emoji: "⏰", label: "Cert. in scadenza",   query: "Certificates expiring in the next 30 days" },
+  { emoji: "💳", label: "Missing Payments",    query: "Show all missing payments this month" },
+  { emoji: "📋", label: "Expired Certs",       query: "List all expired medical certificates" },
+  { emoji: "👤", label: "Operator Absences",   query: "Show operator absences this month" },
+  { emoji: "💰", label: "Revenue This Month",  query: "Revenue summary for this month" },
+  { emoji: "👥", label: "Member Summary",      query: "How many members are registered?" },
+  { emoji: "⏰", label: "Expiring Soon",       query: "Certificates expiring in the next 30 days" },
 ];
 
 // ─── Metric Grid ─ member_summary ─────────────────────────────────────────────
