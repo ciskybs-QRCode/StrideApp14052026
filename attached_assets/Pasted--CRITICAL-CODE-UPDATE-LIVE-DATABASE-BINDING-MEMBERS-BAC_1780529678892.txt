@@ -1,0 +1,32 @@
+🚨 CRITICAL CODE UPDATE: LIVE DATABASE BINDING & MEMBERS BACKOFFICE REFACTOR 🚨
+
+Role: Expert Senior Full-Stack Developer.
+Objective: Completely overhaul the Admin Members section (`Admin/members`) to initiate real-world testing. Connect everything to live production data, wipe out mock data, and enrich the UI with vital safety indicators and dynamic PDF generation features.
+
+CRITICAL CONSTRAINT: Do NOT delete, break, or alter any existing state management, active database connections, or authentication layers unless explicitly required to wire up the live data. Maintain 100% architectural continuity. Strict Deep Navy Blue (#0A1128) and Gold (#D4AF37) theme compliance. Everything must be 100% in ENGLISH with ZERO screen overflow or layout clipping.
+
+Please implement the following updates:
+
+---
+
+1. WIPE MOCK DATA & BIND TO LIVE DATABASE
+- Target: All member directory screens (`Admin/members`).
+- Requirement: Completely remove all placeholder/mock users. Wire the list view and detail views directly to the real database tables/collections (Members, Dependents, and Main Members relationships). 
+
+2. ENRICHED PREVIEW CARDS (LIST VIEW)
+- Each member card in the main list must immediately display high-visibility safety and status indicators:
+  - Allergies: Clear text label or warning indicator if present.
+  - Photo Consent Status: Visual icon indicator (Green photo icon = Approved / Yellow photo icon = Conditional / Red Crossed-out photo icon = Denied).
+  - Ambulance Consent Status: Visual icon indicator (Green Cross = Approved / Red Crossed-out Cross/Prohibition sign = Denied).
+  - Level/Rating: Star icons accompanied by the specific numeric count (e.g., ⭐ 3).
+  - Dependent Members Context: If the member is a dependent/minor, the Main Member's (Parent/Guardian) primary contact info must be visible directly on the preview card.
+
+3. DYNAMIC FULL-DETAIL CARD & ACTIONS (ON TAP)
+- Tapping a member card must open the complete profile sheet/modal, preserving current structural data and actions (Contact, Promote, Downgrade, etc.) while adding:
+  - Full display of all safety and legal data (Allergies, Photo Consent, Ambulance Consent, Stars).
+  - For Dependent Members: Add a direct operational action to immediately contact the linked Main Member (Parent/Guardian) via their contact details.
+
+4. DYNAMIC PDF BADGE GENERATION & PRINT OPTIONS
+- Target: PDF Badge generation/print layout utility.
+- Requirement: Keep the current operational layout but enhance it by adding customization toggles/checkboxes prior to printing. The admin must be able to choose which elements to include on the physical printout (e.g., Toggle on/off: Photo/Video Consents, Allergies, Ambulance Consent).
+- CRITICAL: When the PDF is generated/printed, the selected metrics MUST dynamically render and be clearly visible on the physical printed badge layout.
