@@ -16,65 +16,143 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { adminCopilotQuery, type CopilotResponse } from "@/lib/api";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type MessageRole = "user" | "assistant" | "error";
 
 interface Message {
-  id: string;
-  role: MessageRole;
-  text: string;
+  id:       string;
+  role:     MessageRole;
+  text:     string;
   response?: CopilotResponse;
-  ts: Date;
+  ts:       Date;
 }
 
-// ── Quick prompts ──────────────────────────────────────────────────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
+
+const CLR = {
+  bg:        "#0A1128",
+  navBg:     "#070D1E",
+  surface:   "#0D1A3A",
+  surfaceAlt:"#090F20",
+  userBubble:"#1E3A8A",
+  gold:      "#D4AF37",
+  goldDim:   "rgba(212,175,55,0.22)",
+  goldFaint: "rgba(212,175,55,0.08)",
+  border:    "rgba(255,255,255,0.07)",
+  text:      "#F1F5F9",
+  textMuted: "rgba(241,245,249,0.42)",
+  textDim:   "rgba(241,245,249,0.2)",
+  green:     "#10B981",
+} as const;
+
+// ─── Intent metadata ──────────────────────────────────────────────────────────
+
+const INTENT_META: Record<string, { label: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  missing_payments:  { label: "Missing Payments",  color: "#F59E0B", icon: "card-outline" },
+  expired_documents: { label: "Expired Docs",       color: "#EF4444", icon: "document-outline" },
+  operator_absences: { label: "Absences",           color: "#A78BFA", icon: "person-remove-outline" },
+  member_summary:    { label: "Members",            color: "#10B981", icon: "people-outline" },
+  revenue_summary:   { label: "Revenue",            color: "#60A5FA", icon: "trending-up-outline" },
+  unknown:           { label: "General",            color: "#94A3B8", icon: "help-circle-outline" },
+};
+
+// ─── Quick suggestions ────────────────────────────────────────────────────────
 
 const QUICK_PROMPTS = [
-  { label: "Missing payments",      query: "Show all missing payments this month" },
-  { label: "Expired certificates",  query: "List all expired medical certificates" },
-  { label: "Operator absences",     query: "Show operator absences this month" },
-  { label: "Revenue this year",     query: "Revenue summary for this year" },
-  { label: "Member count",          query: "How many members are registered?" },
-  { label: "Expiring certs (30d)",  query: "Certificates expiring in the next 30 days" },
+  { emoji: "💳", label: "Pagamenti mancanti",  query: "Show all missing payments this month" },
+  { emoji: "📋", label: "Certificati scaduti", query: "List all expired medical certificates" },
+  { emoji: "👤", label: "Assenze operatori",   query: "Show operator absences this month" },
+  { emoji: "💰", label: "Incassi del mese",    query: "Revenue summary for this month" },
+  { emoji: "👥", label: "Riepilogo soci",      query: "How many members are registered?" },
+  { emoji: "⏰", label: "Cert. in scadenza",   query: "Certificates expiring in the next 30 days" },
 ];
 
-// ── Inline table component ────────────────────────────────────────────────────
+// ─── Metric Grid ─ member_summary ─────────────────────────────────────────────
+
+function MetricGrid({ rows }: { rows: string[][] }) {
+  return (
+    <View style={mg.grid}>
+      {rows.map(([label, value], i) => (
+        <View key={i} style={mg.tile}>
+          <Text style={mg.value} numberOfLines={1}>{value}</Text>
+          <Text style={mg.label} numberOfLines={2}>{label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const mg = StyleSheet.create({
+  grid:  { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
+  tile:  {
+    flex: 1, minWidth: "44%",
+    backgroundColor: "rgba(212,175,55,0.07)",
+    borderWidth: 1, borderColor: "rgba(212,175,55,0.2)",
+    borderRadius: 11,
+    paddingVertical: 11, paddingHorizontal: 12,
+    alignItems: "center",
+  },
+  value: { color: "#D4AF37", fontSize: 24, fontWeight: "800", lineHeight: 28 },
+  label: { color: "rgba(241,245,249,0.45)", fontSize: 10, fontWeight: "600", marginTop: 3, textAlign: "center" },
+});
+
+// ─── Revenue Rows ─ revenue_summary ───────────────────────────────────────────
+
+function RevenueRows({ rows }: { rows: string[][] }) {
+  if (!rows.length) return null;
+  const amounts = rows.map(r => parseFloat((r[1] ?? "0").replace(/[^0-9.]/g, "")) || 0);
+  const maxAmt  = Math.max(...amounts, 1);
+  return (
+    <View style={{ marginTop: 12, gap: 7 }}>
+      {rows.slice(0, 8).map((row, i) => {
+        const pct = (amounts[i] ?? 0) / maxAmt;
+        return (
+          <View key={i} style={rr.row}>
+            <Text style={rr.month} numberOfLines={1}>{row[0] ?? "—"}</Text>
+            <View style={rr.barTrack}>
+              <View style={[rr.bar, { flex: Math.max(pct, 0.01) }]} />
+              <View style={{ flex: Math.max(1 - pct, 0) }} />
+            </View>
+            <Text style={rr.amount} numberOfLines={1}>{row[1] ?? "—"}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const rr = StyleSheet.create({
+  row:      { flexDirection: "row", alignItems: "center", gap: 8 },
+  month:    { color: "rgba(241,245,249,0.45)", fontSize: 11, width: 58, flexShrink: 0 },
+  barTrack: { flex: 1, flexDirection: "row", height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.06)", overflow: "hidden" },
+  bar:      { backgroundColor: "#D4AF37", borderRadius: 3 },
+  amount:   { color: "#F1F5F9", fontSize: 11, fontWeight: "700", width: 68, textAlign: "right", flexShrink: 0 },
+});
+
+// ─── Data Table ───────────────────────────────────────────────────────────────
 
 function DataTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
   if (!columns.length || !rows.length) return null;
-
-  const colWidths = columns.map((col, ci) =>
-    Math.max(col.length, ...rows.map(r => (r[ci] ?? "").length), 6),
+  const COL_CHAR_PX = 7.8;
+  const colW = columns.map((c, ci) =>
+    Math.max(c.length, ...rows.map(r => (r[ci] ?? "").length), 4) * COL_CHAR_PX + 16
   );
-  const total = colWidths.reduce((s, w) => s + w, 0) + (colWidths.length - 1) * 2;
-
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
       <View>
-        {/* Header row */}
-        <View style={t.headerRow}>
-          {columns.map((col, ci) => (
-            <Text
-              key={ci}
-              style={[t.headerCell, { minWidth: Math.max(colWidths[ci] ?? 6, 6) * 7.5 }]}
-              numberOfLines={1}
-            >
-              {col.toUpperCase()}
+        <View style={{ flexDirection: "row" }}>
+          {columns.map((c, ci) => (
+            <Text key={ci} style={[tbl.hCell, { width: colW[ci] }]} numberOfLines={1}>
+              {c.toUpperCase()}
             </Text>
           ))}
         </View>
-        {/* Divider */}
-        <View style={[t.divider, { width: Math.max(total * 7.5, 200) }]} />
-        {/* Data rows */}
+        <View style={tbl.divider} />
         {rows.map((row, ri) => (
-          <View key={ri} style={[t.dataRow, ri % 2 === 1 && t.dataRowAlt]}>
+          <View key={ri} style={[{ flexDirection: "row" }, ri % 2 === 1 && tbl.rowAlt]}>
             {columns.map((_, ci) => (
-              <Text
-                key={ci}
-                style={[t.dataCell, { minWidth: Math.max(colWidths[ci] ?? 6, 6) * 7.5 }]}
-                numberOfLines={2}
-              >
+              <Text key={ci} style={[tbl.cell, { width: colW[ci] }]} numberOfLines={2}>
                 {row[ci] ?? "—"}
               </Text>
             ))}
@@ -85,193 +163,285 @@ function DataTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
   );
 }
 
-// ── Message bubble ────────────────────────────────────────────────────────────
+const tbl = StyleSheet.create({
+  hCell:   { color: "#D4AF37", fontSize: 9, fontWeight: "800", letterSpacing: 0.7, paddingHorizontal: 6, paddingVertical: 5 },
+  divider: { height: 1, backgroundColor: "rgba(212,175,55,0.18)", marginBottom: 2 },
+  rowAlt:  { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 4 },
+  cell:    { color: "#94A3B8", fontSize: 11, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 3.5 },
+});
 
-function MessageBubble({ msg }: { msg: Message }) {
-  const isUser = msg.role === "user";
-  const isError = msg.role === "error";
-  const r = msg.response;
-
-  if (isUser) {
-    return (
-      <View style={b.userWrap}>
-        <View style={b.userBubble}>
-          <Text style={b.userText}>{msg.text}</Text>
-        </View>
-        <Text style={b.ts}>{msg.ts.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false })}</Text>
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <View style={b.aiWrap}>
-        <View style={[b.aiBubble, { borderColor: "#EF444455" }]}>
-          <View style={b.aiHeader}>
-            <Ionicons name="alert-circle-outline" size={14} color="#F87171" />
-            <Text style={[b.aiChipText, { color: "#F87171" }]}>Error</Text>
-          </View>
-          <Text style={[b.summaryText, { color: "#FCA5A5" }]}>{msg.text}</Text>
-        </View>
-      </View>
-    );
-  }
-
-  const intentColor = INTENT_COLORS[r?.intent ?? ""] ?? "#94A3B8";
-  const intentLabel = INTENT_LABELS[r?.intent ?? ""] ?? r?.intent ?? "—";
-
-  return (
-    <View style={b.aiWrap}>
-      <View style={b.aiBubble}>
-        {/* AI chip + intent badge */}
-        <View style={b.aiHeader}>
-          <View style={b.aiChip}>
-            <Ionicons name="sparkles" size={10} color="#FBBF24" />
-            <Text style={b.aiChipText}>COPILOT</Text>
-          </View>
-          <View style={[b.intentBadge, { backgroundColor: intentColor + "22", borderColor: intentColor + "55" }]}>
-            <Text style={[b.intentText, { color: intentColor }]}>{intentLabel}</Text>
-          </View>
-        </View>
-
-        {/* Summary text */}
-        <Text style={b.summaryText}>{r?.summary ?? msg.text}</Text>
-
-        {/* Inline table */}
-        {r && r.columns.length > 0 && r.rows.length > 0 && (
-          <DataTable columns={r.columns} rows={r.rows} />
-        )}
-
-        {/* Footer: count + latency */}
-        {r && (
-          <View style={b.aiFooter}>
-            <Text style={b.footerText}>
-              {r.totalCount} row{r.totalCount !== 1 ? "s" : ""}
-              {r.latencyMs ? ` · ${r.latencyMs}ms` : ""}
-              {r.intentResult?.period ? ` · ${r.intentResult.period.replace("_", " ")}` : ""}
-            </Text>
-          </View>
-        )}
-      </View>
-      <Text style={b.ts}>{msg.ts.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false })}</Text>
-    </View>
-  );
-}
-
-const INTENT_COLORS: Record<string, string> = {
-  missing_payments:   "#FBBF24",
-  expired_documents:  "#F87171",
-  operator_absences:  "#A78BFA",
-  member_summary:     "#34D399",
-  revenue_summary:    "#60A5FA",
-};
-const INTENT_LABELS: Record<string, string> = {
-  missing_payments:   "Missing Payments",
-  expired_documents:  "Expired Docs",
-  operator_absences:  "Absences",
-  member_summary:     "Members",
-  revenue_summary:    "Revenue",
-  unknown:            "Unknown",
-};
-
-// ── Typing indicator ──────────────────────────────────────────────────────────
+// ─── Typing indicator ─────────────────────────────────────────────────────────
 
 function TypingIndicator() {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setPhase(p => (p + 1) % 3), 400);
+    return () => clearInterval(id);
+  }, []);
   return (
-    <View style={b.aiWrap}>
-      <View style={[b.aiBubble, { paddingVertical: 12 }]}>
-        <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-          <View style={ty.dot} />
-          <View style={[ty.dot, { opacity: 0.7 }]} />
-          <View style={[ty.dot, { opacity: 0.4 }]} />
-          <Text style={ty.label}>Analysing query...</Text>
+    <View style={{ alignItems: "flex-start", marginBottom: 14 }}>
+      <View style={{ flexDirection: "row", alignItems: "stretch", width: "68%" }}>
+        <View style={[ab.accent, { backgroundColor: CLR.gold }]} />
+        <View style={[ab.bubble, { paddingVertical: 14, paddingHorizontal: 16 }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {[0, 1, 2].map(i => (
+              <View
+                key={i}
+                style={[
+                  ty.dot,
+                  {
+                    opacity:         phase === i ? 1 : 0.2,
+                    transform: [{ translateY: phase === i ? -3 : 0 }],
+                  },
+                ]}
+              />
+            ))}
+            <Text style={ty.label}>Analysing query...</Text>
+          </View>
         </View>
       </View>
     </View>
   );
 }
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+const ty = StyleSheet.create({
+  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: "#D4AF37" },
+  label: { color: "rgba(241,245,249,0.3)", fontSize: 11.5, marginLeft: 2 },
+});
+
+// ─── Message bubble ───────────────────────────────────────────────────────────
+
+function MessageBubble({ msg }: { msg: Message }) {
+  const isUser  = msg.role === "user";
+  const isError = msg.role === "error";
+  const r       = msg.response;
+  const tsStr   = msg.ts.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+  /* ── User bubble ── */
+  if (isUser) {
+    return (
+      <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
+        <View style={ub.bubble}>
+          <Text style={ub.text}>{msg.text}</Text>
+        </View>
+        <Text style={ub.ts}>{tsStr}</Text>
+      </View>
+    );
+  }
+
+  /* ── Error bubble ── */
+  if (isError) {
+    return (
+      <View style={{ alignItems: "flex-start", marginBottom: 14 }}>
+        <View style={{ flexDirection: "row", alignItems: "stretch", width: "88%" }}>
+          <View style={[ab.accent, { backgroundColor: "#EF4444" }]} />
+          <View style={[ab.bubble, { borderColor: "rgba(239,68,68,0.18)" }]}>
+            <View style={ab.header}>
+              <View style={[ab.badge, { backgroundColor: "rgba(239,68,68,0.13)" }]}>
+                <Ionicons name="alert-circle-outline" size={10} color="#EF4444" />
+                <Text style={[ab.badgeText, { color: "#EF4444" }]}>ERROR</Text>
+              </View>
+            </View>
+            <Text style={[ab.summary, { color: "#FCA5A5" }]}>{msg.text}</Text>
+          </View>
+        </View>
+        <Text style={ab.ts}>{tsStr}</Text>
+      </View>
+    );
+  }
+
+  /* ── AI bubble ── */
+  const meta         = INTENT_META[r?.intent ?? ""] ?? INTENT_META["unknown"]!;
+  const accentColor  = meta.color;
+
+  const renderData = () => {
+    if (!r) return null;
+    if (r.intent === "member_summary" && r.rows.length) return <MetricGrid rows={r.rows} />;
+    if (r.intent === "revenue_summary" && r.rows.length) return <RevenueRows rows={r.rows} />;
+    if (r.columns.length && r.rows.length) return <DataTable columns={r.columns} rows={r.rows} />;
+    return null;
+  };
+
+  return (
+    <View style={{ alignItems: "flex-start", marginBottom: 14 }}>
+      <View style={{ flexDirection: "row", alignItems: "stretch", width: "93%" }}>
+        {/* Gold left accent bar — color-coded by intent */}
+        <View style={[ab.accent, { backgroundColor: accentColor }]} />
+
+        <View style={ab.bubble}>
+          {/* Header: COPILOT badge + intent badge */}
+          <View style={ab.header}>
+            <View style={ab.copilotBadge}>
+              <Ionicons name="sparkles" size={9} color="#D4AF37" />
+              <Text style={ab.copilotText}>COPILOT</Text>
+            </View>
+            <View style={[ab.intentBadge, { backgroundColor: accentColor + "18", borderColor: accentColor + "44" }]}>
+              <Ionicons name={meta.icon} size={10} color={accentColor} />
+              <Text style={[ab.intentText, { color: accentColor }]}>{meta.label}</Text>
+            </View>
+          </View>
+
+          {/* Summary text */}
+          <Text style={ab.summary}>{r?.summary ?? msg.text}</Text>
+
+          {/* Data section */}
+          {renderData()}
+
+          {/* Footer */}
+          {r && (r.totalCount > 0 || !!r.latencyMs) && (
+            <View style={ab.footer}>
+              <Text style={ab.footerText}>
+                {r.totalCount > 0 ? `${r.totalCount} record${r.totalCount !== 1 ? "s" : ""}` : ""}
+                {r.latencyMs ? ` · ${r.latencyMs}ms` : ""}
+                {r.intentResult?.period ? ` · ${r.intentResult.period.replace(/_/g, " ")}` : ""}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+      <Text style={ab.ts}>{tsStr}</Text>
+    </View>
+  );
+}
+
+/* User bubble styles */
+const ub = StyleSheet.create({
+  bubble: {
+    backgroundColor: CLR.userBubble,
+    borderRadius: 18, borderBottomRightRadius: 5,
+    paddingHorizontal: 15, paddingVertical: 11,
+    maxWidth: "78%",
+  },
+  text: { color: CLR.text, fontSize: 14, lineHeight: 20 },
+  ts:   { color: CLR.textDim, fontSize: 10, marginTop: 3, marginHorizontal: 3 },
+});
+
+/* AI bubble shared styles */
+const ab = StyleSheet.create({
+  accent: {
+    width: 3, borderRadius: 2,
+    flexShrink: 0, marginRight: 10,
+    alignSelf: "stretch",
+  },
+  bubble: {
+    flex: 1,
+    backgroundColor: CLR.surface,
+    borderRadius: 16, borderBottomLeftRadius: 5,
+    padding: 14,
+    borderWidth: 1, borderColor: CLR.border,
+    overflow: "hidden",
+  },
+  header:       { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 9 },
+  copilotBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(212,175,55,0.13)", borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2.5 },
+  copilotText:  { color: CLR.gold, fontSize: 8, fontWeight: "800", letterSpacing: 1.2 },
+  badge:        { flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2.5 },
+  badgeText:    { fontSize: 8, fontWeight: "800", letterSpacing: 1 },
+  intentBadge:  { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 5, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2.5 },
+  intentText:   { fontSize: 10, fontWeight: "700" },
+  summary:      { color: "#CBD5E1", fontSize: 13.5, lineHeight: 20 },
+  footer:       { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)" },
+  footerText:   { color: "rgba(255,255,255,0.27)", fontSize: 10 },
+  ts:           { color: CLR.textDim, fontSize: 10, marginTop: 4, marginLeft: 13 },
+});
+
+// ─── Welcome banner ───────────────────────────────────────────────────────────
+
+function WelcomeBanner() {
+  return (
+    <View style={wb.card}>
+      <View style={wb.iconWrap}>
+        <Ionicons name="sparkles" size={22} color="#D4AF37" />
+      </View>
+      <Text style={wb.title}>Admin Copilot</Text>
+      <Text style={wb.body}>
+        Ask me anything about your school data in plain language.{"\n"}Tap a suggestion below to get started.
+      </Text>
+      <View style={wb.pills}>
+        {["missing payments", "expired docs", "operator absences", "revenue", "member count"].map(k => (
+          <View key={k} style={wb.pill}>
+            <Text style={wb.pillText}>{k}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const wb = StyleSheet.create({
+  card:    { backgroundColor: "rgba(212,175,55,0.06)", borderWidth: 1, borderColor: "rgba(212,175,55,0.16)", borderRadius: 18, padding: 20, marginBottom: 20, alignItems: "center" },
+  iconWrap:{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(212,175,55,0.12)", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  title:   { color: CLR.text, fontSize: 17, fontWeight: "800", marginBottom: 6 },
+  body:    { color: CLR.textMuted, fontSize: 13, lineHeight: 19, textAlign: "center", marginBottom: 14 },
+  pills:   { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center" },
+  pill:    { backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 6, paddingHorizontal: 9, paddingVertical: 3 },
+  pillText:{ color: "rgba(241,245,249,0.4)", fontSize: 10.5, fontWeight: "600" },
+});
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function CopilotScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-
-  const [input,    setInput]    = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: "",
-      ts: new Date(),
-      response: {
-        intent: "unknown",
-        summary: "Hello! Ask me anything about your school data. Try: \"Show missing payments this month\" or \"List expired certificates\".",
-        columns: [],
-        rows: [],
-        totalCount: 0,
-        latencyMs: 0,
-        executedAt: new Date().toISOString(),
-        meta: {},
-        intentResult: { intent: "unknown", period: "all_time" },
-      },
-    },
-  ]);
-  const [loading, setLoading] = useState(false);
+  const router    = useRouter();
+  const insets    = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
 
+  const [input,    setInput]    = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const showWelcome = messages.length === 0;
+
   useEffect(() => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    return () => clearTimeout(t);
   }, [messages, loading]);
 
   const sendMessage = async (text: string) => {
     const q = text.trim();
     if (!q || loading) return;
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setInput("");
-
-    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", text: q, ts: new Date() };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => [...prev, { id: `u-${Date.now()}`, role: "user", text: q, ts: new Date() }]);
     setLoading(true);
-
     try {
       const result = await adminCopilotQuery(q);
-      const aiMsg: Message = {
-        id: `a-${Date.now()}`,
-        role: "assistant",
-        text: result.summary,
+      setMessages(prev => [...prev, {
+        id:       `a-${Date.now()}`,
+        role:     "assistant",
+        text:     result.summary,
         response: result,
-        ts: new Date(),
-      };
-      setMessages(prev => [...prev, aiMsg]);
+        ts:       new Date(),
+      }]);
     } catch (e) {
-      const errMsg: Message = {
-        id: `e-${Date.now()}`,
+      setMessages(prev => [...prev, {
+        id:   `e-${Date.now()}`,
         role: "error",
         text: (e as Error).message ?? "Request failed. Please try again.",
-        ts: new Date(),
-      };
-      setMessages(prev => [...prev, errMsg]);
+        ts:   new Date(),
+      }]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSend = () => sendMessage(input);
-  const handleQuick = (q: string) => sendMessage(q);
-
   const TAB_H = Platform.OS === "web" ? 84 : 49;
 
   return (
     <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom + TAB_H }]}>
-      {/* ── Navbar ── */}
+
+      {/* ── Navbar ────────────────────────────────────────────── */}
       <View style={s.navbar}>
-        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color="#E2E8F0" />
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          hitSlop={14}
+        >
+          <Ionicons name="chevron-back" size={22} color="rgba(241,245,249,0.55)" />
         </Pressable>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+
+        <View style={s.navCenter}>
+          <View style={s.navRow}>
+            <View style={s.navIcon}>
+              <Ionicons name="sparkles" size={12} color="#D4AF37" />
+            </View>
             <Text style={s.navTitle}>Admin Copilot</Text>
             <View style={s.livePill}>
               <View style={s.liveDot} />
@@ -280,77 +450,83 @@ export default function CopilotScreen() {
           </View>
           <Text style={s.navSub}>Natural Language Analytics Engine</Text>
         </View>
+
         <Pressable
+          hitSlop={14}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setMessages(prev => prev.slice(0, 1));
+            setMessages([]);
           }}
-          hitSlop={10}
         >
-          <Ionicons name="trash-outline" size={20} color="rgba(255,255,255,0.4)" />
+          <Ionicons name="trash-outline" size={18} color="rgba(241,245,249,0.28)" />
         </Pressable>
       </View>
 
-      {/* ── Quick prompts ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={s.chipsScroll}
-        contentContainerStyle={s.chipsContent}
-      >
-        {QUICK_PROMPTS.map(p => (
-          <Pressable
-            key={p.label}
-            style={({ pressed }) => [s.chip, { opacity: pressed ? 0.7 : 1 }]}
-            onPress={() => handleQuick(p.query)}
-          >
-            <Text style={s.chipText}>{p.label}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      {/* ── Quick chips ───────────────────────────────────────── */}
+      <View style={s.chipsWrap}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.chipsContent}
+        >
+          {QUICK_PROMPTS.map(p => (
+            <Pressable
+              key={p.label}
+              style={({ pressed }) => [s.chip, pressed && s.chipActive]}
+              onPress={() => sendMessage(p.query)}
+              disabled={loading}
+            >
+              <Text style={s.chipEmoji}>{p.emoji}</Text>
+              <Text style={s.chipLabel}>{p.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
 
-      {/* ── Message list ── */}
+      {/* ── Message list ──────────────────────────────────────── */}
       <ScrollView
         ref={scrollRef}
-        style={s.messageList}
-        contentContainerStyle={s.messageListContent}
+        style={s.list}
+        contentContainerStyle={s.listInner}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {messages.map(msg => (
-          <MessageBubble key={msg.id} msg={msg} />
-        ))}
+        {showWelcome && <WelcomeBanner />}
+        {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
         {loading && <TypingIndicator />}
         <View style={{ height: 16 }} />
       </ScrollView>
 
-      {/* ── Input bar ── */}
+      {/* ── Input bar ─────────────────────────────────────────── */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={insets.bottom + 10}
       >
-        <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
           <TextInput
             style={s.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Ask anything about your data..."
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholder="Ask anything about your school data..."
+            placeholderTextColor="rgba(241,245,249,0.22)"
             returnKeyType="send"
-            onSubmitEditing={handleSend}
+            onSubmitEditing={() => sendMessage(input)}
             multiline
             maxLength={400}
             editable={!loading}
-            selectionColor="#FBBF24"
+            selectionColor="#D4AF37"
           />
           <Pressable
-            style={({ pressed }) => [s.sendBtn, { opacity: (loading || !input.trim()) ? 0.4 : pressed ? 0.8 : 1 }]}
-            onPress={handleSend}
+            style={({ pressed }) => [
+              s.sendBtn,
+              { opacity: loading || !input.trim() ? 0.38 : pressed ? 0.82 : 1 },
+            ]}
+            onPress={() => sendMessage(input)}
             disabled={loading || !input.trim()}
           >
             {loading
-              ? <ActivityIndicator color="#1E3A8A" size="small" />
-              : <Ionicons name="arrow-up" size={20} color="#1E3A8A" />
+              ? <ActivityIndicator color="#07111F" size="small" />
+              : <Ionicons name="arrow-up" size={20} color="#07111F" />
             }
           </Pressable>
         </View>
@@ -359,69 +535,81 @@ export default function CopilotScreen() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ─── Screen styles ────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#050F2E" },
+  root: { flex: 1, backgroundColor: CLR.bg },
 
-  navbar: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.07)" },
-  navTitle: { fontSize: 18, fontWeight: "800", color: "#F1F5F9" },
-  navSub:   { fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 1 },
-  livePill: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(16,185,129,0.15)", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
-  liveDot:  { width: 5, height: 5, borderRadius: 3, backgroundColor: "#10B981" },
-  liveText: { color: "#10B981", fontSize: 9, fontWeight: "800", letterSpacing: 1 },
+  /* Navbar */
+  navbar: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 18, paddingVertical: 13,
+    backgroundColor: CLR.navBg,
+    borderBottomWidth: 1, borderBottomColor: "rgba(212,175,55,0.13)",
+  },
+  navCenter: { flex: 1 },
+  navRow:    { flexDirection: "row", alignItems: "center", gap: 7 },
+  navIcon:   {
+    width: 24, height: 24, borderRadius: 7,
+    backgroundColor: "rgba(212,175,55,0.12)",
+    alignItems: "center", justifyContent: "center",
+  },
+  navTitle:  { fontSize: 16, fontWeight: "800", color: CLR.text, letterSpacing: -0.3 },
+  navSub:    { fontSize: 10.5, color: CLR.textMuted, marginTop: 2, letterSpacing: 0.1 },
+  livePill:  {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "rgba(16,185,129,0.13)",
+    borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2.5,
+  },
+  liveDot:   { width: 5, height: 5, borderRadius: 3, backgroundColor: CLR.green },
+  liveText:  { color: CLR.green, fontSize: 8.5, fontWeight: "800", letterSpacing: 0.8 },
 
-  chipsScroll:   { flexShrink: 0, maxHeight: 46, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" },
-  chipsContent:  { paddingHorizontal: 16, paddingVertical: 8, gap: 8, flexDirection: "row", alignItems: "center" },
-  chip:          { backgroundColor: "rgba(251,191,36,0.1)", borderWidth: 1, borderColor: "rgba(251,191,36,0.25)", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  chipText:      { color: "#FBBF24", fontSize: 12, fontWeight: "600" },
+  /* Chips */
+  chipsWrap:    { backgroundColor: CLR.surfaceAlt, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
+  chipsContent: { paddingHorizontal: 14, paddingVertical: 9, gap: 7, flexDirection: "row", alignItems: "center" },
+  chip:         {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: CLR.goldFaint,
+    borderWidth: 1, borderColor: CLR.goldDim,
+    borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6,
+  },
+  chipActive:   { backgroundColor: "rgba(212,175,55,0.2)" },
+  chipEmoji:    { fontSize: 13 },
+  chipLabel:    { color: CLR.gold, fontSize: 11.5, fontWeight: "600" },
 
-  messageList:        { flex: 1 },
-  messageListContent: { paddingHorizontal: 16, paddingTop: 12 },
+  /* List */
+  list:      { flex: 1 },
+  listInner: { paddingHorizontal: 14, paddingTop: 16 },
 
-  inputBar: { backgroundColor: "#0B1A3E", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)", paddingHorizontal: 16, paddingTop: 12, flexDirection: "row", alignItems: "flex-end", gap: 10 },
-  input:    { flex: 1, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(251,191,36,0.3)", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, color: "#F1F5F9", fontSize: 14, maxHeight: 100 },
-  sendBtn:  { width: 40, height: 40, borderRadius: 12, backgroundColor: "#FBBF24", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-});
-
-// ── Bubble styles ─────────────────────────────────────────────────────────────
-
-const b = StyleSheet.create({
-  userWrap:  { alignItems: "flex-end", marginBottom: 10 },
-  userBubble:{ backgroundColor: "#1E3A8A", borderRadius: 16, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, maxWidth: "85%" },
-  userText:  { color: "#F1F5F9", fontSize: 14, lineHeight: 20 },
-
-  aiWrap:    { alignItems: "flex-start", marginBottom: 12 },
-  aiBubble:  { backgroundColor: "#0D2050", borderRadius: 16, borderBottomLeftRadius: 4, padding: 14, maxWidth: "92%", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-
-  aiHeader:  { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
-  aiChip:    { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(251,191,36,0.15)", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  aiChipText:{ color: "#FBBF24", fontSize: 8, fontWeight: "800", letterSpacing: 1.2 },
-  intentBadge:{ borderRadius: 5, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2 },
-  intentText: { fontSize: 10, fontWeight: "700" },
-
-  summaryText:{ color: "#CBD5E1", fontSize: 13, lineHeight: 19 },
-
-  aiFooter:  { marginTop: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)", paddingTop: 6 },
-  footerText:{ color: "rgba(255,255,255,0.3)", fontSize: 10 },
-
-  ts:        { color: "rgba(255,255,255,0.2)", fontSize: 10, marginTop: 3, marginHorizontal: 4 },
-});
-
-// ── Table styles ──────────────────────────────────────────────────────────────
-
-const t = StyleSheet.create({
-  headerRow: { flexDirection: "row", gap: 2, marginBottom: 2 },
-  headerCell:{ color: "#FBBF24", fontSize: 10, fontWeight: "800", letterSpacing: 0.5, paddingHorizontal: 6, paddingVertical: 4 },
-  divider:   { height: 1, backgroundColor: "rgba(251,191,36,0.25)", marginBottom: 2 },
-  dataRow:   { flexDirection: "row", gap: 2 },
-  dataRowAlt:{ backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 4 },
-  dataCell:  { color: "#94A3B8", fontSize: 11, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 3 },
-});
-
-// ── Typing dot styles ─────────────────────────────────────────────────────────
-
-const ty = StyleSheet.create({
-  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: "#FBBF24" },
-  label: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginLeft: 4 },
+  /* Input bar */
+  inputBar: {
+    backgroundColor: CLR.navBg,
+    borderTopWidth: 1, borderTopColor: "rgba(212,175,55,0.16)",
+    paddingHorizontal: 14, paddingTop: 12,
+    flexDirection: "row", alignItems: "flex-end", gap: 10,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: CLR.surface,
+    borderWidth: 1.5,
+    borderColor: "rgba(212,175,55,0.38)",
+    borderRadius: 16,
+    paddingHorizontal: 15, paddingVertical: 11,
+    color: CLR.text, fontSize: 14, maxHeight: 100,
+    /* Gold ambient glow (iOS) */
+    shadowColor: "#D4AF37",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+  },
+  sendBtn: {
+    width: 44, height: 44, borderRadius: 13,
+    backgroundColor: CLR.gold,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+    shadowColor: "#D4AF37",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 5,
+  },
 });
