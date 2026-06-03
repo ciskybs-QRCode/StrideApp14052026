@@ -79,6 +79,7 @@ export default function AdminLessonsScreen() {
   const [scNotes,              setScNotes]              = useState("");
   const [scSaving,             setScSaving]             = useState(false);
   const [scFilterDay,          setScFilterDay]          = useState<number | null>(null);
+  const [showAvailSection,     setShowAvailSection]     = useState(false);
 
   // ── Data loading ──────────────────────────────────────────────────────────────
 
@@ -595,63 +596,80 @@ export default function AdminLessonsScreen() {
         {/* ══ SCHEDULER TAB ══ */}
         {tab === "scheduler" && (
           <>
-            {/* ── Operator course availability aggregator ── */}
-            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>Operator Course Availability</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: "row", gap: 8, paddingBottom: 4 }}>
-                {([null, 1, 2, 3, 4, 5, 6, 0] as (number | null)[]).map(d => {
-                  const label = d === null ? "All" : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d];
-                  const active = scFilterDay === d;
-                  return (
-                    <Pressable
-                      key={String(d)}
-                      onPress={() => setScFilterDay(d)}
-                      style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: active ? colors.primary : colors.muted }}
-                    >
-                      <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </ScrollView>
-
-            {courseAvailTemplates.filter(t => scFilterDay === null || t.day_of_week === scFilterDay).length === 0 ? (
-              <View style={[styles.emptyCard, { marginBottom: 16 }]}>
-                <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
-                <Text style={[styles.emptyText, { color: colors.mutedForeground, textAlign: "center" }]}>
-                  No operator course availability yet.{"\n"}Operators can set their weekly schedule from their app.
+            {/* ── Operator course availability aggregator (collapsible) ── */}
+            <Pressable
+              onPress={() => setShowAvailSection(v => !v)}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: showAvailSection ? 10 : 16, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.muted }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Ionicons name="people-outline" size={16} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.mutedForeground }}>
+                  Operator Availability{courseAvailTemplates.length > 0 ? ` (${courseAvailTemplates.length})` : ""}
                 </Text>
               </View>
-            ) : (
-              courseAvailTemplates
-                .filter(t => scFilterDay === null || t.day_of_week === scFilterDay)
-                .map(t => {
-                  const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-                  const opName   = (t.operator as { name?: string } | null)?.name ?? "Unknown operator";
-                  const discName = (t.discipline as { name?: string } | null)?.name ?? "Unknown";
-                  return (
-                    <View key={t.id} style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.cardTitle, { color: colors.foreground }]}>{opName}</Text>
-                        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-                          {discName} · {DOW[t.day_of_week]} · {fmtTime(t.start_time)}–{fmtTime(t.end_time)}
-                        </Text>
-                      </View>
-                      <Pressable
-                        style={{ backgroundColor: `${colors.primary}18`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
-                        onPress={() => {
-                          setScDisciplineId(t.discipline_id);
-                          setScOperatorId(t.operator_id);
-                          setScDayOfWeek(t.day_of_week);
-                          setScStartTime(t.start_time.slice(0, 5));
-                          setScEndTime(t.end_time.slice(0, 5));
-                        }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Use →</Text>
-                      </Pressable>
-                    </View>
-                  );
-                })
+              <Ionicons name={showAvailSection ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
+            </Pressable>
+
+            {showAvailSection && (
+              <>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: "row", gap: 8, paddingBottom: 4 }}>
+                    {([null, 1, 2, 3, 4, 5, 6, 0] as (number | null)[]).map(d => {
+                      const label = d === null ? "All" : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d];
+                      const active = scFilterDay === d;
+                      return (
+                        <Pressable
+                          key={String(d)}
+                          onPress={() => setScFilterDay(d)}
+                          style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: active ? colors.primary : colors.muted }}
+                        >
+                          <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{label}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+
+                {courseAvailTemplates.filter(t => scFilterDay === null || t.day_of_week === scFilterDay).length === 0 ? (
+                  <View style={[styles.emptyCard, { marginBottom: 16 }]}>
+                    <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
+                    <Text style={[styles.emptyText, { color: colors.mutedForeground, textAlign: "center" }]}>
+                      No operator course availability yet.{"\n"}Operators can set their weekly schedule from their app.
+                    </Text>
+                  </View>
+                ) : (
+                  courseAvailTemplates
+                    .filter(t => scFilterDay === null || t.day_of_week === scFilterDay)
+                    .map(t => {
+                      const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+                      const opName   = (t.operator as { name?: string } | null)?.name ?? "Unknown operator";
+                      const discName = (t.discipline as { name?: string } | null)?.name ?? "Unknown";
+                      return (
+                        <View key={t.id} style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.cardTitle, { color: colors.foreground }]}>{opName}</Text>
+                            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                              {discName} · {DOW[t.day_of_week]} · {fmtTime(t.start_time)}–{fmtTime(t.end_time)}
+                            </Text>
+                          </View>
+                          <Pressable
+                            style={{ backgroundColor: `${colors.primary}18`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                            onPress={() => {
+                              setScDisciplineId(t.discipline_id);
+                              setScOperatorId(t.operator_id);
+                              setScDayOfWeek(t.day_of_week);
+                              setScStartTime(t.start_time.slice(0, 5));
+                              setScEndTime(t.end_time.slice(0, 5));
+                              setShowAvailSection(false);
+                            }}
+                          >
+                            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Use →</Text>
+                          </Pressable>
+                        </View>
+                      );
+                    })
+                )}
+              </>
             )}
 
             {/* ── Schedule new course form ── */}

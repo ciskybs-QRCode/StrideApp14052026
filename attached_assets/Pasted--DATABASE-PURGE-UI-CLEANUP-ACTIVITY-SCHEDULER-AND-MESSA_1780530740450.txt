@@ -1,0 +1,32 @@
+🚨 DATABASE PURGE & UI CLEANUP: ACTIVITY, SCHEDULER, AND MESSAGING REFACTOR 🚨
+
+Role: Expert Senior Full-Stack Developer & UI/UX Specialist.
+Objective: Clean out all remaining mock/placeholder data across multiple Admin sections, connect screens to live empty database tables for real production testing, and heavily optimize cluttered UI layouts.
+
+CRITICAL ARCHITECTURAL CONSTRAINTS: 
+- Do NOT alter or break existing authentication, underlying service configurations, or core endpoint logic. Maintain 100% continuity.
+- Visuals: Strict Deep Navy Blue (#0A1128) and Premium Gold (#D4AF37) theme. 
+- Containment: All layouts, inputs, cards, and text fields must be 100% contained within device boundaries. Strict text-wrapping, clean grid alignment, and ZERO screen overflows.
+- Language: 100% STRICT ENGLISH across all updated screens.
+
+Please implement the following modifications:
+
+---
+
+1. ADMIN / ACTIVITY: COMPLETE MOCK PURGE & LIVE CONNECTION
+- Target: `Admin/Activity` view.
+- Requirement: Completely delete all hardcoded/mock courses, classes, operators, and session data. Wipe the view clean. Connect this section directly to the live database (Firestore/Backend tables) so it displays an empty state, ready to receive and display real operational data.
+
+2. SCHEDULER VIEW: GRAPHICAL REALIGNMENT & "SCHEDULE NEW COURSE" REFACTOR
+- Target: `Scheduler` screen.
+- Requirement: Completely clean up and reorder the current cluttered and messy layout. Align all schedule blocks, timelines, and metadata into a clean, sharp, high-density grid.
+- Special Focus: "Schedule New Course" Section. Refactor this entire sub-form. Ensure form fields, dropdowns, day-selectors, and action buttons are perfectly organized, spaced out with consistent padding, and beautifully aligned without overlapping text.
+
+3. ADMIN / NEW MESSAGE: TABLE PURGE & LIVE DATABASE BINDING
+- Target: `Admin/new message` view.
+- Requirement: Wipe any existing mock history, pre-filled templates, or hardcoded tables. Connect all message queues and log tables to live, empty production database tables, fully prepared for clean real-world testing.
+
+4. ATTACHMENTS SECTION: UI CLEANUP & INTEGRATION REMOVAL
+- Target: "Attachments" area inside the New Message page.
+- Requirement: The current graphics look extremely messy and disorganized. Refactor the attachment UI components into a clean, minimal row or grid block.
+- Temporary Modification: REMOVE the links/buttons for Google Drive and Dropbox entirely. Retain only a clean, perfectly aligned local file attachment mechanism that respects the Navy & Gold design guidelines.

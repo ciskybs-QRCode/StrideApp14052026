@@ -63,7 +63,7 @@ interface NotifReceipt {
 
 const RECEIPTS_KEY = "stride_notif_receipts";
 
-type AttachmentType = "pdf" | "image" | "video" | "audio" | "doc" | "excel" | "gdrive" | "dropbox";
+type AttachmentType = "pdf" | "image" | "video" | "audio" | "doc" | "excel";
 type RecipientMode = "all" | "group" | "course" | "individuals";
 
 interface RecipientSelection {
@@ -95,14 +95,12 @@ const QUICK_TEMPLATES = [
 ];
 
 const ATTACHMENT_TYPES: { type: AttachmentType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { type: "pdf",     label: "PDF",     icon: "document-outline",      color: "#EF4444" },
-  { type: "image",   label: "Image",   icon: "image-outline",         color: "#3B82F6" },
-  { type: "video",   label: "Video",   icon: "videocam-outline",      color: "#8B5CF6" },
-  { type: "audio",   label: "Audio",   icon: "musical-note-outline",  color: "#F59E0B" },
-  { type: "doc",     label: "Word",    icon: "document-text-outline", color: "#2563EB" },
-  { type: "excel",   label: "Excel",   icon: "grid-outline",          color: "#16A34A" },
-  { type: "gdrive",  label: "G Drive", icon: "cloud-outline",         color: "#EA4335" },
-  { type: "dropbox", label: "Dropbox", icon: "cloud-upload-outline",  color: "#0061FE" },
+  { type: "pdf",   label: "PDF",   icon: "document-outline",      color: "#EF4444" },
+  { type: "image", label: "Image", icon: "image-outline",         color: "#3B82F6" },
+  { type: "video", label: "Video", icon: "videocam-outline",      color: "#8B5CF6" },
+  { type: "audio", label: "Audio", icon: "musical-note-outline",  color: "#F59E0B" },
+  { type: "doc",   label: "Word",  icon: "document-text-outline", color: "#2563EB" },
+  { type: "excel", label: "Excel", icon: "grid-outline",          color: "#16A34A" },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -160,18 +158,7 @@ export default function AdminCommunications() {
       if (raw) {
         setReceipts(JSON.parse(raw));
       } else {
-        const seed: NotifReceipt[] = [
-          { id: "r1", notifTitle: "May 2026 Newsletter", notifType: "broadcast", recipientName: "Sarah Miller", recipientRole: "parent",  sentAt: "2026-05-20T09:00:00Z", isRead: true,  readAt: "2026-05-20T09:14:22Z" },
-          { id: "r2", notifTitle: "May 2026 Newsletter", notifType: "broadcast", recipientName: "James O'Brien",   recipientRole: "parent",  sentAt: "2026-05-20T09:00:00Z", isRead: false, readAt: null },
-          { id: "r3", notifTitle: "May 2026 Newsletter", notifType: "broadcast", recipientName: "Emma Wilson",    recipientRole: "operator", sentAt: "2026-05-20T09:00:00Z", isRead: true,  readAt: "2026-05-20T10:05:00Z" },
-          { id: "r4", notifTitle: "Workshop Approved: Salsa Fusion", notifType: "workshop_approved", recipientName: "Louis Ford", recipientRole: "operator", sentAt: "2026-05-22T14:30:00Z", isRead: true,  readAt: "2026-05-22T14:32:00Z" },
-          { id: "r5", notifTitle: "Workshop Approved: Salsa Fusion", notifType: "workshop_approved", recipientName: "Sarah Miller", recipientRole: "parent", sentAt: "2026-05-22T14:30:00Z", isRead: false, readAt: null },
-          { id: "r6", notifTitle: "Schedule Change: Monday Ballet", notifType: "schedule_change", recipientName: "Anna Parker",  recipientRole: "operator", sentAt: "2026-05-24T08:00:00Z", isRead: true,  readAt: "2026-05-24T08:10:00Z" },
-          { id: "r7", notifTitle: "Schedule Change: Monday Ballet", notifType: "schedule_change", recipientName: "James O'Brien",  recipientRole: "parent",  sentAt: "2026-05-24T08:00:00Z", isRead: false, readAt: null },
-          { id: "r8", notifTitle: "Payment Reminder", notifType: "payment", recipientName: "Sarah Miller", recipientRole: "parent",  sentAt: "2026-05-28T08:00:00Z", isRead: true,  readAt: "2026-05-28T11:42:00Z" },
-        ];
-        setReceipts(seed);
-        AsyncStorage.setItem(RECEIPTS_KEY, JSON.stringify(seed));
+        setReceipts([]);
       }
     });
   }, []));
@@ -231,10 +218,6 @@ export default function AdminCommunications() {
   const [individualSearch, setIndividualSearch] = useState("");
   const [draftIndividualIds, setDraftIndividualIds] = useState<string[]>([]);
 
-  // Link modal for G Drive / Dropbox
-  const [showLinkModal, setShowLinkModal] = useState(false);
-  const [linkModalType, setLinkModalType] = useState<"gdrive" | "dropbox">("gdrive");
-  const [linkInput, setLinkInput] = useState("");
 
   // ── Reset ────────────────────────────────────────────────────────────────────
 
@@ -256,13 +239,6 @@ export default function AdminCommunications() {
 
   const handleAttachment = async (type: AttachmentType) => {
     try {
-      if (type === "gdrive" || type === "dropbox") {
-        setLinkModalType(type);
-        setLinkInput("");
-        setShowLinkModal(true);
-        return;
-      }
-
       if (type === "image") {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) { Alert.alert("Permission Required", "Allow photo library access to attach images."); return; }
@@ -294,16 +270,6 @@ export default function AdminCommunications() {
       Alert.alert("Error", "Could not open file picker. Please try again.");
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handleSaveLink = () => {
-    const trimmed = linkInput.trim();
-    if (!trimmed) { Alert.alert("Error", "Please paste a link."); return; }
-    const label = linkModalType === "gdrive" ? "G Drive" : "Dropbox";
-    setAttachments(prev => [...prev, `${label}: ${trimmed}`]);
-    setShowLinkModal(false);
-    setLinkInput("");
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   // ── Recipient picker ──────────────────────────────────────────────────────────
@@ -884,50 +850,6 @@ export default function AdminCommunications() {
       </Modal>
 
       {/* ══════════════════════════════════════════════════
-          LINK INPUT MODAL
-      ══════════════════════════════════════════════════ */}
-      <Modal visible={showLinkModal} transparent animationType="fade" onRequestClose={() => setShowLinkModal(false)}>
-        <View style={styles.linkModalOverlay}>
-          <View style={[styles.linkModalCard, { backgroundColor: colors.card }]}>
-            <View style={styles.modalTitleRow}>
-              <Text style={[styles.modalTitle, { color: colors.primary }]}>
-                {linkModalType === "gdrive" ? "Google Drive Link" : "Dropbox Link"}
-              </Text>
-              <Pressable onPress={() => setShowLinkModal(false)}>
-                <Ionicons name="close" size={22} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
-            <Text style={[styles.linkModalHint, { color: colors.mutedForeground }]}>
-              Paste a shareable link from {linkModalType === "gdrive" ? "Google Drive" : "Dropbox"} to attach it to your message.
-            </Text>
-            <View style={[styles.linkInputRow, { borderColor: colors.primary, backgroundColor: colors.background }]}>
-              <Ionicons name="link-outline" size={18} color={colors.mutedForeground} />
-              <TextInput
-                style={[styles.linkInput, { color: colors.foreground }]}
-                value={linkInput}
-                onChangeText={setLinkInput}
-                placeholder={linkModalType === "gdrive" ? "https://drive.google.com/..." : "https://www.dropbox.com/..."}
-                placeholderTextColor={colors.mutedForeground}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                autoFocus
-              />
-            </View>
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-              <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowLinkModal(false)}>
-                <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.modalBtn, { flex: 2, backgroundColor: linkModalType === "gdrive" ? "#EA4335" : "#0061FE" }]} onPress={handleSaveLink}>
-                <Ionicons name="attach-outline" size={16} color="#FFF" />
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Attach Link</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ══════════════════════════════════════════════════
           MESSAGE DETAIL MODAL
       ══════════════════════════════════════════════════ */}
       <Modal visible={!!showDetail} transparent animationType="slide" onRequestClose={() => setShowDetail(null)}>
@@ -1119,12 +1041,6 @@ const styles = StyleSheet.create({
   pickerCheckbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   confirmIndividualsBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14, marginTop: 8 },
   confirmIndividualsBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
-  linkModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 20 },
-  linkModalCard: { borderRadius: 24, padding: 24 },
-  linkModalHint: { fontSize: 13, lineHeight: 18, marginBottom: 14 },
-  linkInputRow: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12 },
-  linkInput: { flex: 1, fontSize: 14 },
-
   // Tab bar
   commTabBar: { flexDirection: "row", borderRadius: 14, padding: 3, gap: 3, marginBottom: 20 },
   commTabBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 12 },

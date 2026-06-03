@@ -230,8 +230,8 @@ export default function ActivityScreen() {
 
   const [tab, setTab]           = useState<"courses" | "admin">("courses");
   const [typeFilter, setTypeFilter] = useState<ActivityType | "all">("all");
-  const [activities, setActivities] = useState<Activity[]>(INITIAL_ACTIVITIES);
-  const [adminItems, setAdminItems] = useState<AdminScheduleItem[]>(INITIAL_ADMIN_ITEMS);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [adminItems, setAdminItems] = useState<AdminScheduleItem[]>([]);
 
   // ── Activity modal state ──
   const [showActivityModal, setShowActivityModal] = useState(false);
