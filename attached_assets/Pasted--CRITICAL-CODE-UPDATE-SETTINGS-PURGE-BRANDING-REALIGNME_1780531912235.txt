@@ -1,0 +1,28 @@
+🚨 CRITICAL CODE UPDATE: SETTINGS PURGE, BRANDING REALIGNMENT & LIVE DATA BINDING 🚨
+
+Role: Expert Senior Full-Stack Developer & UI/UX Specialist.
+Objective: Complete the final data purge in the Admin Settings and White-Label Branding sections, bind text elements to the real database, and heavily optimize the custom styling layouts.
+
+CRITICAL ARCHITECTURAL CONSTRAINTS:
+- Do NOT alter, break, or refactor any existing database collections, authentication states, or functioning endpoints. Maintain 100% architectural continuity.
+- Visuals: Strict Deep Navy Blue (#0A1128) and Premium Gold (#D4AF37) theme.
+- Containment: Ensure 100% layout containment within device boundaries. Explicit text-wrapping, clean spacing, and ZERO horizontal screen overflows.
+- Language: 100% STRICT ENGLISH across all modified UI elements.
+
+Please implement the following updates:
+
+---
+
+1. ADMIN / SETTINGS: DYNAMIC ASSOCIATION NAME & PURGE
+- Target: `Admin/Settings` view.
+- Requirement: Completely remove the hardcoded text "Admin Dance Village". Replace it with a dynamic database query that fetches the actual, live Association Name configured by the administrator. Wipe out any remaining mock/test settings options to prepare the screen for real production testing.
+
+2. ACCESS VERIFICATION WIDGET: ELIMINATE MOCK "MBR-101"
+- Target: The access log/verification alert component displaying "MEMBER ID MBR-101 Present for access verification".
+- Requirement: This is a hardcoded placeholder. Remove the string "MBR-101" and its mock verification text entirely. Wire this widget directly to the real live database access/check-in log table. If no real scan event is present, render a clean, empty state text (e.g., "No recent access verification events").
+
+3. WHITE-LABEL / SCHOOL SETUP: BRANDING & CUSTOMIZATION CLEANUP
+- Target: `School Setup > Branding & Customization` view.
+- School / Association Name Section: Remove the hardcoded example text "Dance Village" from any placeholders or description subtexts. Replace it with a neutral, professional placeholder string (e.g., "e.g., Rising Stars Academy" or "Enter Association Name").
+- Color Palette Section: Graphically reorganize this section. The color pickers, preview tiles, and hex-code inputs must be perfectly ordered into a clean, geometric grid layout with elegant spacing.
+- Font Selection Section: Graphically reorganize the typography selection interface. Align font dropdowns/cards neatly, ensuring clean padding, explicit contrast, and zero layout clashing on mobile screens.

@@ -40,7 +40,7 @@ export default function AppCustomizationPage() {
   const insets = useSafeAreaInsets();
 
   const [logoFileName, setLogoFileName] = useState<string | null>(null);
-  const [schoolName, setSchoolName] = useState(user?.schoolName || "Dance Village");
+  const [schoolName, setSchoolName] = useState(user?.schoolName || "");
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedFont, setSelectedFont] = useState("Montserrat");
   const [buttonStyle, setButtonStyle] = useState<"rounded" | "square">("rounded");
@@ -150,29 +150,27 @@ export default function AppCustomizationPage() {
           style={[styles.nameInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
           value={schoolName}
           onChangeText={t => { setSchoolName(t); setApplied(false); }}
-          placeholder="e.g. Dance Village"
+          placeholder="e.g. Rising Stars Academy"
           placeholderTextColor={colors.mutedForeground}
         />
 
         {/* Colour palette */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>Colour Palette</Text>
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.colorGrid}>
           {PRESET_COLORS.map((p, i) => (
             <Pressable
               key={i}
-              style={[styles.colorRow, i < PRESET_COLORS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }, selectedColorIdx === i && { backgroundColor: "#F0F4FF" }]}
+              style={[styles.colorTile, { borderColor: selectedColorIdx === i ? p.primary : "transparent" }]}
               onPress={() => { setSelectedColorIdx(i); setApplied(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             >
-              <View style={styles.colorSwatchPair}>
-                <View style={[styles.swatchA, { backgroundColor: p.primary }]} />
-                <View style={[styles.swatchB, { backgroundColor: p.secondary }]} />
+              <View style={styles.colorTileSwatch}>
+                <View style={{ flex: 3, backgroundColor: p.primary }} />
+                <View style={{ flex: 2, backgroundColor: p.secondary }} />
               </View>
-              <Text style={[styles.colorName, { color: colors.foreground }]}>{p.name}</Text>
-              {selectedColorIdx === i ? (
-                <Ionicons name="checkmark-circle" size={20} color={p.primary} />
-              ) : (
-                <View style={styles.radioEmpty} />
-              )}
+              <View style={styles.colorTileFooter}>
+                <Text style={[styles.colorTileName, { color: selectedColorIdx === i ? p.primary : colors.foreground }]} numberOfLines={1}>{p.name}</Text>
+                {selectedColorIdx === i && <Ionicons name="checkmark-circle" size={13} color={p.primary} />}
+              </View>
             </Pressable>
           ))}
         </View>
@@ -183,10 +181,11 @@ export default function AppCustomizationPage() {
           {FONTS.map(font => (
             <Pressable
               key={font}
-              style={[styles.fontChip, { borderColor: selectedFont === font ? colors.primary : colors.border, backgroundColor: selectedFont === font ? colors.primary : colors.card }]}
+              style={[styles.fontCard, { borderColor: selectedFont === font ? colors.primary : colors.border, backgroundColor: selectedFont === font ? colors.primary : colors.card }]}
               onPress={() => { setSelectedFont(font); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             >
-              <Text style={[styles.fontChipText, { color: selectedFont === font ? "#FFF" : colors.primary }]}>{font}</Text>
+              <Text style={[styles.fontCardAa, { color: selectedFont === font ? "rgba(255,255,255,0.8)" : colors.mutedForeground }]}>Aa</Text>
+              <Text style={[styles.fontCardName, { color: selectedFont === font ? "#FFF" : colors.primary }]} numberOfLines={1}>{font}</Text>
             </Pressable>
           ))}
         </View>
@@ -265,16 +264,15 @@ const styles = StyleSheet.create({
   logoBtnTitle: { fontSize: 14, fontWeight: "700" },
   logoBtnSub: { fontSize: 11, marginTop: 2 },
   nameInput: { borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, marginBottom: 20 },
-  card: { borderRadius: 18, overflow: "hidden", marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  colorRow: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
-  colorSwatchPair: { flexDirection: "row", borderRadius: 8, overflow: "hidden" },
-  swatchA: { width: 22, height: 22 },
-  swatchB: { width: 22, height: 22 },
-  colorName: { flex: 1, fontSize: 14, fontWeight: "500" },
-  radioEmpty: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#D1D9F0" },
-  fontGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 },
-  fontChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5 },
-  fontChipText: { fontSize: 13, fontWeight: "600" },
+  colorGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
+  colorTile: { width: "31%", borderRadius: 14, overflow: "hidden", borderWidth: 2.5, backgroundColor: "#F8FAFF" },
+  colorTileSwatch: { flexDirection: "row", height: 48 },
+  colorTileFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8, paddingVertical: 7, gap: 4 },
+  colorTileName: { fontSize: 10, fontWeight: "700", flex: 1 },
+  fontGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 20 },
+  fontCard: { width: "31%", alignItems: "center", paddingVertical: 12, paddingHorizontal: 4, borderRadius: 12, borderWidth: 1.5, gap: 3 },
+  fontCardAa: { fontSize: 19, fontWeight: "800" },
+  fontCardName: { fontSize: 10, fontWeight: "700", textAlign: "center" },
   btnStyleRow: { flexDirection: "row", gap: 12, marginBottom: 20 },
   btnStyleOption: { flex: 1, alignItems: "center", padding: 14, borderRadius: 14, borderWidth: 2 },
   btnPreview: { paddingHorizontal: 16, paddingVertical: 9 },

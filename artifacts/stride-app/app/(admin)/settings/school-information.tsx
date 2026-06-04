@@ -44,7 +44,7 @@ interface HoursEntry {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MAIN_FIELDS = [
-  { key: "name" as const,    label: "School Name",  placeholder: "Dance Village",         icon: "school-outline" as const,    iconBg: "#DBEAFE", iconColor: "#1E3A8A" },
+  { key: "name" as const,    label: "School Name",  placeholder: "e.g. Rising Stars Academy", icon: "school-outline" as const, iconBg: "#DBEAFE", iconColor: "#1E3A8A" },
   { key: "address" as const, label: "Address",      placeholder: "1 Main Street, City",   icon: "location-outline" as const,  iconBg: "#CCFBF1", iconColor: "#0D9488" },
   { key: "phone" as const,   label: "Phone",        placeholder: "+61 2 9000 0000",       icon: "call-outline" as const,      iconBg: "#D1FAE5", iconColor: "#10B981" },
   { key: "email" as const,   label: "Email",        placeholder: "info@school.com",       icon: "mail-outline" as const,      iconBg: "#EDE9FE", iconColor: "#7C3AED" },
@@ -95,12 +95,12 @@ const SOCIAL_KEY   = "stride_social_links";
 const HOURS_KEY    = "stride_opening_hours";
 
 const DEFAULT_INFO: SchoolInfo = {
-  name:    "Dance Village",
-  address: "1 Main Street, Sydney NSW 2000",
-  phone:   "+61 2 9123 4567",
-  email:   "info@dancevillage.com.au",
-  website: "www.dancevillage.com.au",
-  taxId:   "ABN 12 345 678 901",
+  name:    "",
+  address: "",
+  phone:   "",
+  email:   "",
+  website: "",
+  taxId:   "",
 };
 
 function campusTypeInfo(type: CampusType) {

@@ -486,7 +486,7 @@ export default function AdminSetup() {
             style={[styles.fieldInput, { borderColor: colors.border }]}
             value={schoolName}
             onChangeText={text => { setSchoolName(text); setQrGenerated(false); }}
-            placeholder="e.g. Dance Village"
+            placeholder="e.g. Rising Stars Academy"
             placeholderTextColor={colors.mutedForeground}
           />
         </View>
@@ -499,7 +499,7 @@ export default function AdminSetup() {
             {PRESET_COLORS.map((preset, i) => (
               <Pressable
                 key={i}
-                style={[styles.colorOption, selectedColors === i && styles.colorOptionSelected]}
+                style={[styles.colorTile, { borderColor: selectedColors === i ? preset.primary : "transparent" }]}
                 onPress={() => {
                   setSelectedColors(i);
                   setCustomPrimary(preset.primary);
@@ -507,12 +507,14 @@ export default function AdminSetup() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
               >
-                <View style={styles.colorSwatch}>
-                  <View style={[styles.colorSwatchPrimary, { backgroundColor: preset.primary }]} />
-                  <View style={[styles.colorSwatchSecondary, { backgroundColor: preset.secondary }]} />
+                <View style={styles.colorTileSwatch}>
+                  <View style={{ flex: 3, backgroundColor: preset.primary }} />
+                  <View style={{ flex: 2, backgroundColor: preset.secondary }} />
                 </View>
-                <Text style={[styles.colorName, { color: colors.primary }]}>{preset.name}</Text>
-                {selectedColors === i && <Ionicons name="checkmark-circle" size={16} color={colors.primary} />}
+                <View style={styles.colorTileFooter}>
+                  <Text style={[styles.colorTileName, { color: selectedColors === i ? preset.primary : colors.primary }]} numberOfLines={1}>{preset.name}</Text>
+                  {selectedColors === i && <Ionicons name="checkmark-circle" size={13} color={preset.primary} />}
+                </View>
               </Pressable>
             ))}
           </View>
@@ -553,10 +555,11 @@ export default function AdminSetup() {
             {FONTS.map(font => (
               <Pressable
                 key={font}
-                style={[styles.fontOption, selectedFont === font && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[styles.fontCard, { borderColor: selectedFont === font ? colors.primary : "#D1D9F0", backgroundColor: selectedFont === font ? colors.primary : "#F0F4FF" }]}
                 onPress={() => { setSelectedFont(font); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               >
-                <Text style={[styles.fontOptionText, selectedFont === font && { color: "#FFF" }]}>{font}</Text>
+                <Text style={[styles.fontCardAa, { color: selectedFont === font ? "rgba(255,255,255,0.8)" : "#8896B0" }]}>Aa</Text>
+                <Text style={[styles.fontCardName, { color: selectedFont === font ? "#FFF" : "#1E3A8A" }]} numberOfLines={1}>{font}</Text>
               </Pressable>
             ))}
           </View>
@@ -903,17 +906,16 @@ const styles = StyleSheet.create({
   fieldInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: "#1E3A8A", marginBottom: 12 },
   sectionCard: { borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   colorGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
-  colorOption: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, padding: 10, borderWidth: 2, borderColor: "transparent", backgroundColor: "#F0F4FF" },
-  colorOptionSelected: { borderColor: "#1E3A8A" },
-  colorSwatch: { flexDirection: "row", borderRadius: 8, overflow: "hidden" },
-  colorSwatchPrimary: { width: 18, height: 18 },
-  colorSwatchSecondary: { width: 18, height: 18 },
-  colorName: { fontSize: 12, fontWeight: "600" },
+  colorTile: { width: "31%", borderRadius: 14, overflow: "hidden", borderWidth: 2.5, backgroundColor: "#F8FAFF" },
+  colorTileSwatch: { flexDirection: "row", height: 48 },
+  colorTileFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8, paddingVertical: 7, gap: 4 },
+  colorTileName: { fontSize: 10, fontWeight: "700", flex: 1 },
   hexInput: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
   hexPreview: { width: 24, height: 24, borderRadius: 6 },
-  fontGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  fontOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D1D9F0", backgroundColor: "#F0F4FF" },
-  fontOptionText: { fontSize: 13, fontWeight: "600", color: "#1E3A8A" },
+  fontGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 8 },
+  fontCard: { width: "31%", alignItems: "center", paddingVertical: 12, paddingHorizontal: 4, borderRadius: 12, borderWidth: 2, gap: 3 },
+  fontCardAa: { fontSize: 19, fontWeight: "800" },
+  fontCardName: { fontSize: 10, fontWeight: "700", textAlign: "center" },
   buttonStyleRow: { flexDirection: "row", gap: 12 },
   buttonStyleOption: { flex: 1, borderRadius: 12, padding: 14, alignItems: "center", borderWidth: 2, borderColor: "#D1D9F0" },
   buttonPreview: { paddingHorizontal: 16, paddingVertical: 10 },
