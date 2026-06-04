@@ -1301,6 +1301,8 @@ export type GatewayConfig = {
   swift?: string;
   account_holder?: string;
   bank_name?: string;
+  stripe_public_key?: string;
+  stripe_webhook_secret?: string;
 };
 
 export type PaymentGateway = {
