@@ -1,0 +1,33 @@
+🚨 PUBLIC WEB LANDING PAGE REFACTOR: CONVERSION FUNNEL, TIERED PRICING & SIGN-UP INTEGRATION 🚨
+
+Role: Expert Senior Frontend Developer & Conversion Rate Optimization (CRO) Specialist.
+Objective: Overhaul the public web landing page to introduce a high-converting registration funnel, implement the tiered volume-pricing visual mechanics, and clearly showcase the platform's core security philosophy.
+
+CRITICAL DESIGN & ARCHITECTURAL CONSTRAINTS:
+- Theme: Strict Deep Navy Blue (#0A1128) background, Premium Gold (#D4AF37) accents/buttons, and clean White typography.
+- Containment: Ensure 100% responsive layout containment across desktop and mobile browsers. Absolutely ZERO horizontal scrolling, layout clipping, or overlapping text blocks.
+- Backend: Wire the registration form directly to the fully functional Supabase Auth Sign-Up workflow created previously.
+- Language: 100% STRICT ENGLISH across all public web sections.
+
+Please implement the following three core sections on the landing page:
+
+---
+
+1. THE "SAFETY FIRST" MARKETING SECTION (FREE PICK-UP DELEGATES)
+- Copy & Content: Add a dedicated, highly visible feature section explaining the QR Code architecture for child pick-up authorization.
+- Core Message: "Child safety should never be a premium feature. All authorized pick-up contacts, emergency numbers, grandparents, and babysitters receive 100% FREE QR Codes for secure access verification. We only count active organization staff and members."
+- Visual Layout: Minimalist, high-contrast block using Gold icons to emphasize maximum security and peace of mind for parents.
+
+2. INTERACTIVE TIERED PRICING SLIDER & TRANSPARENCY
+- Component: Build an elegant, highly responsive visual pricing slider.
+- Behavior: As the user drags the slider to select their estimated total active QR codes (Staff + Members + Dependents), dynamically calculate and display the monthly price using our volume discount tiers:
+  - 1 to 100 QR Codes: $1.20 USD / QR / month.
+  - 101 to 300 QR Codes: $1.05 USD / QR / month.
+  - 301+ QR Codes: $0.90 USD / QR / month.
+- Core Principle Text: Feature a prominent label highlighting the scalable model: *"The larger your organization grows, the less you pay per active code. Scalable security that grows with your community."*
+
+3. LIVE PORTAL INTEGRATION: ON-THE-FLY ACCOUNT CREATION
+- Action Call: Add a bold, beautiful "Get Started Now - 30 Days Free Trial" Call-To-Action (CTA) button in the hero section and pricing area.
+- Workflow: Clicking this button must open a clean, perfectly aligned embedded Portal Registration Modal or section right on the landing page.
+- Input Fields: Organization Name, Administrator Email, Password, and Confirm Password.
+- Backend Binding: Link this form directly to the live Supabase Auth `signUp` function. Upon submission, it must instantly create the tenant account, instantiate the default database profile row, and seamlessly transition the user directly into their new Admin workspace.

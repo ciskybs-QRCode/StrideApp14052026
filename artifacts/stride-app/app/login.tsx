@@ -21,12 +21,14 @@ import { useAuth, UserRole } from "@/context/AuthContext";
 
 const NAVY  = "#0A1128";
 const GOLD  = "#D4AF37";
+const BG    = "#F5F6FA";
+const CARD  = "#FFFFFF";
 const LOGO  = require("@/assets/images/stride-logo.png");
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const router    = useRouter();
-  const insets    = useSafeAreaInsets();
+  const router     = useRouter();
+  const insets     = useSafeAreaInsets();
 
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
@@ -101,7 +103,7 @@ export default function LoginScreen() {
           [{ text: "Got it" }],
         );
       } else {
-        setError((e as Error).message || "Invalid credentials. Please try again.");
+        setError((e as Error).message || "Invalid email or password. Please try again.");
         shake();
       }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -109,7 +111,14 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={[s.container, { backgroundColor: NAVY }]}>
+    <View style={s.container}>
+      {/* Top navy header strip */}
+      <View style={[s.header, { paddingTop: insets.top + 20 }]}>
+        <Image source={LOGO} style={s.logoImage} contentFit="contain" />
+        <View style={s.goldRule} />
+        <Text style={s.tagline}>Dance School Management</Text>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -117,21 +126,15 @@ export default function LoginScreen() {
         <ScrollView
           contentContainerStyle={[
             s.scroll,
-            { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 32 },
+            { paddingBottom: insets.bottom + 32 },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Logo */}
-          <View style={s.logoArea}>
-            <Image source={LOGO} style={s.logoImage} contentFit="contain" />
-            <View style={s.goldRule} />
-          </View>
-
-          {/* Welcome text */}
+          {/* Welcome */}
           <View style={s.welcome}>
             <Text style={s.welcomeTitle}>Welcome Back</Text>
-            <Text style={s.welcomeSub}>Sign in to your Stride account</Text>
+            <Text style={s.welcomeSub}>Sign in to your account to continue</Text>
           </View>
 
           {/* Form card */}
@@ -141,13 +144,13 @@ export default function LoginScreen() {
             <View style={s.fieldGroup}>
               <Text style={s.label}>Email Address</Text>
               <View style={s.inputRow}>
-                <Ionicons name="mail-outline" size={17} color={GOLD} style={s.inputIcon} />
+                <Ionicons name="mail-outline" size={18} color={GOLD} style={s.inputIcon} />
                 <TextInput
                   style={s.input}
                   value={email}
                   onChangeText={v => { setEmail(v); setError(""); }}
                   placeholder="you@example.com"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
@@ -162,14 +165,14 @@ export default function LoginScreen() {
             <View style={s.fieldGroup}>
               <Text style={s.label}>Password</Text>
               <View style={s.inputRow}>
-                <Ionicons name="lock-closed-outline" size={17} color={GOLD} style={s.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={18} color={GOLD} style={s.inputIcon} />
                 <TextInput
                   ref={passRef}
                   style={[s.input, { flex: 1 }]}
                   value={password}
                   onChangeText={v => { setPassword(v); setError(""); }}
-                  placeholder="••••••••"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholder="Enter your password"
+                  placeholderTextColor="#9CA3AF"
                   secureTextEntry={!showPassword}
                   autoComplete="password"
                   returnKeyType="done"
@@ -178,8 +181,8 @@ export default function LoginScreen() {
                 <Pressable onPress={() => setShowPassword(p => !p)} hitSlop={8}>
                   <Ionicons
                     name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={17}
-                    color="rgba(255,255,255,0.4)"
+                    size={18}
+                    color="#9CA3AF"
                   />
                 </Pressable>
               </View>
@@ -188,14 +191,17 @@ export default function LoginScreen() {
             {/* Error */}
             {!!error && (
               <View style={s.errorBox}>
-                <Ionicons name="alert-circle-outline" size={15} color="#F87171" />
+                <Ionicons name="alert-circle-outline" size={15} color="#DC2626" />
                 <Text style={s.errorText}>{error}</Text>
               </View>
             )}
 
             {/* Sign In button */}
             <Pressable
-              style={({ pressed }) => [s.btn, { opacity: pressed || loading ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+              style={({ pressed }) => [
+                s.btn,
+                { opacity: pressed || loading ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+              ]}
               onPress={handleLogin}
               disabled={loading}
             >
@@ -222,24 +228,25 @@ export default function LoginScreen() {
               style={s.testCardHeader}
               onPress={() => setTestOpen(o => !o)}
             >
+              <Ionicons name="flask-outline" size={13} color="#9CA3AF" />
               <Text style={s.testCardTitle}>TEST CREDENTIALS</Text>
               <Ionicons
                 name={testOpen ? "chevron-up-outline" : "chevron-down-outline"}
-                size={14}
-                color={GOLD}
+                size={13}
+                color="#9CA3AF"
               />
             </Pressable>
             {testOpen && (
               <View style={s.testRows}>
                 {[
-                  { role: "Member",    email: "genitore@test.com"  },
-                  { role: "Operator",  email: "operatore@test.com" },
-                  { role: "Admin",     email: "admin@test.com"     },
-                  { role: "Kiosk",     email: "kiosk@test.com"     },
+                  { role: "Member",   email: "genitore@test.com"  },
+                  { role: "Operator", email: "operatore@test.com" },
+                  { role: "Admin",    email: "admin@test.com"     },
+                  { role: "Kiosk",    email: "kiosk@test.com"     },
                 ].map(c => (
                   <Pressable
                     key={c.role}
-                    style={({ pressed }) => [s.testRow, { opacity: pressed ? 0.7 : 1 }]}
+                    style={({ pressed }) => [s.testRow, { opacity: pressed ? 0.6 : 1 }]}
                     onPress={() => { setEmail(c.email); setPassword("stride123"); setError(""); }}
                   >
                     <Text style={s.testRole}>{c.role}</Text>
@@ -258,63 +265,79 @@ export default function LoginScreen() {
   );
 }
 
-const INPUT_BG     = "rgba(255,255,255,0.07)";
-const INPUT_BORDER = "rgba(212,175,55,0.35)";
-const WHITE        = "#FFFFFF";
-
 const s = StyleSheet.create({
-  container: { flex: 1 },
-  scroll:    { flexGrow: 1, paddingHorizontal: 24 },
+  container: { flex: 1, backgroundColor: BG },
 
-  // Logo
-  logoArea:   { alignItems: "center", marginBottom: 28 },
-  logoImage:  { width: 160, height: 88 },
-  goldRule:   { width: 48, height: 2, backgroundColor: GOLD, borderRadius: 2, marginTop: 14, opacity: 0.7 },
+  // Navy top header
+  header: {
+    backgroundColor: NAVY,
+    alignItems: "center",
+    paddingBottom: 28,
+    paddingHorizontal: 24,
+  },
+  logoImage: { width: 150, height: 80 },
+  goldRule:  { width: 40, height: 2, backgroundColor: GOLD, borderRadius: 2, marginTop: 10, opacity: 0.8 },
+  tagline:   { fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 8, letterSpacing: 1.8, textTransform: "uppercase" },
+
+  // Body
+  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 28 },
 
   // Welcome
-  welcome:      { alignItems: "center", marginBottom: 28 },
-  welcomeTitle: { fontSize: 26, fontWeight: "900", color: WHITE, letterSpacing: 0.3 },
-  welcomeSub:   { fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 6, letterSpacing: 0.5 },
+  welcome:      { marginBottom: 20 },
+  welcomeTitle: { fontSize: 22, fontWeight: "800", color: NAVY },
+  welcomeSub:   { fontSize: 13, color: "#6B7280", marginTop: 4 },
 
   // Card
   card: {
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 24,
-    padding: 24,
+    backgroundColor: CARD,
+    borderRadius: 20,
+    padding: 22,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 6,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: "rgba(212,175,55,0.18)",
-    marginBottom: 20,
+    borderColor: "#EAECF0",
   },
 
   // Fields
   fieldGroup: { marginBottom: 16 },
-  label:      { fontSize: 12, fontWeight: "700", color: GOLD, marginBottom: 8, letterSpacing: 0.6 },
+  label: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: NAVY,
+    marginBottom: 8,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: INPUT_BG,
+    backgroundColor: "#F8F9FC",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: INPUT_BORDER,
+    borderColor: "#E5E7EB",
     paddingHorizontal: 14,
     height: 52,
   },
   inputIcon: { marginRight: 10 },
-  input:     { flex: 1, fontSize: 15, color: WHITE },
+  input:     { flex: 1, fontSize: 15, color: NAVY },
 
   // Error
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(239,68,68,0.12)",
+    backgroundColor: "#FEF2F2",
     borderRadius: 10,
     padding: 12,
     marginBottom: 14,
     gap: 8,
     borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.25)",
+    borderColor: "#FECACA",
   },
-  errorText: { color: "#FCA5A5", fontSize: 13, flex: 1 },
+  errorText: { color: "#DC2626", fontSize: 13, flex: 1 },
 
   // Button
   btn: {
@@ -325,35 +348,35 @@ const s = StyleSheet.create({
     justifyContent: "center",
     marginTop: 4,
     shadowColor: GOLD,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 8,
   },
-  btnText: { color: "#0A1128", fontWeight: "900", fontSize: 15, letterSpacing: 1.8 },
+  btnText: { color: NAVY, fontWeight: "900", fontSize: 15, letterSpacing: 1.8 },
 
   // Sign up link
-  linkRow:      { alignItems: "center", marginTop: 20, paddingVertical: 4 },
-  linkText:     { fontSize: 13, color: "rgba(255,255,255,0.5)", textAlign: "center" },
-  linkHighlight:{ color: GOLD, fontWeight: "700" },
+  linkRow:       { alignItems: "center", marginTop: 20, paddingVertical: 4 },
+  linkText:      { fontSize: 13, color: "#6B7280", textAlign: "center" },
+  linkHighlight: { color: GOLD, fontWeight: "700" },
 
   // Test credentials
   testCard: {
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 16,
+    backgroundColor: CARD,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(212,175,55,0.12)",
+    borderColor: "#EAECF0",
     overflow: "hidden",
     marginBottom: 20,
   },
   testCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 7,
     paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 12,
   },
-  testCardTitle: { fontSize: 10, fontWeight: "800", color: GOLD, letterSpacing: 1.5 },
+  testCardTitle: { flex: 1, fontSize: 10, fontWeight: "700", color: "#9CA3AF", letterSpacing: 1.4 },
   testRows:      { paddingHorizontal: 16, paddingBottom: 14 },
   testRow: {
     flexDirection: "row",
@@ -361,11 +384,11 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 9,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.08)",
+    borderTopColor: "#F0F0F0",
   },
-  testRole:  { fontSize: 12, fontWeight: "700", color: WHITE, width: 70 },
-  testEmail: { fontSize: 12, color: "rgba(255,255,255,0.5)", flex: 1, textAlign: "right" },
-  testPw:    { fontSize: 11, color: "rgba(212,175,55,0.6)", textAlign: "center", marginTop: 10 },
+  testRole:  { fontSize: 12, fontWeight: "700", color: NAVY, width: 70 },
+  testEmail: { fontSize: 12, color: "#6B7280", flex: 1, textAlign: "right" },
+  testPw:    { fontSize: 11, color: "#9CA3AF", textAlign: "center", marginTop: 10 },
 
-  footer: { color: "rgba(255,255,255,0.2)", fontSize: 11, textAlign: "center" },
+  footer: { color: "#D1D5DB", fontSize: 11, textAlign: "center" },
 });
