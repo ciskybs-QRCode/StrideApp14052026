@@ -4,6 +4,13 @@ import { useAuth } from "@/context/AuthContext";
 import { ActivityIndicator, View } from "react-native";
 import { api } from "@/lib/api";
 
+// ── Master email override ─────────────────────────────────────────────────────
+const MASTER_EMAIL = "ciskybs@gmail.com";
+function isMasterEmail(email: string | undefined | null): boolean {
+  if (!email) return false;
+  return email.trim().toLowerCase() === MASTER_EMAIL.trim().toLowerCase();
+}
+
 export default function Index() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -39,6 +46,15 @@ export default function Index() {
       router.replace("/pioneer" as never);
       return;
     }
+
+    // ── MASTER EMAIL OVERRIDE ─────────────────────────────────────────────────
+    // Bypass ALL database role checks. Force straight to admin layout so the
+    // Super Admin Dashboard button is always accessible from Settings.
+    if (user && isMasterEmail(user.email)) {
+      router.replace("/(admin)/stats" as never);
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     if (!user) {
       router.replace("/login");

