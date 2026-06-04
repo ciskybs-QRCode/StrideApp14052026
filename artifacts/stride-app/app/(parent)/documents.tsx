@@ -289,6 +289,18 @@ export default function DocumentsScreen() {
         {/* ── Document & Legal Centre ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>Document & Legal Centre</Text>
 
+        {documents.length === 0 && (
+          <View style={styles.emptyNavy}>
+            <View style={styles.emptyNavyRing}>
+              <Ionicons name="document-text-outline" size={36} color="#D4AF37" />
+            </View>
+            <Text style={styles.emptyNavyTitle}>No documents available</Text>
+            <Text style={styles.emptyNavyBody}>
+              No official documents or privacy policies uploaded yet. Please initialize them from the Admin dashboard.
+            </Text>
+          </View>
+        )}
+
         {pendingDocs.length > 0 && (
           <View style={styles.alertBanner}>
             <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
@@ -353,7 +365,17 @@ export default function DocumentsScreen() {
                 </>
               )}
               {newDocs.length === 0 && pendingDocs.length === 0 && (
-                <Text style={[styles.emptyTileText, { color: colors.mutedForeground }]}>No new documents</Text>
+                <View style={styles.emptyTileInner}>
+                  <View style={styles.emptyTileIconRing}>
+                    <Ionicons name="document-text-outline" size={22} color="#D4AF37" />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={styles.emptyTileTitle}>No new documents</Text>
+                    <Text style={styles.emptyTileBody}>
+                      No official documents or privacy policies uploaded yet. Please initialize them from the Admin dashboard.
+                    </Text>
+                  </View>
+                </View>
               )}
 
               {/* ── Upload Certificate ── */}
@@ -460,7 +482,17 @@ export default function DocumentsScreen() {
                 </View>
               ))}
               {archivedDocs.length === 0 && (
-                <Text style={[styles.emptyTileText, { color: colors.mutedForeground }]}>No archived documents yet</Text>
+                <View style={styles.emptyTileInner}>
+                  <View style={styles.emptyTileIconRing}>
+                    <Ionicons name="archive-outline" size={22} color="#D4AF37" />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={styles.emptyTileTitle}>No archived documents yet</Text>
+                    <Text style={styles.emptyTileBody}>
+                      Signed and acknowledged documents will appear here once available.
+                    </Text>
+                  </View>
+                </View>
               )}
             </View>
           )}
@@ -775,6 +807,31 @@ const styles = StyleSheet.create({
   docTileBody: { paddingHorizontal: 16, paddingBottom: 16 },
   subSectionLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase" as const, letterSpacing: 0.5, marginBottom: 8, marginTop: 2 },
   emptyTileText: { fontSize: 13, textAlign: "center" as const, paddingVertical: 12 },
+
+  // ── Premium navy/gold empty states ─────────────────────────────────────────
+  emptyNavy: {
+    backgroundColor: "#0A1128", borderRadius: 20, borderWidth: 1, borderColor: "#D4AF37",
+    padding: 28, marginBottom: 16, alignItems: "center", gap: 14,
+  },
+  emptyNavyRing: {
+    width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: "#D4AF37",
+    backgroundColor: "rgba(212,175,55,0.1)", alignItems: "center", justifyContent: "center",
+  },
+  emptyNavyTitle: { fontSize: 16, fontWeight: "800", color: "#FFFFFF", textAlign: "center" },
+  emptyNavyBody:  { fontSize: 13, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 20 },
+
+  // In-tile compact variant
+  emptyTileInner: {
+    flexDirection: "row", alignItems: "flex-start", gap: 12,
+    backgroundColor: "#0A1128", borderRadius: 14, borderWidth: 1, borderColor: "#D4AF37",
+    padding: 14, marginVertical: 4,
+  },
+  emptyTileIconRing: {
+    width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: "#D4AF37",
+    backgroundColor: "rgba(212,175,55,0.1)", alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  emptyTileTitle: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  emptyTileBody:  { fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 17 },
 
   deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 16, backgroundColor: "#FEF2F2", marginBottom: 20 },
   deleteBtnText: { color: "#EF4444", fontWeight: "700", fontSize: 14, letterSpacing: 1 },

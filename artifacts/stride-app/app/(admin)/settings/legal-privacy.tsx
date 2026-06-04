@@ -480,10 +480,14 @@ export default function LegalPrivacyPage() {
             );
           })}
           {legalAdminDocs.length === 0 && (
-            <View style={{ padding: 32, alignItems: "center", gap: 8 }}>
-              <Ionicons name="document-outline" size={36} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No documents yet</Text>
-              <Text style={[styles.emptySubText, { color: colors.mutedForeground }]}>Tap "Add New" to upload your first legal document</Text>
+            <View style={styles.emptyNavy}>
+              <View style={styles.emptyNavyRing}>
+                <Ionicons name="document-text-outline" size={36} color="#D4AF37" />
+              </View>
+              <Text style={styles.emptyNavyTitle}>No documents yet</Text>
+              <Text style={styles.emptyNavyBody}>
+                No official documents or privacy policies uploaded yet. Please initialize them from the Admin dashboard.
+              </Text>
             </View>
           )}
         </View>
@@ -547,9 +551,14 @@ export default function LegalPrivacyPage() {
                 <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Loading audit records…</Text>
               </View>
             ) : auditLog.length === 0 ? (
-              <View style={{ padding: 40, alignItems: "center", gap: 12 }}>
-                <Ionicons name="document-outline" size={32} color={colors.mutedForeground} />
-                <Text style={{ color: colors.mutedForeground, fontSize: 13, textAlign: "center" }}>No signatures recorded yet. Records appear here once users complete mandatory signing.</Text>
+              <View style={[styles.emptyNavy, { margin: 16 }]}>
+                <View style={styles.emptyNavyRing}>
+                  <Ionicons name="shield-checkmark-outline" size={36} color="#D4AF37" />
+                </View>
+                <Text style={styles.emptyNavyTitle}>No signatures recorded yet</Text>
+                <Text style={styles.emptyNavyBody}>
+                  No official documents or privacy policies uploaded yet. Records appear here once users complete mandatory signing.
+                </Text>
               </View>
             ) : (
               <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 10 }} showsVerticalScrollIndicator>
@@ -1071,6 +1080,16 @@ const styles = StyleSheet.create({
   flagText: { fontSize: 10, fontWeight: "700" },
   emptyText: { fontSize: 15, fontWeight: "600" },
   emptySubText: { fontSize: 12, textAlign: "center", lineHeight: 17 },
+  emptyNavy: {
+    backgroundColor: "#0A1128", borderRadius: 20, borderWidth: 1, borderColor: "#D4AF37",
+    padding: 28, alignItems: "center", gap: 14,
+  },
+  emptyNavyRing: {
+    width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: "#D4AF37",
+    backgroundColor: "rgba(212,175,55,0.1)", alignItems: "center", justifyContent: "center",
+  },
+  emptyNavyTitle: { fontSize: 16, fontWeight: "800", color: "#FFFFFF", textAlign: "center" },
+  emptyNavyBody:  { fontSize: 13, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 20 },
   callout: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 14, padding: 14, marginBottom: 14 },
   calloutText: { flex: 1, fontSize: 13, lineHeight: 18 },
   placeholderCard: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, borderWidth: 1.5, borderStyle: "dashed", padding: 16, marginBottom: 10 },
