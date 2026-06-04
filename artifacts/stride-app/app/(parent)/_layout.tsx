@@ -172,13 +172,14 @@ export default function ParentTabLayout() {
           tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
         }}
       >
-        <Tabs.Screen name="home"      options={{ title: "Home",    tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
-        <Tabs.Screen name="children"  options={{ title: "Members", tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"   size={size} color={color} /> }} />
-        <Tabs.Screen name="courses"   options={{ title: "Courses", tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes"           size={size} color={color} /> }} />
+        <Tabs.Screen name="home"      options={{ title: "Home",     tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
+        <Tabs.Screen name="children"  options={{ title: "Members",  tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"   size={size} color={color} /> }} />
+        <Tabs.Screen name="courses"   options={{ title: "Courses",  tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes"           size={size} color={color} /> }} />
+        <Tabs.Screen name="messages"  options={{ title: "Messages", tabBarIcon: ({ color, size }) => <Ionicons name="mail-outline"            size={size} color={color} /> }} />
         <Tabs.Screen name="wallet"    options={{ href: null }} />
-        <Tabs.Screen name="cart"      options={{ title: "Cart",    tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
+        <Tabs.Screen name="cart"      options={{ title: "Cart",     tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
         <Tabs.Screen name="profile"   options={{ href: null }} />
-        <Tabs.Screen name="documents" options={{ title: "Settings",tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />
+        <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />
         <Tabs.Screen name="checkout"    options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />
         <Tabs.Screen name="alerts"      options={{ href: null }} />

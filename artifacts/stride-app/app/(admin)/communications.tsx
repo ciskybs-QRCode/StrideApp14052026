@@ -432,6 +432,24 @@ export default function AdminCommunications() {
         {commTab === "messages" && (
           <>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Send History</Text>
+            {sentMessages.length === 0 && (
+              <View style={styles.emptyNavy}>
+                <View style={styles.emptyNavyRing}>
+                  <Ionicons name="mail-outline" size={36} color="#D4AF37" />
+                </View>
+                <Text style={styles.emptyNavyTitle}>No messages yet</Text>
+                <Text style={styles.emptyNavyBody}>
+                  No messages yet. Start the conversation or send an official broadcast announcement.
+                </Text>
+                <Pressable
+                  style={styles.emptyNavyCta}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowCompose(true); }}
+                >
+                  <Ionicons name="create-outline" size={16} color="#0A1128" />
+                  <Text style={styles.emptyNavyCtaText}>Compose Message</Text>
+                </Pressable>
+              </View>
+            )}
             {sentMessages.map(item => (
               <Pressable
                 key={item.id}
@@ -498,9 +516,16 @@ export default function AdminCommunications() {
             </View>
 
             {filteredReceipts.length === 0 ? (
-              <View style={{ alignItems: "center", paddingVertical: 40, gap: 10 }}>
-                <Ionicons name="eye-off-outline" size={40} color={colors.mutedForeground} />
-                <Text style={{ fontSize: 14, color: colors.mutedForeground, fontWeight: "600" }}>No receipts</Text>
+              <View style={styles.emptyNavy}>
+                <View style={styles.emptyNavyRing}>
+                  <Ionicons name={receiptFilter === "unread" ? "eye-off-outline" : "checkmark-done-outline"} size={36} color="#D4AF37" />
+                </View>
+                <Text style={styles.emptyNavyTitle}>
+                  {receiptFilter === "all" ? "No read receipts yet" : receiptFilter === "unread" ? "No unread receipts" : "No read receipts"}
+                </Text>
+                <Text style={styles.emptyNavyBody}>
+                  No messages yet. Start the conversation or send an official broadcast announcement.
+                </Text>
               </View>
             ) : (
               filteredReceipts.map(r => {
@@ -934,6 +959,12 @@ export default function AdminCommunications() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
+  emptyNavy: { backgroundColor: "#0A1128", borderRadius: 20, borderWidth: 1, borderColor: "#D4AF37", padding: 28, marginTop: 8, marginBottom: 16, alignItems: "center", gap: 14 },
+  emptyNavyRing: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.1)", alignItems: "center", justifyContent: "center" },
+  emptyNavyTitle: { fontSize: 16, fontWeight: "800", color: "#FFFFFF", textAlign: "center" },
+  emptyNavyBody: { fontSize: 13, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 20 },
+  emptyNavyCta: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#D4AF37", borderRadius: 12, paddingHorizontal: 20, paddingVertical: 11, marginTop: 4 },
+  emptyNavyCtaText: { fontSize: 13, fontWeight: "800", color: "#0A1128" },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }, // kept for safety
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 16 },
   composeBtn: {

@@ -130,10 +130,11 @@ export default function OperatorTabLayout() {
             tabBarBadgeStyle: { backgroundColor: "#FBBF24", color: "#1E3A8A", fontSize: 10, fontWeight: "800" },
           }}
         />
-        <Tabs.Screen name="calendar" options={{ title: "Calendar",  tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"    size={size} color={color} /> }} />
-        <Tabs.Screen name="students" options={{ title: "Members",  tabBarIcon: ({ color, size }) => <Ionicons name="people-outline"         size={size} color={color} /> }} />
-        <Tabs.Screen name="courses"  options={{ title: "Course",   tabBarIcon: ({ color, size }) => <Ionicons name="layers-outline"          size={size} color={color} /> }} />
-        <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline"         size={size} color={color} /> }} />
+        <Tabs.Screen name="calendar"  options={{ title: "Calendar",  tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"  size={size} color={color} /> }} />
+        <Tabs.Screen name="students"  options={{ title: "Members",  tabBarIcon: ({ color, size }) => <Ionicons name="people-outline"       size={size} color={color} /> }} />
+        <Tabs.Screen name="courses"   options={{ title: "Course",   tabBarIcon: ({ color, size }) => <Ionicons name="layers-outline"        size={size} color={color} /> }} />
+        <Tabs.Screen name="messages"  options={{ title: "Messages", tabBarIcon: ({ color, size }) => <Ionicons name="mail-outline"          size={size} color={color} /> }} />
+        <Tabs.Screen name="settings"  options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline"      size={size} color={color} /> }} />
         <Tabs.Screen name="sessions" options={{ href: null }} />
         <Tabs.Screen name="invoicing" options={{ href: null }} />
         <Tabs.Screen name="support"  options={{ href: null }} />
