@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -18,6 +18,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useBillingStatus } from "@/hooks/useBillingStatus";
 import { calculateFullBill, BILLING_TIERS } from "@/lib/billingEngine";
+import { getPaymentMethods, type PaymentGateway } from "@/lib/api";
 
 const NAVY  = "#1E3A8A";
 const GOLD  = "#FBBF24";
@@ -39,6 +40,12 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
+const GATEWAY_ICONS: Record<string, "card-outline" | "logo-paypal" | "business-outline"> = {
+  stripe:        "card-outline",
+  paypal:        "logo-paypal",
+  bank_transfer: "business-outline",
+};
+
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function SubscriptionBillingScreen() {
@@ -46,6 +53,10 @@ export default function SubscriptionBillingScreen() {
   const { user }       = useAuth();
   const { children }   = useAppData();
   const { status, loading, error, refresh, isSuspended } = useBillingStatus();
+
+  const [payMethods,   setPayMethods]   = useState<PaymentGateway[]>([]);
+  const [selectedGway, setSelectedGway] = useState<number | null>(null);
+  const [payLoading,   setPayLoading]   = useState(false);
 
   const memberCount = status?.memberCount ?? children.length;
 
@@ -68,6 +79,15 @@ export default function SubscriptionBillingScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPayLoading(true);
+    getPaymentMethods()
+      .then(methods => { if (!cancelled) { setPayMethods(methods); setPayLoading(false); } })
+      .catch(() => { if (!cancelled) setPayLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <View style={[s.container, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20) }]}>
@@ -244,6 +264,112 @@ export default function SubscriptionBillingScreen() {
           )}
         </View>
 
+        {/* ── PAYMENT METHODS ── */}
+        {(payLoading || payMethods.length > 0) && (
+          <>
+            <Text style={s.sectionLabel}>ACCEPTED PAYMENT METHODS</Text>
+            <View style={s.card}>
+              {payLoading ? (
+                <ActivityIndicator color={NAVY} style={{ paddingVertical: 10 }} />
+              ) : (
+                <>
+                  {payMethods.map((gw, idx) => {
+                    const isSelected = selectedGway === gw.id;
+                    const isLast     = idx === payMethods.length - 1;
+                    const icon       = GATEWAY_ICONS[gw.type] ?? "card-outline";
+                    return (
+                      <View key={gw.id}>
+                        <Pressable
+                          style={({ pressed }) => [
+                            s.gwTile,
+                            isSelected && s.gwTileSelected,
+                            isLast && !isSelected && { borderBottomWidth: 0 },
+                            { opacity: pressed ? 0.8 : 1 },
+                          ]}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setSelectedGway(prev => prev === gw.id ? null : gw.id);
+                          }}
+                        >
+                          <View style={[s.gwIcon, { backgroundColor: isSelected ? NAVY + "15" : "#F3F4F6" }]}>
+                            <Ionicons name={icon} size={18} color={isSelected ? NAVY : "#6B7280"} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[s.gwLabel, { color: isSelected ? NAVY : "#1F2937" }]}>
+                              {gw.label}
+                            </Text>
+                          </View>
+                          <View style={[s.gwRadio, { borderColor: isSelected ? NAVY : "#D1D5DB" }]}>
+                            {isSelected && <View style={s.gwRadioFill} />}
+                          </View>
+                        </Pressable>
+
+                        {/* Expanded config details */}
+                        {isSelected && (
+                          <View style={s.gwDetails}>
+                            {gw.type === "bank_transfer" && (
+                              <>
+                                {!!gw.config.account_holder && (
+                                  <View style={s.gwDetailRow}>
+                                    <Text style={s.gwDetailKey}>Account Holder</Text>
+                                    <Text style={s.gwDetailVal}>{gw.config.account_holder}</Text>
+                                  </View>
+                                )}
+                                {!!gw.config.bank_name && (
+                                  <View style={s.gwDetailRow}>
+                                    <Text style={s.gwDetailKey}>Bank</Text>
+                                    <Text style={s.gwDetailVal}>{gw.config.bank_name}</Text>
+                                  </View>
+                                )}
+                                {!!gw.config.iban && (
+                                  <View style={s.gwDetailRow}>
+                                    <Text style={s.gwDetailKey}>IBAN</Text>
+                                    <Text style={s.gwDetailVal}>{gw.config.iban}</Text>
+                                  </View>
+                                )}
+                                {!!gw.config.swift && (
+                                  <View style={s.gwDetailRow}>
+                                    <Text style={s.gwDetailKey}>BIC / SWIFT</Text>
+                                    <Text style={s.gwDetailVal}>{gw.config.swift}</Text>
+                                  </View>
+                                )}
+                              </>
+                            )}
+                            {gw.type === "paypal" && (
+                              <>
+                                {!!gw.config.paypal_email && (
+                                  <View style={s.gwDetailRow}>
+                                    <Text style={s.gwDetailKey}>PayPal Email</Text>
+                                    <Text style={s.gwDetailVal}>{gw.config.paypal_email}</Text>
+                                  </View>
+                                )}
+                                {!!gw.config.paypal_link && (
+                                  <Pressable
+                                    style={({ pressed }) => [s.gwLink, { opacity: pressed ? 0.7 : 1 }]}
+                                    onPress={() => Linking.openURL(gw.config.paypal_link!)}
+                                  >
+                                    <Ionicons name="open-outline" size={13} color={NAVY} />
+                                    <Text style={s.gwLinkText}>Open PayPal Link</Text>
+                                  </Pressable>
+                                )}
+                              </>
+                            )}
+                            {gw.type === "stripe" && (
+                              <Text style={s.gwDetailNote}>
+                                Secure card payment — you will be redirected to complete the transaction.
+                              </Text>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </>
+              )}
+            </View>
+          </>
+        )}
+
         {/* ── SUPPORT ── */}
         <Pressable
           style={({ pressed }) => [s.supportBtn, { opacity: pressed ? 0.85 : 1 }]}
@@ -370,6 +496,69 @@ const s = StyleSheet.create({
   statusValue: { fontSize: 13, fontWeight: "700", color: "#111827" },
   chip:        { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
   chipText:    { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
+
+  // payment gateways
+  gwTile: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#F3F4F6",
+  },
+  gwTileSelected: {
+    backgroundColor: "#EFF6FF",
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderBottomWidth: 0,
+    marginBottom: 0,
+  },
+  gwIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  gwLabel: { fontSize: 14, fontWeight: "700" },
+  gwRadio: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  gwRadioFill: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: NAVY,
+  },
+  gwDetails: {
+    backgroundColor: "#F0F4FF",
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 4,
+    marginBottom: 8,
+    gap: 8,
+  },
+  gwDetailRow:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  gwDetailKey:  { fontSize: 12, color: "#6B7280", fontWeight: "600" },
+  gwDetailVal:  { fontSize: 12, color: "#1F2937", fontWeight: "700", flex: 1, textAlign: "right" },
+  gwDetailNote: { fontSize: 12, color: "#4B5563", lineHeight: 18 },
+  gwLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#EFF6FF",
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  gwLinkText: { fontSize: 13, color: NAVY, fontWeight: "700" },
 
   // support
   supportBtn: {

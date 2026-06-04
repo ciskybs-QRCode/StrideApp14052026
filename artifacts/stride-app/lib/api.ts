@@ -1268,3 +1268,71 @@ export async function seedSuperAdmin(
     "POST", "/super-admin/seed", { name, email, password },
   );
 }
+
+// ── Collaborator Management ────────────────────────────────────────────────────
+
+export type Collaborator = {
+  id: number;
+  email: string;
+  added_by: string;
+  created_at: string;
+};
+
+export async function listCollaborators(): Promise<Collaborator[]> {
+  return request<Collaborator[]>("GET", "/super-admin/collaborators");
+}
+
+export async function addCollaborator(email: string): Promise<Collaborator> {
+  return request<Collaborator>("POST", "/super-admin/collaborators", { email });
+}
+
+export async function removeCollaborator(id: number): Promise<void> {
+  return request<void>("DELETE", `/super-admin/collaborators/${id}`);
+}
+
+// ── Platform Payment Gateways ─────────────────────────────────────────────────
+
+export type GatewayType = "stripe" | "paypal" | "bank_transfer";
+
+export type GatewayConfig = {
+  paypal_email?: string;
+  paypal_link?: string;
+  iban?: string;
+  swift?: string;
+  account_holder?: string;
+  bank_name?: string;
+};
+
+export type PaymentGateway = {
+  id: number;
+  type: GatewayType;
+  label: string;
+  enabled: boolean;
+  config: GatewayConfig;
+  sort_order: number;
+};
+
+export async function listPaymentGateways(): Promise<PaymentGateway[]> {
+  return request<PaymentGateway[]>("GET", "/super-admin/payment-gateways");
+}
+
+export async function createPaymentGateway(
+  data: Omit<PaymentGateway, "id">,
+): Promise<PaymentGateway> {
+  return request<PaymentGateway>("POST", "/super-admin/payment-gateways", data);
+}
+
+export async function updatePaymentGateway(
+  id: number,
+  data: Partial<Omit<PaymentGateway, "id" | "type">>,
+): Promise<PaymentGateway> {
+  return request<PaymentGateway>("PATCH", `/super-admin/payment-gateways/${id}`, data);
+}
+
+export async function deletePaymentGateway(id: number): Promise<void> {
+  return request<void>("DELETE", `/super-admin/payment-gateways/${id}`);
+}
+
+export async function getPaymentMethods(): Promise<PaymentGateway[]> {
+  return request<PaymentGateway[]>("GET", "/billing/payment-methods");
+}

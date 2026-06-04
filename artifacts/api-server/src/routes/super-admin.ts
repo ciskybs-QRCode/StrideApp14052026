@@ -3,9 +3,37 @@ import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import { requireAuth, requireRole, signToken, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
+import { pool } from "../lib/pg.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
+
+// ── Auto-create platform tables ───────────────────────────────────────────────
+
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS super_admin_collaborators (
+        id          SERIAL PRIMARY KEY,
+        email       TEXT NOT NULL UNIQUE,
+        added_by    TEXT NOT NULL DEFAULT 'system',
+        created_at  TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS platform_payment_gateways (
+        id          SERIAL PRIMARY KEY,
+        type        TEXT NOT NULL,
+        label       TEXT NOT NULL,
+        enabled     BOOLEAN DEFAULT TRUE,
+        config      JSONB NOT NULL DEFAULT '{}',
+        sort_order  INTEGER DEFAULT 0,
+        created_at  TIMESTAMPTZ DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+  } catch (e) {
+    console.error("[platform-tables] auto-create skipped:", (e as Error).message);
+  }
+})();
 
 const _url = process.env["SUPABASE_URL"] ?? "";
 const _key = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_KEY"] ?? "";
@@ -205,5 +233,156 @@ router.post("/super-admin/seed", async (req, res) => {
 
   res.status(201).json({ token, user: newUser });
 });
+
+// ── GET /super-admin/collaborators ────────────────────────────────────────────
+router.get(
+  "/super-admin/collaborators",
+  requireAuth,
+  requireRole("super_admin"),
+  async (_req, res) => {
+    try {
+      const { data, error } = await sa
+        .from("super_admin_collaborators")
+        .select("id, email, added_by, created_at")
+        .order("created_at");
+      if (error) {
+        if ((error as { code?: string }).code === "42P01") { res.json([]); return; }
+        res.status(500).json({ error: error.message }); return;
+      }
+      res.json(data ?? []);
+    } catch { res.json([]); }
+  },
+);
+
+// ── POST /super-admin/collaborators ───────────────────────────────────────────
+router.post(
+  "/super-admin/collaborators",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const caller = (req as AuthReq).user;
+    const { email } = req.body as { email?: string };
+    if (!email?.trim()) {
+      res.status(400).json({ error: "email is required" }); return;
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const { data, error } = await sa
+      .from("super_admin_collaborators")
+      .insert({ email: normalizedEmail, added_by: caller.email })
+      .select("id, email, added_by, created_at")
+      .single();
+    if (error) {
+      if (error.code === "23505") {
+        res.status(409).json({ error: "Email already exists as a collaborator" }); return;
+      }
+      res.status(500).json({ error: error.message }); return;
+    }
+    res.status(201).json(data);
+  },
+);
+
+// ── DELETE /super-admin/collaborators/:id ────────────────────────────────────
+router.delete(
+  "/super-admin/collaborators/:id",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const id = Number(req.params["id"]);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const { error } = await sa.from("super_admin_collaborators").delete().eq("id", id);
+    if (error) { res.status(500).json({ error: error.message }); return; }
+    res.status(204).send();
+  },
+);
+
+// ── GET /super-admin/payment-gateways ────────────────────────────────────────
+router.get(
+  "/super-admin/payment-gateways",
+  requireAuth,
+  requireRole("super_admin"),
+  async (_req, res) => {
+    try {
+      const { data, error } = await sa
+        .from("platform_payment_gateways")
+        .select("id, type, label, enabled, config, sort_order")
+        .order("sort_order");
+      if (error) {
+        if ((error as { code?: string }).code === "42P01") { res.json([]); return; }
+        res.status(500).json({ error: error.message }); return;
+      }
+      res.json(data ?? []);
+    } catch { res.json([]); }
+  },
+);
+
+// ── POST /super-admin/payment-gateways ───────────────────────────────────────
+router.post(
+  "/super-admin/payment-gateways",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const { type, label, enabled, config, sort_order } = req.body as {
+      type?: string; label?: string; enabled?: boolean;
+      config?: Record<string, unknown>; sort_order?: number;
+    };
+    if (!type || !label) {
+      res.status(400).json({ error: "type and label are required" }); return;
+    }
+    const { data, error } = await sa
+      .from("platform_payment_gateways")
+      .insert({
+        type,
+        label,
+        enabled: enabled ?? true,
+        config: config ?? {},
+        sort_order: sort_order ?? 0,
+      })
+      .select("id, type, label, enabled, config, sort_order")
+      .single();
+    if (error) { res.status(500).json({ error: error.message }); return; }
+    res.status(201).json(data);
+  },
+);
+
+// ── PATCH /super-admin/payment-gateways/:id ──────────────────────────────────
+router.patch(
+  "/super-admin/payment-gateways/:id",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const id = Number(req.params["id"]);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const ALLOWED = ["label", "enabled", "config", "sort_order"];
+    const updates: Record<string, unknown> = Object.fromEntries(
+      Object.entries(req.body as Record<string, unknown>).filter(([k]) => ALLOWED.includes(k)),
+    );
+    if (!Object.keys(updates).length) {
+      res.status(400).json({ error: "No valid fields provided" }); return;
+    }
+    updates["updated_at"] = new Date().toISOString();
+    const { data, error } = await sa
+      .from("platform_payment_gateways")
+      .update(updates)
+      .eq("id", id)
+      .select("id, type, label, enabled, config, sort_order")
+      .single();
+    if (error) { res.status(500).json({ error: error.message }); return; }
+    res.json(data);
+  },
+);
+
+// ── DELETE /super-admin/payment-gateways/:id ─────────────────────────────────
+router.delete(
+  "/super-admin/payment-gateways/:id",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const id = Number(req.params["id"]);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const { error } = await sa.from("platform_payment_gateways").delete().eq("id", id);
+    if (error) { res.status(500).json({ error: error.message }); return; }
+    res.status(204).send();
+  },
+);
 
 export default router;

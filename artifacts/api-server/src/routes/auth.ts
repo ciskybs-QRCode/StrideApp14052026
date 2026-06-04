@@ -73,8 +73,29 @@ router.post("/auth/login", async (req, res) => {
   })();
   const effectiveRole = user.role || roles[0] || "parent";
 
+  // ── Collaborator elevation check ──────────────────────────────────────────
+  // Grant super_admin role if email is the master email or is in collaborators table.
+  const MASTER_SA_EMAIL = "ciskybs@gmail.com";
+  let resolvedRole = effectiveRole;
+  if (resolvedRole !== "super_admin") {
+    const normalizedEmail = user.email.toLowerCase().trim();
+    if (normalizedEmail === MASTER_SA_EMAIL) {
+      resolvedRole = "super_admin";
+    } else {
+      try {
+        const { data: collab } = await supabase
+          .from("super_admin_collaborators")
+          .select("id")
+          .ilike("email", normalizedEmail)
+          .limit(1)
+          .maybeSingle();
+        if (collab) resolvedRole = "super_admin";
+      } catch { /* table may not exist yet — ignore */ }
+    }
+  }
+
   // Trial expiry gate — super_admin and active subscribers are always allowed through
-  if (effectiveRole !== "super_admin") {
+  if (resolvedRole !== "super_admin") {
     const { data: orgRow } = await supabase
       .from("organizations")
       .select("trial_ends_at, subscription_status")
@@ -95,7 +116,7 @@ router.post("/auth/login", async (req, res) => {
   const token = signToken({
     id: String(user.id),
     email: user.email,
-    role: effectiveRole,
+    role: resolvedRole,
     orgId: user.organization_id ?? 1,
   });
 

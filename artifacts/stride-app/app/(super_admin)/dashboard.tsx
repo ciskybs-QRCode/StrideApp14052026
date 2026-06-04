@@ -27,6 +27,8 @@ import {
   type PlatformMetrics,
   type PlatformEvent,
 } from "@/lib/api";
+import CollaboratorsPanel from "@/components/CollaboratorsPanel";
+import PaymentGatewaysPanel from "@/components/PaymentGatewaysPanel";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const CARD_W = Math.floor((SCREEN_W - 40) / 2); // 2-col grid, 16px side padding + 8px gap
@@ -669,6 +671,14 @@ export default function SuperAdminDashboard() {
                 ))}
               </View>
             )}
+
+            {/* ── AUTHORIZED COLLABORATORS ── */}
+            <SectionHeader title="AUTHORIZED COLLABORATORS" />
+            <CollaboratorsPanel />
+
+            {/* ── PLATFORM PAYMENT GATEWAYS ── */}
+            <SectionHeader title="PLATFORM PAYMENT GATEWAYS" />
+            <PaymentGatewaysPanel />
           </ScrollView>
         )}
       </View>
