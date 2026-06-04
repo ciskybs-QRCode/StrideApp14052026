@@ -328,36 +328,67 @@ export default function AdminHome() {
           <Text style={styles.sosStandaloneBtnHint}>Press twice to activate</Text>
         </Pressable>
 
-        {/* ── SMART ROSTERING ENTRY CARD ── */}
+        {/* ── [1] SUPER ADMIN DASHBOARD (master email only) ── */}
+        {user?.email?.trim().toLowerCase() === "ciskybs@gmail.com" && (
+          <Pressable
+            style={({ pressed }) => [styles.analyticsCard, { backgroundColor: colors.card, transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
+            onPress={() => { router.push("/(super_admin)/dashboard" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); }}
+          >
+            <View style={styles.analyticsCardLeft}>
+              <View style={[styles.analyticsCardIcon, { backgroundColor: "#EDE9FE" }]}>
+                <Ionicons name="globe" size={24} color="#7C3AED" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.analyticsCardTitle, { color: colors.primary }]}>Super Admin Dashboard</Text>
+                <Text style={[styles.analyticsCardSub, { color: colors.mutedForeground }]}>Platform-wide controls &amp; associations</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+          </Pressable>
+        )}
+
+        {/* ── [2] ADMIN AI SUPPORT ── */}
         <Pressable
-          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#0F2457", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
+          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: colors.card, transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
+          onPress={() => { router.push("/(admin)/copilot"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        >
+          <View style={styles.analyticsCardLeft}>
+            <View style={[styles.analyticsCardIcon, { backgroundColor: "#D1FAE5" }]}>
+              <Ionicons name="terminal-outline" size={24} color="#059669" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.analyticsCardTitle, { color: colors.primary }]}>Admin AI support</Text>
+              <Text style={[styles.analyticsCardSub, { color: colors.mutedForeground }]}>Ask data questions in plain English</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+        </Pressable>
+
+        {/* ── [3] SMART ROSTERING AI ── */}
+        <Pressable
+          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: colors.card, transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
           onPress={() => { router.push("/(admin)/smart-roster"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
         >
           <View style={styles.analyticsCardLeft}>
-            <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(212,175,55,0.2)" }]}>
-              <Ionicons name="sparkles" size={24} color="#D4AF37" />
+            <View style={[styles.analyticsCardIcon, { backgroundColor: "#FEF3C7" }]}>
+              <Ionicons name="sparkles" size={24} color="#D97706" />
             </View>
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <Text style={[styles.analyticsCardTitle, { color: "#FFFFFF" }]}>Smart Rostering</Text>
-                <View style={{ backgroundColor: "rgba(212,175,55,0.2)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
-                  <Text style={{ color: "#D4AF37", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>AI</Text>
-                </View>
-              </View>
-              <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.55)" }]}>Find best substitute · Match score · Auto-notify</Text>
+              <Text style={[styles.analyticsCardTitle, { color: colors.primary }]}>Smart Rostering AI</Text>
+              <Text style={[styles.analyticsCardSub, { color: colors.mutedForeground }]}>Find best substitute · Match score · Auto-notify</Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+          <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
         </Pressable>
 
-        {/* ── ANALYTICS ENTRY CARD ── */}
+        {/* ── [4] ANALYTICS ── */}
         <Pressable
-          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: colors.card, transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
+          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: colors.card, transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 20 }]}
           onPress={() => { router.push("/(admin)/analytics"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
         >
           <View style={styles.analyticsCardLeft}>
             <View style={[styles.analyticsCardIcon, { backgroundColor: "#DBEAFE" }]}>
-              <Ionicons name="bar-chart" size={26} color="#0A1128" />
+              <Ionicons name="bar-chart" size={26} color="#1D4ED8" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.analyticsCardTitle, { color: colors.primary }]}>Analytics</Text>
@@ -365,53 +396,6 @@ export default function AdminHome() {
             </View>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
-        </Pressable>
-
-        {/* ── SUPER ADMIN DASHBOARD (master email only) ── */}
-        {user?.email?.trim().toLowerCase() === "ciskybs@gmail.com" && (
-          <Pressable
-            style={({ pressed }) => [styles.analyticsCard, {
-              backgroundColor: "#0A1128",
-              borderWidth: 1,
-              borderColor: "#D4AF37",
-              transform: pressed ? [{ scale: 0.98 }] : [],
-              marginBottom: 8,
-            }]}
-            onPress={() => { router.push("/(super_admin)/dashboard" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); }}
-          >
-            <View style={styles.analyticsCardLeft}>
-              <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(212,175,55,0.15)" }]}>
-                <Ionicons name="globe" size={24} color="#D4AF37" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.analyticsCardTitle, { color: "#D4AF37" }]}>Super Admin Dashboard</Text>
-                <Text style={[styles.analyticsCardSub, { color: "rgba(212,175,55,0.6)" }]}>Platform-wide controls &amp; associations</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#D4AF37" />
-          </Pressable>
-        )}
-
-        {/* ── AI ENTRY CARD ── */}
-        <Pressable
-          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#050F2E", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 20 }]}
-          onPress={() => { router.push("/(admin)/copilot"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        >
-          <View style={styles.analyticsCardLeft}>
-            <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(212,175,55,0.15)" }]}>
-              <Ionicons name="terminal-outline" size={24} color="#D4AF37" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <Text style={[styles.analyticsCardTitle, { color: "#FFFFFF" }]}>AI</Text>
-                <View style={{ backgroundColor: "rgba(16,185,129,0.2)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
-                  <Text style={{ color: "#10B981", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>NL</Text>
-                </View>
-              </View>
-              <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.5)" }]}>Ask data questions in plain English</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
         </Pressable>
 
         {/* ── HERO KPI BANNER ── */}

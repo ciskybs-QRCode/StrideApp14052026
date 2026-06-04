@@ -1,0 +1,28 @@
+🚨 HOME BUTTONS REFACTOR: UNIFORM MINIMALIST STYLING, RENAMING & REORDERING 🚨
+
+Role: Expert Senior UI/UX Frontend Developer.
+Objective: Standardize all navigation/action buttons on the Home screen to match the clean, light, and minimalist style of the "Analytics" card. Reorder the buttons and update their text labels globally for both Super Admin and standard Admin views.
+
+1. UNIFORM VISUAL STYLE (THE "ANALYTICS" CARD STANDARD)
+- Completely eliminate the heavy solid dark-blue and black backgrounds from ALL action buttons (Smart Rostering, AI, Super Admin).
+- Transform ALL buttons into pure White (#FFFFFF) cards.
+- Enforce crisp Deep Navy Blue (#0A1128) for all primary text titles.
+- Use subtle Slate Gray for description subtitles.
+- Retain the subtle, elegant soft-gray card shadow and rounded corners from the current Analytics block to ensure perfect design consistency.
+
+2. TEXT LABEL UPDATES
+- Rename the button previously labeled "AI" to exactly: "Admin AI support".
+- Rename the button previously labeled "Smart Rostering" to exactly: "Smart Rostering AI".
+
+3. STRICT VERTICAL SEQUENCING
+Rearrange the cards vertically directly beneath the SOS Emergency banner in this exact top-to-bottom sequence:
+
+   [1] Super Admin Dashboard  <-- (STRICT CONDITION: Only render if logged-in user is Super Admin)
+   [2] Admin AI support       <-- (Visible to both Super Admin and regular Admin)
+   [3] Smart Rostering AI     <-- (Visible to both Super Admin and regular Admin)
+   [4] Analytics              <-- (Visible to both Super Admin and regular Admin)
+
+LAYOUT COMPLIANCE:
+- Ensure the conditional visibility for Card [1] is fully dynamic. When a regular Admin logs in, Card [1] must be completely absent, and Card [2] ("Admin AI support") must automatically slide into the top position with zero layout gaps.
+- Language: 100% STRICT ENGLISH for all labels and subtitles.
+- Screen Containment: All text, icons, and chevron arrows must be perfectly contained within the card boundaries on mobile screens with zero horizontal overflow.
