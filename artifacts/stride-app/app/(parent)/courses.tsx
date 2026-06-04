@@ -695,9 +695,14 @@ export default function CoursesScreen() {
             )}
 
             {courses.length === 0 && (
-              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                <Ionicons name="school-outline" size={36} color={colors.mutedForeground} />
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No courses available yet</Text>
+              <View style={styles.emptyNavy}>
+                <View style={styles.emptyNavyIconRing}>
+                  <Ionicons name="school-outline" size={36} color="#D4AF37" />
+                </View>
+                <Text style={styles.emptyNavyTitle}>No courses available yet</Text>
+                <Text style={styles.emptyNavyBody}>
+                  No items configured yet. Enter your Command Center or Admin settings to initialize activities, operators, and disciplines.
+                </Text>
               </View>
             )}
           </>
@@ -1185,6 +1190,10 @@ const styles = StyleSheet.create({
   // Empty
   emptyState: { borderRadius: 16, padding: 32, alignItems: "center", gap: 10 },
   emptyText: { fontSize: 14 },
+  emptyNavy: { backgroundColor: "#0A1128", borderRadius: 20, borderWidth: 1, borderColor: "#D4AF37", padding: 28, marginTop: 16, marginHorizontal: 4, alignItems: "center", gap: 14 },
+  emptyNavyIconRing: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.1)", alignItems: "center", justifyContent: "center" },
+  emptyNavyTitle: { fontSize: 16, fontWeight: "800", color: "#FFFFFF", textAlign: "center" },
+  emptyNavyBody: { fontSize: 13, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 20 },
 
   // Private section
   privateSection: { gap: 0 },

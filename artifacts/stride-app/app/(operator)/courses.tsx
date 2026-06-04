@@ -381,11 +381,13 @@ export default function OperatorCoursesScreen() {
         </View>
 
         {myCourses.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="school-outline" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No Assigned Courses</Text>
-            <Text style={[styles.emptyBody, { color: colors.mutedForeground }]}>
-              You will see your courses here once the Admin assigns you as the instructor.
+          <View style={styles.emptyNavy}>
+            <View style={styles.emptyNavyIconRing}>
+              <Ionicons name="school-outline" size={36} color="#D4AF37" />
+            </View>
+            <Text style={styles.emptyNavyTitle}>No Assigned Courses</Text>
+            <Text style={styles.emptyNavyBody}>
+              No items configured yet. Enter your Command Center or Admin settings to initialize activities, operators, and disciplines.
             </Text>
           </View>
         ) : (
@@ -651,6 +653,10 @@ const styles = StyleSheet.create({
   emptyCard: { borderRadius: 18, padding: 32, alignItems: "center", gap: 10, borderWidth: 1, marginTop: 8 },
   emptyTitle: { fontSize: 17, fontWeight: "800" },
   emptyBody: { fontSize: 13, textAlign: "center", lineHeight: 18 },
+  emptyNavy: { backgroundColor: "#0A1128", borderRadius: 20, borderWidth: 1, borderColor: "#D4AF37", padding: 28, marginTop: 16, marginHorizontal: 4, alignItems: "center", gap: 14 },
+  emptyNavyIconRing: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.1)", alignItems: "center", justifyContent: "center" },
+  emptyNavyTitle: { fontSize: 16, fontWeight: "800", color: "#FFFFFF", textAlign: "center" },
+  emptyNavyBody: { fontSize: 13, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 20 },
   courseCard: { borderRadius: 18, marginBottom: 12, borderWidth: 1, overflow: "hidden" },
   courseHeader: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16 },
   courseIconBox: { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center" },
