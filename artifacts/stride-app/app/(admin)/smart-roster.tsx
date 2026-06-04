@@ -92,7 +92,7 @@ export default function SmartRosterScreen() {
           hitSlop={10}
           style={s.backBtn}
         >
-          <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.55)" />
+          <Ionicons name="chevron-back" size={22} color="#D4AF37" />
         </Pressable>
 
         <View style={{ flex: 1 }}>

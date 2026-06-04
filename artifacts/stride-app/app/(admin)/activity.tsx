@@ -576,6 +576,13 @@ export default function ActivityScreen() {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: pt, backgroundColor: colors.background }]}>
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={({ pressed }) => ({ width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10, opacity: pressed ? 0.6 : 1, marginRight: 4 })}
+        >
+          <Ionicons name="chevron-back" size={24} color="#D4AF37" />
+        </Pressable>
         <View>
           <Text style={[styles.pageTitle, { color: colors.primary }]}>Activity</Text>
           <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>

@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -135,9 +136,10 @@ export default function BlacklistScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
+          paddingTop: 8,
           paddingBottom: insets.bottom + 100,
           paddingHorizontal: 16,
         }}

@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Tabs, useRouter } from "expo-router";
-import { BackButton } from "@/components/BackButton";
 import React, { useEffect, useRef } from "react";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -149,7 +148,6 @@ export default function OperatorTabLayout() {
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
       <RoleSwitcher />
       <BrandingLogoOverlay />
-      <BackButton />
 
       {/* ── Notification banner ── */}
       {activeNotif && (

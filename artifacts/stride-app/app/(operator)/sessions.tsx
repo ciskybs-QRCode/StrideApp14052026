@@ -319,15 +319,24 @@ export default function SessionsScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="people-circle" size={22} color="#1E3A8A" />
-          </View>
-          <View>
-            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Roll Call</Text>
-            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-              {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
-            </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Pressable
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#D4AF37" />
+          </Pressable>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="people-circle" size={22} color="#1E3A8A" />
+            </View>
+            <View>
+              <Text style={[styles.headerTitle, { color: colors.foreground }]}>Roll Call</Text>
+              <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
+                {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
