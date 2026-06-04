@@ -1259,6 +1259,12 @@ export async function syncSeats(): Promise<{ success: boolean; memberCount: numb
   return request<{ success: boolean; memberCount: number }>("POST", "/billing/sync-seats", {});
 }
 
+export async function cancelSubscription(
+  immediate: boolean,
+): Promise<{ status: string }> {
+  return request<{ status: string }>("POST", "/billing/cancel", { immediate });
+}
+
 export async function seedSuperAdmin(
   name: string,
   email: string,
