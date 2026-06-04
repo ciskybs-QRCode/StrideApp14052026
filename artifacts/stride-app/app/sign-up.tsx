@@ -81,14 +81,14 @@ export default function SignUpScreen() {
 
   return (
     <View style={s.container}>
-      {/* Top navy header */}
-      <View style={[s.header, { paddingTop: insets.top + 16 }]}>
+      {/* Back button row — on light background */}
+      <View style={[s.topRow, { paddingTop: insets.top + 12 }]}>
         <Pressable
           style={({ pressed }) => [s.backBtn, { opacity: pressed ? 0.6 : 1 }]}
           onPress={() => router.back()}
           hitSlop={12}
         >
-          <Ionicons name="chevron-back-outline" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-back-outline" size={22} color={NAVY} />
         </Pressable>
         <Image source={LOGO} style={s.logoImage} contentFit="contain" />
         <View style={{ width: 38 }} />
@@ -266,20 +266,13 @@ export default function SignUpScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
 
-  // Navy header
-  header: {
-    backgroundColor: NAVY,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  backBtn:   { width: 38, height: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" },
+  // Top row (light bg)
+  topRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12 },
+  backBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: "rgba(10,17,40,0.07)", alignItems: "center", justifyContent: "center" },
   logoImage: { width: 100, height: 56 },
 
   // Body
-  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 24 },
+  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 16 },
 
   // Welcome
   welcome:      { marginBottom: 20 },

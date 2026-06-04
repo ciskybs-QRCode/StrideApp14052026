@@ -112,13 +112,6 @@ export default function LoginScreen() {
 
   return (
     <View style={s.container}>
-      {/* Top navy header strip */}
-      <View style={[s.header, { paddingTop: insets.top + 20 }]}>
-        <Image source={LOGO} style={s.logoImage} contentFit="contain" />
-        <View style={s.goldRule} />
-        <Text style={s.tagline}>Dance School Management</Text>
-      </View>
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -126,11 +119,18 @@ export default function LoginScreen() {
         <ScrollView
           contentContainerStyle={[
             s.scroll,
-            { paddingBottom: insets.bottom + 32 },
+            { paddingTop: insets.top + 36, paddingBottom: insets.bottom + 32 },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Logo */}
+          <View style={s.logoArea}>
+            <Image source={LOGO} style={s.logoImage} contentFit="contain" />
+            <View style={s.goldRule} />
+            <Text style={s.tagline}>Activity & Membership Management</Text>
+          </View>
+
           {/* Welcome */}
           <View style={s.welcome}>
             <Text style={s.welcomeTitle}>Welcome Back</Text>
@@ -268,19 +268,14 @@ export default function LoginScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
 
-  // Navy top header
-  header: {
-    backgroundColor: NAVY,
-    alignItems: "center",
-    paddingBottom: 28,
-    paddingHorizontal: 24,
-  },
+  // Logo area (light bg)
+  logoArea:  { alignItems: "center", marginBottom: 28 },
   logoImage: { width: 150, height: 80 },
-  goldRule:  { width: 40, height: 2, backgroundColor: GOLD, borderRadius: 2, marginTop: 10, opacity: 0.8 },
-  tagline:   { fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 8, letterSpacing: 1.8, textTransform: "uppercase" },
+  goldRule:  { width: 40, height: 2, backgroundColor: GOLD, borderRadius: 2, marginTop: 10, opacity: 0.7 },
+  tagline:   { fontSize: 11, color: "#9CA3AF", marginTop: 8, letterSpacing: 1.6, textTransform: "uppercase" },
 
   // Body
-  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 28 },
+  scroll: { flexGrow: 1, paddingHorizontal: 20 },
 
   // Welcome
   welcome:      { marginBottom: 20 },
