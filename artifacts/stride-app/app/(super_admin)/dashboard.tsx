@@ -487,7 +487,7 @@ export default function SuperAdminDashboard() {
 
   // ── Security gate: silently redirect any non-super_admin ──────────────────
   useEffect(() => {
-    if (user && user.role !== "super_admin") {
+    if (user && !user.roles?.includes("super_admin")) {
       console.warn(`[Security] Unauthorized access to super-admin dashboard by role "${user.role}" — redirecting.`);
       router.replace("/");
     }

@@ -13,7 +13,7 @@ function isMasterEmail(email: string | undefined | null): boolean {
 }
 /** Returns the full elevated role set for the master account. */
 function masterRoles(): { role: UserRole; roles: UserRole[] } {
-  return { role: "admin", roles: ["super_admin", "admin", "operator", "parent"] };
+  return { role: "super_admin", roles: ["super_admin", "admin", "operator", "parent"] };
 }
 
 export interface User {

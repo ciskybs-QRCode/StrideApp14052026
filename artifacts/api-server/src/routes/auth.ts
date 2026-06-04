@@ -126,7 +126,7 @@ router.post("/auth/login", async (req, res) => {
       id: String(user.id),
       name: user.name,
       email: user.email,
-      role: effectiveRole,
+      role: resolvedRole,
       orgId: user.organization_id ?? 1,
     },
   });

@@ -1,0 +1,27 @@
+🚨 CRITICAL SYSTEM AUTOMATION: FIX INFINITE SPINNER & IMPLEMENT AUTO-SEEDING FOR TEST USERS 🚨
+
+Role: Expert Senior Full-Stack Developer & Database Automation Specialist.
+Objective: Resolve the infinite loading spinner on the Super Admin Dashboard and programmatically automate the initialization/seeding of required system configuration tables and test accounts directly from the codebase.
+
+1. RESOLVE INFINITE SPINNER (EMPTY TABLE DEFENSIVE LOGIC)
+- Update all database queries fetching platform gateways, tenant configurations, or collaborator lists. 
+- Implement strong try/catch blocks. If a query returns empty (Supabase error PGRST116), gracefully resolve the loading state to false and fallback to an empty/default UI state instead of freezing the app on a spinner.
+
+2. AUTOMATED SYSTEM INITIALIZATION & DATA SEEDING
+Create an initialization routine (or a secure standalone script/function triggered on app startup) that checks if the platform is empty, and automatically populates the database with the following essential records:
+
+A) Global App & Super-Admin Configurations:
+   - Hardcode and force-insert the master Super Admin email "ciskybs@gmail.com" into the 'super_admin_collaborators' table (and create a baseline matching row in the system profiles table with role: 'super_admin').
+   - Insert a default row in the 'platform_gateways' or global configuration tables so the application layout has metadata ready to read.
+
+B) Production Test Accounts (The Core Testing Suite):
+   - Check if these exact testing environments exist; if not, programmatically seed or instantiate them inside the database profile/user mapping system:
+     * Email: admin@test.com     | Password: test123 | Role: admin
+     * Email: operator@test.com | Password: test123 | Role: operator
+     * Email: member@test.com   | Password: test123 | Role: parent / member
+     * Email: kiosk@test.com    | Password: test123 | Role: kiosk
+
+3. VISUAL THEME & BOUNDARY ENFORCEMENT
+- If any "Initialize Database" or "Setup Complete" status components render on screen during first-run execution, style them strictly according to our branding guidelines: Deep Navy Blue (#0A1128) background, Premium Gold (#D4AF37) borders/accents, and crisp White text.
+- Form fields and UI layout wrappers must scale flawlessly on mobile viewports with absolutely ZERO horizontal screen overflow.
+- Language: 100% STRICT ENGLISH across all updated flows.
