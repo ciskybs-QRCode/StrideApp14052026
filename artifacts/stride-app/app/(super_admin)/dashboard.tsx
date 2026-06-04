@@ -22,6 +22,7 @@ import {
   getPlatformMetrics,
   listAssociations,
   extendTrial,
+  setSuspension,
   type AssociationRecord,
   type PlatformMetrics,
   type PlatformEvent,
@@ -222,10 +223,16 @@ function ExtendModal({
   const [customMonths, setCustomMonths] = useState("");
   const [extending, setExtending]       = useState(false);
   const [error, setError]               = useState<string | null>(null);
+  const [suspending, setSuspending]     = useState(false);
+  const [suspendError, setSuspendError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    if (!visible) { setCustomMonths(""); setError(null); }
+    if (!visible) {
+      setCustomMonths("");
+      setError(null);
+      setSuspendError(null);
+    }
   }, [visible]);
 
   const handleExtend = useCallback(async (months: number) => {
@@ -248,6 +255,21 @@ function ExtendModal({
     if (isNaN(m) || m < 1 || m > 120) { setError("Enter a valid number of months (1 \u2013 120)."); return; }
     handleExtend(m);
   }, [customMonths, handleExtend]);
+
+  const handleSuspend = useCallback(async (suspend: boolean) => {
+    if (!org) return;
+    setSuspendError(null);
+    setSuspending(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    try {
+      const updated = await setSuspension(org.id, suspend);
+      onSuccess({ ...org, ...updated });
+    } catch (e: unknown) {
+      setSuspendError(e instanceof Error ? e.message : "Action failed — try again");
+    } finally {
+      setSuspending(false);
+    }
+  }, [org, onSuccess]);
 
   const chip    = subscriptionChip(org?.subscription_status);
   const days    = daysUntil(org?.trial_ends_at);
@@ -327,6 +349,41 @@ function ExtendModal({
               </View>
             )}
 
+            {/* Billing Controls */}
+            <Text style={emStyles.sectionLabel}>BILLING CONTROLS</Text>
+            <View style={emStyles.billingCtrlRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  emStyles.suspendBtn,
+                  org?.subscription_status === "suspended" && emStyles.suspendBtnDisabled,
+                  { opacity: pressed || suspending ? 0.75 : 1 },
+                ]}
+                onPress={() => !suspending && handleSuspend(true)}
+                disabled={suspending || org?.subscription_status === "suspended"}
+              >
+                <Ionicons name="lock-closed-outline" size={15} color="#DC2626" />
+                <Text style={emStyles.suspendBtnText}>Suspend Billing</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  emStyles.resumeBtn,
+                  org?.subscription_status !== "suspended" && emStyles.resumeBtnDisabled,
+                  { opacity: pressed || suspending ? 0.75 : 1 },
+                ]}
+                onPress={() => !suspending && handleSuspend(false)}
+                disabled={suspending || org?.subscription_status !== "suspended"}
+              >
+                <Ionicons name="checkmark-circle-outline" size={15} color="#059669" />
+                <Text style={emStyles.resumeBtnText}>Resume Billing</Text>
+              </Pressable>
+            </View>
+            {!!suspendError && (
+              <View style={emStyles.errorBox}>
+                <Ionicons name="alert-circle-outline" size={14} color="#DC2626" />
+                <Text style={emStyles.errorText}>{suspendError}</Text>
+              </View>
+            )}
+
             {/* Gold CTA */}
             <Pressable
               style={({ pressed }) => [emStyles.ctaBtn, { opacity: pressed || extending ? 0.85 : 1 }]}
@@ -382,6 +439,13 @@ const emStyles = StyleSheet.create({
   ctaText:       { fontSize: 15, fontWeight: "900", color: "#1E3A8A" },
   cancelBtn:     { alignItems: "center", paddingVertical: 14, marginHorizontal: 24 },
   cancelText:    { fontSize: 15, color: "#6B7280" },
+  billingCtrlRow:    { flexDirection: "row", gap: 10, marginHorizontal: 24, marginBottom: 4 },
+  suspendBtn:        { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 14, borderRadius: 14, backgroundColor: "#FEF2F2", borderWidth: 1.5, borderColor: "#FECACA" },
+  suspendBtnDisabled:{ opacity: 0.45 },
+  suspendBtnText:    { fontSize: 13, fontWeight: "800", color: "#DC2626" },
+  resumeBtn:         { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 14, borderRadius: 14, backgroundColor: "#ECFDF5", borderWidth: 1.5, borderColor: "#A7F3D0" },
+  resumeBtnDisabled: { opacity: 0.45 },
+  resumeBtnText:     { fontSize: 13, fontWeight: "800", color: "#059669" },
 });
 
 // ── Section header ─────────────────────────────────────────────────────────────

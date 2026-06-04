@@ -60,17 +60,27 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function OfflineBanner() {
-  const { isOnline, pendingCount } = useOfflineSync();
+  const { isOnline, pendingCount, isSyncing } = useOfflineSync();
   const insets = useSafeAreaInsets();
-  if (isOnline) return null;
+  if (isOnline && !isSyncing) return null;
+  const text = isSyncing
+    ? "Syncing offline changes..."
+    : pendingCount > 0
+    ? `Offline \u00B7 ${pendingCount} change${pendingCount !== 1 ? "s" : ""} queued \u2014 will sync automatically`
+    : "Offline \u2014 changes are saved locally";
   return (
     <View style={[styles.offlineBanner, { paddingTop: insets.top + 4 }]}>
-      <Ionicons name="cloud-offline-outline" size={15} color="#FFF" />
-      <Text style={styles.offlineText}>
-        {pendingCount > 0
-          ? `Offline — ${pendingCount} change${pendingCount !== 1 ? "s" : ""} will sync when reconnected`
-          : "No internet connection — changes saved locally"}
-      </Text>
+      <Ionicons
+        name={isSyncing ? "cloud-upload-outline" : "cloud-offline-outline"}
+        size={15}
+        color="#D4AF37"
+      />
+      <Text style={styles.offlineText}>{text}</Text>
+      {pendingCount > 0 && !isSyncing && (
+        <View style={styles.offlineBadge}>
+          <Text style={styles.offlineBadgeText}>{pendingCount}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -158,7 +168,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#EF4444",
+    backgroundColor: "#0A1128",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -166,6 +176,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
     zIndex: 9999,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(212,175,55,0.25)",
+  },
+  offlineBadge: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  offlineBadgeText: {
+    color: "#0A1128",
+    fontSize: 11,
+    fontWeight: "800",
   },
   offlineText: {
     color: "#FFF",

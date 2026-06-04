@@ -1,0 +1,28 @@
+🚨 CRITICAL ARCHITECTURE UPDATE: OFFLINE LOCAL PERSISTENCE & AUTO-SYNC ENGINE 🚨
+
+Role: Expert Senior Full-Stack Mobile & Cloud Database Engineer.
+Objective: Implement a robust offline-first data caching and automatic synchronization system across the entire application ecosystem. The app must remain 100% functional when network connection is completely lost.
+
+CRITICAL ARCHITECTURAL CONSTRAINTS:
+- Do NOT break, duplicate, or alter any existing database schemas, authentication layers, or state configurations. 
+- The offline-to-online transition must happen completely in the background without requiring user intervention, manual refreshes, or app restarts.
+- Ensure zero data duplication during synchronization.
+
+Please implement the following technical specifications:
+
+1. ENABLE FIRESTORE / DATABASE OFFLINE PERSISTENCE
+- Configure the core database initialization layer to explicitly enable local disk persistence and data caching.
+- Ensure that all local reads and writes target the local cache immediately when offline, allowing all pages (Members, Activities, Subscription, Scheduler) to render using cached data.
+
+2. LOCAL OFFLINE TRANSACTION QUEUE (FOR SCANS & ATTENDANCE)
+- Implement a robust offline queue specifically for high-priority operational actions: QR Code scans, check-ins/check-outs, and absence reports.
+- When offline, these actions must be saved locally with precise, immutable timestamps (`offline_timestamp`).
+
+3. AUTOMATIC BACKGROUND SYNC ENGINE
+- Implement a network connectivity listener that detects when internet access is fully restored.
+- Upon reconnection, the engine must automatically execute a silent background sync, flushing the local offline queue and pushing all pending records to the live central database.
+- Resolve conflicts using a "Last Write Wins" or timestamp-based reconciliation strategy to ensure data integrity.
+
+4. MINIMALIST OFFLINE UI INDICATOR
+- Create a subtle, elegant visual banner or small status dot (Deep Navy and Gold / Amber warning theme) that appears *only* when the device is completely offline (e.g., "Offline Mode - Scans will sync automatically").
+- This indicator must be perfectly contained within screen boundaries, minimal, non-intrusive, and automatically vanish the instant connection is re-established.

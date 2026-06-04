@@ -46,6 +46,14 @@ const NAV_ROWS = [
     bg: "#FEF3C7",
   },
   {
+    key: "subscription-billing",
+    title: "Subscription & Billing",
+    description: "QR pricing, billing status and account plan",
+    icon: "card-outline"              as const,
+    color: "#059669",
+    bg: "#ECFDF5",
+  },
+  {
     key: "legal-privacy",
     title: "Legal & Privacy",
     description: "Terms, policies and signatures",

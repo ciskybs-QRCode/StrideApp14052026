@@ -1127,8 +1127,9 @@ export type AssociationRecord = {
   trial_started_at?: string;
   trial_ends_at?: string;
   is_trial_extended?: boolean;
-  subscription_status?: string;
+  subscription_status?: "active" | "trialing" | "past_due" | "suspended" | "expired";
   cost_per_seat_cents?: number;
+  member_count?: number;
 };
 
 export type PlatformEvent = {
@@ -1169,6 +1170,20 @@ export async function updateAssociation(
   data: Partial<Pick<AssociationRecord, "currency" | "country" | "legal_framework" | "tenant_type" | "stripe_connect_account_id">>,
 ): Promise<AssociationRecord> {
   return request<AssociationRecord>("PATCH", `/super-admin/associations/${id}`, data);
+}
+
+export async function setSuspension(
+  orgId: number,
+  suspended: boolean,
+): Promise<AssociationRecord> {
+  return request<AssociationRecord>("POST", "/super-admin/set-suspension", { orgId, suspended });
+}
+
+export async function setTrialEndDate(
+  orgId: number,
+  trialEndsAt: string,
+): Promise<AssociationRecord> {
+  return request<AssociationRecord>("POST", "/super-admin/set-trial-end", { orgId, trialEndsAt });
 }
 
 // ── Admin Copilot ─────────────────────────────────────────────────────────────

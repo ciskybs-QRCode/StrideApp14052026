@@ -152,7 +152,7 @@ const FAQS = [
   { q: "Do I need a credit card to start the trial?", a: "No. Complete and unrestricted access for 30 days, no strings attached. Your account activates instantly with zero payment details required." },
   { q: "What if an entrance kiosk tablet gets stolen?", a: "Use Revoke Access from your operator phone to force-logout and lock the device remotely. The tablet loses all session access within seconds." },
   { q: "Can I manage multiple venues or classes?", a: "Yes, multi-location architecture is natively supported. Create separate schedules, staff pools, and attendance trackers per venue under one admin account." },
-  { q: "How does per-seat pricing work?", a: "You pay only for active enrolled members each month. If a student unenrolls mid-month, they drop off your bill immediately. No flat fees, no minimums." },
+  { q: "How does QR-code pricing work?", a: "You pay per active QR code each month. Each member, dependent, admin account, and kiosk terminal counts as one billable QR. Volume discounts apply automatically: $1.20 for the first 100, $1.05 up to 300, and $0.90 above that. Authorized pick-up contacts are always free of charge. No flat fees, no minimums." },
   { q: "Is my members' data private and secure?", a: "Each school's data is in a fully isolated tenant environment. Cross-tenant access is architecturally impossible. All traffic is encrypted in transit and at rest." },
 ];
 
@@ -160,12 +160,27 @@ const FAQS = [
 
 function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [members, setMembers] = useState(50);
-  const [currency, setCurrency] = useState<"AUD" | "EUR">("AUD");
+  const [qrCodes, setQrCodes] = useState(50);
+  const [currency, setCurrency] = useState<"USD" | "AUD" | "EUR">("USD");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const symbol = currency === "AUD" ? "A$" : "\u20AC";
-  const monthlyTotal = (members * 1.5).toFixed(2);
+  const FX:  Record<"USD" | "AUD" | "EUR", number> = { USD: 1, AUD: 1.55, EUR: 0.93 };
+  const SYM: Record<"USD" | "AUD" | "EUR", string> = { USD: "$", AUD: "A$", EUR: "\u20AC" };
+  const symbol = SYM[currency];
+  const fx = FX[currency];
+  const calcQRBill = (qr: number): number => {
+    if (qr <= 0) return 0;
+    let total = 0;
+    let rem = qr;
+    if (rem > 0) { const u = Math.min(rem, 100); total += u * 1.20 * fx; rem -= u; }
+    if (rem > 0) { const u = Math.min(rem, 200); total += u * 1.05 * fx; rem -= u; }
+    if (rem > 0) { total += rem * 0.90 * fx; }
+    return Math.round(total * 100) / 100;
+  };
+  const monthlyTotal = calcQRBill(qrCodes).toFixed(2);
+  const perQRRate = qrCodes > 0 ? (calcQRBill(qrCodes) / qrCodes).toFixed(3) : "0.000";
+  const flatCost = qrCodes * 1.20 * fx;
+  const volumeSavings = qrCodes > 100 ? Math.max(0, flatCost - calcQRBill(qrCodes)).toFixed(2) : null;
 
   return (
     <div className="bg-white text-slate-900 min-h-screen overflow-x-hidden font-sans">
@@ -763,11 +778,15 @@ function Landing() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-24">
           <div className="text-center mb-14">
             <span className="inline-block bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">Pricing</span>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900">Pay Only for Active Members.</h2>
-            <p className="mt-4 text-slate-500 max-w-lg mx-auto">No flat fees. No minimum seats. No commission. The moment a member unenrolls, you stop paying.</p>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">Pay Per Active QR Code.</h2>
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">
+              No flat fees. No commissions. Volume discounts kick in automatically.
+              Pick-up contacts are always free.
+            </p>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 shadow-lg shadow-slate-100">
+            {/* Free trial badge */}
             <div className="flex justify-center mb-8">
               <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-5 py-2">
                 <span className="text-amber-500 text-lg">🎉</span>
@@ -775,63 +794,94 @@ function Landing() {
               </div>
             </div>
 
+            {/* Currency selector */}
             <div className="flex justify-center gap-2 mb-8">
-              {(["AUD", "EUR"] as const).map(cur => (
+              {(["USD", "AUD", "EUR"] as const).map(cur => (
                 <button key={cur} onClick={() => setCurrency(cur)}
                   className={`px-5 py-2 rounded-lg text-sm font-bold transition-colors ${
                     currency === cur
                       ? "bg-[#1E3A8A] text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}>
-                  {cur === "AUD" ? "A$ AUD" : "\u20AC EUR"}
+                  {cur === "USD" ? "$ USD" : cur === "AUD" ? "A$ AUD" : "\u20AC EUR"}
                 </button>
               ))}
             </div>
 
-            <div className="mb-8">
+            {/* QR code slider */}
+            <div className="mb-3">
               <div className="flex justify-between text-xs text-slate-400 mb-3">
-                <span>0 members</span>
-                <span className="text-[#1E3A8A] font-semibold text-sm">{members} active members</span>
-                <span>500 members</span>
+                <span>10 QR codes</span>
+                <span className="text-[#1E3A8A] font-bold text-sm">{qrCodes} active QR codes</span>
+                <span>1,000 QR codes</span>
               </div>
-              <input type="range" min={0} max={500} step={1} value={members}
-                onChange={e => setMembers(Number(e.target.value))}
+              <input type="range" min={10} max={1000} step={10} value={qrCodes}
+                onChange={e => setQrCodes(Number(e.target.value))}
                 className="stride-slider w-full h-2 rounded-full appearance-none cursor-pointer"
-                style={{ background: `linear-gradient(to right, #1E3A8A ${(members / 500) * 100}%, #e2e8f0 ${(members / 500) * 100}%)` }}
+                style={{ background: `linear-gradient(to right, #1E3A8A ${((qrCodes - 10) / 990) * 100}%, #e2e8f0 ${((qrCodes - 10) / 990) * 100}%)` }}
               />
             </div>
 
+            {/* Tier indicator strip */}
+            <div className="flex gap-1 mb-8 text-xs">
+              <div className={`flex-none px-3 py-1 rounded-full font-bold transition-colors ${qrCodes <= 100 ? "bg-[#1E3A8A] text-white" : "bg-slate-100 text-slate-400"}`}>
+                Tier 1 · 1–100
+              </div>
+              <div className={`flex-none px-3 py-1 rounded-full font-bold transition-colors ${qrCodes > 100 && qrCodes <= 300 ? "bg-[#1E3A8A] text-white" : "bg-slate-100 text-slate-400"}`}>
+                Tier 2 · 101–300
+              </div>
+              <div className={`flex-none px-3 py-1 rounded-full font-bold transition-colors ${qrCodes > 300 ? "bg-[#1E3A8A] text-white" : "bg-slate-100 text-slate-400"}`}>
+                Tier 3 · 301+
+              </div>
+            </div>
+
+            {/* Price display */}
             <div className="text-center bg-slate-50 border border-slate-100 rounded-2xl px-6 py-7 mb-6">
-              {members === 0 ? (
-                <div>
-                  <div className="text-4xl font-black text-slate-900 mb-2">{symbol}0.00<span className="text-xl text-slate-400 font-normal">/mo</span></div>
-                  <p className="text-slate-400 text-sm">You pay nothing with 0 active members.</p>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-4xl sm:text-5xl font-black text-[#1E3A8A] mb-2">
-                    {symbol}{monthlyTotal}<span className="text-xl text-slate-500 font-normal">/mo</span>
-                  </div>
-                  <p className="text-slate-600 text-base leading-relaxed mt-2">
-                    Have <span className="font-bold text-slate-900">{members}</span> active members?{" "}
-                    You only pay <span className="font-bold text-[#1E3A8A]">{symbol}{monthlyTotal}/month</span>.
-                  </p>
-                  <p className="text-slate-400 text-sm mt-2">If a member unenrolls, you instantly stop paying for them.</p>
+              <div className="text-4xl sm:text-5xl font-black text-[#1E3A8A] mb-2">
+                {symbol}{monthlyTotal}
+                <span className="text-xl text-slate-500 font-normal">/mo</span>
+              </div>
+              <p className="text-slate-600 text-sm mt-2">
+                {qrCodes} QR codes &nbsp;&middot;&nbsp;{" "}
+                <span className="font-semibold">{symbol}{perQRRate} effective rate per QR</span>
+              </p>
+              {volumeSavings && parseFloat(volumeSavings) > 0 && (
+                <div className="inline-flex items-center gap-1.5 mt-3 bg-green-50 border border-green-200 rounded-full px-4 py-1.5">
+                  <span className="text-green-600 text-xs font-bold">
+                    Volume discount saves you {symbol}{volumeSavings}/mo vs flat rate
+                  </span>
                 </div>
               )}
             </div>
 
+            {/* Tier rate cards */}
             <div className="flex flex-col sm:flex-row gap-4 text-center mb-8">
               {[
-                { v: `${symbol}1.50`, sub: "per active seat / month" },
-                { v: "0%", sub: "platform commission" },
-                { v: "30 days", sub: "completely free trial" },
-              ].map(({ v, sub }) => (
-                <div key={sub} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-4">
-                  <div className="text-[#1E3A8A] font-black text-xl">{v}</div>
-                  <div className="text-slate-400 text-xs mt-1">{sub}</div>
+                { tier: "Tier 1", range: "1–100 QR codes",   rate: `${symbol}${(1.20 * fx).toFixed(2)}`, active: qrCodes <= 100 },
+                { tier: "Tier 2", range: "101–300 QR codes", rate: `${symbol}${(1.05 * fx).toFixed(2)}`, active: qrCodes > 100 && qrCodes <= 300 },
+                { tier: "Tier 3", range: "301+ QR codes",    rate: `${symbol}${(0.90 * fx).toFixed(2)}`, active: qrCodes > 300 },
+              ].map(({ tier, range, rate, active }) => (
+                <div key={tier}
+                  className={`flex-1 rounded-xl px-4 py-4 border transition-all ${
+                    active
+                      ? "bg-[#1E3A8A] border-[#1E3A8A] text-white shadow-md shadow-blue-200"
+                      : "bg-slate-50 border-slate-100"
+                  }`}
+                >
+                  <div className={`font-black text-xl ${active ? "text-amber-300" : "text-[#1E3A8A]"}`}>{rate}</div>
+                  <div className={`text-xs mt-0.5 font-bold ${active ? "text-blue-200" : "text-slate-400"}`}>per QR / month</div>
+                  <div className={`text-xs mt-1 ${active ? "text-blue-100" : "text-slate-400"}`}>{range}</div>
+                  {active && (
+                    <div className="mt-2 text-xs font-bold text-amber-300 uppercase tracking-wide">Your Tier</div>
+                  )}
                 </div>
               ))}
+            </div>
+
+            {/* Free pick-up contacts note */}
+            <div className="flex items-center justify-center gap-2 mb-8 text-sm text-slate-500 bg-green-50 rounded-xl px-4 py-3 border border-green-100">
+              <span className="text-green-500 font-bold text-base">✓</span>
+              <span>Authorized pick-up contacts are always <strong className="text-green-700">free of charge</strong></span>
             </div>
 
             <div className="text-center">
