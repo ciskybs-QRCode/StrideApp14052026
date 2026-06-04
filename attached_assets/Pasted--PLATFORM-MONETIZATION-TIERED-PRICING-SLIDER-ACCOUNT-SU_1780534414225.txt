@@ -1,0 +1,38 @@
+🚨 PLATFORM MONETIZATION, TIERED PRICING SLIDER & ACCOUNT SUSPENSION LOGIC 🚨
+
+Role: Expert Senior Full-Stack Developer & SaaS Architect.
+Objective: Implement the complete billing infrastructure, tiered volume pricing calculator, custom Super Admin subscription overrides, and strict application lockout mechanisms.
+
+CRITICAL ARCHITECTURAL CONSTRAINTS:
+- Do NOT alter, delete, or break existing authentication, functional database records, or scanner endpoints. Maintain 100% continuity.
+- Theme: Deep Navy Blue (#0A1128) and Gold (#D4AF37).
+- Language: 100% STRICT ENGLISH across all interface elements.
+- Boundary Containment: Ensure all components, billing tables, and sliders wrap perfectly within mobile screen viewports with ZERO overflow.
+
+Please implement the following business logic and UI updates:
+
+1. SUPER ADMIN SUBSCRIPTION OVERRIDES
+- File/Section: `app/(super-admin)/dashboard.tsx`.
+- Feature: Add a management section where the Super Admin can view registered associations and manually override their billing/trial parameters.
+- Logic: Provide inputs to set custom trial end dates, grant a specific number of free weeks/months (e.g., promotional 6-month trial for international expansions), or completely pause/resume billing status.
+
+2. TIERED SCALABLE PRICING LOGIC
+- Implement an automated backend function that calculates the monthly bill based strictly on the number of **Active QR Codes** (Count: Admin + Kiosks + Active Members + Dependents).
+- Excluded: Authorized Pick-up/Emergency contacts are 100% FREE ($0.00).
+- Volume Discount Tiers:
+  - 1 to 100 QR Codes: $1.20 USD / QR / month.
+  - 101 to 300 QR Codes: $1.05 USD / QR / month.
+  - 301+ QR Codes: $0.90 USD / QR / month.
+- Ensure the database auto-updates the subscription total dynamically whenever a new member/dependent or kiosk is added or deleted.
+
+3. WEB LANDING PAGE: INTERACTIVE PRICING SLIDER
+- Location: Pricing section of the public website landing page.
+- Component: Create a gorgeous, responsive UI slider component.
+- Behavior: Moving the slider adjusts the number of projected QR codes (from 10 to 1,000) and dynamically calculates and prints the monthly subscription cost in real-time based on the volume discount tiers. Explicitly feature a text subtitle: *"Authorized Pick-up contacts are always free of charge."*
+
+4. ADMIN BILLING CENTER & APPLICATION LOCKOUT
+- Location: `Admin / Settings / Subscription & Billing`.
+- Features: Display active QR counts, breakdown of costs per category, current payment method details, and a billing history table.
+- HARD LOCKOUT LOGIC: If an association's trial expires or payment fails, set `accountStatus: "SUSPENDED"`.
+- Behavior: When suspended, apply a global navigation guard. Every route inside the app must force-redirect to the Billing Center screen. All core functions (Scanning, Messaging, Activity, Rostering) must be strictly locked down.
+- Data Retention Warning: Display a high-visibility warning banner on the lockout screen: *"Account Suspended. Your data will be safely stored for 30 days. If unpaid, all organization data will be permanently purged from the database."* Unlocking the account via successful payment must instantly restore full system state to `"ACTIVE"`.
