@@ -82,22 +82,40 @@ router.get(
         .select("*")
         .order("id");
       if (error) { res.json([]); return; }
-      res.json(
-        (data ?? []).map((o: Record<string, unknown>) => ({
-          id:                       o["id"],
-          name:                     o["name"] ?? "",
-          currency:                 o["currency"] ?? "EUR",
-          country:                  o["country"] ?? "AU",
-          legal_framework:          o["legal_framework"] ?? null,
-          tenant_type:              o["tenant_type"] ?? "commercial",
+      const orgList = (data ?? []) as Record<string, unknown>[];
+
+      // Merge discount data from pool (separate DB)
+      const orgIds = orgList.map(o => o["id"]).filter(Boolean);
+      const discountMap = new Map<number, { discount_rate: number; discount_duration_end: string | null }>();
+      if (orgIds.length > 0) {
+        await pool.query(
+          `SELECT org_id, discount_rate::float AS discount_rate, discount_duration_end
+           FROM platform_org_discounts WHERE org_id = ANY($1)`,
+          [orgIds],
+        ).then(r => {
+          for (const row of r.rows) discountMap.set(row.org_id, row);
+        }).catch(() => {});
+      }
+
+      res.json(orgList.map(o => {
+        const d = discountMap.get(o["id"] as number);
+        return {
+          id:                        o["id"],
+          name:                      o["name"] ?? "",
+          currency:                  o["currency"] ?? "EUR",
+          country:                   o["country"] ?? "AU",
+          legal_framework:           o["legal_framework"] ?? null,
+          tenant_type:               o["tenant_type"] ?? "commercial",
           stripe_connect_account_id: o["stripe_connect_account_id"] ?? null,
-          trial_started_at:         o["trial_started_at"] ?? null,
-          trial_ends_at:            o["trial_ends_at"] ?? null,
-          is_trial_extended:        o["is_trial_extended"] ?? false,
-          subscription_status:      o["subscription_status"] ?? "trialing",
-          cost_per_seat_cents:      o["cost_per_seat_cents"] ?? 150,
-        })),
-      );
+          trial_started_at:          o["trial_started_at"] ?? null,
+          trial_ends_at:             o["trial_ends_at"] ?? null,
+          is_trial_extended:         o["is_trial_extended"] ?? false,
+          subscription_status:       o["subscription_status"] ?? "trialing",
+          cost_per_seat_cents:       o["cost_per_seat_cents"] ?? 150,
+          discount_rate:             d ? d.discount_rate : null,
+          discount_duration_end:     d ? d.discount_duration_end : null,
+        };
+      }));
     } catch { res.json([]); }
   },
 );
@@ -192,6 +210,107 @@ router.patch(
       if (error) { res.status(500).json({ error: error.message }); return; }
       if (!updated) { res.status(404).json({ error: "Organization not found" }); return; }
       res.json(updated);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
+  },
+);
+
+// ── POST /super-admin/set-suspension (legacy client compat) ───────────────────
+router.post(
+  "/super-admin/set-suspension",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const { orgId, suspended } = req.body as { orgId?: number; suspended?: boolean };
+    if (!orgId || typeof suspended !== "boolean") {
+      res.status(400).json({ error: "orgId and suspended (boolean) are required" }); return;
+    }
+    try {
+      const { data: updated, error } = await sa
+        .from("organizations")
+        .update({ subscription_status: suspended ? "suspended" : "trialing" })
+        .eq("id", orgId)
+        .select("id, name, subscription_status, trial_ends_at, is_trial_extended")
+        .maybeSingle();
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      if (!updated) { res.status(404).json({ error: "Organization not found" }); return; }
+      res.json(updated);
+    } catch (e) { res.status(500).json({ error: (e as Error).message }); }
+  },
+);
+
+// ── POST /super-admin/set-trial-end (legacy client compat) ────────────────────
+router.post(
+  "/super-admin/set-trial-end",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const { orgId, trialEndsAt } = req.body as { orgId?: number; trialEndsAt?: string };
+    if (!orgId || !trialEndsAt) {
+      res.status(400).json({ error: "orgId and trialEndsAt are required" }); return;
+    }
+    try {
+      const { data: updated, error } = await sa
+        .from("organizations")
+        .update({ trial_ends_at: trialEndsAt, is_trial_extended: true })
+        .eq("id", orgId)
+        .select("id, name, trial_ends_at, is_trial_extended")
+        .maybeSingle();
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      if (!updated) { res.status(404).json({ error: "Organization not found" }); return; }
+      res.json(updated);
+    } catch (e) { res.status(500).json({ error: (e as Error).message }); }
+  },
+);
+
+// ── PATCH /super-admin/associations/:id/discount ──────────────────────────────
+router.patch(
+  "/super-admin/associations/:id/discount",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const id = Number(req.params["id"]);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid org ID" }); return; }
+
+    const { discount_rate, duration_months } = req.body as {
+      discount_rate?: number; duration_months?: number;
+    };
+    if (discount_rate === undefined || discount_rate < 0 || discount_rate > 100) {
+      res.status(400).json({ error: "discount_rate (0–100) is required" }); return;
+    }
+    if (!duration_months || duration_months < 1 || duration_months > 120) {
+      res.status(400).json({ error: "duration_months (1–120) is required" }); return;
+    }
+
+    const discount_duration_end = new Date(
+      Date.now() + duration_months * 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    try {
+      const { rows: [row] } = await pool.query(
+        `INSERT INTO platform_org_discounts (org_id, discount_rate, discount_duration_end, updated_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (org_id) DO UPDATE
+           SET discount_rate         = EXCLUDED.discount_rate,
+               discount_duration_end = EXCLUDED.discount_duration_end,
+               updated_at            = NOW()
+         RETURNING org_id, discount_rate::float AS discount_rate, discount_duration_end`,
+        [id, discount_rate, discount_duration_end],
+      );
+
+      pool.query(
+        `INSERT INTO platform_events (event_type, title, description, payload)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          "discount_applied",
+          `Discount applied to org ${id}`,
+          `${discount_rate}% discount for ${duration_months} month(s), expires ${new Date(discount_duration_end).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`,
+          JSON.stringify({ orgId: id, discount_rate, duration_months, discount_duration_end }),
+        ],
+      ).catch(() => {});
+
+      res.json(row);
     } catch (e) {
       res.status(500).json({ error: (e as Error).message });
     }

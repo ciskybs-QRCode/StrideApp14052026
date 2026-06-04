@@ -1,0 +1,31 @@
+🚨 EXCLUSIVE SUPER-ADMIN ROLE PRIVILEGES, MODE SWITCHING & TENANT MANAGEMENT INTERFACE 🚨
+
+Role: Expert Senior Full-Stack Developer & SaaS Architect.
+Objective: Enforce strict exclusive access for the primary Super Admin account, implement a layout toggle to view the standard Admin Home, and build a Tenant Management suite to extend trials or apply custom discounts.
+
+1. EXCLUSIVE SUPER-ADMIN LANDING & WORKSPACE
+- Master Super-Admin Email: "ciskybs@gmail.com" (This is currently the SOLE account with global platform control).
+- Post-Login Behavior: When "ciskybs@gmail.com" authenticates, route them instantly and directly to the Super Admin Dashboard.
+
+2. "SWITCH TO ADMIN VIEW" WORKFLOW
+- Inside the Super Admin Dashboard, add a clean, high-contrast action button labeled "Switch to Organization View" or "View as Standard Admin".
+- Behavior: Tapping this button must smoothly render the standard Admin Home layout underneath, displaying the sequence of clean White minimalist cards we built:
+  [1] Admin AI support
+  [2] Smart Rostering AI
+  [3] Analytics
+- Provide a persistent, clean Gold sticky header or floating return button ONLY visible to the Super Admin that says "Return to Super Admin Panel" so you can toggle back and forth instantly.
+
+3. TENANT PROMO & TRIAL MANAGEMENT WORKSPACE
+On the main Super Admin Dashboard screen, implement the following feature block:
+- Organization Search Slot: A real-time search bar to query and select registered schools/associations from the Supabase tenants table.
+- Free Trial Extension Tool:
+  - Add selector inputs (Dropdown/Fields) to extend the selected organization's free trial by a custom duration (options: Days, Weeks, Months).
+  - Tapping "Update Trial" must programmatically extend and save the new 'trial_end_date' in the database.
+- Custom Discount Engine:
+  - Add an input field for "Discount Percentage (%)" and a duration/cycle picker (e.g., Apply 20% discount for 3 months).
+  - Tapping "Apply Discount" must save these values ('discount_rate', 'discount_duration_end') into that specific organization's billing row in Supabase.
+
+VISUAL COMPLIANCE & THEME:
+- Theme Continuity: Deep Navy Blue (#0A1128) canvas, Premium Gold (#D4AF37) controls/borders, and White minimalist info cards.
+- UI Language: 100% STRICT ENGLISH for all interface text, labels, placeholder search text, and buttons.
+- Screen Containment: Ensure the search results dropdown, inputs, and toggle navigation are fully responsive, with zero layout clipping or horizontal viewport breaking on mobile screens.

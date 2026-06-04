@@ -26,6 +26,13 @@ const DEFAULT_GATEWAYS = [
 
 async function ensurePlatformTables(): Promise<void> {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS platform_org_discounts (
+      org_id                INTEGER PRIMARY KEY,
+      discount_rate         NUMERIC(5,2) NOT NULL DEFAULT 0,
+      discount_duration_end TIMESTAMPTZ,
+      created_at            TIMESTAMPTZ DEFAULT NOW(),
+      updated_at            TIMESTAMPTZ DEFAULT NOW()
+    );
     CREATE TABLE IF NOT EXISTS super_admin_collaborators (
       id          SERIAL PRIMARY KEY,
       email       TEXT NOT NULL UNIQUE,

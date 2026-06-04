@@ -1130,6 +1130,8 @@ export type AssociationRecord = {
   subscription_status?: "active" | "trialing" | "past_due" | "suspended" | "expired";
   cost_per_seat_cents?: number;
   member_count?: number;
+  discount_rate?: number | null;
+  discount_duration_end?: string | null;
 };
 
 export type PlatformEvent = {
@@ -1184,6 +1186,18 @@ export async function setTrialEndDate(
   trialEndsAt: string,
 ): Promise<AssociationRecord> {
   return request<AssociationRecord>("POST", "/super-admin/set-trial-end", { orgId, trialEndsAt });
+}
+
+export async function applyDiscount(
+  orgId: number,
+  discountRate: number,
+  durationMonths: number,
+): Promise<{ org_id: number; discount_rate: number; discount_duration_end: string }> {
+  return request(
+    "PATCH",
+    `/super-admin/associations/${orgId}/discount`,
+    { discount_rate: discountRate, duration_months: durationMonths },
+  );
 }
 
 // ── Admin Copilot ─────────────────────────────────────────────────────────────
