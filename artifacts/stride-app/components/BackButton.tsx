@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Platform, Pressable, StyleSheet } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const GOLD = "#D4AF37";
@@ -27,21 +27,23 @@ export function BackButton({ onPress }: BackButtonProps) {
     }
   };
 
+  const topOffset = insets.top + (Platform.OS === "web" ? 72 : 6);
+
   return (
     <Pressable
       style={({ pressed }) => [
         styles.btn,
-        {
-          top: insets.top + (Platform.OS === "web" ? 70 : 10),
-          opacity: pressed ? 0.72 : 1,
-        },
+        { top: topOffset, opacity: pressed ? 0.65 : 1 },
       ]}
       onPress={handlePress}
-      hitSlop={12}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       accessibilityRole="button"
       accessibilityLabel="Go back"
     >
-      <Ionicons name="chevron-back" size={20} color={GOLD} />
+      <View style={styles.inner}>
+        <Ionicons name="chevron-back" size={18} color={GOLD} />
+        <Text style={styles.label}>Back</Text>
+      </View>
     </Pressable>
   );
 }
@@ -49,18 +51,25 @@ export function BackButton({ onPress }: BackButtonProps) {
 const styles = StyleSheet.create({
   btn: {
     position: "absolute",
-    left: 14,
+    left: 12,
     zIndex: 999,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: NAVY,
+  },
+  inner: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    gap: 2,
+    backgroundColor: NAVY,
+    borderWidth: 1,
+    borderColor: "rgba(212,175,55,0.35)",
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingLeft: 6,
+    paddingRight: 10,
+  },
+  label: {
+    color: GOLD,
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.2,
   },
 });
