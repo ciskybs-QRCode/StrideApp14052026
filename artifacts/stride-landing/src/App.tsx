@@ -3,6 +3,192 @@ import { Route, Switch } from "wouter";
 import Register from "./pages/Register";
 import Activate from "./pages/Activate";
 
+// ── Inline Registration Modal ─────────────────────────────────────────────────
+
+function RegisterModal({ onClose }: { onClose: () => void }) {
+  const [orgName,   setOrgName]   = useState("");
+  const [email,     setEmail]     = useState("");
+  const [password,  setPassword]  = useState("");
+  const [confirm,   setConfirm]   = useState("");
+  const [showPwd,   setShowPwd]   = useState(false);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState("");
+  const [success,   setSuccess]   = useState<{ email: string; activationUrl?: string } | null>(null);
+
+  const submit = async () => {
+    setError("");
+    if (!orgName.trim())                                                   { setError("Please enter your organization name."); return; }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Please enter a valid email address."); return; }
+    if (password.length < 8)                                               { setError("Password must be at least 8 characters."); return; }
+    if (password !== confirm)                                              { setError("Passwords do not match."); return; }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:     email.trim().split("@")[0],
+          email:    email.trim().toLowerCase(),
+          password,
+          org_slug: orgName.trim(),
+          source:   "web_landing",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Registration failed. Please try again."); return; }
+      setSuccess({ email: email.trim().toLowerCase(), activationUrl: data.activationUrl });
+    } catch {
+      setError("Connection error. Please check your network and try again.");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 bg-[#0A1128]/90 backdrop-blur-sm"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="relative w-full max-w-md bg-[#0D1B3E] border border-[#D4AF37]/25 rounded-3xl shadow-2xl shadow-black/60 overflow-hidden">
+        {/* Gold top bar */}
+        <div className="h-1 w-full bg-gradient-to-r from-[#D4AF37]/40 via-[#D4AF37] to-[#D4AF37]/40" />
+
+        <div className="p-8">
+          {/* Close */}
+          <button
+            onClick={onClose}
+            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {success ? (
+            /* Success state */
+            <div className="text-center py-4">
+              <div className="w-16 h-16 rounded-full bg-[#D4AF37]/15 border-2 border-[#D4AF37]/40 flex items-center justify-center mx-auto mb-5">
+                <svg className="w-8 h-8 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-black text-white mb-2">Account Created!</h3>
+              <p className="text-[#D4AF37] text-sm font-semibold mb-4">Check your inbox to activate</p>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                A verification link was sent to <strong className="text-white">{success.email}</strong>.
+                Click it to activate your account, then open the Stride app to access your admin workspace.
+              </p>
+              {success.activationUrl && (
+                <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-4 mb-5 text-left">
+                  <p className="text-amber-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">Dev — Activation Link</p>
+                  <a href={success.activationUrl} className="text-[#D4AF37] text-xs break-all underline">
+                    {success.activationUrl}
+                  </a>
+                </div>
+              )}
+              <div className="flex flex-col gap-3">
+                {[
+                  { n: "1", t: "Open the verification email" },
+                  { n: "2", t: "Click \"Activate My Account\"" },
+                  { n: "3", t: "Log into the Stride app" },
+                ].map(s => (
+                  <div key={s.n} className="flex items-center gap-3 bg-white/4 rounded-xl px-4 py-3">
+                    <span className="w-6 h-6 rounded-full bg-[#D4AF37] text-[#0A1128] text-xs font-black flex items-center justify-center flex-shrink-0">{s.n}</span>
+                    <span className="text-slate-300 text-sm">{s.t}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={onClose} className="mt-6 w-full bg-[#D4AF37] text-[#0A1128] font-bold py-3.5 rounded-xl text-sm hover:bg-amber-400 transition-colors">
+                Back to Home
+              </button>
+            </div>
+          ) : (
+            /* Form state */
+            <>
+              <div className="mb-6">
+                <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/25 rounded-full px-3 py-1 mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
+                  <span className="text-[#D4AF37] text-[10px] font-bold tracking-widest uppercase">30 Days Free — No Card Required</span>
+                </div>
+                <h2 className="text-2xl font-black text-white leading-tight">Create Your Account</h2>
+                <p className="text-slate-400 text-sm mt-1.5">Set up your organization in under 60 seconds.</p>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {/* Org Name */}
+                <div>
+                  <label className="block text-[#D4AF37] text-xs font-bold uppercase tracking-wider mb-1.5">Organization Name</label>
+                  <input type="text" placeholder="e.g. Apex Sports Academy"
+                    value={orgName} onChange={e => { setOrgName(e.target.value); setError(""); }}
+                    className="w-full bg-[#0A1128] border border-[#D4AF37]/25 focus:border-[#D4AF37] text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors"
+                    autoFocus />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-[#D4AF37] text-xs font-bold uppercase tracking-wider mb-1.5">Administrator Email</label>
+                  <input type="email" placeholder="admin@yourorg.com"
+                    value={email} onChange={e => { setEmail(e.target.value); setError(""); }}
+                    className="w-full bg-[#0A1128] border border-[#D4AF37]/25 focus:border-[#D4AF37] text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors" />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-[#D4AF37] text-xs font-bold uppercase tracking-wider mb-1.5">Password</label>
+                  <div className="relative">
+                    <input type={showPwd ? "text" : "password"} placeholder="Min. 8 characters"
+                      value={password} onChange={e => { setPassword(e.target.value); setError(""); }}
+                      className="w-full bg-[#0A1128] border border-[#D4AF37]/25 focus:border-[#D4AF37] text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm outline-none transition-colors" />
+                    <button type="button" onClick={() => setShowPwd(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors text-sm">
+                      {showPwd ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-[#D4AF37] text-xs font-bold uppercase tracking-wider mb-1.5">Confirm Password</label>
+                  <input type="password" placeholder="Re-enter your password"
+                    value={confirm} onChange={e => { setConfirm(e.target.value); setError(""); }}
+                    className={`w-full bg-[#0A1128] border focus:border-[#D4AF37] text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors ${
+                      confirm && confirm !== password ? "border-red-500/60" : "border-[#D4AF37]/25"
+                    }`} />
+                  {confirm && confirm !== password && (
+                    <p className="text-red-400 text-xs mt-1.5 ml-1">Passwords do not match</p>
+                  )}
+                </div>
+              </div>
+
+              {error && (
+                <div className="mt-4 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+
+              <button onClick={submit} disabled={loading}
+                className="mt-5 w-full bg-[#D4AF37] text-[#0A1128] font-black py-4 rounded-xl text-sm hover:bg-amber-400 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-[#D4AF37]/20">
+                {loading ? (
+                  <><span className="w-4 h-4 border-2 border-[#0A1128]/30 border-t-[#0A1128] rounded-full animate-spin" /> Creating account…</>
+                ) : (
+                  <><span>Get Started — 30 Days Free</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg></>
+                )}
+              </button>
+
+              <p className="text-center text-slate-600 text-xs mt-4">
+                Already have an account?{" "}
+                <a href="/" className="text-[#D4AF37] hover:underline font-semibold">Back to home</a>
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 const IconEye = () => (
@@ -159,10 +345,11 @@ const FAQS = [
 // ── Landing ───────────────────────────────────────────────────────────────────
 
 function Landing() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [qrCodes, setQrCodes] = useState(50);
-  const [currency, setCurrency] = useState<"USD" | "AUD" | "EUR">("USD");
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [menuOpen,   setMenuOpen]   = useState(false);
+  const [showModal,  setShowModal]  = useState(false);
+  const [qrCodes,    setQrCodes]    = useState(50);
+  const [currency,   setCurrency]   = useState<"USD" | "AUD" | "EUR">("USD");
+  const [openFaq,    setOpenFaq]    = useState<number | null>(null);
 
   const FX:  Record<"USD" | "AUD" | "EUR", number> = { USD: 1, AUD: 1.55, EUR: 0.93 };
   const SYM: Record<"USD" | "AUD" | "EUR", string> = { USD: "$", AUD: "A$", EUR: "\u20AC" };
@@ -198,10 +385,10 @@ function Landing() {
             {[["#pain-points", "Why Us"], ["#ai-cores", "AI Cores"], ["#how-it-works", "How It Works"], ["#features", "Features"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
               <a key={label} href={href} className="text-sm text-slate-600 hover:text-[#1E3A8A] font-medium transition-colors">{label}</a>
             ))}
-            <a href="/register"
+            <button onClick={() => setShowModal(true)}
               className="bg-[#1E3A8A] text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-[#1e3070] transition-colors">
-              Get Started
-            </a>
+              Get Started Free
+            </button>
           </div>
 
           <button className="md:hidden text-slate-500 p-1" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
@@ -219,11 +406,11 @@ function Landing() {
               <a key={label} href={href} className="text-sm text-slate-600 hover:text-[#1E3A8A] font-medium"
                 onClick={() => setMenuOpen(false)}>{label}</a>
             ))}
-            <a href="/register"
+            <button
               className="bg-[#1E3A8A] text-white text-sm font-bold px-5 py-3 rounded-lg text-center"
-              onClick={() => setMenuOpen(false)}>
-              Get Started / Schedule Pilot
-            </a>
+              onClick={() => { setMenuOpen(false); setShowModal(true); }}>
+              Get Started Free
+            </button>
           </div>
         )}
       </nav>
@@ -257,18 +444,18 @@ function Landing() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <a href="/register"
-                className="inline-flex items-center justify-center gap-2 bg-amber-400 text-slate-900 font-black px-8 py-4 rounded-xl text-base hover:bg-amber-300 transition-colors shadow-lg shadow-amber-200">
-                Get Started / Schedule Pilot
+              <button onClick={() => setShowModal(true)}
+                className="inline-flex items-center justify-center gap-2 bg-[#D4AF37] text-[#0A1128] font-black px-8 py-4 rounded-xl text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-200">
+                Get Started Now — 30 Days Free
                 <IconArrow />
-              </a>
+              </button>
               <a href="#features"
                 className="inline-flex items-center justify-center gap-2 bg-white border-2 border-slate-200 text-slate-700 font-semibold px-8 py-4 rounded-xl text-base hover:border-[#1E3A8A] hover:text-[#1E3A8A] transition-colors">
                 See how it works
               </a>
             </div>
 
-            <p className="mt-4 text-sm text-slate-400">No credit card required. Setup in 60 seconds.</p>
+            <p className="mt-4 text-sm text-slate-400">No credit card required. Live in 60 seconds.</p>
           </div>
 
           {/* Phone mockup — light version */}
@@ -695,10 +882,10 @@ function Landing() {
               <div className="text-slate-900 font-bold mb-1">Ready to make the switch?</div>
               <div className="text-sm text-slate-500">Up and running in under an hour. No migration complexity.</div>
             </div>
-            <a href="/register"
-              className="flex-shrink-0 sm:ml-auto bg-amber-400 text-slate-900 font-bold px-6 py-3 rounded-xl text-sm hover:bg-amber-300 transition-colors whitespace-nowrap shadow-md shadow-amber-100">
-              Get Started / Schedule Pilot
-            </a>
+            <button onClick={() => setShowModal(true)}
+              className="flex-shrink-0 sm:ml-auto bg-[#D4AF37] text-[#0A1128] font-bold px-6 py-3 rounded-xl text-sm hover:bg-amber-400 transition-colors whitespace-nowrap shadow-md shadow-amber-100">
+              Get Started — 30 Days Free
+            </button>
           </div>
         </div>
       </section>
@@ -765,10 +952,106 @@ function Landing() {
               <div className="text-slate-900 font-bold mb-1">Multi-currency billing is automatic</div>
               <div className="text-sm text-slate-500">AUD for Australian entities, EUR for European ones. No manual conversion, no FX surprises.</div>
             </div>
-            <a href="/register"
+            <button onClick={() => setShowModal(true)}
               className="flex-shrink-0 sm:ml-auto bg-[#1E3A8A] text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-[#1e3070] transition-colors whitespace-nowrap">
               Get Started Free
-            </a>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SAFETY FIRST ───────────────────────────────────────────────── */}
+      <section id="safety" className="bg-[#0A1128] overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+
+          {/* Header */}
+          <div className="text-center mb-14">
+            <span className="inline-block border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest mb-5">
+              Safety Philosophy
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight mb-5">
+              Child Safety Should Never Be{" "}
+              <span className="text-[#D4AF37]">a Premium Feature.</span>
+            </h2>
+            <p className="text-blue-200/70 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              Every authorized pick-up contact — grandparents, babysitters, emergency contacts — receives
+              a <strong className="text-white">100% free QR Code</strong> for secure access verification.
+              We only bill for active staff and enrolled members.
+            </p>
+          </div>
+
+          {/* Feature cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+            {[
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                      d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                ),
+                title: "Unlimited Pick-Up Delegates",
+                desc: "Add grandparents, babysitters, nannies, and family friends as authorized pick-up contacts — no limit, no charge. Each person gets their own unique QR code.",
+                badge: "Always Free",
+              },
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                      d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
+                  </svg>
+                ),
+                title: "QR-Gated Pick-Up Verification",
+                desc: "The operator scans the delegate's QR at pick-up time. The system instantly cross-checks the authorization list and confirms or flags in under one second.",
+                badge: "Real-Time",
+              },
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                      d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                  </svg>
+                ),
+                title: "Instant Emergency Alerts",
+                desc: "Unauthorized pick-up attempt? The parent receives a push alert in real time, and the operator gets an on-screen SOS with a one-tap emergency call button.",
+                badge: "Zero Delay",
+              },
+            ].map(({ icon, title, desc, badge }) => (
+              <div key={title} className="bg-white/5 border border-[#D4AF37]/20 hover:border-[#D4AF37]/50 rounded-2xl p-7 flex flex-col gap-4 transition-all duration-200 hover:bg-white/8">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] flex-shrink-0">
+                    {icon}
+                  </div>
+                  <span className="text-[10px] font-black text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-2.5 py-1 rounded-full uppercase tracking-widest flex-shrink-0">
+                    {badge}
+                  </span>
+                </div>
+                <h3 className="text-white font-bold text-base leading-snug">{title}</h3>
+                <p className="text-blue-200/60 text-sm leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Pricing philosophy callout */}
+          <div className="relative rounded-2xl overflow-hidden border border-[#D4AF37]/30 bg-gradient-to-br from-[#D4AF37]/8 to-transparent p-7 sm:p-9">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37]/4 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-[#D4AF37] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#D4AF37]/25">
+                <svg className="w-7 h-7 text-[#0A1128]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-black text-lg sm:text-xl leading-snug mb-2">
+                  "We only count active organization staff and members."
+                </p>
+                <p className="text-blue-200/60 text-sm leading-relaxed">
+                  Pick-up contacts, emergency numbers, grandparents — they are never billable QR codes.
+                  Safety infrastructure should scale freely with your community, not lock behind a paywall.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -878,6 +1161,14 @@ function Landing() {
               ))}
             </div>
 
+            {/* Scalability principle */}
+            <div className="bg-[#0A1128] rounded-2xl px-6 py-5 mb-6 border border-[#D4AF37]/20">
+              <p className="text-center text-[#D4AF37] font-bold text-sm leading-relaxed">
+                The larger your organization grows, the less you pay per active code.{" "}
+                <span className="text-white font-normal">Scalable security that grows with your community.</span>
+              </p>
+            </div>
+
             {/* Free pick-up contacts note */}
             <div className="flex items-center justify-center gap-2 mb-8 text-sm text-slate-500 bg-green-50 rounded-xl px-4 py-3 border border-green-100">
               <span className="text-green-500 font-bold text-base">✓</span>
@@ -885,11 +1176,12 @@ function Landing() {
             </div>
 
             <div className="text-center">
-              <a href="/register"
-                className="inline-flex items-center gap-2 bg-amber-400 text-slate-900 font-black px-10 py-4 rounded-xl text-base hover:bg-amber-300 transition-colors shadow-lg shadow-amber-100">
-                Activate Your Free 30 Days
+              <button onClick={() => setShowModal(true)}
+                className="inline-flex items-center gap-2 bg-[#D4AF37] text-[#0A1128] font-black px-10 py-4 rounded-xl text-base hover:bg-amber-400 transition-colors shadow-lg shadow-amber-200">
+                Get Started Now — 30 Days Free
                 <IconArrow />
-              </a>
+              </button>
+              <p className="text-slate-400 text-xs mt-3">No credit card required &nbsp;&middot;&nbsp; Live in 60 seconds</p>
             </div>
           </div>
         </div>
@@ -935,11 +1227,11 @@ function Landing() {
           <p className="text-blue-200 text-lg mb-10 max-w-xl mx-auto">
             Join hundreds of academies already running cleaner, faster, and legally bulletproof operations.
           </p>
-          <a href="/register"
-            className="inline-flex items-center gap-3 bg-amber-400 text-slate-900 font-black px-10 py-5 rounded-xl text-lg hover:bg-amber-300 transition-colors shadow-xl shadow-black/20">
-            Get Started / Schedule Pilot
+          <button onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-3 bg-[#D4AF37] text-[#0A1128] font-black px-10 py-5 rounded-xl text-lg hover:bg-amber-400 transition-colors shadow-xl shadow-black/20">
+            Get Started Now — 30 Days Free Trial
             <IconArrow />
-          </a>
+          </button>
           <p className="mt-5 text-sm text-blue-300">No credit card. No contracts. Cancel any time.</p>
 
           <div className="flex flex-wrap justify-center gap-3 mt-10">
@@ -975,6 +1267,9 @@ function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* ── REGISTRATION MODAL ─────────────────────────────────────────── */}
+      {showModal && <RegisterModal onClose={() => setShowModal(false)} />}
 
     </div>
   );
