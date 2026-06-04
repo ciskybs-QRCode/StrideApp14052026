@@ -117,7 +117,7 @@ function RegisterModal({ onClose }: { onClose: () => void }) {
                 {/* Org Name */}
                 <div>
                   <label className="block text-[#D4AF37] text-xs font-bold uppercase tracking-wider mb-1.5">Organization Name</label>
-                  <input type="text" placeholder="e.g. Apex Sports Academy"
+                  <input type="text" placeholder="e.g. Apex Youth Association"
                     value={orgName} onChange={e => { setOrgName(e.target.value); setError(""); }}
                     className="w-full bg-[#0A1128] border border-[#D4AF37]/25 focus:border-[#D4AF37] text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors"
                     autoFocus />
@@ -330,7 +330,7 @@ const PAIN_POINTS = [
 
 const COMPLIANCE_REGIONS = [
   { flag: "🇦🇺", label: "AU Non-Profit", sub: "WA Cultural Associations", detail: "NFP-compliant invoicing, volunteer roles, and state-level data residency for WA regulations.", currency: "AUD" },
-  { flag: "🇦🇺", label: "AU Commercial", sub: "ABN Studios & Gyms", detail: "Full ABN framework, GST-inclusive pricing, and TFND withholding automation for contractors.", currency: "AUD" },
+  { flag: "🇦🇺", label: "AU Commercial", sub: "ABN Businesses & Organisations", detail: "Full ABN framework, GST-inclusive pricing, and TFND withholding automation for contractors.", currency: "AUD" },
   { flag: "🇪🇺", label: "EU Sportive", sub: "ASD / SSD Legal Entities", detail: "GDPR-native data handling, EUR billing, and compliance scaffolding for Italian and European ASD/SSD structures.", currency: "EUR" },
 ];
 
@@ -431,7 +431,7 @@ function Landing() {
               <br className="hidden sm:block" />
               The AI Platform for{" "}
               <span className="relative inline-block">
-                <span className="relative z-10">Dance &amp; Sports Academies.</span>
+                <span className="relative z-10">Clubs, Schools &amp; Associations.</span>
                 <span className="absolute bottom-1 left-0 w-full h-3 bg-amber-300/40 -z-0 rounded" />
               </span>
             </h1>
@@ -899,7 +899,7 @@ function Landing() {
               4 Pillars That Replace Your Entire Admin Stack
             </h2>
             <p className="mt-4 text-slate-500 max-w-lg mx-auto">
-              Purpose-built for dance schools, martial arts gyms, and cultural associations.
+              Purpose-built for clubs, schools, and associations of every kind.
             </p>
           </div>
 
@@ -1225,7 +1225,7 @@ function Landing() {
             <span className="text-amber-400"> Start Automating Today.</span>
           </h2>
           <p className="text-blue-200 text-lg mb-10 max-w-xl mx-auto">
-            Join hundreds of academies already running cleaner, faster, and legally bulletproof operations.
+            Join hundreds of organisations already running cleaner, faster, and legally bulletproof operations.
           </p>
           <button onClick={() => setShowModal(true)}
             className="inline-flex items-center gap-3 bg-[#D4AF37] text-[#0A1128] font-black px-10 py-5 rounded-xl text-lg hover:bg-amber-400 transition-colors shadow-xl shadow-black/20">
