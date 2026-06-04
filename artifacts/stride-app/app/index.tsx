@@ -48,10 +48,10 @@ export default function Index() {
     }
 
     // ── MASTER EMAIL OVERRIDE ─────────────────────────────────────────────────
-    // Bypass ALL database role checks. Force straight to admin layout so the
-    // Super Admin Dashboard button is always accessible from Settings.
+    // Bypass ALL database role checks. Land directly on the Super Admin
+    // Dashboard — no admin home flash, no intermediate screen.
     if (user && isMasterEmail(user.email)) {
-      router.replace("/(admin)/stats" as never);
+      router.replace("/(super_admin)/dashboard" as never);
       return;
     }
     // ─────────────────────────────────────────────────────────────────────────
