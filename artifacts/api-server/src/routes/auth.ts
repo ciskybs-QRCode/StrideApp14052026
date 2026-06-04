@@ -83,13 +83,12 @@ router.post("/auth/login", async (req, res) => {
       resolvedRole = "super_admin";
     } else {
       try {
-        const { data: collab } = await supabase
-          .from("super_admin_collaborators")
-          .select("id")
-          .ilike("email", normalizedEmail)
-          .limit(1)
-          .maybeSingle();
-        if (collab) resolvedRole = "super_admin";
+        const { rows } = await pool.query(
+          `SELECT id FROM super_admin_collaborators
+           WHERE lower(email) = lower($1) LIMIT 1`,
+          [normalizedEmail],
+        );
+        if (rows.length > 0) resolvedRole = "super_admin";
       } catch { /* table may not exist yet — ignore */ }
     }
   }

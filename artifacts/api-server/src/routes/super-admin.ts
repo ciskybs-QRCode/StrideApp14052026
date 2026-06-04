@@ -4,79 +4,69 @@ import bcrypt from "bcryptjs";
 import { requireAuth, requireRole, signToken, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
 import { pool } from "../lib/pg.js";
+import { supabase } from "../lib/supabase.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
-
-// ── Auto-create platform tables ───────────────────────────────────────────────
-
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS super_admin_collaborators (
-        id          SERIAL PRIMARY KEY,
-        email       TEXT NOT NULL UNIQUE,
-        added_by    TEXT NOT NULL DEFAULT 'system',
-        created_at  TIMESTAMPTZ DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS platform_payment_gateways (
-        id          SERIAL PRIMARY KEY,
-        type        TEXT NOT NULL,
-        label       TEXT NOT NULL,
-        enabled     BOOLEAN DEFAULT TRUE,
-        config      JSONB NOT NULL DEFAULT '{}',
-        sort_order  INTEGER DEFAULT 0,
-        created_at  TIMESTAMPTZ DEFAULT NOW(),
-        updated_at  TIMESTAMPTZ DEFAULT NOW()
-      );
-    `);
-  } catch (e) {
-    console.error("[platform-tables] auto-create skipped:", (e as Error).message);
-  }
-})();
 
 const _url = process.env["SUPABASE_URL"] ?? "";
 const _key = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_KEY"] ?? "";
 const sa = createClient(_url, _key);
 
-// ── GET /super-admin/metrics ───────────────────────────────────────────────────
+// ── Helper: normalize Supabase errors ────────────────────────────────────────
+function isTableMissingError(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const code = (e as { code?: string }).code ?? "";
+  return ["42P01", "PGRST116", "PGRST200", "PGRST204", "PGRST205"].includes(code);
+}
+
+// ── GET /super-admin/metrics ──────────────────────────────────────────────────
 router.get(
   "/super-admin/metrics",
   requireAuth,
   requireRole("super_admin"),
   async (_req, res) => {
-    const [orgsResult, membersResult, eventsResult] = await Promise.all([
-      sa.from("organizations").select("id, subscription_status, trial_ends_at"),
-      sa.from("members").select("*", { count: "exact", head: true }),
-      sa.from("platform_events")
-        .select("id, event_type, title, description, payload, created_at")
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
+    try {
+      const [orgsResult, membersResult, eventsResult] = await Promise.all([
+        supabase.from("organizations").select("id, subscription_status, trial_ends_at"),
+        supabase.from("members").select("*", { count: "exact", head: true }),
+        pool.query(
+          `SELECT id, event_type, title, description, payload, created_at
+           FROM platform_events
+           ORDER BY created_at DESC
+           LIMIT 20`,
+        ).catch(() => ({ rows: [] as Record<string, unknown>[] })),
+      ]);
 
-    const orgs = (orgsResult.data ?? []) as Array<{
-      id: number;
-      subscription_status?: string;
-      trial_ends_at?: string;
-    }>;
-    const now = new Date();
-    const totalOrgs    = orgs.length;
-    const totalMembers = membersResult.count ?? 0;
-    const activeCount  = orgs.filter(o => o.subscription_status === "active").length;
-    const expiredCount = orgs.filter(o =>
-      o.subscription_status === "expired" ||
-      (o.subscription_status !== "active" && !!o.trial_ends_at && new Date(o.trial_ends_at) <= now),
-    ).length;
-    const trialingCount = Math.max(0, totalOrgs - activeCount - expiredCount);
+      const orgs = (orgsResult.data ?? []) as Array<{
+        id: number;
+        subscription_status?: string;
+        trial_ends_at?: string;
+      }>;
+      const now = new Date();
+      const totalOrgs    = orgs.length;
+      const totalMembers = membersResult.count ?? 0;
+      const activeCount  = orgs.filter(o => o.subscription_status === "active").length;
+      const expiredCount = orgs.filter(o =>
+        o.subscription_status === "expired" ||
+        (o.subscription_status !== "active" && !!o.trial_ends_at && new Date(o.trial_ends_at) <= now),
+      ).length;
+      const trialingCount = Math.max(0, totalOrgs - activeCount - expiredCount);
 
-    res.json({
-      totalOrgs,
-      totalMembers,
-      activeCount,
-      trialingCount,
-      expiredCount,
-      recentEvents: eventsResult.data ?? [],
-    });
+      res.json({
+        totalOrgs,
+        totalMembers,
+        activeCount,
+        trialingCount,
+        expiredCount,
+        recentEvents: (eventsResult as { rows: unknown[] }).rows ?? [],
+      });
+    } catch (e) {
+      res.json({
+        totalOrgs: 0, totalMembers: 0, activeCount: 0,
+        trialingCount: 0, expiredCount: 0, recentEvents: [],
+      });
+    }
   },
 );
 
@@ -86,16 +76,29 @@ router.get(
   requireAuth,
   requireRole("super_admin"),
   async (_req, res) => {
-    const { data, error } = await sa
-      .from("organizations")
-      .select(
-        "id, name, currency, country, legal_framework, tenant_type, " +
-        "stripe_connect_account_id, trial_started_at, trial_ends_at, is_trial_extended, " +
-        "subscription_status, cost_per_seat_cents",
-      )
-      .order("id");
-    if (error) { res.status(500).json({ error: error.message }); return; }
-    res.json(data ?? []);
+    try {
+      const { data, error } = await sa
+        .from("organizations")
+        .select("*")
+        .order("id");
+      if (error) { res.json([]); return; }
+      res.json(
+        (data ?? []).map((o: Record<string, unknown>) => ({
+          id:                       o["id"],
+          name:                     o["name"] ?? "",
+          currency:                 o["currency"] ?? "EUR",
+          country:                  o["country"] ?? "AU",
+          legal_framework:          o["legal_framework"] ?? null,
+          tenant_type:              o["tenant_type"] ?? "commercial",
+          stripe_connect_account_id: o["stripe_connect_account_id"] ?? null,
+          trial_started_at:         o["trial_started_at"] ?? null,
+          trial_ends_at:            o["trial_ends_at"] ?? null,
+          is_trial_extended:        o["is_trial_extended"] ?? false,
+          subscription_status:      o["subscription_status"] ?? "trialing",
+          cost_per_seat_cents:      o["cost_per_seat_cents"] ?? 150,
+        })),
+      );
+    } catch { res.json([]); }
   },
 );
 
@@ -111,42 +114,52 @@ router.post(
       return;
     }
 
-    const { data: org } = await sa
-      .from("organizations")
-      .select("trial_ends_at")
-      .eq("id", orgId)
-      .maybeSingle();
-
-    const base =
-      org?.trial_ends_at && new Date(org.trial_ends_at) > new Date()
-        ? org.trial_ends_at
-        : new Date().toISOString();
-
-    const newEnd = new Date(
-      new Date(base).getTime() + months * 30 * 24 * 60 * 60 * 1000,
-    ).toISOString();
-
-    const { data, error } = await sa
-      .from("organizations")
-      .update({ trial_ends_at: newEnd, is_trial_extended: true })
-      .eq("id", orgId)
-      .select("id, name, trial_ends_at, is_trial_extended")
-      .single();
-
-    if (error) { res.status(500).json({ error: error.message }); return; }
-    invalidateTrialCache(orgId);
-
-    // Log platform event
     try {
-      await sa.from("platform_events").insert({
-        event_type: "trial_extended",
-        title: `Trial extended: ${(data as { name?: string }).name ?? "Unknown school"}`,
-        description: `Extended by ${months} month(s). New expiry: ${new Date(newEnd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`,
-        payload: { orgId, months, newEnd },
-      });
-    } catch { /* non-critical */ }
+      const { data: org } = await sa
+        .from("organizations")
+        .select("id, name, trial_ends_at")
+        .eq("id", orgId)
+        .maybeSingle();
 
-    res.json(data);
+      if (!org) { res.status(404).json({ error: "Organization not found" }); return; }
+
+      const base =
+        org.trial_ends_at && new Date(org.trial_ends_at) > new Date()
+          ? org.trial_ends_at
+          : new Date().toISOString();
+
+      const newEnd = new Date(
+        new Date(base).getTime() + months * 30 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+
+      const { data: updated, error } = await sa
+        .from("organizations")
+        .update({ trial_ends_at: newEnd, is_trial_extended: true })
+        .eq("id", orgId)
+        .select("id, name, trial_ends_at, is_trial_extended")
+        .maybeSingle();
+
+      if (error || !updated) {
+        res.status(500).json({ error: error?.message ?? "Update failed" }); return;
+      }
+
+      invalidateTrialCache(orgId);
+
+      pool.query(
+        `INSERT INTO platform_events (event_type, title, description, payload)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          "trial_extended",
+          `Trial extended: ${(updated as Record<string, unknown>)["name"] ?? "Unknown school"}`,
+          `Extended by ${months} month(s). New expiry: ${new Date(newEnd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`,
+          JSON.stringify({ orgId, months, newEnd }),
+        ],
+      ).catch(() => {});
+
+      res.json(updated);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
   },
 );
 
@@ -160,31 +173,63 @@ router.patch(
     if (isNaN(id)) { res.status(400).json({ error: "Invalid org ID" }); return; }
 
     const ALLOWED = ["currency", "country", "legal_framework", "tenant_type", "stripe_connect_account_id"];
-    const updates = Object.fromEntries(
+    const patch = Object.fromEntries(
       Object.entries(req.body as Record<string, unknown>).filter(([k]) => ALLOWED.includes(k)),
     );
-    if (!Object.keys(updates).length) {
-      res.status(400).json({ error: "No valid fields provided" });
-      return;
+
+    if (!Object.keys(patch).length) {
+      res.status(400).json({ error: "No valid fields provided" }); return;
     }
 
-    const { data, error } = await sa
-      .from("organizations")
-      .update(updates)
-      .eq("id", id)
-      .select(
-        "id, name, currency, country, legal_framework, tenant_type, " +
-        "stripe_connect_account_id, trial_ends_at",
-      )
-      .single();
+    try {
+      const { data: updated, error } = await sa
+        .from("organizations")
+        .update(patch)
+        .eq("id", id)
+        .select("id, name, trial_ends_at")
+        .maybeSingle();
 
-    if (error) { res.status(500).json({ error: error.message }); return; }
-    res.json(data);
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      if (!updated) { res.status(404).json({ error: "Organization not found" }); return; }
+      res.json(updated);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
+  },
+);
+
+// ── PATCH /super-admin/associations/:id/suspend ──────────────────────────────
+router.patch(
+  "/super-admin/associations/:id/suspend",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    const id = Number(req.params["id"]);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid org ID" }); return; }
+
+    const { suspend } = req.body as { suspend?: boolean };
+    if (typeof suspend !== "boolean") {
+      res.status(400).json({ error: "suspend (boolean) is required" }); return;
+    }
+
+    try {
+      const { data: updated, error } = await sa
+        .from("organizations")
+        .update({ subscription_status: suspend ? "suspended" : "trialing" })
+        .eq("id", id)
+        .select("id, name, subscription_status, trial_ends_at, is_trial_extended")
+        .maybeSingle();
+
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      if (!updated) { res.status(404).json({ error: "Organization not found" }); return; }
+      res.json(updated);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
   },
 );
 
 // ── POST /super-admin/seed ────────────────────────────────────────────────────
-// One-time bootstrap: creates the first super_admin account if none exists.
 router.post("/super-admin/seed", async (req, res) => {
   const { name, email, password } = req.body as {
     name?: string; email?: string; password?: string;
@@ -194,7 +239,7 @@ router.post("/super-admin/seed", async (req, res) => {
     return;
   }
 
-  const { count } = await sa
+  const { count } = await supabase
     .from("users")
     .select("*", { count: "exact", head: true })
     .eq("role", "super_admin");
@@ -206,7 +251,7 @@ router.post("/super-admin/seed", async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password.trim(), 10);
 
-  const { data: newUser, error } = await sa
+  const { data: newUser, error } = await supabase
     .from("users")
     .insert({
       name: name.trim(),
@@ -214,7 +259,6 @@ router.post("/super-admin/seed", async (req, res) => {
       password_hash: passwordHash,
       role: "super_admin",
       organization_id: 1,
-      activation_status: "active",
     })
     .select("id, name, email, role")
     .single();
@@ -241,15 +285,12 @@ router.get(
   requireRole("super_admin"),
   async (_req, res) => {
     try {
-      const { data, error } = await sa
-        .from("super_admin_collaborators")
-        .select("id, email, added_by, created_at")
-        .order("created_at");
-      if (error) {
-        if ((error as { code?: string }).code === "42P01") { res.json([]); return; }
-        res.status(500).json({ error: error.message }); return;
-      }
-      res.json(data ?? []);
+      const { rows } = await pool.query(
+        `SELECT id, email, added_by, created_at
+         FROM super_admin_collaborators
+         ORDER BY created_at ASC`,
+      );
+      res.json(rows);
     } catch { res.json([]); }
   },
 );
@@ -266,18 +307,21 @@ router.post(
       res.status(400).json({ error: "email is required" }); return;
     }
     const normalizedEmail = email.trim().toLowerCase();
-    const { data, error } = await sa
-      .from("super_admin_collaborators")
-      .insert({ email: normalizedEmail, added_by: caller.email })
-      .select("id, email, added_by, created_at")
-      .single();
-    if (error) {
-      if (error.code === "23505") {
+    try {
+      const { rows: [created] } = await pool.query(
+        `INSERT INTO super_admin_collaborators (email, added_by)
+         VALUES ($1, $2)
+         RETURNING id, email, added_by, created_at`,
+        [normalizedEmail, caller.email],
+      );
+      res.status(201).json(created);
+    } catch (e) {
+      const msg = (e as Error).message ?? "";
+      if (msg.includes("unique") || msg.includes("duplicate")) {
         res.status(409).json({ error: "Email already exists as a collaborator" }); return;
       }
-      res.status(500).json({ error: error.message }); return;
+      res.status(500).json({ error: msg });
     }
-    res.status(201).json(data);
   },
 );
 
@@ -289,33 +333,33 @@ router.delete(
   async (req, res) => {
     const id = Number(req.params["id"]);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-    const { error } = await sa.from("super_admin_collaborators").delete().eq("id", id);
-    if (error) { res.status(500).json({ error: error.message }); return; }
-    res.status(204).send();
+    try {
+      await pool.query(`DELETE FROM super_admin_collaborators WHERE id = $1`, [id]);
+      res.status(204).send();
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
   },
 );
 
-// ── GET /super-admin/payment-gateways ────────────────────────────────────────
+// ── GET /super-admin/payment-gateways ─────────────────────────────────────────
 router.get(
   "/super-admin/payment-gateways",
   requireAuth,
   requireRole("super_admin"),
   async (_req, res) => {
     try {
-      const { data, error } = await sa
-        .from("platform_payment_gateways")
-        .select("id, type, label, enabled, config, sort_order")
-        .order("sort_order");
-      if (error) {
-        if ((error as { code?: string }).code === "42P01") { res.json([]); return; }
-        res.status(500).json({ error: error.message }); return;
-      }
-      res.json(data ?? []);
+      const { rows } = await pool.query(
+        `SELECT id, type, label, enabled, config, sort_order
+         FROM platform_payment_gateways
+         ORDER BY sort_order ASC`,
+      );
+      res.json(rows);
     } catch { res.json([]); }
   },
 );
 
-// ── POST /super-admin/payment-gateways ───────────────────────────────────────
+// ── POST /super-admin/payment-gateways ────────────────────────────────────────
 router.post(
   "/super-admin/payment-gateways",
   requireAuth,
@@ -328,23 +372,27 @@ router.post(
     if (!type || !label) {
       res.status(400).json({ error: "type and label are required" }); return;
     }
-    const { data, error } = await sa
-      .from("platform_payment_gateways")
-      .insert({
-        type,
-        label,
-        enabled: enabled ?? true,
-        config: config ?? {},
-        sort_order: sort_order ?? 0,
-      })
-      .select("id, type, label, enabled, config, sort_order")
-      .single();
-    if (error) { res.status(500).json({ error: error.message }); return; }
-    res.status(201).json(data);
+    try {
+      const { rows: [created] } = await pool.query(
+        `INSERT INTO platform_payment_gateways (type, label, enabled, config, sort_order)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (type) DO UPDATE
+           SET label = EXCLUDED.label,
+               enabled = EXCLUDED.enabled,
+               config = EXCLUDED.config,
+               sort_order = EXCLUDED.sort_order,
+               updated_at = NOW()
+         RETURNING id, type, label, enabled, config, sort_order`,
+        [type, label, enabled ?? false, JSON.stringify(config ?? {}), sort_order ?? 0],
+      );
+      res.status(201).json(created);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
   },
 );
 
-// ── PATCH /super-admin/payment-gateways/:id ──────────────────────────────────
+// ── PATCH /super-admin/payment-gateways/:id ───────────────────────────────────
 router.patch(
   "/super-admin/payment-gateways/:id",
   requireAuth,
@@ -352,26 +400,35 @@ router.patch(
   async (req, res) => {
     const id = Number(req.params["id"]);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
     const ALLOWED = ["label", "enabled", "config", "sort_order"];
-    const updates: Record<string, unknown> = Object.fromEntries(
-      Object.entries(req.body as Record<string, unknown>).filter(([k]) => ALLOWED.includes(k)),
-    );
-    if (!Object.keys(updates).length) {
+    const allowed = Object.entries(req.body as Record<string, unknown>)
+      .filter(([k]) => ALLOWED.includes(k));
+
+    if (!allowed.length) {
       res.status(400).json({ error: "No valid fields provided" }); return;
     }
-    updates["updated_at"] = new Date().toISOString();
-    const { data, error } = await sa
-      .from("platform_payment_gateways")
-      .update(updates)
-      .eq("id", id)
-      .select("id, type, label, enabled, config, sort_order")
-      .single();
-    if (error) { res.status(500).json({ error: error.message }); return; }
-    res.json(data);
+
+    const setClauses = [...allowed.map(([k], i) => `${k} = $${i + 1}`), `updated_at = NOW()`].join(", ");
+    const values = allowed.map(([k, v]) => k === "config" ? JSON.stringify(v) : v);
+    values.push(id);
+
+    try {
+      const { rows: [updated] } = await pool.query(
+        `UPDATE platform_payment_gateways SET ${setClauses}
+         WHERE id = $${values.length}
+         RETURNING id, type, label, enabled, config, sort_order`,
+        values,
+      );
+      if (!updated) { res.status(404).json({ error: "Gateway not found" }); return; }
+      res.json(updated);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
   },
 );
 
-// ── DELETE /super-admin/payment-gateways/:id ─────────────────────────────────
+// ── DELETE /super-admin/payment-gateways/:id ──────────────────────────────────
 router.delete(
   "/super-admin/payment-gateways/:id",
   requireAuth,
@@ -379,9 +436,12 @@ router.delete(
   async (req, res) => {
     const id = Number(req.params["id"]);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-    const { error } = await sa.from("platform_payment_gateways").delete().eq("id", id);
-    if (error) { res.status(500).json({ error: error.message }); return; }
-    res.status(204).send();
+    try {
+      await pool.query(`DELETE FROM platform_payment_gateways WHERE id = $1`, [id]);
+      res.status(204).send();
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
   },
 );
 
