@@ -88,10 +88,6 @@ export default function StudentDetail() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backBtn} onPress={() => router.navigate("/(operator)/students" as never)}>
-          <Ionicons name="chevron-back" size={22} color={colors.primary} />
-          <Text style={[styles.backText, { color: colors.primary }]}>Students</Text>
-        </Pressable>
 
         <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
           <View style={styles.heroAvatar}>
@@ -251,8 +247,6 @@ export default function StudentDetail() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 14 },
-  backText: { fontSize: 15, fontWeight: "600" },
   notFoundText: { fontSize: 16, marginTop: 12, marginBottom: 24 },
   backFallback: { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 },
   backFallbackText: { color: "#FFF", fontWeight: "700" },

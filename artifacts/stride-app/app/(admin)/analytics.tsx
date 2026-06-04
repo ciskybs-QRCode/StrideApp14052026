@@ -138,9 +138,6 @@ export default function AdminAnalytics() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border, paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
-        <Pressable onPress={() => router.navigate("/(admin)/stats" as never)} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Analytics</Text>
           <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{user?.schoolName || "Stride"}</Text>
@@ -401,7 +398,6 @@ export default function AdminAnalytics() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1 },
-  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontWeight: "800" },
   headerSub: { fontSize: 12, marginTop: 1 },
   scroll: { paddingHorizontal: 20, paddingTop: 20 },

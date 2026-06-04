@@ -226,9 +226,6 @@ export default function TerminalsScreen() {
           },
         ]}
       >
-        <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={22} color="#FBBF24" />
-        </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Terminal Kiosks</Text>
           <Text style={styles.headerSub}>Provisioning &amp; Access Control</Text>
@@ -473,7 +470,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 10,
   },
-  backBtn: { padding: 4 },
   headerCenter: { flex: 1 },
   headerTitle: { color: "#FFFFFF", fontSize: 18, fontWeight: "800" },
   headerSub: { color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 2 },

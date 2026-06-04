@@ -312,10 +312,6 @@ export default function AdminReimbursementsScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 72 : 20), paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backNavRow} onPress={() => router.navigate("/(admin)/settings/app-configuration" as never)}>
-          <Ionicons name="chevron-back" size={18} color={colors.primary} />
-          <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
-        </Pressable>
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Reimbursements</Text>
@@ -474,8 +470,6 @@ export default function AdminReimbursementsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  backNavRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 12 },
-  backNavLabel: { fontSize: 15, fontWeight: "600" },
   titleRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 24, gap: 12 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 2 },
   pageSubtitle: { fontSize: 13 },

@@ -146,9 +146,6 @@ export default function BlacklistScreen() {
       >
         {/* Header */}
         <View style={styles.pageHeader}>
-          <Pressable onPress={() => router.navigate("/(admin)/settings" as never)} style={styles.backBtn} hitSlop={10}>
-            <Ionicons name="arrow-back" size={22} color={colors.primary} />
-          </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Blacklist</Text>
             <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>{entries.length} {entries.length === 1 ? "entry" : "entries"}</Text>
@@ -442,7 +439,6 @@ export default function BlacklistScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   pageHeader: { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 12 },
-  backBtn: { padding: 4 },
   pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSubtitle: { fontSize: 12, marginTop: 1 },
   addBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },

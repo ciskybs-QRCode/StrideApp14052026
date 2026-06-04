@@ -678,10 +678,6 @@ export default function OperatorInvoicing() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backNavRow} onPress={() => router.navigate("/(operator)/settings" as never)}>
-          <Ionicons name="chevron-back" size={18} color={colors.primary} />
-          <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
-        </Pressable>
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Payroll</Text>
 
         {/* ── Payment received banner ── */}
@@ -1119,8 +1115,6 @@ export default function OperatorInvoicing() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  backNavRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 12 },
-  backNavLabel: { fontSize: 15, fontWeight: "600" },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 16 },
   sectionTitle: { fontSize: 13, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 },
 

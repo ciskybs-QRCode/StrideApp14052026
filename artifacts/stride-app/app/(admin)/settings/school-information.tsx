@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -110,7 +109,6 @@ function campusTypeInfo(type: CampusType) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SchoolInformationPage() {
-  const router = useRouter();
   const { user, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -318,12 +316,6 @@ export default function SchoolInformationPage() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Back */}
-        <Pressable style={styles.backRow} onPress={() => router.navigate("/(admin)/settings" as never)}>
-          <Ionicons name="chevron-back" size={20} color={colors.primary} />
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
-        </Pressable>
-
         {/* Page header */}
         <View style={styles.pageHeader}>
           <View style={[styles.headerIcon, { backgroundColor: "#CCFBF1" }]}>
@@ -759,8 +751,6 @@ export default function SchoolInformationPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  backRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 20 },
-  backLabel: { fontSize: 15, fontWeight: "600" },
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 24 },
   headerIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   pageTitle: { fontSize: 22, fontWeight: "800" },

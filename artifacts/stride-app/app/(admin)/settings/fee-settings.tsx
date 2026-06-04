@@ -248,9 +248,6 @@ export default function FeeSettingsScreen() {
 
         {/* ── Back + Title ── */}
         <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-            <Ionicons name="arrow-back" size={22} color={colors.foreground} />
-          </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.foreground }]}>Membership Fees</Text>
             <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
@@ -512,7 +509,6 @@ const styles = StyleSheet.create({
   scroll:    { paddingHorizontal: 20, gap: 4 },
 
   headerRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 8 },
-  backBtn:   { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 12 },
   pageTitle: { fontSize: 22, fontWeight: "800" },
   pageSubtitle: { fontSize: 13, marginTop: 2 },
   iconBadge: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },

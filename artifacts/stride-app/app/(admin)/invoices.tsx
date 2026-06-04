@@ -248,10 +248,6 @@ export default function AdminInvoicesScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 72 : 20), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backNavRow} onPress={() => router.navigate("/(admin)/settings/app-configuration" as never)}>
-          <Ionicons name="chevron-back" size={18} color={colors.primary} />
-          <Text style={[styles.backNavLabel, { color: colors.primary }]}>Back</Text>
-        </Pressable>
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Invoices</Text>
         <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
           Operator payment requests for {schoolName}
@@ -398,8 +394,6 @@ export default function AdminInvoicesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  backNavRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 12 },
-  backNavLabel: { fontSize: 15, fontWeight: "600" },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
   pageSubtitle: { fontSize: 13, marginBottom: 24 },
   sectionTitle: { fontSize: 15, fontWeight: "700", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 },

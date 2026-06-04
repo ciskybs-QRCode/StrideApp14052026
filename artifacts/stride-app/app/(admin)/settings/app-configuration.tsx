@@ -242,12 +242,6 @@ export default function AppConfigurationPage() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <Pressable style={styles.backRow} onPress={() => router.navigate("/(admin)/settings" as never)}>
-          <Ionicons name="chevron-back" size={20} color={colors.primary} />
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
-        </Pressable>
-
         <View style={styles.pageHeader}>
           <View style={[styles.headerIcon, { backgroundColor: "#DBEAFE" }]}>
             <Ionicons name="settings-outline" size={26} color="#1E3A8A" />
@@ -543,8 +537,6 @@ export default function AppConfigurationPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  backRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 20 },
-  backLabel: { fontSize: 15, fontWeight: "600" },
   pageHeader: {
     flexDirection: "row",
     alignItems: "center",

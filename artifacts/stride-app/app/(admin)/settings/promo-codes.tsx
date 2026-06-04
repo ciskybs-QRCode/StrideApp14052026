@@ -258,11 +258,6 @@ export default function PromoCodesPage() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: insets.bottom + 100 }]} showsVerticalScrollIndicator={false}>
 
-        <Pressable style={styles.backRow} onPress={() => router.navigate("/(admin)/settings" as never)}>
-          <Ionicons name="chevron-back" size={20} color={colors.primary} />
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
-        </Pressable>
-
         <View style={styles.pageHeader}>
           <View style={[styles.headerIcon, { backgroundColor: "#FEF3C7" }]}>
             <Ionicons name="pricetag-outline" size={26} color="#F59E0B" />
@@ -591,8 +586,6 @@ export default function PromoCodesPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  backRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 20 },
-  backLabel: { fontSize: 15, fontWeight: "600" },
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 16 },
   headerIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   pageTitle: { fontSize: 22, fontWeight: "800" },

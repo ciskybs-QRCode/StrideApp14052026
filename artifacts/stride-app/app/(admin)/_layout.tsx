@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
+import { BackButton } from "@/components/BackButton";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
@@ -82,6 +83,7 @@ export default function AdminTabLayout() {
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <RoleSwitcher />
     <BrandingLogoOverlay />
+    <BackButton />
     </View>
   );
 }
