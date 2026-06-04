@@ -1,0 +1,24 @@
+🚨 CRITICAL AUTH GATEWAY FIX: PRODUCTION-READY SUPABASE LOGIN & SIGN-UP 🚨
+
+Role: Expert Senior Full-Stack Developer & Authentication Specialist.
+Objective: Implement or completely fix the initial application entry point by creating a flawless, production-ready Authentication Gateway (Login and Sign-Up screens) fully integrated with Supabase Auth.
+
+CRITICAL LOGIC & ROUTING CONSTRAINTS:
+- Do NOT break or disrupt any internal dashboard paths, the Super Admin email-matching logic, or pre-existing database tables.
+- Flow: The app must boot directly into a clean Login screen. If no session is active, restrict access to any internal paths.
+- Upon successful Login/Sign-Up, trigger the global routing logic: evaluate the user's authenticated email—if it matches our master Super Admin email, unlock the Super Admin entry point; otherwise, route them to the standard Admin system.
+
+Please implement the following interface and logic components:
+
+1. INITIAL LOGIN SCREEN
+- Visual Components: Clean inputs for Email and Password, a prominent "Sign In" button, and a toggle link below reading "Don't have an account? Sign Up".
+- Logic: Wire the inputs directly to `supabase.auth.signInWithPassword()`. Handle basic validation (e.g., alert if fields are empty or if Supabase returns invalid credentials) with a clean user-facing error message.
+
+2. REGISTER / SIGN-UP SCREEN
+- Visual Components: Fields for Organization/Association Name, Administrator Email, Password, and a confirm password field. Include a "Create Account" button and a toggle link back to the Login screen.
+- Logic: Wire the workflow to `supabase.auth.signUp()`. Upon successful account creation, ensure the user session is instantiated, and programmatically initialize a default row inside our main configuration/organization tables with the entered Association Name so the database metadata is perfectly set up for testing.
+
+3. VISUAL THEME & BOUNDARY ENFORCEMENT
+- Theme: Deep Navy Blue background (`#0A1128`), Premium Gold styling elements/borders (`#D4AF37`), and ultra-crisp White text.
+- Containment: Both forms, inputs, input labels, error texts, and submission buttons must fit perfectly centered within the mobile display viewport. Ensure strict text wrapping and responsive margins. Absolutely ZERO horizontal screen layout overflow or clipping.
+- Language: 100% STRICT ENGLISH across both screens.

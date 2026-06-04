@@ -32,6 +32,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
+  register: (orgName: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   /** Switch the active role (must be in user.roles). Does NOT navigate — caller handles routing. */
@@ -110,6 +111,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return mapped;
   };
 
+  const register = async (orgName: string, email: string, password: string): Promise<User> => {
+    const name = email.split("@")[0] ?? "Admin";
+    const { token, user: apiUser } = await api.register(name, email, password, orgName);
+    await setToken(token);
+    const primaryRole = apiUser.role as UserRole;
+    const mapped: User = {
+      id:    String(apiUser.id),
+      name:  apiUser.name,
+      email: apiUser.email,
+      role:  primaryRole,
+      roles: rolesForPrimary(primaryRole),
+      orgId: apiUser.orgId ?? (apiUser.organization_id as number | undefined),
+    };
+    try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped)); } catch { /* localStorage blocked */ }
+    setUser(mapped);
+    return mapped;
+  };
+
   const logout = async () => {
     try { await Promise.all([clearToken(), AsyncStorage.removeItem(USER_KEY)]); } catch { /* ignore */ }
     setUser(null);
@@ -129,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser, switchRole }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser, switchRole }}>
       {children}
     </AuthContext.Provider>
   );
