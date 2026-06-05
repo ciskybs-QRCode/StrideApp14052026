@@ -90,9 +90,10 @@ export default function SmartRosterScreen() {
         <Pressable
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={10}
-          style={s.backBtn}
+          style={({ pressed }) => [s.backBtn, { flexDirection: "row", alignItems: "center", gap: 2, opacity: pressed ? 0.6 : 1 }]}
         >
-          <Ionicons name="chevron-back" size={22} color="#D4AF37" />
+          <Ionicons name="chevron-back" size={22} color={GOLD} />
+          <Text style={{ fontSize: 13, fontWeight: "600", color: GOLD }}>Back</Text>
         </Pressable>
 
         <View style={{ flex: 1 }}>

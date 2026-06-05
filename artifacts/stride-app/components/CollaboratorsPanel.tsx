@@ -16,8 +16,14 @@ import {
   type Collaborator,
 } from "@/lib/api";
 
-const NAVY = "#1E3A8A";
-const GOLD = "#FBBF24";
+const NAVY = "#0A1128";
+const GOLD = "#D4AF37";
+
+const MASTER_SA_EMAIL = "ciskybs@gmail.com";
+
+function isMasterAdmin(email: string): boolean {
+  return email.trim().toLowerCase() === MASTER_SA_EMAIL;
+}
 
 export default function CollaboratorsPanel() {
   const [items,   setItems]   = useState<Collaborator[]>([]);
@@ -40,6 +46,9 @@ export default function CollaboratorsPanel() {
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setErr("Enter a valid email address."); return;
     }
+    if (isMasterAdmin(trimmed)) {
+      setErr("This is the protected master account — it cannot be added manually."); return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSaving(true); setErr(null);
     try {
@@ -54,6 +63,7 @@ export default function CollaboratorsPanel() {
   }, [email]);
 
   const handleRemove = useCallback(async (c: Collaborator) => {
+    if (isMasterAdmin(c.email)) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       await removeCollaborator(c.id);
@@ -108,21 +118,39 @@ export default function CollaboratorsPanel() {
         </View>
       ) : (
         <View style={s.list}>
-          {items.map(c => (
-            <View key={c.id} style={s.item}>
-              <View style={s.itemLeft}>
-                <Ionicons name="shield-checkmark-outline" size={14} color={NAVY} />
-                <Text style={s.itemEmail} numberOfLines={1}>{c.email}</Text>
+          {items.map(c => {
+            const locked = isMasterAdmin(c.email);
+            return (
+              <View key={c.id} style={s.item}>
+                <View style={s.itemLeft}>
+                  <Ionicons
+                    name={locked ? "shield-checkmark" : "shield-checkmark-outline"}
+                    size={14}
+                    color={locked ? GOLD : NAVY}
+                  />
+                  <Text style={s.itemEmail} numberOfLines={1}>{c.email}</Text>
+                  {locked && (
+                    <View style={s.masterBadge}>
+                      <Text style={s.masterBadgeText}>MASTER</Text>
+                    </View>
+                  )}
+                </View>
+                {locked ? (
+                  <View style={s.lockIcon} accessibilityLabel="Protected — cannot remove">
+                    <Ionicons name="lock-closed" size={15} color={GOLD} />
+                  </View>
+                ) : (
+                  <Pressable
+                    style={({ pressed }) => [s.removeBtn, { opacity: pressed ? 0.6 : 1 }]}
+                    onPress={() => handleRemove(c)}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
+                  </Pressable>
+                )}
               </View>
-              <Pressable
-                style={({ pressed }) => [s.removeBtn, { opacity: pressed ? 0.6 : 1 }]}
-                onPress={() => handleRemove(c)}
-                hitSlop={8}
-              >
-                <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
-              </Pressable>
-            </View>
-          ))}
+            );
+          })}
         </View>
       )}
 
@@ -200,6 +228,16 @@ const s = StyleSheet.create({
     gap: 8,
   },
   itemEmail: { flex: 1, fontSize: 13, color: "#1F2937", fontWeight: "600" },
+  masterBadge: {
+    backgroundColor: NAVY,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: GOLD,
+  },
+  masterBadgeText: { fontSize: 9, fontWeight: "900", color: GOLD, letterSpacing: 0.5 },
+  lockIcon: { padding: 4 },
   removeBtn: { padding: 4 },
   hint: {
     fontSize: 11,

@@ -141,9 +141,10 @@ export default function AdminAnalytics() {
         <Pressable
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={({ pressed }) => ({ width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10, opacity: pressed ? 0.6 : 1 })}
+          style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 2, paddingRight: 8, opacity: pressed ? 0.6 : 1 })}
         >
-          <Ionicons name="chevron-back" size={24} color="#D4AF37" />
+          <Ionicons name="chevron-back" size={22} color="#D4AF37" />
+          <Text style={{ fontSize: 13, fontWeight: "600", color: "#D4AF37" }}>Back</Text>
         </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Analytics</Text>

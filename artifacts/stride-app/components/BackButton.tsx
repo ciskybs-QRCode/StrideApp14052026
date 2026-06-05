@@ -27,13 +27,14 @@ export function BackButton({ onPress }: BackButtonProps) {
     }
   };
 
-  const topOffset = insets.top + (Platform.OS === "web" ? 72 : 6);
-
   return (
     <Pressable
       style={({ pressed }) => [
         styles.btn,
-        { top: topOffset, opacity: pressed ? 0.65 : 1 },
+        {
+          paddingTop: insets.top + (Platform.OS === "web" ? 72 : 8),
+          opacity: pressed ? 0.65 : 1,
+        },
       ]}
       onPress={handlePress}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -41,7 +42,7 @@ export function BackButton({ onPress }: BackButtonProps) {
       accessibilityLabel="Go back"
     >
       <View style={styles.inner}>
-        <Ionicons name="chevron-back" size={18} color={GOLD} />
+        <Ionicons name="chevron-back" size={17} color={GOLD} />
         <Text style={styles.label}>Back</Text>
       </View>
     </Pressable>
@@ -50,9 +51,9 @@ export function BackButton({ onPress }: BackButtonProps) {
 
 const styles = StyleSheet.create({
   btn: {
-    position: "absolute",
-    left: 12,
-    zIndex: 999,
+    paddingLeft: 12,
+    paddingBottom: 10,
+    alignSelf: "flex-start",
   },
   inner: {
     flexDirection: "row",

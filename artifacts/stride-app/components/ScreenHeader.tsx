@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const GOLD = "#D4AF37";
@@ -46,7 +46,8 @@ export function ScreenHeader({ onBack, rightSlot }: ScreenHeaderProps) {
         accessibilityRole="button"
         accessibilityLabel="Go back"
       >
-        <Ionicons name="chevron-back" size={24} color={GOLD} />
+        <Ionicons name="chevron-back" size={22} color={GOLD} />
+        <Text style={styles.backText}>Back</Text>
       </Pressable>
 
       {rightSlot != null && <View style={styles.right}>{rightSlot}</View>}
@@ -54,7 +55,7 @@ export function ScreenHeader({ onBack, rightSlot }: ScreenHeaderProps) {
   );
 }
 
-/** Minimal inline back-arrow for insertion inside existing header rows. */
+/** Minimal inline back-arrow with "Back" text for insertion inside existing header rows. */
 export function BackArrow({ onBack }: { onBack?: () => void }) {
   const router = useRouter();
   const handleBack = () => {
@@ -71,7 +72,8 @@ export function BackArrow({ onBack }: { onBack?: () => void }) {
       accessibilityRole="button"
       accessibilityLabel="Go back"
     >
-      <Ionicons name="chevron-back" size={24} color={GOLD} />
+      <Ionicons name="chevron-back" size={22} color={GOLD} />
+      <Text style={styles.backText}>Back</Text>
     </Pressable>
   );
 }
@@ -84,11 +86,18 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   backBtn: {
-    width: 44,
-    height: 44,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 2,
+    height: 44,
+    paddingHorizontal: 4,
     borderRadius: 10,
+  },
+  backText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: GOLD,
+    marginLeft: -2,
   },
   right: {
     marginLeft: "auto",

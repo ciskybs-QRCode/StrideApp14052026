@@ -1,0 +1,30 @@
+🚨 CRITICAL REFACTOR: EXCLUSIVE SUPER-ADMIN WORKSPACE OVERHAUL, GLOBAL ACCESSIBILITY & SUBSCRIPTION DISCOUNT ENGINE 🚨
+
+Role: Principal UI/UX Architect & Full-Stack Engineer.
+Objective: Completely clean up the messy/floating layout of the Super Admin Command Center, protect the master admin credentials, implement a fluid bi-directional role-switching system, enforce a strict global back-button layout hierarchy, and build the missing subscription discount feature.
+
+1. HEADLINE CLEANUP & HEADER DE-FLOATING (COMMAND CENTER)
+- ELIMINATE THE FLOATING BLOCKS: The header must NOT float or use absolute positioning. Convert the top section into a clean, native, embedded white row.
+- THEME REMODEL: Replace the confusing, heavy solid blue block at the top with a crisp minimalist background. Use Deep Navy Blue (#0A1128) ONLY for text/icons, and Premium Gold (#D4AF37) for high-importance badges.
+- SECURITY LOCK: In the Platform Gateways / Collaborators UI, hardcode an explicit shield around the email "ciskybs@gmail.com". Disallow any UI interaction (delete/edit/toggle off) that could accidentally remove or revoke permissions for this master email.
+
+2. BI-DIRECTIONAL ROLE SWITCHING SYSTEM
+- FROM SUPER ADMIN TO CLIENT VIEW: In the native header of the Command Center, add a clean account/view-switching utility button ("Switch to Standard View").
+- FROM CLIENT VIEWS BACK TO SUPER ADMIN: On EVERY standard dashboard (Admin, Operator, and Member/Parent views), implement a dynamic role-checking rule. If the logged-in user's email is "ciskybs@gmail.com" (or any verified email in the super_admin_collaborators table), render a prominent, elegant "Open Super Admin Command Center" action tile/button. This allows instantaneous navigation back to the main cockpit from any operational role.
+
+3. THE DRILL-DOWN BACK BUTTON LAW (GLOBAL IMPLEMENTATION)
+- Absolute UI Constraint: EVERY single screen across ALL roles (Admin, Operator, Parent/Member, Kiosk) must naturally integrate a layout-level back button (clean gold chevron/arrow with `< Back` text) at the top-left of the view hierarchy.
+- It must NEVER float as an overlay or absolute-positioned block. It must sit cleanly inline with the page titles, mapping directly to the previous node in the routing tree.
+
+4. IMPLEMENTING THE MISSING PROMO & DISCOUNT ENGINE
+- Build a dedicated, highly visible section inside the Super Admin screen titled: "Tenant Subscription & Promotion Manager".
+- Features to create from scratch:
+  * Association Search Input: A clean text field to lookup schools/tenants.
+  * Discount Value Form: A number input field for "Discount Percentage (%)" or "Custom Monthly Price".
+  * Duration Selector: A field/picker to define how long the discount lasts (e.g., Months/Weeks) or an "Extend Free Trial" button.
+  * Action: A high-contrast button ("Apply Promotional Status") that instantly pushes these financial updates to the Supabase database row for that specific school.
+
+VISUAL BOUNDARY & LANGUAGE RULES:
+- Style: Crisp White cards, Deep Navy Blue typography, soft gray shadows, Premium Gold interactive accents.
+- Scaling: Everything must scale perfectly inside the phone frame display boundaries with absolutely ZERO horizontal scrolling, layout text overlapping, or clipping.
+- Language: 100% STRICT ENGLISH for all text strings, forms, and buttons.

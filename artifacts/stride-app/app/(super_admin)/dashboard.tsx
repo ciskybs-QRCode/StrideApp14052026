@@ -758,6 +758,316 @@ const emStyles = StyleSheet.create({
   discountCtaText:{ fontSize: 14, fontWeight: "900", color: "#D4AF37" },
 });
 
+// ── Promo Manager Section ─────────────────────────────────────────────────────
+
+function PromoManagerSection({
+  orgs,
+  onSuccess,
+}: {
+  orgs: AssociationRecord[];
+  onSuccess: (updated: AssociationRecord) => void;
+}) {
+  const [query,    setQuery]    = useState("");
+  const [selected, setSelected] = useState<AssociationRecord | null>(null);
+  const [showDrop, setShowDrop] = useState(false);
+  const [mode,     setMode]     = useState<"percent" | "trial">("percent");
+  const [discPct,  setDiscPct]  = useState("");
+  const [months,   setMonths]   = useState(3);
+  const [saving,   setSaving]   = useState(false);
+  const [err,      setErr]      = useState<string | null>(null);
+  const [ok,       setOk]       = useState(false);
+
+  const hits = query.trim()
+    ? orgs.filter(o => o.name.toLowerCase().includes(query.toLowerCase())).slice(0, 6)
+    : [];
+
+  const handleApply = async () => {
+    if (!selected) { setErr("Select a school first."); return; }
+    setSaving(true); setErr(null); setOk(false);
+    try {
+      if (mode === "percent") {
+        const rate = parseFloat(discPct);
+        if (isNaN(rate) || rate < 0 || rate > 100) {
+          setErr("Enter a valid discount percentage (0–100).");
+          setSaving(false);
+          return;
+        }
+        await applyDiscount(selected.id, rate, months);
+        onSuccess({ ...selected, discount_rate: rate });
+      } else {
+        const updated = await extendTrial(selected.id, months);
+        onSuccess({ ...selected, ...updated });
+      }
+      setOk(true);
+      setTimeout(() => setOk(false), 3500);
+    } catch (e) {
+      setErr((e as Error).message ?? "Failed to apply. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <View style={pmS.card}>
+      {/* Title */}
+      <View style={pmS.titleRow}>
+        <View style={pmS.titleIcon}>
+          <Ionicons name="pricetag" size={16} color="#D4AF37" />
+        </View>
+        <View style={pmS.titleText}>
+          <Text style={pmS.title}>Subscription & Promotion Manager</Text>
+          <Text style={pmS.subtitle}>Apply discounts or extend free trials for any tenant</Text>
+        </View>
+      </View>
+
+      {/* Mode toggle */}
+      <View style={pmS.modeRow}>
+        {(["percent", "trial"] as const).map(m => (
+          <Pressable
+            key={m}
+            style={[pmS.modeBtn, mode === m && pmS.modeBtnActive]}
+            onPress={() => { setMode(m); setErr(null); setOk(false); }}
+          >
+            <Text style={[pmS.modeBtnText, mode === m && pmS.modeBtnTextActive]}>
+              {m === "percent" ? "% Discount" : "Extend Free Trial"}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* School search */}
+      <Text style={pmS.label}>SCHOOL / TENANT</Text>
+      <View style={pmS.searchWrap}>
+        <Ionicons name="search-outline" size={15} color="#9CA3AF" />
+        <TextInput
+          style={pmS.searchInput}
+          value={query}
+          onChangeText={v => { setQuery(v); setSelected(null); setShowDrop(true); setErr(null); }}
+          onFocus={() => setShowDrop(true)}
+          placeholder="Type school name to search..."
+          placeholderTextColor="#9CA3AF"
+          autoCapitalize="none"
+        />
+        {selected && <Ionicons name="checkmark-circle" size={16} color="#059669" />}
+        {query.length > 0 && !selected && (
+          <Pressable onPress={() => { setQuery(""); setSelected(null); }} hitSlop={8}>
+            <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+          </Pressable>
+        )}
+      </View>
+
+      {/* Dropdown results */}
+      {showDrop && hits.length > 0 && !selected && (
+        <View style={pmS.dropdown}>
+          {hits.map(o => {
+            const chip = subscriptionChip(o.subscription_status);
+            return (
+              <Pressable
+                key={o.id}
+                style={({ pressed }) => [pmS.dropItem, { opacity: pressed ? 0.7 : 1 }]}
+                onPress={() => { setSelected(o); setQuery(o.name); setShowDrop(false); setErr(null); }}
+              >
+                <Text style={pmS.dropItemText} numberOfLines={1}>{o.name}</Text>
+                <View style={[pmS.dropChip, { backgroundColor: chip.bg }]}>
+                  <Text style={[pmS.dropChipText, { color: chip.color }]}>{chip.label}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Selected org pill */}
+      {selected && (
+        <View style={pmS.selectedPill}>
+          <Ionicons name="business" size={13} color="#0A1128" />
+          <Text style={pmS.selectedText} numberOfLines={1}>{selected.name}</Text>
+          <Pressable onPress={() => { setSelected(null); setQuery(""); }} hitSlop={8}>
+            <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+          </Pressable>
+        </View>
+      )}
+
+      {/* Discount % input */}
+      {mode === "percent" && (
+        <>
+          <Text style={pmS.label}>DISCOUNT PERCENTAGE</Text>
+          <View style={pmS.pctRow}>
+            <TextInput
+              style={pmS.pctInput}
+              value={discPct}
+              onChangeText={v => { setDiscPct(v); setErr(null); }}
+              keyboardType="decimal-pad"
+              placeholder="e.g. 20"
+              placeholderTextColor="#9CA3AF"
+              maxLength={5}
+            />
+            <Text style={pmS.pctUnit}>%</Text>
+          </View>
+        </>
+      )}
+
+      {/* Duration selector */}
+      <Text style={pmS.label}>{mode === "percent" ? "DISCOUNT DURATION" : "EXTENSION DURATION"}</Text>
+      <View style={pmS.durRow}>
+        {[1, 3, 6, 12].map(m => (
+          <Pressable
+            key={m}
+            style={[pmS.durBtn, months === m && pmS.durBtnActive]}
+            onPress={() => { setMonths(m); setErr(null); }}
+          >
+            <Text style={[pmS.durNum, months === m && pmS.durNumActive]}>{m}</Text>
+            <Text style={[pmS.durUnit, months === m && pmS.durUnitActive]}>mo</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Feedback */}
+      {!!err && (
+        <View style={pmS.errRow}>
+          <Ionicons name="alert-circle-outline" size={13} color="#DC2626" />
+          <Text style={pmS.errText}>{err}</Text>
+        </View>
+      )}
+      {ok && (
+        <View style={pmS.okRow}>
+          <Ionicons name="checkmark-circle" size={13} color="#059669" />
+          <Text style={pmS.okText}>
+            {mode === "percent"
+              ? `${discPct}% discount applied for ${months} month${months !== 1 ? "s" : ""} — saved.`
+              : `Free trial extended by ${months} month${months !== 1 ? "s" : ""} — saved.`}
+          </Text>
+        </View>
+      )}
+
+      {/* Apply CTA */}
+      <Pressable
+        style={({ pressed }) => [
+          pmS.applyBtn,
+          (!selected || saving) && pmS.applyBtnDisabled,
+          { opacity: pressed || saving ? 0.85 : 1 },
+        ]}
+        onPress={handleApply}
+        disabled={!selected || saving}
+      >
+        {saving ? (
+          <ActivityIndicator size="small" color="#0A1128" />
+        ) : (
+          <>
+            <Ionicons name="checkmark-circle" size={16} color="#0A1128" />
+            <Text style={pmS.applyBtnText}>Apply Promotional Status</Text>
+          </>
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
+const pmS = StyleSheet.create({
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "rgba(212,175,55,0.22)",
+  },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 14 },
+  titleIcon: {
+    width: 36, height: 36, borderRadius: 12,
+    backgroundColor: "#0A1128",
+    alignItems: "center", justifyContent: "center",
+    flexShrink: 0,
+  },
+  titleText: { flex: 1 },
+  title:    { fontSize: 15, fontWeight: "900", color: "#0A1128", marginBottom: 3 },
+  subtitle: { fontSize: 12, color: "#6B7280", lineHeight: 17 },
+
+  modeRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  modeBtn: {
+    flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: 10,
+    backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB",
+  },
+  modeBtnActive:     { backgroundColor: "#0A1128", borderColor: "#D4AF37" },
+  modeBtnText:       { fontSize: 12, fontWeight: "700", color: "#6B7280" },
+  modeBtnTextActive: { color: "#D4AF37" },
+
+  label: { fontSize: 10, fontWeight: "800", color: "#9CA3AF", letterSpacing: 1, marginBottom: 7 },
+
+  searchWrap: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#F9FAFB", borderRadius: 12,
+    borderWidth: 1, borderColor: "#E5E7EB",
+    paddingHorizontal: 12, paddingVertical: 10,
+    marginBottom: 6,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: "#111827", padding: 0 },
+
+  dropdown: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1, shadowRadius: 12, elevation: 5,
+    marginBottom: 8, overflow: "hidden",
+  },
+  dropItem: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#F3F4F6",
+  },
+  dropItemText: { flex: 1, fontSize: 13, fontWeight: "600", color: "#111827" },
+  dropChip:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  dropChipText: { fontSize: 10, fontWeight: "800" },
+
+  selectedPill: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#EFF6FF", borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8,
+    marginBottom: 14,
+    borderWidth: 1, borderColor: "#BFDBFE",
+  },
+  selectedText: { flex: 1, fontSize: 13, fontWeight: "700", color: "#0A1128" },
+
+  pctRow: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#F9FAFB", borderRadius: 12,
+    borderWidth: 1, borderColor: "#E5E7EB",
+    paddingHorizontal: 14, marginBottom: 14, height: 52,
+  },
+  pctInput: { flex: 1, fontSize: 20, fontWeight: "800", color: "#0A1128", padding: 0 },
+  pctUnit:  { fontSize: 14, fontWeight: "700", color: "#9CA3AF", marginLeft: 4 },
+
+  durRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  durBtn: {
+    flex: 1, alignItems: "center", paddingVertical: 13,
+    borderRadius: 14, backgroundColor: "#F9FAFB",
+    borderWidth: 1.5, borderColor: "#E5E7EB",
+  },
+  durBtnActive:  { backgroundColor: "#0A1128", borderColor: "#D4AF37" },
+  durNum:        { fontSize: 20, fontWeight: "900", color: "#374151" },
+  durNumActive:  { color: "#D4AF37" },
+  durUnit:       { fontSize: 10, color: "#9CA3AF", marginTop: 2 },
+  durUnitActive: { color: "rgba(212,175,55,0.7)" },
+
+  errRow: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 10, marginBottom: 10 },
+  errText: { flex: 1, fontSize: 12, color: "#DC2626" },
+  okRow:  { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#ECFDF5", borderRadius: 10, padding: 10, marginBottom: 10 },
+  okText: { flex: 1, fontSize: 12, color: "#059669" },
+
+  applyBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16,
+  },
+  applyBtnDisabled: { opacity: 0.4 },
+  applyBtnText: { fontSize: 14, fontWeight: "900", color: "#0A1128" },
+});
+
 // ── Section header ─────────────────────────────────────────────────────────────
 
 function SectionHeader({ title, count }: { title: string; count?: number }) {
@@ -851,7 +1161,7 @@ export default function SuperAdminDashboard() {
   }, [loadData]);
 
   return (
-    <View style={[styles.container, { backgroundColor: "#0A1128" }]}>
+    <View style={styles.container}>
       {/* ── HEADER ── */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <View style={styles.headerRow}>
@@ -869,19 +1179,19 @@ export default function SuperAdminDashboard() {
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAdminViewMode(true); }}
             >
               <Ionicons name="eye-outline" size={14} color="#D4AF37" />
-              <Text style={styles.switchBtnText}>Admin View</Text>
+              <Text style={styles.switchBtnText}>Standard View</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerBtn, { opacity: pressed ? 0.7 : 1 }]}
               onPress={() => { setRefreshing(true); loadData(true); }}
             >
-              <Ionicons name="refresh-outline" size={20} color="#D4AF37" />
+              <Ionicons name="refresh-outline" size={20} color="#0A1128" />
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerBtn, { opacity: pressed ? 0.7 : 1 }]}
               onPress={logout}
             >
-              <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.65)" />
+              <Ionicons name="log-out-outline" size={20} color="#6B7280" />
             </Pressable>
           </View>
         </View>
@@ -913,6 +1223,10 @@ export default function SuperAdminDashboard() {
             <View style={styles.metricsGrid}>
               {metricItems.map(item => <MetricCard key={item.key} item={item} />)}
             </View>
+
+            {/* ── TENANT SUBSCRIPTION & PROMOTION MANAGER ── */}
+            <SectionHeader title="TENANT SUBSCRIPTION & PROMOTION MANAGER" />
+            <PromoManagerSection orgs={orgs} onSuccess={handleExtendSuccess} />
 
             {/* ── TENANT DIRECTORY ── */}
             <SectionHeader title="TENANT DIRECTORY" count={filteredOrgs.length} />
@@ -1007,17 +1321,17 @@ export default function SuperAdminDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  header:       { backgroundColor: "#0A1128", paddingHorizontal: 20, paddingBottom: 20 },
+  header:       { backgroundColor: "#FFFFFF", paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E7EB", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4 },
   headerRow:    { flexDirection: "row", alignItems: "flex-start" },
   headerLeft:   { flex: 1 },
   goldBadge:    { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#D4AF37", alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
   goldBadgeText:{ fontSize: 10, fontWeight: "900", color: "#0A1128", letterSpacing: 0.5 },
-  headerTitle:  { fontSize: 26, fontWeight: "900", color: "#FFF", marginBottom: 3 },
-  headerSub:    { fontSize: 12, color: "rgba(255,255,255,0.55)" },
+  headerTitle:  { fontSize: 26, fontWeight: "900", color: "#0A1128", marginBottom: 3 },
+  headerSub:    { fontSize: 12, color: "#9CA3AF" },
   headerRight:  { flexDirection: "column", alignItems: "flex-end", gap: 6, paddingTop: 4 },
-  switchBtn:    { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(212,175,55,0.15)", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: "rgba(212,175,55,0.35)" },
+  switchBtn:    { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#0A1128", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: "#D4AF37" },
   switchBtnText:{ fontSize: 11, fontWeight: "800", color: "#D4AF37" },
-  headerBtn:    { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  headerBtn:    { width: 36, height: 36, borderRadius: 10, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
 
   body:         { flex: 1, backgroundColor: "#F8FAFC" },
   loadingBox:   { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },

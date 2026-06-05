@@ -20,6 +20,7 @@ import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import SuperAdminShortcut from "@/components/SuperAdminShortcut";
 import { useAppData } from "@/context/AppDataContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { usePaidLessons, type PaidLesson } from "@/context/PaidLessonsContext";
@@ -221,6 +222,8 @@ export default function ParentHome() {
             )}
           </Pressable>
         </View>
+
+        <SuperAdminShortcut />
 
         {/* Security Alert Banner */}
         {activeAlerts.filter(a => a.type !== "access_denied").length > 0 && (
