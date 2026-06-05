@@ -72,12 +72,12 @@ function StepIndicator({ current }: { current: number }) {
 const si = StyleSheet.create({
   row:         { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 28 },
   dot:         { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  done:        { backgroundColor: "#10B981" },
+  done:        { backgroundColor: NAVY },
   active:      { backgroundColor: GOLD },
-  idle:        { backgroundColor: "rgba(255,255,255,0.15)" },
-  line:        { flex: 1, height: 2, backgroundColor: "rgba(255,255,255,0.15)", maxWidth: 28 },
-  lineDone:    { backgroundColor: "#10B981" },
-  dotNum:      { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.5)" },
+  idle:        { backgroundColor: "#E5E7EB" },
+  line:        { flex: 1, height: 2, backgroundColor: "#E5E7EB", maxWidth: 28 },
+  lineDone:    { backgroundColor: NAVY },
+  dotNum:      { fontSize: 12, fontWeight: "700", color: "#9CA3AF" },
   dotNumActive:{ color: NAVY },
 });
 
@@ -210,7 +210,7 @@ export default function Pioneer() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: NAVY }}
+      style={{ flex: 1, backgroundColor: "#F8F9FA" }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
@@ -410,7 +410,7 @@ export default function Pioneer() {
                   <Text style={styles.presetLabel}>{p.label}</Text>
                   {selectedPreset === i && (
                     <View style={styles.presetCheck}>
-                      <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                      <Ionicons name="checkmark-circle" size={16} color={GOLD} />
                     </View>
                   )}
                 </Pressable>
@@ -516,7 +516,7 @@ export default function Pioneer() {
             )}
 
             <Pressable
-              style={[styles.primaryBtn, { marginTop: 12, backgroundColor: GOLD }, completing && { opacity: 0.7 }]}
+              style={[styles.primaryBtn, { marginTop: 12, backgroundColor: NAVY }, completing && { opacity: 0.7 }]}
               onPress={handleComplete}
               disabled={completing}
             >
@@ -527,7 +527,7 @@ export default function Pioneer() {
             </Pressable>
 
             <Pressable style={styles.backBtn} onPress={() => next(step - 1)}>
-              <Ionicons name="arrow-back-outline" size={15} color="rgba(255,255,255,0.5)" />
+              <Ionicons name="arrow-back-outline" size={15} color="#64748B" />
               <Text style={styles.backText}>Back</Text>
             </Pressable>
           </View>
@@ -536,7 +536,7 @@ export default function Pioneer() {
         {/* Back nav for steps 2-4 */}
         {step > 1 && step < 5 && (
           <Pressable style={styles.backBtn} onPress={() => next(step - 1)}>
-            <Ionicons name="arrow-back-outline" size={15} color="rgba(255,255,255,0.5)" />
+            <Ionicons name="arrow-back-outline" size={15} color="#64748B" />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
         )}
@@ -550,10 +550,10 @@ const styles = StyleSheet.create({
   header:    { alignItems: "center", marginBottom: 24, gap: 8 },
   badge:     { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: GOLD, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
   badgeText: { fontSize: 11, fontWeight: "800", color: NAVY, letterSpacing: 1.5 },
-  title:     { fontSize: 28, fontWeight: "900", color: "#FFF", textAlign: "center" },
-  subtitle:  { fontSize: 14, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 20, marginBottom: 8 },
+  title:     { fontSize: 28, fontWeight: "900", color: NAVY, textAlign: "center" },
+  subtitle:  { fontSize: 14, color: "#64748B", textAlign: "center", lineHeight: 20, marginBottom: 8 },
 
-  card:      { backgroundColor: "#FFF", borderRadius: 24, padding: 22, gap: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12, marginBottom: 16 },
+  card:      { backgroundColor: "#FFF", borderRadius: 24, padding: 22, gap: 4, shadowColor: "#0A1128", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 3, borderWidth: 1, borderColor: "#EEF2F6", marginBottom: 16 },
   cardTitle: { fontSize: 20, fontWeight: "800", marginBottom: 4 },
   cardSub:   { fontSize: 13, color: "#6B7280", marginBottom: 16, lineHeight: 19 },
 
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   skipText: { fontSize: 13, color: "#6B7280", fontWeight: "500" },
 
   backBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, marginBottom: 4 },
-  backText: { fontSize: 13, color: "rgba(255,255,255,0.5)", fontWeight: "600" },
+  backText: { fontSize: 13, color: "#64748B", fontWeight: "600" },
 
   errBox:   { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: "#FECACA" },
   errText:  { flex: 1, fontSize: 13, color: "#EF4444" },
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
 
   presetGrid:        { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
   presetCard:        { borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E7EB", padding: 10, minWidth: "30%", flex: 1, alignItems: "center", position: "relative" },
-  presetCardSelected:{ borderColor: "#10B981", backgroundColor: "#F0FDF4" },
+  presetCardSelected:{ borderColor: GOLD, backgroundColor: `${GOLD}12` },
   presetSwatch:      { width: 20, height: 20, borderRadius: 10 },
   presetLabel:       { fontSize: 10, fontWeight: "600", color: "#374151", textAlign: "center", marginTop: 2 },
   presetCheck:       { position: "absolute", top: 4, right: 4 },
