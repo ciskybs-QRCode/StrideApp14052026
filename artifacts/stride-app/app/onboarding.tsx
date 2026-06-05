@@ -19,6 +19,19 @@ import { useAuth } from "@/context/AuthContext";
 import { SignaturePad } from "@/components/SignaturePad";
 import { api, type ApiDocument } from "@/lib/api";
 
+/** Prevent API calls from hanging the spinner indefinitely. */
+function withTimeout<T>(promise: Promise<T>, ms = 20_000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new Error("Request timed out — check your connection and try again.")),
+        ms
+      )
+    ),
+  ]);
+}
+
 // ── Country / dial-code list ───────────────────────────────────────────────────
 interface Country {
   dial: string;
@@ -139,6 +152,7 @@ export default function OnboardingScreen() {
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [submitErr, setSubmitErr] = useState("");
 
   // Step 1 — Personal info + address
   const [firstName, setFirstName] = useState("");
@@ -224,32 +238,37 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = async () => {
+    setSubmitErr("");
     setSaving(true);
     try {
       const fullName  = `${firstName.trim()} ${lastName.trim()}`;
       const fullPhone = `${dialCode}${phone.trim()}`;
 
-      await api.updateFullProfile({
-        firstName: firstName.trim(),
-        lastName:  lastName.trim(),
-        phone:     fullPhone,
-        address: { street, city, zip, state, country },
-      });
+      await withTimeout(
+        api.updateFullProfile({
+          firstName: firstName.trim(),
+          lastName:  lastName.trim(),
+          phone:     fullPhone,
+          address: { street, city, zip, state, country },
+        })
+      );
 
       for (const m of members) {
-        await api.addChild({ first_name: m.firstName, last_name: m.lastName, ...(m.dob ? { date_of_birth: m.dob } : {}) });
+        await withTimeout(
+          api.addChild({ first_name: m.firstName, last_name: m.lastName, ...(m.dob ? { date_of_birth: m.dob } : {}) })
+        );
       }
 
       for (const doc of mandatoryDocs) {
         const sig = signatures[doc.id];
-        if (sig) await api.signDocumentWithSignature(String(doc.id), sig);
+        if (sig) await withTimeout(api.signDocumentWithSignature(String(doc.id), sig));
       }
 
       await updateUser({ name: fullName, phone: fullPhone, onboardingComplete: true });
       router.replace("/(parent)/home");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Something went wrong";
-      Alert.alert("Error", msg + "\n\nPlease try again.");
+      const msg = e instanceof Error ? e.message : "Something went wrong. Please try again.";
+      setSubmitErr(msg);
     } finally {
       setSaving(false);
     }
@@ -529,6 +548,13 @@ export default function OnboardingScreen() {
                 })
               )}
 
+              {!!submitErr && (
+                <View style={styles.errBanner}>
+                  <Ionicons name="alert-circle-outline" size={15} color="#DC2626" />
+                  <Text style={styles.errBannerText}>{submitErr}</Text>
+                </View>
+              )}
+
               <Pressable
                 style={[styles.primaryBtn, (!step4Valid || saving) && styles.primaryBtnDisabled]}
                 onPress={handleComplete}
@@ -681,6 +707,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryBtnDisabled: { opacity: 0.4 },
+  errBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    padding: 12,
+  },
+  errBannerText: { flex: 1, fontSize: 13, color: "#DC2626", lineHeight: 18 },
   primaryBtnText: { fontSize: 16, fontWeight: "800", color: "#FFF" },
   fieldLabel: { fontSize: 12, fontWeight: "700", color: "#374151", marginBottom: 6 },
   hint: { fontSize: 11, color: "#94A3B8", marginTop: 4 },

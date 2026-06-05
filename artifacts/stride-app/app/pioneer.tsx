@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Linking,
@@ -22,8 +21,21 @@ import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { api, setToken } from "@/lib/api";
 
-const NAVY = "#1E3A8A";
-const GOLD = "#FBBF24";
+const NAVY = "#0A1128";
+const GOLD = "#D4AF37";
+
+/** Prevent API calls from hanging the spinner indefinitely. */
+function withTimeout<T>(promise: Promise<T>, ms = 20_000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new Error("Request timed out — check your connection and try again.")),
+        ms
+      )
+    ),
+  ]);
+}
 const TOTAL_STEPS = 5;
 
 const COLOR_PRESETS = [
@@ -106,6 +118,7 @@ export default function Pioneer() {
   const [ageGroups, setAgeGroups]   = useState<string[]>([]);
   const [skillLevels, setSkillLevels] = useState<string[]>([]);
   const [completing, setCompleting] = useState(false);
+  const [completeErr, setCompleteErr] = useState("");
 
   const scrollToTop = () => scrollRef.current?.scrollTo({ y: 0, animated: true });
 
@@ -144,14 +157,18 @@ export default function Pioneer() {
   // ── Step 3: Logo picker ───────────────────────────────────────────────────
   const pickLogo = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") { Alert.alert("Permission needed", "Allow photo access to upload your logo."); return; }
+    if (status !== "granted") { setCompleteErr("Photo library access is required to upload a logo. Please allow it in your device settings."); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
     if (!result.canceled && result.assets[0]) setLogoUri(result.assets[0].uri);
   };
 
   // ── Step 5: Complete wizard ───────────────────────────────────────────────
   const handleComplete = async () => {
-    if (!schoolName.trim()) { Alert.alert("School name required", "Please enter your school name."); return; }
+    setCompleteErr("");
+    if (!schoolName.trim()) {
+      setCompleteErr("School name is required. Go back to Step 1 and enter your school name.");
+      return;
+    }
     setCompleting(true);
     try {
       const preset = COLOR_PRESETS[selectedPreset];
@@ -160,22 +177,24 @@ export default function Pioneer() {
       await updateUser({ schoolName, primaryColor: preset.primary, secondaryColor: preset.secondary, logoUri: logoUri ?? undefined });
 
       // Persist to backend
-      await api.pioneerComplete({
-        schoolName: schoolName.trim(),
-        registrationNumber: regNumber.trim() || undefined,
-        contactPhone: contactPhone.trim() || undefined,
-        studios: studios.filter(s => s.name.trim()).map(s => ({
-          name: s.name.trim(),
-          capacity: parseInt(s.capacity, 10) || 20,
-        })),
-        ageGroups,
-        skillLevels,
-      });
+      await withTimeout(
+        api.pioneerComplete({
+          schoolName: schoolName.trim(),
+          registrationNumber: regNumber.trim() || undefined,
+          contactPhone: contactPhone.trim() || undefined,
+          studios: studios.filter(s => s.name.trim()).map(s => ({
+            name: s.name.trim(),
+            capacity: parseInt(s.capacity, 10) || 20,
+          })),
+          ageGroups,
+          skillLevels,
+        })
+      );
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(admin)/stats");
     } catch (err: unknown) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Setup failed. Please try again.");
+      setCompleteErr(err instanceof Error ? err.message : "Setup failed — please try again.");
     } finally {
       setCompleting(false);
     }
@@ -342,7 +361,7 @@ export default function Pioneer() {
                       setStripeLinked(true);
                     }
                   } catch {
-                    Alert.alert("Stripe not configured", "Stripe Connect setup can be completed later from Admin Settings → Finance.");
+                    /* Stripe not yet configured — user can connect later via Admin Settings → Finance */
                   }
                 }}
               >
@@ -489,8 +508,15 @@ export default function Pioneer() {
               </Text>
             </View>
 
+            {!!completeErr && (
+              <View style={styles.errBox}>
+                <Ionicons name="alert-circle-outline" size={15} color="#EF4444" />
+                <Text style={styles.errText}>{completeErr}</Text>
+              </View>
+            )}
+
             <Pressable
-              style={[styles.primaryBtn, { marginTop: 20, backgroundColor: "#10B981" }, completing && { opacity: 0.7 }]}
+              style={[styles.primaryBtn, { marginTop: 12, backgroundColor: GOLD }, completing && { opacity: 0.7 }]}
               onPress={handleComplete}
               disabled={completing}
             >
