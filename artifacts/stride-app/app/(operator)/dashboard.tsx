@@ -25,6 +25,7 @@ import { useRouter } from "expo-router";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import SuperAdminShortcut from "@/components/SuperAdminShortcut";
+import RoleSwitcherBar from "@/components/RoleSwitcherBar";
 import { type QrScanParams, useOfflineSync } from "@/context/OfflineSyncContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
@@ -908,6 +909,7 @@ export default function OperatorDashboard() {
         </View>
 
         <SuperAdminShortcut />
+        <RoleSwitcherBar />
 
         {/* ── Active Alert Banner (substitution cascade only — red alert goes to Admin) ── */}
         {activeAlert && !activeAlert.resolved && activeAlert.cascadeStep < 4 && (

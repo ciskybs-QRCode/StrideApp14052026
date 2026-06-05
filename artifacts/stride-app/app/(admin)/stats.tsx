@@ -20,6 +20,7 @@ import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import SuperAdminShortcut from "@/components/SuperAdminShortcut";
+import RoleSwitcherBar from "@/components/RoleSwitcherBar";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
@@ -299,6 +300,7 @@ export default function AdminHome() {
         </View>
 
         <SuperAdminShortcut />
+        <RoleSwitcherBar />
 
         {/* ── QUICK ACTIONS ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>

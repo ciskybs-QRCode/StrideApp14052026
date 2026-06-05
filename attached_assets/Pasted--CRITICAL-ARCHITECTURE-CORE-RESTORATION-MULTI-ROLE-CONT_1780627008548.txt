@@ -1,0 +1,28 @@
+🚨 CRITICAL ARCHITECTURE CORE RESTORATION: MULTI-ROLE CONTEXT SWITCHER & SECURE SUPER-ADMIN PORTAL 🚨
+
+Role: Principal Full-Stack Architect & State Management Expert.
+Context Failure: The previous code iteration accidentally deleted the essential multi-role context switcher. In our platform ecosystem, an Organization Administrator can concurrently be an Operator (Teacher) and a Member (Parent with dependent children) within the association. Breaking this structure destroys the entire testing and operational pipeline. 
+
+You must IMMEDIATELY restore and reinforce the multi-role swapping mechanics under the following strict specifications:
+
+1. RESTORE GLOBAL STANDARD ROLE SWITCHER (ADMIN / OPERATOR / MEMBER)
+- Re-implement the global UI switching component (dropdown, sliding menu, or profile header selector) visible across all standard client dashboards.
+- Whenever a user account holds or acts within multiple roles (Admin, Operator, Member/Parent), they must be able to switch contexts instantly (e.g., from Admin Home to Operator view, or from Operator view to personal Member/Parent Dashboard to see their linked dependants) without logging out.
+- Ensure that switching layouts updates the immediate UI viewport state but preserves the user's active session and database profile links.
+
+2. EXCLUSIVE SUPER-ADMIN GLOBAL GATEWAY (MASTER OVERRIDE)
+- Master Email Lock: "ciskybs@gmail.com" (and any explicit rows inside 'super_admin_collaborators').
+- Ubiquitous Super-Admin Access: No matter which standard role or view the master user switches into (whether looking at the app as a Standard Admin, an Operator, or a Parent/Member), a prominent, premium action tile or persistent button labeled "⚡ Enter Super Admin Command Center" must ALWAYS be rendered at the top of their navigation hierarchy.
+- This guarantees the Master Super Admin can never get locked out or trapped inside standard client layouts.
+
+3. INSIDE THE SUPER ADMIN COMMAND CENTER
+- Inside the Super Admin dashboard header, provide a clear, unified role execution hub to jump directly into ANY layout: [Super Admin View] | [Standard Admin View] | [Operator View] | [Member View].
+- Tapping any of these options must route or flip the workspace context flawlessly to allow full-stack testing from a single master account.
+
+4. THE ACCESSIBLE BACK BUTTON LAW (NATIVE TREE NAVIGATION)
+- Every single screen generated or updated within any role workflow MUST have a clean, non-floating, layout-integrated back button (Gold chevron `< Back`) at the top-left of the screen container. It must strictly follow the application routing tree to return to the previous view. No absolute/floating overlays allowed.
+
+VISUAL & TEXT SPECIFICATIONS:
+- Colors: Deep Navy Blue (#0A1128) backgrounds/text, Premium Gold (#D4AF37) for the Super Admin toggles and action highlights, minimalist White (#FFFFFF) cards with soft shadows.
+- Screen Containment: All dropdown selectors and layout wrappers must scale inside the viewport boundaries with ZERO horizontal breaking or overlapping elements.
+- Language: 100% STRICT ENGLISH for all code, buttons, and interface strings.

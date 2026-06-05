@@ -1090,7 +1090,7 @@ const shStyles = StyleSheet.create({
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 
 export default function SuperAdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole } = useAuth();
   const router           = useRouter();
   const insets           = useSafeAreaInsets();
 
@@ -1195,6 +1195,47 @@ export default function SuperAdminDashboard() {
             </Pressable>
           </View>
         </View>
+      </View>
+
+      {/* ── ROLE HUB ── */}
+      <View style={styles.roleHub}>
+        <Text style={styles.roleHubLabel}>JUMP TO VIEW</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.roleHubRow}>
+          {([
+            { role: "super_admin" as const, label: "SA View",       icon: "shield-checkmark"  as const },
+            { role: "admin"       as const, label: "Admin View",    icon: "settings-outline"  as const },
+            { role: "operator"    as const, label: "Operator View", icon: "school-outline"    as const },
+            { role: "parent"      as const, label: "Member View",   icon: "person-outline"    as const },
+          ] as const).map(item => {
+            const active = item.role === "super_admin";
+            return (
+              <Pressable
+                key={item.role}
+                style={({ pressed }) => [
+                  styles.roleHubChip,
+                  active && styles.roleHubChipActive,
+                  { opacity: pressed && !active ? 0.7 : 1 },
+                ]}
+                onPress={async () => {
+                  if (active) return;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  await switchRole(item.role);
+                  const routes: Record<string, string> = {
+                    admin:    "/(admin)/stats",
+                    operator: "/(operator)/dashboard",
+                    parent:   "/(parent)/home",
+                  };
+                  router.replace(routes[item.role] as never);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Switch to ${item.label}`}
+              >
+                <Ionicons name={item.icon} size={13} color={active ? "#0A1128" : "#D4AF37"} />
+                <Text style={[styles.roleHubChipText, active && styles.roleHubChipTextActive]}>{item.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* ── BODY ── */}
@@ -1332,6 +1373,24 @@ const styles = StyleSheet.create({
   switchBtn:    { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#0A1128", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: "#D4AF37" },
   switchBtnText:{ fontSize: 11, fontWeight: "800", color: "#D4AF37" },
   headerBtn:    { width: 36, height: 36, borderRadius: 10, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
+
+  roleHub:         { backgroundColor: "#0A1128", paddingHorizontal: 20, paddingBottom: 14, paddingTop: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(212,175,55,0.2)" },
+  roleHubLabel:    { fontSize: 9, fontWeight: "900", color: "rgba(212,175,55,0.55)", letterSpacing: 1.5, marginBottom: 10 },
+  roleHubRow:      { flexDirection: "row", gap: 8, paddingRight: 4 },
+  roleHubChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(212,175,55,0.25)",
+  },
+  roleHubChipActive:     { backgroundColor: "#D4AF37", borderColor: "#D4AF37" },
+  roleHubChipText:       { fontSize: 12, fontWeight: "700", color: "#D4AF37" },
+  roleHubChipTextActive: { color: "#0A1128" },
 
   body:         { flex: 1, backgroundColor: "#F8FAFC" },
   loadingBox:   { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
