@@ -1,0 +1,23 @@
+🚨 IMMUTABLE GLOBAL DESIGN SYSTEM LAW: BAN ALL INLINE COLORS AND ENFORCE THEME CONSTANTS 🚨
+
+Role: Lead UI/UX Engineer & Software Architect.
+Context Failure: You are constantly generating random, inline, or arbitrary hex codes across different screens, breaking the platform's corporate identity. This stops NOW. You must enforce a single, unified, immutable global Design System.
+
+1. CRITICAL COLOR PALETTE ARCHITECTURE (THE ONLY ALLOWED COLORS)
+- BACKGROUND CANVAS: Pure White (#FFFFFF) or Ultra-Light Fresh Gray (#F8F9FA) ONLY. The app layout must remain bright, clean, and spacious.
+- PRIMARY BRAND / TEXT / HEADERS: Deep Navy Blue (#0A1128) ONLY. Used for corporate seriousness, titles, and main text structures.
+- SECONDARY BRAND / ACCENTS / INTERACTIONS: Premium Gold (#D4AF37) ONLY. Used for focused states, premium call-to-actions, and highlights.
+- SEMANTIC EXCEPTIONS: Strict exceptions are allowed ONLY for critical system alerts (e.g., the Red #EF4444 for the SOS Emergency button or Forbidden banners, and Green for Success status). Absolutely zero other colors are permitted.
+
+2. REFACTOR TASK: CENTRALIZED THEME ENFORCEMENT
+- Locate the main global style/theme file (e.g., app_theme.dart, theme.ts, or tailwind.config.js depending on the stack setup).
+- If it doesn't exist, CREATE a centralized theme configuration file declaring these exact three colors as global constants (e.g., BRAND_NAVY, BRAND_GOLD, BRAND_LIGHT_BG).
+- Go through the files changed in the last iterations (especially the Onboarding Wizard, Home, and Super Admin views) and REMOVE any inline hardcoded hex codes or native element color overrides. Replace them strictly with the global theme variables.
+
+3. REPLIT AI BEHAVIORAL OVERRIDE FOR FUTURE PROMPTS
+- From this moment on, for ANY UI component, button, card, or screen you write, modify, or update, you are FORBIDDEN from choosing or inventing colors.
+- If you need to style a component, you must STRICTLY pull the color from the centralized global theme constants.
+
+VISUAL SCREEN CONSTRAINT:
+- Everything must fit elegantly within the phone layout viewport with zero layout shifting, zero text clipping behind the notch, and perfect breathing room (padding/margins).
+- Language: 100% STRICT ENGLISH for all code-level labels and technical references.

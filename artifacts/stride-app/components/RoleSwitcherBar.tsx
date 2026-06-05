@@ -5,8 +5,7 @@ import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useAuth, type UserRole } from "@/context/AuthContext";
 
-const NAVY = "#0A1128";
-const GOLD = "#D4AF37";
+import { NAVY, GOLD } from "@/lib/theme";
 
 type RoleConfig = {
   role: UserRole;

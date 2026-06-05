@@ -30,6 +30,7 @@ import {
 } from "@/lib/api";
 import CollaboratorsPanel from "@/components/CollaboratorsPanel";
 import PaymentGatewaysPanel from "@/components/PaymentGatewaysPanel";
+import { NAVY, GOLD, BG } from "@/lib/theme";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const CARD_W = Math.floor((SCREEN_W - 40) / 2);
@@ -119,7 +120,7 @@ function AdminHomeView({ onReturn }: { onReturn: () => void }) {
       <View style={[avStyles.banner, { paddingTop: insets.top + 8 }]}>
         <View style={avStyles.bannerLeft}>
           <View style={avStyles.bannerBadge}>
-            <Ionicons name="eye-outline" size={12} color="#1E3A8A" />
+            <Ionicons name="eye-outline" size={12} color={NAVY} />
             <Text style={avStyles.bannerBadgeText}>ADMIN VIEW PREVIEW</Text>
           </View>
           <Text style={avStyles.bannerTitle}>Standard Admin Workspace</Text>
@@ -128,7 +129,7 @@ function AdminHomeView({ onReturn }: { onReturn: () => void }) {
           style={({ pressed }) => [avStyles.returnBtn, { opacity: pressed ? 0.8 : 1 }]}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onReturn(); }}
         >
-          <Ionicons name="shield-checkmark" size={14} color="#1E3A8A" />
+          <Ionicons name="shield-checkmark" size={14} color={NAVY} />
           <Text style={avStyles.returnBtnText}>Return to Control Panel</Text>
         </Pressable>
       </View>
@@ -161,7 +162,7 @@ function AdminHomeView({ onReturn }: { onReturn: () => void }) {
           ))}
 
           <View style={avStyles.noteCard}>
-            <Ionicons name="information-circle-outline" size={16} color="#1E3A8A" />
+            <Ionicons name="information-circle-outline" size={16} color={NAVY} />
             <Text style={avStyles.noteText}>
               You are previewing the Admin workspace as Super Administrator.
               Tap any card to open that module — all changes apply to the live platform.
@@ -175,7 +176,7 @@ function AdminHomeView({ onReturn }: { onReturn: () => void }) {
             style={({ pressed }) => [avStyles.floatBtnInner, { opacity: pressed ? 0.85 : 1 }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onReturn(); }}
           >
-            <Ionicons name="shield-checkmark" size={16} color="#1E3A8A" />
+            <Ionicons name="shield-checkmark" size={16} color={NAVY} />
             <Text style={avStyles.floatBtnText}>Return to Super Admin Panel</Text>
           </Pressable>
         </View>
@@ -186,7 +187,7 @@ function AdminHomeView({ onReturn }: { onReturn: () => void }) {
 
 const avStyles = StyleSheet.create({
   banner: {
-    backgroundColor: "#D4AF37",
+    backgroundColor: GOLD,
     paddingHorizontal: 16,
     paddingBottom: 14,
     flexDirection: "row",
@@ -196,16 +197,16 @@ const avStyles = StyleSheet.create({
   },
   bannerLeft:      { flex: 1, gap: 4 },
   bannerBadge:     { flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start" },
-  bannerBadgeText: { fontSize: 10, fontWeight: "900", color: "#1E3A8A", letterSpacing: 0.8 },
-  bannerTitle:     { fontSize: 17, fontWeight: "900", color: "#0A1128" },
+  bannerBadgeText: { fontSize: 10, fontWeight: "900", color: NAVY, letterSpacing: 0.8 },
+  bannerTitle:     { fontSize: 17, fontWeight: "900", color: NAVY },
   returnBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: "#0A1128", borderRadius: 20,
+    backgroundColor: NAVY, borderRadius: 20,
     paddingHorizontal: 14, paddingVertical: 9, flexShrink: 0,
   },
-  returnBtnText: { fontSize: 12, fontWeight: "800", color: "#D4AF37" },
+  returnBtnText: { fontSize: 12, fontWeight: "800", color: GOLD },
 
-  body:    { flex: 1, backgroundColor: "#F8FAFC" },
+  body:    { flex: 1, backgroundColor: BG },
   content: { paddingHorizontal: 16, paddingTop: 20 },
 
   sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#9CA3AF", marginBottom: 14 },
@@ -227,19 +228,19 @@ const avStyles = StyleSheet.create({
     flexDirection: "row", alignItems: "flex-start", gap: 10,
     backgroundColor: "#EFF6FF", borderRadius: 14, padding: 14, marginTop: 4,
   },
-  noteText: { flex: 1, fontSize: 12, color: "#1E3A8A", lineHeight: 18 },
+  noteText: { flex: 1, fontSize: 12, color: NAVY, lineHeight: 18 },
 
   floatBtn: {
     position: "absolute", alignSelf: "center",
-    shadowColor: "#D4AF37", shadowOffset: { width: 0, height: 4 },
+    shadowColor: GOLD, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5, shadowRadius: 12, elevation: 10,
   },
   floatBtnInner: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "#D4AF37", borderRadius: 30,
+    backgroundColor: GOLD, borderRadius: 30,
     paddingHorizontal: 22, paddingVertical: 14,
   },
-  floatBtnText: { fontSize: 14, fontWeight: "900", color: "#0A1128" },
+  floatBtnText: { fontSize: 14, fontWeight: "900", color: NAVY },
 });
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -289,7 +290,7 @@ function TenantCard({ org, onExtend }: { org: AssociationRecord; onExtend: (o: A
     <View style={tcStyles.card}>
       <View style={tcStyles.topRow}>
         <View style={tcStyles.iconBox}>
-          <Ionicons name="business-outline" size={18} color="#0A1128" />
+          <Ionicons name="business-outline" size={18} color={NAVY} />
         </View>
         <View style={tcStyles.nameBlock}>
           <Text style={tcStyles.name} numberOfLines={1}>{org.name}</Text>
@@ -303,7 +304,7 @@ function TenantCard({ org, onExtend }: { org: AssociationRecord; onExtend: (o: A
           </View>
           {hasDiscount && (
             <View style={tcStyles.discountChip}>
-              <Ionicons name="pricetag" size={9} color="#D4AF37" />
+              <Ionicons name="pricetag" size={9} color={GOLD} />
               <Text style={tcStyles.discountChipText}>{org.discount_rate}% OFF</Text>
             </View>
           )}
@@ -322,7 +323,7 @@ function TenantCard({ org, onExtend }: { org: AssociationRecord; onExtend: (o: A
           style={({ pressed }) => [tcStyles.extendBtn, { opacity: pressed ? 0.75 : 1 }]}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onExtend(org); }}
         >
-          <Ionicons name="options-outline" size={13} color="#0A1128" />
+          <Ionicons name="options-outline" size={13} color={NAVY} />
           <Text style={tcStyles.extendBtnText}>Manage</Text>
         </Pressable>
       </View>
@@ -339,21 +340,21 @@ const tcStyles = StyleSheet.create({
   badges:     { alignItems: "flex-end", gap: 4 },
   chip:       { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   chipText:   { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
-  discountChip: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#0A1128", borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3 },
-  discountChipText: { fontSize: 9, fontWeight: "900", color: "#D4AF37" },
+  discountChip: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: NAVY, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3 },
+  discountChipText: { fontSize: 9, fontWeight: "900", color: GOLD },
   bottomRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   trialLabel: { fontSize: 12, color: "#6B7280", flex: 1 },
   extendBtn:  { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#EFF6FF" },
-  extendBtnText: { fontSize: 12, fontWeight: "700", color: "#0A1128" },
+  extendBtnText: { fontSize: 12, fontWeight: "700", color: NAVY },
 });
 
 function EventCard({ event }: { event: PlatformEvent }) {
   const icon = EVENT_ICONS[event.event_type] ?? "radio-button-on-outline";
   const iconColor =
-    event.event_type === "new_tenant_registered"  ? "#0A1128" :
+    event.event_type === "new_tenant_registered"  ? NAVY :
     event.event_type === "trial_extended"         ? "#D97706" :
     event.event_type === "subscription_activated" ? "#059669" :
-    event.event_type === "discount_applied"       ? "#D4AF37" :
+    event.event_type === "discount_applied"       ? GOLD :
     "#DC2626";
 
   return (
@@ -479,7 +480,7 @@ function ExtendModal({
             {/* Header */}
             <View style={emStyles.header}>
               <View style={emStyles.headerIcon}>
-                <Ionicons name="options" size={28} color="#0A1128" />
+                <Ionicons name="options" size={28} color={NAVY} />
               </View>
               <Text style={emStyles.title}>Tenant Management</Text>
               <Text style={emStyles.orgName} numberOfLines={1}>{org?.name}</Text>
@@ -490,7 +491,7 @@ function ExtendModal({
                 <Text style={emStyles.dayText}>{dayText}</Text>
                 {org?.discount_rate != null && org.discount_rate > 0 && (
                   <View style={emStyles.activeDiscountBadge}>
-                    <Ionicons name="pricetag" size={10} color="#D4AF37" />
+                    <Ionicons name="pricetag" size={10} color={GOLD} />
                     <Text style={emStyles.activeDiscountText}>{org.discount_rate}% DISC</Text>
                   </View>
                 )}
@@ -534,7 +535,7 @@ function ExtendModal({
                 disabled={extending}
               >
                 {extending
-                  ? <ActivityIndicator size="small" color="#0A1128" />
+                  ? <ActivityIndicator size="small" color={NAVY} />
                   : <Text style={emStyles.applyText}>Apply</Text>}
               </Pressable>
             </View>
@@ -584,7 +585,7 @@ function ExtendModal({
             {/* ── CUSTOM DISCOUNT ENGINE ── */}
             <View style={emStyles.discountHeader}>
               <View style={emStyles.discountHeaderIcon}>
-                <Ionicons name="pricetag" size={14} color="#D4AF37" />
+                <Ionicons name="pricetag" size={14} color={GOLD} />
               </View>
               <Text style={emStyles.sectionLabel}>CUSTOM DISCOUNT ENGINE</Text>
             </View>
@@ -669,9 +670,9 @@ function ExtendModal({
               disabled={applyingDisc || !discountRate.trim()}
             >
               {applyingDisc
-                ? <ActivityIndicator size="small" color="#0A1128" />
+                ? <ActivityIndicator size="small" color={NAVY} />
                 : <>
-                    <Ionicons name="pricetag" size={16} color="#0A1128" />
+                    <Ionicons name="pricetag" size={16} color={NAVY} />
                     <Text style={emStyles.discountCtaText}>
                       Apply {discountRate ? `${discountRate}%` : ""} Discount for {discountMonths} Month{discountMonths !== 1 ? "s" : ""}
                     </Text>
@@ -685,9 +686,9 @@ function ExtendModal({
               disabled={extending}
             >
               {extending
-                ? <ActivityIndicator size="small" color="#0A1128" />
+                ? <ActivityIndicator size="small" color={NAVY} />
                 : <>
-                    <Ionicons name="checkmark-circle" size={18} color="#0A1128" />
+                    <Ionicons name="checkmark-circle" size={18} color={NAVY} />
                     <Text style={emStyles.ctaText}>Override / Extend Trial Expiration</Text>
                   </>}
             </Pressable>
@@ -715,14 +716,14 @@ const emStyles = StyleSheet.create({
   chip:          { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
   chipText:      { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
   dayText:       { fontSize: 13, color: "#6B7280" },
-  activeDiscountBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#0A1128", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
-  activeDiscountText:  { fontSize: 10, fontWeight: "900", color: "#D4AF37" },
+  activeDiscountBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: NAVY, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
+  activeDiscountText:  { fontSize: 10, fontWeight: "900", color: GOLD },
   sectionLabel:  { fontSize: 10, fontWeight: "700", letterSpacing: 1.2, color: "#9CA3AF", marginTop: 20, marginBottom: 10, marginHorizontal: 24 },
   presetsRow:    { flexDirection: "row", gap: 8, marginHorizontal: 24, marginBottom: 4, flexWrap: "wrap" },
   presetBtn:     { flex: 1, minWidth: 52, alignItems: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: "#EFF6FF", borderWidth: 1.5, borderColor: "#BFDBFE" },
-  presetBtnActive: { backgroundColor: "#0A1128", borderColor: "#D4AF37" },
-  presetNum:     { fontSize: 22, fontWeight: "900", color: "#0A1128" },
-  presetNumActive: { color: "#D4AF37" },
+  presetBtnActive: { backgroundColor: NAVY, borderColor: GOLD },
+  presetNum:     { fontSize: 22, fontWeight: "900", color: NAVY },
+  presetNumActive: { color: GOLD },
   presetUnit:    { fontSize: 11, color: "#6B7280", marginTop: 2 },
   presetUnitActive: { color: "rgba(212,175,55,0.7)" },
   customRow:     { flexDirection: "row", gap: 10, marginHorizontal: 24, marginBottom: 4 },
@@ -730,13 +731,13 @@ const emStyles = StyleSheet.create({
   customInput:   { flex: 1, fontSize: 18, fontWeight: "700", color: "#111827" },
   customUnit:    { fontSize: 13, color: "#9CA3AF", marginLeft: 6 },
   applyBtn:      { paddingHorizontal: 22, height: 52, borderRadius: 12, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "#BFDBFE" },
-  applyText:     { fontSize: 15, fontWeight: "800", color: "#0A1128" },
+  applyText:     { fontSize: 15, fontWeight: "800", color: NAVY },
   errorBox:      { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, marginHorizontal: 24, marginBottom: 4 },
   errorText:     { flex: 1, color: "#DC2626", fontSize: 12 },
   successBox:    { flexDirection: "row", alignItems: "flex-start", gap: 6, backgroundColor: "#ECFDF5", borderRadius: 10, padding: 12, marginHorizontal: 24, marginBottom: 4 },
   successText:   { flex: 1, color: "#059669", fontSize: 12 },
-  ctaBtn:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 16, marginBottom: 8 },
-  ctaText:       { fontSize: 15, fontWeight: "900", color: "#0A1128" },
+  ctaBtn:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: GOLD, borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 16, marginBottom: 8 },
+  ctaText:       { fontSize: 15, fontWeight: "900", color: NAVY },
   cancelBtn:     { alignItems: "center", paddingVertical: 14, marginHorizontal: 24 },
   cancelText:    { fontSize: 15, color: "#6B7280" },
   billingCtrlRow:    { flexDirection: "row", gap: 10, marginHorizontal: 24, marginBottom: 4 },
@@ -748,14 +749,14 @@ const emStyles = StyleSheet.create({
   resumeBtnText:     { fontSize: 13, fontWeight: "800", color: "#059669" },
   // Discount engine
   discountHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 20, marginHorizontal: 24 },
-  discountHeaderIcon: { width: 24, height: 24, borderRadius: 8, backgroundColor: "#0A1128", alignItems: "center", justifyContent: "center" },
+  discountHeaderIcon: { width: 24, height: 24, borderRadius: 8, backgroundColor: NAVY, alignItems: "center", justifyContent: "center" },
   discRatesRow:   { flexDirection: "row", gap: 6, marginHorizontal: 24, marginBottom: 10, flexWrap: "wrap" },
   discRateChip:   { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB" },
-  discRateChipActive: { backgroundColor: "#0A1128", borderColor: "#D4AF37" },
+  discRateChipActive: { backgroundColor: NAVY, borderColor: GOLD },
   discRateText:   { fontSize: 13, fontWeight: "700", color: "#374151" },
-  discRateTextActive: { color: "#D4AF37" },
-  discountCta:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#0A1128", borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 12, borderWidth: 1.5, borderColor: "#D4AF37" },
-  discountCtaText:{ fontSize: 14, fontWeight: "900", color: "#D4AF37" },
+  discRateTextActive: { color: GOLD },
+  discountCta:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: NAVY, borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 12, borderWidth: 1.5, borderColor: GOLD },
+  discountCtaText:{ fontSize: 14, fontWeight: "900", color: GOLD },
 });
 
 // ── Promo Manager Section ─────────────────────────────────────────────────────
@@ -812,7 +813,7 @@ function PromoManagerSection({
       {/* Title */}
       <View style={pmS.titleRow}>
         <View style={pmS.titleIcon}>
-          <Ionicons name="pricetag" size={16} color="#D4AF37" />
+          <Ionicons name="pricetag" size={16} color={GOLD} />
         </View>
         <View style={pmS.titleText}>
           <Text style={pmS.title}>Subscription & Promotion Manager</Text>
@@ -880,7 +881,7 @@ function PromoManagerSection({
       {/* Selected org pill */}
       {selected && (
         <View style={pmS.selectedPill}>
-          <Ionicons name="business" size={13} color="#0A1128" />
+          <Ionicons name="business" size={13} color={NAVY} />
           <Text style={pmS.selectedText} numberOfLines={1}>{selected.name}</Text>
           <Pressable onPress={() => { setSelected(null); setQuery(""); }} hitSlop={8}>
             <Ionicons name="close-circle" size={16} color="#9CA3AF" />
@@ -951,10 +952,10 @@ function PromoManagerSection({
         disabled={!selected || saving}
       >
         {saving ? (
-          <ActivityIndicator size="small" color="#0A1128" />
+          <ActivityIndicator size="small" color={NAVY} />
         ) : (
           <>
-            <Ionicons name="checkmark-circle" size={16} color="#0A1128" />
+            <Ionicons name="checkmark-circle" size={16} color={NAVY} />
             <Text style={pmS.applyBtnText}>Apply Promotional Status</Text>
           </>
         )}
@@ -980,12 +981,12 @@ const pmS = StyleSheet.create({
   titleRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 14 },
   titleIcon: {
     width: 36, height: 36, borderRadius: 12,
-    backgroundColor: "#0A1128",
+    backgroundColor: NAVY,
     alignItems: "center", justifyContent: "center",
     flexShrink: 0,
   },
   titleText: { flex: 1 },
-  title:    { fontSize: 15, fontWeight: "900", color: "#0A1128", marginBottom: 3 },
+  title:    { fontSize: 15, fontWeight: "900", color: NAVY, marginBottom: 3 },
   subtitle: { fontSize: 12, color: "#6B7280", lineHeight: 17 },
 
   modeRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
@@ -993,9 +994,9 @@ const pmS = StyleSheet.create({
     flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: 10,
     backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB",
   },
-  modeBtnActive:     { backgroundColor: "#0A1128", borderColor: "#D4AF37" },
+  modeBtnActive:     { backgroundColor: NAVY, borderColor: GOLD },
   modeBtnText:       { fontSize: 12, fontWeight: "700", color: "#6B7280" },
-  modeBtnTextActive: { color: "#D4AF37" },
+  modeBtnTextActive: { color: GOLD },
 
   label: { fontSize: 10, fontWeight: "800", color: "#9CA3AF", letterSpacing: 1, marginBottom: 7 },
 
@@ -1032,7 +1033,7 @@ const pmS = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1, borderColor: "#BFDBFE",
   },
-  selectedText: { flex: 1, fontSize: 13, fontWeight: "700", color: "#0A1128" },
+  selectedText: { flex: 1, fontSize: 13, fontWeight: "700", color: NAVY },
 
   pctRow: {
     flexDirection: "row", alignItems: "center",
@@ -1040,7 +1041,7 @@ const pmS = StyleSheet.create({
     borderWidth: 1, borderColor: "#E5E7EB",
     paddingHorizontal: 14, marginBottom: 14, height: 52,
   },
-  pctInput: { flex: 1, fontSize: 20, fontWeight: "800", color: "#0A1128", padding: 0 },
+  pctInput: { flex: 1, fontSize: 20, fontWeight: "800", color: NAVY, padding: 0 },
   pctUnit:  { fontSize: 14, fontWeight: "700", color: "#9CA3AF", marginLeft: 4 },
 
   durRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
@@ -1049,9 +1050,9 @@ const pmS = StyleSheet.create({
     borderRadius: 14, backgroundColor: "#F9FAFB",
     borderWidth: 1.5, borderColor: "#E5E7EB",
   },
-  durBtnActive:  { backgroundColor: "#0A1128", borderColor: "#D4AF37" },
+  durBtnActive:  { backgroundColor: NAVY, borderColor: GOLD },
   durNum:        { fontSize: 20, fontWeight: "900", color: "#374151" },
-  durNumActive:  { color: "#D4AF37" },
+  durNumActive:  { color: GOLD },
   durUnit:       { fontSize: 10, color: "#9CA3AF", marginTop: 2 },
   durUnitActive: { color: "rgba(212,175,55,0.7)" },
 
@@ -1062,10 +1063,10 @@ const pmS = StyleSheet.create({
 
   applyBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16,
+    backgroundColor: GOLD, borderRadius: 16, paddingVertical: 16,
   },
   applyBtnDisabled: { opacity: 0.4 },
-  applyBtnText: { fontSize: 14, fontWeight: "900", color: "#0A1128" },
+  applyBtnText: { fontSize: 14, fontWeight: "900", color: NAVY },
 });
 
 // ── Section header ─────────────────────────────────────────────────────────────
@@ -1083,7 +1084,7 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
 const shStyles = StyleSheet.create({
   row:       { flexDirection: "row", alignItems: "center", marginBottom: 10, marginTop: 20 },
   title:     { fontSize: 11, fontWeight: "800", letterSpacing: 1.2, color: "#6B7280", flex: 1 },
-  badge:     { backgroundColor: "#0A1128", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  badge:     { backgroundColor: NAVY, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { fontSize: 11, fontWeight: "800", color: "#FFF" },
 });
 
@@ -1134,7 +1135,7 @@ export default function SuperAdminDashboard() {
 
   const metricItems: MetricItem[] = metrics
     ? [
-        { key: "schools",  label: "TOTAL SCHOOLS",   value: metrics.totalOrgs,     icon: "business",           color: "#0A1128", bg: "#EFF6FF" },
+        { key: "schools",  label: "TOTAL SCHOOLS",   value: metrics.totalOrgs,     icon: "business",           color: NAVY, bg: "#EFF6FF" },
         { key: "members",  label: "GLOBAL MEMBERS",  value: metrics.totalMembers,  icon: "people",             color: "#7C3AED", bg: "#F5F3FF" },
         { key: "active",   label: "ACTIVE SUBS",     value: metrics.activeCount,   icon: "checkmark-circle",   color: "#059669", bg: "#ECFDF5" },
         { key: "trialing", label: "IN TRIAL",        value: metrics.trialingCount, icon: "timer-outline",      color: "#D97706", bg: "#FFFBEB" },
@@ -1167,7 +1168,7 @@ export default function SuperAdminDashboard() {
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <View style={styles.goldBadge}>
-              <Ionicons name="shield-checkmark" size={10} color="#0A1128" />
+              <Ionicons name="shield-checkmark" size={10} color={NAVY} />
               <Text style={styles.goldBadgeText}>PLATFORM CONTROL PANEL</Text>
             </View>
             <Text style={styles.headerTitle}>Command Center</Text>
@@ -1178,14 +1179,14 @@ export default function SuperAdminDashboard() {
               style={({ pressed }) => [styles.switchBtn, { opacity: pressed ? 0.8 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAdminViewMode(true); }}
             >
-              <Ionicons name="eye-outline" size={14} color="#D4AF37" />
+              <Ionicons name="eye-outline" size={14} color={GOLD} />
               <Text style={styles.switchBtnText}>Standard View</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerBtn, { opacity: pressed ? 0.7 : 1 }]}
               onPress={() => { setRefreshing(true); loadData(true); }}
             >
-              <Ionicons name="refresh-outline" size={20} color="#0A1128" />
+              <Ionicons name="refresh-outline" size={20} color={NAVY} />
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.headerBtn, { opacity: pressed ? 0.7 : 1 }]}
@@ -1230,7 +1231,7 @@ export default function SuperAdminDashboard() {
                 accessibilityRole="button"
                 accessibilityLabel={`Switch to ${item.label}`}
               >
-                <Ionicons name={item.icon} size={13} color={active ? "#0A1128" : "#D4AF37"} />
+                <Ionicons name={item.icon} size={13} color={active ? NAVY : GOLD} />
                 <Text style={[styles.roleHubChipText, active && styles.roleHubChipTextActive]}>{item.label}</Text>
               </Pressable>
             );
@@ -1242,7 +1243,7 @@ export default function SuperAdminDashboard() {
       <View style={styles.body}>
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#0A1128" />
+            <ActivityIndicator size="large" color={NAVY} />
             <Text style={styles.loadingText}>Loading platform data...</Text>
           </View>
         ) : (
@@ -1255,7 +1256,7 @@ export default function SuperAdminDashboard() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={() => { setRefreshing(true); loadData(true); }}
-                tintColor="#0A1128"
+                tintColor={NAVY}
               />
             }
           >
@@ -1308,7 +1309,7 @@ export default function SuperAdminDashboard() {
               onPress={() => router.push("/(super_admin)/associations" as never)}
             >
               <Text style={styles.viewAllText}>View Full Tenant Details</Text>
-              <Ionicons name="chevron-forward" size={15} color="#0A1128" />
+              <Ionicons name="chevron-forward" size={15} color={NAVY} />
             </Pressable>
 
             {/* ── RECENT ACTIVITY ── */}
@@ -1365,16 +1366,16 @@ const styles = StyleSheet.create({
   header:       { backgroundColor: "#FFFFFF", paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E7EB", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4 },
   headerRow:    { flexDirection: "row", alignItems: "flex-start" },
   headerLeft:   { flex: 1 },
-  goldBadge:    { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#D4AF37", alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
-  goldBadgeText:{ fontSize: 10, fontWeight: "900", color: "#0A1128", letterSpacing: 0.5 },
-  headerTitle:  { fontSize: 26, fontWeight: "900", color: "#0A1128", marginBottom: 3 },
+  goldBadge:    { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: GOLD, alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
+  goldBadgeText:{ fontSize: 10, fontWeight: "900", color: NAVY, letterSpacing: 0.5 },
+  headerTitle:  { fontSize: 26, fontWeight: "900", color: NAVY, marginBottom: 3 },
   headerSub:    { fontSize: 12, color: "#9CA3AF" },
   headerRight:  { flexDirection: "column", alignItems: "flex-end", gap: 6, paddingTop: 4 },
-  switchBtn:    { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#0A1128", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: "#D4AF37" },
-  switchBtnText:{ fontSize: 11, fontWeight: "800", color: "#D4AF37" },
+  switchBtn:    { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: NAVY, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: GOLD },
+  switchBtnText:{ fontSize: 11, fontWeight: "800", color: GOLD },
   headerBtn:    { width: 36, height: 36, borderRadius: 10, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
 
-  roleHub:         { backgroundColor: "#0A1128", paddingHorizontal: 20, paddingBottom: 14, paddingTop: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(212,175,55,0.2)" },
+  roleHub:         { backgroundColor: NAVY, paddingHorizontal: 20, paddingBottom: 14, paddingTop: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(212,175,55,0.2)" },
   roleHubLabel:    { fontSize: 9, fontWeight: "900", color: "rgba(212,175,55,0.55)", letterSpacing: 1.5, marginBottom: 10 },
   roleHubRow:      { flexDirection: "row", gap: 8, paddingRight: 4 },
   roleHubChip: {
@@ -1388,9 +1389,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(212,175,55,0.25)",
   },
-  roleHubChipActive:     { backgroundColor: "#D4AF37", borderColor: "#D4AF37" },
-  roleHubChipText:       { fontSize: 12, fontWeight: "700", color: "#D4AF37" },
-  roleHubChipTextActive: { color: "#0A1128" },
+  roleHubChipActive:     { backgroundColor: GOLD, borderColor: GOLD },
+  roleHubChipText:       { fontSize: 12, fontWeight: "700", color: GOLD },
+  roleHubChipTextActive: { color: NAVY },
 
   body:         { flex: 1, backgroundColor: "#F8FAFC" },
   loadingBox:   { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
@@ -1409,7 +1410,7 @@ const styles = StyleSheet.create({
   emptySubtext: { fontSize: 12, color: "#D1D5DB", textAlign: "center", maxWidth: 260 },
 
   viewAllRow:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 12, marginBottom: 4 },
-  viewAllText: { fontSize: 13, fontWeight: "700", color: "#0A1128" },
+  viewAllText: { fontSize: 13, fontWeight: "700", color: NAVY },
 
   eventsCard:  { backgroundColor: "#FFF", borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
 });

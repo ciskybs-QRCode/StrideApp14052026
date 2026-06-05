@@ -21,8 +21,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { api, setToken } from "@/lib/api";
 
-const NAVY = "#0A1128";
-const GOLD = "#D4AF37";
+import { NAVY, GOLD, BG } from "@/lib/theme";
 
 /** Prevent API calls from hanging the spinner indefinitely. */
 function withTimeout<T>(promise: Promise<T>, ms = 20_000): Promise<T> {
@@ -209,7 +208,7 @@ export default function Pioneer() {
   const toggleSkill = (v: string) => setSkillLevels(a => a.includes(v) ? a.filter(x => x !== v) : [...a, v]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F9FA" }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: BG }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
