@@ -1,0 +1,21 @@
+🚨 CRITICAL ONBOARDING BLOCKER: RESOLVE "FORBIDDEN" DATABASE ERROR ON STEP 5 & FIX NOTCH OVERLAP 🚨
+
+Role: Expert Senior Full-Stack Developer & Supabase Security Specialist.
+Context: As shown in "image_c4bda2.png", clicking the "Complete Setup & Launch" button on Step 5 triggers a hard red "Forbidden" validation banner, blocking the entire onboarding database transaction. Additionally, the top step indicator text is severely clipped by the mobile screen notch/dynamic island.
+
+REQUIRED FIXES:
+
+1. BYPASS OR FIX THE "FORBIDDEN" AUTHENTICATION CRASH
+- Inspect the database submission logic triggered by the "Complete Setup & Launch" button inside the wizard.
+- The "Forbidden" error occurs because Supabase Row Level Security (RLS) policies restrict inserts into the courses, age groups, or tenant configuration tables before the user profile's 'admin' role is fully committed and synchronized in the session metadata.
+- Fix: Ensure the user session profile or metadata is updated and recognized BEFORE executing the batch insert for the onboarding configurations. Alternatively, adjust the client-side API call or add defensive client verification handling so that this initial setup write is authorized under the onboarding user context.
+- Wrap this entire pipeline in a robust try/catch block. If the database still rejects it, do not just throw "Forbidden"—output the exact technical Postgres/Supabase error string to the console for complete debugging.
+
+2. NOTCH & DYNAMIC ISLAND CLIP REFACTOR
+- Look at the top element ("Step 5 of 5 Courses") from "image_c4bda2.png". It is overlapping the device physical hardware notch.
+- Wrap the top header layout in a strict `SafeArea` component or inject an explicit top padding (minimum 24dp above the progress dots) so the typography sits completely clear of any camera notches or dynamic islands.
+
+3. MAINTAIN THE FRESH & BRIGHT VISUALS
+- Keep the light-neutral background (#FFFFFF / #F8F9FA) untouched.
+- Retain the exact Navy Blue (#0A1128) button styling and Gold accents as currently displayed.
+- Language: 100% STRICT ENGLISH for any newly handled state messages.

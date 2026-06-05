@@ -347,7 +347,10 @@ router.get("/auth/invite/:token", async (req, res) => {
 
 // ── POST /org/configure ───────────────────────────────────────────────────────
 // Pioneer wizard completion. Sets system_configured = true.
-router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res) => {
+// Role gate: admin always allowed. Non-admin allowed ONLY during the unconfigured
+// pioneer phase (system_configured = false) — handles the case where the server
+// assigned role "parent" because test users already existed in the DB.
+router.post("/org/configure", requireAuth, async (req, res) => {
   const { schoolName, registrationNumber, contactPhone, studios, ageGroups, skillLevels } = req.body as {
     schoolName: string;
     registrationNumber?: string;
@@ -357,8 +360,38 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
     skillLevels?: string[];
   };
 
-  const { orgId } = (req as AuthReq).user;
+  const { orgId, role, id: callerId } = (req as AuthReq).user;
   const oid = orgId ?? 1;
+
+  if (role !== "admin") {
+    // Allow non-admin callers only if this is the pioneer phase (system not yet configured).
+    const { data: orgRow, error: orgErr } = await supabase
+      .from("organizations")
+      .select("system_configured")
+      .eq("id", oid)
+      .maybeSingle();
+
+    if (orgErr) {
+      req.log.error({ err: orgErr }, "org/configure: failed to check system_configured");
+      res.status(500).json({ error: orgErr.message ?? "Database error" });
+      return;
+    }
+
+    if (orgRow?.system_configured === true) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    // Pioneer phase — promote caller to admin so they can manage the school going forward.
+    const { error: promoteErr } = await supabase
+      .from("users")
+      .update({ role: "admin" })
+      .eq("id", Number(callerId));
+
+    if (promoteErr) {
+      req.log.warn({ err: promoteErr }, "org/configure: role promotion failed — continuing anyway");
+    }
+  }
 
   await supabase.from("organizations").update({
     name: schoolName,
