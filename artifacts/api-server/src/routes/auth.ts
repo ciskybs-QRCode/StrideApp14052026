@@ -16,16 +16,18 @@ function toSlug(name: string): string {
 // Public. Returns { configured, userCount, orgName }.
 router.get("/auth/system-status", async (_req, res) => {
   try {
-    const [{ count: userCount }, { data: orgs }] = await Promise.all([
+    const [{ count: userCount }, { data: orgs }, cfgResult] = await Promise.all([
       supabase.from("users").select("*", { count: "exact", head: true }),
-      supabase.from("organizations").select("id, name, system_configured, trial_ends_at, subscription_status").limit(1),
+      supabase.from("organizations").select("id, name, trial_ends_at, subscription_status").limit(1),
+      pool.query<{ value: string }>("SELECT value FROM system_settings WHERE key = 'system_configured'").catch(() => ({ rows: [] as { value: string }[] })),
     ]);
     const org = orgs?.[0];
     const trialEndsAt       = (org as { trial_ends_at?: string; subscription_status?: string } | undefined)?.trial_ends_at ?? null;
     const subscriptionStatus = (org as { trial_ends_at?: string; subscription_status?: string } | undefined)?.subscription_status ?? "trialing";
     const trialExpired       = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
+    const configured         = cfgResult.rows[0]?.value === "true";
     res.json({
-      configured: org?.system_configured ?? false,
+      configured,
       userCount: userCount ?? 0,
       orgName: org?.name ?? null,
       trialEndsAt,
@@ -365,19 +367,19 @@ router.post("/org/configure", requireAuth, async (req, res) => {
 
   if (role !== "admin") {
     // Allow non-admin callers only if this is the pioneer phase (system not yet configured).
-    const { data: orgRow, error: orgErr } = await supabase
-      .from("organizations")
-      .select("system_configured")
-      .eq("id", oid)
-      .maybeSingle();
-
-    if (orgErr) {
-      req.log.error({ err: orgErr }, "org/configure: failed to check system_configured");
-      res.status(500).json({ error: orgErr.message ?? "Database error" });
+    let isConfigured = false;
+    try {
+      const { rows } = await pool.query<{ value: string }>(
+        "SELECT value FROM system_settings WHERE key = 'system_configured'"
+      );
+      isConfigured = rows[0]?.value === "true";
+    } catch (err) {
+      req.log.error({ err }, "org/configure: failed to check system_configured in pool");
+      res.status(500).json({ error: "Database error checking configuration state" });
       return;
     }
 
-    if (orgRow?.system_configured === true) {
+    if (isConfigured) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
@@ -393,9 +395,16 @@ router.post("/org/configure", requireAuth, async (req, res) => {
     }
   }
 
+  // Mark system as configured in the pool's settings table.
+  await pool.query(
+    `INSERT INTO system_settings (key, value, updated_at)
+     VALUES ('system_configured', 'true', NOW())
+     ON CONFLICT (key) DO UPDATE SET value = 'true', updated_at = NOW()`
+  );
+
+  // Update org name and other metadata in Supabase.
   await supabase.from("organizations").update({
     name: schoolName,
-    system_configured: true,
     ...(registrationNumber ? { registration_number: registrationNumber } : {}),
     updated_at: new Date().toISOString(),
   }).eq("id", oid);

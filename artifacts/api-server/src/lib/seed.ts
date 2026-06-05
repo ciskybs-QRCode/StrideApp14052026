@@ -87,7 +87,6 @@ async function ensureDefaultOrg(): Promise<void> {
   const { error } = await supabase.from("organizations").insert({
     id:                  DEFAULT_ORG_ID,
     name:                "Stride Platform",
-    system_configured:   false,
     trial_ends_at:       trialEnd,
     subscription_status: "trialing",
   });

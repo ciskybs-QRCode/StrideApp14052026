@@ -6,7 +6,7 @@
  */
 
 /** Primary brand color: Deep Navy Blue — titles, headers, buttons */
-export const NAVY = "#0A1128";
+export const NAVY = "#1E3A8A";
 
 /** Secondary brand accent: Premium Gold — CTAs, focus states, highlights */
 export const GOLD = "#D4AF37";
