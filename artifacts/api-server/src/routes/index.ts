@@ -39,6 +39,7 @@ import predictiveSubstitutesRouter from "./predictive-substitutes.js";
 import adminCopilotRouter from "./admin-copilot.js";
 import verifyQrRouter from "./verify-qr.js";
 import identityRouter from "./identity.js";
+import importRouter from "./import.js";
 
 const router: IRouter = Router();
 
@@ -82,5 +83,6 @@ router.use(predictiveSubstitutesRouter);
 router.use(adminCopilotRouter);
 router.use(verifyQrRouter);
 router.use(identityRouter);
+router.use(importRouter);
 
 export default router;
