@@ -1,13 +1,45 @@
-import type { Request, Response, NextFunction } from "express";
+/**
+ * securityGuard.ts
+ *
+ * Pure, stateless authorisation layer for user-modification operations.
+ * No database calls — safe to invoke synchronously before any API handler.
+ *
+ * Rules (evaluated in strict priority order):
+ *
+ *  1. Owner lock  — target.email === OWNER_EMAIL → always false, no exceptions.
+ *  2. Self-guard  — a user may never modify themselves.
+ *  3. Super admin — can modify admin / operator / parent, but CANNOT modify
+ *                   another super_admin (prevents privilege coup).
+ *  4. Everyone else — may only modify users whose role rank is strictly lower.
+ */
+
 import type { TokenPayload } from "../lib/auth.js";
 
-export type User = TokenPayload;
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-export type GuardedOperation = "delete" | "update_role";
+export type UserRole =
+  | "parent"
+  | "operator"
+  | "admin"
+  | "super_admin"
+  | "kiosk";
+
+/** Shape expected by all guard functions. Satisfied by TokenPayload. */
+export interface User extends TokenPayload {
+  role: string; // kept as string to match TokenPayload; functions narrow via ROLE_RANK
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 /**
- * Role hierarchy used to determine downgrade protection.
- * Higher index = higher privilege.
+ * The single protected owner account. Every destructive or privilege-changing
+ * operation targeting this email is unconditionally rejected.
+ */
+const OWNER_EMAIL = "ciskybs@gmail.com";
+
+/**
+ * Numeric privilege rank. Used for "non-super_admin" lateral/upward move checks.
+ * A requester with rank N may only act on targets with rank < N.
  */
 const ROLE_RANK: Record<string, number> = {
   parent:      0,
@@ -19,101 +51,64 @@ const ROLE_RANK: Record<string, number> = {
 
 const rank = (role: string): number => ROLE_RANK[role] ?? -1;
 
-/**
- * The protected owner email. Any destructive operation targeting
- * this account is unconditionally blocked, regardless of requester.
- */
-const PROTECTED_EMAIL = "ciskybs@gmail.com";
+// ── Core guard ────────────────────────────────────────────────────────────────
 
 /**
- * Determines whether `requester` is allowed to perform `operation`
- * on `target`.
- *
- * Rules (evaluated in order — first false wins):
- *
- * 1. If target.email === PROTECTED_EMAIL → always false for
- *    delete or update_role that would demote/remove.
- *
- * 2. A super_admin may modify any role EXCEPT another super_admin.
- *
- * 3. Non-super_admin requesters may only modify users whose role
- *    rank is strictly lower than their own (no lateral or upward moves).
- *
- * 4. A user may never modify themselves.
+ * Internal helper that encodes the shared rules for both delete and role-update.
+ * Returns `true` only if `requester` is permitted to act on `target`.
  */
-export function canModifyUser(
-  requester: User,
-  target: User,
-  operation: GuardedOperation,
-): boolean {
-  // Self-modification is never allowed
+function isPermitted(requester: User, target: User): boolean {
+  // Rule 1 — owner lock (must be first, no override possible)
+  if (target.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return false;
+
+  // Rule 2 — no self-modification
   if (requester.id === target.id) return false;
 
-  // Hard-coded owner protection
-  if (target.email === PROTECTED_EMAIL) return false;
-
-  // super_admin can modify anyone except another super_admin
+  // Rule 3 — super_admin privilege
   if (requester.role === "super_admin") {
+    // Cannot touch another super_admin
     return target.role !== "super_admin";
   }
 
-  // All other roles: requester must outrank the target
+  // Rule 4 — all other roles: requester must strictly outrank target
   return rank(requester.role) > rank(target.role);
 }
 
+// ── Public API ────────────────────────────────────────────────────────────────
+
 /**
- * Resolves the new role from the request body for update_role operations.
- * Returns undefined if the field is absent (e.g. for delete ops).
+ * Returns `true` if `requester` is allowed to delete `target`.
+ *
+ * @example
+ * if (!canDelete(req.user, targetUser)) {
+ *   return res.status(403).json({ error: "Forbidden" });
+ * }
  */
-export function resolveNewRole(req: Request): string | undefined {
-  const body = req.body as Record<string, unknown> | undefined;
-  return typeof body?.role === "string" ? body.role : undefined;
+export function canDelete(requester: User, target: User): boolean {
+  return isPermitted(requester, target);
 }
 
-// ---------------------------------------------------------------------------
-// Express middleware factory
-// ---------------------------------------------------------------------------
-
 /**
- * `guardOperation(operation, getTarget)`
+ * Returns `true` if `requester` is allowed to change `target`'s role to `newRole`.
  *
- * Returns an Express middleware that:
- *   1. Reads `req.user` (set by requireAuth).
- *   2. Fetches the target user via `getTarget(req)` (async).
- *   3. Calls `canModifyUser` — responds 403 if denied, calls next() if allowed.
+ * Additional constraint beyond the base rules:
+ *   - No one may promote a target TO super_admin (that role is assigned at the
+ *     infrastructure level, not through the app UI).
+ *   - A super_admin may demote another super_admin's role — blocked by
+ *     isPermitted (rule 3), so no extra check needed here.
  *
- * Usage:
- *   router.delete(
- *     "/users/:id",
- *     requireAuth,
- *     guardOperation("delete", (req) => fetchUserById(req.params.id)),
- *     deleteUserHandler,
- *   );
+ * @example
+ * if (!canUpdateRole(req.user, targetUser, "admin")) {
+ *   return res.status(403).json({ error: "Forbidden" });
+ * }
  */
-export function guardOperation(
-  operation: GuardedOperation,
-  getTarget: (req: Request) => Promise<User>,
-) {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const requester = (req as Request & { user?: User }).user;
-    if (!requester) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
+export function canUpdateRole(
+  requester: User,
+  target: User,
+  newRole: UserRole,
+): boolean {
+  // Nobody can promote anyone to super_admin via the API
+  if (newRole === "super_admin") return false;
 
-    let target: User;
-    try {
-      target = await getTarget(req);
-    } catch {
-      res.status(404).json({ error: "Target user not found" });
-      return;
-    }
-
-    if (!canModifyUser(requester, target, operation)) {
-      res.status(403).json({ error: "Forbidden: insufficient privileges for this operation" });
-      return;
-    }
-
-    next();
-  };
+  return isPermitted(requester, target);
 }
