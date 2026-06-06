@@ -78,6 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setUser(parsed);
       }
+    } catch (e) {
+      console.error("Auth load error:", e);
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await setToken("kiosk-demo-token");
       try {
         await AsyncStorage.setItem(USER_KEY, JSON.stringify(kioskUser));
-      } catch {}
+      } catch (e) {
+        console.error("Storage error:", e);
+      }
       setUser(kioskUser);
       return kioskUser;
     }
@@ -113,7 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     try {
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped));
-    } catch {}
+    } catch (e) {
+      console.error("Storage error:", e);
+    }
     setUser(mapped);
     return mapped;
   };
@@ -121,7 +127,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await Promise.all([clearToken(), AsyncStorage.removeItem(USER_KEY)]);
-    } catch {}
+    } catch (e) {
+      console.error("Logout error:", e);
+    }
     setUser(null);
   };
 
@@ -130,7 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updated = { ...user, ...updates };
     try {
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
-    } catch {}
+    } catch (e) {
+      console.error("Update error:", e);
+    }
     setUser(updated);
   };
 
