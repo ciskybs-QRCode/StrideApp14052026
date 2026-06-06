@@ -4,8 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ActivityIndicator, View } from "react-native";
 import { api } from "@/lib/api";
 
-// Mirrors the exact same check used in AuthContext so there is only one
-// source of truth. Change OWNER_EMAIL in AuthContext first, then here.
+// Must match OWNER_EMAIL in AuthContext exactly.
 const OWNER_EMAIL = "ciskybs@gmail.com";
 
 export default function Index() {
@@ -24,19 +23,28 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    // Wait for BOTH auth state and system status before making any decision.
-    // Without this gate the redirect fires before AsyncStorage is read,
-    // causing owners/admins to fall through to /(member)/dashboard.
-    if (isLoading || sysLoading) return;
+    // ── Step 1: gate — do nothing until both async sources are settled ──────
+    if (isLoading || sysLoading) {
+      console.log("[index] still loading — isLoading:", isLoading, "sysLoading:", sysLoading);
+      return;
+    }
 
-    // ── Debug log — remove once routing is confirmed stable ──────────────
-    const ownerCheck = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
-    console.log("[index] isLoading:", isLoading, "| sysLoading:", sysLoading);
-    console.log("[index] user.email:", user?.email, "| user.role:", user?.role);
-    console.log("[index] isOwner():", ownerCheck);
-    // ─────────────────────────────────────────────────────────────────────
+    // ── Step 2: dump the full user object as soon as it is available ─────────
+    console.log("[index] --- AUTH RESOLVED ---");
+    console.log("[index] full user object:", JSON.stringify(user, null, 2));
 
-    // Deep-link invite: ?org=... (from QR scan or link click)
+    // ── Step 3: owner / role diagnostics ─────────────────────────────────────
+    const storedEmail  = user?.email ?? "(no email)";
+    const storedRole   = user?.role  ?? "(no role)";
+    const ownerCheck   = storedEmail.toLowerCase() === OWNER_EMAIL.toLowerCase();
+
+    console.log("[index] user.email :", storedEmail);
+    console.log("[index] user.role  :", storedRole);
+    console.log("[index] OWNER_EMAIL:", OWNER_EMAIL);
+    console.log("[index] isOwner()  :", ownerCheck);
+    console.log("[index] sysStatus  :", JSON.stringify(sysStatus));
+
+    // ── Deep-link invite ──────────────────────────────────────────────────────
     if (params.org) {
       const qs = new URLSearchParams({
         org: params.org,
@@ -44,75 +52,87 @@ export default function Index() {
         ...(params.primary   ? { primary:   params.primary }   : {}),
         ...(params.secondary ? { secondary: params.secondary } : {}),
       }).toString();
+      console.log("[index] → /join (deep-link)");
       router.replace((`/join?${qs}`) as never);
       return;
     }
 
-    // Pioneer: no users in system yet → first-boot wizard
+    // ── Pioneer (empty system) ────────────────────────────────────────────────
     if (!user && (sysStatus?.userCount ?? 1) === 0) {
+      console.log("[index] → /pioneer (no users in system)");
       router.replace("/pioneer" as never);
       return;
     }
 
+    // ── Not logged in ─────────────────────────────────────────────────────────
     if (!user) {
+      console.log("[index] → /login (no user)");
       router.replace("/login");
       return;
     }
 
-    // Owner check uses email comparison — same logic as AuthContext.isOwner()
-    // This must be evaluated AFTER isLoading is false so user is fully hydrated.
+    // ── Owner / super_admin → super_admin dashboard ───────────────────────────
     if (ownerCheck || user.role === "super_admin") {
-      console.log("[index] → /(super_admin)/dashboard");
+      console.log("[index] → /(super_admin)/dashboard  [ownerCheck:", ownerCheck, " role:", user.role, "]");
       router.replace("/(super_admin)/dashboard" as never);
       return;
     }
 
+    // ── Admin + expired trial → billing paywall ───────────────────────────────
     if (
       user.role === "admin" &&
       sysStatus?.trialExpired &&
       sysStatus?.subscriptionStatus !== "active"
     ) {
+      console.log("[index] → /(admin)/billing/paywall (trial expired)");
       router.replace("/(admin)/billing/paywall" as never);
       return;
     }
 
+    // ── Any user + expired trial ──────────────────────────────────────────────
     if (sysStatus?.trialExpired && sysStatus?.subscriptionStatus !== "active") {
+      console.log("[index] → /trial-expired");
       router.replace("/trial-expired" as never);
       return;
     }
 
+    // ── Admin + system not configured ─────────────────────────────────────────
     if (user.role === "admin" && sysStatus?.configured === false) {
+      console.log("[index] → /pioneer (unconfigured system)");
       router.replace("/pioneer" as never);
       return;
     }
 
+    // ── Kiosk ─────────────────────────────────────────────────────────────────
     if (user.role === "kiosk") {
+      console.log("[index] → /(kiosk)/");
       router.replace("/(kiosk)/" as never);
       return;
     }
 
+    // ── Admin ─────────────────────────────────────────────────────────────────
     if (user.role === "admin") {
+      console.log("[index] → /(admin)/stats");
       router.replace("/(admin)/stats");
       return;
     }
 
-    // operator / parent / any other role → member fan-out
-    console.log("[index] → /(member)/dashboard (role:", user.role, ")");
+    // ── Member fan-out (operator / parent / fallback) ─────────────────────────
+    if (ownerCheck) {
+      // isOwner() is true but we are about to route to /(member)/dashboard —
+      // this should NEVER happen; the ownerCheck branch above should have caught it.
+      console.warn(
+        "[index] ⚠️  ROUTING CONFLICT DETECTED — isOwner() is TRUE but super_admin branch was skipped.",
+        "user.role:", user.role,
+        "user.email:", user.email,
+      );
+    }
+
+    console.log("[index] → /(member)/dashboard  [role:", user.role, "]");
     router.replace("/(member)/dashboard" as never);
   }, [user, isLoading, sysStatus, sysLoading, params.org]);
 
-  // Render-level gate: show spinner while auth or system status is still
-  // loading. This prevents any redirect from firing on a stale user=null.
-  if (isLoading || sysLoading) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1E3A8A" }}>
-        <ActivityIndicator color="#FBBF24" size="large" />
-      </View>
-    );
-  }
-
-  // Auth is resolved — useEffect above will fire the redirect.
-  // Return the same spinner so there's no flash of blank screen.
+  // Render-level gate: hold the spinner until both loading flags clear.
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1E3A8A" }}>
       <ActivityIndicator color="#FBBF24" size="large" />

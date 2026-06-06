@@ -42,11 +42,19 @@ export default function LoginScreen() {
     ]).start();
   };
 
-  const navigateAfterLogin = (role: UserRole) => {
-    if (role === "kiosk")         router.replace("/(kiosk)/" as never);
-    else if (role === "admin")    router.replace("/(admin)/stats" as never);
-    else if (role === "operator") router.replace("/(operator)/dashboard" as never);
-    else                          router.replace("/(parent)/home" as never);
+  // Must mirror OWNER_EMAIL in AuthContext and index.tsx.
+  const OWNER_EMAIL = "ciskybs@gmail.com";
+
+  const navigateAfterLogin = (role: UserRole, email?: string) => {
+    const isOwner = email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+    console.log("[login] navigateAfterLogin — role:", role, "| email:", email, "| isOwner:", isOwner);
+    if (isOwner || role === "super_admin") {
+      console.log("[login] → /(super_admin)/dashboard");
+      router.replace("/(super_admin)/dashboard" as never);
+    } else if (role === "kiosk")    router.replace("/(kiosk)/" as never);
+    else if (role === "admin")      router.replace("/(admin)/stats" as never);
+    else if (role === "operator")   router.replace("/(operator)/dashboard" as never);
+    else                            router.replace("/(parent)/home" as never);
   };
 
   // Demo auto-login: ?demo=parent|operator|admin auto-signs in for canvas previews
@@ -63,7 +71,7 @@ export default function LoginScreen() {
     const creds = DEMO_CREDS[demo];
     if (!creds) return;
     login(creds.email, creds.password)
-      .then(u => navigateAfterLogin(u.role))
+      .then(u => navigateAfterLogin(u.role, u.email))
       .catch(() => { /* silently fall through to manual login */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -74,7 +82,7 @@ export default function LoginScreen() {
     try {
       const loggedInUser = await login(email, password);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigateAfterLogin(loggedInUser.role);
+      navigateAfterLogin(loggedInUser.role, loggedInUser.email);
     } catch (e: unknown) {
       const err = e as Error;
       const msg = (err.message ?? "").toLowerCase();
