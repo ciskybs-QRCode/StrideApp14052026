@@ -1,0 +1,20 @@
+name: Sync to GitHub
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to target repository
+        run: |
+          git remote add target https://x-access-token:${{ secrets.GITHUB_PAT }}@github.com/ciskybs-QRCode/StrideApp14052026.git
+          git push target main --force
