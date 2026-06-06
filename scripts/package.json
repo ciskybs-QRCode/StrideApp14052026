@@ -7,6 +7,7 @@
     "hello": "tsx ./src/hello.ts",
     "reset-test-passwords": "tsx ./src/reset-test-passwords.ts",
     "test-identity": "tsx ./src/test-identity.ts",
+    "test-import": "tsx ./src/test-import.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
