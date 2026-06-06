@@ -1186,6 +1186,56 @@ export async function setTrialEndDate(
   return request<AssociationRecord>("POST", "/super-admin/set-trial-end", { orgId, trialEndsAt });
 }
 
+export type FinancialOrgRecord = {
+  orgId: number;
+  name: string;
+  status: string;
+  memberCount: number;
+  costPerSeatCents: number;
+  mrrCents: number;
+  currency: string;
+};
+
+export type FinancialSummary = {
+  totalMrrCents: number;
+  trialMrrCents: number;
+  totalMemberCount: number;
+  orgs: FinancialOrgRecord[];
+};
+
+export type AdminRecord = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+};
+
+export type CreateTenantResult = AssociationRecord & { tempPassword?: string };
+export type AddSuperAdminResult = AdminRecord & { tempPassword?: string };
+
+export async function getFinancialAnalytics(): Promise<FinancialSummary> {
+  return request<FinancialSummary>("GET", "/super-admin/financial");
+}
+
+export async function createTenant(
+  name: string,
+  adminEmail: string,
+  plan: "starter" | "pro" | "standard",
+): Promise<CreateTenantResult> {
+  return request<CreateTenantResult>("POST", "/super-admin/tenants", { name, adminEmail, plan });
+}
+
+export async function listAdmins(): Promise<AdminRecord[]> {
+  return request<AdminRecord[]>("GET", "/super-admin/admins");
+}
+
+export async function addSuperAdmin(
+  email: string,
+  name?: string,
+): Promise<AddSuperAdminResult> {
+  return request<AddSuperAdminResult>("POST", "/super-admin/add-super-admin", { email, name });
+}
+
 // ── Admin Copilot ─────────────────────────────────────────────────────────────
 
 export interface CopilotResponse {
