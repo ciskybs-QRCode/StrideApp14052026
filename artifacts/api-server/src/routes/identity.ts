@@ -86,7 +86,7 @@ router.get(
     let query = supabaseAdmin
       .from("tenant_memberships")
       .select(
-        "id, status, role, invited_at, activated_at, expires_at, global_users(id, first_name, last_name, email, qr_code)",
+        "id, status, role, invited_at, activated_at, expires_at, global_users!global_user_id(id, first_name, last_name, email, qr_code)",
       )
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false });
