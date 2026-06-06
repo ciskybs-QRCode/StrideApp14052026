@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
-import { requireAuth, requireRole, signToken, type TokenPayload } from "../lib/auth.js";
+import { requireAuth, requireOwnerOrSuperAdmin, signToken, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
 
 const router = Router();
@@ -15,7 +15,7 @@ const sa = createClient(_url, _key);
 router.get(
   "/super-admin/metrics",
   requireAuth,
-  requireRole("super_admin"),
+  requireOwnerOrSuperAdmin,
   async (_req, res) => {
     const [orgsResult, membersResult, eventsResult] = await Promise.all([
       sa.from("organizations").select("id, subscription_status, trial_ends_at"),
@@ -56,8 +56,12 @@ router.get(
 router.get(
   "/super-admin/associations",
   requireAuth,
-  requireRole("super_admin"),
-  async (_req, res) => {
+  requireOwnerOrSuperAdmin,
+  async (req, res) => {
+    const user = (req as AuthReq).user;
+    console.log("[/super-admin/associations] request from:", user.email, "| role:", user.role);
+    console.log("[/super-admin/associations] Authorization header present:", !!req.headers.authorization);
+
     const { data, error } = await sa
       .from("organizations")
       .select(
@@ -66,7 +70,13 @@ router.get(
         "subscription_status, cost_per_seat_cents",
       )
       .order("id");
-    if (error) { res.status(500).json({ error: error.message }); return; }
+
+    if (error) {
+      console.error("[/super-admin/associations] Supabase error:", error.message);
+      res.status(500).json({ error: error.message });
+      return;
+    }
+    console.log("[/super-admin/associations] returning", (data ?? []).length, "orgs");
     res.json(data ?? []);
   },
 );
@@ -75,7 +85,7 @@ router.get(
 router.post(
   "/super-admin/extend-trial",
   requireAuth,
-  requireRole("super_admin"),
+  requireOwnerOrSuperAdmin,
   async (req, res) => {
     const { orgId, months } = req.body as { orgId?: number; months?: number };
     if (!orgId || !months || months < 1) {
@@ -108,7 +118,6 @@ router.post(
     if (error) { res.status(500).json({ error: error.message }); return; }
     invalidateTrialCache(orgId);
 
-    // Log platform event
     try {
       await sa.from("platform_events").insert({
         event_type: "trial_extended",
@@ -126,7 +135,7 @@ router.post(
 router.patch(
   "/super-admin/associations/:id",
   requireAuth,
-  requireRole("super_admin"),
+  requireOwnerOrSuperAdmin,
   async (req, res) => {
     const id = Number(req.params["id"]);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid org ID" }); return; }
