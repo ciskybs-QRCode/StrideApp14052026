@@ -5,7 +5,7 @@ import { ActivityIndicator, View } from "react-native";
 import { api } from "@/lib/api";
 
 export default function Index() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isOwner } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams<{ org?: string; school?: string; primary?: string; secondary?: string }>();
 
@@ -42,7 +42,7 @@ export default function Index() {
 
     if (!user) {
       router.replace("/login");
-    } else if (user.role === "super_admin") {
+    } else if (isOwner() || user.role === "super_admin") {
       router.replace("/(super_admin)/dashboard" as never);
     } else if (
       user.role === "admin" &&
