@@ -5,10 +5,15 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "reset-test-passwords": "tsx ./src/reset-test-passwords.ts",
+    "test-identity": "tsx ./src/test-identity.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "catalog:",
+    "bcryptjs": "^3.0.3",
     "tsx": "catalog:"
   }
 }
