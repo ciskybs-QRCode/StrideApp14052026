@@ -59,12 +59,8 @@ export default function Index() {
       router.replace("/(kiosk)/" as never);
     } else if (user.role === "admin") {
       router.replace("/(admin)/stats");
-    } else if (user.role === "operator") {
-      router.replace("/(operator)/dashboard");
-    } else if (user.role === "parent" && user.onboardingComplete === false) {
-      router.replace("/onboarding" as never);
     } else {
-      router.replace("/(parent)/home");
+      router.replace("/(member)/dashboard" as never);
     }
   }, [user, isLoading, params.org, sysStatus, sysLoading]);
 
