@@ -5,6 +5,8 @@ import * as XLSX from "xlsx";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { logAction } from "../lib/audit.js";
+import { importLimiter } from "../lib/rate-limit.js";
+import { internalError } from "../lib/validate.js";
 import type { Request } from "express";
 
 type AuthReq = Request & { user: TokenPayload };
@@ -136,6 +138,7 @@ router.post(
   "/identity/import",
   requireAuth,
   requireRole("admin", "operator"),
+  importLimiter,
   (req, res, next) => {
     upload.single("file")(req, res, (err: unknown) => {
       if (err instanceof multer.MulterError) {
@@ -234,7 +237,7 @@ router.post(
       .select("id, email");
 
     if (upsertErr) {
-      res.status(500).json({ error: `global_users upsert failed: ${upsertErr.message}` });
+      internalError(res, upsertErr, "identity/import:global_users-upsert", user.id);
       return;
     }
 
@@ -280,7 +283,7 @@ router.post(
       });
 
     if (membershipErr) {
-      res.status(500).json({ error: `tenant_memberships upsert failed: ${membershipErr.message}` });
+      internalError(res, membershipErr, "identity/import:memberships-upsert", user.id);
       return;
     }
 
