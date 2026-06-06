@@ -1,7 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startReminderScheduler } from "./lib/reminder-scheduler.js";
-import { runSeed } from "./lib/seed.js";
 
 const rawPort = process.env["PORT"];
 
@@ -25,8 +24,4 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   startReminderScheduler();
-
-  runSeed().catch((e: unknown) =>
-    logger.error({ err: (e as Error).message }, "[seed] Unhandled seed error"),
-  );
 });

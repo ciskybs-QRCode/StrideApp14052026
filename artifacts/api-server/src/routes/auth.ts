@@ -16,18 +16,16 @@ function toSlug(name: string): string {
 // Public. Returns { configured, userCount, orgName }.
 router.get("/auth/system-status", async (_req, res) => {
   try {
-    const [{ count: userCount }, { data: orgs }, cfgResult] = await Promise.all([
+    const [{ count: userCount }, { data: orgs }] = await Promise.all([
       supabase.from("users").select("*", { count: "exact", head: true }),
-      supabase.from("organizations").select("id, name, trial_ends_at, subscription_status").limit(1),
-      pool.query<{ value: string }>("SELECT value FROM system_settings WHERE key = 'system_configured'").catch(() => ({ rows: [] as { value: string }[] })),
+      supabase.from("organizations").select("id, name, system_configured, trial_ends_at, subscription_status").limit(1),
     ]);
     const org = orgs?.[0];
     const trialEndsAt       = (org as { trial_ends_at?: string; subscription_status?: string } | undefined)?.trial_ends_at ?? null;
     const subscriptionStatus = (org as { trial_ends_at?: string; subscription_status?: string } | undefined)?.subscription_status ?? "trialing";
     const trialExpired       = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
-    const configured         = cfgResult.rows[0]?.value === "true";
     res.json({
-      configured,
+      configured: org?.system_configured ?? false,
       userCount: userCount ?? 0,
       orgName: org?.name ?? null,
       trialEndsAt,
@@ -75,28 +73,8 @@ router.post("/auth/login", async (req, res) => {
   })();
   const effectiveRole = user.role || roles[0] || "parent";
 
-  // ── Collaborator elevation check ──────────────────────────────────────────
-  // Grant super_admin role if email is the master email or is in collaborators table.
-  const MASTER_SA_EMAIL = "ciskybs@gmail.com";
-  let resolvedRole = effectiveRole;
-  if (resolvedRole !== "super_admin") {
-    const normalizedEmail = user.email.toLowerCase().trim();
-    if (normalizedEmail === MASTER_SA_EMAIL) {
-      resolvedRole = "super_admin";
-    } else {
-      try {
-        const { rows } = await pool.query(
-          `SELECT id FROM super_admin_collaborators
-           WHERE lower(email) = lower($1) LIMIT 1`,
-          [normalizedEmail],
-        );
-        if (rows.length > 0) resolvedRole = "super_admin";
-      } catch { /* table may not exist yet — ignore */ }
-    }
-  }
-
   // Trial expiry gate — super_admin and active subscribers are always allowed through
-  if (resolvedRole !== "super_admin") {
+  if (effectiveRole !== "super_admin") {
     const { data: orgRow } = await supabase
       .from("organizations")
       .select("trial_ends_at, subscription_status")
@@ -117,7 +95,7 @@ router.post("/auth/login", async (req, res) => {
   const token = signToken({
     id: String(user.id),
     email: user.email,
-    role: resolvedRole,
+    role: effectiveRole,
     orgId: user.organization_id ?? 1,
   });
 
@@ -127,7 +105,7 @@ router.post("/auth/login", async (req, res) => {
       id: String(user.id),
       name: user.name,
       email: user.email,
-      role: resolvedRole,
+      role: effectiveRole,
       orgId: user.organization_id ?? 1,
     },
   });
@@ -349,10 +327,7 @@ router.get("/auth/invite/:token", async (req, res) => {
 
 // ── POST /org/configure ───────────────────────────────────────────────────────
 // Pioneer wizard completion. Sets system_configured = true.
-// Role gate: admin always allowed. Non-admin allowed ONLY during the unconfigured
-// pioneer phase (system_configured = false) — handles the case where the server
-// assigned role "parent" because test users already existed in the DB.
-router.post("/org/configure", requireAuth, async (req, res) => {
+router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res) => {
   const { schoolName, registrationNumber, contactPhone, studios, ageGroups, skillLevels } = req.body as {
     schoolName: string;
     registrationNumber?: string;
@@ -362,49 +337,12 @@ router.post("/org/configure", requireAuth, async (req, res) => {
     skillLevels?: string[];
   };
 
-  const { orgId, role, id: callerId } = (req as AuthReq).user;
+  const { orgId } = (req as AuthReq).user;
   const oid = orgId ?? 1;
 
-  if (role !== "admin") {
-    // Allow non-admin callers only if this is the pioneer phase (system not yet configured).
-    let isConfigured = false;
-    try {
-      const { rows } = await pool.query<{ value: string }>(
-        "SELECT value FROM system_settings WHERE key = 'system_configured'"
-      );
-      isConfigured = rows[0]?.value === "true";
-    } catch (err) {
-      req.log.error({ err }, "org/configure: failed to check system_configured in pool");
-      res.status(500).json({ error: "Database error checking configuration state" });
-      return;
-    }
-
-    if (isConfigured) {
-      res.status(403).json({ error: "Forbidden" });
-      return;
-    }
-
-    // Pioneer phase — promote caller to admin so they can manage the school going forward.
-    const { error: promoteErr } = await supabase
-      .from("users")
-      .update({ role: "admin" })
-      .eq("id", Number(callerId));
-
-    if (promoteErr) {
-      req.log.warn({ err: promoteErr }, "org/configure: role promotion failed — continuing anyway");
-    }
-  }
-
-  // Mark system as configured in the pool's settings table.
-  await pool.query(
-    `INSERT INTO system_settings (key, value, updated_at)
-     VALUES ('system_configured', 'true', NOW())
-     ON CONFLICT (key) DO UPDATE SET value = 'true', updated_at = NOW()`
-  );
-
-  // Update org name and other metadata in Supabase.
   await supabase.from("organizations").update({
     name: schoolName,
+    system_configured: true,
     ...(registrationNumber ? { registration_number: registrationNumber } : {}),
     updated_at: new Date().toISOString(),
   }).eq("id", oid);

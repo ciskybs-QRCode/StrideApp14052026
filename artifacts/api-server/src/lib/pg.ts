@@ -109,17 +109,10 @@ export async function ensureTables(): Promise<void> {
     ADD COLUMN IF NOT EXISTS activation_status TEXT DEFAULT 'active';
   `).catch(() => {});
 
-  // Pioneer: system_configured stored in pool's own key-value settings table.
-  // (organizations table lives in Supabase — we avoid cross-DB DDL here.)
+  // Pioneer: system_configured flag on organizations
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS system_settings (
-      key        TEXT PRIMARY KEY,
-      value      TEXT NOT NULL,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    INSERT INTO system_settings (key, value)
-    VALUES ('system_configured', 'false')
-    ON CONFLICT DO NOTHING;
+    ALTER TABLE IF EXISTS organizations
+    ADD COLUMN IF NOT EXISTS system_configured BOOLEAN DEFAULT FALSE;
   `).catch(() => {});
 
   // Invite tokens (admin-generated shareable registration links)

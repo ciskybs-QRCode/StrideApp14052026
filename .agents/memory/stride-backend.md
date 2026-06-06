@@ -26,16 +26,6 @@ The Expo app's `lib/api.ts` uses this to build `https://${domain}/api`. No `.env
 
 **Why:** The fallback only triggers on "Failed to fetch" (server unreachable), so the real Supabase data is used whenever the API server is up.
 
-## Super-admin features added (June 2026)
-
-- `platform_org_discounts` table created in direct PG (pool), keyed by `org_id` (INTEGER PK).
-- `GET /super-admin/associations` now LEFT JOINs pool discount table and merges `discount_rate` + `discount_duration_end` into each org row.
-- New routes: `POST /super-admin/set-suspension` (orgId, suspended bool) and `POST /super-admin/set-trial-end` (orgId, trialEndsAt) — compatibility aliases for the mobile client, using same `sa` Supabase client as existing suspend/trial routes.
-- New route: `PATCH /super-admin/associations/:id/discount` (discount_rate 0–100, duration_months 1–120) — upserts into `platform_org_discounts` and emits a `discount_applied` platform event.
-- `AssociationRecord` type in `lib/api.ts` now has `discount_rate?: number | null` and `discount_duration_end?: string | null`.
-- `applyDiscount(orgId, discountRate, durationMonths)` added to `lib/api.ts`.
-- Supabase UPDATE on non-existent row via `sa` (service role) returns "Invalid API key" — all update routes mitigate this by SELECTing first and returning 404 before attempting UPDATE.
-
 ## Two separate databases — critical distinction
 
 The API server connects to TWO different databases:

@@ -1,4 +1,3 @@
-import { ScreenHeader } from "@/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
@@ -675,9 +674,8 @@ export default function OperatorInvoicing() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: 8, paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Payroll</Text>

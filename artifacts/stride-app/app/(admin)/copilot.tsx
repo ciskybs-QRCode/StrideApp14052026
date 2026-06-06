@@ -433,10 +433,8 @@ export default function CopilotScreen() {
         <Pressable
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           hitSlop={14}
-          style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 2, opacity: pressed ? 0.6 : 1 })}
         >
-          <Ionicons name="chevron-back" size={22} color="#D4AF37" />
-          <Text style={{ fontSize: 13, fontWeight: "600", color: "#D4AF37" }}>Back</Text>
+          <Ionicons name="chevron-back" size={22} color="rgba(241,245,249,0.55)" />
         </Pressable>
 
         <View style={s.navCenter}>

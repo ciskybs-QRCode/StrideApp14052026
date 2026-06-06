@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { useColors } from "@/hooks/useColors";
+import { BackButton } from "@/components/BackButton";
 import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
@@ -172,14 +173,13 @@ export default function ParentTabLayout() {
           tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
         }}
       >
-        <Tabs.Screen name="home"      options={{ title: "Home",     tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
-        <Tabs.Screen name="children"  options={{ title: "Members",  tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"   size={size} color={color} /> }} />
-        <Tabs.Screen name="courses"   options={{ title: "Courses",  tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes"           size={size} color={color} /> }} />
-        <Tabs.Screen name="messages"  options={{ title: "Messages", tabBarIcon: ({ color, size }) => <Ionicons name="mail-outline"            size={size} color={color} /> }} />
+        <Tabs.Screen name="home"      options={{ title: "Home",    tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
+        <Tabs.Screen name="children"  options={{ title: "Members", tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"   size={size} color={color} /> }} />
+        <Tabs.Screen name="courses"   options={{ title: "Courses", tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes"           size={size} color={color} /> }} />
         <Tabs.Screen name="wallet"    options={{ href: null }} />
-        <Tabs.Screen name="cart"      options={{ title: "Cart",     tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
+        <Tabs.Screen name="cart"      options={{ title: "Cart",    tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
         <Tabs.Screen name="profile"   options={{ href: null }} />
-        <Tabs.Screen name="documents" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />
+        <Tabs.Screen name="documents" options={{ title: "Settings",tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />
         <Tabs.Screen name="checkout"    options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />
         <Tabs.Screen name="alerts"      options={{ href: null }} />
@@ -188,6 +188,7 @@ export default function ParentTabLayout() {
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
       <RoleSwitcher />
       <BrandingLogoOverlay />
+      <BackButton />
 
       {/* ── Mandatory Legal Signature Gate ──────────────────────────────────── */}
       <Modal visible={blocked} transparent={false} animationType="slide" statusBarTranslucent>

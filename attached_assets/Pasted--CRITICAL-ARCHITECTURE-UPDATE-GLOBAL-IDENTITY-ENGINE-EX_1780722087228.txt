@@ -1,0 +1,22 @@
+🚨 CRITICAL ARCHITECTURE UPDATE: GLOBAL IDENTITY ENGINE & EXCEL/CSV DATA IMPORT MODULE 🚨
+
+Role: Lead Cloud Architect & Flutter/Supabase Engineer.
+Context: We are upgrading the app to a robust Multi-Tenant SaaS platform. Users must be able to use a single "Stride" QR Code across multiple independent associations without breaking database isolation. We also need a massive data import module.
+
+STEP 1: GLOBAL IDENTITY & TENANT-LINKING DATABASE ARCHITECTURE
+- Refactor the database logic to support a "Global User Wallet".
+- Table 1: `global_users` (Stores universal data: UserID, Global_QR_Code, First Name, Last Name, Email).
+- Table 2: `tenant_memberships` (Junction table linking global UserID to a specific TenantID/Association, with a 'status' like 'invited', 'active', 'expired').
+- Table 3: `tenant_specific_data` (Strictly isolated table holding specific dynamic fields, medical info, and legal signatures strictly bound to a TenantID. RLS policies MUST block any tenant from reading another tenant's data).
+
+STEP 2: THE BULK DATA IMPORT MODULE (EXCEL/CSV PARSER)
+- Create a new UI section in the Standard Admin dashboard: "Import Members Data".
+- Implement a robust file picker allowing the Admin to upload `.csv`, `.xls`, or `.xlsx` files.
+- Build an internal parser function (using Flutter packages like `csv` or `excel`) to read the uploaded matrix.
+- The parser must extract arrays of: Member First/Last Name, Member Email, and a count/list of Dependant Members.
+- Insert this parsed data into a `pending_invites` table linked to the Admin's TenantID, mapping out exactly how many total members and dependants are expected to join.
+
+UI & VISUAL CONSTRAINTS:
+- The Import Data screen must utilize pure White cards, Deep Navy Blue (#0A1128) typography, and Premium Gold (#D4AF37) action buttons.
+- Absolute Geometry Law: The upload interface, tables, and data previews MUST be 100% contained within the mobile phone display boundaries. Zero floating overlays, zero horizontal scrolling off-screen, zero overlapping text.
+- Back Button Law: Include the layout-integrated Back button at the top-left to return to the Admin Dashboard.

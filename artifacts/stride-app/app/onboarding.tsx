@@ -18,20 +18,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { SignaturePad } from "@/components/SignaturePad";
 import { api, type ApiDocument } from "@/lib/api";
-import { NAVY, GOLD, BG, DANGER, SUCCESS } from "@/lib/theme";
-
-/** Prevent API calls from hanging the spinner indefinitely. */
-function withTimeout<T>(promise: Promise<T>, ms = 20_000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(
-        () => reject(new Error("Request timed out — check your connection and try again.")),
-        ms
-      )
-    ),
-  ]);
-}
 
 // ── Country / dial-code list ───────────────────────────────────────────────────
 interface Country {
@@ -90,6 +76,8 @@ interface NewMember {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const TOTAL_STEPS = 4;
+const NAVY = "#1E3A8A";
+const GOLD = "#FBBF24";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -151,7 +139,6 @@ export default function OnboardingScreen() {
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
-  const [submitErr, setSubmitErr] = useState("");
 
   // Step 1 — Personal info + address
   const [firstName, setFirstName] = useState("");
@@ -237,37 +224,32 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = async () => {
-    setSubmitErr("");
     setSaving(true);
     try {
       const fullName  = `${firstName.trim()} ${lastName.trim()}`;
       const fullPhone = `${dialCode}${phone.trim()}`;
 
-      await withTimeout(
-        api.updateFullProfile({
-          firstName: firstName.trim(),
-          lastName:  lastName.trim(),
-          phone:     fullPhone,
-          address: { street, city, zip, state, country },
-        })
-      );
+      await api.updateFullProfile({
+        firstName: firstName.trim(),
+        lastName:  lastName.trim(),
+        phone:     fullPhone,
+        address: { street, city, zip, state, country },
+      });
 
       for (const m of members) {
-        await withTimeout(
-          api.addChild({ first_name: m.firstName, last_name: m.lastName, ...(m.dob ? { date_of_birth: m.dob } : {}) })
-        );
+        await api.addChild({ first_name: m.firstName, last_name: m.lastName, ...(m.dob ? { date_of_birth: m.dob } : {}) });
       }
 
       for (const doc of mandatoryDocs) {
         const sig = signatures[doc.id];
-        if (sig) await withTimeout(api.signDocumentWithSignature(String(doc.id), sig));
+        if (sig) await api.signDocumentWithSignature(String(doc.id), sig);
       }
 
       await updateUser({ name: fullName, phone: fullPhone, onboardingComplete: true });
       router.replace("/(parent)/home");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Something went wrong. Please try again.";
-      setSubmitErr(msg);
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      Alert.alert("Error", msg + "\n\nPlease try again.");
     } finally {
       setSaving(false);
     }
@@ -285,7 +267,7 @@ export default function OnboardingScreen() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
+    <View style={{ flex: 1, backgroundColor: "#F8FAFF" }}>
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         {step > 1 ? (
@@ -497,7 +479,7 @@ export default function OnboardingScreen() {
                   return (
                     <View key={doc.id} style={[styles.card, signed && styles.cardSigned]}>
                       <View style={styles.docHeader}>
-                        <View style={[styles.docIconWrap, { backgroundColor: signed ? "#DCFCE7" : `${NAVY}12` }]}>
+                        <View style={[styles.docIconWrap, { backgroundColor: signed ? "#DCFCE7" : "#EEF2FF" }]}>
                           <Ionicons
                             name={signed ? "checkmark-circle" : "document-text-outline"}
                             size={22}
@@ -545,13 +527,6 @@ export default function OnboardingScreen() {
                     </View>
                   );
                 })
-              )}
-
-              {!!submitErr && (
-                <View style={styles.errBanner}>
-                  <Ionicons name="alert-circle-outline" size={15} color="#DC2626" />
-                  <Text style={styles.errBannerText}>{submitErr}</Text>
-                </View>
               )}
 
               <Pressable
@@ -627,7 +602,7 @@ const sh = StyleSheet.create({
     marginBottom: 12,
   },
   stepBadgeText: { fontSize: 12, fontWeight: "700", color: NAVY },
-  stepTitle: { fontSize: 26, fontWeight: "800", color: NAVY, marginBottom: 6 },
+  stepTitle: { fontSize: 26, fontWeight: "800", color: "#0F172A", marginBottom: 6 },
   stepSubtitle: { fontSize: 14, color: "#64748B", lineHeight: 20 },
 });
 
@@ -641,8 +616,8 @@ const fieldSt = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 13 : 10,
     fontSize: 15,
-    color: NAVY,
-    backgroundColor: "#FAFAFA",
+    color: "#0F172A",
+    backgroundColor: "#FAFBFF",
   },
 });
 
@@ -654,15 +629,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
     gap: 12,
-    backgroundColor: BG,
+    backgroundColor: "#F8FAFF",
     borderBottomWidth: 1,
-    borderBottomColor: `${NAVY}10`,
+    borderBottomColor: "#EEF2F8",
   },
   backBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: `${NAVY}12`,
+    backgroundColor: "#EEF2FF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -686,7 +661,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     gap: 14,
-    shadowColor: NAVY,
+    shadowColor: "#1E3A8A",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 10,
@@ -706,17 +681,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryBtnDisabled: { opacity: 0.4 },
-  errBanner: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    backgroundColor: "#FEF2F2",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-    borderRadius: 12,
-    padding: 12,
-  },
-  errBannerText: { flex: 1, fontSize: 13, color: "#DC2626", lineHeight: 18 },
   primaryBtnText: { fontSize: 16, fontWeight: "800", color: "#FFF" },
   fieldLabel: { fontSize: 12, fontWeight: "700", color: "#374151", marginBottom: 6 },
   hint: { fontSize: 11, color: "#94A3B8", marginTop: 4 },
@@ -729,7 +693,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#FAFBFF",
   },
   countryFlag: { fontSize: 20 },
   countryDial: { fontSize: 15, fontWeight: "700", color: NAVY },
@@ -741,12 +705,12 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#FAFBFF",
   },
   dialBadge: {
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 13 : 10,
-    backgroundColor: `${NAVY}12`,
+    backgroundColor: "#EEF2FF",
     borderRightWidth: 1.5,
     borderRightColor: "#E2E8F0",
   },
@@ -756,7 +720,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 13 : 10,
     fontSize: 15,
-    color: NAVY,
+    color: "#0F172A",
   },
   emptyState: { alignItems: "center", gap: 8, paddingVertical: 16 },
   emptyStateText: { fontSize: 15, fontWeight: "700", color: "#94A3B8" },
@@ -778,10 +742,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberAvatarText: { fontSize: 13, fontWeight: "800", color: NAVY },
-  memberName: { fontSize: 14, fontWeight: "700", color: NAVY },
+  memberName: { fontSize: 14, fontWeight: "700", color: "#0F172A" },
   memberDob: { fontSize: 12, color: "#64748B", marginTop: 2 },
   addMemberForm: {
-    backgroundColor: BG,
+    backgroundColor: "#F8FAFF",
     borderRadius: 12,
     padding: 14,
     gap: 10,
@@ -826,11 +790,11 @@ const styles = StyleSheet.create({
   loadingWrap: { alignItems: "center", gap: 12, paddingVertical: 40 },
   loadingText: { fontSize: 14, color: "#64748B" },
   noDocs: { alignItems: "center", gap: 10, paddingVertical: 20 },
-  noDocsTitle: { fontSize: 18, fontWeight: "800", color: NAVY },
+  noDocsTitle: { fontSize: 18, fontWeight: "800", color: "#0F172A" },
   noDocsText: { fontSize: 13, color: "#64748B", textAlign: "center" },
   docHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   docIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  docTitle: { fontSize: 15, fontWeight: "700", color: NAVY, lineHeight: 20 },
+  docTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A", lineHeight: 20 },
   docType: { fontSize: 12, color: "#64748B", marginTop: 2 },
   signedBadge: {
     flexDirection: "row",
@@ -883,7 +847,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 16,
   },
-  pickerTitle: { fontSize: 17, fontWeight: "800", color: NAVY, marginBottom: 12 },
+  pickerTitle: { fontSize: 17, fontWeight: "800", color: "#0F172A", marginBottom: 12 },
   pickerSearch: {
     flexDirection: "row",
     alignItems: "center",
@@ -896,7 +860,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFF",
     marginBottom: 8,
   },
-  pickerSearchInput: { flex: 1, fontSize: 14, color: NAVY },
+  pickerSearchInput: { flex: 1, fontSize: 14, color: "#0F172A" },
   pickerItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -908,6 +872,6 @@ const styles = StyleSheet.create({
   },
   pickerItemActive: { backgroundColor: "#EEF2FF" },
   pickerFlag: { fontSize: 20, width: 28 },
-  pickerName: { flex: 1, fontSize: 14, color: NAVY },
+  pickerName: { flex: 1, fontSize: 14, color: "#0F172A" },
   pickerDial: { fontSize: 13, color: NAVY, fontWeight: "700" },
 });

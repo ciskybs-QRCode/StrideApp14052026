@@ -1,4 +1,3 @@
-import { ScreenHeader } from "@/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as DocumentPicker from "expo-document-picker";
@@ -309,9 +308,8 @@ export default function AdminReimbursementsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: 8, paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 72 : 20), paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.titleRow}>

@@ -576,13 +576,6 @@ export default function ActivityScreen() {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: pt, backgroundColor: colors.background }]}>
-        <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={({ pressed }) => ({ width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 10, opacity: pressed ? 0.6 : 1, marginRight: 4 })}
-        >
-          <Ionicons name="chevron-back" size={24} color="#D4AF37" />
-        </Pressable>
         <View>
           <Text style={[styles.pageTitle, { color: colors.primary }]}>Activity</Text>
           <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
@@ -649,18 +642,9 @@ export default function ActivityScreen() {
 
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             {filtered.length === 0 ? (
-              <View style={styles.emptyNavy}>
-                <View style={styles.emptyNavyIconRing}>
-                  <Ionicons name="calendar-outline" size={36} color="#D4AF37" />
-                </View>
-                <Text style={styles.emptyNavyTitle}>
-                  {activities.length === 0 ? "No activities configured yet" : "No activities match this filter"}
-                </Text>
-                <Text style={styles.emptyNavyBody}>
-                  {activities.length === 0
-                    ? "No items configured yet. Enter your Command Center or Admin settings to initialize activities, operators, and disciplines."
-                    : "Try selecting a different filter above to view other activity types."}
-                </Text>
+              <View style={styles.empty}>
+                <Ionicons name="calendar-outline" size={48} color={colors.mutedForeground} />
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No activities found</Text>
               </View>
             ) : (
               filtered.map(a => <ActivityCard key={a.id} a={a} />)
@@ -728,35 +712,23 @@ export default function ActivityScreen() {
       {/* ── ADMIN SCHEDULE TAB ── */}
       {tab === "admin" && (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {adminItems.length === 0 ? (
-            <View style={styles.emptyNavy}>
-              <View style={styles.emptyNavyIconRing}>
-                <Ionicons name="briefcase-outline" size={36} color="#D4AF37" />
-              </View>
-              <Text style={styles.emptyNavyTitle}>No schedule items yet</Text>
-              <Text style={styles.emptyNavyBody}>
-                No items configured yet. Enter your Command Center or Admin settings to initialize activities, operators, and disciplines.
-              </Text>
-            </View>
-          ) : (
-            (["secretary_hours","staff_meeting","parent_teacher"] as AdminItemType[]).map(type => {
-              const items = adminItems.filter(i => i.type === type);
-              if (items.length === 0) return null;
-              const tc = ADMIN_TYPE_CONFIG[type];
-              return (
-                <View key={type}>
-                  <View style={styles.adminSectionHeader}>
-                    <View style={[styles.adminSectionIcon, { backgroundColor: tc.bg }]}>
-                      <Ionicons name={tc.icon} size={16} color={tc.color} />
-                    </View>
-                    <Text style={[styles.adminSectionTitle, { color: tc.color }]}>{tc.label}</Text>
-                    <Text style={[styles.adminSectionCount, { color: colors.mutedForeground }]}>{items.length}</Text>
+          {(["secretary_hours","staff_meeting","parent_teacher"] as AdminItemType[]).map(type => {
+            const items = adminItems.filter(i => i.type === type);
+            if (items.length === 0) return null;
+            const tc = ADMIN_TYPE_CONFIG[type];
+            return (
+              <View key={type}>
+                <View style={styles.adminSectionHeader}>
+                  <View style={[styles.adminSectionIcon, { backgroundColor: tc.bg }]}>
+                    <Ionicons name={tc.icon} size={16} color={tc.color} />
                   </View>
-                  {items.map(item => <AdminItemCard key={item.id} item={item} />)}
+                  <Text style={[styles.adminSectionTitle, { color: tc.color }]}>{tc.label}</Text>
+                  <Text style={[styles.adminSectionCount, { color: colors.mutedForeground }]}>{items.length}</Text>
                 </View>
-              );
-            })
-          )}
+                {items.map(item => <AdminItemCard key={item.id} item={item} />)}
+              </View>
+            );
+          })}
           <View style={{ height: 120 }} />
         </ScrollView>
       )}
@@ -1442,10 +1414,6 @@ const styles = StyleSheet.create({
 
   empty: { alignItems: "center", gap: 12, paddingVertical: 60 },
   emptyText: { fontSize: 15, fontWeight: "600" },
-  emptyNavy: { backgroundColor: "#0A1128", borderRadius: 20, borderWidth: 1, borderColor: "#D4AF37", padding: 28, marginTop: 16, marginHorizontal: 4, alignItems: "center", gap: 14 },
-  emptyNavyIconRing: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.1)", alignItems: "center", justifyContent: "center" },
-  emptyNavyTitle: { fontSize: 16, fontWeight: "800", color: "#FFFFFF", textAlign: "center" },
-  emptyNavyBody: { fontSize: 13, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 20 },
 
   // Activity Card
   actCard: { borderRadius: 20, marginBottom: 12, flexDirection: "row", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },

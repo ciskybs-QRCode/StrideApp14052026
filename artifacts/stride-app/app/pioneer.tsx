@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Linking,
@@ -16,25 +17,13 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { api, setToken } from "@/lib/api";
 
-import { NAVY, GOLD, BG } from "@/lib/theme";
-
-/** Prevent API calls from hanging the spinner indefinitely. */
-function withTimeout<T>(promise: Promise<T>, ms = 20_000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(
-        () => reject(new Error("Request timed out — check your connection and try again.")),
-        ms
-      )
-    ),
-  ]);
-}
+const NAVY = "#1E3A8A";
+const GOLD = "#FBBF24";
 const TOTAL_STEPS = 5;
 
 const COLOR_PRESETS = [
@@ -71,12 +60,12 @@ function StepIndicator({ current }: { current: number }) {
 const si = StyleSheet.create({
   row:         { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 28 },
   dot:         { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  done:        { backgroundColor: NAVY },
+  done:        { backgroundColor: "#10B981" },
   active:      { backgroundColor: GOLD },
-  idle:        { backgroundColor: "#E5E7EB" },
-  line:        { flex: 1, height: 2, backgroundColor: "#E5E7EB", maxWidth: 28 },
-  lineDone:    { backgroundColor: NAVY },
-  dotNum:      { fontSize: 12, fontWeight: "700", color: "#9CA3AF" },
+  idle:        { backgroundColor: "rgba(255,255,255,0.15)" },
+  line:        { flex: 1, height: 2, backgroundColor: "rgba(255,255,255,0.15)", maxWidth: 28 },
+  lineDone:    { backgroundColor: "#10B981" },
+  dotNum:      { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.5)" },
   dotNumActive:{ color: NAVY },
 });
 
@@ -117,7 +106,6 @@ export default function Pioneer() {
   const [ageGroups, setAgeGroups]   = useState<string[]>([]);
   const [skillLevels, setSkillLevels] = useState<string[]>([]);
   const [completing, setCompleting] = useState(false);
-  const [completeErr, setCompleteErr] = useState("");
 
   const scrollToTop = () => scrollRef.current?.scrollTo({ y: 0, animated: true });
 
@@ -156,18 +144,14 @@ export default function Pioneer() {
   // ── Step 3: Logo picker ───────────────────────────────────────────────────
   const pickLogo = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") { setCompleteErr("Photo library access is required to upload a logo. Please allow it in your device settings."); return; }
+    if (status !== "granted") { Alert.alert("Permission needed", "Allow photo access to upload your logo."); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
     if (!result.canceled && result.assets[0]) setLogoUri(result.assets[0].uri);
   };
 
   // ── Step 5: Complete wizard ───────────────────────────────────────────────
   const handleComplete = async () => {
-    setCompleteErr("");
-    if (!schoolName.trim()) {
-      setCompleteErr("School name is required. Go back to Step 1 and enter your school name.");
-      return;
-    }
+    if (!schoolName.trim()) { Alert.alert("School name required", "Please enter your school name."); return; }
     setCompleting(true);
     try {
       const preset = COLOR_PRESETS[selectedPreset];
@@ -176,24 +160,22 @@ export default function Pioneer() {
       await updateUser({ schoolName, primaryColor: preset.primary, secondaryColor: preset.secondary, logoUri: logoUri ?? undefined });
 
       // Persist to backend
-      await withTimeout(
-        api.pioneerComplete({
-          schoolName: schoolName.trim(),
-          registrationNumber: regNumber.trim() || undefined,
-          contactPhone: contactPhone.trim() || undefined,
-          studios: studios.filter(s => s.name.trim()).map(s => ({
-            name: s.name.trim(),
-            capacity: parseInt(s.capacity, 10) || 20,
-          })),
-          ageGroups,
-          skillLevels,
-        })
-      );
+      await api.pioneerComplete({
+        schoolName: schoolName.trim(),
+        registrationNumber: regNumber.trim() || undefined,
+        contactPhone: contactPhone.trim() || undefined,
+        studios: studios.filter(s => s.name.trim()).map(s => ({
+          name: s.name.trim(),
+          capacity: parseInt(s.capacity, 10) || 20,
+        })),
+        ageGroups,
+        skillLevels,
+      });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(admin)/stats");
     } catch (err: unknown) {
-      setCompleteErr(err instanceof Error ? err.message : "Setup failed — please try again.");
+      Alert.alert("Error", err instanceof Error ? err.message : "Setup failed. Please try again.");
     } finally {
       setCompleting(false);
     }
@@ -208,14 +190,13 @@ export default function Pioneer() {
   const toggleSkill = (v: string) => setSkillLevels(a => a.includes(v) ? a.filter(x => x !== v) : [...a, v]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BG }} edges={["top"]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: NAVY }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.scroll, { paddingTop: 24, paddingBottom: insets.bottom + 48 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 48 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -361,7 +342,7 @@ export default function Pioneer() {
                       setStripeLinked(true);
                     }
                   } catch {
-                    /* Stripe not yet configured — user can connect later via Admin Settings → Finance */
+                    Alert.alert("Stripe not configured", "Stripe Connect setup can be completed later from Admin Settings → Finance.");
                   }
                 }}
               >
@@ -410,7 +391,7 @@ export default function Pioneer() {
                   <Text style={styles.presetLabel}>{p.label}</Text>
                   {selectedPreset === i && (
                     <View style={styles.presetCheck}>
-                      <Ionicons name="checkmark-circle" size={16} color={GOLD} />
+                      <Ionicons name="checkmark-circle" size={16} color="#10B981" />
                     </View>
                   )}
                 </Pressable>
@@ -508,15 +489,8 @@ export default function Pioneer() {
               </Text>
             </View>
 
-            {!!completeErr && (
-              <View style={styles.errBox}>
-                <Ionicons name="alert-circle-outline" size={15} color="#EF4444" />
-                <Text style={styles.errText}>{completeErr}</Text>
-              </View>
-            )}
-
             <Pressable
-              style={[styles.primaryBtn, { marginTop: 12, backgroundColor: NAVY }, completing && { opacity: 0.7 }]}
+              style={[styles.primaryBtn, { marginTop: 20, backgroundColor: "#10B981" }, completing && { opacity: 0.7 }]}
               onPress={handleComplete}
               disabled={completing}
             >
@@ -527,7 +501,7 @@ export default function Pioneer() {
             </Pressable>
 
             <Pressable style={styles.backBtn} onPress={() => next(step - 1)}>
-              <Ionicons name="arrow-back-outline" size={15} color="#64748B" />
+              <Ionicons name="arrow-back-outline" size={15} color="rgba(255,255,255,0.5)" />
               <Text style={styles.backText}>Back</Text>
             </Pressable>
           </View>
@@ -536,13 +510,12 @@ export default function Pioneer() {
         {/* Back nav for steps 2-4 */}
         {step > 1 && step < 5 && (
           <Pressable style={styles.backBtn} onPress={() => next(step - 1)}>
-            <Ionicons name="arrow-back-outline" size={15} color="#64748B" />
+            <Ionicons name="arrow-back-outline" size={15} color="rgba(255,255,255,0.5)" />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
         )}
       </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -551,10 +524,10 @@ const styles = StyleSheet.create({
   header:    { alignItems: "center", marginBottom: 24, gap: 8 },
   badge:     { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: GOLD, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
   badgeText: { fontSize: 11, fontWeight: "800", color: NAVY, letterSpacing: 1.5 },
-  title:     { fontSize: 28, fontWeight: "900", color: NAVY, textAlign: "center" },
-  subtitle:  { fontSize: 14, color: "#64748B", textAlign: "center", lineHeight: 20, marginBottom: 8 },
+  title:     { fontSize: 28, fontWeight: "900", color: "#FFF", textAlign: "center" },
+  subtitle:  { fontSize: 14, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 20, marginBottom: 8 },
 
-  card:      { backgroundColor: "#FFF", borderRadius: 24, padding: 22, gap: 4, shadowColor: "#0A1128", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 3, borderWidth: 1, borderColor: "#EEF2F6", marginBottom: 16 },
+  card:      { backgroundColor: "#FFF", borderRadius: 24, padding: 22, gap: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12, marginBottom: 16 },
   cardTitle: { fontSize: 20, fontWeight: "800", marginBottom: 4 },
   cardSub:   { fontSize: 13, color: "#6B7280", marginBottom: 16, lineHeight: 19 },
 
@@ -569,7 +542,7 @@ const styles = StyleSheet.create({
   skipText: { fontSize: 13, color: "#6B7280", fontWeight: "500" },
 
   backBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, marginBottom: 4 },
-  backText: { fontSize: 13, color: "#64748B", fontWeight: "600" },
+  backText: { fontSize: 13, color: "rgba(255,255,255,0.5)", fontWeight: "600" },
 
   errBox:   { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: "#FECACA" },
   errText:  { flex: 1, fontSize: 13, color: "#EF4444" },
@@ -586,7 +559,7 @@ const styles = StyleSheet.create({
 
   presetGrid:        { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
   presetCard:        { borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E7EB", padding: 10, minWidth: "30%", flex: 1, alignItems: "center", position: "relative" },
-  presetCardSelected:{ borderColor: GOLD, backgroundColor: `${GOLD}12` },
+  presetCardSelected:{ borderColor: "#10B981", backgroundColor: "#F0FDF4" },
   presetSwatch:      { width: 20, height: 20, borderRadius: 10 },
   presetLabel:       { fontSize: 10, fontWeight: "600", color: "#374151", textAlign: "center", marginTop: 2 },
   presetCheck:       { position: "absolute", top: 4, right: 4 },

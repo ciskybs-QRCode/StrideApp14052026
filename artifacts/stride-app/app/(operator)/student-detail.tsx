@@ -1,4 +1,3 @@
-import { ScreenHeader } from "@/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -82,11 +81,10 @@ export default function StudentDetail() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: 8, paddingBottom: insets.bottom + 40 },
+          { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: insets.bottom + 40 },
         ]}
         showsVerticalScrollIndicator={false}
       >

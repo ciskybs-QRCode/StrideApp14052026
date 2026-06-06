@@ -138,19 +138,11 @@ export default function AdminAnalytics() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* ── HEADER ── */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border, paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
-        <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 2, paddingRight: 8, opacity: pressed ? 0.6 : 1 })}
-        >
-          <Ionicons name="chevron-back" size={22} color="#D4AF37" />
-          <Text style={{ fontSize: 13, fontWeight: "600", color: "#D4AF37" }}>Back</Text>
-        </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Analytics</Text>
           <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{user?.schoolName || "Stride"}</Text>
         </View>
-        <View style={{ width: 44 }} />
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView

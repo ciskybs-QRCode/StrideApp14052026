@@ -288,28 +288,4 @@ router.post("/billing/webhook", async (req, res) => {
   }
 });
 
-// ── GET /billing/payment-methods ─────────────────────────────────────────────
-// Returns active payment gateways configured by the Super Admin.
-// Accessible by admin (and super_admin) roles.
-router.get(
-  "/billing/payment-methods",
-  requireAuth,
-  requireRole("admin", "super_admin"),
-  async (_req, res) => {
-    try {
-      const { data, error } = await supabase
-        .from("platform_payment_gateways")
-        .select("id, type, label, enabled, config, sort_order")
-        .eq("enabled", true)
-        .order("sort_order");
-      if (error) {
-        if ((error as { code?: string }).code === "42P01") { res.json([]); return; }
-        res.status(500).json({ error: error.message });
-        return;
-      }
-      res.json(data ?? []);
-    } catch { res.json([]); }
-  },
-);
-
 export default router;

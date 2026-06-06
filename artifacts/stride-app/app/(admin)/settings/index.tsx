@@ -64,15 +64,6 @@ const NAV_ROWS = [
   },
 ] as const;
 
-// ── Super Admin gate ─────────────────────────────────────────────────────────
-
-const MASTER_EMAIL = "ciskybs@gmail.com";
-
-function isSuperAdminEmail(email: string | undefined | null): boolean {
-  if (!email) return false;
-  return email.trim().toLowerCase() === MASTER_EMAIL.trim().toLowerCase();
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SettingsIndex() {
@@ -83,7 +74,6 @@ export default function SettingsIndex() {
   const insets = useSafeAreaInsets();
 
   const unsignedCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
-  const showSuperAdmin = isSuperAdminEmail(user?.email);
 
   const initials = (user?.name ?? "A")
     .split(" ")
@@ -111,13 +101,6 @@ export default function SettingsIndex() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-
-        {/* ── DEBUG EMAIL INDICATOR (temporary) ── */}
-        <View style={styles.debugBar}>
-          <Text style={styles.debugText} numberOfLines={1}>
-            Logged in as: {user?.email ?? "(not signed in)"}
-          </Text>
-        </View>
 
         {/* ── PAGE TITLE ROW — "Settings" + Admin badge ── */}
         <View style={styles.titleRow}>
@@ -165,26 +148,6 @@ export default function SettingsIndex() {
             />
           </View>
         </View>
-
-        {/* ── SUPER ADMIN DASHBOARD ── */}
-        {showSuperAdmin && (
-          <Pressable
-            style={({ pressed }) => [styles.superAdminBtn, { opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              router.push("/(super_admin)/dashboard" as never);
-            }}
-          >
-            <View style={styles.superAdminIconWrap}>
-              <Ionicons name="globe" size={22} color="#D4AF37" />
-            </View>
-            <View style={styles.featText}>
-              <Text style={styles.superAdminTitle}>Super Admin Dashboard</Text>
-              <Text style={styles.superAdminDesc}>Platform-wide controls &amp; associations</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#D4AF37" />
-          </Pressable>
-        )}
 
         {/* ── ACCOUNT ── */}
         <AccountSettingsCard />
@@ -427,57 +390,4 @@ const styles = StyleSheet.create({
   countBadgeText: { fontSize: 11, fontWeight: "700" },
 
   version: { fontSize: 12, textAlign: "center", marginBottom: 20 },
-
-  // Debug bar (temporary)
-  debugBar: {
-    backgroundColor: "#D4AF37",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    marginBottom: 14,
-  },
-  debugText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-
-  // Super Admin button
-  superAdminBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
-    backgroundColor: "#0A1128",
-    borderWidth: 1.5,
-    borderColor: "#D4AF37",
-    shadowColor: "#D4AF37",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  superAdminIconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    backgroundColor: "rgba(212,175,55,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(212,175,55,0.35)",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  superAdminTitle: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 2,
-  },
-  superAdminDesc: {
-    color: "rgba(212,175,55,0.75)",
-    fontSize: 12,
-  },
 });
