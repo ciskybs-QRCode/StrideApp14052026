@@ -2,15 +2,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api, setToken, clearToken, getToken } from "../lib/api";
 
-export type UserRole = "parent" | "operator" | "admin" | "kiosk" | "super_admin";
+// --- INSERISCI QUI LA TUA EMAIL ---
+const OWNER_EMAIL = "ciskybs@gmail.com";
+
+export type UserRole =
+  | "parent"
+  | "operator"
+  | "admin"
+  | "kiosk"
+  | "super_admin";
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  /** Currently active role — used for routing and UI decisions */
   role: UserRole;
-  /** All roles granted to this account. Admins get all three, operators get operator+parent. */
   roles: UserRole[];
   orgId?: number;
   schoolName?: string;
@@ -19,12 +25,7 @@ export interface User {
   logoUri?: string;
   profilePhotoUri?: string;
   phone?: string;
-  /**
-   * Explicitly false only for accounts created via /join that have not yet completed
-   * the onboarding wizard. Undefined = existing account, treated as complete.
-   */
   onboardingComplete?: boolean;
-  /** 'pending_activation' = registered via web, awaiting email verification. */
   activationStatus?: "active" | "pending_activation";
 }
 
@@ -34,8 +35,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
-  /** Switch the active role (must be in user.roles). Does NOT navigate — caller handles routing. */
   switchRole: (role: UserRole) => Promise<void>;
+  isOwner: () => boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -44,10 +45,12 @@ const USER_KEY = "stride_user";
 
 /** Derive multi-role list from a primary role returned by the API */
 function rolesForPrimary(primary: UserRole): UserRole[] {
-  if (primary === "super_admin") return ["super_admin"];
-  if (primary === "admin")       return ["admin", "operator", "parent"];
-  if (primary === "operator")    return ["operator", "parent"];
-  if (primary === "kiosk")       return ["kiosk"];
+  // Super admin inherits all possible capabilities
+  if (primary === "super_admin")
+    return ["super_admin", "admin", "operator", "parent"];
+  if (primary === "admin") return ["admin", "operator", "parent"];
+  if (primary === "operator") return ["operator", "parent"];
+  if (primary === "kiosk") return ["kiosk"];
   return ["parent"];
 }
 
@@ -59,6 +62,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
+  const isOwner = () =>
+    user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+
   const loadUser = async () => {
     try {
       const [stored, token] = await Promise.all([
@@ -67,7 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ]);
       if (stored && token) {
         const parsed = JSON.parse(stored) as User;
-        // Migrate sessions stored before multi-role was introduced
         if (!parsed.roles || parsed.roles.length === 0) {
           parsed.roles = rolesForPrimary(parsed.role);
         }
@@ -79,7 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string): Promise<User> => {
-    // Kiosk device account: bypass API and set role locally
     if (email.toLowerCase() === "kiosk@test.com") {
       const kioskUser: User = {
         id: "kiosk-device",
@@ -89,7 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         roles: ["kiosk"],
       };
       await setToken("kiosk-demo-token");
-      try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(kioskUser)); } catch { /* localStorage blocked */ }
+      try {
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(kioskUser));
+      } catch {}
       setUser(kioskUser);
       return kioskUser;
     }
@@ -98,27 +104,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setToken(token);
     const primaryRole = apiUser.role as UserRole;
     const mapped: User = {
-      id:    String(apiUser.id),
-      name:  apiUser.name,
+      id: String(apiUser.id),
+      name: apiUser.name,
       email: apiUser.email,
-      role:  primaryRole,
+      role: primaryRole,
       roles: rolesForPrimary(primaryRole),
       orgId: apiUser.orgId ?? (apiUser.organization_id as number | undefined),
     };
-    try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped)); } catch { /* localStorage blocked */ }
+    try {
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped));
+    } catch {}
     setUser(mapped);
     return mapped;
   };
 
   const logout = async () => {
-    try { await Promise.all([clearToken(), AsyncStorage.removeItem(USER_KEY)]); } catch { /* ignore */ }
+    try {
+      await Promise.all([clearToken(), AsyncStorage.removeItem(USER_KEY)]);
+    } catch {}
     setUser(null);
   };
 
   const updateUser = async (updates: Partial<User>) => {
     if (!user) return;
     const updated = { ...user, ...updates };
-    try { await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated)); } catch { /* localStorage blocked */ }
+    try {
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
+    } catch {}
     setUser(updated);
   };
 
@@ -129,7 +141,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser, switchRole }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        logout,
+        updateUser,
+        switchRole,
+        isOwner,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
