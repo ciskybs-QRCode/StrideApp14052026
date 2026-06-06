@@ -27,7 +27,7 @@ router.post("/private-notifications/:id/read", requireAuth, async (req, res) => 
   const { error } = await supabase
     .from("private_notifications")
     .update({ read: true })
-    .eq("id", parseInt(req.params.id))
+    .eq("id", parseInt(String(req.params["id"])))
     .eq("recipient_id", user.id);
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json({ ok: true });

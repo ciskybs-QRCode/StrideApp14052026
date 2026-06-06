@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { supabase } from "../lib/supabase.js";
 import { signToken, requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { pool } from "../lib/pg.js";
+import { resolveGlobalUserId } from "../lib/global-identity.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -92,11 +93,20 @@ router.post("/auth/login", async (req, res) => {
     }
   }
 
+  const resolvedOrgId = user.organization_id ?? 1;
+  const globalUserId = await resolveGlobalUserId(
+    user.email,
+    user.name ?? user.email,
+    resolvedOrgId,
+    effectiveRole,
+  );
+
   const token = signToken({
     id: String(user.id),
     email: user.email,
     role: effectiveRole,
-    orgId: user.organization_id ?? 1,
+    orgId: resolvedOrgId,
+    ...(globalUserId !== null ? { globalUserId } : {}),
   });
 
   res.json({
@@ -106,7 +116,8 @@ router.post("/auth/login", async (req, res) => {
       name: user.name,
       email: user.email,
       role: effectiveRole,
-      orgId: user.organization_id ?? 1,
+      orgId: resolvedOrgId,
+      ...(globalUserId !== null ? { globalUserId } : {}),
     },
   });
 });
@@ -236,11 +247,20 @@ router.post("/auth/register", async (req, res) => {
     return;
   }
 
+  const resolvedOrgId = (newUser.organization_id as number | null) ?? orgId;
+  const globalUserId = await resolveGlobalUserId(
+    newUser.email,
+    newUser.name ?? newUser.email,
+    resolvedOrgId,
+    newUser.role,
+  );
+
   const token = signToken({
     id: String(newUser.id),
     email: newUser.email,
     role: newUser.role,
-    orgId: (newUser.organization_id as number | null) ?? orgId,
+    orgId: resolvedOrgId,
+    ...(globalUserId !== null ? { globalUserId } : {}),
   });
 
   res.status(201).json({
@@ -251,7 +271,8 @@ router.post("/auth/register", async (req, res) => {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
-      orgId: (newUser.organization_id as number | null) ?? orgId,
+      orgId: resolvedOrgId,
+      ...(globalUserId !== null ? { globalUserId } : {}),
     },
   });
 });

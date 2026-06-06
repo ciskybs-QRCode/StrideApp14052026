@@ -38,6 +38,7 @@ import absencesRouter from "./absences.js";
 import predictiveSubstitutesRouter from "./predictive-substitutes.js";
 import adminCopilotRouter from "./admin-copilot.js";
 import verifyQrRouter from "./verify-qr.js";
+import identityRouter from "./identity.js";
 
 const router: IRouter = Router();
 
@@ -80,5 +81,6 @@ router.use(absencesRouter);
 router.use(predictiveSubstitutesRouter);
 router.use(adminCopilotRouter);
 router.use(verifyQrRouter);
+router.use(identityRouter);
 
 export default router;

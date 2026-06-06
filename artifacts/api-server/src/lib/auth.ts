@@ -6,6 +6,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   orgId: number;
+  globalUserId?: number;
 }
 
 const secret = () => process.env["SESSION_SECRET"] || "stride-fallback-secret";

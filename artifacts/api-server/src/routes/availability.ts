@@ -97,7 +97,7 @@ router.post("/availability", requireAuth, requireRole("operator", "admin"), asyn
         sender_id: user.id,
         type: "booking_request",
         title: "New Availability Submitted",
-        body: `${user.name} submitted a slot for ${slotDate} at ${startTime}.`,
+        body: `Operator submitted a slot for ${slotDate} at ${startTime}.`,
       }))
     );
   }
@@ -116,7 +116,7 @@ router.patch("/availability/:id", requireAuth, requireRole("admin"), async (req,
   const { data: slot, error } = await supabase
     .from("operator_availability")
     .update({ status, parent_price_cents: parentPriceCents })
-    .eq("id", parseInt(req.params.id))
+    .eq("id", parseInt(String(req.params["id"])))
     .eq("organization_id", user.orgId)
     .select(`*, operator_profile:operator_profiles!operator_profile_id(user_id)`)
     .single();

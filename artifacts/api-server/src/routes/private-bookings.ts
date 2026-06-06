@@ -94,7 +94,7 @@ router.patch("/private-bookings/:id/confirm", requireAuth, requireRole("operator
   const { data: booking, error } = await supabase
     .from("private_bookings")
     .update({ status: "confirmed" })
-    .eq("id", parseInt(req.params.id))
+    .eq("id", parseInt(String(req.params["id"])))
     .eq("organization_id", user.orgId)
     .select()
     .single();
@@ -119,7 +119,7 @@ router.patch("/private-bookings/:id/cancel", requireAuth, async (req, res) => {
   const { data: booking, error } = await supabase
     .from("private_bookings")
     .update({ status: "cancelled" })
-    .eq("id", parseInt(req.params.id))
+    .eq("id", parseInt(String(req.params["id"])))
     .eq("organization_id", user.orgId)
     .select()
     .single();
