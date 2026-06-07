@@ -1244,6 +1244,14 @@ export async function listAdmins(): Promise<AdminRecord[]> {
   return request<AdminRecord[]>("GET", "/super-admin/admins");
 }
 
+export async function updateUserRole(userId: number, newRole: string): Promise<AdminRecord> {
+  return request<AdminRecord>("PATCH", `/super-admin/users/${userId}/role`, { newRole });
+}
+
+export async function deleteUser(userId: number): Promise<void> {
+  return request<void>("DELETE", `/super-admin/users/${userId}`);
+}
+
 export async function addSuperAdmin(
   email: string,
   name?: string,

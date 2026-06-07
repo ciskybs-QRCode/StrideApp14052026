@@ -13,9 +13,11 @@ import {
   getPlatformMetrics, listAssociations, extendTrial, setSuspension,
   getFinancialAnalytics, createTenant, listAdmins, addSuperAdmin,
   getOwnerSettings, updateOwnerEmail, updateOwnerPassword, setToken,
+  updateUserRole, deleteUser,
   type AssociationRecord, type PlatformMetrics, type PlatformEvent,
   type FinancialSummary, type AdminRecord, type TenantOptions,
 } from "@/lib/api";
+import type { User } from "@/context/AuthContext";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const CARD_W = Math.floor((SCREEN_W - 40) / 2);
@@ -184,31 +186,326 @@ const fr = StyleSheet.create({
 
 // ── Admin Row ─────────────────────────────────────────────────────────────────
 
-function AdminRow({ rec }: { rec: AdminRecord }) {
-  const isSA = rec.role === "super_admin";
+// ── Role display helpers ──────────────────────────────────────────────────────
+
+function roleColor(role: string): string {
+  if (role === "super_admin") return "#1E3A8A";
+  if (role === "admin")       return "#7C3AED";
+  if (role === "operator")    return "#D97706";
+  if (role === "parent")      return "#059669";
+  return "#6B7280";
+}
+function roleBg(role: string): string {
+  if (role === "super_admin") return "#EFF6FF";
+  if (role === "admin")       return "#F5F3FF";
+  if (role === "operator")    return "#FFFBEB";
+  if (role === "parent")      return "#ECFDF5";
+  return "#F9FAFB";
+}
+function roleLabel(role: string): string {
+  if (role === "super_admin") return "Super Admin";
+  if (role === "admin")       return "Admin";
+  if (role === "operator")    return "Operator";
+  if (role === "parent")      return "Parent";
+  return role;
+}
+
+// ── AdminRow ──────────────────────────────────────────────────────────────────
+
+function AdminRow({
+  rec, onEdit,
+}: {
+  rec: AdminRecord;
+  onEdit: (rec: AdminRecord) => void;
+}) {
+  const color = roleColor(rec.role);
+  const bg    = roleBg(rec.role);
   return (
     <View style={ar.row}>
-      <View style={ar.avatar}>
-        <Ionicons name={isSA ? "shield-checkmark" : "person"} size={16} color={isSA ? "#1E3A8A" : "#7C3AED"} />
+      <View style={[ar.avatar, { backgroundColor: bg }]}>
+        <Ionicons name={rec.role === "super_admin" ? "shield-checkmark" : "person"} size={16} color={color} />
       </View>
       <View style={ar.info}>
         <Text style={ar.name} numberOfLines={1}>{rec.name}</Text>
         <Text style={ar.email} numberOfLines={1}>{rec.email}</Text>
       </View>
-      <View style={[ar.chip, { backgroundColor: isSA ? "#EFF6FF" : "#F5F3FF" }]}>
-        <Text style={[ar.chipText, { color: isSA ? "#1E3A8A" : "#7C3AED" }]}>{isSA ? "SUPER ADMIN" : "ADMIN"}</Text>
+      <View style={[ar.chip, { backgroundColor: bg }]}>
+        <Text style={[ar.chipText, { color }]}>{roleLabel(rec.role).toUpperCase()}</Text>
       </View>
+      <Pressable
+        style={({ pressed }) => [ar.editBtn, { opacity: pressed ? 0.65 : 1 }]}
+        onPress={() => onEdit(rec)}
+        hitSlop={8}
+      >
+        <Ionicons name="create-outline" size={17} color="#1E3A8A" />
+      </Pressable>
     </View>
   );
 }
 const ar = StyleSheet.create({
   row:      { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" },
-  avatar:   { width: 34, height: 34, borderRadius: 10, backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  avatar:   { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   info:     { flex: 1, minWidth: 0 },
   name:     { fontSize: 13, fontWeight: "700", color: "#111827" },
   email:    { fontSize: 11, color: "#9CA3AF", marginTop: 1 },
   chip:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   chipText: { fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
+  editBtn:  { width: 32, height: 32, borderRadius: 8, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+});
+
+// ── ManageUserModal ───────────────────────────────────────────────────────────
+
+type ManageStep = "view" | "confirm_role" | "confirm_delete";
+
+const ROLE_OPTIONS: { key: string; label: string; icon: "person" | "people" | "people-outline"; color: string; bg: string }[] = [
+  { key: "admin",    label: "Admin",    icon: "person",         color: "#7C3AED", bg: "#F5F3FF" },
+  { key: "operator", label: "Operator", icon: "people",         color: "#D97706", bg: "#FFFBEB" },
+  { key: "parent",   label: "Parent",   icon: "people-outline", color: "#059669", bg: "#ECFDF5" },
+];
+
+function ManageUserModal({
+  visible, target, currentUser, ownerEmail, onClose, onSuccess,
+}: {
+  visible: boolean;
+  target: AdminRecord | null;
+  currentUser: User | null;
+  ownerEmail: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [step,        setStep]        = useState<ManageStep>("view");
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
+  const [saving,      setSaving]      = useState(false);
+  const [denied,      setDenied]      = useState<string | null>(null);
+  const [error,       setError]       = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (!visible) {
+      setStep("view"); setPendingRole(null);
+      setSaving(false); setDenied(null); setError(null);
+    }
+  }, [visible]);
+
+  if (!target || !currentUser) return null;
+
+  const isOwnerTarget = target.email.toLowerCase() === ownerEmail.toLowerCase();
+  const isSelf        = currentUser.id === String(target.id);
+  const isPeerSA      = target.role === "super_admin" && !isOwnerTarget;
+  // Client-side mirror of securityGuard.isPermitted
+  const canAct = !isOwnerTarget && !isSelf && currentUser.role === "super_admin" && !isPeerSA;
+
+  const handleRoleSelect = (role: string) => {
+    if (!canAct) { setDenied("You don't have permission to modify this user."); return; }
+    if (role === target.role) return;
+    setPendingRole(role); setDenied(null); setStep("confirm_role");
+  };
+
+  const handleConfirmRole = async () => {
+    if (!pendingRole) return;
+    setSaving(true); setError(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await updateUserRole(target.id, pendingRole);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onSuccess(); onClose();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to update role";
+      if (/403|forbidden|denied/i.test(msg)) { setDenied("Access denied by security policy."); setStep("view"); }
+      else setError(msg);
+    } finally { setSaving(false); }
+  };
+
+  const handleConfirmDelete = async () => {
+    setSaving(true); setError(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    try {
+      await deleteUser(target.id);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onSuccess(); onClose();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to delete user";
+      if (/403|forbidden|denied/i.test(msg)) { setDenied("Access denied by security policy."); setStep("view"); }
+      else setError(msg);
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={em.overlay}>
+        <Pressable style={em.backdrop} onPress={onClose} />
+        <View style={[em.sheet, { paddingBottom: insets.bottom + 20 }]}>
+          <View style={em.dragHandle} />
+          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+
+            {/* ── VIEW step ── */}
+            {step === "view" && (
+              <>
+                <View style={mu.header}>
+                  <View style={[mu.avatar, { backgroundColor: roleBg(target.role) }]}>
+                    <Ionicons name={target.role === "super_admin" ? "shield-checkmark" : "person"} size={26} color={roleColor(target.role)} />
+                  </View>
+                  <Text style={mu.name} numberOfLines={1}>{target.name}</Text>
+                  <Text style={mu.emailTxt} numberOfLines={1}>{target.email}</Text>
+                  <View style={[mu.roleBadge, { backgroundColor: roleBg(target.role) }]}>
+                    <Text style={[mu.roleChipTxt, { color: roleColor(target.role) }]}>{roleLabel(target.role).toUpperCase()}</Text>
+                  </View>
+                  {(isOwnerTarget || isPeerSA || isSelf) && (
+                    <View style={mu.lockNote}>
+                      <Ionicons name="lock-closed-outline" size={12} color="#6B7280" />
+                      <Text style={mu.lockText}>
+                        {isOwnerTarget ? "Platform owner — protected account"
+                          : isSelf    ? "You cannot modify your own account"
+                          : "Super admin accounts are peer-protected"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {!!denied && (
+                  <View style={mu.deniedBox}>
+                    <Ionicons name="lock-closed" size={13} color="#DC2626" />
+                    <Text style={mu.deniedText}>{denied}</Text>
+                  </View>
+                )}
+
+                {canAct && (
+                  <>
+                    <Text style={[em.sectionLabel, { marginTop: 16 }]}>CHANGE ROLE TO</Text>
+                    <View style={{ paddingHorizontal: 20, gap: 8 }}>
+                      {ROLE_OPTIONS.map(opt => {
+                        const isCurrent = target.role === opt.key;
+                        return (
+                          <Pressable
+                            key={opt.key}
+                            style={({ pressed }) => [mu.roleOption, isCurrent && mu.roleOptionCurrent, { opacity: isCurrent ? 0.55 : pressed ? 0.8 : 1 }]}
+                            onPress={() => handleRoleSelect(opt.key)}
+                            disabled={isCurrent}
+                          >
+                            <View style={[mu.roleOptIcon, { backgroundColor: opt.bg }]}>
+                              <Ionicons name={opt.icon} size={15} color={opt.color} />
+                            </View>
+                            <Text style={[mu.roleOptLabel, { color: isCurrent ? "#9CA3AF" : "#111827" }]}>{opt.label}</Text>
+                            {isCurrent
+                              ? <View style={[mu.roleBadge, { backgroundColor: opt.bg }]}><Text style={[mu.roleChipTxt, { color: opt.color }]}>Current</Text></View>
+                              : <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    <Text style={[em.sectionLabel, { marginTop: 20 }]}>DANGER ZONE</Text>
+                    <Pressable
+                      style={({ pressed }) => [mu.revokeBtn, { marginHorizontal: 20, opacity: pressed ? 0.85 : 1 }]}
+                      onPress={() => { setDenied(null); setStep("confirm_delete"); }}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                      <Text style={mu.revokeTxt}>Revoke Access</Text>
+                    </Pressable>
+                  </>
+                )}
+
+                <Pressable style={[em.cancelBtn, { marginTop: 20 }]} onPress={onClose}>
+                  <Text style={em.cancelText}>Close</Text>
+                </Pressable>
+              </>
+            )}
+
+            {/* ── CONFIRM ROLE step ── */}
+            {step === "confirm_role" && !!pendingRole && (
+              <>
+                <View style={mu.confirmBox}>
+                  <View style={[mu.confirmIcon, { backgroundColor: "#FFFBEB" }]}>
+                    <Ionicons name="swap-horizontal" size={26} color="#D97706" />
+                  </View>
+                  <Text style={mu.confirmTitle}>Confirm Role Change</Text>
+                  <Text style={mu.confirmDesc}>
+                    Change{" "}
+                    <Text style={{ fontWeight: "900", color: "#111827" }}>{target.name}</Text>
+                    {" "}from{" "}
+                    <Text style={{ color: roleColor(target.role), fontWeight: "700" }}>{roleLabel(target.role)}</Text>
+                    {" "}to{" "}
+                    <Text style={{ color: roleColor(pendingRole), fontWeight: "700" }}>{roleLabel(pendingRole)}</Text>?
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#9CA3AF", textAlign: "center", marginTop: 4 }}>This takes effect immediately.</Text>
+                </View>
+                {!!error && <View style={[em.errorBox, { marginHorizontal: 20 }]}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
+                <View style={mu.btnRow}>
+                  <Pressable style={[mu.secondaryBtn, { flex: 1 }]} onPress={() => { setStep("view"); setPendingRole(null); }}>
+                    <Text style={mu.secondaryTxt}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={[mu.primaryBtn, { flex: 1, opacity: saving ? 0.7 : 1 }]} onPress={handleConfirmRole} disabled={saving}>
+                    {saving ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={mu.primaryTxt}>Confirm</Text>}
+                  </Pressable>
+                </View>
+              </>
+            )}
+
+            {/* ── CONFIRM DELETE step ── */}
+            {step === "confirm_delete" && (
+              <>
+                <View style={mu.confirmBox}>
+                  <View style={[mu.confirmIcon, { backgroundColor: "#FEF2F2" }]}>
+                    <Ionicons name="warning" size={26} color="#DC2626" />
+                  </View>
+                  <Text style={mu.confirmTitle}>Revoke Access</Text>
+                  <Text style={mu.confirmDesc}>
+                    Permanently delete{" "}
+                    <Text style={{ fontWeight: "900", color: "#111827" }}>{target.name}</Text>
+                    {"'s account?\n"}
+                    <Text style={{ fontSize: 12, color: "#9CA3AF" }}>{target.email}</Text>
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#DC2626", textAlign: "center", marginTop: 4, fontWeight: "700" }}>This cannot be undone.</Text>
+                </View>
+                {!!error && <View style={[em.errorBox, { marginHorizontal: 20 }]}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
+                <View style={mu.btnRow}>
+                  <Pressable style={[mu.secondaryBtn, { flex: 1 }]} onPress={() => setStep("view")}>
+                    <Text style={mu.secondaryTxt}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[mu.revokeBtn, { flex: 1, justifyContent: "center", paddingVertical: 14, borderRadius: 14, opacity: saving ? 0.7 : 1 }]}
+                    onPress={handleConfirmDelete}
+                    disabled={saving}
+                  >
+                    {saving ? <ActivityIndicator size="small" color="#DC2626" /> : <Text style={mu.revokeTxt}>Delete Account</Text>}
+                  </Pressable>
+                </View>
+              </>
+            )}
+
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const mu = StyleSheet.create({
+  header:           { alignItems: "center", paddingHorizontal: 24, paddingTop: 24, paddingBottom: 18, gap: 5, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" },
+  avatar:           { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: 6 },
+  name:             { fontSize: 18, fontWeight: "900", color: "#111827", textAlign: "center" },
+  emailTxt:         { fontSize: 12, color: "#6B7280", textAlign: "center" },
+  roleBadge:        { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 },
+  roleChipTxt:      { fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
+  lockNote:         { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#F9FAFB", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 6, borderWidth: 1, borderColor: "#E5E7EB" },
+  lockText:         { fontSize: 11, color: "#6B7280" },
+  deniedBox:        { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, marginHorizontal: 20, marginTop: 12, borderWidth: 1, borderColor: "#FECACA" },
+  deniedText:       { flex: 1, fontSize: 12, color: "#DC2626", fontWeight: "600" },
+  roleOption:       { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB" },
+  roleOptionCurrent:{ borderColor: "transparent" },
+  roleOptIcon:      { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  roleOptLabel:     { flex: 1, fontSize: 14, fontWeight: "700" },
+  revokeBtn:        { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14, backgroundColor: "#FEF2F2", borderWidth: 1.5, borderColor: "#FECACA" },
+  revokeTxt:        { fontSize: 14, fontWeight: "800", color: "#DC2626" },
+  confirmBox:       { alignItems: "center", padding: 28, paddingBottom: 16, gap: 10 },
+  confirmIcon:      { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  confirmTitle:     { fontSize: 18, fontWeight: "900", color: "#111827" },
+  confirmDesc:      { fontSize: 14, color: "#6B7280", textAlign: "center", lineHeight: 20 },
+  btnRow:           { flexDirection: "row", gap: 10, paddingHorizontal: 20, marginTop: 20, marginBottom: 8 },
+  secondaryBtn:     { alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB" },
+  secondaryTxt:     { fontSize: 14, fontWeight: "700", color: "#6B7280" },
+  primaryBtn:       { alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: "#1E3A8A" },
+  primaryTxt:       { fontSize: 14, fontWeight: "900", color: "#FFF" },
 });
 
 // ── Event Card ────────────────────────────────────────────────────────────────
@@ -856,6 +1153,7 @@ export default function SuperAdminDashboard() {
   const [addTenantVisible, setAddTenantVisible] = useState(false);
   const [addAdminVisible,  setAddAdminVisible]  = useState(false);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [manageUser,       setManageUser]       = useState<AdminRecord | null>(null);
 
   // Owner Settings
   const [ownerEmail,     setOwnerEmail]     = useState<string>(user?.email ?? "");
@@ -1081,7 +1379,7 @@ export default function SuperAdminDashboard() {
               ) : (
                 admins.map((a, i) => (
                   <View key={a.id} style={i === admins.length - 1 ? { borderBottomWidth: 0 } : undefined}>
-                    <AdminRow rec={a} />
+                    <AdminRow rec={a} onEdit={setManageUser} />
                   </View>
                 ))
               )}
@@ -1249,6 +1547,14 @@ export default function SuperAdminDashboard() {
       <AddTenantModal visible={addTenantVisible} onClose={() => setAddTenantVisible(false)} onSuccess={() => loadData(true)} />
       <AddSuperAdminModal visible={addAdminVisible} onClose={() => setAddAdminVisible(false)} onSuccess={() => loadData(true)} />
       <RoleSwitcherModal visible={roleModalVisible} onClose={() => setRoleModalVisible(false)} onNavigate={route => router.push(route as never)} />
+      <ManageUserModal
+        visible={!!manageUser}
+        target={manageUser}
+        currentUser={user}
+        ownerEmail={ownerEmail}
+        onClose={() => setManageUser(null)}
+        onSuccess={() => loadData(true)}
+      />
     </View>
   );
 }

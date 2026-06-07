@@ -5,6 +5,7 @@ import { requireAuth, requireOwnerOrSuperAdmin, signToken, type TokenPayload } f
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
 import { ensureTables } from "../lib/pg.js";
 import { getOwnerEmail, setOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
+import { canDelete, canUpdateRole, type UserRole } from "../services/securityGuard.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -276,6 +277,67 @@ router.get("/super-admin/admins", requireAuth, requireOwnerOrSuperAdmin, async (
     .order("name");
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data ?? []);
+});
+
+// ── PATCH /super-admin/users/:id/role ────────────────────────────────────────
+// Change a user's role. Guarded by securityGuard.canUpdateRole.
+router.patch("/super-admin/users/:id/role", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const caller = (req as AuthReq).user;
+  const targetId = parseInt(String(req.params["id"] ?? ""), 10);
+  if (isNaN(targetId)) { res.status(400).json({ error: "Invalid user id" }); return; }
+
+  const { newRole } = req.body as { newRole?: string };
+  const ALLOWED_ROLES: UserRole[] = ["admin", "operator", "parent", "kiosk"];
+  if (!newRole || !ALLOWED_ROLES.includes(newRole as UserRole)) {
+    res.status(400).json({ error: "Invalid role. Allowed: admin, operator, parent, kiosk" });
+    return;
+  }
+
+  const { data: target } = await sa.from("users").select("id, name, email, role").eq("id", targetId).maybeSingle();
+  if (!target) { res.status(404).json({ error: "User not found" }); return; }
+
+  // Dynamic owner lock (overrides hardcoded guard)
+  if ((target as { email: string }).email.toLowerCase() === getOwnerEmail().toLowerCase()) {
+    res.status(403).json({ error: "Cannot modify the platform owner" });
+    return;
+  }
+
+  const targetUser = { id: String((target as { id: number }).id), email: (target as { email: string }).email, role: (target as { role: string }).role, orgId: 0 };
+  if (!canUpdateRole(caller, targetUser, newRole as UserRole)) {
+    res.status(403).json({ error: "Access denied by security policy" });
+    return;
+  }
+
+  const { data: updated, error } = await sa.from("users").update({ role: newRole }).eq("id", targetId).select("id, name, email, role").single();
+  if (error || !updated) { res.status(500).json({ error: error?.message ?? "Failed to update role" }); return; }
+  res.json(updated);
+});
+
+// ── DELETE /super-admin/users/:id ─────────────────────────────────────────────
+// Delete a user account. Guarded by securityGuard.canDelete.
+router.delete("/super-admin/users/:id", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const caller = (req as AuthReq).user;
+  const targetId = parseInt(String(req.params["id"] ?? ""), 10);
+  if (isNaN(targetId)) { res.status(400).json({ error: "Invalid user id" }); return; }
+
+  const { data: target } = await sa.from("users").select("id, name, email, role").eq("id", targetId).maybeSingle();
+  if (!target) { res.status(404).json({ error: "User not found" }); return; }
+
+  // Dynamic owner lock
+  if ((target as { email: string }).email.toLowerCase() === getOwnerEmail().toLowerCase()) {
+    res.status(403).json({ error: "Cannot delete the platform owner" });
+    return;
+  }
+
+  const targetUser = { id: String((target as { id: number }).id), email: (target as { email: string }).email, role: (target as { role: string }).role, orgId: 0 };
+  if (!canDelete(caller, targetUser)) {
+    res.status(403).json({ error: "Access denied by security policy" });
+    return;
+  }
+
+  const { error } = await sa.from("users").delete().eq("id", targetId);
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  res.status(204).send();
 });
 
 // ── POST /super-admin/add-super-admin ─────────────────────────────────────────
