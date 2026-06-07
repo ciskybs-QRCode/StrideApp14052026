@@ -2,12 +2,16 @@ import { Router } from "express";
 import { createHash } from "crypto";
 import { pool, ensureTables } from "../lib/pg.js";
 import { requireAuth } from "../lib/auth.js";
+import { SignatureService } from "../lib/SignatureService.js";
 import type { Request, Response } from "express";
 import type { TokenPayload } from "../lib/auth.js";
 
 type AuthedRequest = Request & { user: TokenPayload };
 
 const router = Router();
+
+// Singleton — one service instance reuses the shared pool
+const signatureService = new SignatureService(pool);
 
 // POST /security/pickup-signature  (any authenticated role — operator or kiosk)
 router.post("/security/pickup-signature", requireAuth, async (req: Request, res: Response) => {
@@ -84,6 +88,47 @@ router.get("/security/audit-log/:childId", requireAuth, async (req: Request, res
   );
 
   res.json({ records: rows });
+});
+
+// ── POST /security/pickup-log ────────────────────────────────────────────────
+// Formal add-on endpoint — writes ONLY to pickup_records + verification_hashes.
+// Has zero write access to children, users, or any pre-existing table.
+router.post("/security/pickup-log", requireAuth, async (req: Request, res: Response) => {
+  const user = (req as AuthedRequest).user;
+
+  const { child_id, parent_id, lat, lng, signature_blob, pickup_id } = req.body as {
+    child_id:       string;
+    parent_id?:     string;
+    lat?:           number | null;
+    lng?:           number | null;
+    signature_blob: string;
+    pickup_id?:     string;
+  };
+
+  if (!child_id || !signature_blob) {
+    res.status(400).json({ error: "child_id and signature_blob are required" });
+    return;
+  }
+
+  const result = await signatureService.addRecord({
+    child_id,
+    operator_id:    user.id,
+    parent_id:      parent_id ?? null,
+    lat:            lat       ?? null,
+    lng:            lng       ?? null,
+    signature_blob,
+    pickup_id,
+  });
+
+  res.status(201).json(result);
+});
+
+// ── GET /security/pickup-log/verify/:recordId ────────────────────────────────
+// Read-only integrity check — recomputes the hash and confirms it matches.
+router.get("/security/pickup-log/verify/:recordId", requireAuth, async (req: Request, res: Response) => {
+  const recordId = String(req.params.recordId);
+  const check = await signatureService.verifyRecord(recordId);
+  res.json(check);
 });
 
 export default router;
