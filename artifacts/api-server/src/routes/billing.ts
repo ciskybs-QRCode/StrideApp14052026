@@ -132,10 +132,33 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
       "localhost";
     const baseUrl = `https://${rawDomain}`;
 
+    // Check if this org qualifies for the first-invoice 25% welcome discount
+    const { data: discountCheck } = await supabase
+      .from("organizations")
+      .select("first_invoice_discount_applied")
+      .eq("id", orgId)
+      .maybeSingle();
+    const isFirstSubscription =
+      !(discountCheck as { first_invoice_discount_applied?: boolean } | null)
+        ?.first_invoice_discount_applied;
+
+    // Create a one-time Stripe coupon for the 25% welcome reward
+    let welcomeCouponId: string | undefined;
+    if (isFirstSubscription) {
+      const coupon = await stripe.coupons.create({
+        percent_off: 25,
+        duration: "once",
+        name: "Welcome — 25% First Month",
+        metadata: { orgId: String(orgId) },
+      });
+      welcomeCouponId = coupon.id;
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceId, quantity: memberCount }],
+      ...(welcomeCouponId ? { discounts: [{ coupon: welcomeCouponId }] } : {}),
       subscription_data: {
         metadata: { orgId: String(orgId), memberCount: String(memberCount) },
       },
@@ -229,11 +252,28 @@ router.post("/billing/webhook", async (req, res) => {
           getOrgId(invAny.subscription_details?.metadata) ??
           getOrgId(inv.metadata as Record<string, string>);
         if (orgId) {
+          // Mark subscription active
           await supabase
             .from("organizations")
             .update({ subscription_status: "active" })
             .eq("id", orgId);
           invalidateTrialCache(orgId);
+
+          // Mark first-invoice welcome discount as consumed (one-time reward)
+          const { data: orgRow } = await supabase
+            .from("organizations")
+            .select("first_invoice_discount_applied")
+            .eq("id", orgId)
+            .maybeSingle();
+          if (
+            !(orgRow as { first_invoice_discount_applied?: boolean } | null)
+              ?.first_invoice_discount_applied
+          ) {
+            await supabase
+              .from("organizations")
+              .update({ first_invoice_discount_applied: true })
+              .eq("id", orgId);
+          }
         }
         break;
       }

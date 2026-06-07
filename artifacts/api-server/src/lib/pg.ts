@@ -187,6 +187,14 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS qr_discount_value INTEGER DEFAULT 0;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS promo_code TEXT;`).catch(() => {});
 
+  // Trial reminder tracking — prevents duplicate emails at T-7, T-3, T-1
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_reminder_7d_sent_at TIMESTAMPTZ;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_reminder_3d_sent_at TIMESTAMPTZ;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_reminder_1d_sent_at TIMESTAMPTZ;`).catch(() => {});
+
+  // First-invoice welcome discount (25% one-time reward, applied via Stripe coupon)
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS first_invoice_discount_applied BOOLEAN DEFAULT FALSE;`).catch(() => {});
+
   // Future absence planning — operator scheduling
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_absences (

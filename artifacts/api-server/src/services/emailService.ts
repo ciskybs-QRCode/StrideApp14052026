@@ -159,7 +159,239 @@ export function generateInvitationLink(
   return url.toString();
 }
 
-// ── Email template ────────────────────────────────────────────────────────────
+// ── Transactional email dispatch (Resend) ─────────────────────────────────────
+
+const RESEND_API_URL = "https://api.resend.com/emails";
+
+export interface TransactionalEmail {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}
+
+/**
+ * Send a transactional email via Resend.
+ * Falls back to logging the content if RESEND_API_KEY is not configured —
+ * safe for development without crashing the scheduler.
+ */
+export async function sendTransactionalEmail(email: TransactionalEmail): Promise<void> {
+  const apiKey = process.env["RESEND_API_KEY"];
+  const fromAddress = process.env["RESEND_FROM_EMAIL"] ?? "Stride <billing@stride.example.com>";
+
+  if (!apiKey) {
+    // Development fallback: log the email payload instead of sending
+    const { logger: log } = await import("../lib/logger.js");
+    log.info({ to: email.to, subject: email.subject }, "[email-dev] Would send email (RESEND_API_KEY not set)");
+    log.info({ text: email.text }, "[email-dev] Email body");
+    return;
+  }
+
+  const body = JSON.stringify({
+    from: fromAddress,
+    to: [email.to],
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+  });
+
+  const res = await fetch(RESEND_API_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "(no body)");
+    throw new Error(`Resend API error ${res.status}: ${detail}`);
+  }
+}
+
+// ── Trial reminder email template ─────────────────────────────────────────────
+
+export interface TrialReminderParams {
+  /** Organization admin's first name (for salutation). */
+  adminName: string;
+  /** Organization name shown in the email. */
+  orgName: string;
+  /** ISO date string of trial expiry, e.g. "2026-07-14". */
+  trialEndsAt: string;
+  /** Days remaining (1, 3, or 7). */
+  daysLeft: number;
+  /** Number of billable QR codes (= active members). */
+  billableQrCount: number;
+  /** Price per QR code in cents. */
+  pricePerCodeCents: number;
+  /** Total cost after any discount, in cents. */
+  totalCents: number;
+  /** Optional applied discount label, e.g. "10% promotional discount". */
+  discountLabel?: string;
+  /** URL to the payment portal. */
+  paymentUrl: string;
+}
+
+function formatCents(cents: number, currency = "EUR"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+/**
+ * Build a Stride-branded HTML + plain-text trial reminder email.
+ * Navy (#1E3A8A) + Gold (#D4AF37) palette, minimalist layout.
+ */
+export function buildTrialReminderEmail(p: TrialReminderParams): { html: string; text: string; subject: string } {
+  const urgency = p.daysLeft === 1 ? "tomorrow" : `in ${p.daysLeft} days`;
+  const expiryDate = formatDate(p.trialEndsAt);
+  const perCodeFormatted = formatCents(p.pricePerCodeCents);
+  const totalFormatted = formatCents(p.totalCents);
+  const subject = `Your Stride trial expires ${urgency} — ${expiryDate}`;
+
+  const discountRow = p.discountLabel
+    ? `<tr>
+        <td style="padding:6px 0;color:#6B7280;font-size:14px;">${p.discountLabel}</td>
+        <td style="padding:6px 0;color:#16A34A;font-size:14px;text-align:right;font-weight:600;">applied</td>
+      </tr>`
+    : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table width="560" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#1E3A8A;border-radius:12px 12px 0 0;padding:32px 40px;text-align:center;">
+              <div style="font-size:28px;font-weight:800;letter-spacing:-0.5px;color:#FFFFFF;">
+                S<span style="color:#D4AF37;">t</span>ride
+              </div>
+              <div style="margin-top:4px;font-size:11px;letter-spacing:2px;color:#93C5FD;text-transform:uppercase;">
+                Membership Platform
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background:#FFFFFF;padding:40px;">
+
+              <p style="margin:0 0 8px;font-size:13px;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px;">
+                Trial expiry notice
+              </p>
+              <h1 style="margin:0 0 24px;font-size:26px;font-weight:700;color:#111827;line-height:1.2;">
+                Your trial ends ${urgency}.
+              </h1>
+
+              <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
+                Hi ${p.adminName}, your Stride trial for <strong>${p.orgName}</strong> expires on
+                <strong style="color:#1E3A8A;">${expiryDate}</strong>.
+                To keep your account active without interruption, please complete your membership before that date.
+              </p>
+
+              <!-- Billing breakdown -->
+              <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:24px;margin-bottom:28px;">
+                <p style="margin:0 0 16px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B7280;">
+                  Membership cost breakdown
+                </p>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:6px 0;color:#374151;font-size:14px;">Billable QR codes (active members)</td>
+                    <td style="padding:6px 0;color:#374151;font-size:14px;text-align:right;font-weight:600;">${p.billableQrCount}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:6px 0;color:#374151;font-size:14px;">Price per code / month</td>
+                    <td style="padding:6px 0;color:#374151;font-size:14px;text-align:right;font-weight:600;">${perCodeFormatted}</td>
+                  </tr>
+                  ${discountRow}
+                  <tr>
+                    <td colspan="2" style="padding:12px 0 0;border-top:2px solid #E5E7EB;"></td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;font-size:16px;font-weight:700;color:#111827;">Total / month</td>
+                    <td style="padding:4px 0;font-size:20px;font-weight:800;color:#1E3A8A;text-align:right;">${totalFormatted}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- CTA -->
+              <div style="text-align:center;margin-bottom:32px;">
+                <a href="${p.paymentUrl}"
+                   style="display:inline-block;background:#D4AF37;color:#111827;font-size:15px;font-weight:700;
+                          text-decoration:none;padding:14px 36px;border-radius:8px;letter-spacing:0.2px;">
+                  Secure Your Account →
+                </a>
+              </div>
+
+              <p style="margin:0;font-size:13px;color:#9CA3AF;line-height:1.6;">
+                Smart Pick-up QR codes are not included in billing — only permanent member profile codes count.<br/>
+                If you have questions, reply to this email and our team will help.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#F9FAFB;border:1px solid #E5E7EB;border-top:none;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9CA3AF;">
+                Stride Membership Platform · You're receiving this because you manage <strong>${p.orgName}</strong>.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = [
+    `STRIDE — Trial Expiry Notice`,
+    ``,
+    `Hi ${p.adminName},`,
+    ``,
+    `Your Stride trial for "${p.orgName}" expires on ${expiryDate} (${urgency}).`,
+    ``,
+    `── MEMBERSHIP COST BREAKDOWN ──`,
+    `Billable QR codes (active members): ${p.billableQrCount}`,
+    `Price per code / month:             ${perCodeFormatted}`,
+    p.discountLabel ? `Discount:                           ${p.discountLabel}` : null,
+    `Total / month:                      ${totalFormatted}`,
+    ``,
+    `── SECURE YOUR ACCOUNT ──`,
+    p.paymentUrl,
+    ``,
+    `Smart Pick-up QR codes are not included in billing.`,
+    ``,
+    `— The Stride Team`,
+  ].filter((l) => l !== null).join("\n");
+
+  return { html, text, subject };
+}
+
+// ── Member invitation email template ─────────────────────────────────────────
 
 /**
  * Compose a minimalist, plain-text invitation email for a member.
