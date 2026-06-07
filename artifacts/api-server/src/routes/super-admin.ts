@@ -303,7 +303,7 @@ router.patch("/super-admin/users/:id/role", requireAuth, requireOwnerOrSuperAdmi
   }
 
   const targetUser = { id: String((target as { id: number }).id), email: (target as { email: string }).email, role: (target as { role: string }).role, orgId: 0 };
-  if (!canUpdateRole(caller, targetUser, newRole as UserRole)) {
+  if (!canUpdateRole(caller, targetUser, newRole as UserRole, getOwnerEmail())) {
     res.status(403).json({ error: "Access denied by security policy" });
     return;
   }
@@ -330,7 +330,7 @@ router.delete("/super-admin/users/:id", requireAuth, requireOwnerOrSuperAdmin, a
   }
 
   const targetUser = { id: String((target as { id: number }).id), email: (target as { email: string }).email, role: (target as { role: string }).role, orgId: 0 };
-  if (!canDelete(caller, targetUser)) {
+  if (!canDelete(caller, targetUser, getOwnerEmail())) {
     res.status(403).json({ error: "Access denied by security policy" });
     return;
   }

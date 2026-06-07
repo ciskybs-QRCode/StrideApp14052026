@@ -289,11 +289,16 @@ function ManageUserModal({
 
   if (!target || !currentUser) return null;
 
+  const isCallerOwner = !!currentUser.is_owner;
   const isOwnerTarget = target.email.toLowerCase() === ownerEmail.toLowerCase();
   const isSelf        = currentUser.id === String(target.id);
   const isPeerSA      = target.role === "super_admin" && !isOwnerTarget;
-  // Client-side mirror of securityGuard.isPermitted
-  const canAct = !isOwnerTarget && !isSelf && currentUser.role === "super_admin" && !isPeerSA;
+  // Client-side mirror of securityGuard.isPermitted (Rule O: owner bypasses peer-SA block)
+  const canAct = !isSelf && (
+    isCallerOwner
+      ? true                                                               // owner may act on anyone except themselves
+      : !isOwnerTarget && !isPeerSA && currentUser.role === "super_admin"  // non-owner SA rules
+  );
 
   const handleRoleSelect = (role: string) => {
     if (!canAct) { setDenied("You don't have permission to modify this user."); return; }
@@ -350,12 +355,12 @@ function ManageUserModal({
                   <View style={[mu.roleBadge, { backgroundColor: roleBg(target.role) }]}>
                     <Text style={[mu.roleChipTxt, { color: roleColor(target.role) }]}>{roleLabel(target.role).toUpperCase()}</Text>
                   </View>
-                  {(isOwnerTarget || isPeerSA || isSelf) && (
+                  {!canAct && (
                     <View style={mu.lockNote}>
                       <Ionicons name="lock-closed-outline" size={12} color="#6B7280" />
                       <Text style={mu.lockText}>
-                        {isOwnerTarget ? "Platform owner — protected account"
-                          : isSelf    ? "You cannot modify your own account"
+                        {isSelf         ? "You cannot modify your own account"
+                          : isOwnerTarget ? "Platform owner — protected account"
                           : "Super admin accounts are peer-protected"}
                       </Text>
                     </View>

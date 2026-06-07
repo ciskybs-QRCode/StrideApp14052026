@@ -56,21 +56,26 @@ const rank = (role: string): number => ROLE_RANK[role] ?? -1;
 /**
  * Internal helper that encodes the shared rules for both delete and role-update.
  * Returns `true` only if `requester` is permitted to act on `target`.
+ *
+ * @param ownerEmail - Dynamic owner email (defaults to compile-time constant).
  */
-function isPermitted(requester: User, target: User): boolean {
-  // Rule 1 — owner lock (must be first, no override possible)
-  if (target.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return false;
+function isPermitted(requester: User, target: User, ownerEmail: string = OWNER_EMAIL): boolean {
+  const ownerLower = ownerEmail.toLowerCase();
 
-  // Rule 2 — no self-modification
+  // Rule 1 — owner lock: the owner's account is never a valid target for others.
+  if (target.email.toLowerCase() === ownerLower) return false;
+
+  // Rule 2 — self-guard: no self-modification.
   if (requester.id === target.id) return false;
 
-  // Rule 3 — super_admin privilege
-  if (requester.role === "super_admin") {
-    // Cannot touch another super_admin
-    return target.role !== "super_admin";
-  }
+  // Rule O — owner privilege: the platform owner may act on any non-owner, non-self account.
+  //           This intentionally overrides the peer-SA restriction below.
+  if (requester.email.toLowerCase() === ownerLower) return true;
 
-  // Rule 4 — all other roles: requester must strictly outrank target
+  // Rule 3 — peer-SA protection: a non-owner super_admin cannot touch another super_admin.
+  if (requester.role === "super_admin") return target.role !== "super_admin";
+
+  // Rule 4 — all other roles: requester must strictly outrank target.
   return rank(requester.role) > rank(target.role);
 }
 
@@ -79,26 +84,25 @@ function isPermitted(requester: User, target: User): boolean {
 /**
  * Returns `true` if `requester` is allowed to delete `target`.
  *
+ * Pass the current dynamic ownerEmail so the check stays accurate after an
+ * owner-email update (falls back to the compile-time constant if omitted).
+ *
  * @example
- * if (!canDelete(req.user, targetUser)) {
+ * if (!canDelete(req.user, targetUser, getOwnerEmail())) {
  *   return res.status(403).json({ error: "Forbidden" });
  * }
  */
-export function canDelete(requester: User, target: User): boolean {
-  return isPermitted(requester, target);
+export function canDelete(requester: User, target: User, ownerEmail: string = OWNER_EMAIL): boolean {
+  return isPermitted(requester, target, ownerEmail);
 }
 
 /**
  * Returns `true` if `requester` is allowed to change `target`'s role to `newRole`.
  *
- * Additional constraint beyond the base rules:
- *   - No one may promote a target TO super_admin (that role is assigned at the
- *     infrastructure level, not through the app UI).
- *   - A super_admin may demote another super_admin's role — blocked by
- *     isPermitted (rule 3), so no extra check needed here.
+ * Additional constraint: no one may promote a target TO super_admin via the API.
  *
  * @example
- * if (!canUpdateRole(req.user, targetUser, "admin")) {
+ * if (!canUpdateRole(req.user, targetUser, "admin", getOwnerEmail())) {
  *   return res.status(403).json({ error: "Forbidden" });
  * }
  */
@@ -106,9 +110,10 @@ export function canUpdateRole(
   requester: User,
   target: User,
   newRole: UserRole,
+  ownerEmail: string = OWNER_EMAIL,
 ): boolean {
   // Nobody can promote anyone to super_admin via the API
   if (newRole === "super_admin") return false;
 
-  return isPermitted(requester, target);
+  return isPermitted(requester, target, ownerEmail);
 }
