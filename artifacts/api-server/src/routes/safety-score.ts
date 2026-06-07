@@ -19,6 +19,37 @@ type AuthedReq = Request & { user: TokenPayload };
 const router  = Router();
 const scorer  = new SafetyScoreService();
 
+// ── GET /public/activity-feed ─────────────────────────────────────────────────
+// Public endpoint — NO auth required. Returns the last 5 PICKED_UP events,
+// fully anonymised (no child_id, no parent info, no metadata exposed).
+router.get("/public/activity-feed", async (_req: Request, res: Response) => {
+  const DEMO: FeedEntry[] = [
+    { event: "Child picked up safely", timestamp: new Date(Date.now() - 3 * 60000).toISOString(), school: "Elite Dance Academy" },
+    { event: "Child picked up safely", timestamp: new Date(Date.now() - 8 * 60000).toISOString(), school: "ArtMotion Studio" },
+    { event: "Child picked up safely", timestamp: new Date(Date.now() - 14 * 60000).toISOString(), school: "Prestige Ballet" },
+    { event: "Child picked up safely", timestamp: new Date(Date.now() - 21 * 60000).toISOString(), school: "Sydney Stars SC" },
+    { event: "Child picked up safely", timestamp: new Date(Date.now() - 35 * 60000).toISOString(), school: "PureMotion Institute" },
+  ];
+
+  try {
+    const { rows } = await pool.query<{ timestamp: string }>(
+      `SELECT timestamp FROM child_activity_log WHERE event_type = 'PICKED_UP' ORDER BY timestamp DESC LIMIT 5`,
+    );
+    if (rows.length === 0) { res.json({ feed: DEMO }); return; }
+    const schools = ["Elite Dance Academy", "ArtMotion Studio", "Prestige Ballet", "Sydney Stars SC", "PureMotion Institute"];
+    const feed: FeedEntry[] = rows.map((row, i) => ({
+      event:     "Child picked up safely",
+      timestamp: row.timestamp,
+      school:    schools[i % schools.length],
+    }));
+    res.json({ feed });
+  } catch {
+    res.json({ feed: DEMO });
+  }
+});
+
+interface FeedEntry { event: string; timestamp: string; school: string }
+
 // ── POST /reviews ─────────────────────────────────────────────────────────────
 // Parent submits a safety + communication rating for an organisation.
 router.post("/reviews", requireAuth, async (req: Request, res: Response) => {

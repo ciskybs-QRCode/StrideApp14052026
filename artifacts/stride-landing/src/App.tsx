@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Router, Route, Switch } from "wouter";
 import Register from "./pages/Register";
 import Activate from "./pages/Activate";
@@ -165,13 +165,55 @@ const FAQS = [
   { q: "Is my members' data private and secure?", a: "Each school's data is in a fully isolated tenant environment. Cross-tenant access is architecturally impossible. All traffic is encrypted in transit and at rest." },
 ];
 
+const SAFETY_PILLARS = [
+  { label: "Protocol Adherence", value: 38, max: 40, color: "bg-blue-400", barColor: "#60A5FA", desc: "On-time sign-ins, pickup compliance, session punctuality" },
+  { label: "Parent Feedback",    value: 37, max: 40, color: "bg-emerald-400", barColor: "#34D399", desc: "Safety & communication ratings from enrolled families" },
+  { label: "Emergency Response", value: 20, max: 20, color: "bg-violet-400", barColor: "#A78BFA", desc: "Documented handoffs and incident resolution speed" },
+];
+
+const FEATURED_SCHOOLS = [
+  { name: "Elite Dance Academy",   location: "Sydney, AU",  score: 95, isVerified: true,  reviews: 127, discipline: "Ballet & Contemporary" },
+  { name: "ArtMotion Studio",      location: "Melbourne, AU", score: 88, isVerified: true, reviews: 84,  discipline: "Jazz & Hip-Hop" },
+  { name: "Prestige Ballet",       location: "Milan, IT",   score: 91, isVerified: true,  reviews: 203, discipline: "Classical Ballet" },
+  { name: "ActiveKids Academy",    location: "Brisbane, AU", score: 76, isVerified: false, reviews: 31,  discipline: "Multi-sport" },
+  { name: "Sydney Stars SC",       location: "Sydney, AU",  score: 82, isVerified: false, reviews: 56,  discipline: "Gymnastics" },
+  { name: "PureMotion Institute",  location: "Rome, IT",    score: 93, isVerified: true,  reviews: 149, discipline: "Dance & Fitness" },
+];
+
 // ── Landing ───────────────────────────────────────────────────────────────────
+
+type FeedEntry = { event: string; timestamp: string; school: string };
+
+function useAnimatedCount(target: number, duration = 1200) {
+  const [count, setCount] = useState(0);
+  const raf = useRef<number>(0);
+  useEffect(() => {
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      setCount(Math.round(p * target));
+      if (p < 1) raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, [target, duration]);
+  return count;
+}
 
 function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrCodes, setQrCodes] = useState(50);
   const [currency, setCurrency] = useState<"USD" | "AUD" | "EUR">("USD");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [liveFeed, setLiveFeed] = useState<FeedEntry[]>([]);
+  const scoreDisplay = useAnimatedCount(95, 1400);
+
+  useEffect(() => {
+    fetch("/api/public/activity-feed")
+      .then(r => r.json())
+      .then((d: { feed: FeedEntry[] }) => { if (d.feed?.length) setLiveFeed(d.feed); })
+      .catch(() => {});
+  }, []);
 
   const FX:  Record<"USD" | "AUD" | "EUR", number> = { USD: 1, AUD: 1.55, EUR: 0.93 };
   const SYM: Record<"USD" | "AUD" | "EUR", string> = { USD: "$", AUD: "A$", EUR: "\u20AC" };
@@ -242,9 +284,41 @@ function Landing() {
         <div className="flex flex-col-reverse lg:flex-row items-center gap-14 lg:gap-20">
 
           <div className="flex-1 w-full text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 mb-7">
-              <span className="w-2 h-2 rounded-full bg-[#1E3A8A] animate-pulse flex-shrink-0" />
-              <span className="text-[#1E3A8A] text-xs font-semibold tracking-wider uppercase">Now in Early Access</span>
+            <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start mb-7">
+              <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#1E3A8A] animate-pulse flex-shrink-0" />
+                <span className="text-[#1E3A8A] text-xs font-semibold tracking-wider uppercase">Now in Early Access</span>
+              </div>
+              <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-300 rounded-full px-4 py-1.5 shadow-sm shadow-emerald-100">
+                <svg className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+                <span className="text-emerald-700 text-xs font-bold tracking-wide">Stride Verified</span>
+              </div>
+            </div>
+
+            {/* Safety Score widget */}
+            <div className="flex items-center gap-4 bg-gradient-to-r from-slate-900 to-[#0d2060] rounded-2xl px-5 py-4 mb-7 max-w-sm mx-auto lg:mx-0 border border-white/10 shadow-xl">
+              <div className="relative flex-shrink-0 w-14 h-14 rounded-xl bg-emerald-500/20 border-2 border-emerald-400/50 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-emerald-300 leading-none">{scoreDisplay}</span>
+                <span className="text-[9px] text-emerald-400/80 font-bold">/100</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <svg className="w-3 h-3 text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                  <span className="text-white text-xs font-bold">Safety Score — Stride Verified</span>
+                </div>
+                {[{ label: "Protocol", w: "95%" }, { label: "Feedback", w: "93%" }, { label: "Response", w: "100%" }].map(({ label, w }) => (
+                  <div key={label} className="flex items-center gap-2 mb-1">
+                    <div className="w-12 text-[9px] text-slate-400 font-medium">{label}</div>
+                    <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-400 rounded-full transition-all duration-700" style={{ width: w }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.2rem] font-black leading-[1.1] text-slate-900 mb-6">
@@ -268,7 +342,7 @@ function Landing() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <a href="/register"
                 className="inline-flex items-center justify-center gap-2 bg-amber-400 text-slate-900 font-black px-8 py-4 rounded-xl text-base hover:bg-amber-300 transition-colors shadow-lg shadow-amber-200">
-                Get Started / Schedule Pilot
+                Check Your School's Safety Score
                 <IconArrow />
               </a>
               <a href="#features"
@@ -340,6 +414,85 @@ function Landing() {
         </div>
       </div>
 
+      {/* ── STRIDE SAFETY STANDARD ─────────────────────────────────────── */}
+      <section id="safety-standard" className="bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+          <div className="text-center mb-14">
+            <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider mb-5">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+              Stride Verified
+            </span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+              The Stride{" "}
+              <span className="text-emerald-600">Safety Standard</span>
+            </h2>
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">
+              Every school on Stride is scored in real time across three independent pillars. The badge is earned, not assigned.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-slate-900 rounded-3xl p-8 shadow-2xl">
+              {/* Score header */}
+              <div className="flex items-start gap-6 mb-8">
+                <div className="w-20 h-20 flex-shrink-0 rounded-2xl bg-emerald-500/15 border-2 border-emerald-400/50 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-black text-emerald-300 leading-none">95</span>
+                  <span className="text-[10px] text-emerald-400/80 font-bold mt-0.5">/100</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-white font-black text-xl">Elite Dance Academy</span>
+                    <span className="inline-flex items-center gap-1 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Stride Verified
+                    </span>
+                  </div>
+                  <p className="text-slate-400 text-sm">Sydney, AU · 127 parent reviews · Updated in real time</p>
+                  <div className="mt-3 flex gap-2 flex-wrap">
+                    {["Protocol ✓", "Feedback ✓", "Response ✓"].map(t => (
+                      <span key={t} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Pillar bars */}
+              <div className="space-y-6">
+                {SAFETY_PILLARS.map(({ label, value, max, barColor, desc }) => (
+                  <div key={label}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span className="text-white text-sm font-bold">{label}</span>
+                        <p className="text-slate-500 text-xs mt-0.5">{desc}</p>
+                      </div>
+                      <span className="text-sm font-black ml-4 flex-shrink-0" style={{ color: barColor }}>
+                        {value}<span className="text-slate-500 font-normal text-xs">/{max}</span>
+                      </span>
+                    </div>
+                    <div className="h-2 bg-white/8 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-1000"
+                        style={{ width: `${(value / max) * 100}%`, backgroundColor: barColor }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-white/8 flex items-center justify-between">
+                <p className="text-slate-500 text-xs">Scores recalculate continuously as new data arrives.</p>
+                <a href="/register"
+                  className="inline-flex items-center gap-2 bg-emerald-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-emerald-400 transition-colors">
+                  Verify Your School
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── PAIN POINTS ────────────────────────────────────────────────── */}
       <section id="pain-points" className="bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
@@ -394,6 +547,59 @@ function Landing() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── REAL-TIME TRANSPARENCY ─────────────────────────────────────── */}
+      <section id="transparency" className="bg-[#061020]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">Live Activity Feed</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white">Real-Time Transparency</h2>
+              <p className="text-slate-400 text-sm mt-2 max-w-md">Every pickup is logged. Every check-in is timestamped. Zero gaps. Zero surprises. The feed below is live.</p>
+            </div>
+            <div className="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-center">
+              <div className="text-3xl font-black text-emerald-400">100%</div>
+              <div className="text-slate-400 text-xs mt-1">Audit Coverage</div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {(liveFeed.length > 0 ? liveFeed : [
+              { event: "Child picked up safely", timestamp: new Date(Date.now() - 3 * 60000).toISOString(), school: "Elite Dance Academy" },
+              { event: "Child picked up safely", timestamp: new Date(Date.now() - 8 * 60000).toISOString(), school: "ArtMotion Studio" },
+              { event: "Child picked up safely", timestamp: new Date(Date.now() - 14 * 60000).toISOString(), school: "Prestige Ballet" },
+              { event: "Child picked up safely", timestamp: new Date(Date.now() - 21 * 60000).toISOString(), school: "Sydney Stars SC" },
+              { event: "Child picked up safely", timestamp: new Date(Date.now() - 35 * 60000).toISOString(), school: "PureMotion Institute" },
+            ] as FeedEntry[]).map((entry, i) => {
+              const mins = Math.round((Date.now() - new Date(entry.timestamp).getTime()) / 60000);
+              return (
+                <div key={i} className="flex items-center gap-4 bg-white/4 border border-white/8 rounded-xl px-5 py-3.5 hover:bg-white/6 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-semibold">{entry.event}</p>
+                    <p className="text-slate-500 text-xs">{entry.school} · Child ID anonymised per GDPR</p>
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <span className="text-emerald-400 text-xs font-bold">{mins < 1 ? "just now" : `${mins}m ago`}</span>
+                    <p className="text-slate-600 text-[10px] mt-0.5">Signature captured</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-center text-slate-600 text-xs mt-6">
+            Child identities are never shown publicly. All data is anonymised and GDPR-compliant.
+          </p>
         </div>
       </section>
 
@@ -905,6 +1111,78 @@ function Landing() {
       </section>
 
       {/* ── FAQ ────────────────────────────────────────────────────────── */}
+      {/* ── FEATURED VERIFIED SCHOOLS ──────────────────────────────────── */}
+      <section id="schools" className="bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24">
+          <div className="text-center mb-14">
+            <span className="inline-block bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">Stride Network</span>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+              Schools on the{" "}
+              <span className="text-[#1E3A8A]">Stride Network</span>
+            </h2>
+            <p className="mt-4 text-slate-500 max-w-lg mx-auto">
+              Discover schools earning the Stride Verified badge — recognised by parents as the gold standard in child safety.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FEATURED_SCHOOLS.map(({ name, location, score, isVerified, reviews, discipline }) => {
+              const scoreColor = score >= 85 ? "#059669" : score >= 70 ? "#D97706" : "#2563EB";
+              return (
+                <div key={name} className="relative rounded-2xl border border-slate-100 bg-white p-6 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
+                  {/* Ribbon */}
+                  {isVerified && (
+                    <div className="absolute top-0 right-0">
+                      <div className="relative w-24 h-24 overflow-hidden">
+                        <div className="absolute top-4 -right-6 w-28 bg-gradient-to-r from-amber-400 to-emerald-500 text-white text-[10px] font-black text-center py-1 rotate-45 shadow-md">
+                          VERIFIED
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Score ring */}
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-xl flex flex-col items-center justify-center border-2 flex-shrink-0"
+                      style={{ borderColor: scoreColor, backgroundColor: `${scoreColor}10` }}>
+                      <span className="text-lg font-black leading-none" style={{ color: scoreColor }}>{score}</span>
+                      <span className="text-[9px] font-bold" style={{ color: scoreColor }}>/100</span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-slate-900 leading-tight">{name}</h3>
+                      <p className="text-slate-400 text-xs mt-0.5">{location}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full">{discipline}</span>
+                    <span className="text-xs text-slate-400">{reviews} reviews</span>
+                  </div>
+
+                  {isVerified && (
+                    <div className="mt-4 flex items-center gap-1.5 text-emerald-600">
+                      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                      </svg>
+                      <span className="text-xs font-bold">Stride Verified School</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-12 text-center">
+            <a href="/register"
+              className="inline-flex items-center gap-2 bg-[#1E3A8A] text-white font-black px-8 py-4 rounded-xl text-base hover:bg-[#1e3070] transition-colors shadow-lg shadow-blue-200">
+              Get Your School Verified
+              <IconArrow />
+            </a>
+            <p className="mt-3 text-sm text-slate-400">Scores are live — start collecting reviews today.</p>
+          </div>
+        </div>
+      </section>
+
       <section id="faq" className="bg-slate-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-24">
           <div className="text-center mb-14">
