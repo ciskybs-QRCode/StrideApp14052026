@@ -41,6 +41,7 @@ import verifyQrRouter from "./verify-qr.js";
 import identityRouter from "./identity.js";
 import importRouter from "./import.js";
 import securityRouter from "./security.js";
+import guardianCircleRouter from "./guardian-circle.js";
 
 const router: IRouter = Router();
 
@@ -86,5 +87,6 @@ router.use(verifyQrRouter);
 router.use(identityRouter);
 router.use(importRouter);
 router.use(securityRouter);
+router.use(guardianCircleRouter);
 
 export default router;

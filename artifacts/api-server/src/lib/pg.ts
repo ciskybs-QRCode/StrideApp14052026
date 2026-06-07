@@ -316,6 +316,23 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS cs_user_idx    ON checkout_sessions (user_id);
   `).catch(() => {});
 
+  // Guardian Circle — auxiliary authorized pickups table (satellite, no FK to members/users)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS authorized_pickups (
+      id             UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      child_id       TEXT        NOT NULL,
+      guardian_name  TEXT        NOT NULL,
+      guardian_email TEXT,
+      guardian_phone TEXT,
+      is_active      BOOLEAN     NOT NULL DEFAULT TRUE,
+      expires_at     TIMESTAMPTZ,
+      created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_by     TEXT
+    );
+    CREATE INDEX IF NOT EXISTS ap_child_idx  ON authorized_pickups (child_id);
+    CREATE INDEX IF NOT EXISTS ap_active_idx ON authorized_pickups (child_id, is_active);
+  `).catch(() => {});
+
   // Digital Proof of Presence — tamper-evident pickup signature log
   await pool.query(`
     CREATE TABLE IF NOT EXISTS pickup_signatures (

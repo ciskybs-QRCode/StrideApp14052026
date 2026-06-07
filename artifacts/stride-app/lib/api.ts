@@ -764,9 +764,43 @@ export const api = {
     anomaly_reasons: string | null;
     status: "AI-Verified" | "Pending Admin Review";
   }>("POST", "/documents/analyze-medical-certificate", payload),
+
+  // ── Guardian Circle ────────────────────────────────────────────────────────
+  listGuardianCircle: (childId: string) =>
+    request<{ entries: GuardianCircleApiEntry[] }>(
+      "GET", `/guardian-circle/child/${encodeURIComponent(childId)}`,
+    ).then(r => r.entries),
+
+  addGuardianCircle: (data: {
+    child_id:       string;
+    guardian_name:  string;
+    guardian_email?: string | null;
+    guardian_phone?: string | null;
+    expires_at?:    string | null;
+  }) => request<GuardianCircleApiEntry>("POST", "/guardian-circle", data),
+
+  deactivateGuardianCircle: (id: string) =>
+    request<GuardianCircleApiEntry>("PATCH", `/guardian-circle/${id}/deactivate`),
+
+  checkGuardianCircle: (childId: string, guardianId: string) =>
+    request<{ authorized: boolean; reason: string }>(
+      "GET",
+      `/guardian-circle/check?childId=${encodeURIComponent(childId)}&guardianId=${encodeURIComponent(guardianId)}`,
+    ),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface GuardianCircleApiEntry {
+  id:             string;
+  child_id:       string;
+  guardian_name:  string;
+  guardian_email: string | null;
+  guardian_phone: string | null;
+  is_active:      boolean;
+  expires_at:     string | null;
+  created_at:     string;
+}
 
 export interface ApiUser {
   id: string | number;

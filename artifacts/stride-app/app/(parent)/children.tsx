@@ -522,6 +522,15 @@ export default function ChildrenScreen() {
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
+              <Pressable
+                style={[styles.actionBtn, { backgroundColor: colors.muted, marginTop: 4 }]}
+                onPress={() => router.push({ pathname: "/(parent)/guardian-circle", params: { childId: child.id } })}
+              >
+                <Ionicons name="people-circle-outline" size={18} color={colors.primary} />
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Guardian Circle</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+              </Pressable>
+
               {child.dateOfBirth && (
                 <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
                   <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Born:</Text>
