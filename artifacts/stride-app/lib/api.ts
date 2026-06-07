@@ -808,6 +808,28 @@ export const api = {
 
   listOrgReviews: (orgId: number | string) =>
     request<{ reviews: OrgReview[] }>("GET", `/reviews/org/${orgId}`),
+
+  // ── Emergency Pulse ────────────────────────────────────────────────────────
+  triggerEmergencyPulse: (data: { org_id?: number | null; location_label?: string }) =>
+    request<{ pulse_id: string; triggered_at: string; checked_in_count: number }>(
+      "POST", "/emergency/pulse", data,
+    ),
+
+  getActivePulse: () =>
+    request<EmergencyPulse | null>("GET", "/emergency/pulse/active"),
+
+  getPulseStatus: (id: string) =>
+    request<PulseStatus>("GET", `/emergency/pulse/${id}/status`),
+
+  acknowledgePulse: (id: string, data: { status: "safe" | "missing" }) =>
+    request<{ ok: boolean; status: string }>(
+      "POST", `/emergency/pulse/${id}/acknowledge`, data,
+    ),
+
+  resolvePulse: (id: string) =>
+    request<{ ok: boolean; resolved: boolean }>(
+      "PATCH", `/emergency/pulse/${id}/resolve`,
+    ),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -844,6 +866,23 @@ export interface OrgReview {
   communication_rating: number;
   comment:              string | null;
   created_at:           string;
+}
+
+export interface EmergencyPulse {
+  id:             string;
+  org_id:         number | null;
+  triggered_by:   string;
+  location_label: string;
+  status:         "active" | "resolved";
+  triggered_at:   string;
+  resolved_at:    string | null;
+}
+
+export interface PulseStatus extends EmergencyPulse {
+  safe_count:    number;
+  missing_count: number;
+  total_acks:    number;
+  acks: Array<{ parent_id: string; status: string; acked_at: string }>;
 }
 
 export interface GuardianCircleApiEntry {

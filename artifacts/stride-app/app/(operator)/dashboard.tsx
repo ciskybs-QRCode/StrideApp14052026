@@ -296,6 +296,10 @@ export default function OperatorDashboard() {
   const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
   const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string } | null>(null);
 
+  // ── Emergency Pulse ────────────────────────────────────────────────────────
+  const [showPulseConfirm, setShowPulseConfirm] = useState(false);
+  const [pulseTriggering,  setPulseTriggering]  = useState(false);
+
   // ── Pending scheduled-course requests (operator must confirm or decline) ─────
   const [pendingCourses, setPendingCourses]           = useState<ApiScheduledCourse[]>([]);
 
@@ -751,6 +755,30 @@ export default function OperatorDashboard() {
     setSosProcDone(false);
   };
 
+  // ── Emergency Pulse handlers ───────────────────────────────────────────────
+  const handleEmergencyPulsePress = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setShowPulseConfirm(true);
+  };
+
+  const confirmEmergencyPulse = async () => {
+    setPulseTriggering(true);
+    try {
+      const result = await api.triggerEmergencyPulse({
+        org_id: 1,
+        location_label: campusAddress || "Main Campus",
+      });
+      setShowPulseConfirm(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      pushLog({ time: nowTime(), action: `🚨 Emergency Pulse broadcast — ${result.checked_in_count} children estimated on-site`, type: "error" });
+      router.push(`/(operator)/emergency-pulse?id=${result.pulse_id}` as Parameters<typeof router.push>[0]);
+    } catch {
+      Alert.alert("Error", "Could not trigger Emergency Pulse. Check your connection and try again.");
+    } finally {
+      setPulseTriggering(false);
+    }
+  };
+
   const handleSosProcStep = async () => {
     if (!sosType || sosProcLogging) return;
     setSosProcLogging(true);
@@ -1135,6 +1163,21 @@ export default function OperatorDashboard() {
           </View>
           <Text style={styles.sosStandaloneBtnLabel}>SOS EMERGENCY</Text>
           <Text style={styles.sosStandaloneBtnHint}>Press twice to activate</Text>
+        </Pressable>
+
+        {/* ── Emergency Pulse Button ── */}
+        <Pressable
+          style={({ pressed }) => [styles.pulseStandaloneBtn, { opacity: pressed ? 0.92 : 1 }]}
+          onPress={handleEmergencyPulsePress}
+        >
+          <View style={styles.pulseIconRing}>
+            <Ionicons name="radio" size={26} color="#7C3AED" />
+          </View>
+          <View style={styles.pulseBtnBody}>
+            <Text style={styles.pulseBtnLabel}>EMERGENCY PULSE</Text>
+            <Text style={styles.pulseBtnHint}>Broadcast crisis alert to all checked-in parents</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
         </Pressable>
 
         {/* ── Operator QR Code Panel ── */}
@@ -1854,6 +1897,47 @@ export default function OperatorDashboard() {
         </View>
       </Modal>
 
+      {/* ── Emergency Pulse Confirmation Modal ── */}
+      <Modal visible={showPulseConfirm} transparent animationType="fade" onRequestClose={() => setShowPulseConfirm(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { borderTopWidth: 4, borderTopColor: "#7C3AED" }]}>
+            <View style={{ alignItems: "center", marginBottom: 16 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#7C3AED15", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                <Ionicons name="radio" size={30} color="#7C3AED" />
+              </View>
+              <Text style={[styles.modalTitle, { textAlign: "center", color: "#7C3AED", marginBottom: 8 }]}>Emergency Pulse</Text>
+              <Text style={{ textAlign: "center", color: "#6B7280", fontSize: 13, lineHeight: 20 }}>
+                This will broadcast a{" "}
+                <Text style={{ fontWeight: "800", color: "#1F2937" }}>HIGH-PRIORITY ALERT</Text>
+                {" "}to all parents with children currently checked in.{"\n\n"}
+                Parents will be prompted to confirm their child{"'"}s safety. You will see a live{" "}
+                <Text style={{ fontWeight: "700" }}>Safe / Need Help</Text>
+                {" "}count update in real time on the next screen.
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <Pressable
+                style={[styles.closeBtn, { flex: 1, backgroundColor: "#F3F4F6" }]}
+                onPress={() => setShowPulseConfirm(false)}
+                disabled={pulseTriggering}
+              >
+                <Text style={{ color: "#374151", fontWeight: "700", fontSize: 15 }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.closeBtn, { flex: 1.4, backgroundColor: "#7C3AED" }]}
+                onPress={() => void confirmEmergencyPulse()}
+                disabled={pulseTriggering}
+              >
+                {pulseTriggering
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.closeBtnText}>BROADCAST NOW</Text>
+                }
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* ══════════════════════════════════════════════════
           SOS / Emergency Mode Modal  (3-phase flow)
       ══════════════════════════════════════════════════ */}
@@ -2084,6 +2168,13 @@ const styles = StyleSheet.create({
   secAlertBtnTitle: { color: "#FFF", fontWeight: "800", fontSize: 14 },
   secAlertBtnSub: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 },
   sosStandaloneBtnText: { fontSize: 13, fontWeight: "800", color: "#FFF" },
+
+  // Emergency Pulse button — below SOS
+  pulseStandaloneBtn:  { flexDirection: "row", alignItems: "center", backgroundColor: "#1C0047", borderWidth: 1, borderColor: "#7C3AED50", borderRadius: 20, paddingVertical: 16, paddingHorizontal: 20, marginBottom: 24, gap: 12 },
+  pulseIconRing:       { width: 44, height: 44, borderRadius: 22, backgroundColor: "#7C3AED20", borderWidth: 1.5, borderColor: "#7C3AED60", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  pulseBtnBody:        { flex: 1 },
+  pulseBtnLabel:       { fontSize: 16, fontWeight: "900", color: "#E9D5FF", letterSpacing: 0.8 },
+  pulseBtnHint:        { fontSize: 11, fontWeight: "500", color: "#A78BFA", marginTop: 2 },
 
   // Operator QR panel
   qrPanel: { flexDirection: "row", alignItems: "center", borderRadius: 18, padding: 16, marginBottom: 24, gap: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },

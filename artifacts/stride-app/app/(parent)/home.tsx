@@ -2,10 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import {
+  ActivityIndicator,
   Alert,
+  Animated,
   Linking,
   Modal,
   Platform,
@@ -75,6 +77,63 @@ export default function ParentHome() {
   const [futureAbsNote, setFutureAbsNote] = useState("");
   const [futureAbsSuccess, setFutureAbsSuccess] = useState(false);
   const [orgLogoUri, setOrgLogoUri] = useState<string | null>(null);
+
+  // ── Emergency Pulse ────────────────────────────────────────────────────────
+  const [activePulse,    setActivePulse]    = useState<import("@/lib/api").EmergencyPulse | null>(null);
+  const [showPulseAlert, setShowPulseAlert] = useState(false);
+  const [ackStatus,      setAckStatus]      = useState<"safe" | "missing" | null>(null);
+  const [ackSubmitting,  setAckSubmitting]  = useState(false);
+  const pulseRingAnim = useRef(new Animated.Value(1)).current;
+
+  // ── Poll for active emergency pulse every 15 s ────────────────────────────
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseRingAnim, { toValue: 1.18, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseRingAnim, { toValue: 1,    duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseRingAnim]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const pulse = await api.getActivePulse();
+        if (cancelled) return;
+        if (pulse && pulse.status === "active") {
+          setActivePulse(pulse);
+          if (!ackStatus) setShowPulseAlert(true);
+        } else {
+          setActivePulse(null);
+          if (!pulse) setShowPulseAlert(false);
+        }
+      } catch {}
+    };
+    void check();
+    const interval = setInterval(check, 15000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [ackStatus]);
+
+  const handlePulseAck = async (status: "safe" | "missing") => {
+    if (!activePulse || ackSubmitting) return;
+    setAckSubmitting(true);
+    try {
+      await api.acknowledgePulse(activePulse.id, { status });
+      setAckStatus(status);
+      Haptics.notificationAsync(
+        status === "safe"
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Error,
+      );
+    } catch {
+      Alert.alert("Error", "Could not submit your response. Please try again.");
+    } finally {
+      setAckSubmitting(false);
+    }
+  };
 
   const nextLesson = lessons[0];
   const nextCourse = courses.find(c => c.id === nextLesson?.courseId);
@@ -423,6 +482,94 @@ export default function ParentHome() {
           </View>
         </View>
       </ScrollView>
+
+      {/* ── Emergency Pulse Alert Modal ── */}
+      <Modal visible={showPulseAlert} transparent animationType="fade" statusBarTranslucent>
+        <View style={styles.pulseOverlay}>
+          {/* Pulsing ring */}
+          <Animated.View style={[styles.pulseRingOuter, { transform: [{ scale: pulseRingAnim }] }]} />
+          <View style={styles.pulseCard}>
+            {/* Header */}
+            <View style={styles.pulseCardHeader}>
+              <View style={styles.pulseIconBox}>
+                <Ionicons name="radio" size={28} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.pulseTitle}>EMERGENCY ALERT</Text>
+                <Text style={styles.pulseLocation}>{activePulse?.location_label ?? "Campus"}</Text>
+              </View>
+              <View style={styles.pulseLiveBadge}>
+                <View style={styles.pulseLiveDot} />
+                <Text style={styles.pulseLiveText}>LIVE</Text>
+              </View>
+            </View>
+
+            {!ackStatus ? (
+              <>
+                <Text style={styles.pulseBody}>
+                  Your school has issued an emergency alert. Please confirm your child{"'"}s current safety status immediately.
+                </Text>
+
+                <View style={styles.pulseActions}>
+                  <Pressable
+                    style={[styles.pulseActionBtn, { backgroundColor: "#059669" }]}
+                    onPress={() => void handlePulseAck("safe")}
+                    disabled={ackSubmitting}
+                  >
+                    {ackSubmitting
+                      ? <ActivityIndicator color="#FFF" size="small" />
+                      : <>
+                          <Ionicons name="checkmark-circle" size={22} color="#FFF" />
+                          <Text style={styles.pulseActionText}>My Child is Safe</Text>
+                        </>
+                    }
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.pulseActionBtn, { backgroundColor: "#DC2626" }]}
+                    onPress={() => void handlePulseAck("missing")}
+                    disabled={ackSubmitting}
+                  >
+                    {ackSubmitting
+                      ? <ActivityIndicator color="#FFF" size="small" />
+                      : <>
+                          <Ionicons name="alert-circle" size={22} color="#FFF" />
+                          <Text style={styles.pulseActionText}>I Need Help</Text>
+                        </>
+                    }
+                  </Pressable>
+                </View>
+
+                <Text style={styles.pulseDisclaimer}>
+                  School staff are monitoring responses in real time.
+                </Text>
+              </>
+            ) : (
+              <View style={styles.pulseAckConfirm}>
+                <View style={[styles.pulseAckIcon, { backgroundColor: ackStatus === "safe" ? "#059669" : "#DC2626" }]}>
+                  <Ionicons
+                    name={ackStatus === "safe" ? "checkmark-circle" : "alert-circle"}
+                    size={36}
+                    color="#FFF"
+                  />
+                </View>
+                <Text style={[styles.pulseAckTitle, { color: ackStatus === "safe" ? "#059669" : "#DC2626" }]}>
+                  {ackStatus === "safe" ? "Confirmed Safe" : "Help Requested"}
+                </Text>
+                <Text style={styles.pulseAckSub}>
+                  {ackStatus === "safe"
+                    ? "Your response has been received. The school staff can see your status."
+                    : "Staff have been notified. Someone will contact you shortly."
+                  }
+                </Text>
+                <Pressable style={styles.pulseDismissBtn} onPress={() => setShowPulseAlert(false)}>
+                  <Text style={styles.pulseDismissText}>Dismiss</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* ── QR Modal ── */}
       <Modal visible={showQR} transparent animationType="fade" onRequestClose={() => setShowQR(false)}>
@@ -806,4 +953,27 @@ const styles = StyleSheet.create({
   detailRowLeft: { flexDirection: "row", alignItems: "center", gap: 6, width: 100 },
   detailLabel: { fontSize: 13 },
   detailValue: { fontSize: 13, fontWeight: "600", flex: 1, textAlign: "right" },
+
+  // Emergency Pulse Alert Modal
+  pulseOverlay:    { flex: 1, backgroundColor: "rgba(0,0,0,0.82)", alignItems: "center", justifyContent: "center", padding: 20 },
+  pulseRingOuter:  { position: "absolute", width: 160, height: 160, borderRadius: 80, backgroundColor: "#DC262618", borderWidth: 3, borderColor: "#DC262640" },
+  pulseCard:       { backgroundColor: "#1A0030", borderRadius: 24, padding: 22, width: "100%", borderWidth: 1, borderColor: "#7C3AED40" },
+  pulseCardHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  pulseIconBox:    { width: 48, height: 48, borderRadius: 14, backgroundColor: "#DC2626", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  pulseTitle:      { color: "#FFF", fontWeight: "900", fontSize: 17, letterSpacing: 1.5 },
+  pulseLocation:   { color: "#A78BFA", fontSize: 12, marginTop: 2 },
+  pulseLiveBadge:  { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#DC262620", borderWidth: 1, borderColor: "#DC262640", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  pulseLiveDot:    { width: 6, height: 6, borderRadius: 3, backgroundColor: "#DC2626" },
+  pulseLiveText:   { color: "#DC2626", fontWeight: "800", fontSize: 10, letterSpacing: 1.5 },
+  pulseBody:       { color: "#D1D5DB", fontSize: 14, lineHeight: 21, marginBottom: 20 },
+  pulseActions:    { flexDirection: "column", gap: 10, marginBottom: 14 },
+  pulseActionBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 15 },
+  pulseActionText: { color: "#FFF", fontWeight: "900", fontSize: 16 },
+  pulseDisclaimer: { color: "#6B7280", fontSize: 11, textAlign: "center" },
+  pulseAckConfirm: { alignItems: "center", gap: 12, paddingVertical: 8 },
+  pulseAckIcon:    { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+  pulseAckTitle:   { fontSize: 22, fontWeight: "900" },
+  pulseAckSub:     { color: "#9CA3AF", fontSize: 13, textAlign: "center", lineHeight: 20 },
+  pulseDismissBtn: { marginTop: 8, backgroundColor: "#FFFFFF15", borderRadius: 12, paddingHorizontal: 32, paddingVertical: 12 },
+  pulseDismissText:{ color: "#D1D5DB", fontWeight: "700", fontSize: 14 },
 });

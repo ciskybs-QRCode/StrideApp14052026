@@ -332,6 +332,32 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS or_org_ts_idx ON org_reviews (org_id, created_at DESC);
   `).catch(() => {});
 
+  // Emergency Pulse — crisis broadcast tables
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS emergency_pulses (
+      id             UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      org_id         INTEGER,
+      triggered_by   TEXT        NOT NULL,
+      location_label TEXT        NOT NULL DEFAULT 'Main Campus',
+      status         TEXT        NOT NULL DEFAULT 'active',
+      triggered_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      resolved_at    TIMESTAMPTZ,
+      CHECK (status IN ('active', 'resolved'))
+    );
+    CREATE INDEX IF NOT EXISTS ep_status_idx ON emergency_pulses (status, triggered_at DESC);
+
+    CREATE TABLE IF NOT EXISTS emergency_pulse_acks (
+      id         UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      pulse_id   UUID        NOT NULL,
+      parent_id  TEXT        NOT NULL,
+      status     TEXT        NOT NULL,
+      acked_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (pulse_id, parent_id),
+      CHECK (status IN ('safe', 'missing'))
+    );
+    CREATE INDEX IF NOT EXISTS epa_pulse_idx ON emergency_pulse_acks (pulse_id);
+  `).catch(() => {});
+
   // Security Timeline — black-box observer log (append-only, no FK to any other table)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS child_activity_log (
