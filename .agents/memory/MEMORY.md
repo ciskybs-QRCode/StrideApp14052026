@@ -8,3 +8,4 @@
 - [Stride curly-quote parser bug](stride-curly-quotes.md) — Babel/Metro and Vite treat Unicode curly quotes U+201C/U+201D as string delimiters in JSX; always use ASCII alternatives or escape codes.
 - [Stride Global System Architecture](stride-pioneer.md) — Pioneer wizard, invite loop, pending_activation flow, system-status routing fully implemented.
 - [Stride OpenAI Vision integration](stride-openai-vision.md) — AI integration provisioned; lib/integrations-openai-ai-server built; image client needed optional-chaining fix for response.data; react lib removed from root tsconfig (not needed server-side).
+- [Stride payment audit model](stride-payment-audit.md) — server-side price resolution + payment_audit_log before Stripe session; generateBillingStatement() filters is_smart_pickup=false.

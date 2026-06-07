@@ -355,4 +355,75 @@ router.post("/billing/webhook", async (req, res) => {
   }
 });
 
+// ── generateBillingStatement ──────────────────────────────────────────────────
+// Single source of truth for tenant billing. Explicitly filters out
+// is_smart_pickup = true so Smart Pick-Up activity never inflates the bill.
+export type BillingLineItem = {
+  courseId: number;
+  courseName: string;
+  monthlyPriceCents: number;
+  sessionsPerWeek: number;
+};
+
+export type BillingStatement = {
+  orgId: number;
+  memberCount: number;
+  costPerSeatCents: number;
+  memberFeeCents: number;
+  courseItems: BillingLineItem[];
+  totalMonthlyCents: number;
+  currency: string;
+  generatedAt: string;
+};
+
+export async function generateBillingStatement(orgId: number): Promise<BillingStatement> {
+  const [orgResult, memberResult, coursesResult] = await Promise.all([
+    supabase
+      .from("organizations")
+      .select("currency, cost_per_seat_cents")
+      .eq("id", orgId)
+      .maybeSingle(),
+    supabase
+      .from("members")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", orgId),
+    // ↓ Smart Pick-Up courses are explicitly excluded — they are a logistics aid,
+    //   not a billable activity, and must never appear in the tenant statement.
+    supabase
+      .from("courses")
+      .select("id, name, price, sessions_per_week, is_smart_pickup")
+      .eq("organization_id", orgId)
+      .eq("is_smart_pickup", false),
+  ]);
+
+  const org = orgResult.data as { currency?: string; cost_per_seat_cents?: number } | null;
+  const memberCount     = memberResult.count ?? 0;
+  const costPerSeatCents = org?.cost_per_seat_cents ?? 150;
+  const currency        = org?.currency ?? "EUR";
+
+  type DbCourse = { id: number; name: string; price: number; sessions_per_week?: number };
+  const courses = (coursesResult.data ?? []) as DbCourse[];
+
+  const courseItems: BillingLineItem[] = courses.map(c => ({
+    courseId:         c.id,
+    courseName:       c.name,
+    monthlyPriceCents: Math.round(c.price * 100),
+    sessionsPerWeek:  c.sessions_per_week ?? 1,
+  }));
+
+  const memberFeeCents   = memberCount * costPerSeatCents;
+  const totalMonthlyCents = memberFeeCents;
+
+  return {
+    orgId,
+    memberCount,
+    costPerSeatCents,
+    memberFeeCents,
+    courseItems,
+    totalMonthlyCents,
+    currency,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 export default router;

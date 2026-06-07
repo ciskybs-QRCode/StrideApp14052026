@@ -250,6 +250,24 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS mmc_org_idx    ON member_medical_certs (org_id);
   `).catch(() => {});
 
+  // Financial audit trail — every payment request logged before Stripe session is created
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS payment_audit_log (
+      id               SERIAL PRIMARY KEY,
+      request_id       UUID    NOT NULL DEFAULT gen_random_uuid(),
+      organization_id  INTEGER,
+      user_id          TEXT    NOT NULL,
+      items_list       JSONB   NOT NULL,
+      calculated_total NUMERIC(10,2) NOT NULL,
+      discount_applied NUMERIC(10,2) NOT NULL DEFAULT 0,
+      promo_code       TEXT,
+      stripe_session_id TEXT,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS pal_org_idx  ON payment_audit_log (organization_id);
+    CREATE INDEX IF NOT EXISTS pal_user_idx ON payment_audit_log (user_id);
+  `).catch(() => {});
+
   // Web-Checkout Proxy: track Stripe-hosted checkout sessions for member purchases
   await pool.query(`
     CREATE TABLE IF NOT EXISTS checkout_sessions (

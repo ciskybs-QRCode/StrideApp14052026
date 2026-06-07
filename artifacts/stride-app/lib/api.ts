@@ -459,11 +459,40 @@ export const api = {
     request<{ ok: boolean }>("POST", "/emergency-logs", data),
 
   // Checkout & Payments — Web-Checkout Proxy model
-  // All payments go through Stripe-hosted checkout opened in the system browser.
+  // Client sends item descriptors only (no prices). Server fetches prices from DB,
+  // logs to payment_audit_log, creates the Stripe session, returns the verified itemized breakdown.
   createWebCheckoutSession: (data: {
-    items: Array<{ courseId: string; courseName: string; participantName: string; childId?: string; packageType: string; price: number }>;
-    amountCents: number;
-  }) => request<{ sessionId: string; checkoutUrl: string }>("POST", "/checkout/web-session", data),
+    items: Array<{
+      courseId:        string;
+      courseName:      string;
+      participantName: string;
+      childId?:        string;
+      packageType:     string;
+      clientPrice?:    number;   // only sent for private/non-DB lessons
+    }>;
+    promoCode?:            string;
+    promoDiscountType?:    "percent" | "amount";
+    promoDiscountPercent?: number;
+    promoDiscountAmount?:  number;
+    promoTargetCourseIds?: string[];
+  }) => request<{
+    sessionId:       string;
+    checkoutUrl:     string;
+    auditId:         string;
+    lineItems: Array<{
+      courseId:        string;
+      courseName:      string;
+      participantName: string;
+      packageType:     string;
+      unitPrice:       number;
+      discount:        number;
+      finalPrice:      number;
+      priceSource:     "db" | "client_fallback";
+    }>;
+    calculatedTotal:  number;
+    discountApplied:  number;
+    currency:         string;
+  }>("POST", "/checkout/web-session", data),
   getCheckoutSessionStatus: (sessionId: string) =>
     request<{ status: "pending" | "complete" | "expired"; invoiceNumber: string | null; invoiceId: number | null }>("GET", `/checkout/session-status/${sessionId}`),
 
