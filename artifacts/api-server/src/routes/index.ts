@@ -45,6 +45,7 @@ import guardianCircleRouter from "./guardian-circle.js";
 import safetyScoreRouter from "./safety-score.js";
 import emergencyPulseRouter from "./emergency-pulse.js";
 import proximityRouter from "./proximity.js";
+import marketplaceRouter from "./marketplace.js";
 
 const router: IRouter = Router();
 
@@ -94,5 +95,6 @@ router.use(guardianCircleRouter);
 router.use(safetyScoreRouter);
 router.use(emergencyPulseRouter);
 router.use(proximityRouter);
+router.use(marketplaceRouter);
 
 export default router;

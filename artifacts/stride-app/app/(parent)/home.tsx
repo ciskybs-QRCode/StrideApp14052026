@@ -447,6 +447,26 @@ export default function ParentHome() {
           </Pressable>
         </View>
 
+        {/* ── Stride Marketplace Banner ── */}
+        <Pressable
+          style={({ pressed }) => [styles.marketplaceBanner, { transform: pressed ? [{ scale: 0.98 }] : [] }]}
+          onPress={() => router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0])}
+        >
+          <View style={styles.marketplaceBannerLeft}>
+            <View style={styles.marketplaceBannerIcon}>
+              <Ionicons name="storefront" size={24} color="#D4AF37" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.marketplaceBannerTitle}>Stride Marketplace</Text>
+              <Text style={styles.marketplaceBannerSub}>Gear · Insurance · Accessories</Text>
+            </View>
+          </View>
+          <View style={styles.marketplaceVerifiedBadge}>
+            <Ionicons name="checkmark-circle" size={13} color="#D4AF37" />
+            <Text style={styles.marketplaceVerifiedText}>STRIDE{"\n"}VERIFIED</Text>
+          </View>
+        </Pressable>
+
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>
         {[
@@ -976,4 +996,13 @@ const styles = StyleSheet.create({
   pulseAckSub:     { color: "#9CA3AF", fontSize: 13, textAlign: "center", lineHeight: 20 },
   pulseDismissBtn: { marginTop: 8, backgroundColor: "#FFFFFF15", borderRadius: 12, paddingHorizontal: 32, paddingVertical: 12 },
   pulseDismissText:{ color: "#D1D5DB", fontWeight: "700", fontSize: 14 },
+
+  // Marketplace banner
+  marketplaceBanner:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#1E3A8A", borderRadius: 18, padding: 16, marginBottom: 20, marginTop: 4, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  marketplaceBannerLeft:   { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  marketplaceBannerIcon:   { width: 44, height: 44, borderRadius: 12, backgroundColor: "rgba(212,175,55,0.15)", alignItems: "center", justifyContent: "center" },
+  marketplaceBannerTitle:  { color: "#FFF", fontWeight: "900", fontSize: 15, marginBottom: 2 },
+  marketplaceBannerSub:    { color: "rgba(255,255,255,0.6)", fontSize: 12 },
+  marketplaceVerifiedBadge:{ alignItems: "center", gap: 2, backgroundColor: "rgba(212,175,55,0.15)", borderRadius: 10, padding: 8 },
+  marketplaceVerifiedText: { color: "#D4AF37", fontSize: 9, fontWeight: "900", textAlign: "center", letterSpacing: 0.5 },
 });

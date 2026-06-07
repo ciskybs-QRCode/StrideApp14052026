@@ -384,6 +384,88 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS cba_uuid_idx   ON child_beacon_assignments (wearable_uuid);
   `).catch(() => {});
 
+  // Stride-Verified Marketplace — products, services, platform commission
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS marketplace_products (
+      id                 UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      org_id             INTEGER,
+      title              TEXT        NOT NULL,
+      description        TEXT,
+      category           TEXT        NOT NULL DEFAULT 'equipment',
+      price_cents        INTEGER     NOT NULL,
+      currency           TEXT        NOT NULL DEFAULT 'eur',
+      platform_fee_pct   NUMERIC(5,2) NOT NULL DEFAULT 10.0,
+      image_url          TEXT,
+      is_stride_verified BOOLEAN     NOT NULL DEFAULT false,
+      is_active          BOOLEAN     NOT NULL DEFAULT true,
+      metadata           JSONB,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS mp_org_idx       ON marketplace_products (org_id);
+    CREATE INDEX IF NOT EXISTS mp_verified_idx  ON marketplace_products (is_stride_verified);
+    CREATE INDEX IF NOT EXISTS mp_active_idx    ON marketplace_products (is_active);
+
+    CREATE TABLE IF NOT EXISTS marketplace_purchases (
+      id                 UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      product_id         UUID        NOT NULL,
+      user_id            TEXT        NOT NULL,
+      org_id             INTEGER,
+      stripe_session_id  TEXT,
+      amount_cents       INTEGER     NOT NULL,
+      platform_fee_cents INTEGER     NOT NULL DEFAULT 0,
+      status             TEXT        NOT NULL DEFAULT 'pending',
+      purchased_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS mpur_user_idx    ON marketplace_purchases (user_id);
+    CREATE INDEX IF NOT EXISTS mpur_prod_idx    ON marketplace_purchases (product_id);
+    CREATE INDEX IF NOT EXISTS mpur_session_idx ON marketplace_purchases (stripe_session_id);
+  `).catch(() => {});
+
+  // Seed Stride-Verified insurance partner products (demo)
+  await pool.query(`
+    INSERT INTO marketplace_products
+      (title, description, category, price_cents, currency, platform_fee_pct, is_stride_verified)
+    SELECT
+      'Sports Injury Insurance — Annual',
+      'Up to €50,000 cover for sport-related injuries, physiotherapy, and hospitalisation. Automatically renews annually. Underwritten by Stride Insurance Partners.',
+      'insurance', 4999, 'eur', 15.0, true
+    WHERE NOT EXISTS (
+      SELECT 1 FROM marketplace_products WHERE title = 'Sports Injury Insurance — Annual'
+    );
+
+    INSERT INTO marketplace_products
+      (title, description, category, price_cents, currency, platform_fee_pct, is_stride_verified)
+    SELECT
+      'Family Multi-Sport Cover',
+      'Comprehensive annual policy covering all registered dependants across every enrolled activity. One premium, every child, all disciplines.',
+      'insurance', 8999, 'eur', 15.0, true
+    WHERE NOT EXISTS (
+      SELECT 1 FROM marketplace_products WHERE title = 'Family Multi-Sport Cover'
+    );
+
+    INSERT INTO marketplace_products
+      (org_id, title, description, category, price_cents, currency, platform_fee_pct, is_stride_verified)
+    SELECT
+      1,
+      'Aikido Gi — Beginner Set',
+      'Full uniform (jacket + trousers + white belt) sized for junior practitioners. Pre-washed, durable cotton blend. School logo embroidered on request.',
+      'equipment', 4900, 'eur', 12.0, false
+    WHERE NOT EXISTS (
+      SELECT 1 FROM marketplace_products WHERE title = 'Aikido Gi — Beginner Set'
+    );
+
+    INSERT INTO marketplace_products
+      (org_id, title, description, category, price_cents, currency, platform_fee_pct, is_stride_verified)
+    SELECT
+      1,
+      'Stride Dance Bag',
+      'Spacious drawstring bag with dedicated shoe pouch and water-bottle holder. Available in Navy/Gold colourway.',
+      'accessories', 2499, 'eur', 12.0, false
+    WHERE NOT EXISTS (
+      SELECT 1 FROM marketplace_products WHERE title = 'Stride Dance Bag'
+    );
+  `).catch(() => {});
+
   // Security Timeline — black-box observer log (append-only, no FK to any other table)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS child_activity_log (

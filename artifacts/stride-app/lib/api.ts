@@ -855,6 +855,38 @@ export const api = {
 
   listRecentProximityCheckins: () =>
     request<{ entries: ProximityRecentEntry[] }>("GET", "/proximity/recent"),
+
+  // ── Stride-Verified Marketplace ────────────────────────────────────────────
+  listMarketplaceProducts: (params?: { org_id?: number; category?: string; verified?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (params?.org_id   != null)  qs.set("org_id",   String(params.org_id));
+    if (params?.category)          qs.set("category",  params.category);
+    if (params?.verified === true) qs.set("verified",  "true");
+    const q = qs.toString();
+    return request<{ products: MarketplaceProduct[] }>("GET", `/marketplace/products${q ? `?${q}` : ""}`);
+  },
+
+  createMarketplaceProduct: (data: {
+    title: string; description?: string; category?: string;
+    price_cents: number; currency?: string; platform_fee_pct?: number;
+    image_url?: string; is_stride_verified?: boolean; org_id?: number | null;
+  }) =>
+    request<MarketplaceProduct>("POST", "/marketplace/products", data),
+
+  updateMarketplaceProduct: (id: string, data: Partial<{
+    title: string; description: string; category: string; price_cents: number;
+    platform_fee_pct: number; image_url: string; is_active: boolean; is_stride_verified: boolean;
+  }>) =>
+    request<MarketplaceProduct>("PATCH", `/marketplace/products/${id}`, data),
+
+  deleteMarketplaceProduct: (id: string) =>
+    request<{ ok: boolean }>("DELETE", `/marketplace/products/${id}`),
+
+  marketplaceCheckout: (data: { product_id: string; quantity?: number }) =>
+    request<MarketplaceCheckoutResult>("POST", "/marketplace/checkout", data),
+
+  listMarketplacePurchases: () =>
+    request<{ purchases: MarketplacePurchase[] }>("GET", "/marketplace/purchases"),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -908,6 +940,44 @@ export interface PulseStatus extends EmergencyPulse {
   missing_count: number;
   total_acks:    number;
   acks: Array<{ parent_id: string; status: string; acked_at: string }>;
+}
+
+export interface MarketplaceProduct {
+  id:                string;
+  org_id:            number | null;
+  title:             string;
+  description:       string | null;
+  category:          string;
+  price_cents:       number;
+  currency:          string;
+  platform_fee_pct:  number;
+  image_url:         string | null;
+  is_stride_verified: boolean;
+  is_active:         boolean;
+  created_at:        string;
+}
+
+export interface MarketplaceCheckoutResult {
+  checkoutUrl:        string;
+  sessionId:          string;
+  amount_cents:       number;
+  platform_fee_cents: number;
+  net_cents:          number;
+  currency:           string;
+  product:            { title: string; category: string };
+}
+
+export interface MarketplacePurchase {
+  id:                string;
+  stripe_session_id: string | null;
+  amount_cents:      number;
+  platform_fee_cents: number;
+  status:            string;
+  purchased_at:      string;
+  title:             string;
+  category:          string;
+  image_url:         string | null;
+  is_stride_verified: boolean;
 }
 
 export interface ProximityBeacon {
