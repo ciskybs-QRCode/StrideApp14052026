@@ -52,14 +52,14 @@ export default function TrialExpiredScreen() {
         <View style={styles.contactBox}>
           <Pressable
             style={styles.contactRow}
-            onPress={() => Linking.openURL("mailto:admin@stride.app")}
+            onPress={() => Linking.openURL("mailto:support@stride.app")}
           >
             <Ionicons name="mail-outline" size={16} color="#FBBF24" />
             <Text style={styles.contactLink}>admin@stride.app</Text>
           </Pressable>
           <Pressable
             style={styles.contactRow}
-            onPress={() => Linking.openURL("https://stride.app")}
+            onPress={() => Linking.openURL(`https://${process.env["EXPO_PUBLIC_DOMAIN"] ?? "stride-platform.com"}`)}
           >
             <Ionicons name="globe-outline" size={16} color="#FBBF24" />
             <Text style={styles.contactLink}>stride.app</Text>

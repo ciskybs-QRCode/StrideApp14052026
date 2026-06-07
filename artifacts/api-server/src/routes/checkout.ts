@@ -281,6 +281,42 @@ router.get("/checkout/session-status/:sessionId", requireAuth, async (req, res) 
   });
 });
 
+// ── GET /checkout/receipt/:sessionId — public, no auth ───────────────────────
+// Called by the /payment-success landing page to render a branded receipt.
+// The Stripe session_id is Stripe-generated and unguessable, so exposing
+// non-PII summary data (total, invoice number, line items) is safe.
+router.get("/checkout/receipt/:sessionId", async (req, res) => {
+  const sessionId = String(req.params["sessionId"] ?? "");
+  if (!sessionId) { res.status(400).json({ error: "Missing sessionId" }); return; }
+
+  const { data } = await supabase
+    .from("checkout_sessions")
+    .select("status, invoice_number, amount_cents, items")
+    .eq("session_id", sessionId)
+    .maybeSingle();
+
+  if (!data) {
+    // Webhook hasn't arrived yet — tell client to keep polling
+    res.json({ status: "pending", invoiceNumber: null, amountCents: null, currency: "eur", items: [] });
+    return;
+  }
+
+  type SessionRow = {
+    status:          string;
+    invoice_number?: string | null;
+    amount_cents?:   number | null;
+    items?:          unknown;
+  };
+  const row = data as SessionRow;
+  res.json({
+    status:        row.status,
+    invoiceNumber: row.invoice_number ?? null,
+    amountCents:   row.amount_cents   ?? null,
+    currency:      "eur",
+    items:         Array.isArray(row.items) ? row.items : [],
+  });
+});
+
 // ── processMemberCheckout (webhook / internal use) ────────────────────────────
 // Called by the billing webhook on checkout.session.completed.
 // Reads the server-verified items from checkout_sessions (never the client payload).
