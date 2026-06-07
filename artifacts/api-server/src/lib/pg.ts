@@ -203,6 +203,27 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS branding_secondary_color TEXT DEFAULT '#D4AF37';`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS branding_logo_url TEXT;`).catch(() => {});
 
+  // Batch checkout: groups multiple org payments into one UX flow
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS checkout_batches (
+      id              SERIAL PRIMARY KEY,
+      batch_id        UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+      user_id         TEXT NOT NULL,
+      organization_id INTEGER,
+      status          TEXT NOT NULL DEFAULT 'pending',
+      total_sessions  INTEGER NOT NULL DEFAULT 0,
+      completed_count INTEGER NOT NULL DEFAULT 0,
+      total_cents     INTEGER NOT NULL DEFAULT 0,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      completed_at    TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS cb_batch_idx ON checkout_batches (batch_id);
+    CREATE INDEX IF NOT EXISTS cb_user_idx  ON checkout_batches (user_id);
+  `).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS batch_id UUID;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS batch_position INTEGER;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS checkout_url TEXT;`).catch(() => {});
+
   // Future absence planning — operator scheduling
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_absences (

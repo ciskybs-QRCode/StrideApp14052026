@@ -28,6 +28,17 @@ type CartItemInput = {
   clientPrice?:    number;
 };
 
+type OrgRow = {
+  currency?:                  string;
+  stripe_connect_account_id?: string;
+  stripe_secret_key?:         string;
+  name?:                      string;
+  branding_primary_color?:    string;
+  branding_secondary_color?:  string;
+  branding_logo_url?:         string | null;
+  trial_ends_at?:             string;
+};
+
 // ── Server-side price resolution ─────────────────────────────────────────────
 async function resolveLineItems(
   orgId:                  number,
@@ -134,7 +145,6 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
   }
 
   try {
-    // ── 1. Org config — fetch before price resolution ────────────────────────
     const { data: orgData } = await supabase
       .from("organizations")
       .select(
@@ -145,16 +155,6 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
       .eq("id", orgId)
       .maybeSingle();
 
-    type OrgRow = {
-      currency?:                  string;
-      stripe_connect_account_id?: string;
-      stripe_secret_key?:         string;
-      name?:                      string;
-      branding_primary_color?:    string;
-      branding_secondary_color?:  string;
-      branding_logo_url?:         string | null;
-      trial_ends_at?:             string;
-    };
     const org = orgData as OrgRow | null;
 
     const currency       = org?.currency?.toLowerCase() ?? "eur";
@@ -164,7 +164,6 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     const trialEndsAt    = org?.trial_ends_at ?? null;
     const isTrial        = !trialEndsAt || new Date() < new Date(trialEndsAt);
 
-    // ── 2. Server-side price resolution ──────────────────────────────────────
     const lineItems = await resolveLineItems(
       orgId, items, orgName,
       promoCode, promoDiscountType, promoDiscountPercent,
@@ -180,7 +179,6 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
       return;
     }
 
-    // ── 3. Audit log — written BEFORE Stripe session ──────────────────────────
     const { data: auditRow } = await supabase
       .from("payment_audit_log")
       .insert({
@@ -201,11 +199,6 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
       ?? "localhost";
     const baseUrl = `https://${rawDomain}`;
 
-    // ── 4. Choose Stripe account for this payment ─────────────────────────────
-    // If the org has their own Stripe key → use it directly (funds land in their
-    // account immediately, Stride is never in the money flow).
-    // If the org has a Connect account only → use the platform key with transfer_data.
-    // Otherwise → platform key with no routing (should be resolved in onboarding).
     const Stripe = (await import("stripe")).default;
 
     type SessionParams = Parameters<InstanceType<typeof Stripe>["checkout"]["sessions"]["create"]>[0];
@@ -237,12 +230,9 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     let activeStripeKey: string;
 
     if (orgStripeKey) {
-      // Org's own Stripe account — direct payment, no platform fee needed
       activeStripeKey = orgStripeKey;
-      // No transfer_data: funds land directly in the org's account
     } else {
       activeStripeKey = masterStripeKey;
-      // Connect routing when org has set up a Connect account
       if (connectId) {
         sessionParams.payment_intent_data = {
           transfer_data:          { destination: connectId },
@@ -254,7 +244,6 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     const stripe  = new Stripe(activeStripeKey);
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    // ── 5. Link audit record to the Stripe session ───────────────────────────
     await Promise.all([
       supabase
         .from("payment_audit_log")
@@ -267,6 +256,7 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
         status:          "pending",
         items:           lineItems,
         amount_cents:    calculatedCents,
+        checkout_url:    session.url,
       }),
     ]);
 
@@ -283,6 +273,251 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     req.log.error(err);
     res.status(500).json({ error: (err as Error).message });
   }
+});
+
+// ── POST /checkout/batch-session ──────────────────────────────────────────────
+// Creates one Stripe checkout session per org group, linked under a single batch.
+// Returns batchId + ordered session list so the app can open them sequentially.
+router.post("/checkout/batch-session", requireAuth, async (req, res) => {
+  const masterStripeKey = process.env["STRIPE_SECRET_KEY"];
+  if (!masterStripeKey) {
+    res.status(503).json({ error: "stripe_not_configured" });
+    return;
+  }
+
+  const user = (req as AuthReq).user;
+
+  const {
+    groups,
+    promoCode,
+    promoDiscountType,
+    promoDiscountPercent,
+    promoDiscountAmount,
+    promoTargetCourseIds,
+  } = req.body as {
+    groups: Array<{ orgId: number; items: CartItemInput[] }>;
+    promoCode?:            string;
+    promoDiscountType?:    "percent" | "amount";
+    promoDiscountPercent?: number;
+    promoDiscountAmount?:  number;
+    promoTargetCourseIds?: string[];
+  };
+
+  if (!Array.isArray(groups) || groups.length === 0) {
+    res.status(400).json({ error: "No groups provided" });
+    return;
+  }
+
+  try {
+    const Stripe = (await import("stripe")).default;
+    type SessionParams = Parameters<InstanceType<typeof Stripe>["checkout"]["sessions"]["create"]>[0];
+
+    const rawDomain = process.env["REPLIT_DOMAINS"]?.split(",")[0]
+      ?? process.env["REPLIT_DEV_DOMAIN"]
+      ?? "localhost";
+    const baseUrl = `https://${rawDomain}`;
+    const batchId = crypto.randomUUID();
+
+    const sessions: Array<{
+      position:    number;
+      sessionId:   string;
+      checkoutUrl: string;
+      orgId:       number;
+      orgName:     string;
+      amountCents: number;
+      currency:    string;
+    }> = [];
+    let totalCents = 0;
+
+    for (let pos = 0; pos < groups.length; pos++) {
+      const group = groups[pos];
+      if (!group || !Array.isArray(group.items) || group.items.length === 0) continue;
+
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("currency, stripe_connect_account_id, stripe_secret_key, name, trial_ends_at")
+        .eq("id", group.orgId)
+        .maybeSingle();
+
+      const org          = orgData as OrgRow | null;
+      const currency     = org?.currency?.toLowerCase() ?? "eur";
+      const connectId    = org?.stripe_connect_account_id ?? null;
+      const orgStripeKey = org?.stripe_secret_key ?? null;
+      const orgName      = org?.name ?? `Organisation ${group.orgId}`;
+      const trialEndsAt  = org?.trial_ends_at ?? null;
+      const isTrial      = !trialEndsAt || new Date() < new Date(trialEndsAt);
+
+      const lineItems = await resolveLineItems(
+        group.orgId, group.items, orgName,
+        promoCode, promoDiscountType, promoDiscountPercent,
+        promoDiscountAmount, promoTargetCourseIds,
+      );
+
+      const groupCents = Math.round(lineItems.reduce((s, i) => s + i.finalPrice, 0) * 100);
+      if (groupCents <= 0) continue;
+
+      const { data: auditRow } = await supabase
+        .from("payment_audit_log")
+        .insert({
+          organization_id:  group.orgId,
+          user_id:          String(user.id),
+          items_list:       lineItems,
+          calculated_total: groupCents / 100,
+          discount_applied: lineItems.reduce((s, i) => s + i.discount, 0),
+          promo_code:       promoCode ?? null,
+        })
+        .select("request_id")
+        .single();
+
+      const auditId = (auditRow as { request_id?: string } | null)?.request_id ?? "unknown";
+
+      const stripeLineItems = lineItems.map(item => ({
+        price_data: {
+          currency,
+          product_data: { name: `${item.courseName} — ${item.participantName}` },
+          unit_amount:  Math.round(item.finalPrice * 100),
+        },
+        quantity: 1,
+      }));
+
+      const position = pos + 1;
+      const sessionParams: SessionParams = {
+        mode:       "payment",
+        line_items: stripeLineItems,
+        success_url: `${baseUrl}/payment-batch?batch_id=${batchId}&position=${position}`,
+        cancel_url:  `${baseUrl}/payment-cancelled?batch_id=${batchId}&position=${position}`,
+        metadata: {
+          type:          "member_checkout",
+          orgId:         String(group.orgId),
+          userId:        String(user.id),
+          auditId,
+          batchId,
+          batchPosition: String(position),
+        },
+      };
+
+      const activeStripeKey = orgStripeKey ?? masterStripeKey;
+
+      if (!orgStripeKey && connectId) {
+        sessionParams.payment_intent_data = {
+          transfer_data:          { destination: connectId },
+          application_fee_amount: isTrial ? 0 : Math.round(groupCents * 0.02),
+        };
+      }
+
+      const stripe  = new Stripe(activeStripeKey);
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      await Promise.all([
+        supabase.from("payment_audit_log").update({ stripe_session_id: session.id }).eq("request_id", auditId),
+        supabase.from("checkout_sessions").insert({
+          session_id:      session.id,
+          organization_id: group.orgId,
+          user_id:         String(user.id),
+          status:          "pending",
+          items:           lineItems,
+          amount_cents:    groupCents,
+          batch_id:        batchId,
+          batch_position:  position,
+          checkout_url:    session.url,
+        }),
+      ]);
+
+      totalCents += groupCents;
+      sessions.push({
+        position,
+        sessionId:   session.id,
+        checkoutUrl: session.url ?? "",
+        orgId:       group.orgId,
+        orgName,
+        amountCents: groupCents,
+        currency,
+      });
+    }
+
+    if (sessions.length === 0) {
+      res.status(400).json({ error: "No valid payment groups" });
+      return;
+    }
+
+    await supabase.from("checkout_batches").insert({
+      batch_id:        batchId,
+      user_id:         String(user.id),
+      organization_id: user.orgId ?? null,
+      status:          "pending",
+      total_sessions:  sessions.length,
+      completed_count: 0,
+      total_cents:     totalCents,
+    });
+
+    res.json({ batchId, sessions, totalSessions: sessions.length });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── GET /checkout/batch-status/:batchId — public (UUID is unguessable) ────────
+router.get("/checkout/batch-status/:batchId", async (req, res) => {
+  const batchId = String(req.params["batchId"] ?? "");
+  if (!batchId) { res.status(400).json({ error: "Missing batchId" }); return; }
+
+  const { data: batchData } = await supabase
+    .from("checkout_batches")
+    .select("batch_id, status, total_sessions, completed_count, total_cents")
+    .eq("batch_id", batchId)
+    .maybeSingle();
+
+  if (!batchData) { res.status(404).json({ error: "Batch not found" }); return; }
+
+  const { data: sessionRows } = await supabase
+    .from("checkout_sessions")
+    .select("session_id, status, batch_position, organization_id, amount_cents, invoice_number, checkout_url")
+    .eq("batch_id", batchId)
+    .order("batch_position", { ascending: true });
+
+  type BatchRow = { batch_id: string; status: string; total_sessions: number; completed_count: number; total_cents: number };
+  type SessionRow = {
+    session_id:      string;
+    status:          string;
+    batch_position:  number;
+    organization_id: number;
+    amount_cents:    number;
+    invoice_number?: string | null;
+    checkout_url?:   string | null;
+  };
+
+  const batch    = batchData as BatchRow;
+  const sessions = (sessionRows ?? []) as SessionRow[];
+
+  const orgIds = [...new Set(sessions.map(s => s.organization_id).filter(Boolean))];
+  const orgMap = new Map<number, string>();
+  if (orgIds.length > 0) {
+    const { data: orgs } = await supabase
+      .from("organizations")
+      .select("id, name")
+      .in("id", orgIds);
+    type OrgNameRow = { id: number; name: string };
+    (orgs ?? []).forEach((o: OrgNameRow) => orgMap.set(o.id, o.name));
+  }
+
+  res.json({
+    batchId:        batch.batch_id,
+    status:         batch.status,
+    totalSessions:  batch.total_sessions,
+    completedCount: batch.completed_count,
+    totalCents:     batch.total_cents,
+    sessions:       sessions.map(s => ({
+      position:      s.batch_position,
+      sessionId:     s.session_id,
+      status:        s.status,
+      checkoutUrl:   s.status === "pending" ? (s.checkout_url ?? null) : null,
+      orgId:         s.organization_id,
+      orgName:       orgMap.get(s.organization_id) ?? null,
+      amountCents:   s.amount_cents,
+      invoiceNumber: s.invoice_number ?? null,
+    })),
+  });
 });
 
 // ── GET /checkout/session-status/:sessionId ───────────────────────────────────
@@ -310,9 +545,6 @@ router.get("/checkout/session-status/:sessionId", requireAuth, async (req, res) 
 });
 
 // ── GET /checkout/receipt/:sessionId — public, no auth ───────────────────────
-// Called by the /payment-success landing page to render a branded receipt.
-// The Stripe session_id is Stripe-generated and unguessable, so exposing
-// non-PII summary data (total, invoice number, line items) is safe.
 router.get("/checkout/receipt/:sessionId", async (req, res) => {
   const sessionId = String(req.params["sessionId"] ?? "");
   if (!sessionId) { res.status(400).json({ error: "Missing sessionId" }); return; }
@@ -324,15 +556,7 @@ router.get("/checkout/receipt/:sessionId", async (req, res) => {
     .maybeSingle();
 
   if (!data) {
-    res.json({
-      status:        "pending",
-      invoiceNumber: null,
-      amountCents:   null,
-      currency:      "eur",
-      orgName:       null,
-      branding:      null,
-      items:         [],
-    });
+    res.json({ status: "pending", invoiceNumber: null, amountCents: null, currency: "eur", orgName: null, branding: null, items: [] });
     return;
   }
 
@@ -345,13 +569,8 @@ router.get("/checkout/receipt/:sessionId", async (req, res) => {
   };
   const row = data as SessionRow;
 
-  // Fetch org branding for dynamic web-checkout styling
   let orgName: string | null = null;
-  let branding = {
-    primaryColor:   "#1E3A8A",
-    secondaryColor: "#D4AF37",
-    logoUrl:        null as string | null,
-  };
+  let branding = { primaryColor: "#1E3A8A", secondaryColor: "#D4AF37", logoUrl: null as string | null };
 
   if (row.organization_id) {
     const { data: orgData } = await supabase
@@ -361,14 +580,9 @@ router.get("/checkout/receipt/:sessionId", async (req, res) => {
       .maybeSingle();
 
     if (orgData) {
-      type OrgRow = {
-        name?:                     string;
-        branding_primary_color?:   string;
-        branding_secondary_color?: string;
-        branding_logo_url?:        string | null;
-      };
-      const org = orgData as OrgRow;
-      orgName = org.name ?? null;
+      type OrgBrandRow = { name?: string; branding_primary_color?: string; branding_secondary_color?: string; branding_logo_url?: string | null };
+      const org = orgData as OrgBrandRow;
+      orgName  = org.name ?? null;
       branding = {
         primaryColor:   org.branding_primary_color   ?? "#1E3A8A",
         secondaryColor: org.branding_secondary_color ?? "#D4AF37",
@@ -450,6 +664,34 @@ export async function processMemberCheckout(opts: {
       completed_at:   new Date().toISOString(),
     })
     .eq("session_id", sessionId);
+
+  // ── Batch completion tracking ─────────────────────────────────────────────
+  const { data: sessionRow } = await supabase
+    .from("checkout_sessions")
+    .select("batch_id")
+    .eq("session_id", sessionId)
+    .maybeSingle();
+
+  const batchId = (sessionRow as { batch_id?: string | null } | null)?.batch_id ?? null;
+  if (batchId) {
+    const { data: batchRow } = await supabase
+      .from("checkout_batches")
+      .select("total_sessions, completed_count")
+      .eq("batch_id", batchId)
+      .maybeSingle();
+
+    if (batchRow) {
+      type BatchRow = { total_sessions: number; completed_count: number };
+      const b = batchRow as BatchRow;
+      const newCount  = b.completed_count + 1;
+      const newStatus = newCount >= b.total_sessions ? "complete" : "partial";
+      await supabase.from("checkout_batches").update({
+        completed_count: newCount,
+        status:          newStatus,
+        ...(newStatus === "complete" ? { completed_at: new Date().toISOString() } : {}),
+      }).eq("batch_id", batchId);
+    }
+  }
 
   return { invoiceNumber, invoiceId };
 }

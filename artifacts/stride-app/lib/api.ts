@@ -496,6 +496,56 @@ export const api = {
   getCheckoutSessionStatus: (sessionId: string) =>
     request<{ status: "pending" | "complete" | "expired"; invoiceNumber: string | null; invoiceId: number | null }>("GET", `/checkout/session-status/${sessionId}`),
 
+  createBatchCheckoutSession: (data: {
+    groups: Array<{
+      orgId: number;
+      items: Array<{
+        courseId:        string;
+        courseName:      string;
+        participantName: string;
+        childId?:        string;
+        packageType:     string;
+        clientPrice?:    number;
+      }>;
+    }>;
+    promoCode?:            string;
+    promoDiscountType?:    "percent" | "amount";
+    promoDiscountPercent?: number;
+    promoDiscountAmount?:  number;
+    promoTargetCourseIds?: string[];
+  }) => request<{
+    batchId:       string;
+    sessions: Array<{
+      position:    number;
+      sessionId:   string;
+      checkoutUrl: string;
+      orgId:       number;
+      orgName:     string;
+      amountCents: number;
+      currency:    string;
+    }>;
+    totalSessions: number;
+  }>("POST", "/checkout/batch-session", data),
+
+  getBatchStatus: (batchId: string) =>
+    request<{
+      batchId:        string;
+      status:         "pending" | "partial" | "complete" | "abandoned";
+      totalSessions:  number;
+      completedCount: number;
+      totalCents:     number;
+      sessions: Array<{
+        position:      number;
+        sessionId:     string;
+        status:        "pending" | "complete" | "expired";
+        checkoutUrl:   string | null;
+        orgId:         number;
+        orgName:       string | null;
+        amountCents:   number;
+        invoiceNumber: string | null;
+      }>;
+    }>("GET", `/checkout/batch-status/${batchId}`),
+
   // Enrollment Requests (validation & approval flow)
   getEnrollmentRequests: () =>
     request<ApiEnrollmentRequest[]>("GET", "/enrollment-requests"),
@@ -755,6 +805,7 @@ export interface ApiChild {
 
 export interface ApiCourse {
   id: number;
+  organization_id?: number;
   name: string;
   discipline?: string;
   price?: number;

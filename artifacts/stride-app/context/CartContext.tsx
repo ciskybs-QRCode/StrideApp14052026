@@ -11,6 +11,8 @@ export interface CartItem {
   label: string;
   price: number;
   participantName: string;
+  orgId?: number;
+  orgName?: string;
   status: CartItemStatus;
   requestId?: string;
   validationIssue?: string;
