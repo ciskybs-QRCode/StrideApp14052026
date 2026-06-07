@@ -447,25 +447,6 @@ export default function ParentHome() {
           </Pressable>
         </View>
 
-        {/* ── Stride Marketplace Banner ── */}
-        <Pressable
-          style={({ pressed }) => [styles.marketplaceBanner, { transform: pressed ? [{ scale: 0.98 }] : [] }]}
-          onPress={() => router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0])}
-        >
-          <View style={styles.marketplaceBannerLeft}>
-            <View style={styles.marketplaceBannerIcon}>
-              <Ionicons name="storefront" size={24} color="#D4AF37" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.marketplaceBannerTitle}>Stride Marketplace</Text>
-              <Text style={styles.marketplaceBannerSub}>Gear · Insurance · Accessories</Text>
-            </View>
-          </View>
-          <View style={styles.marketplaceVerifiedBadge}>
-            <Ionicons name="checkmark-circle" size={13} color="#D4AF37" />
-            <Text style={styles.marketplaceVerifiedText}>STRIDE{"\n"}VERIFIED</Text>
-          </View>
-        </Pressable>
 
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>

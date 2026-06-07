@@ -28,7 +28,8 @@ import { Router } from "express";
 import { pool } from "../lib/pg.js";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
-import type { Request, Response } from "express";
+import { ENABLE_MARKETPLACE } from "../features.js";
+import type { Request, Response, NextFunction } from "express";
 
 type AuthReq = Request & { user: TokenPayload };
 
@@ -40,6 +41,15 @@ type OrgRow = {
 };
 
 const router = Router();
+
+// Feature-flag guard — returns 404 for all marketplace endpoints when disabled.
+router.use((_req: Request, res: Response, next: NextFunction) => {
+  if (!ENABLE_MARKETPLACE) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  next();
+});
 
 // ── GET /marketplace/products ─────────────────────────────────────────────────
 // List all active marketplace products.
