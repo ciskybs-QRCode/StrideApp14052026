@@ -7,15 +7,16 @@ type AuthReq = Request & { user: TokenPayload };
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 export type CheckoutLineItem = {
-  courseId:        string;
-  courseName:      string;
-  participantName: string;
-  packageType:     string;
-  childId?:        string;
-  unitPrice:       number;   // server-verified (DB or client_fallback)
-  discount:        number;   // server-calculated
-  finalPrice:      number;   // unitPrice - discount
-  priceSource:     "db" | "client_fallback";
+  courseId:          string;
+  courseName:        string;
+  participantName:   string;
+  packageType:       string;
+  childId?:          string;
+  organizationName?: string;
+  unitPrice:         number;
+  discount:          number;
+  finalPrice:        number;
+  priceSource:       "db" | "client_fallback";
 };
 
 type CartItemInput = {
@@ -24,20 +25,19 @@ type CartItemInput = {
   participantName: string;
   childId?:        string;
   packageType:     string;
-  clientPrice?:    number;  // only trusted when DB has no record (private lessons)
+  clientPrice?:    number;
 };
 
 // ── Server-side price resolution ─────────────────────────────────────────────
-// Fetches authoritative prices from the courses table.
-// Private lessons (courseId starts with "private-") fall back to clientPrice.
 async function resolveLineItems(
-  orgId: number,
-  items: CartItemInput[],
-  promoCode?: string,
-  promoDiscountType?: "percent" | "amount",
-  promoDiscountPercent?: number,
-  promoDiscountAmount?: number,
-  promoTargetCourseIds?: string[],
+  orgId:                  number,
+  items:                  CartItemInput[],
+  orgName?:               string,
+  promoCode?:             string,
+  promoDiscountType?:     "percent" | "amount",
+  promoDiscountPercent?:  number,
+  promoDiscountAmount?:   number,
+  promoTargetCourseIds?:  string[],
 ): Promise<CheckoutLineItem[]> {
   const numericIds = items
     .map(i => parseInt(i.courseId))
@@ -68,12 +68,10 @@ async function resolveLineItems(
       unitPrice   = dbRow.price;
       priceSource = "db";
     } else {
-      // Private lesson or demo course — accept client-provided price
       unitPrice   = item.clientPrice ?? 0;
       priceSource = "client_fallback";
     }
 
-    // Server-side promo calculation
     let discount = 0;
     if (promoCode) {
       const targets = promoTargetCourseIds ?? [];
@@ -89,11 +87,12 @@ async function resolveLineItems(
 
     const finalPrice = Math.max(0, unitPrice - discount);
     return {
-      courseId:        item.courseId,
-      courseName:      item.courseName,
-      participantName: item.participantName,
-      packageType:     item.packageType,
-      childId:         item.childId,
+      courseId:         item.courseId,
+      courseName:       item.courseName,
+      participantName:  item.participantName,
+      packageType:      item.packageType,
+      childId:          item.childId,
+      organizationName: orgName,
       unitPrice,
       discount,
       finalPrice,
@@ -103,12 +102,9 @@ async function resolveLineItems(
 }
 
 // ── POST /checkout/web-session ────────────────────────────────────────────────
-// Client sends item IDs + participant info — never prices.
-// Server fetches authoritative prices, logs to payment_audit_log, then
-// creates the Stripe session. Returns the itemized breakdown to the app.
 router.post("/checkout/web-session", requireAuth, async (req, res) => {
-  const stripeKey = process.env["STRIPE_SECRET_KEY"];
-  if (!stripeKey) {
+  const masterStripeKey = process.env["STRIPE_SECRET_KEY"];
+  if (!masterStripeKey) {
     res.status(503).json({ error: "stripe_not_configured" });
     return;
   }
@@ -138,23 +134,53 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
   }
 
   try {
-    // ── 1. Server-side price resolution ─────────────────────────────────────
+    // ── 1. Org config — fetch before price resolution ────────────────────────
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select(
+        "currency, stripe_connect_account_id, stripe_secret_key, " +
+        "name, branding_primary_color, branding_secondary_color, branding_logo_url, " +
+        "trial_ends_at",
+      )
+      .eq("id", orgId)
+      .maybeSingle();
+
+    type OrgRow = {
+      currency?:                  string;
+      stripe_connect_account_id?: string;
+      stripe_secret_key?:         string;
+      name?:                      string;
+      branding_primary_color?:    string;
+      branding_secondary_color?:  string;
+      branding_logo_url?:         string | null;
+      trial_ends_at?:             string;
+    };
+    const org = orgData as OrgRow | null;
+
+    const currency       = org?.currency?.toLowerCase() ?? "eur";
+    const connectId      = org?.stripe_connect_account_id ?? null;
+    const orgStripeKey   = org?.stripe_secret_key ?? null;
+    const orgName        = org?.name ?? "Stride";
+    const trialEndsAt    = org?.trial_ends_at ?? null;
+    const isTrial        = !trialEndsAt || new Date() < new Date(trialEndsAt);
+
+    // ── 2. Server-side price resolution ──────────────────────────────────────
     const lineItems = await resolveLineItems(
-      orgId, items,
+      orgId, items, orgName,
       promoCode, promoDiscountType, promoDiscountPercent,
       promoDiscountAmount, promoTargetCourseIds,
     );
 
-    const discountApplied  = lineItems.reduce((s, i) => s + i.discount,   0);
-    const calculatedTotal  = lineItems.reduce((s, i) => s + i.finalPrice, 0);
-    const calculatedCents  = Math.round(calculatedTotal * 100);
+    const discountApplied = lineItems.reduce((s, i) => s + i.discount,   0);
+    const calculatedTotal = lineItems.reduce((s, i) => s + i.finalPrice, 0);
+    const calculatedCents = Math.round(calculatedTotal * 100);
 
     if (calculatedCents <= 0) {
       res.status(400).json({ error: "Calculated total is zero" });
       return;
     }
 
-    // ── 2. Audit log — written BEFORE Stripe session is created ─────────────
+    // ── 3. Audit log — written BEFORE Stripe session ──────────────────────────
     const { data: auditRow } = await supabase
       .from("payment_audit_log")
       .insert({
@@ -170,27 +196,19 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
 
     const auditId = (auditRow as { request_id?: string } | null)?.request_id ?? "unknown";
 
-    // ── 3. Org config ────────────────────────────────────────────────────────
-    const { data: orgData } = await supabase
-      .from("organizations")
-      .select("currency, stripe_connect_account_id, trial_ends_at")
-      .eq("id", orgId)
-      .maybeSingle();
-
-    const currency    = (orgData as { currency?: string }                   | null)?.currency?.toLowerCase() ?? "eur";
-    const connectId   = (orgData as { stripe_connect_account_id?: string }  | null)?.stripe_connect_account_id ?? null;
-    const trialEndsAt = (orgData as { trial_ends_at?: string }              | null)?.trial_ends_at ?? null;
-    const isTrial     = !trialEndsAt || new Date() < new Date(trialEndsAt);
-
     const rawDomain = process.env["REPLIT_DOMAINS"]?.split(",")[0]
       ?? process.env["REPLIT_DEV_DOMAIN"]
       ?? "localhost";
     const baseUrl = `https://${rawDomain}`;
 
-    // ── 4. Create Stripe session using server-calculated amounts ─────────────
+    // ── 4. Choose Stripe account for this payment ─────────────────────────────
+    // If the org has their own Stripe key → use it directly (funds land in their
+    // account immediately, Stride is never in the money flow).
+    // If the org has a Connect account only → use the platform key with transfer_data.
+    // Otherwise → platform key with no routing (should be resolved in onboarding).
     const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(stripeKey);
 
+    type SessionParams = Parameters<InstanceType<typeof Stripe>["checkout"]["sessions"]["create"]>[0];
     const stripeLineItems = lineItems.map(item => ({
       price_data: {
         currency,
@@ -203,12 +221,11 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
       quantity: 1,
     }));
 
-    type SessionParams = Parameters<typeof stripe.checkout.sessions.create>[0];
     const sessionParams: SessionParams = {
-      mode:         "payment",
-      line_items:   stripeLineItems,
-      success_url:  `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:   `${baseUrl}/payment-cancelled`,
+      mode:        "payment",
+      line_items:  stripeLineItems,
+      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${baseUrl}/payment-cancelled`,
       metadata: {
         type:    "member_checkout",
         orgId:   String(orgId),
@@ -217,13 +234,24 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
       },
     };
 
-    if (connectId) {
-      sessionParams.payment_intent_data = {
-        transfer_data:        { destination: connectId },
-        application_fee_amount: isTrial ? 0 : Math.round(calculatedCents * 0.02),
-      };
+    let activeStripeKey: string;
+
+    if (orgStripeKey) {
+      // Org's own Stripe account — direct payment, no platform fee needed
+      activeStripeKey = orgStripeKey;
+      // No transfer_data: funds land directly in the org's account
+    } else {
+      activeStripeKey = masterStripeKey;
+      // Connect routing when org has set up a Connect account
+      if (connectId) {
+        sessionParams.payment_intent_data = {
+          transfer_data:          { destination: connectId },
+          application_fee_amount: isTrial ? 0 : Math.round(calculatedCents * 0.02),
+        };
+      }
     }
 
+    const stripe  = new Stripe(activeStripeKey);
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     // ── 5. Link audit record to the Stripe session ───────────────────────────
@@ -291,35 +319,76 @@ router.get("/checkout/receipt/:sessionId", async (req, res) => {
 
   const { data } = await supabase
     .from("checkout_sessions")
-    .select("status, invoice_number, amount_cents, items")
+    .select("status, invoice_number, amount_cents, items, organization_id")
     .eq("session_id", sessionId)
     .maybeSingle();
 
   if (!data) {
-    // Webhook hasn't arrived yet — tell client to keep polling
-    res.json({ status: "pending", invoiceNumber: null, amountCents: null, currency: "eur", items: [] });
+    res.json({
+      status:        "pending",
+      invoiceNumber: null,
+      amountCents:   null,
+      currency:      "eur",
+      orgName:       null,
+      branding:      null,
+      items:         [],
+    });
     return;
   }
 
   type SessionRow = {
-    status:          string;
-    invoice_number?: string | null;
-    amount_cents?:   number | null;
-    items?:          unknown;
+    status:           string;
+    invoice_number?:  string | null;
+    amount_cents?:    number | null;
+    items?:           unknown;
+    organization_id?: number | null;
   };
   const row = data as SessionRow;
+
+  // Fetch org branding for dynamic web-checkout styling
+  let orgName: string | null = null;
+  let branding = {
+    primaryColor:   "#1E3A8A",
+    secondaryColor: "#D4AF37",
+    logoUrl:        null as string | null,
+  };
+
+  if (row.organization_id) {
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("name, branding_primary_color, branding_secondary_color, branding_logo_url")
+      .eq("id", row.organization_id)
+      .maybeSingle();
+
+    if (orgData) {
+      type OrgRow = {
+        name?:                     string;
+        branding_primary_color?:   string;
+        branding_secondary_color?: string;
+        branding_logo_url?:        string | null;
+      };
+      const org = orgData as OrgRow;
+      orgName = org.name ?? null;
+      branding = {
+        primaryColor:   org.branding_primary_color   ?? "#1E3A8A",
+        secondaryColor: org.branding_secondary_color ?? "#D4AF37",
+        logoUrl:        org.branding_logo_url        ?? null,
+      };
+    }
+  }
+
   res.json({
     status:        row.status,
     invoiceNumber: row.invoice_number ?? null,
     amountCents:   row.amount_cents   ?? null,
     currency:      "eur",
+    orgName,
+    branding,
     items:         Array.isArray(row.items) ? row.items : [],
   });
 });
 
 // ── processMemberCheckout (webhook / internal use) ────────────────────────────
-// Called by the billing webhook on checkout.session.completed.
-// Reads the server-verified items from checkout_sessions (never the client payload).
 export async function processMemberCheckout(opts: {
   orgId:       number;
   userId:      string;

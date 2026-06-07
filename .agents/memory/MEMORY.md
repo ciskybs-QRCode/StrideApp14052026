@@ -11,3 +11,4 @@
 - [Stride payment audit model](stride-payment-audit.md) — server-side price resolution + payment_audit_log before Stripe session; generateBillingStatement() filters is_smart_pickup=false.
 - [Stride landing Wouter base path](stride-landing-router.md) — Wouter Router needs `base={import.meta.env.BASE_URL.replace(/\/$/, "")}` when Vite BASE_PATH is set; without it sub-routes fall through to Landing catch-all.
 - [Stride landing pages](stride-landing-pages.md) — all 10 routes wired; PageShell.tsx shared nav+footer; checkout_sessions has no currency column (hardcode "eur"); public receipt endpoint at GET /checkout/receipt/:sessionId.
+- [Stride multi-tenant payments](stride-multitenant-payments.md) — per-org stripe_secret_key takes priority over Connect routing; branding columns on organizations; lib/api.ts request() now exported; 4 new billing endpoints; stripe-connect.tsx admin screen.

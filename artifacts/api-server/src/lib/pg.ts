@@ -195,6 +195,14 @@ export async function ensureTables(): Promise<void> {
   // First-invoice welcome discount (25% one-time reward, applied via Stripe coupon)
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS first_invoice_discount_applied BOOLEAN DEFAULT FALSE;`).catch(() => {});
 
+  // Per-tenant Stripe key — org's own Stripe account for direct payment processing
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS stripe_secret_key TEXT;`).catch(() => {});
+
+  // Dynamic branding engine — org-specific colors and logo for web checkout
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS branding_primary_color TEXT DEFAULT '#1E3A8A';`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS branding_secondary_color TEXT DEFAULT '#D4AF37';`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS branding_logo_url TEXT;`).catch(() => {});
+
   // Future absence planning — operator scheduling
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_absences (

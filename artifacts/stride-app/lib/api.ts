@@ -26,7 +26,7 @@ export async function clearToken(): Promise<void> {
   try { await AsyncStorage.removeItem(TOKEN_KEY); } catch { /* localStorage blocked */ }
 }
 
-async function request<T>(
+export async function request<T>(
   method: string,
   path: string,
   body?: unknown,

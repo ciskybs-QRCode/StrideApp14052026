@@ -426,4 +426,132 @@ export async function generateBillingStatement(orgId: number): Promise<BillingSt
   };
 }
 
+// ── GET /billing/stripe-account ───────────────────────────────────────────────
+// Returns current Stripe connection status for this org (admin only).
+// Never returns the actual key — only a masked hint (last 4 chars).
+router.get("/billing/stripe-account", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  try {
+    const { data } = await supabase
+      .from("organizations")
+      .select("stripe_secret_key, branding_primary_color, branding_secondary_color, branding_logo_url")
+      .eq("id", orgId)
+      .maybeSingle();
+
+    type OrgRow = {
+      stripe_secret_key?:         string | null;
+      branding_primary_color?:    string | null;
+      branding_secondary_color?:  string | null;
+      branding_logo_url?:         string | null;
+    };
+    const row = data as OrgRow | null;
+    const key = row?.stripe_secret_key ?? null;
+
+    res.json({
+      connected:   !!key,
+      keyHint:     key ? `...${key.slice(-4)}` : null,
+      isLiveKey:   key ? key.startsWith("sk_live_") : null,
+      branding: {
+        primaryColor:   row?.branding_primary_color   ?? null,
+        secondaryColor: row?.branding_secondary_color ?? null,
+        logoUrl:        row?.branding_logo_url        ?? null,
+      },
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── POST /billing/stripe-account ──────────────────────────────────────────────
+// Saves the org's own Stripe secret key after validating it with Stripe's API.
+// Once set, all member payments for this org use this key directly — Stride
+// is never in the money flow.
+router.post("/billing/stripe-account", requireAuth, requireRole("admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+
+  const { secretKey } = req.body as { secretKey?: string };
+  if (!secretKey || !secretKey.startsWith("sk_")) {
+    res.status(400).json({
+      error:   "invalid_key_format",
+      message: "Key must begin with sk_test_ or sk_live_",
+    });
+    return;
+  }
+
+  // Validate the key is accepted by Stripe before storing
+  try {
+    const Stripe = (await import("stripe")).default;
+    const stripe = new Stripe(secretKey);
+    await stripe.balance.retrieve();
+  } catch {
+    res.status(400).json({
+      error:   "invalid_key",
+      message: "Stripe rejected this key. Check it is correct and has not been revoked.",
+    });
+    return;
+  }
+
+  try {
+    await supabase
+      .from("organizations")
+      .update({ stripe_secret_key: secretKey })
+      .eq("id", orgId);
+
+    res.json({
+      success:   true,
+      keyHint:   `...${secretKey.slice(-4)}`,
+      isLiveKey: secretKey.startsWith("sk_live_"),
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── DELETE /billing/stripe-account ────────────────────────────────────────────
+// Removes the stored Stripe key — payments fall back to the Connect routing.
+router.delete("/billing/stripe-account", requireAuth, requireRole("admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  try {
+    await supabase
+      .from("organizations")
+      .update({ stripe_secret_key: null })
+      .eq("id", orgId);
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── PATCH /billing/branding ───────────────────────────────────────────────────
+// Updates org branding used on the web checkout receipt page.
+router.patch("/billing/branding", requireAuth, requireRole("admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  const { primaryColor, secondaryColor, logoUrl } = req.body as {
+    primaryColor?:   string;
+    secondaryColor?: string;
+    logoUrl?:        string | null;
+  };
+
+  const updates: Record<string, unknown> = {};
+  if (primaryColor   !== undefined) updates["branding_primary_color"]   = primaryColor;
+  if (secondaryColor !== undefined) updates["branding_secondary_color"] = secondaryColor;
+  if (logoUrl        !== undefined) updates["branding_logo_url"]        = logoUrl;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No branding fields provided" });
+    return;
+  }
+
+  try {
+    await supabase.from("organizations").update(updates).eq("id", orgId);
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 export default router;
