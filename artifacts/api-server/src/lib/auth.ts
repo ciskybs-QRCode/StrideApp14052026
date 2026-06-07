@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
+import { getOwnerEmail } from "./owner-config.js";
 
 export interface TokenPayload {
   id: string;
@@ -50,12 +51,11 @@ export function requireRole(...roles: string[]) {
  *
  * Allows access if EITHER:
  *   - user.role === "super_admin"  (normal super_admin account)
- *   - user.email === OWNER_EMAIL   (platform owner, regardless of stored role)
+ *   - user.email === OWNER_EMAIL   (platform owner, read dynamically from system_config)
  *
- * This decouples the owner identity (email) from whatever role is stored
- * in the DB, so the owner is never accidentally locked out by a role mismatch.
+ * OWNER_EMAIL is stored in the system_config table and cached in memory.
+ * It can be updated at runtime via the /super-admin/owner-email route.
  */
-const OWNER_EMAIL = "ciskybs@gmail.com";
 
 export function requireOwnerOrSuperAdmin(
   req: Request,
@@ -68,13 +68,14 @@ export function requireOwnerOrSuperAdmin(
     return;
   }
   const isSuperAdmin = user.role === "super_admin";
-  const isOwner      = user.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isOwner      = user.email?.toLowerCase() === getOwnerEmail().toLowerCase();
 
   // Debug log — shows exactly what the server sees for every super-admin request
   console.log(
     "[requireOwnerOrSuperAdmin]",
     "email:", user.email,
     "| role:", user.role,
+    "| ownerEmail:", getOwnerEmail(),
     "| isSuperAdmin:", isSuperAdmin,
     "| isOwner:", isOwner,
     "| allowed:", isSuperAdmin || isOwner,

@@ -3,6 +3,7 @@ import { Router, type Request } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../lib/supabase.js";
 import { signToken, requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { getOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
 import { pool } from "../lib/pg.js";
 import { resolveGlobalUserId } from "../lib/global-identity.js";
 
@@ -109,6 +110,9 @@ router.post("/auth/login", async (req, res) => {
     ...(globalUserId !== null ? { globalUserId } : {}),
   });
 
+  // Lazily ensure owner_email is seeded on first login
+  await initOwnerEmail().catch(() => {});
+
   res.json({
     token,
     user: {
@@ -117,6 +121,7 @@ router.post("/auth/login", async (req, res) => {
       email: user.email,
       role: effectiveRole,
       orgId: resolvedOrgId,
+      is_owner: user.email?.toLowerCase() === getOwnerEmail().toLowerCase(),
       ...(globalUserId !== null ? { globalUserId } : {}),
     },
   });

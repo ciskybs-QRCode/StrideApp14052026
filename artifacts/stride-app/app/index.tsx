@@ -4,9 +4,6 @@ import { useAuth } from "@/context/AuthContext";
 import { ActivityIndicator, View } from "react-native";
 import { api } from "@/lib/api";
 
-// Must match OWNER_EMAIL in AuthContext exactly.
-const OWNER_EMAIL = "ciskybs@gmail.com";
-
 export default function Index() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -36,12 +33,11 @@ export default function Index() {
     // ── Step 3: owner / role diagnostics ─────────────────────────────────────
     const storedEmail  = user?.email ?? "(no email)";
     const storedRole   = user?.role  ?? "(no role)";
-    const ownerCheck   = storedEmail.toLowerCase() === OWNER_EMAIL.toLowerCase();
+    const ownerCheck   = user?.is_owner === true;
 
     console.log("[index] user.email :", storedEmail);
     console.log("[index] user.role  :", storedRole);
-    console.log("[index] OWNER_EMAIL:", OWNER_EMAIL);
-    console.log("[index] isOwner()  :", ownerCheck);
+    console.log("[index] isOwner    :", ownerCheck);
     console.log("[index] sysStatus  :", JSON.stringify(sysStatus));
 
     // ── Deep-link invite ──────────────────────────────────────────────────────

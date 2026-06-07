@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import { requireAuth, requireOwnerOrSuperAdmin, signToken, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
+import { ensureTables } from "../lib/pg.js";
+import { getOwnerEmail, setOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -301,5 +303,119 @@ router.post("/super-admin/seed", async (req, res) => {
   const token = signToken({ id: String(newUser.id), email: newUser.email, role: "super_admin", orgId: 1 });
   res.status(201).json({ token, user: newUser });
 });
+
+// ── GET /super-admin/owner-settings ──────────────────────────────────────────
+router.get(
+  "/super-admin/owner-settings",
+  requireAuth,
+  requireOwnerOrSuperAdmin,
+  async (_req, res) => {
+    await ensureTables();
+    await initOwnerEmail().catch(() => {});
+    res.json({ email: getOwnerEmail() });
+  },
+);
+
+// ── POST /super-admin/owner-email ─────────────────────────────────────────────
+// Only the current owner may call this (not other super_admins).
+router.post(
+  "/super-admin/owner-email",
+  requireAuth,
+  requireOwnerOrSuperAdmin,
+  async (req, res) => {
+    const caller = (req as AuthReq).user;
+    if (caller.email?.toLowerCase() !== getOwnerEmail().toLowerCase()) {
+      res.status(403).json({ error: "Only the platform owner can update the owner email" });
+      return;
+    }
+
+    const { newEmail, currentPassword } = req.body as { newEmail?: string; currentPassword?: string };
+    if (!newEmail?.trim() || !currentPassword) {
+      res.status(400).json({ error: "newEmail and currentPassword are required" });
+      return;
+    }
+
+    const { data: users, error: fetchErr } = await sa
+      .from("users")
+      .select("id, password_hash")
+      .ilike("email", caller.email)
+      .limit(1);
+    if (fetchErr || !users?.length) {
+      res.status(404).json({ error: "Owner account not found" });
+      return;
+    }
+
+    const ownerUser = users[0] as { id: number; password_hash: string };
+    const valid = await bcrypt.compare(currentPassword, ownerUser.password_hash);
+    if (!valid) {
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
+    }
+
+    const normalizedNew = newEmail.trim().toLowerCase();
+    const { data: existing } = await sa
+      .from("users")
+      .select("id")
+      .ilike("email", normalizedNew)
+      .neq("id", ownerUser.id)
+      .limit(1);
+    if (existing?.length) {
+      res.status(409).json({ error: "Email already in use by another account" });
+      return;
+    }
+
+    await sa.from("users").update({ email: normalizedNew }).eq("id", ownerUser.id);
+    await setOwnerEmail(normalizedNew);
+
+    const token = signToken({ id: String(ownerUser.id), email: normalizedNew, role: caller.role, orgId: caller.orgId });
+    res.json({ token, email: normalizedNew, is_owner: true });
+  },
+);
+
+// ── POST /super-admin/owner-password ─────────────────────────────────────────
+// Only the current owner may call this.
+router.post(
+  "/super-admin/owner-password",
+  requireAuth,
+  requireOwnerOrSuperAdmin,
+  async (req, res) => {
+    const caller = (req as AuthReq).user;
+    if (caller.email?.toLowerCase() !== getOwnerEmail().toLowerCase()) {
+      res.status(403).json({ error: "Only the platform owner can update the owner password" });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
+    if (!currentPassword || !newPassword?.trim()) {
+      res.status(400).json({ error: "currentPassword and newPassword are required" });
+      return;
+    }
+    if (newPassword.length < 8) {
+      res.status(400).json({ error: "Password must be at least 8 characters" });
+      return;
+    }
+
+    const { data: users, error: fetchErr } = await sa
+      .from("users")
+      .select("id, password_hash")
+      .ilike("email", caller.email)
+      .limit(1);
+    if (fetchErr || !users?.length) {
+      res.status(404).json({ error: "Owner account not found" });
+      return;
+    }
+
+    const ownerUser = users[0] as { id: number; password_hash: string };
+    const valid = await bcrypt.compare(currentPassword, ownerUser.password_hash);
+    if (!valid) {
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await sa.from("users").update({ password_hash: newHash }).eq("id", ownerUser.id);
+    res.json({ success: true });
+  },
+);
 
 export default router;

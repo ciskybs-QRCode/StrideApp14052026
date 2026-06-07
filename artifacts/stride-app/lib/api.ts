@@ -707,6 +707,7 @@ export interface ApiUser {
   organization_id?: number;
   staff_type?: string;
   created_at?: string;
+  is_owner?: boolean;
 }
 
 export interface ApiChild {
@@ -1307,6 +1308,30 @@ export async function createCheckoutSession(): Promise<{ url: string; sessionId:
 
 export async function syncSeats(): Promise<{ success: boolean; memberCount: number }> {
   return request<{ success: boolean; memberCount: number }>("POST", "/billing/sync-seats", {});
+}
+
+// ── Owner Settings ────────────────────────────────────────────────────────────
+
+export async function getOwnerSettings(): Promise<{ email: string }> {
+  return request<{ email: string }>("GET", "/super-admin/owner-settings");
+}
+
+export async function updateOwnerEmail(
+  newEmail: string,
+  currentPassword: string,
+): Promise<{ token: string; email: string; is_owner: boolean }> {
+  return request<{ token: string; email: string; is_owner: boolean }>(
+    "POST", "/super-admin/owner-email", { newEmail, currentPassword },
+  );
+}
+
+export async function updateOwnerPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>(
+    "POST", "/super-admin/owner-password", { currentPassword, newPassword },
+  );
 }
 
 export async function seedSuperAdmin(

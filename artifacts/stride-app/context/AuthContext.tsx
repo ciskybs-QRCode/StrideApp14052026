@@ -2,9 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api, setToken, clearToken, getToken } from "../lib/api";
 
-// --- INSERISCI QUI LA TUA EMAIL ---
-const OWNER_EMAIL = "ciskybs@gmail.com";
-
 export type UserRole =
   | "parent"
   | "operator"
@@ -27,6 +24,7 @@ export interface User {
   phone?: string;
   onboardingComplete?: boolean;
   activationStatus?: "active" | "pending_activation";
+  is_owner?: boolean;
 }
 
 interface AuthContextType {
@@ -62,8 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
-  const isOwner = () =>
-    user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isOwner = () => user?.is_owner === true;
 
   const loadUser = async () => {
     try {
@@ -114,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: primaryRole,
       roles: rolesForPrimary(primaryRole),
       orgId: apiUser.orgId ?? (apiUser.organization_id as number | undefined),
+      is_owner: apiUser.is_owner ?? false,
     };
     try {
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(mapped));

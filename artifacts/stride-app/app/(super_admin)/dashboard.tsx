@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   getPlatformMetrics, listAssociations, extendTrial, setSuspension,
   getFinancialAnalytics, createTenant, listAdmins, addSuperAdmin,
+  getOwnerSettings, updateOwnerEmail, updateOwnerPassword, setToken,
   type AssociationRecord, type PlatformMetrics, type PlatformEvent,
   type FinancialSummary, type AdminRecord,
 } from "@/lib/api";
@@ -627,6 +628,17 @@ export default function SuperAdminDashboard() {
   const [addAdminVisible,  setAddAdminVisible]  = useState(false);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
 
+  // Owner Settings
+  const [ownerEmail,     setOwnerEmail]     = useState<string>(user?.email ?? "");
+  const [newEmail,       setNewEmail]       = useState("");
+  const [emailPw,        setEmailPw]        = useState("");
+  const [emailSaving,    setEmailSaving]    = useState(false);
+  const [emailMsg,       setEmailMsg]       = useState<{ ok: boolean; text: string } | null>(null);
+  const [curPw,          setCurPw]          = useState("");
+  const [newPw,          setNewPw]          = useState("");
+  const [pwSaving,       setPwSaving]       = useState(false);
+  const [pwMsg,          setPwMsg]          = useState<{ ok: boolean; text: string } | null>(null);
+
   const searchRef = useRef<TextInput>(null);
 
   // Security gate
@@ -658,6 +670,15 @@ export default function SuperAdminDashboard() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Load owner email from server on mount (owner only)
+  useEffect(() => {
+    if (user?.is_owner !== true) return;
+    getOwnerSettings()
+      .then(s => setOwnerEmail(s.email))
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredOrgs = useMemo(
     () => search.trim() ? orgs.filter(o => o.name.toLowerCase().includes(search.toLowerCase().trim())) : orgs,
@@ -837,6 +858,141 @@ export default function SuperAdminDashboard() {
               )}
             </View>
 
+            {/* ── OWNER SETTINGS ── */}
+            {isOwner() && (
+              <View>
+                <SectionHeader title="OWNER SETTINGS" />
+
+                {/* Update Email */}
+                <View style={d.card}>
+                  <Text style={st.sLabel}>CURRENT OWNER EMAIL</Text>
+                  <Text style={st.currentEmail}>{ownerEmail}</Text>
+
+                  <Text style={[st.sLabel, { marginTop: 16 }]}>NEW EMAIL</Text>
+                  <View style={st.inputRow}>
+                    <Ionicons name="mail-outline" size={15} color="#6B7BA4" />
+                    <TextInput
+                      style={st.input}
+                      value={newEmail}
+                      onChangeText={setNewEmail}
+                      placeholder="new@email.com"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                  </View>
+
+                  <Text style={[st.sLabel, { marginTop: 12 }]}>CURRENT PASSWORD (to confirm)</Text>
+                  <View style={st.inputRow}>
+                    <Ionicons name="lock-closed-outline" size={15} color="#6B7BA4" />
+                    <TextInput
+                      style={st.input}
+                      value={emailPw}
+                      onChangeText={setEmailPw}
+                      placeholder="Your current password"
+                      placeholderTextColor="#9CA3AF"
+                      secureTextEntry
+                    />
+                  </View>
+
+                  {emailMsg && (
+                    <View style={[st.msgBox, { backgroundColor: emailMsg.ok ? "#ECFDF5" : "#FEF2F2" }]}>
+                      <Ionicons name={emailMsg.ok ? "checkmark-circle-outline" : "alert-circle-outline"} size={14} color={emailMsg.ok ? "#059669" : "#EF4444"} />
+                      <Text style={[st.msgText, { color: emailMsg.ok ? "#059669" : "#EF4444" }]}>{emailMsg.text}</Text>
+                    </View>
+                  )}
+
+                  <Pressable
+                    style={({ pressed }) => [st.saveBtn, { opacity: pressed || emailSaving ? 0.7 : 1 }]}
+                    disabled={emailSaving}
+                    onPress={async () => {
+                      if (!newEmail.trim() || !emailPw) {
+                        setEmailMsg({ ok: false, text: "Please enter a new email and your current password." });
+                        return;
+                      }
+                      setEmailSaving(true); setEmailMsg(null);
+                      try {
+                        const result = await updateOwnerEmail(newEmail.trim(), emailPw);
+                        await setToken(result.token);
+                        setOwnerEmail(result.email);
+                        setNewEmail(""); setEmailPw("");
+                        setEmailMsg({ ok: true, text: `Owner email updated to ${result.email}. Re-login to refresh your session.` });
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      } catch (e: unknown) {
+                        setEmailMsg({ ok: false, text: (e as Error).message ?? "Failed to update email." });
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                      } finally { setEmailSaving(false); }
+                    }}
+                  >
+                    {emailSaving
+                      ? <ActivityIndicator color="#FFF" size="small" />
+                      : <Text style={st.saveBtnText}>Update Email</Text>}
+                  </Pressable>
+                </View>
+
+                {/* Update Password */}
+                <View style={d.card}>
+                  <Text style={st.sLabel}>CHANGE PASSWORD</Text>
+
+                  <View style={[st.inputRow, { marginTop: 10 }]}>
+                    <Ionicons name="lock-closed-outline" size={15} color="#6B7BA4" />
+                    <TextInput
+                      style={st.input}
+                      value={curPw}
+                      onChangeText={setCurPw}
+                      placeholder="Current password"
+                      placeholderTextColor="#9CA3AF"
+                      secureTextEntry
+                    />
+                  </View>
+
+                  <View style={[st.inputRow, { marginTop: 10 }]}>
+                    <Ionicons name="lock-open-outline" size={15} color="#6B7BA4" />
+                    <TextInput
+                      style={st.input}
+                      value={newPw}
+                      onChangeText={setNewPw}
+                      placeholder="New password (min 8 chars)"
+                      placeholderTextColor="#9CA3AF"
+                      secureTextEntry
+                    />
+                  </View>
+
+                  {pwMsg && (
+                    <View style={[st.msgBox, { backgroundColor: pwMsg.ok ? "#ECFDF5" : "#FEF2F2" }]}>
+                      <Ionicons name={pwMsg.ok ? "checkmark-circle-outline" : "alert-circle-outline"} size={14} color={pwMsg.ok ? "#059669" : "#EF4444"} />
+                      <Text style={[st.msgText, { color: pwMsg.ok ? "#059669" : "#EF4444" }]}>{pwMsg.text}</Text>
+                    </View>
+                  )}
+
+                  <Pressable
+                    style={({ pressed }) => [st.saveBtn, { opacity: pressed || pwSaving ? 0.7 : 1 }]}
+                    disabled={pwSaving}
+                    onPress={async () => {
+                      if (!curPw || !newPw) {
+                        setPwMsg({ ok: false, text: "Please fill in both password fields." });
+                        return;
+                      }
+                      setPwSaving(true); setPwMsg(null);
+                      try {
+                        await updateOwnerPassword(curPw, newPw);
+                        setCurPw(""); setNewPw("");
+                        setPwMsg({ ok: true, text: "Password updated successfully." });
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      } catch (e: unknown) {
+                        setPwMsg({ ok: false, text: (e as Error).message ?? "Failed to update password." });
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                      } finally { setPwSaving(false); }
+                    }}
+                  >
+                    {pwSaving
+                      ? <ActivityIndicator color="#FFF" size="small" />
+                      : <Text style={st.saveBtnText}>Update Password</Text>}
+                  </Pressable>
+                </View>
+              </View>
+            )}
+
             {/* ── RECENT ACTIVITY ── */}
             <SectionHeader title="RECENT ACTIVITY" />
             {!metrics?.recentEvents.length ? (
@@ -907,4 +1063,17 @@ const d = StyleSheet.create({
   emptyBox:    { alignItems: "center", paddingVertical: 24, gap: 6, marginBottom: 8 },
   emptyText:   { fontSize: 13, color: "#6B7280", textAlign: "center" },
   emptySubtext:{ fontSize: 12, color: "#9CA3AF", textAlign: "center" },
+});
+
+// ── Owner Settings Styles ─────────────────────────────────────────────────────
+
+const st = StyleSheet.create({
+  sLabel:       { fontSize: 10, fontWeight: "700", color: "#9CA3AF", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 6 },
+  currentEmail: { fontSize: 14, fontWeight: "600", color: "#1E3A8A", marginBottom: 4 },
+  inputRow:     { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F0F4FF", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: "#D1D9F0" },
+  input:        { flex: 1, fontSize: 14, color: "#1E3A8A", padding: 0 },
+  msgBox:       { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 8, padding: 10, marginTop: 10 },
+  msgText:      { fontSize: 12, flex: 1 },
+  saveBtn:      { backgroundColor: "#1E3A8A", borderRadius: 10, height: 44, alignItems: "center", justifyContent: "center", marginTop: 14 },
+  saveBtnText:  { color: "#FFF", fontWeight: "700", fontSize: 14, letterSpacing: 0.5 },
 });
