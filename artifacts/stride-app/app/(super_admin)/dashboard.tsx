@@ -14,7 +14,7 @@ import {
   getFinancialAnalytics, createTenant, listAdmins, addSuperAdmin,
   getOwnerSettings, updateOwnerEmail, updateOwnerPassword, setToken,
   type AssociationRecord, type PlatformMetrics, type PlatformEvent,
-  type FinancialSummary, type AdminRecord,
+  type FinancialSummary, type AdminRecord, type TenantOptions,
 } from "@/lib/api";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -374,76 +374,183 @@ const em = StyleSheet.create({
   cancelText:   { fontSize: 15, color: "#6B7280" },
 });
 
+// ── Add-Tenant-specific styles ────────────────────────────────────────────────
+const at = StyleSheet.create({
+  // Success info boxes
+  infoBox:            { backgroundColor: "#FFFBEB", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#FDE68A", gap: 4 },
+  infoLabel:          { fontSize: 10, fontWeight: "700", color: "#D97706", letterSpacing: 0.8 },
+  monoValue:          { fontSize: 16, fontWeight: "900", color: "#111827", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
+  // Trial row
+  trialRow:           { flexDirection: "row", alignItems: "center", gap: 10 },
+  trialNumInput:      { width: 70, backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 14, height: 48, fontSize: 18, fontWeight: "700", color: "#111827", textAlign: "center" },
+  unitChips:          { flexDirection: "row", flex: 1, gap: 6 },
+  unitChip:           { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: 10, backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB" },
+  unitChipActive:     { backgroundColor: "#EFF6FF", borderColor: "#1E3A8A" },
+  unitChipText:       { fontSize: 11, fontWeight: "700", color: "#6B7280" },
+  unitChipTextActive: { color: "#1E3A8A" },
+  // Accordion
+  accordionToggle:    { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 24, marginTop: 18, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: "#EFF6FF", borderWidth: 1.5, borderColor: "#BFDBFE" },
+  accordionLabel:     { flex: 1, fontSize: 13, fontWeight: "800", color: "#1E3A8A" },
+  // Advanced panel
+  advancedPanel:      { marginHorizontal: 24, marginTop: 10, backgroundColor: "#FAFAFA", borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", padding: 16, gap: 12 },
+  advSectionLabel:    { fontSize: 10, fontWeight: "700", letterSpacing: 1.1, color: "#9CA3AF" },
+  advRow:             { gap: 6 },
+  advFieldLabel:      { fontSize: 12, color: "#6B7280", fontWeight: "600" },
+  // Price input
+  priceInputWrap:     { flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 12, height: 44 },
+  currencySign:       { fontSize: 14, color: "#9CA3AF", fontWeight: "700", marginRight: 6 },
+  priceInput:         { flex: 1, fontSize: 15, fontWeight: "700", color: "#111827", height: 44 },
+  // Discount chips
+  discountChips:      { flexDirection: "row", gap: 8 },
+  discChip:           { flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: 10, backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB" },
+  discChipActive:     { backgroundColor: "#EFF6FF", borderColor: "#1E3A8A" },
+  discChipText:       { fontSize: 12, fontWeight: "700", color: "#6B7280" },
+  discChipTextActive: { color: "#1E3A8A" },
+  // Safety note
+  safetyNote:         { flexDirection: "row", alignItems: "flex-start", gap: 6, backgroundColor: "#ECFDF5", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#A7F3D0" },
+  safetyText:         { flex: 1, fontSize: 11, color: "#059669", fontWeight: "600", lineHeight: 16 },
+  // Promo code
+  promoHint:          { fontSize: 11, color: "#9CA3AF", marginTop: 4, paddingHorizontal: 2, lineHeight: 15 },
+});
+
 // ── Add Tenant Modal ──────────────────────────────────────────────────────────
 
 type Plan = "starter" | "pro" | "standard";
+type TrialUnit = "days" | "weeks" | "months" | "years";
+type DiscountType = "none" | "fixed" | "percent";
+
 function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onClose: () => void; onSuccess: () => void }) {
-  const [name, setName]   = useState("");
+  // Basic fields
+  const [name,  setName]  = useState("");
   const [email, setEmail] = useState("");
-  const [plan, setPlan]   = useState<Plan>("standard");
+  const [plan,  setPlan]  = useState<Plan>("standard");
+
+  // Trial duration
+  const [trialValue, setTrialValue] = useState("30");
+  const [trialUnit,  setTrialUnit]  = useState<TrialUnit>("days");
+
+  // Advanced settings
+  const [showAdvanced,  setShowAdvanced]  = useState(false);
+  const [qrBasePrice,   setQrBasePrice]   = useState("0");
+  const [discountType,  setDiscountType]  = useState<DiscountType>("none");
+  const [discountValue, setDiscountValue] = useState("0");
+  const [promoCode,     setPromoCode]     = useState("");
+
+  // Submit state
   const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
-  const [result, setResult] = useState<{ tempPassword?: string } | null>(null);
+  const [error,  setError]  = useState<string | null>(null);
+  const [result, setResult] = useState<{ tempPassword?: string; trialSummary?: string; promoCode?: string } | null>(null);
+
   const insets = useSafeAreaInsets();
 
-  useEffect(() => { if (!visible) { setName(""); setEmail(""); setPlan("standard"); setError(null); setResult(null); } }, [visible]);
+  useEffect(() => {
+    if (!visible) {
+      setName(""); setEmail(""); setPlan("standard");
+      setTrialValue("30"); setTrialUnit("days");
+      setShowAdvanced(false); setQrBasePrice("0");
+      setDiscountType("none"); setDiscountValue("0"); setPromoCode("");
+      setError(null); setResult(null);
+    }
+  }, [visible]);
 
   const handleCreate = async () => {
-    if (!name.trim() || !email.trim()) { setError("Name and admin email are required."); return; }
-    if (!email.includes("@")) { setError("Enter a valid email address."); return; }
+    if (!name.trim() || !email.trim()) { setError("School name and admin email are required."); return; }
+    if (!email.includes("@"))         { setError("Enter a valid email address."); return; }
+    const tv = parseInt(trialValue) || 30;
+    if (tv < 1) { setError("Trial duration must be at least 1."); return; }
+
     setError(null); setSaving(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const options: TenantOptions = {
+      trialValue: tv,
+      trialUnit,
+      qrBasePriceCents: Math.round(parseFloat(qrBasePrice || "0") * 100),
+    };
+    if (discountType !== "none") {
+      options.qrDiscountType  = discountType;
+      options.qrDiscountValue = parseInt(discountValue || "0") || 0;
+    }
+    if (promoCode.trim()) options.promoCode = promoCode.trim();
+
     try {
-      const res = await createTenant(name.trim(), email.trim(), plan);
-      setResult({ tempPassword: res.tempPassword });
+      const res = await createTenant(name.trim(), email.trim(), plan, options);
+      const trialSummary = `${tv} ${trialUnit}`;
+      setResult({ tempPassword: res.tempPassword, trialSummary, promoCode: promoCode.trim().toUpperCase() || undefined });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create tenant");
     } finally { setSaving(false); }
   };
 
   const PLANS: { key: Plan; label: string; price: string }[] = [
-    { key: "starter",  label: "Starter",  price: "€5/seat" },
-    { key: "pro",      label: "Pro",      price: "€9/seat" },
+    { key: "starter",  label: "Starter",  price: "€5/seat"  },
+    { key: "pro",      label: "Pro",      price: "€9/seat"  },
     { key: "standard", label: "Standard", price: "€12/seat" },
   ];
+  const TRIAL_UNITS: TrialUnit[] = ["days", "weeks", "months", "years"];
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={em.overlay}>
         <Pressable style={em.backdrop} onPress={onClose} />
-        <View style={[em.sheet, { maxHeight: SCREEN_H * 0.8, paddingBottom: insets.bottom + 24 }]}>
+        <View style={[em.sheet, { maxHeight: SCREEN_H * 0.92, paddingBottom: insets.bottom + 24 }]}>
           <View style={em.dragHandle} />
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" bounces={false}>
+
             {result ? (
-              // Success state
-              <View style={{ alignItems: "center", padding: 32, gap: 12 }}>
-                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name="checkmark-circle" size={36} color="#059669" />
+              /* ── Success State ─────────────────────────────────────────── */
+              <View style={{ padding: 28, gap: 12 }}>
+                <View style={{ alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="checkmark-circle" size={36} color="#059669" />
+                  </View>
+                  <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827" }}>Tenant Created</Text>
+                  <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>{name} is live with a {result.trialSummary} trial.</Text>
                 </View>
-                <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827" }}>Tenant Created</Text>
-                <Text style={{ fontSize: 14, color: "#6B7280", textAlign: "center" }}>{name} has been registered with a 30-day trial.</Text>
+
                 {result.tempPassword && (
-                  <View style={{ backgroundColor: "#FFFBEB", borderRadius: 12, padding: 16, width: "100%", gap: 4 }}>
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#D97706", letterSpacing: 0.8 }}>TEMP PASSWORD (share securely)</Text>
-                    <Text style={{ fontSize: 16, fontWeight: "900", color: "#111827", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" }}>{result.tempPassword}</Text>
+                  <View style={at.infoBox}>
+                    <Text style={at.infoLabel}>TEMP PASSWORD — share securely</Text>
+                    <Text style={at.monoValue}>{result.tempPassword}</Text>
                   </View>
                 )}
-                <Pressable style={[em.ctaBtn, { width: "100%", marginHorizontal: 0, marginTop: 8 }]} onPress={() => { onSuccess(); onClose(); }}>
+
+                <View style={[at.infoBox, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
+                  <Text style={[at.infoLabel, { color: "#1E3A8A" }]}>TRIAL</Text>
+                  <Text style={[at.monoValue, { fontSize: 14, color: "#1E3A8A" }]}>{result.trialSummary}</Text>
+                  {parseFloat(qrBasePrice) > 0 && (
+                    <Text style={{ fontSize: 12, color: "#3B82F6", marginTop: 4 }}>
+                      QR base: €{parseFloat(qrBasePrice).toFixed(2)}{discountType !== "none" ? ` · Discount: ${discountType === "fixed" ? `-€${discountValue}` : `-${discountValue}%`}` : ""}
+                    </Text>
+                  )}
+                  {result.promoCode && (
+                    <Text style={{ fontSize: 12, color: "#7C3AED", marginTop: 2 }}>Promo: {result.promoCode}</Text>
+                  )}
+                </View>
+
+                <Pressable style={em.ctaBtn} onPress={() => { onSuccess(); onClose(); }}>
                   <Text style={em.ctaText}>Done</Text>
                 </Pressable>
               </View>
+
             ) : (
+              /* ── Form State ─────────────────────────────────────────────── */
               <>
+                {/* Header */}
                 <View style={{ alignItems: "center", padding: 24, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" }}>
                   <View style={em.headerIcon}><Ionicons name="business" size={28} color="#1E3A8A" /></View>
                   <Text style={em.title}>Add New Tenant</Text>
-                  <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Creates the school account + admin user with a 30-day trial</Text>
+                  <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Creates a school account + admin user with a custom trial</Text>
                 </View>
+
+                {/* School Details */}
                 <Text style={em.sectionLabel}>SCHOOL DETAILS</Text>
                 <View style={{ paddingHorizontal: 24, gap: 10 }}>
                   <TextInput style={s.input} value={name} onChangeText={setName} placeholder="School / Association Name" placeholderTextColor="#9CA3AF" />
                   <TextInput style={s.input} value={email} onChangeText={setEmail} placeholder="Admin Email" placeholderTextColor="#9CA3AF" keyboardType="email-address" autoCapitalize="none" />
                 </View>
+
+                {/* Subscription Plan */}
                 <Text style={em.sectionLabel}>SUBSCRIPTION PLAN</Text>
                 <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 24 }}>
                   {PLANS.map(p => (
@@ -453,15 +560,137 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                     </Pressable>
                   ))}
                 </View>
-                {!!error && <View style={[em.errorBox, { marginTop: 12 }]}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
+
+                {/* Trial Duration */}
+                <Text style={em.sectionLabel}>TRIAL DURATION</Text>
+                <View style={{ paddingHorizontal: 24, gap: 10 }}>
+                  <View style={at.trialRow}>
+                    <TextInput
+                      style={at.trialNumInput}
+                      value={trialValue}
+                      onChangeText={v => setTrialValue(v.replace(/[^0-9]/g, ""))}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      placeholder="30"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                    <View style={at.unitChips}>
+                      {TRIAL_UNITS.map(u => (
+                        <Pressable
+                          key={u}
+                          style={[at.unitChip, trialUnit === u && at.unitChipActive]}
+                          onPress={() => setTrialUnit(u)}
+                        >
+                          <Text style={[at.unitChipText, trialUnit === u && at.unitChipTextActive]}>
+                            {u.charAt(0).toUpperCase() + u.slice(1)}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Advanced Settings accordion */}
+                <Pressable
+                  style={({ pressed }) => [at.accordionToggle, { opacity: pressed ? 0.7 : 1 }]}
+                  onPress={() => { setShowAdvanced(p => !p); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <Ionicons name="settings-outline" size={15} color="#1E3A8A" />
+                  <Text style={at.accordionLabel}>Advanced Settings</Text>
+                  <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={15} color="#1E3A8A" />
+                </Pressable>
+
+                {showAdvanced && (
+                  <View style={at.advancedPanel}>
+
+                    {/* QR Code Pricing */}
+                    <Text style={at.advSectionLabel}>QR CODE PRICING ADJUSTMENTS</Text>
+
+                    <View style={at.advRow}>
+                      <Text style={at.advFieldLabel}>Base price per QR code (€)</Text>
+                      <View style={at.priceInputWrap}>
+                        <Text style={at.currencySign}>€</Text>
+                        <TextInput
+                          style={at.priceInput}
+                          value={qrBasePrice}
+                          onChangeText={v => setQrBasePrice(v.replace(/[^0-9.]/g, ""))}
+                          keyboardType="decimal-pad"
+                          placeholder="0.00"
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </View>
+                    </View>
+
+                    <View style={at.advRow}>
+                      <Text style={at.advFieldLabel}>Discount type</Text>
+                      <View style={at.discountChips}>
+                        {([["none", "None"], ["fixed", "Fixed €"], ["percent", "%"]] as [DiscountType, string][]).map(([k, label]) => (
+                          <Pressable key={k} style={[at.discChip, discountType === k && at.discChipActive]} onPress={() => setDiscountType(k)}>
+                            <Text style={[at.discChipText, discountType === k && at.discChipTextActive]}>{label}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </View>
+
+                    {discountType !== "none" && (
+                      <View style={at.advRow}>
+                        <Text style={at.advFieldLabel}>
+                          {discountType === "fixed" ? "Fixed discount (cents, e.g. 20 = €0.20)" : "Percentage discount (e.g. 10 = 10%)"}
+                        </Text>
+                        <View style={at.priceInputWrap}>
+                          <Text style={at.currencySign}>{discountType === "fixed" ? "¢" : "%"}</Text>
+                          <TextInput
+                            style={at.priceInput}
+                            value={discountValue}
+                            onChangeText={v => setDiscountValue(v.replace(/[^0-9]/g, ""))}
+                            keyboardType="number-pad"
+                            placeholder={discountType === "fixed" ? "20" : "10"}
+                            placeholderTextColor="#9CA3AF"
+                          />
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={at.safetyNote}>
+                      <Ionicons name="shield-checkmark-outline" size={13} color="#059669" />
+                      <Text style={at.safetyText}>Smart Pick-up QR codes are always free and excluded from billing calculations.</Text>
+                    </View>
+
+                    {/* Promo Code */}
+                    <Text style={[at.advSectionLabel, { marginTop: 16 }]}>PROMO CODE</Text>
+                    <View style={at.priceInputWrap}>
+                      <Ionicons name="pricetag-outline" size={15} color="#6B7BA4" style={{ marginRight: 6 }} />
+                      <TextInput
+                        style={[at.priceInput, { flex: 1 }]}
+                        value={promoCode}
+                        onChangeText={v => setPromoCode(v.toUpperCase())}
+                        placeholder="e.g. LAUNCH2025"
+                        placeholderTextColor="#9CA3AF"
+                        autoCapitalize="characters"
+                      />
+                    </View>
+                    <Text style={at.promoHint}>Attaches this promo code to the tenant's account and activates any configured discounts.</Text>
+                  </View>
+                )}
+
+                {!!error && (
+                  <View style={[em.errorBox, { marginTop: 12 }]}>
+                    <Ionicons name="alert-circle-outline" size={14} color="#DC2626" />
+                    <Text style={em.errorText}>{error}</Text>
+                  </View>
+                )}
+
                 <Pressable style={({ pressed }) => [em.ctaBtn, { opacity: pressed || saving ? 0.85 : 1 }]} onPress={handleCreate} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color="#1E3A8A" /> : <><Ionicons name="add-circle" size={18} color="#1E3A8A" /><Text style={em.ctaText}>Create Tenant</Text></>}
+                  {saving
+                    ? <ActivityIndicator size="small" color="#1E3A8A" />
+                    : <><Ionicons name="add-circle" size={18} color="#1E3A8A" /><Text style={em.ctaText}>Create Tenant</Text></>}
                 </Pressable>
                 <Pressable style={({ pressed }) => [em.cancelBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={onClose}>
                   <Text style={em.cancelText}>Cancel</Text>
                 </Pressable>
               </>
             )}
+
           </ScrollView>
         </View>
       </KeyboardAvoidingView>

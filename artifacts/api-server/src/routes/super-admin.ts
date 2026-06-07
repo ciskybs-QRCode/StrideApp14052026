@@ -181,30 +181,62 @@ router.get("/super-admin/financial", requireAuth, requireOwnerOrSuperAdmin, asyn
 
 // ── POST /super-admin/tenants ─────────────────────────────────────────────────
 // Create a new tenant org + admin user in one call.
+// Body: { name, adminEmail, plan, trialValue?, trialUnit?, qrBasePriceCents?,
+//          qrDiscountType?, qrDiscountValue?, promoCode? }
 router.post("/super-admin/tenants", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
-  const { name, adminEmail, plan } = req.body as { name?: string; adminEmail?: string; plan?: string };
+  const {
+    name, adminEmail, plan,
+    trialValue, trialUnit,
+    qrBasePriceCents, qrDiscountType, qrDiscountValue,
+    promoCode,
+  } = req.body as {
+    name?: string; adminEmail?: string; plan?: string;
+    trialValue?: number; trialUnit?: "days" | "weeks" | "months" | "years";
+    qrBasePriceCents?: number;
+    qrDiscountType?: "fixed" | "percent";
+    qrDiscountValue?: number;
+    promoCode?: string;
+  };
+
   if (!name?.trim() || !adminEmail?.trim()) {
     res.status(400).json({ error: "name and adminEmail are required" });
     return;
   }
 
-  // Create org with 30-day trial
-  const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  // Compute trial end from flexible value + unit
+  const value = Math.max(1, Math.min(Number(trialValue) || 30, 9999));
+  const unit  = trialUnit ?? "days";
+  const unitMs = unit === "weeks" ? 7 * 86_400_000
+    : unit === "months" ? 30 * 86_400_000
+    : unit === "years"  ? 365 * 86_400_000
+    : 86_400_000;
+  const trialEnd = new Date(Date.now() + value * unitMs).toISOString();
+
+  const orgPayload: Record<string, unknown> = {
+    name: name.trim(),
+    subscription_status: "trialing",
+    trial_started_at: new Date().toISOString(),
+    trial_ends_at: trialEnd,
+    cost_per_seat_cents: plan === "starter" ? 500 : plan === "pro" ? 900 : 1200,
+    qr_base_price_cents: Math.max(0, Number(qrBasePriceCents) || 0),
+  };
+  if (qrDiscountType === "fixed" || qrDiscountType === "percent") {
+    orgPayload["qr_discount_type"]  = qrDiscountType;
+    orgPayload["qr_discount_value"] = Math.max(0, Number(qrDiscountValue) || 0);
+  }
+  if (promoCode?.trim()) {
+    orgPayload["promo_code"] = promoCode.trim().toUpperCase();
+  }
+
   const { data: newOrg, error: orgErr } = await sa
     .from("organizations")
-    .insert({
-      name: name.trim(),
-      subscription_status: "trialing",
-      trial_started_at: new Date().toISOString(),
-      trial_ends_at: trialEnd,
-      cost_per_seat_cents: plan === "starter" ? 500 : plan === "pro" ? 900 : 1200,
-    })
-    .select("id, name, subscription_status, trial_ends_at, cost_per_seat_cents")
+    .insert(orgPayload)
+    .select("id, name, subscription_status, trial_ends_at, cost_per_seat_cents, qr_base_price_cents, qr_discount_type, qr_discount_value, promo_code")
     .single();
 
   if (orgErr || !newOrg) { res.status(500).json({ error: orgErr?.message ?? "Failed to create org" }); return; }
 
-  // Create admin user with temporary password (they must reset on first login)
+  // Create admin user with temporary password
   const tmpPassword = Math.random().toString(36).slice(2, 10) + "Aa1!";
   const passwordHash = await bcrypt.hash(tmpPassword, 10);
   await sa.from("users").insert({
@@ -218,11 +250,16 @@ router.post("/super-admin/tenants", requireAuth, requireOwnerOrSuperAdmin, async
 
   // Log event
   try {
+    const discountDesc = qrDiscountType === "fixed"
+      ? ` · QR discount: -${(Number(qrDiscountValue) / 100).toFixed(2)} ${plan ?? "EUR"} fixed`
+      : qrDiscountType === "percent"
+      ? ` · QR discount: -${qrDiscountValue}%`
+      : "";
     await sa.from("platform_events").insert({
       event_type: "new_tenant_registered",
       title: `New tenant: ${name.trim()}`,
-      description: `Plan: ${plan ?? "standard"} · Admin: ${adminEmail.trim()}`,
-      payload: { orgId: (newOrg as { id: number }).id, adminEmail, plan },
+      description: `Plan: ${plan ?? "standard"} · Trial: ${value} ${unit} · Admin: ${adminEmail.trim()}${discountDesc}${promoCode?.trim() ? ` · Promo: ${promoCode.trim().toUpperCase()}` : ""}`,
+      payload: { orgId: (newOrg as { id: number }).id, adminEmail, plan, trialValue: value, trialUnit: unit },
     });
   } catch { /* non-critical */ }
 

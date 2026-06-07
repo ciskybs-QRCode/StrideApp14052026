@@ -181,6 +181,12 @@ export async function ensureTables(): Promise<void> {
     )
   `).catch(() => {});
 
+  // QR code pricing adjustments per tenant (discount policy engine)
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS qr_base_price_cents INTEGER DEFAULT 0;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS qr_discount_type TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS qr_discount_value INTEGER DEFAULT 0;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS promo_code TEXT;`).catch(() => {});
+
   // Future absence planning — operator scheduling
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_absences (

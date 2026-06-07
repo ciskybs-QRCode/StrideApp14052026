@@ -1131,7 +1131,20 @@ export type AssociationRecord = {
   subscription_status?: "active" | "trialing" | "past_due" | "suspended" | "expired";
   cost_per_seat_cents?: number;
   member_count?: number;
+  qr_base_price_cents?: number;
+  qr_discount_type?: "fixed" | "percent";
+  qr_discount_value?: number;
+  promo_code?: string;
 };
+
+export interface TenantOptions {
+  trialValue?: number;
+  trialUnit?: "days" | "weeks" | "months" | "years";
+  qrBasePriceCents?: number;
+  qrDiscountType?: "fixed" | "percent";
+  qrDiscountValue?: number;
+  promoCode?: string;
+}
 
 export type PlatformEvent = {
   id: number;
@@ -1222,8 +1235,9 @@ export async function createTenant(
   name: string,
   adminEmail: string,
   plan: "starter" | "pro" | "standard",
+  options?: TenantOptions,
 ): Promise<CreateTenantResult> {
-  return request<CreateTenantResult>("POST", "/super-admin/tenants", { name, adminEmail, plan });
+  return request<CreateTenantResult>("POST", "/super-admin/tenants", { name, adminEmail, plan, ...options });
 }
 
 export async function listAdmins(): Promise<AdminRecord[]> {
