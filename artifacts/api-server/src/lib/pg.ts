@@ -358,6 +358,32 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS epa_pulse_idx ON emergency_pulse_acks (pulse_id);
   `).catch(() => {});
 
+  // BLE Proximity — frictionless check-in via beacon detection
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS proximity_beacons (
+      id          UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      org_id      INTEGER,
+      beacon_uuid TEXT        NOT NULL UNIQUE,
+      label       TEXT        NOT NULL,
+      zone        TEXT        NOT NULL DEFAULT 'entrance',
+      active      BOOLEAN     NOT NULL DEFAULT true,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS pb_org_idx    ON proximity_beacons (org_id);
+    CREATE INDEX IF NOT EXISTS pb_uuid_idx   ON proximity_beacons (beacon_uuid);
+
+    CREATE TABLE IF NOT EXISTS child_beacon_assignments (
+      id            UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      child_id      TEXT        NOT NULL,
+      wearable_uuid TEXT        NOT NULL UNIQUE,
+      label         TEXT        NOT NULL DEFAULT 'Wearable',
+      active        BOOLEAN     NOT NULL DEFAULT true,
+      assigned_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS cba_child_idx  ON child_beacon_assignments (child_id);
+    CREATE INDEX IF NOT EXISTS cba_uuid_idx   ON child_beacon_assignments (wearable_uuid);
+  `).catch(() => {});
+
   // Security Timeline — black-box observer log (append-only, no FK to any other table)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS child_activity_log (

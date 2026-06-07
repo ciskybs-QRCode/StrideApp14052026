@@ -180,6 +180,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="billing"         options={{ href: null }} />
       <Tabs.Screen name="smart-roster"    options={{ href: null }} />
       <Tabs.Screen name="copilot"         options={{ href: null }} />
+      <Tabs.Screen name="beacons"         options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <RoleSwitcher />

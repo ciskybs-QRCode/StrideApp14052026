@@ -830,6 +830,31 @@ export const api = {
     request<{ ok: boolean; resolved: boolean }>(
       "PATCH", `/emergency/pulse/${id}/resolve`,
     ),
+
+  // ── BLE Proximity Check-in ─────────────────────────────────────────────────
+  proximityDetect: (data: { wearable_uuid?: string; beacon_uuid?: string; child_id?: string; rssi?: number }) =>
+    request<ProximityDetectResult>("POST", "/proximity/detect", data),
+
+  listProximityBeacons: () =>
+    request<{ beacons: ProximityBeacon[] }>("GET", "/proximity/beacons"),
+
+  registerProximityBeacon: (data: { beacon_uuid: string; label: string; zone?: string; org_id?: number }) =>
+    request<ProximityBeacon>("POST", "/proximity/beacons", data),
+
+  deleteProximityBeacon: (id: string) =>
+    request<{ ok: boolean }>("DELETE", `/proximity/beacons/${id}`),
+
+  listBeaconAssignments: () =>
+    request<{ assignments: ChildBeaconAssignment[] }>("GET", "/proximity/assignments"),
+
+  assignBeacon: (data: { child_id: string; wearable_uuid: string; label?: string }) =>
+    request<ChildBeaconAssignment>("POST", "/proximity/assignments", data),
+
+  deleteBeaconAssignment: (id: string) =>
+    request<{ ok: boolean }>("DELETE", `/proximity/assignments/${id}`),
+
+  listRecentProximityCheckins: () =>
+    request<{ entries: ProximityRecentEntry[] }>("GET", "/proximity/recent"),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -883,6 +908,46 @@ export interface PulseStatus extends EmergencyPulse {
   missing_count: number;
   total_acks:    number;
   acks: Array<{ parent_id: string; status: string; acked_at: string }>;
+}
+
+export interface ProximityBeacon {
+  id:          string;
+  org_id:      number | null;
+  beacon_uuid: string;
+  label:       string;
+  zone:        string;
+  active:      boolean;
+  created_at:  string;
+}
+
+export interface ChildBeaconAssignment {
+  id:            string;
+  child_id:      string;
+  wearable_uuid: string;
+  label:         string;
+  active:        boolean;
+  assigned_at:   string;
+}
+
+export interface ProximityDetectResult {
+  auto_checked_in:    boolean;
+  already_checked_in: boolean;
+  child_id:           string | null;
+  detected_uuid?:     string | null;
+  checked_in_at?:     string;
+  message?:           string;
+}
+
+export interface ProximityRecentEntry {
+  id:        string;
+  child_id:  string;
+  timestamp: string;
+  metadata:  {
+    trigger?:       string;
+    wearable_uuid?: string;
+    rssi?:          number | null;
+    notes?:         string;
+  };
 }
 
 export interface GuardianCircleApiEntry {

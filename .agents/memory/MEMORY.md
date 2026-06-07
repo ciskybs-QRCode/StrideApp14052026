@@ -9,6 +9,7 @@
 - [Stride Global System Architecture](stride-pioneer.md) — Pioneer wizard, invite loop, pending_activation flow, system-status routing fully implemented.
 - [Stride OpenAI Vision integration](stride-openai-vision.md) — AI integration provisioned; lib/integrations-openai-ai-server built; image client needed optional-chaining fix for response.data; react lib removed from root tsconfig (not needed server-side).
 - [Stride Emergency Pulse](stride-emergency-pulse.md) — full crisis broadcast system: DB tables, 5 API routes, operator dashboard screen, dashboard button, parent home polling + full-screen ack modal.
+- [Stride BLE Proximity Check-in](stride-ble-proximity.md) — frictionless auto check-in: 2 DB tables, 8 API routes under /proximity/*, admin beacons.tsx screen, stats.tsx entry card.
 - [Stride payment audit model](stride-payment-audit.md) — server-side price resolution + payment_audit_log before Stripe session; generateBillingStatement() filters is_smart_pickup=false.
 - [Stride landing Wouter base path](stride-landing-router.md) — Wouter Router needs `base={import.meta.env.BASE_URL.replace(/\/$/, "")}` when Vite BASE_PATH is set; without it sub-routes fall through to Landing catch-all.
 - [Stride landing pages](stride-landing-pages.md) — all 10 routes wired; PageShell.tsx shared nav+footer; checkout_sessions has no currency column (hardcode "eur"); public receipt endpoint at GET /checkout/receipt/:sessionId.

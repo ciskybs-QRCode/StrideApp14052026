@@ -389,6 +389,28 @@ export default function AdminHome() {
           <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
         </Pressable>
 
+        {/* ── BLE PROXIMITY ENTRY CARD ── */}
+        <Pressable
+          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#0C4A6E", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 20 }]}
+          onPress={() => { router.push("/(admin)/beacons" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        >
+          <View style={styles.analyticsCardLeft}>
+            <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(14,165,233,0.25)" }]}>
+              <Ionicons name="bluetooth" size={24} color="#38BDF8" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                <Text style={[styles.analyticsCardTitle, { color: "#FFF" }]}>BLE Proximity Check-in</Text>
+                <View style={{ backgroundColor: "rgba(56,189,248,0.2)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
+                  <Text style={{ color: "#38BDF8", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>BLE</Text>
+                </View>
+              </View>
+              <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.5)" }]}>Wearable beacons · Auto check-in · Live proximity log</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+        </Pressable>
+
         {/* ── HERO KPI BANNER ── */}
         <View style={[styles.heroBanner, { backgroundColor: colors.primary }]}>
           <View style={styles.heroMain}>
