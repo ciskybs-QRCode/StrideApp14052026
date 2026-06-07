@@ -26,6 +26,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { usePaidLessons, type PaidLesson } from "@/context/PaidLessonsContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
+import { useFeatures } from "@/context/FeaturesContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 
@@ -50,6 +51,7 @@ function buildMapsUrl(location: string): string {
 
 export default function ParentHome() {
   const { user, updateUser } = useAuth();
+  const { marketplaceEnabled } = useFeatures();
   const { children, courses, lessons } = useAppData();
   const { unreadCount } = usePrivateLessons();
   const { paidLessons } = usePaidLessons();
@@ -447,6 +449,27 @@ export default function ParentHome() {
           </Pressable>
         </View>
 
+        {/* ── Stride Marketplace Banner (visible only when global flag is ON) ── */}
+        {marketplaceEnabled && (
+          <Pressable
+            style={({ pressed }) => [styles.marketplaceBanner, { transform: pressed ? [{ scale: 0.98 }] : [] }]}
+            onPress={() => router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0])}
+          >
+            <View style={styles.marketplaceBannerLeft}>
+              <View style={styles.marketplaceBannerIcon}>
+                <Ionicons name="storefront" size={24} color="#D4AF37" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.marketplaceBannerTitle}>Stride Marketplace</Text>
+                <Text style={styles.marketplaceBannerSub}>Gear · Insurance · Accessories</Text>
+              </View>
+            </View>
+            <View style={styles.marketplaceVerifiedBadge}>
+              <Ionicons name="checkmark-circle" size={13} color="#D4AF37" />
+              <Text style={styles.marketplaceVerifiedText}>STRIDE{"\n"}VERIFIED</Text>
+            </View>
+          </Pressable>
+        )}
 
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>

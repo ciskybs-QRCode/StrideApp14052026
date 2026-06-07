@@ -27,6 +27,7 @@ import { RealtimeProvider } from "@/context/RealtimeContext";
 import { PromoProvider } from "@/context/PromoContext";
 import { SubstitutionProvider } from "@/context/SubstitutionContext";
 import { SecurityEscalationProvider } from "@/context/SecurityEscalationContext";
+import { FeaturesProvider } from "@/context/FeaturesContext";
 import { TerminologyProvider } from "@/context/TerminologyContext";
 import { UnreadProvider } from "@/context/UnreadContext";
 
@@ -131,6 +132,7 @@ export default function RootLayout() {
           <TerminologyProvider>
           <OfflineSyncProvider>
             <AuthProvider>
+              <FeaturesProvider>
               <AppDataProvider>
                 <UnreadProvider>
                 <CartProvider>
@@ -153,6 +155,7 @@ export default function RootLayout() {
                 </CartProvider>
                 </UnreadProvider>
               </AppDataProvider>
+              </FeaturesProvider>
             </AuthProvider>
           </OfflineSyncProvider>
           </TerminologyProvider>

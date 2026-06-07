@@ -28,7 +28,6 @@ import { Router } from "express";
 import { pool } from "../lib/pg.js";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
-import { ENABLE_MARKETPLACE } from "../features.js";
 import type { Request, Response, NextFunction } from "express";
 
 type AuthReq = Request & { user: TokenPayload };
@@ -42,9 +41,35 @@ type OrgRow = {
 
 const router = Router();
 
+// 30-second in-memory cache for the DB-backed marketplace_enabled flag.
+// Avoids a DB round-trip on every request while staying fresh enough for
+// the governance toggle to propagate within half a minute.
+let _cachedEnabled: boolean | null = null;
+let _cacheTs = 0;
+const CACHE_TTL_MS = 30_000;
+
+async function isMarketplaceEnabled(): Promise<boolean> {
+  if (_cachedEnabled !== null && Date.now() - _cacheTs < CACHE_TTL_MS) {
+    return _cachedEnabled;
+  }
+  try {
+    const { rows } = await pool.query<{ value: string }>(
+      "SELECT value FROM system_config WHERE key = 'marketplace_enabled'",
+    );
+    _cachedEnabled = rows[0]?.value === "true";
+  } catch {
+    _cachedEnabled = false;
+  }
+  _cacheTs = Date.now();
+  return _cachedEnabled ?? false;
+}
+
 // Feature-flag guard — returns 404 for all marketplace endpoints when disabled.
-router.use((_req: Request, res: Response, next: NextFunction) => {
-  if (!ENABLE_MARKETPLACE) {
+// State is read from system_config (DB) and cached for 30 s so that a super-admin
+// toggle propagates across all sessions within half a minute.
+router.use(async (_req: Request, res: Response, next: NextFunction) => {
+  const enabled = await isMarketplaceEnabled();
+  if (!enabled) {
     res.status(404).json({ error: "Not found" });
     return;
   }

@@ -19,6 +19,7 @@ import {
 import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { useFeatures } from "@/context/FeaturesContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
@@ -127,6 +128,7 @@ type ScanResult = {
 
 export default function AdminHome() {
   const { user } = useAuth();
+  const { marketplaceEnabled } = useFeatures();
   const { courses, students, payments } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -388,6 +390,49 @@ export default function AdminHome() {
           </View>
           <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
         </Pressable>
+
+        {/* ── MARKETPLACE ENTRY CARD (visible only when global flag is ON) ── */}
+        {marketplaceEnabled && (
+          <Pressable
+            style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#78350F", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
+            onPress={() => { router.push("/(admin)/marketplace" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <View style={styles.analyticsCardLeft}>
+              <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(212,175,55,0.2)" }]}>
+                <Ionicons name="storefront" size={24} color="#D4AF37" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.analyticsCardTitle, { color: "#FFF" }]}>Stride Marketplace</Text>
+                <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.5)" }]}>Products · Insurance · Platform commission</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+          </Pressable>
+        )}
+
+        {/* ── SYSTEM GOVERNANCE CARD (super_admin only) ── */}
+        {user?.role === "super_admin" && (
+          <Pressable
+            style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#1E3A8A", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
+            onPress={() => { router.push("/(admin)/governance" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <View style={styles.analyticsCardLeft}>
+              <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(212,175,55,0.18)" }]}>
+                <Ionicons name="shield-checkmark" size={24} color="#D4AF37" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                  <Text style={[styles.analyticsCardTitle, { color: "#FFF" }]}>System Governance</Text>
+                  <View style={{ backgroundColor: "rgba(212,175,55,0.22)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
+                    <Text style={{ color: "#D4AF37", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>SUPER ADMIN</Text>
+                  </View>
+                </View>
+                <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.5)" }]}>Feature flags · Module activation · Audit log</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+          </Pressable>
+        )}
 
         {/* ── BLE PROXIMITY ENTRY CARD ── */}
         <Pressable

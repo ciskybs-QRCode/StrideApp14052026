@@ -1743,3 +1743,30 @@ export async function getPickupAuditLog(childId: string): Promise<PickupRecord[]
   );
   return res.records;
 }
+
+// ── System Feature Flags ──────────────────────────────────────────────────────
+
+export interface FeatureFlags {
+  marketplace_enabled: boolean;
+}
+
+export async function getFeatureFlags(): Promise<FeatureFlags> {
+  return request<FeatureFlags>("GET", "/system/config/features");
+}
+
+export async function setFeatureFlag(key: string, value: boolean): Promise<FeatureFlags> {
+  return request<FeatureFlags>("POST", "/super-admin/features", { [key]: value });
+}
+
+export interface GovernanceEvent {
+  id: number;
+  event_type: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+}
+
+export async function getGovernanceLog(): Promise<GovernanceEvent[]> {
+  const res = await request<{ events: GovernanceEvent[] }>("GET", "/super-admin/governance/log");
+  return res.events;
+}

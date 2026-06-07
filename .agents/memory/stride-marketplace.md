@@ -1,6 +1,6 @@
 ---
 name: Stride Marketplace
-description: Stride-Verified Marketplace — products, insurance partners, platform commission via Stripe Connect
+description: Stride-Verified Marketplace — products, insurance partners, platform commission via Stripe Connect. Includes Global Governance system.
 ---
 
 ## Architecture

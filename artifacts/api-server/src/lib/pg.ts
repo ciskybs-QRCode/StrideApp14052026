@@ -169,6 +169,13 @@ export async function ensureTables(): Promise<void> {
     )
   `).catch(() => {});
 
+  // Seed default feature flags (idempotent — ON CONFLICT DO NOTHING)
+  await pool.query(`
+    INSERT INTO system_config (key, value)
+    VALUES ('marketplace_enabled', 'false')
+    ON CONFLICT (key) DO NOTHING
+  `).catch(() => {});
+
   // Platform-level event log — super-admin notification feed
   await pool.query(`
     CREATE TABLE IF NOT EXISTS platform_events (
