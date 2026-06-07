@@ -27,11 +27,9 @@ type BankFormat = "au" | "it" | "other";
 
 interface BankDetails {
   format: BankFormat;
-  // AU fields
   bsb?: string;
   accountNumber?: string;
   accountName?: string;
-  // IT / other fields
   iban?: string;
 }
 
@@ -66,40 +64,21 @@ function maskIBAN(iban: string): string {
   return `${iban.slice(0, 4)} •••• •••• ${iban.slice(-4)}`;
 }
 
-interface SavedCard {
-  number: string;
-  name: string;
-  expiry: string;
-  brand: string;
-}
-
-function formatCardNumber(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 16);
-  return digits.replace(/(.{4})/g, "$1 ").trim();
-}
-
-function maskCard(number: string): string {
-  const digits = number.replace(/\D/g, "");
-  const last4 = digits.slice(-4) || "0000";
-  return `•••• •••• •••• ${last4}`;
-}
-
 export default function WalletScreen() {
   const { payments, bookings, courses } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
   // ── Bank details state ───────────────────────────────────────────────────────
-  const [bankDetails, setBankDetails] = useState<BankDetails | null>(null);
-  const [showBankModal, setShowBankModal] = useState(false);
-  const [gpsLoading, setGpsLoading] = useState(false);
+  const [bankDetails, setBankDetails]       = useState<BankDetails | null>(null);
+  const [showBankModal, setShowBankModal]   = useState(false);
+  const [gpsLoading, setGpsLoading]         = useState(false);
   const [detectedFormat, setDetectedFormat] = useState<BankFormat>("au");
-  // Draft fields
-  const [draftBSB, setDraftBSB] = useState("");
+  const [draftBSB, setDraftBSB]             = useState("");
   const [draftAccNumber, setDraftAccNumber] = useState("");
-  const [draftAccName, setDraftAccName] = useState("");
-  const [draftIBAN, setDraftIBAN] = useState("");
-  const [draftFormat, setDraftFormat] = useState<BankFormat>("au");
+  const [draftAccName, setDraftAccName]     = useState("");
+  const [draftIBAN, setDraftIBAN]           = useState("");
+  const [draftFormat, setDraftFormat]       = useState<BankFormat>("au");
 
   useEffect(() => {
     AsyncStorage.getItem(BANK_KEY).then(raw => {
@@ -112,7 +91,6 @@ export default function WalletScreen() {
   const openBankModal = async () => {
     setGpsLoading(true);
     setShowBankModal(true);
-    // Pre-fill from saved
     if (bankDetails) {
       setDraftFormat(bankDetails.format);
       setDraftBSB(bankDetails.bsb ?? "");
@@ -131,7 +109,7 @@ export default function WalletScreen() {
         setDetectedFormat(fmt);
         if (!bankDetails) setDraftFormat(fmt);
       }
-    } catch { /* GPS unavailable — keep default */ }
+    } catch { /* GPS unavailable */ }
     finally { setGpsLoading(false); }
   };
 
@@ -155,27 +133,14 @@ export default function WalletScreen() {
     ? !!(draftBSB.replace(/\D/g, "").length === 6 && draftAccNumber.replace(/\D/g, "").length >= 4 && draftAccName.trim())
     : draftIBAN.replace(/\s/g, "").length >= 15;
 
-  // Card state
-  const [savedCard, setSavedCard] = useState<SavedCard>({
-    number: "1234",
-    name: "John Smith",
-    expiry: "09/28",
-    brand: "VISA",
-  });
-  const [showAddCard, setShowAddCard] = useState(false);
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCVV, setCardCVV] = useState("");
-
-  // Cancel renewal state — step 1 = first confirm, step 2 = feedback + final confirm
-  const [cancelId, setCancelId] = useState<string | null>(null);
-  const [cancelStep, setCancelStep] = useState<1 | 2>(1);
+  // ── Cancel renewal state ─────────────────────────────────────────────────────
+  const [cancelId,       setCancelId]       = useState<string | null>(null);
+  const [cancelStep,     setCancelStep]     = useState<1 | 2>(1);
   const [cancelFeedback, setCancelFeedback] = useState("");
-  const [cancelSuccess, setCancelSuccess] = useState(false);
+  const [cancelSuccess,  setCancelSuccess]  = useState(false);
 
   const activeSubscriptions = bookings.filter(b => b.status === "confirmed");
-  const paid = payments.filter(p => p.status === "paid");
+  const paid    = payments.filter(p => p.status === "paid");
   const pending = payments.filter(p => p.status === "pending");
 
   const openCancelFlow = (id: string) => {
@@ -192,18 +157,6 @@ export default function WalletScreen() {
     setTimeout(() => setCancelSuccess(false), 3000);
   };
 
-  const handleSaveCard = () => {
-    const digits = cardNumber.replace(/\D/g, "");
-    if (digits.length < 13) return;
-    if (!cardName.trim()) return;
-    if (!cardExpiry.match(/^\d{2}\/\d{2}$/)) return;
-    const brand = digits.startsWith("4") ? "VISA" : digits.startsWith("5") ? "MC" : "CARD";
-    setSavedCard({ number: digits.slice(-4), name: cardName.trim(), expiry: cardExpiry, brand });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowAddCard(false);
-    setCardNumber(""); setCardName(""); setCardExpiry(""); setCardCVV("");
-  };
-
   const handleDownloadReceipt = async (payment: typeof payments[0]) => {
     await Share.share({ message: `Receipt: ${payment.description}\nAmount: €${payment.amount}\nDate: ${payment.date}\nStatus: Paid` });
   };
@@ -218,21 +171,30 @@ export default function WalletScreen() {
       >
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Wallet</Text>
 
-        {/* Card Visual */}
-        <View style={[styles.cardVisual, { backgroundColor: colors.primary }]}>
-          <View style={styles.cardTop}>
-            <Ionicons name="card" size={24} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.cardBrand}>{savedCard.brand}</Text>
+        {/* ── Payment Method ── */}
+        <View style={[styles.paymentMethodCard, { backgroundColor: colors.primary }]}>
+          <View style={styles.pmTop}>
+            <View style={styles.pmIconCircle}>
+              <Ionicons name="shield-checkmark" size={22} color="#FBBF24" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pmTitle}>Secure Web Checkout</Text>
+              <Text style={styles.pmSub}>Powered by Stripe</Text>
+            </View>
+            <View style={[styles.pmBadge, { backgroundColor: "rgba(251,191,36,0.2)", borderColor: "#FBBF24" }]}>
+              <Text style={styles.pmBadgeText}>PCI DSS</Text>
+            </View>
           </View>
-          <Text style={styles.cardNumber}>{maskCard(savedCard.number)}</Text>
-          <View style={styles.cardBottom}>
-            <Text style={styles.cardLabel}>{savedCard.name}</Text>
-            <Text style={styles.cardExpiry}>{savedCard.expiry}</Text>
+          <Text style={styles.pmDesc}>
+            Payments open in your browser via Stripe-hosted checkout. No card details are stored in this app.
+          </Text>
+          <View style={styles.pmMethodsRow}>
+            {["Visa", "Mastercard", "Apple Pay", "Google Pay"].map(m => (
+              <View key={m} style={styles.pmMethod}>
+                <Text style={styles.pmMethodText}>{m}</Text>
+              </View>
+            ))}
           </View>
-          <Pressable style={styles.updateCardBtn} onPress={() => setShowAddCard(true)}>
-            <Ionicons name="add-circle-outline" size={15} color="#FFF" />
-            <Text style={styles.updateCardText}>Upload / Update Card</Text>
-          </Pressable>
         </View>
 
         {/* ── Bank Details Section ── */}
@@ -263,10 +225,7 @@ export default function WalletScreen() {
                     <Text style={[styles.bankValue, { color: colors.foreground }]}>{maskIBAN(bankDetails.iban ?? "")}</Text>
                   )}
                 </View>
-                <Pressable
-                  style={[styles.bankEditBtn, { backgroundColor: colors.muted }]}
-                  onPress={openBankModal}
-                >
+                <Pressable style={[styles.bankEditBtn, { backgroundColor: colors.muted }]} onPress={openBankModal}>
                   <Ionicons name="pencil" size={14} color={colors.primary} />
                 </Pressable>
               </View>
@@ -314,7 +273,7 @@ export default function WalletScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.subName, { color: colors.primary }]}>{course.name}</Text>
                   <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>Renews on 01/06/2026</Text>
-                  <Text style={[styles.subPrice, { color: colors.secondary }]}>€{course.price}/mo</Text>
+                  <Text style={[styles.subPrice, { color: colors.secondary }]}>{"\u20AC"}{course.price}/mo</Text>
                 </View>
               </View>
               <Pressable
@@ -347,13 +306,13 @@ export default function WalletScreen() {
                     <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>{payment.date}</Text>
                   </View>
                 </View>
-                <Text style={[styles.transactionAmount, { color: "#F59E0B" }]}>€{payment.amount}</Text>
+                <Text style={[styles.transactionAmount, { color: "#F59E0B" }]}>{"\u20AC"}{payment.amount}</Text>
               </View>
             ))}
           </>
         )}
 
-        {/* Transaction History — unchanged */}
+        {/* Transaction History */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Transaction History</Text>
         {paid.map(payment => (
           <View key={payment.id} style={[styles.transactionCard, { backgroundColor: colors.card }]}>
@@ -365,7 +324,7 @@ export default function WalletScreen() {
               </View>
             </View>
             <View style={styles.transactionRight}>
-              <Text style={[styles.transactionAmount, { color: "#10B981" }]}>€{payment.amount}</Text>
+              <Text style={[styles.transactionAmount, { color: "#10B981" }]}>{"\u20AC"}{payment.amount}</Text>
               <Pressable style={styles.receiptBtn} onPress={() => handleDownloadReceipt(payment)}>
                 <Ionicons name="download-outline" size={16} color={colors.primary} />
               </Pressable>
@@ -392,7 +351,6 @@ export default function WalletScreen() {
                 <Text style={[styles.modalTitle, { color: colors.primary }]}>Bank Details</Text>
               </View>
 
-              {/* GPS detection banner */}
               {gpsLoading ? (
                 <View style={[styles.bankGpsBanner, { backgroundColor: "#EFF6FF" }]}>
                   <ActivityIndicator size="small" color={colors.primary} />
@@ -413,10 +371,9 @@ export default function WalletScreen() {
                 </View>
               )}
 
-              {/* Format toggle */}
               <Text style={[styles.fieldLabel, { color: colors.primary }]}>Format</Text>
               <View style={[styles.formatToggle, { backgroundColor: colors.muted }]}>
-                {([["au", "🇦🇺 Australia"], ["it", "🇮🇹 Italy / IBAN"], ["other", "🌐 Other IBAN"]] as [BankFormat, string][]).map(([f, label]) => (
+                {([["au", "\uD83C\uDDE6\uD83C\uDDFA Australia"], ["it", "\uD83C\uDDEE\uD83C\uDDF9 Italy / IBAN"], ["other", "\uD83C\uDF10 Other IBAN"]] as [BankFormat, string][]).map(([f, label]) => (
                   <Pressable
                     key={f}
                     style={[styles.formatTab, draftFormat === f && { backgroundColor: colors.primary }]}
@@ -427,7 +384,6 @@ export default function WalletScreen() {
                 ))}
               </View>
 
-              {/* Australian fields */}
               {draftFormat === "au" ? (
                 <>
                   <Text style={[styles.fieldLabel, { color: colors.primary }]}>BSB Number</Text>
@@ -503,96 +459,7 @@ export default function WalletScreen() {
         </View>
       </Modal>
 
-      {/* ── Upload / Update Card Modal ── */}
-      <Modal visible={showAddCard} transparent animationType="slide" onRequestClose={() => setShowAddCard(false)}>
-        <View style={styles.modalOverlay}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
-            <View style={[styles.modalCard, { position: "relative", paddingTop: 44 }]}>
-              <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => setShowAddCard(false)} hitSlop={14}>
-                <Ionicons name="close-circle" size={30} color="#9CA3AF" />
-              </Pressable>
-              <View style={styles.modalTitleRow}>
-                <Ionicons name="card" size={22} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.primary }]}>Add / Update Card</Text>
-              </View>
-              <Text style={[styles.modalHint, { color: colors.mutedForeground }]}>
-                Card details are encrypted. We do not store your CVV or full card number.
-              </Text>
-
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Card Number</Text>
-              <TextInput
-                style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
-                value={formatCardNumber(cardNumber)}
-                onChangeText={t => setCardNumber(t.replace(/\D/g, ""))}
-                placeholder="1234 5678 9012 3456"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="number-pad"
-                maxLength={19}
-              />
-
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Cardholder Name</Text>
-              <TextInput
-                style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
-                value={cardName}
-                onChangeText={setCardName}
-                placeholder="As it appears on the card"
-                placeholderTextColor={colors.mutedForeground}
-                autoCapitalize="characters"
-              />
-
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Expiry (MM/YY)</Text>
-                  <TextInput
-                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
-                    value={cardExpiry}
-                    onChangeText={t => {
-                      const d = t.replace(/\D/g, "").slice(0, 4);
-                      setCardExpiry(d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d);
-                    }}
-                    placeholder="MM/YY"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    maxLength={5}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>CVV</Text>
-                  <TextInput
-                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
-                    value={cardCVV}
-                    onChangeText={t => setCardCVV(t.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="•••"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    secureTextEntry
-                    maxLength={4}
-                  />
-                </View>
-              </View>
-
-              <View style={[styles.secureRow, { backgroundColor: colors.muted }]}>
-                <Ionicons name="lock-closed" size={14} color="#10B981" />
-                <Text style={[styles.secureText, { color: colors.mutedForeground }]}>256-bit SSL encrypted · PCI DSS compliant</Text>
-              </View>
-
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-                <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowAddCard(false)}>
-                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.modalBtn, { flex: 1, backgroundColor: cardNumber.replace(/\D/g, "").length >= 13 && cardName.trim() && cardExpiry.match(/^\d{2}\/\d{2}$/) ? colors.primary : colors.border }]}
-                  onPress={handleSaveCard}
-                >
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Save Card</Text>
-                </Pressable>
-              </View>
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
-
-      {/* ── Cancel Renewal Modal — 2-Step ── */}
+      {/* ── Cancel Renewal Modal ── */}
       <Modal visible={!!cancelId} transparent animationType="fade" onRequestClose={() => setCancelId(null)}>
         <View style={styles.modalCentreOverlay}>
           <View style={[styles.modalCentreCard, { position: "relative" }]}>
@@ -644,10 +511,7 @@ export default function WalletScreen() {
                   <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setCancelStep(1)}>
                     <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
                   </Pressable>
-                  <Pressable
-                    style={[styles.modalBtn, { flex: 1, backgroundColor: "#DC2626" }]}
-                    onPress={handleFinalCancel}
-                  >
+                  <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: "#DC2626" }]} onPress={handleFinalCancel}>
                     <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Cancellation</Text>
                   </Pressable>
                 </View>
@@ -662,77 +526,77 @@ export default function WalletScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingHorizontal: 20 },
+  scroll:    { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
 
-  cardVisual: { borderRadius: 20, padding: 24, marginBottom: 28, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  cardBrand: { color: "#FFFFFF", fontWeight: "800", fontSize: 18, fontStyle: "italic" },
-  cardNumber: { color: "#FFFFFF", fontSize: 20, letterSpacing: 4, fontWeight: "600", marginBottom: 20 },
-  cardBottom: { flexDirection: "row", justifyContent: "space-between" },
-  cardLabel: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: "500" },
-  cardExpiry: { color: "rgba(255,255,255,0.8)", fontSize: 14 },
-  updateCardBtn: { marginTop: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.4)", borderRadius: 10, paddingVertical: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
-  updateCardText: { color: "#FFFFFF", fontWeight: "600", fontSize: 13 },
+  paymentMethodCard: { borderRadius: 20, padding: 20, marginBottom: 28, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  pmTop:       { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 14 },
+  pmIconCircle:{ width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(251,191,36,0.15)", alignItems: "center", justifyContent: "center" },
+  pmTitle:     { color: "#FFFFFF", fontWeight: "800", fontSize: 16 },
+  pmSub:       { color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 },
+  pmBadge:     { borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  pmBadgeText: { color: "#FBBF24", fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
+  pmDesc:      { color: "rgba(255,255,255,0.75)", fontSize: 13, lineHeight: 18, marginBottom: 14 },
+  pmMethodsRow:{ flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pmMethod:    { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  pmMethodText:{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: "600" },
 
-  successBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, padding: 14, marginBottom: 16 },
+  successBanner:     { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, padding: 14, marginBottom: 16 },
   successBannerText: { flex: 1, fontSize: 13, fontWeight: "600", lineHeight: 18 },
 
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
-  subCard: { flexDirection: "column", borderRadius: 16, padding: 16, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  subCardLeft: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
-  subIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  subName: { fontSize: 15, fontWeight: "700" },
-  subRenewal: { fontSize: 12, marginTop: 2 },
-  subPrice: { fontSize: 14, fontWeight: "700", marginTop: 4 },
-  cancelRenewalBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, alignSelf: "center" },
+  subCard:      { flexDirection: "column", borderRadius: 16, padding: 16, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  subCardLeft:  { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
+  subIcon:      { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  subName:      { fontSize: 15, fontWeight: "700" },
+  subRenewal:   { fontSize: 12, marginTop: 2 },
+  subPrice:     { fontSize: 14, fontWeight: "700", marginTop: 4 },
+  cancelRenewalBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, alignSelf: "center" },
   cancelRenewalText: { color: "#EF4444", fontSize: 12, fontWeight: "600" },
 
   emptyCard: { borderRadius: 14, padding: 24, alignItems: "center", gap: 8, marginBottom: 10 },
   emptyText: { fontSize: 14 },
 
-  transactionCard: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 14, padding: 14, marginBottom: 10 },
-  transactionLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
-  transactionDesc: { fontSize: 14, fontWeight: "500" },
-  transactionDate: { fontSize: 12, marginTop: 2 },
-  transactionRight: { flexDirection: "row", alignItems: "center", gap: 10 },
+  transactionCard:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 14, padding: 14, marginBottom: 10 },
+  transactionLeft:   { flexDirection: "row", alignItems: "center", flex: 1 },
+  transactionDesc:   { fontSize: 14, fontWeight: "500" },
+  transactionDate:   { fontSize: 12, marginTop: 2 },
+  transactionRight:  { flexDirection: "row", alignItems: "center", gap: 10 },
   transactionAmount: { fontSize: 16, fontWeight: "700" },
-  receiptBtn: { padding: 6, backgroundColor: "#F0F4FF", borderRadius: 8 },
+  receiptBtn:        { padding: 6, backgroundColor: "#F0F4FF", borderRadius: 8 },
 
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, margin: 16 },
+  modalOverlay:       { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalCard:          { backgroundColor: "#FFF", borderRadius: 24, padding: 24, margin: 16 },
   modalCentreOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 },
-  modalCentreCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 28, width: "100%" },
-  warningCircle: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 16 },
-  modalTitleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
-  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
-  modalHint: { fontSize: 13, marginBottom: 18, lineHeight: 18 },
-  modalDesc: { fontSize: 14, lineHeight: 20 },
-  fieldLabel: { fontSize: 12, fontWeight: "700", marginBottom: 6, marginTop: 14, textTransform: "uppercase", letterSpacing: 0.4 },
-  input: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
-  secureRow: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginTop: 16 },
-  secureText: { fontSize: 12 },
-  feedbackInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 90 },
-  modalBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  modalCentreCard:    { backgroundColor: "#FFF", borderRadius: 24, padding: 28, width: "100%" },
+  warningCircle:      { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 16 },
+  modalTitleRow:      { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
+  modalTitle:         { fontSize: 20, fontWeight: "700", marginBottom: 8 },
+  modalDesc:          { fontSize: 14, lineHeight: 20 },
+  fieldLabel:   { fontSize: 12, fontWeight: "700", marginBottom: 6, marginTop: 14, textTransform: "uppercase", letterSpacing: 0.4 },
+  input:        { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
+  secureRow:    { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  secureText:   { fontSize: 12 },
+  feedbackInput:{ borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 90 },
+  modalBtn:     { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   modalBtnText: { fontWeight: "700", fontSize: 15 },
 
-  // Bank details
-  bankCard: { borderRadius: 16, padding: 16, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  bankCardTop: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 10 },
-  bankIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  bankCard:        { borderRadius: 16, padding: 16, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  bankCardTop:     { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 10 },
+  bankIcon:        { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   bankFormatLabel: { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
-  bankValue: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
-  bankAccName: { fontSize: 13, fontWeight: "700" },
-  bankEditBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  bankSecureRow: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
-  bankSecureText: { fontSize: 11, fontWeight: "500", flex: 1 },
-  bankAddRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  bankAddTitle: { fontSize: 15, fontWeight: "700", marginBottom: 3 },
-  bankAddSub: { fontSize: 12, lineHeight: 17 },
-  bankGpsBanner: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16 },
-  bankGpsText: { fontSize: 12, fontWeight: "600", flex: 1, lineHeight: 17 },
-  bankHint: { fontSize: 11, marginTop: 4, marginBottom: 4 },
-  formatToggle: { flexDirection: "row", borderRadius: 12, padding: 4, marginBottom: 4 },
-  formatTab: { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 9 },
-  formatTabText: { fontSize: 11, fontWeight: "700" },
+  bankValue:       { fontSize: 14, fontWeight: "600", marginBottom: 2 },
+  bankAccName:     { fontSize: 13, fontWeight: "700" },
+  bankEditBtn:     { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  bankSecureRow:   { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  bankSecureText:  { fontSize: 11, fontWeight: "500", flex: 1 },
+  bankAddRow:      { flexDirection: "row", alignItems: "center", gap: 14 },
+  bankAddTitle:    { fontSize: 15, fontWeight: "700", marginBottom: 3 },
+  bankAddSub:      { fontSize: 12, lineHeight: 17 },
+  bankGpsBanner:   { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16 },
+  bankGpsText:     { fontSize: 12, fontWeight: "600", flex: 1, lineHeight: 17 },
+  bankHint:        { fontSize: 11, marginTop: 4, marginBottom: 4 },
+  formatToggle:    { flexDirection: "row", borderRadius: 12, padding: 4, marginBottom: 4 },
+  formatTab:       { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 9 },
+  formatTabText:   { fontSize: 11, fontWeight: "700" },
 });

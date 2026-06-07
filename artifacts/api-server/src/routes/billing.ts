@@ -309,11 +309,38 @@ router.post("/billing/webhook", async (req, res) => {
 
       case "checkout.session.completed": {
         const session = event.data.object as import("stripe").Stripe.Checkout.Session;
-        const orgId = getOrgId(session.metadata as Record<string, string>);
-        if (orgId && session.subscription) {
-          await supabase.from("organizations").update({
-            stripe_subscription_id: String(session.subscription),
-          }).eq("id", orgId);
+        const meta = session.metadata as Record<string, string> | null;
+
+        if (meta?.["type"] === "member_checkout") {
+          const orgId  = meta["orgId"]  ? parseInt(meta["orgId"])  : null;
+          const userId = meta["userId"] ?? null;
+
+          if (orgId && userId && session.id) {
+            const { data: csRow } = await supabase
+              .from("checkout_sessions")
+              .select("items, amount_cents")
+              .eq("session_id", session.id)
+              .maybeSingle();
+
+            const items      = (csRow as { items?: unknown[] }                | null)?.items       ?? [];
+            const amtCents   = (csRow as { amount_cents?: number }            | null)?.amount_cents ?? 0;
+
+            const { processMemberCheckout } = await import("./checkout.js");
+            await processMemberCheckout({
+              orgId,
+              userId,
+              sessionId:   session.id,
+              items:       items as Parameters<typeof processMemberCheckout>[0]["items"],
+              amountCents: amtCents,
+            });
+          }
+        } else {
+          const orgId = getOrgId(meta);
+          if (orgId && session.subscription) {
+            await supabase.from("organizations").update({
+              stripe_subscription_id: String(session.subscription),
+            }).eq("id", orgId);
+          }
         }
         break;
       }

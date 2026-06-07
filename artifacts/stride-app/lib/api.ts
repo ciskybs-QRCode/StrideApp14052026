@@ -458,19 +458,14 @@ export const api = {
   logEmergencyStep: (data: { protocol_id: string; protocol_title: string; step_index: number; step_text: string }) =>
     request<{ ok: boolean }>("POST", "/emergency-logs", data),
 
-  // Checkout & Payments
-  createStripeIntent: (data: { amount: number; currency?: string }) =>
-    request<{ clientSecret: string; intentId: string }>("POST", "/checkout/stripe/intent", data),
-  createPayPalOrder: (data: { amount: number }) =>
-    request<{ orderId: string }>("POST", "/checkout/paypal/order", data),
-  capturePayPalOrder: (orderId: string) =>
-    request<{ success: boolean }>("POST", "/checkout/paypal/capture", { orderId }),
-  checkoutComplete: (data: {
+  // Checkout & Payments — Web-Checkout Proxy model
+  // All payments go through Stripe-hosted checkout opened in the system browser.
+  createWebCheckoutSession: (data: {
     items: Array<{ courseId: string; courseName: string; participantName: string; childId?: string; packageType: string; price: number }>;
-    paymentMethod: string;
-    paymentRef: string;
-    amount: number;
-  }) => request<{ success: boolean; invoiceNumber: string; invoiceId: number | null; transactionId: number | null; enrollmentErrors: string[] | null }>("POST", "/checkout/complete", data),
+    amountCents: number;
+  }) => request<{ sessionId: string; checkoutUrl: string }>("POST", "/checkout/web-session", data),
+  getCheckoutSessionStatus: (sessionId: string) =>
+    request<{ status: "pending" | "complete" | "expired"; invoiceNumber: string | null; invoiceId: number | null }>("GET", `/checkout/session-status/${sessionId}`),
 
   // Enrollment Requests (validation & approval flow)
   getEnrollmentRequests: () =>

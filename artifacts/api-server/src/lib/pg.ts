@@ -250,5 +250,24 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS mmc_org_idx    ON member_medical_certs (org_id);
   `).catch(() => {});
 
+  // Web-Checkout Proxy: track Stripe-hosted checkout sessions for member purchases
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS checkout_sessions (
+      id              SERIAL PRIMARY KEY,
+      session_id      TEXT NOT NULL UNIQUE,
+      organization_id INTEGER,
+      user_id         TEXT NOT NULL,
+      status          TEXT NOT NULL DEFAULT 'pending',
+      items           JSONB,
+      invoice_number  TEXT,
+      invoice_id      INTEGER,
+      amount_cents    INTEGER,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      completed_at    TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS cs_session_idx ON checkout_sessions (session_id);
+    CREATE INDEX IF NOT EXISTS cs_user_idx    ON checkout_sessions (user_id);
+  `).catch(() => {});
+
   initialized = true;
 }

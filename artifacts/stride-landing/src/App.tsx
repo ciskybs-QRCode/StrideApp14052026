@@ -982,11 +982,78 @@ function Landing() {
 
 // ── Router ────────────────────────────────────────────────────────────────────
 
+function PaymentSuccess() {
+  const sessionId = new URLSearchParams(window.location.search).get("session_id");
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0d1a3e", fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ textAlign: "center", padding: "48px 32px", maxWidth: 480 }}>
+        <div style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h1 style={{ color: "#FFFFFF", fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>Payment Confirmed!</h1>
+        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, lineHeight: 1.6, margin: "0 0 32px" }}>
+          Your booking is locked in. Return to the Stride app to see your confirmation and invoice.
+        </p>
+        {sessionId && (
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: "0 0 24px", fontFamily: "monospace" }}>
+            Ref: {sessionId.slice(-12)}
+          </p>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <a
+            href="stride://"
+            style={{ display: "block", backgroundColor: "#FBBF24", color: "#1E3A8A", fontWeight: 700, fontSize: 15, padding: "14px 28px", borderRadius: 12, textDecoration: "none" }}
+          >
+            Return to Stride App
+          </a>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0 }}>
+            If the app doesn&apos;t open automatically, switch back to the Stride app manually.
+          </p>
+        </div>
+        <div style={{ marginTop: 40 }}>
+          <a href="/" style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, textDecoration: "none" }}>stride-platform.com</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaymentCancelled() {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0d1a3e", fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ textAlign: "center", padding: "48px 32px", maxWidth: 480 }}>
+        <div style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#374151", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </div>
+        <h1 style={{ color: "#FFFFFF", fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>Payment Cancelled</h1>
+        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, lineHeight: 1.6, margin: "0 0 32px" }}>
+          No charge was made. Return to the Stride app to try again.
+        </p>
+        <a
+          href="stride://"
+          style={{ display: "inline-block", backgroundColor: "#1E3A8A", color: "#FFFFFF", fontWeight: 700, fontSize: 15, padding: "14px 28px", borderRadius: 12, textDecoration: "none", border: "1px solid rgba(255,255,255,0.15)" }}
+        >
+          Back to Stride App
+        </a>
+        <div style={{ marginTop: 40 }}>
+          <a href="/" style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, textDecoration: "none" }}>stride-platform.com</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <Switch>
       <Route path="/register" component={Register} />
       <Route path="/activate" component={Activate} />
+      <Route path="/payment-success" component={PaymentSuccess} />
+      <Route path="/payment-cancelled" component={PaymentCancelled} />
       <Route component={Landing} />
     </Switch>
   );
