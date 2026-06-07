@@ -379,6 +379,13 @@ export default function ParentHome() {
             <Ionicons name="alert-circle-outline" size={28} color="#F59E0B" />
             <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>REPORT{"\n"}ABSENCE/DELAY</Text>
           </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#ECFDF5", borderColor: "#059669", transform: pressed ? [{ scale: 0.96 }] : [] }]}
+            onPress={() => router.push("/(parent)/org-search" as Parameters<typeof router.push>[0])}
+          >
+            <Ionicons name="shield-checkmark" size={28} color="#059669" />
+            <Text style={[styles.quickBtnText, { color: "#059669" }]}>FIND{"\n"}SCHOOLS</Text>
+          </Pressable>
         </View>
 
         {/* Notifications */}

@@ -316,6 +316,22 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS cs_user_idx    ON checkout_sessions (user_id);
   `).catch(() => {});
 
+  // Stride Safety Score — org reviews (satellite table, writes only from /reviews endpoint)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_reviews (
+      id                   UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      org_id               INTEGER     NOT NULL,
+      parent_id            TEXT        NOT NULL,
+      course_id            INTEGER,
+      safety_rating        SMALLINT    NOT NULL CHECK (safety_rating BETWEEN 1 AND 5),
+      communication_rating SMALLINT    NOT NULL CHECK (communication_rating BETWEEN 1 AND 5),
+      comment              TEXT,
+      created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS or_org_idx    ON org_reviews (org_id);
+    CREATE INDEX IF NOT EXISTS or_org_ts_idx ON org_reviews (org_id, created_at DESC);
+  `).catch(() => {});
+
   // Security Timeline — black-box observer log (append-only, no FK to any other table)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS child_activity_log (

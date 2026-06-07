@@ -42,6 +42,7 @@ import identityRouter from "./identity.js";
 import importRouter from "./import.js";
 import securityRouter from "./security.js";
 import guardianCircleRouter from "./guardian-circle.js";
+import safetyScoreRouter from "./safety-score.js";
 
 const router: IRouter = Router();
 
@@ -88,5 +89,6 @@ router.use(identityRouter);
 router.use(importRouter);
 router.use(securityRouter);
 router.use(guardianCircleRouter);
+router.use(safetyScoreRouter);
 
 export default router;

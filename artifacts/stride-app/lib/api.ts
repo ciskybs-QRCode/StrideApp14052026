@@ -787,9 +787,64 @@ export const api = {
       "GET",
       `/guardian-circle/check?childId=${encodeURIComponent(childId)}&guardianId=${encodeURIComponent(guardianId)}`,
     ),
+
+  // ── Stride Safety Score ────────────────────────────────────────────────────
+  searchOrgs: (q?: string) =>
+    request<OrgSearchResult[]>(
+      "GET",
+      `/orgs/search${q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`,
+    ),
+
+  getOrgSafetyScore: (orgId: number | string) =>
+    request<SafetyScoreResult>("GET", `/orgs/safety-score/${orgId}`),
+
+  submitReview: (data: {
+    org_id:               number;
+    course_id?:           number | null;
+    safety_rating:        number;
+    communication_rating: number;
+    comment?:             string | null;
+  }) => request<{ id: string }>("POST", "/reviews", data),
+
+  listOrgReviews: (orgId: number | string) =>
+    request<{ reviews: OrgReview[] }>("GET", `/reviews/org/${orgId}`),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface OrgSearchResult {
+  id:           number;
+  name:         string;
+  location:     string | null;
+  description:  string | null;
+  logo_url:     string | null;
+  slug:         string | null;
+  safety_score: number;
+  is_verified:  boolean;
+  review_count: number;
+  avg_rating:   number;
+  score_label:  "Excellent" | "Good" | "Fair" | "New";
+}
+
+export interface SafetyScoreResult {
+  org_id:             number;
+  total:              number;
+  protocol_adherence: number;
+  parent_feedback:    number;
+  emergency_response: number;
+  review_count:       number;
+  avg_rating:         number;
+  is_verified:        boolean;
+  label:              string;
+}
+
+export interface OrgReview {
+  id:                   string;
+  safety_rating:        number;
+  communication_rating: number;
+  comment:              string | null;
+  created_at:           string;
+}
 
 export interface GuardianCircleApiEntry {
   id:             string;
