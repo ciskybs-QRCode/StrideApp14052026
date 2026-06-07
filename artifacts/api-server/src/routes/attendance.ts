@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { SecurityObserver } from "../lib/SecurityObserver.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -36,6 +37,13 @@ router.post("/attendance", requireAuth, requireRole("admin", "operator"), async 
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.status(201).json(data);
+  // Fire-and-forget — SecurityObserver never delays or blocks the response
+  const childId = String(body.child_id ?? "");
+  SecurityObserver.logActivity(childId, "CHECK_IN", {
+    operator:   user.email,
+    session_id: body.session_id,
+    status:     body.status,
+  });
 });
 
 router.patch("/attendance/:id", requireAuth, requireRole("admin", "operator"), async (req, res) => {

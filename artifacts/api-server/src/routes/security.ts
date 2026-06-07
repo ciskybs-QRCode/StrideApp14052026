@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import { pool, ensureTables } from "../lib/pg.js";
 import { requireAuth } from "../lib/auth.js";
 import { SignatureService } from "../lib/SignatureService.js";
+import { SecurityObserver } from "../lib/SecurityObserver.js";
 import type { Request, Response } from "express";
 import type { TokenPayload } from "../lib/auth.js";
 
@@ -55,6 +56,15 @@ router.post("/security/pickup-signature", requireAuth, async (req: Request, res:
 
   const row = rows[0];
   res.json({ pickupId: row.pickup_id, integrityHash: row.integrity_hash, createdAt: row.created_at });
+  // Fire-and-forget — SecurityObserver never delays or blocks the response
+  SecurityObserver.logActivity(child_id, "PICKED_UP", {
+    guardian_name,
+    relationship,
+    operator:  user.email,
+    pickup_id: row.pickup_id,
+    lat,
+    lng,
+  });
 });
 
 // GET /security/audit-log/:childId  (parent or operator — auth required)
@@ -129,6 +139,34 @@ router.get("/security/pickup-log/verify/:recordId", requireAuth, async (req: Req
   const recordId = String(req.params.recordId);
   const check = await signatureService.verifyRecord(recordId);
   res.json(check);
+});
+
+// ── GET /security/timeline/:childId ──────────────────────────────────────────
+// Read-only Security Timeline — returns all child_activity_log entries for a
+// child, ordered newest first. This endpoint has zero write access.
+router.get("/security/timeline/:childId", requireAuth, async (req: Request, res: Response) => {
+  const { childId } = req.params;
+
+  try {
+    const { rows } = await pool.query<{
+      id:         string;
+      child_id:   string;
+      event_type: string;
+      timestamp:  string;
+      metadata:   Record<string, unknown> | null;
+    }>(
+      `SELECT id, child_id, event_type, timestamp, metadata
+       FROM child_activity_log
+       WHERE child_id = $1
+       ORDER BY timestamp DESC
+       LIMIT 200`,
+      [childId],
+    );
+    res.json({ timeline: rows });
+  } catch {
+    // Table may not exist yet if no events have been logged — return empty
+    res.json({ timeline: [] });
+  }
 });
 
 export default router;

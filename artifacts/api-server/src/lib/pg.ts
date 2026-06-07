@@ -316,6 +316,19 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS cs_user_idx    ON checkout_sessions (user_id);
   `).catch(() => {});
 
+  // Security Timeline — black-box observer log (append-only, no FK to any other table)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS child_activity_log (
+      id         UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      child_id   TEXT        NOT NULL,
+      event_type TEXT        NOT NULL,
+      timestamp  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      metadata   JSONB
+    );
+    CREATE INDEX IF NOT EXISTS cal_child_idx    ON child_activity_log (child_id);
+    CREATE INDEX IF NOT EXISTS cal_child_ts_idx ON child_activity_log (child_id, timestamp DESC);
+  `).catch(() => {});
+
   // Guardian Circle — auxiliary authorized pickups table (satellite, no FK to members/users)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS authorized_pickups (
