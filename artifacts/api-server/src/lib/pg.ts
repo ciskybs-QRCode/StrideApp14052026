@@ -316,5 +316,26 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS cs_user_idx    ON checkout_sessions (user_id);
   `).catch(() => {});
 
+  // Digital Proof of Presence — tamper-evident pickup signature log
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pickup_signatures (
+      id               SERIAL  PRIMARY KEY,
+      pickup_id        UUID    NOT NULL DEFAULT gen_random_uuid(),
+      child_id         TEXT    NOT NULL,
+      child_name       TEXT    NOT NULL DEFAULT '',
+      operator_id      TEXT    NOT NULL,
+      operator_name    TEXT,
+      guardian_name    TEXT,
+      relationship     TEXT,
+      lat              DOUBLE PRECISION,
+      lng              DOUBLE PRECISION,
+      signature_blob   TEXT    NOT NULL,
+      integrity_hash   TEXT    NOT NULL,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS ps_child_idx ON pickup_signatures (child_id);
+    CREATE INDEX IF NOT EXISTS ps_op_idx    ON pickup_signatures (operator_id);
+  `).catch(() => {});
+
   initialized = true;
 }

@@ -1440,3 +1440,43 @@ export async function seedSuperAdmin(
     "POST", "/super-admin/seed", { name, email, password },
   );
 }
+
+// ── Digital Proof of Presence ───────────────────────────────────────────────
+
+export type PickupSignaturePayload = {
+  child_id:       string;
+  child_name:     string;
+  guardian_name:  string;
+  relationship:   string;
+  lat:            number | null;
+  lng:            number | null;
+  signature_blob: string;
+};
+
+export type PickupRecord = {
+  pickup_id:     string;
+  child_id:      string;
+  child_name:    string;
+  operator_name: string | null;
+  guardian_name: string | null;
+  relationship:  string | null;
+  lat:           number | null;
+  lng:           number | null;
+  hash_preview:  string;
+  created_at:    string;
+};
+
+export async function submitPickupSignature(
+  payload: PickupSignaturePayload,
+): Promise<{ pickupId: string; integrityHash: string }> {
+  return request<{ pickupId: string; integrityHash: string }>(
+    "POST", "/security/pickup-signature", payload,
+  );
+}
+
+export async function getPickupAuditLog(childId: string): Promise<PickupRecord[]> {
+  const res = await request<{ records: PickupRecord[] }>(
+    "GET", `/security/audit-log/${encodeURIComponent(childId)}`,
+  );
+  return res.records;
+}

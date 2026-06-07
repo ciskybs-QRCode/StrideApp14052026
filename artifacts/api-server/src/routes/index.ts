@@ -40,6 +40,7 @@ import adminCopilotRouter from "./admin-copilot.js";
 import verifyQrRouter from "./verify-qr.js";
 import identityRouter from "./identity.js";
 import importRouter from "./import.js";
+import securityRouter from "./security.js";
 
 const router: IRouter = Router();
 
@@ -84,5 +85,6 @@ router.use(adminCopilotRouter);
 router.use(verifyQrRouter);
 router.use(identityRouter);
 router.use(importRouter);
+router.use(securityRouter);
 
 export default router;

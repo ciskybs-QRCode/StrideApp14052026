@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -509,6 +510,15 @@ export default function ChildrenScreen() {
               >
                 <Ionicons name="medical-outline" size={18} color={colors.primary} />
                 <Text style={[styles.actionBtnText, { color: colors.primary }]}>Edit Medical Info</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+              </Pressable>
+
+              <Pressable
+                style={[styles.actionBtn, { backgroundColor: colors.muted, marginTop: 4 }]}
+                onPress={() => router.push({ pathname: "/(parent)/pickup-audit", params: { childId: child.id } })}
+              >
+                <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Pickup History</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 

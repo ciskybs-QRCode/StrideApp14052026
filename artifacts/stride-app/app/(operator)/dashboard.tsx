@@ -48,9 +48,10 @@ type ScanResult = {
 };
 
 type GuardianResult = {
+  childId?:     string;
   guardianName: string;
   relationship: string;
-  childName: string;
+  childName:    string;
   isAuthorized: boolean;
 };
 
@@ -506,7 +507,10 @@ export default function OperatorDashboard() {
     const tag = result.isAuthorized ? "✓ Pick-up authorised" : "✗ Pick-up NOT authorised";
     pushLog({ time: nowTime(), action: `${tag}: ${result.guardianName} per ${result.childName}`, type: result.isAuthorized ? "warning" : "error" });
     Haptics.notificationAsync(result.isAuthorized ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Error);
-    setTimeout(() => { setGuardianResult(null); setScanned(false); setShowScanner(false); }, 5000);
+    // Unauthorized: auto-dismiss after 5s. Authorized: operator must tap "Verify & Sign" or Skip.
+    if (!result.isAuthorized) {
+      setTimeout(() => { setGuardianResult(null); setScanned(false); setShowScanner(false); }, 5000);
+    }
   };
 
   const simulateGuardianScan = () => {
@@ -662,7 +666,7 @@ export default function OperatorDashboard() {
       const childName = child?.name ?? decodeURIComponent(parts[6] ?? "Bambino");
       // A QR issued by Stride is implicitly authorized unless the student record says otherwise
       const isAuthorized = !!delegateId;
-      showGuardianResult({ guardianName, relationship, childName, isAuthorized });
+      showGuardianResult({ guardianName, relationship, childName, isAuthorized, childId });
 
     } else if (data.startsWith("STRIDE:CHILD:")) {
       // Direct child check-in QR — format: STRIDE:CHILD:<studentId>:<encodedName>
@@ -1694,7 +1698,37 @@ export default function OperatorDashboard() {
                   <Text style={styles.guardianFieldValue}>{guardianResult.childName}</Text>
                 </View>
               </View>
-              {!guardianResult.isAuthorized && (
+              {guardianResult.isAuthorized ? (
+                <View style={styles.verifyRow}>
+                  <Pressable
+                    style={styles.verifySignBtn}
+                    onPress={() => {
+                      const g = guardianResult;
+                      setGuardianResult(null);
+                      setScanned(false);
+                      setShowScanner(false);
+                      router.push({
+                        pathname: "/(operator)/verify-sign",
+                        params: {
+                          childId:      g.childId ?? "",
+                          childName:    g.childName,
+                          guardianName: g.guardianName,
+                          relationship: g.relationship,
+                        },
+                      });
+                    }}
+                  >
+                    <Ionicons name="shield-checkmark-outline" size={16} color="#FFF" />
+                    <Text style={styles.verifySignText}>Verify &amp; Sign Pick-up</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.verifyDismissBtn}
+                    onPress={() => { setGuardianResult(null); setScanned(false); setShowScanner(false); }}
+                  >
+                    <Text style={styles.verifyDismissText}>Skip</Text>
+                  </Pressable>
+                </View>
+              ) : (
                 <Text style={styles.guardianWarning}>⚠️ Contact parent before proceeding</Text>
               )}
             </View>
@@ -2169,6 +2203,11 @@ const styles = StyleSheet.create({
   guardianFieldValue: { fontSize: 16, fontWeight: "700", color: "#FFF" },
   guardianDivider:    { width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.2)" },
   guardianWarning:    { fontSize: 13, color: "#FCA5A5", fontWeight: "600", textAlign: "center" },
+  verifyRow:          { flexDirection: "row", gap: 10 },
+  verifySignBtn:      { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#10B981", paddingVertical: 12, borderRadius: 10 },
+  verifySignText:     { color: "#FFF", fontSize: 13, fontWeight: "800" },
+  verifyDismissBtn:   { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.12)" },
+  verifyDismissText:  { color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: "600" },
 
   // Private lesson scan result panel
   lessonScanPanel: { backgroundColor: "#0F2460", padding: 24, alignItems: "center", gap: 8 },
