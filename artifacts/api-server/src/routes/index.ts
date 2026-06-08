@@ -48,6 +48,7 @@ import proximityRouter from "./proximity.js";
 import marketplaceRouter from "./marketplace.js";
 import systemConfigRouter from "./system-config.js";
 import regionalPricingRouter from "./regional-pricing.js";
+import rescueRouter from "./rescue.js";
 
 const router: IRouter = Router();
 
@@ -100,5 +101,6 @@ router.use(proximityRouter);
 router.use(marketplaceRouter);
 router.use(systemConfigRouter);
 router.use(regionalPricingRouter);
+router.use(rescueRouter);
 
 export default router;

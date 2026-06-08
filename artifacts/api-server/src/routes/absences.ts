@@ -2,9 +2,18 @@ import { Router } from "express";
 import type { Request } from "express";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { RescueCascadeService } from "../lib/RescueCascadeService.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
+
+async function isCascadeAutoTriggerEnabled(orgId: number): Promise<boolean> {
+  const { rows } = await pool.query<{ cascade_auto_trigger: boolean | null }>(
+    `SELECT cascade_auto_trigger FROM admin_settings WHERE organization_id = $1`,
+    [orgId],
+  );
+  return rows[0]?.cascade_auto_trigger === true;
+}
 
 // POST /absences/operator/future
 router.post(
@@ -43,7 +52,21 @@ router.post(
           reason ?? null,
         ],
       );
-      res.status(201).json(result.rows[0]);
+      const absence = result.rows[0] as { id: number; operator_id: string; operator_name: string };
+      res.status(201).json(absence);
+
+      // Fire-and-forget: auto-trigger cascade if enabled
+      const orgId = (user as { orgId?: number }).orgId ?? 1;
+      isCascadeAutoTriggerEnabled(orgId).then(enabled => {
+        if (!enabled) return;
+        return RescueCascadeService.triggerCascade({
+          orgId,
+          absenceId:          absence.id,
+          absentOperatorId:   user.id,
+          absentOperatorName: absence.operator_name || user.email,
+          autoTriggered:      true,
+        });
+      }).catch(err => req.log.error(err, "absences: auto-cascade failed"));
     } catch (err) {
       req.log.error(err, "Failed to insert operator_absence");
       res.status(500).json({ error: "Failed to save absence" });

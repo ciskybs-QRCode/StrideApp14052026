@@ -1852,3 +1852,75 @@ export async function deleteRegionalPricing(id: number): Promise<void> {
 export async function setOrgRegion(region_code: string | null): Promise<void> {
   await request<void>("PUT", "/regional-pricing/org-region", { region_code });
 }
+
+// ── Rescue Cascade ─────────────────────────────────────────────────────────────
+
+export interface CascadeContact {
+  id:               number;
+  cascade_id:       number;
+  operator_id:      string;
+  operator_name:    string | null;
+  rank:             number;
+  skill_score:      number | null;
+  reliability_score: number | null;
+  composite_score:  number | null;
+  status:           "pending" | "accepted" | "declined" | "expired";
+  contacted_at:     string;
+  responded_at:     string | null;
+}
+
+export interface RescueCascade {
+  id:                      number;
+  org_id:                  number;
+  absence_id:              number | null;
+  discipline_id:           number | null;
+  course_name:             string | null;
+  class_datetime:          string | null;
+  absent_operator_id:      string;
+  absent_operator_name:    string | null;
+  status:                  "pending" | "resolved" | "cancelled";
+  auto_triggered:          boolean;
+  resolved_at:             string | null;
+  resolved_by_operator_id: string | null;
+  created_at:              string;
+  // aggregated
+  pending_count?:   number;
+  accepted_count?:  number;
+  declined_count?:  number;
+  total_contacts?:  number;
+  contacts?:        CascadeContact[];
+}
+
+export async function triggerRescueCascade(params: {
+  discipline_id:         number;
+  absent_operator_id:    string;
+  course_name?:          string;
+  class_datetime?:       string;
+  absent_operator_name?: string;
+  absence_id?:           number;
+}): Promise<{ cascade_id: number }> {
+  return request<{ cascade_id: number }>("POST", "/rescue/trigger", params);
+}
+
+export async function getRescueCascades(): Promise<RescueCascade[]> {
+  return request<RescueCascade[]>("GET", "/rescue/cascades");
+}
+
+export async function getRescueCascadeDetail(id: number): Promise<RescueCascade> {
+  return request<RescueCascade>("GET", `/rescue/cascade/${id}`);
+}
+
+export async function cancelRescueCascade(id: number): Promise<void> {
+  await request<void>("DELETE", `/rescue/cascade/${id}`);
+}
+
+export async function getRescuePending(): Promise<CascadeContact[]> {
+  return request<CascadeContact[]>("GET", "/rescue/pending");
+}
+
+export async function acknowledgeRescue(cascade_contact_id: number, accept: boolean): Promise<{ success: boolean; cascadeStatus: string }> {
+  return request<{ success: boolean; cascadeStatus: string }>("POST", "/rescue/acknowledge", {
+    cascade_contact_id,
+    accept,
+  });
+}

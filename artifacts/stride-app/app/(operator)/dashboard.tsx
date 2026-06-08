@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -28,7 +28,7 @@ import { type QrScanParams, useOfflineSync } from "@/context/OfflineSyncContext"
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiScheduledCourse } from "@/lib/api";
+import { api, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact } from "@/lib/api";
 import {
   CASCADE_TIMEOUT_SECS,
   MOCK_SUBS,
@@ -376,6 +376,38 @@ export default function OperatorDashboard() {
       setShowCascade(true);
     }
   }, [activeAlert?.id]);
+
+  // ── Rescue cascade pending requests ────────────────────────────────────
+  const [rescuePending, setRescuePending] = useState<CascadeContact[]>([]);
+  const [rescueAcking,  setRescueAcking]  = useState<number | null>(null);
+
+  const loadRescuePending = useCallback(async () => {
+    try {
+      const data = await getRescuePending();
+      setRescuePending(data);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    loadRescuePending();
+    const interval = setInterval(loadRescuePending, 30_000);
+    return () => clearInterval(interval);
+  }, [loadRescuePending]);
+
+  const handleRescueAck = async (contact: CascadeContact, accept: boolean) => {
+    setRescueAcking(contact.id);
+    try {
+      await acknowledgeRescue(contact.id, accept);
+      setRescuePending(prev => prev.filter(c => c.id !== contact.id));
+      Haptics.notificationAsync(accept
+        ? Haptics.NotificationFeedbackType.Success
+        : Haptics.NotificationFeedbackType.Warning);
+    } catch {
+      Alert.alert("Error", "Could not submit response. Please try again.");
+    } finally {
+      setRescueAcking(null);
+    }
+  };
 
   // ── Load pending scheduled-course requests for this operator ─────────────
   useEffect(() => {
@@ -1112,6 +1144,76 @@ export default function OperatorDashboard() {
             >
               <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Retry</Text>
             </Pressable>
+          </View>
+        )}
+
+        {/* ── Rescue Cascade Requests ── */}
+        {rescuePending.length > 0 && (
+          <View style={{ backgroundColor: "#1A0A2E", borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1.5, borderColor: "#7C3AED" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: "rgba(124,58,237,0.2)", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="git-network-outline" size={16} color="#A78BFA" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFF" }}>
+                  Rescue Request{rescuePending.length > 1 ? "s" : ""} ({rescuePending.length})
+                </Text>
+                <Text style={{ fontSize: 10.5, color: "#A78BFA", marginTop: 1 }}>
+                  You have been selected to cover a class
+                </Text>
+              </View>
+              <View style={{ backgroundColor: "#7C3AED", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+                <Text style={{ color: "#FFF", fontSize: 9, fontWeight: "800", letterSpacing: 0.5 }}>URGENT</Text>
+              </View>
+            </View>
+            {rescuePending.map(contact => (
+              <View key={contact.id} style={{ backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: "rgba(124,58,237,0.3)" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <Ionicons name="calendar-outline" size={13} color="rgba(255,255,255,0.4)" />
+                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13, flex: 1 }} numberOfLines={1}>
+                    {(contact as CascadeContact & { course_name?: string }).course_name ?? "Class cover request"}
+                  </Text>
+                  <Text style={{ color: "#A78BFA", fontSize: 10, fontWeight: "700" }}>
+                    #{contact.rank} candidate
+                  </Text>
+                </View>
+                {(contact as CascadeContact & { class_datetime?: string }).class_datetime ? (
+                  <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11.5, marginBottom: 10 }}>
+                    {new Date((contact as CascadeContact & { class_datetime?: string }).class_datetime!).toLocaleString("en-AU", {
+                      weekday: "short", day: "numeric", month: "short",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </Text>
+                ) : null}
+                {contact.composite_score != null && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 10 }}>
+                    <Ionicons name="sparkles" size={10} color="#D4AF37" />
+                    <Text style={{ color: "#D4AF37", fontSize: 10, fontWeight: "700" }}>
+                      AI match score: {Math.round(contact.composite_score * 100)}%
+                    </Text>
+                  </View>
+                )}
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <Pressable
+                    disabled={rescueAcking === contact.id}
+                    style={({ pressed }) => [{ flex: 1, backgroundColor: "#7C3AED", borderRadius: 10, paddingVertical: 11, alignItems: "center", opacity: pressed || rescueAcking === contact.id ? 0.7 : 1 }]}
+                    onPress={() => handleRescueAck(contact, true)}
+                  >
+                    {rescueAcking === contact.id
+                      ? <ActivityIndicator size="small" color="#FFF" />
+                      : <Text style={{ color: "#FFF", fontWeight: "800", fontSize: 13 }}>✓ Accept</Text>
+                    }
+                  </Pressable>
+                  <Pressable
+                    disabled={rescueAcking === contact.id}
+                    style={({ pressed }) => [{ paddingHorizontal: 20, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", alignItems: "center", opacity: pressed || rescueAcking === contact.id ? 0.7 : 1 }]}
+                    onPress={() => handleRescueAck(contact, false)}
+                  >
+                    <Text style={{ color: "rgba(255,255,255,0.6)", fontWeight: "700", fontSize: 13 }}>Decline</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
           </View>
         )}
 
