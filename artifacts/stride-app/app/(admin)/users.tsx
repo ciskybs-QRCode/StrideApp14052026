@@ -284,7 +284,6 @@ export default function AdminUsers() {
         title="Members"
         subtitle="User management"
         light
-        hideBack
         right={
           <Pressable
             style={[styles.badgePdfBtn, { backgroundColor: colors.primary }]}

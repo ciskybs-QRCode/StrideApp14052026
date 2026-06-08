@@ -137,7 +137,7 @@ export default function AdminAnalytics() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Analytics" subtitle={user?.schoolName || "Stride"} light hideBack />
+      <ScreenHeader title="Analytics" subtitle={user?.schoolName || "Stride"} light />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}

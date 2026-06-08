@@ -23,6 +23,8 @@ import { useFeatures } from "@/context/FeaturesContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
+import { HubCard } from "@/components/HubCard";
+import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { QRScanButton } from "@/components/QRScanButton";
 import { SOSButton } from "@/components/SOSButton";
 
@@ -284,10 +286,13 @@ export default function AdminHome() {
           <View>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Home</Text>
             <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              {user?.schoolName || "Stride"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              {user?.schoolName || "Stride"} {"\u00B7"} {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </Text>
           </View>
         </View>
+
+        {/* ── ROLE SWITCHER ── */}
+        <RoleSwitcherRow />
 
         {/* ── Org load error banner ── */}
         {orgLoadError && (
@@ -325,131 +330,52 @@ export default function AdminHome() {
           <SOSButton onConfirm={openSOS} />
         </View>
 
-        {/* ── ANALYTICS ENTRY CARD ── */}
-        <Pressable
-          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: colors.card, transform: pressed ? [{ scale: 0.98 }] : [] }]}
+        {/* ── TOOLS & NAVIGATION ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 10 }]}>Tools</Text>
+
+        <HubCard
+          icon="bar-chart"
+          title="Analytics"
+          description="Trends, payments, occupancy and export"
           onPress={() => { router.push("/(admin)/analytics"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        >
-          <View style={styles.analyticsCardLeft}>
-            <View style={[styles.analyticsCardIcon, { backgroundColor: "#DBEAFE" }]}>
-              <Ionicons name="bar-chart" size={26} color="#1E3A8A" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.analyticsCardTitle, { color: colors.primary }]}>Analytics</Text>
-              <Text style={[styles.analyticsCardSub, { color: colors.mutedForeground }]}>Trends · Payments · Occupancy · Export</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
-        </Pressable>
-
-        {/* ── ADMIN COPILOT ENTRY CARD ── */}
-        <Pressable
-          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#050F2E", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
+        />
+        <HubCard
+          icon="terminal-outline"
+          title="Admin Copilot"
+          description="Ask data questions in plain English"
+          badge="NL"
           onPress={() => { router.push("/(admin)/copilot"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        >
-          <View style={styles.analyticsCardLeft}>
-            <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(251,191,36,0.15)" }]}>
-              <Ionicons name="terminal-outline" size={24} color="#FBBF24" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <Text style={[styles.analyticsCardTitle, { color: "#FFFFFF" }]}>Admin Copilot</Text>
-                <View style={{ backgroundColor: "rgba(16,185,129,0.2)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
-                  <Text style={{ color: "#10B981", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>NL</Text>
-                </View>
-              </View>
-              <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.5)" }]}>Ask data questions in plain English</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
-        </Pressable>
-
-        {/* ── SMART ROSTERING ENTRY CARD ── */}
-        <Pressable
-          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#0F2457", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 20 }]}
+        />
+        <HubCard
+          icon="sparkles"
+          title="Smart Rostering"
+          description="Find best substitute, match score and auto-notify"
+          badge="AI"
           onPress={() => { router.push("/(admin)/smart-roster"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        >
-          <View style={styles.analyticsCardLeft}>
-            <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(251,191,36,0.2)" }]}>
-              <Ionicons name="sparkles" size={24} color="#FBBF24" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <Text style={[styles.analyticsCardTitle, { color: "#FFFFFF" }]}>Smart Rostering</Text>
-                <View style={{ backgroundColor: "rgba(251,191,36,0.2)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
-                  <Text style={{ color: "#FBBF24", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>AI</Text>
-                </View>
-              </View>
-              <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.55)" }]}>Find best substitute · Match score · Auto-notify</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
-        </Pressable>
-
-        {/* ── MARKETPLACE ENTRY CARD (visible only when global flag is ON) ── */}
-        {marketplaceEnabled && (
-          <Pressable
-            style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#78350F", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
-            onPress={() => { router.push("/(admin)/marketplace" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          >
-            <View style={styles.analyticsCardLeft}>
-              <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(212,175,55,0.2)" }]}>
-                <Ionicons name="storefront" size={24} color="#D4AF37" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.analyticsCardTitle, { color: "#FFF" }]}>Stride Marketplace</Text>
-                <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.5)" }]}>Products · Insurance · Platform commission</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
-          </Pressable>
-        )}
-
-        {/* ── SYSTEM GOVERNANCE CARD (super_admin only) ── */}
-        {user?.role === "super_admin" && (
-          <Pressable
-            style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#1E3A8A", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 8 }]}
-            onPress={() => { router.push("/(admin)/governance" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          >
-            <View style={styles.analyticsCardLeft}>
-              <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(212,175,55,0.18)" }]}>
-                <Ionicons name="shield-checkmark" size={24} color="#D4AF37" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                  <Text style={[styles.analyticsCardTitle, { color: "#FFF" }]}>System Governance</Text>
-                  <View style={{ backgroundColor: "rgba(212,175,55,0.22)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
-                    <Text style={{ color: "#D4AF37", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>SUPER ADMIN</Text>
-                  </View>
-                </View>
-                <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.5)" }]}>Feature flags · Module activation · Audit log</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
-          </Pressable>
-        )}
-
-        {/* ── BLE PROXIMITY ENTRY CARD ── */}
-        <Pressable
-          style={({ pressed }) => [styles.analyticsCard, { backgroundColor: "#0C4A6E", transform: pressed ? [{ scale: 0.98 }] : [], marginBottom: 20 }]}
+        />
+        <HubCard
+          icon="bluetooth"
+          title="BLE Proximity Check-in"
+          description="Wearable beacons, auto check-in and live proximity log"
+          badge="BLE"
           onPress={() => { router.push("/(admin)/beacons" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        >
-          <View style={styles.analyticsCardLeft}>
-            <View style={[styles.analyticsCardIcon, { backgroundColor: "rgba(14,165,233,0.25)" }]}>
-              <Ionicons name="bluetooth" size={24} color="#38BDF8" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <Text style={[styles.analyticsCardTitle, { color: "#FFF" }]}>BLE Proximity Check-in</Text>
-                <View style={{ backgroundColor: "rgba(56,189,248,0.2)", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
-                  <Text style={{ color: "#38BDF8", fontSize: 8, fontWeight: "800", letterSpacing: 1 }}>BLE</Text>
-                </View>
-              </View>
-              <Text style={[styles.analyticsCardSub, { color: "rgba(255,255,255,0.5)" }]}>Wearable beacons · Auto check-in · Live proximity log</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
-        </Pressable>
+        />
+        {marketplaceEnabled && (
+          <HubCard
+            icon="storefront"
+            title="Stride Marketplace"
+            description="Products, insurance and platform commission"
+            onPress={() => { router.push("/(admin)/marketplace" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          />
+        )}
+        {user?.role === "super_admin" && (
+          <HubCard
+            icon="shield-checkmark"
+            title="System Governance"
+            description="Feature flags, module activation and audit log"
+            onPress={() => { router.push("/(admin)/governance" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          />
+        )}
 
         {/* ── HERO KPI BANNER ── */}
         <View style={[styles.heroBanner, { backgroundColor: colors.primary }]}>
@@ -806,12 +732,6 @@ const styles = StyleSheet.create({
   qrCodeBtnIcon: { width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   qrCodeBtnLabel: { fontSize: 15, fontWeight: "800" },
   qrCodeBtnSub: { fontSize: 12, fontWeight: "500", marginTop: 2 },
-
-  analyticsCard: { flexDirection: "row", alignItems: "center", borderRadius: 18, padding: 16, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },
-  analyticsCardLeft: { flexDirection: "row", alignItems: "center", gap: 14, flex: 1 },
-  analyticsCardIcon: { width: 50, height: 50, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  analyticsCardTitle: { fontSize: 16, fontWeight: "800", marginBottom: 2 },
-  analyticsCardSub: { fontSize: 12, fontWeight: "500" },
 
   heroBanner: { borderRadius: 24, padding: 22, marginBottom: 16 },
   heroMain: { marginBottom: 18 },
