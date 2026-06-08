@@ -15,7 +15,7 @@ const plans = [
       "QR check-in & kiosk",
       "Smart Pick-Up (guardian circle)",
       "Digital document signing",
-      "Parent portal",
+      "Member portal",
       "Basic attendance reports",
       "Email support",
     ],

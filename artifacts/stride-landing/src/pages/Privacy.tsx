@@ -14,8 +14,8 @@ This Policy complies with the General Data Protection Regulation (GDPR), the UK 
     body: `This Privacy Policy applies to:
 
 • Organisation administrators and operators who manage the Platform
-• Parents or guardians who register or use the parent portal
-• Children whose data is entered into the Platform by their parents or guardians
+• Members or guardians who register or use the member portal
+• Dependant members whose data is entered into the Platform by their members or guardians
 • Any other person whose personal data is processed through the Service
 
 Stride Platform acts as a data processor when processing the personal data of your members and students on behalf of your organisation (the data controller). For our own business operations, we act as a data controller.`,
@@ -65,12 +65,12 @@ We do not sell or rent your personal data to third parties. We do not use your d
     title: "5. Children's Data",
     body: `The Stride platform is designed for the management of minors (children) enrolled in educational or activity programmes. We treat this data with the highest level of care and apply additional protections:
 
-• Children's data is only entered into the Platform by their parent or legal guardian, or by an authorised organisation administrator
-• We do not directly collect data from children
-• Parents and guardians can request access to, correction of, or deletion of their child's data at any time
-• We recommend that organisations review their own data protection policies regarding the processing of children's data and ensure appropriate consents are obtained
+• Dependant member data is only entered into the Platform by their member or legal guardian, or by an authorised organisation administrator
+• We do not directly collect data from dependant members
+• Members and guardians can request access to, correction of, or deletion of their dependant member's data at any time
+• We recommend that organisations review their own data protection policies regarding the processing of dependant member data and ensure appropriate consents are obtained
 
-All data relating to children is isolated to the relevant organisation's account and is not accessible by other organisations or third parties.`,
+All data relating to dependant members is isolated to the relevant organisation's account and is not accessible by other organisations or third parties.`,
   },
   {
     id: "sharing",

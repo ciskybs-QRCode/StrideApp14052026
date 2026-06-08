@@ -4,7 +4,7 @@ const sections = [
   {
     id: "acceptance",
     title: "1. Acceptance of Terms",
-    body: `By accessing or using the Stride platform ("Service", "Platform"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to all of these Terms, you may not use the Service. These Terms apply to all users of the Service, including operators, administrators, parents, and any other person who accesses the Platform.
+    body: `By accessing or using the Stride platform ("Service", "Platform"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to all of these Terms, you may not use the Service. These Terms apply to all users of the Service, including operators, administrators, members, and any other person who accesses the Platform.
 
 The Service is provided by Stride Platform ("Company", "we", "us", "our"). We reserve the right to update these Terms at any time. Your continued use of the Service after changes are posted constitutes your acceptance of the updated Terms.`,
   },
@@ -15,7 +15,7 @@ The Service is provided by Stride Platform ("Company", "we", "us", "our"). We re
 
 • Member and student management (enrolment, profiles, attendance)
 • Class scheduling and instructor management
-• Parent portal with Smart Pick-Up and emergency protocols
+• Member portal with Smart Pick-Up and emergency protocols
 • QR code-based check-in and kiosk management
 • Digital document signing and record keeping
 • Integrated payment processing via Stripe
@@ -40,7 +40,7 @@ Organisation administrators are responsible for all activity within their organi
     title: "4. Data Relating to Children",
     body: `The Service is designed to process data relating to children enrolled in activity programmes. By using the Service, you agree to:
 
-• Obtain all necessary consents from parents or legal guardians before entering any child's personal data into the Platform
+• Obtain all necessary consents from members or legal guardians before entering any dependant member's personal data into the Platform
 • Process children's data only for the purposes described in our Privacy Policy
 • Comply with all applicable data protection laws, including GDPR, when processing children's data
 • Not collect or process sensitive health or medical data beyond what is strictly necessary for the safe delivery of activities
@@ -58,7 +58,7 @@ We take the privacy of minors extremely seriously and implement additional safeg
 • All payments are processed securely by Stripe; we do not store payment card information
 • Late payments may result in suspension of your account; all data is retained for 30 days following suspension before permanent deletion
 
-Member payments (parents paying for courses) are processed directly between the organisation and its members via Stripe Connect.`,
+Member payments (members paying for courses) are processed directly between the organisation and its members via Stripe Connect.`,
   },
   {
     id: "prohibited",

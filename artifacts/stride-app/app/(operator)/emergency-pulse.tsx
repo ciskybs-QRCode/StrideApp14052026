@@ -225,7 +225,7 @@ export default function EmergencyPulseDashboard() {
               .map((a, i) => (
                 <View key={i} style={[S.ackRow, { borderColor: "#DC262620" }]}>
                   <View style={[S.ackDot, { backgroundColor: "#DC2626" }]} />
-                  <Text style={S.ackId}>Parent #{(a.parent_id.slice(0, 6)).toUpperCase()}</Text>
+                  <Text style={S.ackId}>Member #{(a.parent_id.slice(0, 6)).toUpperCase()}</Text>
                   <Text style={S.ackTime}>{elapsed(a.acked_at)}</Text>
                 </View>
               ))}
@@ -244,7 +244,7 @@ export default function EmergencyPulseDashboard() {
               .map((a, i) => (
                 <View key={i} style={[S.ackRow, { borderColor: "#05996920" }]}>
                   <View style={[S.ackDot, { backgroundColor: "#059669" }]} />
-                  <Text style={S.ackId}>Parent #{(a.parent_id.slice(0, 6)).toUpperCase()}</Text>
+                  <Text style={S.ackId}>Member #{(a.parent_id.slice(0, 6)).toUpperCase()}</Text>
                   <Text style={S.ackTime}>{elapsed(a.acked_at)}</Text>
                 </View>
               ))}

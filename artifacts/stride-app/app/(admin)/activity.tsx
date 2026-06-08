@@ -1023,7 +1023,7 @@ export default function ActivityScreen() {
             {renderRow("Age Group",
               <PickerRow
                 options={[
-                  { value: "kids" as const, label: "Kids (4–12)" },
+                  { value: "kids" as const, label: "Juniors (4–12)" },
                   { value: "youth" as const, label: "Youth (13–17)" },
                   { value: "adult" as const, label: "Adult (18+)" },
                   { value: "all" as const, label: "All Ages" },

@@ -53,10 +53,10 @@ function useLivePulse(intervalMs = 30_000): LivePulseData {
 
 const COMPARISON = [
   { feature: "Attendance",          paper: "Manual roll call",                  stride: "QR check-in — instant, immutable" },
-  { feature: "Pickup authorization",paper: "Verbal confirmation",               stride: "Guardian Circle QR + real-time parent alert" },
+  { feature: "Pickup authorization",paper: "Verbal confirmation",               stride: "Guardian Circle QR + real-time member alert" },
   { feature: "Security audit trail",paper: "Paper binder — lost or destroyed",  stride: "SHA-256 Security Timeline, permanent" },
   { feature: "Proof of presence",   paper: "Handwritten sign-in sheet",         stride: "Cryptographic hash per check-in" },
-  { feature: "Emergency alerts",    paper: "Phone tree — minutes or hours",     stride: "Emergency Pulse to all parents in &lt;3 s" },
+  { feature: "Emergency alerts",    paper: "Phone tree — minutes or hours",     stride: "Emergency Pulse to all members in &lt;3 s" },
   { feature: "Incident records",    paper: "Handwritten, no search",            stride: "Searchable digital Security Timeline" },
 ];
 
@@ -132,16 +132,16 @@ const SCHOOL_FEATURES = [
   },
   {
     Icon: IcoShield,
-    tag: "Child Safety",
+    tag: "Dependant Safety",
     title: "Smart Pick-Up Control",
-    desc: "Define exactly who can collect each child. Unauthorised pickup attempts trigger an immediate alert to school staff and the registered parent.",
+    desc: "Define exactly who can collect each dependant member. Unauthorised pickup attempts trigger an immediate alert to school staff and the registered member.",
     color: "bg-indigo-600",
   },
   {
     Icon: IcoPeople,
     tag: "Zero Liability",
     title: "Legal Gate",
-    desc: "Digital consent forms, waivers, and media releases — collected and signed on the parent's phone before first access. SHA-256 audit trail included.",
+    desc: "Digital consent forms, waivers, and media releases — collected and signed on the member's phone before first access. SHA-256 audit trail included.",
     color: "bg-violet-600",
   },
   {
@@ -167,7 +167,7 @@ const PARENT_FEATURES = [
   {
     Icon: IcoPulse,
     title: "Emergency Pulse Alerts",
-    desc: "Schools can broadcast emergency alerts to all parent phones simultaneously. One-tap acknowledgment confirms you've received the message.",
+    desc: "Schools can broadcast emergency alerts to all member phones simultaneously. One-tap acknowledgment confirms you've received the message.",
   },
 ];
 
@@ -179,7 +179,7 @@ const HOW_STEPS = [
   },
   {
     n: "02",
-    title: "Parents sign documents on their phones",
+    title: "Members sign documents on their phones",
     desc: "Families receive an invite link. They download the Stride app, review all consent documents, and sign digitally before their first session.",
   },
   {
@@ -251,7 +251,7 @@ export default function Landing() {
   const navLinks = [
     ["#security", "Security"],
     ["#for-schools", "For Schools"],
-    ["#for-parents", "For Parents"],
+    ["#for-members", "For Members"],
     ["#pricing", "Pricing"],
     ["#faq", "FAQ"],
   ];
@@ -653,20 +653,20 @@ export default function Landing() {
       </section>
 
       {/* ── FOR PARENTS ────────────────────────────────────────────────────── */}
-      <section id="for-parents" className="py-24 bg-white">
+      <section id="for-members" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col lg:flex-row items-center gap-16">
 
             {/* Left — copy */}
             <div className="flex-1">
               <span className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-1.5 mb-5">
-                <span className="text-amber-700 text-xs font-bold tracking-wider uppercase">For Parents</span>
+                <span className="text-amber-700 text-xs font-bold tracking-wider uppercase">For Members</span>
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">
-                Your Child, Always in Safe Hands
+                Your Dependants, Always in Safe Hands
               </h2>
               <p className="text-lg text-slate-500 mb-8 leading-relaxed">
-                Stride gives parents full visibility and control — from the moment drop-off happens
+                Stride gives members full visibility and control — from the moment drop-off happens
                 to the second pick-up is confirmed. No more uncertainty. No more missed messages.
               </p>
 
@@ -693,7 +693,7 @@ export default function Landing() {
                     <IcoShield />
                   </div>
                   <div>
-                    <p className="text-white font-bold text-sm">Parent Portal</p>
+                    <p className="text-white font-bold text-sm">Member Portal</p>
                     <p className="text-blue-300 text-xs">Sofia's School — Live</p>
                   </div>
                   <span className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

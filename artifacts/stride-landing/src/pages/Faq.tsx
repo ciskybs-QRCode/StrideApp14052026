@@ -30,15 +30,15 @@ const categories = [
     items: [
       {
         q: "How does Smart Pick-Up work?",
-        a: "Parents configure a Guardian Circle — a list of people authorised to collect each child. When an operator scans the child's QR code at the kiosk, the system checks this list and displays a live photo and name. If an unknown person arrives, the operator sees a warning and can trigger an SOS.",
+        a: "Members configure a Guardian Circle — a list of people authorised to collect each dependant. When an operator scans the dependant's QR code at the kiosk, the system checks this list and displays a live photo and name. If an unknown person arrives, the operator sees a warning and can trigger an SOS.",
       },
       {
-        q: "What happens if an unauthorised person tries to pick up a child?",
-        a: "The kiosk shows a 'Denied' screen with red alert colour. The operator's dashboard displays an SOS alert with the child's name and a prompt to follow the school's emergency protocol. The event is logged with a timestamp and is available in the security audit log.",
+        q: "What happens if an unauthorised person tries to pick up a dependant member?",
+        a: "The kiosk shows a 'Denied' screen with red alert colour. The operator's dashboard displays an SOS alert with the dependant's name and a prompt to follow the school's emergency protocol. The event is logged with a timestamp and is available in the security audit log.",
       },
       {
-        q: "Can parents add and remove guardians themselves?",
-        a: "Yes. Parents can manage their Guardian Circle from the mobile app at any time. Changes take effect immediately — no admin approval required, though admins can view the full circle.",
+        q: "Can members add and remove guardians themselves?",
+        a: "Yes. Members can manage their Guardian Circle from the mobile app at any time. Changes take effect immediately — no admin approval required, though admins can view the full circle.",
       },
       {
         q: "Are signatures legally binding?",
@@ -52,7 +52,7 @@ const categories = [
     items: [
       {
         q: "How are payments processed?",
-        a: "Stripe handles all payments. Parents can pay for subscriptions, one-off invoices, marketplace products, and private lessons directly in the app. Funds are deposited to your bank account via Stripe Connect.",
+        a: "Stripe handles all payments. Members can pay for subscriptions, one-off invoices, marketplace products, and private lessons directly in the app. Funds are deposited to your bank account via Stripe Connect.",
       },
       {
         q: "Can I use my own Stripe account?",

@@ -568,7 +568,7 @@ export default function OperatorDashboard() {
       return;
     }
     const tag = result.isAuthorized ? "✓ Pick-up authorised" : "✗ Pick-up NOT authorised";
-    pushLog({ time: nowTime(), action: `${tag}: ${result.guardianName} per ${result.childName}`, type: result.isAuthorized ? "warning" : "error" });
+    pushLog({ time: nowTime(), action: `${tag}: ${result.guardianName} for ${result.childName}`, type: result.isAuthorized ? "warning" : "error" });
     Haptics.notificationAsync(result.isAuthorized ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Error);
     // Unauthorized: auto-dismiss after 5s. Authorized: operator must tap "Verify & Sign" or Skip.
     if (!result.isAuthorized) {
@@ -660,15 +660,15 @@ export default function OperatorDashboard() {
         const parts = data.split(":");
         scanType = "checkin";
         studentId = parts[2] ?? undefined;
-        studentName = decodeURIComponent(parts[3] ?? "Studente");
+        studentName = decodeURIComponent(parts[3] ?? "Member");
       } else if (data.startsWith("STRIDE:GUARDIAN:")) {
         scanType = "guardian";
         const parts = data.split(":");
-        studentName = decodeURIComponent(parts[4] ?? "Tutore");
+        studentName = decodeURIComponent(parts[4] ?? "Guardian");
       } else if (data.startsWith("STRIDE:LESSON:")) {
         scanType = "lesson";
         const parts = data.split(":");
-        studentName = parts[5] ?? "Lezione";
+        studentName = parts[5] ?? "Lesson";
       }
 
       await enqueue({
@@ -684,9 +684,9 @@ export default function OperatorDashboard() {
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const displayName = studentName ?? "Membro";
+      const displayName = studentName ?? "Member";
       showScanResult({ type: "success", name: displayName, subscription: "active", medical: "valid", payment: "paid" });
-      pushLog({ time: nowTime(), action: `⏳ Offline: ${displayName} — in coda`, type: "warning" });
+      pushLog({ time: nowTime(), action: `⏳ Offline: ${displayName} — queued`, type: "warning" });
       setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 4000);
       return;
     }
@@ -865,7 +865,7 @@ export default function OperatorDashboard() {
       });
       setShowPulseConfirm(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      pushLog({ time: nowTime(), action: `🚨 Emergency Pulse broadcast — ${result.checked_in_count} children estimated on-site`, type: "error" });
+      pushLog({ time: nowTime(), action: `🚨 Emergency Pulse broadcast — ${result.checked_in_count} dependants estimated on-site`, type: "error" });
       router.push(`/(operator)/emergency-pulse?id=${result.pulse_id}` as Parameters<typeof router.push>[0]);
     } catch {
       Alert.alert("Error", "Could not trigger Emergency Pulse. Check your connection and try again.");
@@ -1358,7 +1358,7 @@ export default function OperatorDashboard() {
           </View>
           <View style={styles.pulseBtnBody}>
             <Text style={styles.pulseBtnLabel}>EMERGENCY PULSE</Text>
-            <Text style={styles.pulseBtnHint}>Broadcast crisis alert to all checked-in parents</Text>
+            <Text style={styles.pulseBtnHint}>Broadcast crisis alert to all checked-in members</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
         </Pressable>
@@ -2139,7 +2139,7 @@ export default function OperatorDashboard() {
 
           {!scanResult && !lessonScanResult && !lessonScanning && !guardianResult && !accessAlert && Platform.OS !== "web" && (
             <View style={styles.scannerFooter}>
-              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 8 }}>Inquadra il QR Code dello studente</Text>
+              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 8 }}>Scan the member{"'"}s QR code</Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>
                 <Text style={styles.simulateBtnText}>Simulate Member Check-in</Text>
               </Pressable>
@@ -2196,8 +2196,8 @@ export default function OperatorDashboard() {
               <Text style={{ textAlign: "center", color: "#6B7280", fontSize: 13, lineHeight: 20 }}>
                 This will broadcast a{" "}
                 <Text style={{ fontWeight: "800", color: "#1F2937" }}>HIGH-PRIORITY ALERT</Text>
-                {" "}to all parents with children currently checked in.{"\n\n"}
-                Parents will be prompted to confirm their child{"'"}s safety. You will see a live{" "}
+                {" "}to all members with dependants currently checked in.{"\n\n"}
+                Members will be prompted to confirm their dependant{"'"}s safety. You will see a live{" "}
                 <Text style={{ fontWeight: "700" }}>Safe / Need Help</Text>
                 {" "}count update in real time on the next screen.
               </Text>

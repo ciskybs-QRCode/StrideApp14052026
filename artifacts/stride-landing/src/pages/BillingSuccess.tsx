@@ -6,7 +6,7 @@ export default function BillingSuccess() {
 
   const features = [
     { icon: "📅", label: "Unlimited class scheduling and calendar management" },
-    { icon: "👪", label: "Parent portal with Smart Pick-Up and real-time updates" },
+    { icon: "👪", label: "Member portal with Smart Pick-Up and real-time updates" },
     { icon: "📲", label: "QR kiosk check-in and operator clock-in system" },
     { icon: "📝", label: "Digital document signing and compliance records" },
     { icon: "💳", label: "Automated invoicing and payment processing for members" },

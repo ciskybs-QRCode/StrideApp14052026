@@ -206,7 +206,7 @@ function roleLabel(role: string): string {
   if (role === "super_admin") return "Super Admin";
   if (role === "admin")       return "Admin";
   if (role === "operator")    return "Operator";
-  if (role === "parent")      return "Parent";
+  if (role === "parent")      return "Member";
   return role;
 }
 
@@ -1081,7 +1081,7 @@ type SimRole = { icon: keyof typeof Ionicons.glyphMap; label: string; desc: stri
 const SIM_ROLES: SimRole[] = [
   { icon: "stats-chart-outline",  label: "Admin View",    desc: "School management & billing", color: "#7C3AED", bg: "#F5F3FF", route: "/(admin)/stats" },
   { icon: "calendar-outline",     label: "Operator View", desc: "Dashboard, QR scanner & ops",  color: "#059669", bg: "#ECFDF5", route: "/(operator)/dashboard" },
-  { icon: "home-outline",         label: "Parent View",   desc: "Bookings, wallet & children",  color: "#D97706", bg: "#FFFBEB", route: "/(parent)/home" },
+  { icon: "home-outline",         label: "Member View",   desc: "Bookings, wallet & dependants", color: "#D97706", bg: "#FFFBEB", route: "/(parent)/home" },
 ];
 
 function RoleSwitcherModal({ visible, onClose, onNavigate }: { visible: boolean; onClose: () => void; onNavigate: (route: string) => void }) {

@@ -134,7 +134,7 @@ const INITIAL_SCHEDULE: LessonItem[][] = [
   ],
   [{ course: "Hip Hop Junior",     start: "16:00", end: "17:30", room: "Room B", students: 10 }],
   [{ course: "Contemporary Dance", start: "17:00", end: "18:30", room: "Room C", students: 8  }],
-  [{ course: "Kids Yoga",          start: "10:00", end: "11:00", room: "Room D", students: 6  }],
+  [{ course: "Juniors Yoga",        start: "10:00", end: "11:00", room: "Room D", students: 6  }],
   [],
 ];
 

@@ -91,9 +91,9 @@ export default function JoinScreen() {
             <Text style={[styles.schoolBadgeText, { color: primary }]}>STRIDE APP</Text>
           </View>
           <Text style={styles.heroSchool}>{schoolName}</Text>
-          <Text style={styles.heroTagline}>Parent Registration</Text>
+          <Text style={styles.heroTagline}>Member Registration</Text>
           <Text style={styles.heroDesc}>
-            Create your free account to follow lessons, payments and communications of your dependent members.
+            Create your free account to follow lessons, payments and communications of your dependant members.
           </Text>
         </View>
 

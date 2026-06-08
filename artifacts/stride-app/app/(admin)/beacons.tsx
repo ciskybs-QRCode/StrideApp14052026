@@ -143,7 +143,7 @@ export default function BeaconsScreen() {
   // ── Assign wearable to child ──────────────────────────────────────────────
   const addAssignment = async () => {
     if (!aChild || !aUUID.trim()) {
-      Alert.alert("Missing fields", "Child and UUID are required.");
+      Alert.alert("Missing fields", "Dependant Member and UUID are required.");
       return;
     }
     setSaving(true);
@@ -154,7 +154,7 @@ export default function BeaconsScreen() {
       setAChild(""); setAUUID(""); setALabel("Wearable");
       void loadAll();
     } catch {
-      Alert.alert("Error", "Could not assign wearable. UUID may already be assigned to another child.");
+      Alert.alert("Error", "Could not assign wearable. UUID may already be assigned to another dependant member.");
     } finally {
       setSaving(false);
     }
@@ -263,8 +263,8 @@ export default function BeaconsScreen() {
         {/* ── Child Wearable Assignments ───────────────────────────────────── */}
         <View style={[S.sectionHeader, { marginTop: 24 }]}>
           <View style={S.sectionLeft}>
-            <Text style={[S.sectionTitle, { color: colors.foreground }]}>Child Wearables</Text>
-            <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>UUID → child mapping for auto check-in</Text>
+            <Text style={[S.sectionTitle, { color: colors.foreground }]}>Dependant Wearables</Text>
+            <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>UUID → dependant mapping for auto check-in</Text>
           </View>
           <Pressable
             style={[S.addBtn, { backgroundColor: "#059669" }]}
@@ -428,7 +428,7 @@ export default function BeaconsScreen() {
               </Pressable>
             </View>
 
-            <Text style={[S.fieldLabel, { color: colors.mutedForeground }]}>Child</Text>
+            <Text style={[S.fieldLabel, { color: colors.mutedForeground }]}>Dependant Member</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 {students.map(s => (
