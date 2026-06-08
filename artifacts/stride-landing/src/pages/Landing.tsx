@@ -929,6 +929,159 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── PRIVACY BY DESIGN ──────────────────────────────────────────────── */}
+      <section id="privacy-by-design" className="py-24 bg-gradient-to-br from-[#060f1e] to-[#0a1a35] relative overflow-hidden">
+
+        {/* Subtle grid texture */}
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+
+          {/* Header */}
+          <div className="text-center mb-14">
+            {/* Shield hero icon */}
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 mb-6 mx-auto">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <polyline points="9 12 11 14 15 10" />
+              </svg>
+            </div>
+
+            <span className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="text-emerald-400 text-xs font-bold tracking-wider uppercase">Designed With Your Data In Mind</span>
+            </span>
+
+            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+              Privacy by Design
+            </h2>
+            <p className="text-blue-300 text-lg max-w-2xl mx-auto leading-relaxed">
+              How We Protect Your Data — and Your Child's
+            </p>
+          </div>
+
+          {/* 4-pillar grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+
+            {/* Pillar 1 — Data Encryption */}
+            <div className="bg-white/4 border border-emerald-500/15 rounded-2xl p-8 hover:border-emerald-500/35 transition-colors">
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/12 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-white font-black text-lg">Data Encryption</h3>
+                    <span className="text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">AES-256</span>
+                  </div>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    All data, including BLE proximity signals, is encrypted at rest and in transit using AES-256 standards.
+                    Your child's movement history is stored in a secure, isolated database.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pillar 2 — GDPR/CCPA */}
+            <div className="bg-white/4 border border-blue-500/15 rounded-2xl p-8 hover:border-blue-500/35 transition-colors">
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/12 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-white font-black text-lg">GDPR &amp; CCPA Compliant</h3>
+                    <span className="text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">Global</span>
+                  </div>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Stride is fully compliant with global data protection standards.
+                    No personally identifiable movement data is shared with third parties. <span className="text-white font-bold">Ever.</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pillar 3 — Local-Only Rule */}
+            <div className="bg-white/4 border border-violet-500/15 rounded-2xl p-8 hover:border-violet-500/35 transition-colors">
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 rounded-xl bg-violet-500/12 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6.5 6.5 17.5 17.5" />
+                    <path d="M3.4 3.4A9.9 9.9 0 0 0 2 8.5c0 5.5 4.5 10 10 10a9.9 9.9 0 0 0 5.1-1.4" />
+                    <path d="M6.1 6.1A5.9 5.9 0 0 0 6 8.5a6 6 0 0 0 6 6 5.9 5.9 0 0 0 2.4-.5" />
+                    <path d="M10.7 10.7a2 2 0 1 0 2.6 2.6" />
+                    <path d="M20.6 20.6A9.9 9.9 0 0 0 22 15.5a9.9 9.9 0 0 0-9.5-9.9" />
+                    <path d="M17.9 17.9A5.9 5.9 0 0 0 18 15.5a6 6 0 0 0-5.9-6" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-white font-black text-lg">The &apos;Local-Only&apos; Rule</h3>
+                    <span className="text-[10px] font-bold bg-violet-500/15 text-violet-400 border border-violet-500/20 px-2 py-0.5 rounded-full">Zero PII</span>
+                  </div>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Wearable UUIDs are randomly generated anonymous identifiers. They contain{" "}
+                    <span className="text-white font-bold">NO child name or personal info</span> — only the system
+                    can link the identifier to the child profile in your secure, private portal.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pillar 4 — Parental Control */}
+            <div className="bg-white/4 border border-amber-500/15 rounded-2xl p-8 hover:border-amber-500/35 transition-colors">
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/12 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-white font-black text-lg">Parental Control</h3>
+                    <span className="text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">Full Transparency</span>
+                  </div>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Parents have full transparency. You can view all recorded logs, disable proximity tracking at any time,
+                    and request a full data audit export.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom trust bar */}
+          <div className="bg-white/3 border border-white/8 rounded-2xl px-8 py-6 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
+            {[
+              { icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", stroke: "#34d399", label: "AES-256 at rest & in transit" },
+              { icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z", stroke: "#60a5fa", label: "GDPR · CCPA · UK GDPR" },
+              { icon: "M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z", stroke: "#a78bfa", label: "No third-party data sharing" },
+              { icon: "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z M4 22v-7", stroke: "#fbbf24", label: "Full audit export on request" },
+            ].map(({ icon, stroke, label }) => (
+              <div key={label} className="flex items-center gap-2.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d={icon} />
+                </svg>
+                <span className="text-slate-400 text-sm font-medium">{label}</span>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
       {/* ── PRICING ────────────────────────────────────────────────────────── */}
       <section id="pricing" className="py-24 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
