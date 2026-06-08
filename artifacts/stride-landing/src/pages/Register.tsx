@@ -39,10 +39,10 @@ function ProgressBar({ step }: { step: number }) {
       <div className="flex items-center gap-2 mb-3">
         {Array.from({ length: TOTAL }, (_, i) => i + 1).map(n => (
           <div key={n} className="flex items-center gap-2 flex-1">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 transition-colors
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 transition-colors
               ${n < step  ? "bg-emerald-500 text-white"
-              : n === step ? "bg-[#D4AF37] text-[#0A192F]"
-              : "bg-white/10 text-slate-400"}`}>
+              : n === step ? "bg-[#1E3A8A] text-white"
+              : "bg-slate-100 text-slate-400 border border-slate-200"}`}>
               {n < step ? (
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
@@ -50,16 +50,16 @@ function ProgressBar({ step }: { step: number }) {
               ) : n}
             </div>
             {n < TOTAL && (
-              <div className={`flex-1 h-0.5 rounded-full transition-colors ${n < step ? "bg-emerald-500" : "bg-white/10"}`} />
+              <div className={`flex-1 h-0.5 rounded-full transition-colors ${n < step ? "bg-emerald-500" : "bg-slate-200"}`} />
             )}
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-[10px] text-slate-500 font-medium">
-        <span className={step >= 1 ? "text-[#D4AF37]" : ""}>School</span>
-        <span className={step >= 2 ? "text-[#D4AF37]" : ""}>Account</span>
-        <span className={step >= 3 ? "text-[#D4AF37]" : ""}>Payments</span>
-        <span className={step >= 4 ? "text-[#D4AF37]" : ""}>Launch</span>
+      <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+        <span className={step >= 1 ? "text-[#1E3A8A] font-bold" : ""}>School</span>
+        <span className={step >= 2 ? "text-[#1E3A8A] font-bold" : ""}>Account</span>
+        <span className={step >= 3 ? "text-[#1E3A8A] font-bold" : ""}>Payments</span>
+        <span className={step >= 4 ? "text-[#1E3A8A] font-bold" : ""}>Launch</span>
       </div>
     </div>
   );
@@ -67,9 +67,9 @@ function ProgressBar({ step }: { step: number }) {
 
 // ── Input styles ──────────────────────────────────────────────────────────────
 
-const inputCls = "w-full bg-[#0A192F] border border-[#D4AF37]/30 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-colors";
+const inputCls = "w-full bg-white border border-slate-200 text-slate-900 placeholder-slate-400 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10 transition-colors";
 const selectCls = `${inputCls} appearance-none cursor-pointer`;
-const labelCls = "block text-sm font-semibold text-slate-300 mb-2";
+const labelCls = "block text-sm font-semibold text-slate-700 mb-2";
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
 
@@ -91,21 +91,21 @@ export default function Register() {
   const [country,    setCountry]    = useState("AU");
 
   // Step 2 — Admin account
-  const [firstName,   setFirstName]   = useState("");
-  const [lastName,    setLastName]    = useState("");
-  const [email,       setEmail]       = useState("");
-  const [password,    setPassword]    = useState("");
-  const [confirmPwd,  setConfirmPwd]  = useState("");
-  const [showPwd,     setShowPwd]     = useState(false);
+  const [firstName,  setFirstName]  = useState("");
+  const [lastName,   setLastName]   = useState("");
+  const [email,      setEmail]      = useState("");
+  const [password,   setPassword]   = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [showPwd,    setShowPwd]    = useState(false);
 
   // Step 4 — terms
   const [agreedTerms, setAgreedTerms] = useState(false);
 
   // Meta
-  const [error,          setError]         = useState("");
-  const [loading,        setLoading]        = useState(false);
-  const [submitted,      setSubmitted]      = useState(false);
-  const [activationUrl,  setActivationUrl]  = useState<string | null>(null);
+  const [error,         setError]        = useState("");
+  const [loading,       setLoading]      = useState(false);
+  const [submitted,     setSubmitted]    = useState(false);
+  const [activationUrl, setActivationUrl] = useState<string | null>(null);
 
   const countryData = COUNTRIES.find(c => c.value === country) ?? COUNTRIES[0];
   const currency    = countryData.currency;
@@ -163,39 +163,40 @@ export default function Register() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#0A192F] flex items-center justify-center px-6 py-16">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-16">
         <div className="max-w-md w-full">
-          <div className="bg-[#112240] border border-[#D4AF37]/30 rounded-2xl p-10 text-center">
-            <div className="w-20 h-20 rounded-full bg-[#D4AF37]/10 border-2 border-[#D4AF37]/40 flex items-center justify-center mx-auto mb-6">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
+            <div className="w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center mx-auto mb-6">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                 <polyline points="22,6 12,13 2,6" />
               </svg>
             </div>
-            <h2 className="text-2xl font-black text-white mb-2">Check Your Inbox</h2>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              We sent a verification link to <strong className="text-[#D4AF37]">{email}</strong>.
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Check Your Inbox</h2>
+            <p className="text-slate-500 text-sm leading-relaxed mb-6">
+              We sent a verification link to{" "}
+              <strong className="text-[#1E3A8A]">{email}</strong>.
               Click it to activate your account, then download Stride and log in as Administrator.
             </p>
 
-            <div className="flex flex-col gap-3 text-left mb-6">
+            <div className="flex flex-col gap-2.5 text-left mb-6">
               {[
                 { n: "1", t: "Open the email from Stride" },
                 { n: "2", t: "Click 'Activate My Account'" },
                 { n: "3", t: "Download Stride & log in as Admin" },
-                { n: "4", t: "Go to Settings → Billing to connect Stripe" },
+                { n: "4", t: "Go to Settings \u2192 Billing to connect Stripe" },
               ].map(s => (
-                <div key={s.n} className="flex items-center gap-3 bg-[#0A192F] rounded-xl px-4 py-3">
-                  <span className="w-6 h-6 rounded-full bg-[#D4AF37] text-[#0A192F] text-xs font-black flex items-center justify-center flex-shrink-0">{s.n}</span>
-                  <span className="text-slate-300 text-sm">{s.t}</span>
+                <div key={s.n} className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                  <span className="w-6 h-6 rounded-full bg-[#1E3A8A] text-white text-xs font-black flex items-center justify-center flex-shrink-0">{s.n}</span>
+                  <span className="text-slate-700 text-sm">{s.t}</span>
                 </div>
               ))}
             </div>
 
             {activationUrl && (
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-5">
-                <p className="text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">Dev — Activation Link</p>
-                <a href={activationUrl} className="text-[#D4AF37] text-xs break-all underline hover:text-[#e8c44b] transition-colors">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
+                <p className="text-amber-700 text-xs font-bold uppercase tracking-wider mb-2">Dev &mdash; Activation Link</p>
+                <a href={activationUrl} className="text-[#1E3A8A] text-xs break-all underline hover:text-[#152d6e] transition-colors">
                   {activationUrl}
                 </a>
               </div>
@@ -213,31 +214,31 @@ export default function Register() {
   // ── Main wizard ────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#0A192F] flex items-center justify-center px-6 py-16">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-16">
       <div className="max-w-md w-full">
 
         {/* Header */}
         <div className="text-center mb-8">
           <a href="/" className="inline-flex items-center gap-2 no-underline mb-6">
             <Logo />
-            <span className="text-white font-bold text-lg tracking-wide">Stride Platform</span>
+            <span className="text-[#1E3A8A] font-bold text-lg tracking-wide">Stride Platform</span>
           </a>
-          <h1 className="text-3xl font-black text-white mb-2">Register Your School</h1>
-          <p className="text-slate-400 text-sm">
+          <h1 className="text-3xl font-black text-slate-900 mb-2">Register Your School</h1>
+          <p className="text-slate-500 text-sm">
             Start your free 30-day trial. No credit card required.
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#112240] border border-[#D4AF37]/20 rounded-2xl p-8">
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
           <ProgressBar step={step} />
 
           {/* ── Step 1: School Details ─────────────────────────────────── */}
           {step === 1 && (
             <div className="flex flex-col gap-5">
               <div>
-                <p className="text-[#D4AF37] text-sm font-bold uppercase tracking-wider mb-1">About Your School</p>
-                <p className="text-slate-400 text-sm">Tell us about your organisation.</p>
+                <p className="text-[#1E3A8A] text-sm font-bold uppercase tracking-wider mb-1">About Your School</p>
+                <p className="text-slate-500 text-sm">Tell us about your organisation.</p>
               </div>
               <div>
                 <label className={labelCls}>School / Organisation Name</label>
@@ -270,7 +271,9 @@ export default function Register() {
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </div>
-                <p className="text-slate-500 text-xs mt-1.5">Billing currency: <strong className="text-slate-300">{currency}</strong></p>
+                <p className="text-slate-400 text-xs mt-1.5">
+                  Billing currency: <strong className="text-slate-700">{currency}</strong>
+                </p>
               </div>
             </div>
           )}
@@ -279,8 +282,10 @@ export default function Register() {
           {step === 2 && (
             <div className="flex flex-col gap-5">
               <div>
-                <p className="text-[#D4AF37] text-sm font-bold uppercase tracking-wider mb-1">Administrator Account</p>
-                <p className="text-slate-400 text-sm">You'll be the primary admin for {schoolName || "your school"}.</p>
+                <p className="text-[#1E3A8A] text-sm font-bold uppercase tracking-wider mb-1">Administrator Account</p>
+                <p className="text-slate-500 text-sm">
+                  You'll be the primary admin for {schoolName || "your school"}.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -306,7 +311,7 @@ export default function Register() {
                     placeholder="Min. 8 characters" value={password}
                     onChange={e => { setPassword(e.target.value); setError(""); }} />
                   <button type="button" onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
                     {showPwd ? (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
@@ -332,20 +337,20 @@ export default function Register() {
           {step === 3 && (
             <div className="flex flex-col gap-5">
               <div>
-                <p className="text-[#D4AF37] text-sm font-bold uppercase tracking-wider mb-1">Payment Setup</p>
-                <p className="text-slate-400 text-sm">How Stride handles payments for your school.</p>
+                <p className="text-[#1E3A8A] text-sm font-bold uppercase tracking-wider mb-1">Payment Setup</p>
+                <p className="text-slate-500 text-sm">How Stride handles payments for your school.</p>
               </div>
 
-              <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-4">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="1" y="4" width="22" height="16" rx="2" />
                     <line x1="1" y1="10" x2="23" y2="10" />
                   </svg>
-                  <span className="text-emerald-300 font-bold text-sm">Powered by Stripe Connect</span>
+                  <span className="text-emerald-700 font-bold text-sm">Powered by Stripe Connect</span>
                 </div>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  Member fees go directly into your Stripe account — Stride never holds your money.
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Member fees go directly into your Stripe account &mdash; Stride never holds your money.
                   You connect your Stripe account from the app after registration.
                 </p>
               </div>
@@ -353,50 +358,39 @@ export default function Register() {
               <div className="space-y-3">
                 {[
                   {
-                    icon: (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ),
                     title: "0% platform commission on member payments",
                     desc:  "What your members pay goes directly to you, minus standard Stripe processing fees.",
                   },
                   {
-                    icon: (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ),
                     title: "Automated operator payroll",
                     desc:  "Set earnings per operator and Stride routes payouts automatically at the end of each period.",
                   },
                   {
-                    icon: (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ),
                     title: "Connect from Admin Settings after sign-up",
-                    desc:  "Go to Admin → Billing → Stripe Connect and complete the setup in minutes.",
+                    desc:  "Go to Admin \u2192 Billing \u2192 Stripe Connect and complete setup in minutes.",
                   },
-                ].map(({ icon, title, desc }) => (
-                  <div key={title} className="flex gap-3 bg-[#0A192F] rounded-xl px-4 py-3">
-                    <span className="mt-0.5 flex-shrink-0">{icon}</span>
+                ].map(({ title, desc }) => (
+                  <div key={title} className="flex gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                    <svg className="mt-0.5 flex-shrink-0 text-emerald-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
                     <div>
-                      <p className="text-white text-sm font-semibold">{title}</p>
-                      <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{desc}</p>
+                      <p className="text-slate-800 text-sm font-semibold">{title}</p>
+                      <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">{desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex items-start gap-3 bg-[#D4AF37]/5 border border-[#D4AF37]/15 rounded-xl p-4">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" className="flex-shrink-0 mt-0.5">
-                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+              <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1E3A8A" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  You don't need to connect Stripe right now. Your trial runs without it.
-                  Connect when you're ready to start taking member payments.
+                <p className="text-slate-600 text-xs leading-relaxed">
+                  You don&apos;t need to connect Stripe right now. Your trial runs without it.
+                  Connect when you&apos;re ready to start taking member payments.
                 </p>
               </div>
             </div>
@@ -406,11 +400,11 @@ export default function Register() {
           {step === 4 && (
             <div className="flex flex-col gap-5">
               <div>
-                <p className="text-[#D4AF37] text-sm font-bold uppercase tracking-wider mb-1">Review &amp; Launch</p>
-                <p className="text-slate-400 text-sm">Confirm your details and start your free trial.</p>
+                <p className="text-[#1E3A8A] text-sm font-bold uppercase tracking-wider mb-1">Review &amp; Launch</p>
+                <p className="text-slate-500 text-sm">Confirm your details and start your free trial.</p>
               </div>
 
-              <div className="bg-[#0A192F] rounded-xl p-5 space-y-3 border border-[#D4AF37]/15">
+              <div className="bg-slate-50 rounded-xl p-5 space-y-3 border border-slate-200">
                 {[
                   { label: "School Name", value: schoolName },
                   { label: "Type",        value: ORG_TYPES.find(t => t.value === orgType)?.label ?? orgType },
@@ -420,22 +414,22 @@ export default function Register() {
                   { label: "Admin Email", value: email },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex items-center justify-between">
-                    <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">{label}</span>
-                    <span className="text-white text-sm font-semibold">{value}</span>
+                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">{label}</span>
+                    <span className="text-slate-800 text-sm font-semibold">{value}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-[#1E3A8A]/20 border border-[#1E3A8A]/30 rounded-xl p-4">
-                <p className="text-blue-200 text-xs font-bold uppercase tracking-wider mb-2">What happens next</p>
+              <div className="bg-[#1E3A8A]/5 border border-[#1E3A8A]/20 rounded-xl p-4">
+                <p className="text-[#1E3A8A] text-xs font-bold uppercase tracking-wider mb-2">What happens next</p>
                 <ul className="space-y-1.5">
                   {[
                     "Verification email sent immediately",
                     "30-day free trial starts on activation",
-                    "Stripe Connect — connect from the app anytime",
+                    "Stripe Connect \u2014 connect from the app anytime",
                   ].map(item => (
-                    <li key={item} className="flex items-center gap-2 text-slate-300 text-xs">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <li key={item} className="flex items-center gap-2 text-slate-600 text-xs">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       {item}
@@ -447,12 +441,12 @@ export default function Register() {
               <label className="flex items-start gap-3 cursor-pointer">
                 <input type="checkbox" checked={agreedTerms}
                   onChange={e => { setAgreedTerms(e.target.checked); setError(""); }}
-                  className="mt-0.5 accent-[#D4AF37] w-4 h-4 flex-shrink-0" />
-                <span className="text-slate-400 text-xs leading-relaxed">
+                  className="mt-0.5 accent-[#1E3A8A] w-4 h-4 flex-shrink-0" />
+                <span className="text-slate-500 text-xs leading-relaxed">
                   I agree to Stride&apos;s{" "}
-                  <a href="/terms"   target="_blank" className="text-[#D4AF37] hover:underline">Terms of Service</a>
+                  <a href="/terms"   target="_blank" className="text-[#1E3A8A] hover:underline">Terms of Service</a>
                   {" "}and{" "}
-                  <a href="/privacy" target="_blank" className="text-[#D4AF37] hover:underline">Privacy Policy</a>.
+                  <a href="/privacy" target="_blank" className="text-[#1E3A8A] hover:underline">Privacy Policy</a>.
                 </span>
               </label>
             </div>
@@ -460,8 +454,8 @@ export default function Register() {
 
           {/* ── Error ─────────────────────────────────────────────────── */}
           {error && (
-            <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
 
@@ -469,13 +463,13 @@ export default function Register() {
           <div className={`flex gap-3 mt-6 ${step > 1 ? "flex-row" : "flex-col"}`}>
             {step > 1 && (
               <button type="button" onClick={() => { setStep(s => s - 1); setError(""); }}
-                className="flex-1 bg-[#0A192F] border border-[#D4AF37]/30 text-slate-300 font-bold py-3.5 rounded-xl text-sm hover:border-[#D4AF37]/60 transition-colors">
+                className="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-3.5 rounded-xl text-sm hover:border-slate-300 hover:bg-slate-50 transition-colors">
                 Back
               </button>
             )}
             {step < TOTAL ? (
               <button type="button" onClick={next}
-                className="flex-1 bg-[#D4AF37] text-[#0A192F] font-bold py-3.5 rounded-xl text-sm hover:bg-[#e8c44b] transition-colors">
+                className="flex-1 bg-[#1E3A8A] text-white font-bold py-3.5 rounded-xl text-sm hover:bg-[#152d6e] transition-colors">
                 Continue
               </button>
             ) : (
@@ -486,16 +480,16 @@ export default function Register() {
                     <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 12a9 9 0 11-6.219-8.56" />
                     </svg>
-                    Creating your school…
+                    Creating your school&hellip;
                   </>
                 ) : "Launch My School"}
               </button>
             )}
           </div>
 
-          <p className="text-center text-slate-500 text-xs mt-5">
+          <p className="text-center text-slate-400 text-xs mt-5">
             Already have an account?{" "}
-            <a href="/" className="text-[#D4AF37] hover:underline font-semibold">Back to home</a>
+            <a href="/" className="text-[#1E3A8A] hover:underline font-semibold">Back to home</a>
           </p>
         </div>
 
