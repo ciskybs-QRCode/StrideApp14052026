@@ -33,6 +33,15 @@ import { api, type ProximityBeacon, type ChildBeaconAssignment, type ProximityRe
 
 const ZONES = ["entrance", "studio-a", "studio-b", "lobby", "cafeteria", "exit"] as const;
 
+type ZoneCategory = "core" | "transition" | "external_safe_zone" | "exit";
+
+const ZONE_CATEGORIES: { value: ZoneCategory; label: string; color: string; desc: string }[] = [
+  { value: "core",               label: "Core",          color: "#0EA5E9", desc: "Main premises (studios, entrance)" },
+  { value: "transition",         label: "Transition",    color: "#8B5CF6", desc: "Within-school buffer zones" },
+  { value: "external_safe_zone", label: "External Safe", color: "#F59E0B", desc: "Outside but known safe (e.g. bathroom)" },
+  { value: "exit",               label: "Exit",          color: "#EF4444", desc: "School exit scanners" },
+];
+
 function generateUUID(): string {
   const hex4 = () => Math.floor(Math.random() * 0xffff).toString(16).padStart(4, "0").toUpperCase();
   return `${hex4()}${hex4()}-${hex4()}-${hex4()}-${hex4()}-${hex4()}${hex4()}${hex4()}`;
@@ -62,9 +71,10 @@ export default function BeaconsScreen() {
   const [showAddAssignment, setShowAddAssignment] = useState(false);
 
   // Add Beacon form
-  const [bUUID,  setBUUID]  = useState("");
-  const [bLabel, setBLabel] = useState("");
-  const [bZone,  setBZone]  = useState<typeof ZONES[number]>("entrance");
+  const [bUUID,    setBUUID]    = useState("");
+  const [bLabel,   setBLabel]   = useState("");
+  const [bZone,    setBZone]    = useState<typeof ZONES[number]>("entrance");
+  const [bZoneCat, setBZoneCat] = useState<ZoneCategory>("core");
 
   // Add Assignment form
   const [aChild, setAChild] = useState("");
@@ -128,10 +138,10 @@ export default function BeaconsScreen() {
     }
     setSaving(true);
     try {
-      await api.registerProximityBeacon({ beacon_uuid: bUUID.trim(), label: bLabel.trim(), zone: bZone });
+      await api.registerProximityBeacon({ beacon_uuid: bUUID.trim(), label: bLabel.trim(), zone: bZone, zone_category: bZoneCat });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowAddBeacon(false);
-      setBUUID(""); setBLabel(""); setBZone("entrance");
+      setBUUID(""); setBLabel(""); setBZone("entrance"); setBZoneCat("core");
       void loadAll();
     } catch {
       Alert.alert("Error", "Could not register beacon. UUID may already be in use.");
@@ -245,20 +255,28 @@ export default function BeaconsScreen() {
             <Ionicons name="bluetooth-outline" size={28} color="#9CA3AF" />
             <Text style={[S.emptyText, { color: colors.mutedForeground }]}>No scanners registered yet</Text>
           </View>
-        ) : beacons.map(b => (
-          <View key={b.id} style={[S.itemCard, { backgroundColor: colors.card }]}>
-            <View style={[S.itemIcon, { backgroundColor: "#0EA5E915" }]}>
-              <Ionicons name="radio" size={18} color="#0EA5E9" />
+        ) : beacons.map(b => {
+          const cat = ZONE_CATEGORIES.find(c => c.value === b.zone_category) ?? ZONE_CATEGORIES[0];
+          return (
+            <View key={b.id} style={[S.itemCard, { backgroundColor: colors.card }]}>
+              <View style={[S.itemIcon, { backgroundColor: `${cat.color}15` }]}>
+                <Ionicons
+                  name={b.zone_category === "external_safe_zone" ? "location" : b.zone_category === "exit" ? "exit-outline" : "radio"}
+                  size={18} color={cat.color}
+                />
+              </View>
+              <View style={S.itemBody}>
+                <Text style={[S.itemTitle, { color: colors.foreground }]}>{b.label}</Text>
+                <Text style={[S.itemSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  {b.zone.toUpperCase()}  •  {b.beacon_uuid}
+                </Text>
+              </View>
+              <View style={[S.zoneCatBadge, { backgroundColor: `${cat.color}20`, borderColor: `${cat.color}40` }]}>
+                <Text style={[S.zoneCatBadgeText, { color: cat.color }]}>{cat.label}</Text>
+              </View>
             </View>
-            <View style={S.itemBody}>
-              <Text style={[S.itemTitle, { color: colors.foreground }]}>{b.label}</Text>
-              <Text style={[S.itemSub, { color: colors.mutedForeground }]} numberOfLines={1}>
-                {b.zone.toUpperCase()}  •  {b.beacon_uuid}
-              </Text>
-            </View>
-            <View style={S.greenDot} />
-          </View>
-        ))}
+          );
+        })}
 
         {/* ── Child Wearable Assignments ───────────────────────────────────── */}
         <View style={[S.sectionHeader, { marginTop: 24 }]}>
@@ -409,6 +427,31 @@ export default function BeaconsScreen() {
               ))}
             </View>
 
+            <Text style={[S.fieldLabel, { color: colors.mutedForeground, marginTop: 12 }]}>Zone Category</Text>
+            <Text style={[S.fieldHint, { color: colors.mutedForeground }]}>
+              Sets Safe-Zone behaviour: External Safe Zone activates transit lock when a child is detected.
+            </Text>
+            {ZONE_CATEGORIES.map(cat => (
+              <Pressable
+                key={cat.value}
+                style={[
+                  S.catRow,
+                  {
+                    backgroundColor: bZoneCat === cat.value ? `${cat.color}15` : colors.background,
+                    borderColor: bZoneCat === cat.value ? cat.color : colors.border,
+                  },
+                ]}
+                onPress={() => setBZoneCat(cat.value)}
+              >
+                <View style={[S.catDot, { backgroundColor: cat.color }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[S.catLabel, { color: bZoneCat === cat.value ? cat.color : colors.foreground }]}>{cat.label}</Text>
+                  <Text style={[S.catDesc, { color: colors.mutedForeground }]}>{cat.desc}</Text>
+                </View>
+                {bZoneCat === cat.value && <Ionicons name="checkmark-circle" size={18} color={cat.color} />}
+              </Pressable>
+            ))}
+
             <Pressable style={[S.modalPrimaryBtn, { opacity: saving ? 0.7 : 1 }]} onPress={() => void addBeacon()} disabled={saving}>
               {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={S.modalPrimaryBtnText}>Register Scanner</Text>}
             </Pressable>
@@ -512,7 +555,14 @@ const S = StyleSheet.create({
   itemBody:   { flex: 1 },
   itemTitle:  { fontSize: 14, fontWeight: "700" },
   itemSub:    { fontSize: 11, marginTop: 2 },
-  greenDot:   { width: 8, height: 8, borderRadius: 4, backgroundColor: "#10B981" },
+  greenDot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: "#10B981" },
+  zoneCatBadge:     { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
+  zoneCatBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
+  fieldHint:        { fontSize: 11, marginBottom: 8, lineHeight: 15 },
+  catRow:           { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, borderWidth: 1.5, marginBottom: 8 },
+  catDot:           { width: 10, height: 10, borderRadius: 5 },
+  catLabel:         { fontSize: 13, fontWeight: "700" },
+  catDesc:          { fontSize: 11, marginTop: 1 },
 
   // Assignment card
   assignCard:    { borderRadius: 14, padding: 14, marginBottom: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },

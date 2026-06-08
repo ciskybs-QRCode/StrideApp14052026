@@ -368,13 +368,14 @@ export async function ensureTables(): Promise<void> {
   // BLE Proximity — frictionless check-in via beacon detection
   await pool.query(`
     CREATE TABLE IF NOT EXISTS proximity_beacons (
-      id          UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-      org_id      INTEGER,
-      beacon_uuid TEXT        NOT NULL UNIQUE,
-      label       TEXT        NOT NULL,
-      zone        TEXT        NOT NULL DEFAULT 'entrance',
-      active      BOOLEAN     NOT NULL DEFAULT true,
-      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      id            UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      org_id        INTEGER,
+      beacon_uuid   TEXT        NOT NULL UNIQUE,
+      label         TEXT        NOT NULL,
+      zone          TEXT        NOT NULL DEFAULT 'entrance',
+      zone_category TEXT        NOT NULL DEFAULT 'core',
+      active        BOOLEAN     NOT NULL DEFAULT true,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS pb_org_idx    ON proximity_beacons (org_id);
     CREATE INDEX IF NOT EXISTS pb_uuid_idx   ON proximity_beacons (beacon_uuid);
@@ -389,6 +390,25 @@ export async function ensureTables(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS cba_child_idx  ON child_beacon_assignments (child_id);
     CREATE INDEX IF NOT EXISTS cba_uuid_idx   ON child_beacon_assignments (wearable_uuid);
+  `).catch(() => {});
+
+  // Safe-Zone: add zone_category to existing beacons table (idempotent)
+  await pool.query(`
+    ALTER TABLE IF EXISTS proximity_beacons
+      ADD COLUMN IF NOT EXISTS zone_category TEXT NOT NULL DEFAULT 'core';
+  `).catch(() => {});
+
+  // Safe-Zone: per-child transit state (IN_TRANSIT + transit_lock + 15-min timeout)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS child_transit_states (
+      id                 UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      child_id           TEXT        NOT NULL UNIQUE,
+      status             TEXT        NOT NULL DEFAULT 'CHECKED_IN',
+      transit_lock       BOOLEAN     NOT NULL DEFAULT false,
+      transit_started_at TIMESTAMPTZ,
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS cts_child_idx ON child_transit_states (child_id);
   `).catch(() => {});
 
   // Stride-Verified Marketplace — products, services, platform commission

@@ -28,7 +28,7 @@ import { type QrScanParams, useOfflineSync } from "@/context/OfflineSyncContext"
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact } from "@/lib/api";
+import { api, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact, type ChildTransitWarning } from "@/lib/api";
 import {
   CASCADE_TIMEOUT_SECS,
   MOCK_SUBS,
@@ -315,6 +315,8 @@ export default function OperatorDashboard() {
 
   // ── Pending scheduled-course requests (operator must confirm or decline) ─────
   const [pendingCourses, setPendingCourses]           = useState<ApiScheduledCourse[]>([]);
+  const [transitWarnings, setTransitWarnings]         = useState<ChildTransitWarning[]>([]);
+  const [clearingTransit, setClearingTransit]         = useState<string | null>(null);
   const allCoursesRef = useRef<ApiScheduledCourse[]>([]);
   const [coursesLoadError, setCoursesLoadError]       = useState(false);
 
@@ -395,6 +397,33 @@ export default function OperatorDashboard() {
     const interval = setInterval(loadRescuePending, 30_000);
     return () => clearInterval(interval);
   }, [loadRescuePending]);
+
+  // ── Safe-Zone transit warnings polling (every 60 s) ──────────────────────────
+  const loadTransitWarnings = useCallback(async () => {
+    try {
+      const data = await api.listTransitWarnings();
+      setTransitWarnings(data.warnings);
+    } catch { /* non-critical — fail silently */ }
+  }, []);
+
+  useEffect(() => {
+    void loadTransitWarnings();
+    const interval = setInterval(() => void loadTransitWarnings(), 60_000);
+    return () => clearInterval(interval);
+  }, [loadTransitWarnings]);
+
+  const handleClearTransit = async (childId: string) => {
+    setClearingTransit(childId);
+    try {
+      await api.clearTransitState(childId);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setTransitWarnings(prev => prev.filter(w => w.child_id !== childId));
+    } catch {
+      Alert.alert("Error", "Could not clear transit state. Please try again.");
+    } finally {
+      setClearingTransit(null);
+    }
+  };
 
   const handleRescueAck = async (contact: CascadeContact, accept: boolean) => {
     setRescueAcking(contact.id);
@@ -1287,6 +1316,60 @@ export default function OperatorDashboard() {
                       <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>✗ Decline</Text>
                     </Pressable>
                   </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* ── Safe-Zone Proximity Warnings ── */}
+        {transitWarnings.length > 0 && (
+          <View style={{ backgroundColor: "#FEF9C3", borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1.5, borderColor: "#EAB308" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#EAB30820", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="location-outline" size={18} color="#A16207" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "900", color: "#713F12" }}>
+                  Proximity Warning ({transitWarnings.length})
+                </Text>
+                <Text style={{ fontSize: 11, color: "#A16207", marginTop: 1 }}>
+                  Child{transitWarnings.length > 1 ? "ren" : ""} in external zone &gt; 15 min — please verify
+                </Text>
+              </View>
+              <Pressable onPress={() => void loadTransitWarnings()} hitSlop={10}>
+                <Ionicons name="refresh" size={16} color="#A16207" />
+              </Pressable>
+            </View>
+            {transitWarnings.map(w => {
+              const mins = Math.round(w.minutes_elapsed);
+              const isClearing = clearingTransit === w.child_id;
+              return (
+                <View key={w.child_id} style={{ backgroundColor: "#FFF", borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: "#FDE68A", flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#F59E0B20", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="walk-outline" size={18} color="#D97706" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" }}>
+                      Child ID: {w.child_id}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: "#D97706", marginTop: 2, fontWeight: "600" }}>
+                      In external zone for {mins} min{mins !== 1 ? "s" : ""} — transit lock active
+                    </Text>
+                  </View>
+                  <Pressable
+                    disabled={isClearing}
+                    onPress={() => void handleClearTransit(w.child_id)}
+                    style={({ pressed }) => [{
+                      backgroundColor: "#1E3A8A", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
+                      opacity: pressed || isClearing ? 0.7 : 1,
+                    }]}
+                  >
+                    {isClearing
+                      ? <ActivityIndicator size="small" color="#FFF" />
+                      : <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "800" }}>Verified</Text>
+                    }
+                  </Pressable>
                 </View>
               );
             })}

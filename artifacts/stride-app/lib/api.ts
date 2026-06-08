@@ -856,7 +856,7 @@ export const api = {
   listProximityBeacons: () =>
     request<{ beacons: ProximityBeacon[] }>("GET", "/proximity/beacons"),
 
-  registerProximityBeacon: (data: { beacon_uuid: string; label: string; zone?: string; org_id?: number }) =>
+  registerProximityBeacon: (data: { beacon_uuid: string; label: string; zone?: string; zone_category?: string; org_id?: number }) =>
     request<ProximityBeacon>("POST", "/proximity/beacons", data),
 
   deleteProximityBeacon: (id: string) =>
@@ -873,6 +873,12 @@ export const api = {
 
   listRecentProximityCheckins: () =>
     request<{ entries: ProximityRecentEntry[] }>("GET", "/proximity/recent"),
+
+  listTransitWarnings: () =>
+    request<{ warnings: ChildTransitWarning[] }>("GET", "/proximity/transit-warnings"),
+
+  clearTransitState: (childId: string) =>
+    request<{ ok: boolean; child_id: string; status: string }>("POST", `/proximity/transit-clear/${childId}`),
 
   // ── Stride-Verified Marketplace ────────────────────────────────────────────
   listMarketplaceProducts: (params?: { org_id?: number; category?: string; verified?: boolean }) => {
@@ -999,13 +1005,23 @@ export interface MarketplacePurchase {
 }
 
 export interface ProximityBeacon {
-  id:          string;
-  org_id:      number | null;
-  beacon_uuid: string;
-  label:       string;
-  zone:        string;
-  active:      boolean;
-  created_at:  string;
+  id:            string;
+  org_id:        number | null;
+  beacon_uuid:   string;
+  label:         string;
+  zone:          string;
+  zone_category: "core" | "transition" | "external_safe_zone" | "exit";
+  active:        boolean;
+  created_at:    string;
+}
+
+export interface ChildTransitWarning {
+  child_id:           string;
+  status:             string;
+  transit_lock:       boolean;
+  transit_started_at: string;
+  updated_at:         string;
+  minutes_elapsed:    number;
 }
 
 export interface ChildBeaconAssignment {
