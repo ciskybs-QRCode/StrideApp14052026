@@ -36,3 +36,46 @@ export const importLimiter = rateLimit({
   },
   message: { error: "Too many import requests. Please wait a minute before uploading again." },
 });
+
+/**
+ * Global API limiter — applied to every /api route.
+ * Prevents volumetric abuse. 300 requests per 15-minute window per IP.
+ */
+export const globalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip ?? "unknown",
+  skip: (req) => req.path === "/api/healthz",
+  message: { error: "Too many requests from this IP. Please try again later." },
+});
+
+/**
+ * QR scan / check-in limiter — applied to high-value scan endpoints.
+ * 30 scans per minute per IP — prevents brute-force QR enumeration.
+ */
+export const qrScanLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const user = (req as AuthReq).user;
+    return user ? `qr:${user.id}:${user.orgId}` : `qr-ip:${req.ip ?? "unknown"}`;
+  },
+  message: { error: "Too many scan requests. Please slow down." },
+});
+
+/**
+ * Auth limiter — applied to login and register endpoints.
+ * 10 attempts per 15-minute window per IP — prevents credential stuffing.
+ */
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => `auth:${req.ip ?? "unknown"}`,
+  message: { error: "Too many login attempts. Please wait 15 minutes and try again." },
+});

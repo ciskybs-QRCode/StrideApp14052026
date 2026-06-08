@@ -3,6 +3,7 @@ import { Router, type Request } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../lib/supabase.js";
 import { signToken, requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { authLimiter } from "../lib/rate-limit.js";
 import { getOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
 import { pool } from "../lib/pg.js";
 import { resolveGlobalUserId } from "../lib/global-identity.js";
@@ -40,7 +41,7 @@ router.get("/auth/system-status", async (_req, res) => {
 });
 
 // ── POST /auth/login ──────────────────────────────────────────────────────────
-router.post("/auth/login", async (req, res) => {
+router.post("/auth/login", authLimiter, async (req, res) => {
   const { email, password } = req.body as { email: string; password: string };
   if (!email || !password) {
     res.status(400).json({ error: "Email and password are required" });
@@ -130,7 +131,7 @@ router.post("/auth/login", async (req, res) => {
 // ── POST /auth/register ───────────────────────────────────────────────────────
 // `source: 'web'` triggers pending_activation for non-pioneer accounts.
 // First-ever user → admin role, system_configured stays false (pioneer wizard).
-router.post("/auth/register", async (req, res) => {
+router.post("/auth/register", authLimiter, async (req, res) => {
   const {
     name, email, password, org_slug, invite_token, source,
     first_name, last_name, phone,

@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, type TokenPayload } from "../lib/auth.js";
+import { qrScanLimiter } from "../lib/rate-limit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -20,7 +21,7 @@ type QrVerifyResult = {
 //   "MBR-{userId}"                      — settings screen format
 //   "STRIDE:MBR:{userId}:{email}"       — alternative
 //   "STRIDE:PARENT:{userId}:{email}"    — parent role variant
-router.post("/verify-member-qr", requireAuth, async (req, res) => {
+router.post("/verify-member-qr", requireAuth, qrScanLimiter, async (req, res) => {
   const user  = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
   const { qrData } = req.body as { qrData?: string };

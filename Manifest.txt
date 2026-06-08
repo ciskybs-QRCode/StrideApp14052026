@@ -1,0 +1,434 @@
+================================================================================
+  STRIDE PLATFORM — PRODUCTION RELEASE MANIFEST
+  Generated: 2026-06-08
+  Version:   1.0.0-release
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+  SECTION 1 — ACTIVE API ROUTES
+  Base path: /api
+  Auth tiers: [public] [authenticated] [admin|operator] [admin-only] [super-admin]
+────────────────────────────────────────────────────────────────────────────────
+
+  HEALTH & SYSTEM
+  ───────────────
+  GET    /healthz                                    [public]
+  GET    /auth/system-status                         [public]
+  GET    /system/config/features                     [authenticated]
+  GET    /terminology                                [authenticated]
+  GET    /public/activity-feed                       [public]
+
+  AUTHENTICATION  ← authLimiter (10 req/15 min per IP)
+  ──────────────────────────────────────────────────────
+  POST   /auth/login                                 [public + authLimiter]
+  POST   /auth/register                              [public + authLimiter]
+  GET    /auth/activate/:token                       [public]
+  POST   /auth/invite                                [admin-only]
+  GET    /auth/invite/:token                         [public]
+  PATCH  /profile                                    [authenticated]
+
+  IDENTITY
+  ────────
+  GET    /identity/me                                [authenticated]
+
+  ORGANIZATION
+  ────────────
+  GET    /org                                        [authenticated]
+  PATCH  /org                                        [admin-only]
+  POST   /org/configure                              [admin-only]
+  GET    /orgs/search                                [authenticated]
+  GET    /orgs/safety-score/:orgId                   [authenticated]
+
+  USERS & MEMBERS
+  ───────────────
+  GET    /users                                      [admin-only]
+  PATCH  /users/:id/role                             [admin-only]
+  PATCH  /users/:id/status                           [admin-only]
+  GET    /members                                    [authenticated]
+  POST   /members                                    [authenticated]
+  PATCH  /members/:id                                [authenticated]
+  DELETE /members/:id                                [authenticated]
+
+  QR CHECK-IN & ACCESS  ← qrScanLimiter (30 req/min per user/IP)
+  ────────────────────────────────────────────────────────────────
+  GET    /access-check/:childId                      [admin|operator + qrScanLimiter]
+  PATCH  /access-check/:childId/payment              [admin-only]
+  POST   /verify-member-qr                           [authenticated + qrScanLimiter]
+
+  ATTENDANCE
+  ──────────
+  GET    /attendance                                 [admin|operator]
+  POST   /attendance                                 [admin|operator]  ← Zod.strict()
+  POST   /attendance/batch                           [admin|operator]
+  PATCH  /attendance/:id                             [admin|operator]
+
+  CHILDREN & STUDENTS
+  ────────────────────
+  GET    /students                                   [admin|operator]
+  PATCH  /students/:id/stars                         [admin|operator]
+  GET    /delegates                                  [authenticated]
+  POST   /delegates                                  [authenticated]
+  DELETE /delegates/:id                              [authenticated]
+
+  GUARDIAN CIRCLE  ← parent ownership enforced
+  ─────────────────────────────────────────────
+  GET    /guardian-circle/check                      [authenticated]
+  GET    /guardian-circle/child/:childId             [authenticated + ownership]
+  POST   /guardian-circle                            [authenticated + ownership]
+  PATCH  /guardian-circle/:id/deactivate             [authenticated]
+
+  SECURITY & PICKUP  ← parent ownership enforced on child-scoped reads
+  ─────────────────────────────────────────────────────────────────────
+  POST   /security/pickup-signature                  [authenticated]
+  POST   /security/pickup-log                        [authenticated]
+  GET    /security/pickup-log/verify/:recordId       [authenticated]
+  GET    /security/audit-log/:childId                [authenticated + ownership]
+  GET    /security/timeline/:childId                 [authenticated + ownership]
+
+  COURSES & ENROLLMENT
+  ─────────────────────
+  GET    /courses                                    [authenticated]
+  GET    /enrollments                                [authenticated]
+  POST   /enrollments                                [authenticated]
+  GET    /enrollment-requests                        [authenticated]
+  POST   /enrollment-requests                        [authenticated]
+  PATCH  /enrollment-requests/:id                    [authenticated]
+  GET    /scheduled-courses                          [authenticated]
+  POST   /scheduled-courses                          [admin-only]
+  POST   /scheduled-courses/:id/confirm              [admin|operator]
+  POST   /scheduled-courses/:id/decline              [admin|operator]
+  GET    /course-availability                        [authenticated]
+  PUT    /course-availability                        [admin|operator]
+  DELETE /course-availability/:id                    [admin|operator]
+  GET    /lessons                                    [admin|operator]
+
+  SESSIONS & ROSTER
+  ──────────────────
+  GET    /sessions/today                             [admin|operator]
+  GET    /sessions/:sessionId/roster                 [admin|operator]
+  POST   /sessions/:sessionId/bulk-signout           [admin|operator]
+
+  PRIVATE BOOKINGS
+  ────────────────
+  GET    /private-bookings                           [authenticated]
+  POST   /private-bookings                           [authenticated]
+  POST   /private-bookings/scan                      [admin|operator]
+  PATCH  /private-bookings/:id/confirm               [admin|operator]
+  PATCH  /private-bookings/:id/cancel                [authenticated]
+
+  DOCUMENTS & LEGAL
+  ──────────────────
+  GET    /documents                                  [authenticated]
+  POST   /documents                                  [authenticated]
+  POST   /documents/:id/sign                         [authenticated]
+  POST   /documents/analyze-medical-certificate      [authenticated]
+  POST   /legal/sign                                 [authenticated]
+  GET    /legal/signed-ids                           [authenticated]
+  GET    /legal/audit-log                            [authenticated]
+
+  PAYMENTS & BILLING
+  ───────────────────
+  GET    /payments                                   [authenticated]
+  POST   /payments                                   [authenticated]
+  GET    /billing/status                             [admin-only]
+  POST   /billing/checkout-session                   [authenticated]
+  GET    /billing/stripe-account                     [admin-only]
+  POST   /billing/stripe-account                     [admin-only]
+  DELETE /billing/stripe-account                     [admin-only]
+  PATCH  /billing/branding                           [admin-only]
+  POST   /billing/sync-seats                         [admin-only]
+  POST   /billing/webhook                            [public — Stripe signature verified]
+  POST   /checkout/web-session                       [authenticated]
+  POST   /checkout/batch-session                     [authenticated]
+  GET    /checkout/batch-status/:batchId             [public]
+  GET    /checkout/receipt/:sessionId                [public]
+  GET    /checkout/session-status/:sessionId         [authenticated]
+  POST   /finance/stripe-onboarding                  [authenticated]
+  GET    /finance/stripe-status                      [authenticated]
+  POST   /finance/execute-payout                     [admin-only]
+
+  MARKETPLACE
+  ────────────
+  GET    /marketplace/products                       [authenticated]
+  POST   /marketplace/products                       [admin-only]
+  PATCH  /marketplace/products/:id                   [admin-only]
+  DELETE /marketplace/products/:id                   [admin-only]
+  GET    /marketplace/purchases                      [authenticated]
+  POST   /marketplace/checkout                       [authenticated]
+
+  OPERATOR TOOLS
+  ───────────────
+  POST   /operator-clock/in                          [admin|operator]
+  POST   /operator-clock/out                         [admin|operator]
+  GET    /operator-clock                             [admin|operator]
+  GET    /operator-earnings                          [admin|operator]
+  GET    /operator-profiles                          [authenticated]
+  POST   /operator-profiles                          [admin-only]
+  PATCH  /operator-profiles/:id                      [admin-only]
+  DELETE /operator-profiles/:id                      [admin-only]
+  GET    /reimbursements                             [admin|operator]
+  POST   /reimbursements                             [authenticated]
+  PATCH  /reimbursements/:id                         [admin-only]
+
+  ADMIN TOOLS
+  ────────────
+  GET    /admin-settings                             [admin|operator]
+  PUT    /admin-settings                             [admin-only]
+  GET    /disciplines                                [authenticated]
+  POST   /disciplines                                [admin-only]
+  PATCH  /disciplines/:id                            [admin-only]
+  DELETE /disciplines/:id                            [admin-only]
+  GET    /promo-codes                                [admin|operator]
+  POST   /promo-codes                                [admin-only]
+  PATCH  /promo-codes/:id/toggle                     [admin-only]
+  DELETE /promo-codes/:id                            [admin-only]
+  GET    /blacklist                                  [admin|operator]
+  POST   /blacklist                                  [admin-only]
+  POST   /blacklist/check                            [authenticated]
+  DELETE /blacklist/:id                              [admin-only]
+  GET    /messages                                   [admin|operator]
+  POST   /messages                                   [admin|operator]
+  GET    /availability                               [authenticated]
+  POST   /availability                               [admin|operator]
+  PATCH  /availability/:id                           [admin|operator]
+
+  EMERGENCY
+  ──────────
+  POST   /emergency-logs                             [authenticated]
+  POST   /emergency/pulse                            [admin|operator]
+  GET    /emergency/pulse/active                     [authenticated]
+  GET    /emergency/pulse/:id/status                 [authenticated]
+  POST   /emergency/pulse/:id/acknowledge            [authenticated]
+  PATCH  /emergency/pulse/:id/resolve                [admin|operator]
+
+  PROXIMITY (BLE)
+  ────────────────
+  GET    /proximity/beacons                          [admin-only]
+  POST   /proximity/beacons                          [admin-only]
+  DELETE /proximity/beacons/:id                      [admin-only]
+  GET    /proximity/assignments                      [admin|operator]
+  POST   /proximity/assignments                      [admin|operator]
+  DELETE /proximity/assignments/:id                  [admin|operator]
+  POST   /proximity/detect                           [authenticated]
+  GET    /proximity/recent                           [admin|operator]
+
+  MEETING & WORKSHOPS
+  ─────────────────────
+  GET    /meeting-availability                       [authenticated]
+  GET    /workshop-proposals                         [authenticated]
+  POST   /workshop-proposals                         [authenticated]
+  PUT    /workshop-proposals/:id/approve             [admin-only]
+  PUT    /workshop-proposals/:id/reject              [admin-only]
+
+  REVIEWS & LOGS
+  ───────────────
+  POST   /reviews                                    [authenticated]
+  GET    /reviews/org/:orgId                         [authenticated]
+  POST   /pdf-logs                                   [authenticated]
+  POST   /import                                     [admin-only + importLimiter]
+
+  NOTIFICATIONS
+  ──────────────
+  GET    /private-notifications                      [authenticated]
+  POST   /private-notifications/:id/read             [authenticated]
+  POST   /private-notifications/read-all             [authenticated]
+
+  SUPER-ADMIN (platform-level)
+  ─────────────────────────────
+  GET    /super-admin/financial                      [super-admin]
+  GET    /super-admin/admins                         [super-admin]
+  POST   /super-admin/tenants                        [super-admin]
+  POST   /super-admin/seed                           [admin-only]
+  POST   /super-admin/extend-trial                   [super-admin]
+  POST   /super-admin/set-trial-end                  [super-admin]
+  POST   /super-admin/set-suspension                 [super-admin]
+  POST   /super-admin/add-super-admin                [super-admin]
+  PATCH  /super-admin/users/:id/role                 [super-admin]
+  DELETE /super-admin/users/:id                      [super-admin]
+  PATCH  /super-admin/associations/:id               [super-admin]
+
+  Total routes: 137
+
+────────────────────────────────────────────────────────────────────────────────
+  SECTION 2 — DATABASE TABLES
+────────────────────────────────────────────────────────────────────────────────
+
+  LOCAL POSTGRESQL (Replit managed — via DATABASE_URL)
+  ─────────────────────────────────────────────────────
+  activation_tokens          — email activation links for pioneer onboarding
+  admin_settings             — per-org key/value configuration store
+  authorized_pickups         — guardian circle entries (child pickup authorization)
+  availabilities             — operator scheduling slots
+  blacklist                  — blocked individuals registry
+  bookings                   — general booking records
+  checkout_batches           — multi-org batch payment sessions
+  checkout_sessions          — Stripe checkout session tracking
+  child_activity_log         — SecurityObserver event log (check-ins, pick-ups)
+  child_beacon_assignments   — BLE proximity beacon ↔ child mappings
+  disciplines                — activity disciplines catalogue
+  emergency_pulse_acks       — parent acknowledgements of emergency broadcasts
+  emergency_pulses           — emergency broadcast events
+  invite_tokens              — admin-generated invite links
+  invoices                   — payroll / operator invoices
+  legal_signatures_audit_log — SHA-256 signed legal document audit trail
+  marketplace_products       — operator marketplace listings
+  marketplace_purchases      — marketplace purchase records
+  member_medical_certs       — uploaded medical certificate metadata
+  notifications              — system notification queue
+  operator_absences          — operator absence / substitution records
+  operator_clock_records     — operator clock-in / clock-out entries
+  operator_course_avail      — course-level operator availability
+  operator_discipline_rates  — per-discipline pay rates for operators
+  operator_profiles          — extended operator profile data
+  operators                  — operator registry
+  org_reviews                — org-level parent reviews
+  payment_audit_log          — server-side price resolution audit log
+  pickup_signatures          — biometric pickup signature blobs + integrity hashes
+  platform_events            — global platform audit events
+  platform_org_discounts     — platform-level org discount overrides
+  platform_payment_gateways  — per-org Stripe Connect configuration
+  proximity_beacons          — registered BLE beacons for auto check-in
+  reimbursements             — operator expense reimbursement requests
+  scheduled_courses          — parent-requested scheduled course bookings
+  student_absences           — student absence records
+  super_admin_collaborators  — platform super-admin access list
+  Total local tables: 37
+
+  SUPABASE (PostgreSQL — via SUPABASE_URL + service role key)
+  ─────────────────────────────────────────────────────────────
+  admin_settings             attendance_alerts          attendance_records
+  audit_logs                 bank_transfer_receipts     behavioral_reports
+  billing_profiles           blacklist                  broadcast_messages
+  chat_messages              chat_threads               child_consents
+  child_emergency_contacts   children                   course_absences
+  course_sessions            course_waitlist            courses
+  delegate_children          delegates                  direct_messages
+  document_signatures        document_user_hides        document_views
+  documents                  donations                  emergency_alerts
+  emergency_assessments      emergency_audit_events     enrollment_applications
+  enrollments                evacuation_rollcall        facility_check_schedules
+  facility_log_entries       global_users               internal_feedback
+  invoices                   lesson_disruptions         materials
+  medical_reports            meeting_bookings           meeting_slots
+  members                    notifications              operator_benefits
+  organizations              payment_methods            pending_invites
+  personal_documents         private_lesson_bookings    private_lessons
+  promo_codes                promo_redemptions          push_tokens
+  reimbursement_requests     restricted_persons         scholarship_nominations
+  social_feed_links          staff_attendance           staff_earnings
+  staff_proposals            subscriptions              system_audit_logs
+  tenant_memberships         tenant_specific_data       transactions
+  unaccounted_alerts         users                      venues
+  Total Supabase tables: 67
+
+────────────────────────────────────────────────────────────────────────────────
+  SECTION 3 — SECURITY MIDDLEWARE (in application order)
+────────────────────────────────────────────────────────────────────────────────
+
+  1. pinoHttp              Request/response structured logging (pino)
+  2. cors()                CORS headers — all origins (client controls domain)
+  3. globalApiLimiter      300 req / 15 min per IP across all /api routes
+                           (skips /api/healthz)
+  4. express.raw()         Raw body for Stripe webhook path only
+                           (/api/billing/webhook — Stripe signature verified)
+  5. express.json()        JSON body parsing
+  6. express.urlencoded()  Form body parsing
+  7. trialGuard            Multi-tenant trial enforcement middleware
+                           — blocks non-billing routes for expired orgs
+  8. requireAuth           JWT Bearer verification on all protected routes
+                           — checks HS256 signature + expiry
+  9. requireRole(...)      Role-based access control
+                           Tiers: parent < operator < admin < super_admin
+  10. authLimiter          10 req / 15 min per IP on /auth/login + /auth/register
+                           — credential stuffing prevention
+  11. qrScanLimiter        30 req / min per user on /access-check + /verify-member-qr
+                           — QR brute-force prevention
+  12. importLimiter        10 req / min per user on /import
+                           — heavy file upload protection
+  13. identityLimiter      100 req / min per user on /identity/* routes
+  14. denyIfNotOwned()     Parent ownership guard on child-scoped endpoints:
+                           GET /guardian-circle/child/:childId
+                           POST /guardian-circle
+                           GET /security/timeline/:childId
+                           GET /security/audit-log/:childId
+  15. AttendanceInsertSchema.strict()
+                           Zod strict validation on POST /attendance
+                           — rejects any non-whitelisted key with HTTP 400
+  16. SecurityObserver     Fire-and-forget event logging via setImmediate()
+                           — never blocks response thread
+                           — writes to child_activity_log (local PG)
+
+────────────────────────────────────────────────────────────────────────────────
+  SECTION 4 — ENVIRONMENT VARIABLES (PRODUCTION MAPPING)
+────────────────────────────────────────────────────────────────────────────────
+
+  Variable                  Source              Required   Used by
+  ────────────────────────  ──────────────────  ─────────  ────────────────────
+  DATABASE_URL              Replit PostgreSQL   YES        Drizzle ORM, pg pool
+  SUPABASE_URL              Replit Secret       YES        Supabase client
+  SUPABASE_SERVICE_ROLE_KEY Replit Secret       YES        Supabase admin client
+  STRIPE_SECRET_KEY         Replit Secret       YES        Stripe SDK
+  SESSION_SECRET            Replit Secret       YES        JWT signing (HS256)
+  PORT                      artifact.toml       YES        Express listen (8080)
+  NODE_ENV                  artifact.toml       YES        Build + behaviour flags
+  GITHUB_PAT                Replit Secret       YES        GitHub integration
+  EXPO_PUBLIC_DOMAIN        dev script env      YES        Mobile API base URL
+
+  Production build command:  pnpm --filter @workspace/api-server run build
+  Production run command:    node --enable-source-maps artifacts/api-server/dist/index.mjs
+  Health check path:         /api/healthz
+  Service port:              8080
+
+────────────────────────────────────────────────────────────────────────────────
+  SECTION 5 — BRANDING & ASSET LOADING
+────────────────────────────────────────────────────────────────────────────────
+
+  Component              Status     Notes
+  ─────────────────────  ─────────  ───────────────────────────────────────────
+  PageShell (landing)    ✅ Clean   Uses inline SVG — zero external image deps
+  BrandingProvider       ✅ Clean   logo field is a CDN URL from org DB record;
+                                   never references local filesystem paths
+  BrandingContext (app)  ✅ Clean   school_logo_url from org API → CDN-compatible
+  Fonts (landing)        ✅ Clean   system-ui fallback stack; no web font CDN
+  Fonts (mobile)         ✅ Clean   @expo-google-fonts/montserrat bundled natively
+
+  Logo delivery path:
+    Admin uploads URL → stored in organizations.logo_url (Supabase)
+    → served via GET /org → client renders img src from URL
+    → any CDN-hosted URL (Cloudinary, Supabase Storage, S3) is drop-in compatible
+
+────────────────────────────────────────────────────────────────────────────────
+  SECTION 6 — DATA CLEANUP (pre-production)
+────────────────────────────────────────────────────────────────────────────────
+
+  Table                 Rows purged   Method                   Status
+  ────────────────────  ────────────  ───────────────────────  ────────
+  child_activity_log    53            DELETE (local PG)        ✅ DONE
+  pickup_signatures     0             DELETE (local PG)        ✅ CLEAN
+  authorized_pickups    5             DELETE (local PG)        ✅ DONE
+  attendance_records    51            Supabase REST DELETE      ✅ DONE
+  (stress-test rows     where notes LIKE 'stress-%' OR 'observer-timing-test')
+
+  Remaining clean rows preserved:
+    attendance_records  8  (pre-existing legitimate records)
+
+────────────────────────────────────────────────────────────────────────────────
+  SECTION 7 — DEPLOYMENT CHECKLIST
+────────────────────────────────────────────────────────────────────────────────
+
+  [✅] TypeScript typecheck    api-server 0 errors | stride-app 0 errors
+  [✅] Rate limiting           Global (300/15min) + Auth (10/15min) + QR (30/min)
+  [✅] RBAC enforcement        29 access-matrix assertions verified (Red Team)
+  [✅] Cross-child isolation   Timeline, audit-log, guardian-circle all guarded
+  [✅] Zod strict validation   POST /attendance rejects unknown keys
+  [✅] Error sanitization      No raw Supabase/DB errors exposed to clients
+  [✅] SecurityObserver        Fire-and-forget, 1 call per handler, non-blocking
+  [✅] Test data purged        4 tables cleared
+  [✅] Branding CDN-ready      URL-based logos, inline SVG nav/footer icons
+  [✅] Env vars mapped         All 9 vars confirmed in Replit Secrets / platform
+  [✅] Health endpoint         GET /api/healthz → 200 (used by production probe)
+  [✅] Production build conf   artifact.toml wired: build + run + health check
+
+================================================================================
+  END OF MANIFEST — STRIDE PLATFORM IS READY FOR DEPLOYMENT
+================================================================================

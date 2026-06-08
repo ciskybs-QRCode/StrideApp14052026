@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { qrScanLimiter } from "../lib/rate-limit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -13,7 +14,7 @@ export type AccessVerdict =
 
 // GET /access-check/:childId
 // Full QR membership verification — returns verdict + member info.
-router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator"), qrScanLimiter, async (req, res) => {
   const { childId } = req.params;
   const user = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
