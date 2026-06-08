@@ -251,6 +251,7 @@ export default function Landing() {
   const navLinks = [
     ["#security", "Security"],
     ["#for-schools", "For Schools"],
+    ["#emergency-pulse", "Emergency Pulse™"],
     ["#for-members", "For Members"],
     ["#pricing", "Pricing"],
     ["#faq", "FAQ"],
@@ -325,14 +326,21 @@ export default function Landing() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.2rem] font-black leading-[1.1] text-slate-900 mb-6">
-              The Safest Way to{" "}
-              <span className="text-[#1E3A8A]">Run Your School.</span>
+              The Only Platform with{" "}
+              <span className="text-[#1E3A8A]">Real-Time Emergency Response &amp; Crisis Management.</span>
             </h1>
 
-            <p className="text-lg text-slate-600 leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
-              Free QR check-ins, authorised pick-up control, and digital consent — all on one platform.
-              Built for dance schools, gyms, and activity academies that take child safety seriously.
+            <p className="text-lg text-slate-600 leading-relaxed mb-5 max-w-xl mx-auto lg:mx-0">
+              Stride is your school's <strong className="text-slate-800">Digital Safety Shield</strong> — immutable QR attendance, verified pick-up control, digital consent, and a crisis-ready Emergency Pulse that delivers a forced full-screen alert to every member in under 3 seconds.
             </p>
+
+            <div className="flex flex-wrap gap-3 justify-center lg:justify-start mb-6 text-xs font-bold">
+              {["Immutable Logs", "Real-Time Alerts", "Verified Pick-Up", "Crisis-Ready"].map(tag => (
+                <span key={tag} className="inline-flex items-center gap-1.5 bg-[#1E3A8A]/8 border border-[#1E3A8A]/20 text-[#1E3A8A] rounded-full px-3 py-1 tracking-wide">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1E3A8A]" />{tag}
+                </span>
+              ))}
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-6">
               <a href="/register"
@@ -365,7 +373,7 @@ export default function Landing() {
               </div>
               {[
                 { label: "Protocol Adherence", w: "95%" },
-                { label: "Parent Feedback",    w: "93%" },
+                { label: "Member Feedback",     w: "93%" },
                 { label: "Emergency Response", w: "100%" },
               ].map(({ label, w }) => (
                 <div key={label} className="mb-2">
@@ -648,6 +656,178 @@ export default function Landing() {
               className="inline-flex items-center gap-2 bg-[#1E3A8A] text-white font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-[#152d6e] transition-colors no-underline">
               Register Your School <IcoArrow />
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── EMERGENCY PULSE™ ───────────────────────────────────────────────── */}
+      <section id="emergency-pulse" className="py-24 bg-gradient-to-br from-[#080d1a] via-[#0f0a0a] to-[#1a0505]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+
+            {/* Left — copy */}
+            <div className="flex-1">
+              <span className="inline-flex items-center gap-2 bg-red-500/15 border border-red-500/30 rounded-full px-4 py-1.5 mb-6">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                <span className="text-red-400 text-xs font-bold tracking-widest uppercase">Emergency Pulse™</span>
+                <span className="text-red-500/40 text-xs">· Patent Pending</span>
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-black text-white mb-5">
+                Your Dependant's Safety<br />in Real-Time.
+              </h2>
+              <p className="text-lg text-slate-300 mb-8 leading-relaxed">
+                In any critical event, Stride delivers a{" "}
+                <span className="text-red-400 font-bold">forced, full-screen notification</span> to every member on-site —
+                bypassing silent mode. Receive immediate confirmation of dependant safety with a live
+                Safe / Need&nbsp;Help dashboard for organisers, updated in real time.
+              </p>
+              <div className="space-y-5">
+                {[
+                  { icon: "📡", label: "Crisis Broadcast in &lt;3 s", desc: "One tap sends a HIGH-PRIORITY alert to every checked-in member simultaneously. Sub-3-second delivery. Crisis-ready architecture — designed to perform under load." },
+                  { icon: "✅", label: "Live Acknowledgment", desc: "Members respond Safe or Need Help directly from the lock screen. Organisers see a real-time tally — no phone trees, no confusion, no delays." },
+                  { icon: "🔒", label: "Immutable Audit Trail", desc: "Every broadcast, response, and timestamp is SHA-256 hashed and cryptographically logged. Tamper-proof evidence available on request — court admissible." },
+                ].map(({ icon, label, desc }) => (
+                  <div key={label} className="flex items-start gap-4">
+                    <span className="text-2xl flex-shrink-0 mt-0.5">{icon}</span>
+                    <div>
+                      <h4 className="text-white font-black text-sm mb-1" dangerouslySetInnerHTML={{ __html: label }} />
+                      <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <a href="/register"
+                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-black px-7 py-3.5 rounded-xl text-sm mt-8 transition-colors no-underline shadow-lg shadow-red-900/40">
+                Activate Emergency Protection
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+            </div>
+
+            {/* Right — Emergency Modal phone mockup */}
+            <div className="flex-shrink-0 w-full max-w-[280px] mx-auto lg:mx-0">
+              <div className="relative">
+                {/* Glow */}
+                <div className="absolute inset-0 bg-red-600/20 rounded-[3rem] blur-3xl scale-110" />
+                {/* Phone frame */}
+                <div className="relative bg-[#0d1020] border-[3px] border-red-900/50 rounded-[3rem] overflow-hidden shadow-2xl shadow-red-900/30">
+                  {/* Notch */}
+                  <div className="w-20 h-5 bg-black rounded-b-2xl mx-auto flex-shrink-0" />
+                  {/* Emergency screen */}
+                  <div className="bg-gradient-to-b from-[#1a0505] to-[#0f0505] px-5 pt-3 pb-5 flex flex-col">
+                    {/* Alert badge */}
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-red-400 text-[10px] font-black tracking-widest uppercase">Emergency Active</span>
+                    </div>
+                    {/* Pulse rings */}
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="relative w-20 h-20">
+                        <div className="absolute inset-0 rounded-full bg-red-500/8 border border-red-500/20 animate-ping" />
+                        <div className="absolute inset-2 rounded-full bg-red-500/15 border border-red-500/30" />
+                        <div className="absolute inset-4 rounded-full bg-red-500/25 border border-red-500/50" />
+                        <div className="absolute inset-[22px] rounded-full bg-red-600 flex items-center justify-center">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Title */}
+                    <p className="text-white text-center font-black text-sm mb-0.5">⚠ EMERGENCY ALERT</p>
+                    <p className="text-red-300/80 text-center text-[10px] mb-4">Main Campus · Sofia{"'"}s Dance Academy</p>
+                    {/* Live counters */}
+                    <div className="grid grid-cols-2 gap-2 mb-3.5">
+                      <div className="bg-emerald-500/15 border border-emerald-500/25 rounded-xl p-3 text-center">
+                        <p className="text-emerald-300 text-2xl font-black leading-none">12</p>
+                        <p className="text-emerald-400/60 text-[9px] font-bold uppercase tracking-wide mt-0.5">Confirmed Safe</p>
+                      </div>
+                      <div className="bg-red-500/15 border border-red-500/25 rounded-xl p-3 text-center">
+                        <p className="text-red-300 text-2xl font-black leading-none">3</p>
+                        <p className="text-red-400/60 text-[9px] font-bold uppercase tracking-wide mt-0.5">Need Help</p>
+                      </div>
+                    </div>
+                    {/* Response buttons */}
+                    <div className="bg-emerald-500 rounded-xl py-2.5 text-center mb-2 cursor-default">
+                      <span className="text-white font-black text-sm">✓ We Are Safe</span>
+                    </div>
+                    <div className="bg-red-600 rounded-xl py-2.5 text-center cursor-default mb-4">
+                      <span className="text-white font-black text-sm">⚠ Need Assistance</span>
+                    </div>
+                    {/* Footer */}
+                    <p className="text-slate-600 text-[8px] text-center leading-relaxed">
+                      Stride Emergency Protocol · SHA-256 Verified<br />Forced delivery — bypasses silent mode
+                    </p>
+                  </div>
+                  <div className="w-16 h-1 bg-white/20 rounded-full mx-auto mb-3 flex-shrink-0" />
+                </div>
+              </div>
+              <p className="text-center text-slate-500 text-xs mt-4">↑ Actual member Emergency Pulse screen</p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHY MEMBERS TRUST STRIDE ───────────────────────────────────────── */}
+      <section className="py-20 bg-[#0d1a3e]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 bg-[#D4AF37]/15 border border-[#D4AF37]/30 rounded-full px-4 py-1.5 mb-5">
+              <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse" />
+              <span className="text-[#D4AF37] text-xs font-bold tracking-wider uppercase">The Member{"'"}s Promise</span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">Why Members Trust Stride</h2>
+            <p className="text-blue-300 text-lg max-w-xl mx-auto">
+              Uncompromising safety standards. No exceptions.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                ),
+                accent: "text-[#D4AF37]",
+                bg: "bg-[#D4AF37]/10",
+                border: "border-[#D4AF37]/20",
+                title: "Instant Verification",
+                body: "No waiting for calls. The moment your dependant checks in or a pickup is authorised, a verified status update lands on your phone. Real-time. Immutable. Logged with a SHA-256 hash you can audit.",
+              },
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>
+                  </svg>
+                ),
+                accent: "text-emerald-400",
+                bg: "bg-emerald-500/10",
+                border: "border-emerald-500/20",
+                title: "Safety-First Architecture",
+                body: "Every pickup is SHA-256 hashed, timestamped, and verified against the authorised Guardian Circle before any handover is permitted. No verbal confirmations. No exceptions. No gaps.",
+              },
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                ),
+                accent: "text-red-400",
+                bg: "bg-red-500/10",
+                border: "border-red-500/20",
+                title: "Crisis-Ready",
+                body: "Our Emergency Pulse system ensures communication remains active even under extreme pressure. Forced full-screen delivery, independent of silent mode, with live Safe / Need Help acknowledgment tracking.",
+              },
+            ].map(({ icon, accent, bg, border, title, body }) => (
+              <div key={title} className={`${bg} border ${border} rounded-2xl p-7`}>
+                <div className={`w-12 h-12 rounded-xl ${bg} border ${border} flex items-center justify-center ${accent} mb-5`}>
+                  {icon}
+                </div>
+                <h3 className="text-white font-black text-lg mb-3">{title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
