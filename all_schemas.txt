@@ -1,0 +1,15 @@
+admin-settings.ts
+availabilities.ts
+blacklist.ts
+bookings.ts
+conversations.ts
+disciplines.ts
+index.ts
+invoices.ts
+messages.ts
+notifications.ts
+operator-course-avail.ts
+operators.ts
+reimbursements.ts
+relations.ts
+scheduled-courses.ts
