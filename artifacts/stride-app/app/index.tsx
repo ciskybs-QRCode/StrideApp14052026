@@ -67,9 +67,9 @@ export default function Index() {
       return;
     }
 
-    // ── Owner / super_admin → super_admin dashboard ───────────────────────────
-    if (ownerCheck || user.role === "super_admin") {
-      console.log("[index] → /(super_admin)/dashboard  [ownerCheck:", ownerCheck, " role:", user.role, "]");
+    // ── super_admin → super_admin dashboard (role-only check; is_owner is a permission flag, not a routing signal) ──
+    if (user.role === "super_admin") {
+      console.log("[index] → /(super_admin)/dashboard  [role: super_admin]");
       router.replace("/(super_admin)/dashboard" as never);
       return;
     }
@@ -114,16 +114,6 @@ export default function Index() {
     }
 
     // ── Member fan-out (operator / parent / fallback) ─────────────────────────
-    if (ownerCheck) {
-      // isOwner() is true but we are about to route to /(member)/dashboard —
-      // this should NEVER happen; the ownerCheck branch above should have caught it.
-      console.warn(
-        "[index] ⚠️  ROUTING CONFLICT DETECTED — isOwner() is TRUE but super_admin branch was skipped.",
-        "user.role:", user.role,
-        "user.email:", user.email,
-      );
-    }
-
     console.log("[index] → /(member)/dashboard  [role:", user.role, "]");
     router.replace("/(member)/dashboard" as never);
   }, [user, isLoading, sysStatus, sysLoading, params.org]);

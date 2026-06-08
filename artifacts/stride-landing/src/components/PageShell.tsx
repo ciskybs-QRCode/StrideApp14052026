@@ -30,7 +30,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
             <a href="/pricing" className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>Pricing</a>
             <a href="/faq"     className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>FAQ</a>
             <a href="/contact" className={`text-sm font-medium transition-colors ${linkTxt}`}>Support</a>
-            <a href="/register" className="bg-[#D4AF37] text-[#0A192F] text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-[#e8c44b] transition-colors no-underline">
+            <a href="/landing/register" className="bg-[#D4AF37] text-[#0A192F] text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-[#e8c44b] transition-colors no-underline">
               Get Started
             </a>
           </div>
@@ -75,7 +75,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
             <p className="text-white text-xs font-black uppercase tracking-wider mb-3">Support</p>
             <div className="flex flex-col gap-2">
               <a href="/contact" className="text-blue-300 text-xs hover:text-white transition-colors">Contact Us</a>
-              <a href="/register" className="text-blue-300 text-xs hover:text-white transition-colors">Get Started</a>
+              <a href="/landing/register" className="text-blue-300 text-xs hover:text-white transition-colors">Get Started</a>
             </div>
           </div>
 

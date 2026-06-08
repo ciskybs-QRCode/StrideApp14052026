@@ -20,7 +20,7 @@ const plans = [
       "Email support",
     ],
     cta: "Start Free Trial",
-    ctaHref: "/register",
+    ctaHref: "/landing/register",
     ctaStyle: "bg-[#1E3A8A] text-white hover:bg-[#1e3070]",
   },
   {
@@ -44,7 +44,7 @@ const plans = [
       "Custom branding & white-label",
     ],
     cta: "Get Started",
-    ctaHref: "/register",
+    ctaHref: "/landing/register",
     ctaStyle: "bg-[#D4AF37] text-[#0A192F] hover:bg-[#e8c44b]",
   },
   {

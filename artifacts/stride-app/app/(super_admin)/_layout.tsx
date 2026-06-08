@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 export default function SuperAdminLayout() {
   const { user, isOwner } = useAuth();
 
-  if (!user || !isOwner()) {
+  if (!user || user.role !== "super_admin") {
     return <Redirect href="/" />;
   }
 

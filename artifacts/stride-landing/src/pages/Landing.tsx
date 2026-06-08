@@ -300,7 +300,7 @@ export default function Landing() {
                 {label}
               </a>
             ))}
-            <a href="/register"
+            <a href="/landing/register"
               className="bg-[#D4AF37] text-[#0A192F] text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-[#e8c44b] transition-colors no-underline">
               Get Started Free
             </a>
@@ -322,7 +322,7 @@ export default function Landing() {
                 className="text-sm text-slate-600 hover:text-[#1E3A8A] font-medium no-underline"
                 onClick={() => setMenuOpen(false)}>{label}</a>
             ))}
-            <a href="/register"
+            <a href="/landing/register"
               className="bg-[#D4AF37] text-[#0A192F] text-sm font-bold px-5 py-3 rounded-lg text-center no-underline"
               onClick={() => setMenuOpen(false)}>
               Get Started Free — 30-Day Trial
@@ -368,7 +368,7 @@ export default function Landing() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-5">
-              <a href="/register"
+              <a href="/landing/register"
                 className="inline-flex items-center justify-center gap-2 bg-[#D4AF37] text-[#0A192F] font-black px-8 py-4 rounded-xl text-base hover:bg-[#e8c44b] transition-colors shadow-md shadow-amber-100 no-underline">
                 Start Free Trial <IcoArrow />
               </a>
@@ -522,7 +522,7 @@ export default function Landing() {
           </div>
 
           <div className="mt-8 text-center">
-            <a href="/register"
+            <a href="/landing/register"
               className="inline-flex items-center gap-2 bg-[#1E3A8A] text-white font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-[#152d6e] transition-colors no-underline">
               Switch to Stride Today
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -562,7 +562,7 @@ export default function Landing() {
           </div>
 
           <div className="mt-10 text-center">
-            <a href="/register"
+            <a href="/landing/register"
               className="inline-flex items-center gap-2 bg-[#1E3A8A] text-white font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-[#152d6e] transition-colors no-underline">
               Register Your School <IcoArrow />
             </a>
@@ -610,7 +610,7 @@ export default function Landing() {
                   </div>
                 ))}
               </div>
-              <a href="/register"
+              <a href="/landing/register"
                 className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-black px-7 py-3.5 rounded-xl text-sm mt-8 transition-colors no-underline">
                 Activate Emergency Protection <IcoArrow />
               </a>
@@ -691,7 +691,7 @@ export default function Landing() {
               </div>
 
               <div className="mt-8">
-                <a href="/register"
+                <a href="/landing/register"
                   className="inline-flex items-center gap-2 bg-[#D4AF37] text-[#0A192F] font-black px-7 py-3.5 rounded-xl text-sm hover:bg-[#e8c44b] transition-colors no-underline shadow-md shadow-amber-100">
                   Join as a Member <IcoArrow />
                 </a>
@@ -759,7 +759,7 @@ export default function Landing() {
           ))}
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-10 text-center">
-          <a href="/register"
+          <a href="/landing/register"
             className="inline-flex items-center gap-2 bg-[#D4AF37] text-[#0A192F] font-black px-8 py-4 rounded-xl text-sm hover:bg-[#e8c44b] transition-colors no-underline shadow-md">
             Start Your Free Trial <IcoArrow />
           </a>
@@ -956,7 +956,7 @@ export default function Landing() {
             No credit card. No commitment. Full access for 30 days.<br />
             Set up your school, invite your operators, and run your first safe session today.
           </p>
-          <a href="/register"
+          <a href="/landing/register"
             className="inline-flex items-center gap-2.5 bg-[#D4AF37] text-[#0A192F] font-black text-lg px-10 py-5 rounded-2xl hover:bg-[#e8c44b] transition-colors shadow-xl shadow-[#D4AF37]/20 no-underline">
             Start Free Trial &mdash; No Card Required <IcoArrow />
           </a>

@@ -39,14 +39,21 @@ export const importLimiter = rateLimit({
 
 /**
  * Global API limiter — applied to every /api route.
- * Prevents volumetric abuse. 300 requests per 15-minute window per IP.
+ * Keys by authenticated user+org when possible so multiple browser sessions
+ * from the same IP (e.g. dev previews) each get their own bucket.
+ * Falls back to IP for unauthenticated requests.
+ * 2 000 requests per 15-minute window — generous enough for dev/demo with
+ * multiple concurrent iframes while still blocking actual volumetric abuse.
  */
 export const globalApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 300,
+  limit: 2000,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? "unknown",
+  keyGenerator: (req) => {
+    const user = (req as AuthReq).user;
+    return user ? `global:uid:${user.id}:org:${user.orgId}` : `global:ip:${req.ip ?? "unknown"}`;
+  },
   skip: (req) => req.path === "/api/healthz",
   message: { error: "Too many requests from this IP. Please try again later." },
 });
