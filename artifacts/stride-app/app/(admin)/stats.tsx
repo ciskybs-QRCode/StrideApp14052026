@@ -149,6 +149,7 @@ export default function AdminHome() {
   const [showQRFullscreen, setShowQRFullscreen] = useState(false);
   const [campusAddress, setCampusAddress]   = useState("1 Main Street, Sydney NSW 2000");
   const [orgName, setOrgName]               = useState<string>("");
+  const [orgLoadError, setOrgLoadError]     = useState(false);
   const pulseAnim     = useRef(new Animated.Value(1)).current;
   const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -158,7 +159,7 @@ export default function AdminHome() {
     });
     api.getOrg().then(org => {
       if (org?.name) setOrgName(org.name);
-    }).catch(() => {});
+    }).catch(() => setOrgLoadError(true));
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.08, duration: 600, useNativeDriver: true }),
@@ -298,6 +299,22 @@ export default function AdminHome() {
             </Text>
           </View>
         </View>
+
+        {/* ── Org load error banner ── */}
+        {orgLoadError && (
+          <View style={{ backgroundColor: "#FEE2E2", borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#FCA5A5" }}>
+            <Text style={{ fontSize: 13, color: "#991B1B", fontWeight: "600" }}>Failed to load school data</Text>
+            <Pressable
+              onPress={() => {
+                setOrgLoadError(false);
+                api.getOrg().then(org => { if (org?.name) setOrgName(org.name); }).catch(() => setOrgLoadError(true));
+              }}
+              style={{ backgroundColor: "#991B1B", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+            >
+              <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Retry</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* ── QUICK ACTIONS ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>

@@ -114,6 +114,7 @@ export default function AdminUsers() {
 
   const [users,         setUsers]         = useState<UserRecord[]>([]);
   const [loadingUsers,  setLoadingUsers]  = useState(true);
+  const [loadError,     setLoadError]     = useState(false);
   const [search,        setSearch]        = useState("");
   const [filter,        setFilter]        = useState<"all" | "parent" | "operator" | "admin" | "student">("all");
   const [selected,      setSelected]      = useState<UserRecord | null>(null);
@@ -165,7 +166,7 @@ export default function AdminUsers() {
         : [];
 
       setUsers([...userRecords, ...studentRecords]);
-    }).catch(() => {}).finally(() => setLoadingUsers(false));
+    }).catch(() => setLoadError(true)).finally(() => setLoadingUsers(false));
   }, []);
 
   // Operator profile for detail modal
@@ -296,6 +297,26 @@ export default function AdminUsers() {
             <Text style={styles.badgePdfBtnText}>Badge PDF</Text>
           </Pressable>
         </View>
+
+        {/* ── Load error banner ── */}
+        {loadError && (
+          <View style={{ backgroundColor: "#FEE2E2", borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#FCA5A5" }}>
+            <Text style={{ fontSize: 13, color: "#991B1B", fontWeight: "600" }}>Failed to load members</Text>
+            <Pressable
+              onPress={() => {
+                setLoadError(false);
+                setLoadingUsers(true);
+                Promise.allSettled([api.getUsers(), api.getStudents(), api.getOperatorProfiles(), api.getChildren()])
+                  .then(() => {})
+                  .catch(() => setLoadError(true))
+                  .finally(() => setLoadingUsers(false));
+              }}
+              style={{ backgroundColor: "#991B1B", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+            >
+              <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Retry</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Stats strip */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>

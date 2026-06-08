@@ -21,7 +21,7 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
   // ── Fetch child ────────────────────────────────────────────────────────────
   const { data: child, error: childErr } = await supabase
     .from("children")
-    .select("id, first_name, last_name, is_blocked, block_reason, payment_status")
+    .select("*")
     .eq("id", parseInt(String(childId), 10))
     .single();
 
@@ -114,10 +114,10 @@ router.patch("/access-check/:childId/payment", requireAuth, requireRole("admin")
     .from("children")
     .update(updates)
     .eq("id", parseInt(String(childId), 10))
-    .select("id, first_name, last_name, is_blocked, block_reason, payment_status")
+    .select("*")
     .single();
 
-  if (error) { res.status(500).json({ error: error.message }); return; }
+  if (error) { res.status(500).json({ error: "Failed to update child record" }); return; }
   res.json(data);
 });
 

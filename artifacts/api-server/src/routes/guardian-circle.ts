@@ -7,6 +7,7 @@
 
 import { Router } from "express";
 import { pool } from "../lib/pg.js";
+import { supabase } from "../lib/supabase.js";
 import { requireAuth } from "../lib/auth.js";
 import {
   GuardianAccessService,
@@ -39,8 +40,24 @@ router.get("/guardian-circle/check", requireAuth, async (req: Request, res: Resp
 
 // ── GET /guardian-circle/child/:childId ──────────────────────────────────────
 // List all Guardian Circle entries for a child (parent or operator).
+// Parents may only query their own children; operators and admins are unrestricted.
 router.get("/guardian-circle/child/:childId", requireAuth, async (req: Request, res: Response) => {
+  const user    = (req as AuthedRequest).user;
   const childId = String(req.params.childId);
+
+  if (user.role === "parent") {
+    const { data: child } = await supabase
+      .from("children")
+      .select("id, parent_id")
+      .eq("id", childId)
+      .single();
+
+    if (!child || String(child.parent_id) !== String(user.id)) {
+      res.status(403).json({ error: "Access denied: not your child" });
+      return;
+    }
+  }
+
   const entries = await guardianService.listForChild(childId);
   res.json({ entries });
 });

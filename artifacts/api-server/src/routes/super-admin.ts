@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
-import { requireAuth, requireOwnerOrSuperAdmin, signToken, type TokenPayload } from "../lib/auth.js";
+import { requireAuth, requireOwnerOrSuperAdmin, requireRole, signToken, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
 import { ensureTables } from "../lib/pg.js";
 import { getOwnerEmail, setOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
@@ -384,7 +384,7 @@ router.post("/super-admin/add-super-admin", requireAuth, requireOwnerOrSuperAdmi
 });
 
 // ── POST /super-admin/seed ────────────────────────────────────────────────────
-router.post("/super-admin/seed", async (req, res) => {
+router.post("/super-admin/seed", requireAuth, requireRole("admin"), async (req, res) => {
   const { name, email, password } = req.body as { name?: string; email?: string; password?: string };
   if (!name?.trim() || !email?.trim() || !password?.trim()) {
     res.status(400).json({ error: "name, email and password are required" });

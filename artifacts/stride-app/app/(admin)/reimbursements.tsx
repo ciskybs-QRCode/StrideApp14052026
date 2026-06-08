@@ -234,8 +234,10 @@ export default function AdminReimbursementsScreen() {
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: "paid" | "rejected" } | null>(null);
   const [receiptThresholdCents, setReceiptThresholdCents] = useState(0);
   const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       const data = await api.getReimbursements();
       setRequests(data.map(r => ({
@@ -249,6 +251,7 @@ export default function AdminReimbursementsScreen() {
         submittedAt: r.submitted_at,
       })));
     } catch {
+      setLoadError(true);
       setRequests([]);
     }
     // Load school name from API
@@ -327,6 +330,19 @@ export default function AdminReimbursementsScreen() {
             <Text style={styles.addBtnText}>Request</Text>
           </Pressable>
         </View>
+
+        {/* ── Load error banner ── */}
+        {loadError && (
+          <View style={{ backgroundColor: "#FEE2E2", borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#FCA5A5" }}>
+            <Text style={{ fontSize: 13, color: "#991B1B", fontWeight: "600" }}>Failed to load reimbursements</Text>
+            <Pressable
+              onPress={load}
+              style={{ backgroundColor: "#991B1B", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+            >
+              <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Retry</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* ── Pending ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Awaiting Review</Text>

@@ -302,6 +302,7 @@ export default function OperatorDashboard() {
 
   // ── Pending scheduled-course requests (operator must confirm or decline) ─────
   const [pendingCourses, setPendingCourses]           = useState<ApiScheduledCourse[]>([]);
+  const [coursesLoadError, setCoursesLoadError]       = useState(false);
 
   // ── Clock-Out / QR logout state ─────────────────────────────────────────────
   const [showClockOutModal, setShowClockOutModal]     = useState(false);
@@ -366,9 +367,10 @@ export default function OperatorDashboard() {
 
   // ── Load pending scheduled-course requests for this operator ─────────────
   useEffect(() => {
+    setCoursesLoadError(false);
     api.getScheduledCourses()
       .then(courses => setPendingCourses(courses.filter(c => c.status === "pending_confirmation")))
-      .catch(() => {});
+      .catch(() => setCoursesLoadError(true));
   }, []);
 
   const handleCourseConfirm = async (id: number) => {
@@ -1061,6 +1063,24 @@ export default function OperatorDashboard() {
             onOpenNotif={(id) => { markRead(id); router.push("/(operator)/private-lessons"); }}
             onViewAll={() => router.push("/(operator)/private-lessons")}
           />
+        )}
+
+        {/* ── Course load error banner ── */}
+        {coursesLoadError && (
+          <View style={{ backgroundColor: "#FEE2E2", borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#FCA5A5" }}>
+            <Text style={{ fontSize: 13, color: "#991B1B", fontWeight: "600" }}>Failed to load course requests</Text>
+            <Pressable
+              onPress={() => {
+                setCoursesLoadError(false);
+                api.getScheduledCourses()
+                  .then(courses => setPendingCourses(courses.filter(c => c.status === "pending_confirmation")))
+                  .catch(() => setCoursesLoadError(true));
+              }}
+              style={{ backgroundColor: "#991B1B", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+            >
+              <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Retry</Text>
+            </Pressable>
+          </View>
         )}
 
         {/* ── Pending Scheduled-Course Requests ── */}

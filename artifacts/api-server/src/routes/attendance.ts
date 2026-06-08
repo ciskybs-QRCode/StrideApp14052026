@@ -1,7 +1,15 @@
 import { Router, type Request } from "express";
+import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { SecurityObserver } from "../lib/SecurityObserver.js";
+
+const AttendanceInsertSchema = z.object({
+  child_id:   z.number({ required_error: "child_id is required" }).int().positive(),
+  session_id: z.number().int().positive().optional(),
+  status:     z.string().max(64).optional(),
+  notes:      z.string().max(1000).optional(),
+});
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -29,20 +37,26 @@ router.get("/attendance", requireAuth, requireRole("admin", "operator"), async (
 
 router.post("/attendance", requireAuth, requireRole("admin", "operator"), async (req, res) => {
   const user = (req as AuthReq).user;
-  const body = req.body as Record<string, unknown>;
+
+  const parsed = AttendanceInsertSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors });
+    return;
+  }
+  const { child_id, session_id, status, notes } = parsed.data;
+
   const { data, error } = await supabase
     .from("attendance_records")
-    .insert({ ...body, operator_id: parseInt(user.id) })
+    .insert({ child_id, session_id, status, notes, operator_id: parseInt(user.id) })
     .select()
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.status(201).json(data);
   // Fire-and-forget — SecurityObserver never delays or blocks the response
-  const childId = String(body.child_id ?? "");
-  SecurityObserver.logActivity(childId, "CHECK_IN", {
+  SecurityObserver.logActivity(String(child_id), "CHECK_IN", {
     operator:   user.email,
-    session_id: body.session_id,
-    status:     body.status,
+    session_id,
+    status,
   });
 });
 
