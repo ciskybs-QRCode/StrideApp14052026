@@ -24,6 +24,8 @@ export type SecurityEventType =
   | "SIGNATURE_CAPTURED"
   | "GUARDIAN_ADDED"
   | "GUARDIAN_DEACTIVATED"
+  | "GUARDIAN_SCANNED"   // Intelligent QR — successful validated scan
+  | "OVERRIDE_SCANNED"   // Intelligent QR — operator confirmed exception protocol
   | (string & {});       // allow arbitrary future event types without breaking TS
 
 // ── Table bootstrap (idempotent, run once per process) ────────────────────────

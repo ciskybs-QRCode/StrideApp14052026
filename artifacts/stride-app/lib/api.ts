@@ -772,11 +772,16 @@ export const api = {
     ).then(r => r.entries),
 
   addGuardianCircle: (data: {
-    child_id:       string;
-    guardian_name:  string;
-    guardian_email?: string | null;
-    guardian_phone?: string | null;
-    expires_at?:    string | null;
+    child_id:                  string;
+    guardian_name:             string;
+    guardian_email?:           string | null;
+    guardian_phone?:           string | null;
+    expires_at?:               string | null;
+    is_single_use?:            boolean;
+    pickup_days?:              string[] | null;
+    pickup_window_start?:      string | null;
+    pickup_window_end?:        string | null;
+    window_tolerance_minutes?: number;
   }) => request<GuardianCircleApiEntry>("POST", "/guardian-circle", data),
 
   deactivateGuardianCircle: (id: string) =>
@@ -786,6 +791,18 @@ export const api = {
     request<{ authorized: boolean; reason: string }>(
       "GET",
       `/guardian-circle/check?childId=${encodeURIComponent(childId)}&guardianId=${encodeURIComponent(guardianId)}`,
+    ),
+
+  scanGuardianQR: (guardianId: string, data: { child_id: string }) =>
+    request<{
+      verdict:      "ok" | "override_required";
+      reason?:      string;
+      guardian:     GuardianCircleApiEntry;
+    }>("POST", `/guardian-circle/${guardianId}/scan`, data),
+
+  confirmGuardianOverride: (guardianId: string, data: { child_id: string; override_reason: string; override_note?: string }) =>
+    request<{ success: boolean; overridden_at: string }>(
+      "POST", `/guardian-circle/${guardianId}/override`, data,
     ),
 
   // ── Stride Safety Score ────────────────────────────────────────────────────
@@ -1021,14 +1038,20 @@ export interface ProximityRecentEntry {
 }
 
 export interface GuardianCircleApiEntry {
-  id:             string;
-  child_id:       string;
-  guardian_name:  string;
-  guardian_email: string | null;
-  guardian_phone: string | null;
-  is_active:      boolean;
-  expires_at:     string | null;
-  created_at:     string;
+  id:                       string;
+  child_id:                 string;
+  guardian_name:            string;
+  guardian_email:           string | null;
+  guardian_phone:           string | null;
+  is_active:                boolean;
+  expires_at:               string | null;
+  created_at:               string;
+  is_single_use:            boolean;
+  used_at:                  string | null;
+  pickup_days:              string[] | null;
+  pickup_window_start:      string | null;
+  pickup_window_end:        string | null;
+  window_tolerance_minutes: number;
 }
 
 export interface ApiUser {

@@ -18,3 +18,4 @@
 - [Stride Marketplace](stride-marketplace.md) — marketplace_products + marketplace_purchases tables; 6 API routes; commission via Stripe application_fee_amount; parent screen + admin manage screen + home banner + stats card.
 - [Stride marketplace guard scope](stride-marketplace-guard.md) — router.use() without path prefix in a sub-router intercepts ALL requests; scope feature-flag guards with router.use("/marketplace", guard) not router.use(guard).
 - [Stride Global Pricing Engine](stride-global-pricing.md) — regional_pricing table + region_code in admin_settings; PricingService.getPricingForOrg(); 5 API routes; admin mobile screen; checkout/billing wired to PricingService.
+- [Stride Intelligent QR Guardian](stride-intelligent-qr.md) — 6 new columns on authorized_pickups; /scan + /override routes; GUARDIAN_SCANNED + OVERRIDE_SCANNED events; override modal in dashboard; parent form with single-use + time window fields.

@@ -48,11 +48,22 @@ type ScanResult = {
 };
 
 type GuardianResult = {
+  guardianId?:  string;
   childId?:     string;
   guardianName: string;
   relationship: string;
   childName:    string;
   isAuthorized: boolean;
+};
+
+type OverrideData = {
+  guardianId:   string;
+  guardianName: string;
+  childId:      string;
+  childName:    string;
+  relationship: string;
+  reason:       string;
+  confirming:   boolean;
 };
 
 interface LogEntry {
@@ -294,6 +305,7 @@ export default function OperatorDashboard() {
   const [selectedBooking, setSelectedBooking] = useState<import("@/lib/api").ApiPrivateBooking | null>(null);
   const [lessonScanning,  setLessonScanning]  = useState(false);
   const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
+  const [overrideData,    setOverrideData]    = useState<OverrideData | null>(null);
   const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string } | null>(null);
 
   // ── Emergency Pulse ────────────────────────────────────────────────────────
@@ -508,6 +520,7 @@ export default function OperatorDashboard() {
 
   const showGuardianResult = (result: GuardianResult) => {
     setGuardianResult(result);
+    setOverrideData(null);
     setScanResult(null);
     setScanned(true);
     const tag = result.isAuthorized ? "✓ Pick-up authorised" : "✗ Pick-up NOT authorised";
@@ -661,18 +674,37 @@ export default function OperatorDashboard() {
       setLessonScanning(false);
 
     } else if (data.startsWith("STRIDE:GUARDIAN:")) {
-      // Guardian pickup QR — format: STRIDE:GUARDIAN:<delegateId>:<childId>:<guardianName>:<relationship>
-      const parts = data.split(":");
-      const delegateId   = parts[2] ?? "";
+      // Guardian pickup QR — format: STRIDE:GUARDIAN:<guardianId>:<childId>:<guardianName>:<relationship>
+      const parts        = data.split(":");
+      const guardianId   = parts[2] ?? "";
       const childId      = parts[3] ?? "";
       const guardianName = decodeURIComponent(parts[4] ?? "Guardian");
-      const relationship = parts[5] ?? "Tutore";
-      // Look up the child by id in the students list
-      const child = students.find(s => s.id === childId);
-      const childName = child?.name ?? decodeURIComponent(parts[6] ?? "Bambino");
-      // A QR issued by Stride is implicitly authorized unless the student record says otherwise
-      const isAuthorized = !!delegateId;
-      showGuardianResult({ guardianName, relationship, childName, isAuthorized, childId });
+      const relationship = parts[5] ?? "Guardian";
+      const child        = students.find(s => s.id === childId);
+      const childName    = child?.name ?? "Child";
+
+      setScanned(true);
+      setGuardianResult(null);
+      setOverrideData(null);
+
+      try {
+        const result = await api.scanGuardianQR(guardianId, { child_id: childId });
+        if (result.verdict === "ok") {
+          showGuardianResult({ guardianId, guardianName, relationship, childName, isAuthorized: true, childId });
+        } else {
+          // ── Exception Protocol ───────────────────────────────────────────────
+          setOverrideData({
+            guardianId, guardianName, childId, childName, relationship,
+            reason:     result.reason ?? "Scan outside normal parameters",
+            confirming: false,
+          });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          pushLog({ time: nowTime(), action: `\u26a0 Override required: ${guardianName} \u2014 ${result.reason}`, type: "warning" });
+        }
+      } catch {
+        // Graceful degradation — if API call fails, show as authorized (system availability)
+        showGuardianResult({ guardianId, guardianName, relationship, childName, isAuthorized: !!guardianId, childId });
+      }
 
     } else if (data.startsWith("STRIDE:CHILD:")) {
       // Direct child check-in QR — format: STRIDE:CHILD:<studentId>:<encodedName>
@@ -1735,6 +1767,102 @@ export default function OperatorDashboard() {
             </CameraView>
           )}
 
+          {/* ── Exception Protocol — Override Required ── */}
+          {overrideData && !guardianResult && (
+            <View style={styles.overridePanel}>
+              {/* Header */}
+              <View style={styles.overrideHeader}>
+                <View style={styles.overrideIconWrap}>
+                  <Ionicons name="warning" size={26} color="#F59E0B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.overrideTitle}>Exception Protocol</Text>
+                  <Text style={styles.overrideSub}>Manual confirmation required</Text>
+                </View>
+                <View style={styles.overrideStatusBadge}>
+                  <Text style={styles.overrideStatusText}>OVERRIDE</Text>
+                </View>
+              </View>
+
+              {/* Reason */}
+              <View style={styles.overrideReasonBox}>
+                <Ionicons name="alert-circle-outline" size={14} color="#FCD34D" />
+                <Text style={styles.overrideReasonText}>{overrideData.reason}</Text>
+              </View>
+
+              {/* Guardian / Child */}
+              <View style={styles.guardianRow}>
+                <View style={styles.guardianField}>
+                  <Text style={styles.guardianFieldLabel}>GUARDIAN</Text>
+                  <Text style={styles.guardianFieldValue}>{overrideData.guardianName}</Text>
+                  <Text style={[styles.guardianFieldLabel, { marginTop: 2 }]}>{overrideData.relationship}</Text>
+                </View>
+                <View style={styles.guardianDivider} />
+                <View style={styles.guardianField}>
+                  <Text style={styles.guardianFieldLabel}>CHILD</Text>
+                  <Text style={styles.guardianFieldValue}>{overrideData.childName}</Text>
+                </View>
+              </View>
+
+              {/* Warning */}
+              <Text style={styles.overrideWarningText}>
+                This scan does not meet normal authorisation criteria. Proceeding will be logged as OVERRIDE_SCANNED in the Security Timeline.
+              </Text>
+
+              {/* Actions */}
+              <View style={styles.overrideActions}>
+                <Pressable
+                  style={styles.overrideDenyBtn}
+                  onPress={() => { setOverrideData(null); setScanned(false); setShowScanner(false); }}
+                >
+                  <Ionicons name="close" size={16} color="#EF4444" />
+                  <Text style={styles.overrideDenyText}>Deny</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.overrideConfirmBtn, overrideData.confirming && { opacity: 0.7 }]}
+                  disabled={overrideData.confirming}
+                  onPress={async () => {
+                    setOverrideData(prev => prev ? { ...prev, confirming: true } : null);
+                    try {
+                      await api.confirmGuardianOverride(overrideData.guardianId, {
+                        child_id:       overrideData.childId,
+                        override_reason: overrideData.reason,
+                      });
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                      pushLog({ time: nowTime(), action: `\u26a0 OVERRIDE: ${overrideData.guardianName} \u2014 proceeding`, type: "warning" });
+                      const snap = overrideData;
+                      setOverrideData(null);
+                      // Open signature pad
+                      setScanned(false);
+                      setShowScanner(false);
+                      router.push({
+                        pathname: "/(operator)/verify-sign",
+                        params: {
+                          childId:      snap.childId,
+                          childName:    snap.childName,
+                          guardianName: snap.guardianName,
+                          relationship: snap.relationship,
+                        },
+                      });
+                    } catch {
+                      setOverrideData(prev => prev ? { ...prev, confirming: false } : null);
+                      Alert.alert("Error", "Could not log override. Please try again.");
+                    }
+                  }}
+                >
+                  {overrideData.confirming ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="shield-outline" size={16} color="#FFF" />
+                      <Text style={styles.overrideConfirmText}>Override &amp; Proceed</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          )}
+
           {/* Guardian pickup result */}
           {guardianResult && (
             <View style={[styles.guardianPanel, { backgroundColor: guardianResult.isAuthorized ? "#4C1D95" : "#7F1D1D" }]}>
@@ -2319,6 +2447,23 @@ const styles = StyleSheet.create({
   verifySignText:     { color: "#FFF", fontSize: 13, fontWeight: "800" },
   verifyDismissBtn:   { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.12)" },
   verifyDismissText:  { color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: "600" },
+
+  // Exception Protocol — Override panel
+  overridePanel:       { padding: 20, gap: 12, backgroundColor: "#1C1410" },
+  overrideHeader:      { flexDirection: "row", alignItems: "center", gap: 14 },
+  overrideIconWrap:    { width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(245,158,11,0.2)", alignItems: "center", justifyContent: "center" },
+  overrideTitle:       { color: "#FFF", fontSize: 16, fontWeight: "800" },
+  overrideSub:         { color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 },
+  overrideStatusBadge: { backgroundColor: "#F59E0B", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  overrideStatusText:  { color: "#000", fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
+  overrideReasonBox:   { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "rgba(245,158,11,0.12)", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "rgba(245,158,11,0.3)" },
+  overrideReasonText:  { flex: 1, color: "#FCD34D", fontSize: 13, lineHeight: 18 },
+  overrideWarningText: { fontSize: 11, color: "rgba(255,255,255,0.5)", textAlign: "center", lineHeight: 16 },
+  overrideActions:     { flexDirection: "row", gap: 10 },
+  overrideDenyBtn:     { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: "rgba(239,68,68,0.5)", backgroundColor: "rgba(239,68,68,0.1)" },
+  overrideDenyText:    { color: "#EF4444", fontWeight: "700", fontSize: 14 },
+  overrideConfirmBtn:  { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#D97706", paddingVertical: 13, borderRadius: 10 },
+  overrideConfirmText: { color: "#FFF", fontWeight: "800", fontSize: 14 },
 
   // Private lesson scan result panel
   lessonScanPanel: { backgroundColor: "#0F2460", padding: 24, alignItems: "center", gap: 8 },

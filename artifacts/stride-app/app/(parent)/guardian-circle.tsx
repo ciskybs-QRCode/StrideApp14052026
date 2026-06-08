@@ -19,15 +19,24 @@ import colors from "@/constants/colors";
 
 const C = colors.light;
 
+const ALL_DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
+type WeekDay = typeof ALL_DAYS[number];
+
 type GuardianEntry = {
-  id:             string;
-  child_id:       string;
-  guardian_name:  string;
-  guardian_email: string | null;
-  guardian_phone: string | null;
-  is_active:      boolean;
-  expires_at:     string | null;
-  created_at:     string;
+  id:                       string;
+  child_id:                 string;
+  guardian_name:            string;
+  guardian_email:           string | null;
+  guardian_phone:           string | null;
+  is_active:                boolean;
+  expires_at:               string | null;
+  created_at:               string;
+  is_single_use:            boolean;
+  used_at:                  string | null;
+  pickup_days:              string[] | null;
+  pickup_window_start:      string | null;
+  pickup_window_end:        string | null;
+  window_tolerance_minutes: number;
 };
 
 function isExpired(entry: GuardianEntry): boolean {
@@ -61,13 +70,21 @@ export default function GuardianCircle() {
   const [showAdd,       setShowAdd]       = useState(false);
   const [deactivating,  setDeactivating]  = useState<string | null>(null);
 
-  // Add form state
-  const [name,      setName]      = useState("");
-  const [email,     setEmail]     = useState("");
-  const [phone,     setPhone]     = useState("");
-  const [hasExpiry, setHasExpiry] = useState(false);
-  const [expiry,    setExpiry]    = useState("");
-  const [saving,    setSaving]    = useState(false);
+  // ── Add form state ───────────────────────────────────────────────────────────
+  const [name,       setName]       = useState("");
+  const [email,      setEmail]      = useState("");
+  const [phone,      setPhone]      = useState("");
+  const [hasExpiry,  setHasExpiry]  = useState(false);
+  const [expiry,     setExpiry]     = useState("");
+  const [saving,     setSaving]     = useState(false);
+
+  // Intelligent QR fields
+  const [isSingleUse,   setIsSingleUse]   = useState(false);
+  const [hasWindow,     setHasWindow]     = useState(false);
+  const [pickupDays,    setPickupDays]    = useState<WeekDay[]>([]);
+  const [windowStart,   setWindowStart]   = useState("15:30");
+  const [windowEnd,     setWindowEnd]     = useState("16:30");
+  const [toleranceMins, setToleranceMins] = useState("30");
 
   useEffect(() => {
     if (children.length > 0 && !selectedChild) setSelectedChild(children[0].id);
@@ -79,7 +96,7 @@ export default function GuardianCircle() {
     setError(null);
     try {
       const data = await api.listGuardianCircle(childId);
-      setEntries(data);
+      setEntries(data as GuardianEntry[]);
     } catch {
       setError("Could not load Guardian Circle. Please try again.");
     } finally {
@@ -90,20 +107,35 @@ export default function GuardianCircle() {
 
   useEffect(() => { if (selectedChild) void load(selectedChild); }, [selectedChild]);
 
-  const resetForm = () => { setName(""); setEmail(""); setPhone(""); setHasExpiry(false); setExpiry(""); };
+  const resetForm = () => {
+    setName(""); setEmail(""); setPhone(""); setHasExpiry(false); setExpiry("");
+    setIsSingleUse(false); setHasWindow(false); setPickupDays([]);
+    setWindowStart("15:30"); setWindowEnd("16:30"); setToleranceMins("30");
+  };
+
+  const toggleDay = (day: WeekDay) => {
+    setPickupDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day],
+    );
+  };
 
   const handleAdd = async () => {
     if (!name.trim() || !selectedChild) return;
     setSaving(true);
     try {
       const entry = await api.addGuardianCircle({
-        child_id:       selectedChild,
-        guardian_name:  name.trim(),
-        guardian_email: email.trim() || null,
-        guardian_phone: phone.trim() || null,
-        expires_at:     hasExpiry && expiry ? new Date(expiry).toISOString() : null,
+        child_id:                  selectedChild,
+        guardian_name:             name.trim(),
+        guardian_email:            email.trim()  || null,
+        guardian_phone:            phone.trim()  || null,
+        expires_at:                hasExpiry && expiry ? new Date(expiry).toISOString() : null,
+        is_single_use:             isSingleUse,
+        pickup_days:               hasWindow && pickupDays.length > 0 ? pickupDays : null,
+        pickup_window_start:       hasWindow && windowStart ? windowStart : null,
+        pickup_window_end:         hasWindow && windowEnd   ? windowEnd   : null,
+        window_tolerance_minutes:  hasWindow ? (parseInt(toleranceMins, 10) || 30) : 30,
       });
-      setEntries(prev => [entry, ...prev]);
+      setEntries(prev => [entry as GuardianEntry, ...prev]);
       resetForm();
       setShowAdd(false);
     } catch {
@@ -126,7 +158,7 @@ export default function GuardianCircle() {
             setDeactivating(entry.id);
             try {
               const updated = await api.deactivateGuardianCircle(entry.id);
-              setEntries(prev => prev.map(e => e.id === entry.id ? updated : e));
+              setEntries(prev => prev.map(e => e.id === entry.id ? updated as GuardianEntry : e));
             } catch {
               Alert.alert("Error", "Could not deactivate guardian.");
             } finally {
@@ -169,7 +201,8 @@ export default function GuardianCircle() {
         <View style={styles.safetyNote}>
           <Ionicons name="shield-checkmark" size={13} color={C.primary} />
           <Text style={styles.safetyText}>
-            Guardian Circle is an <Text style={{ fontWeight: "900" }}>auxiliary</Text> layer only. It can never override the primary parent authorisation. Primary parent permissions are fully separate and unaffected.
+            Guardian Circle is an <Text style={{ fontWeight: "900" }}>auxiliary</Text> layer only. It can never override the primary parent authorisation.{" "}
+            <Text style={{ fontWeight: "700" }}>Intelligent QR</Text> lets you restrict guardians to specific days, time windows, or single-use tokens.
           </Text>
         </View>
 
@@ -253,6 +286,8 @@ export default function GuardianCircle() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+              {/* Basic fields */}
               <Text style={styles.fieldLabel}>Full Name *</Text>
               <TextInput
                 style={styles.input}
@@ -303,6 +338,106 @@ export default function GuardianCircle() {
                 />
               )}
 
+              {/* ── Intelligent QR section ──────────────────────────────────── */}
+              <View style={styles.sectionDivider}>
+                <View style={styles.sectionDividerLine} />
+                <Text style={styles.sectionDividerText}>INTELLIGENT QR</Text>
+                <View style={styles.sectionDividerLine} />
+              </View>
+
+              {/* Single Use Token */}
+              <View style={styles.expiryRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Single-Use Token</Text>
+                  <Text style={[styles.fieldLabel, { color: C.mutedForeground, fontWeight: "400", marginTop: 1 }]}>
+                    QR is invalidated after the first successful scan
+                  </Text>
+                </View>
+                <Switch
+                  value={isSingleUse}
+                  onValueChange={setIsSingleUse}
+                  trackColor={{ true: "#7C3AED" }}
+                  thumbColor="#FFF"
+                />
+              </View>
+
+              {/* Time Window */}
+              <View style={styles.expiryRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Restrict to Time Window</Text>
+                  <Text style={[styles.fieldLabel, { color: C.mutedForeground, fontWeight: "400", marginTop: 1 }]}>
+                    Scans outside window trigger Exception Protocol
+                  </Text>
+                </View>
+                <Switch
+                  value={hasWindow}
+                  onValueChange={v => { setHasWindow(v); if (v && pickupDays.length === 0) setPickupDays(["MON", "TUE", "WED", "THU", "FRI"]); }}
+                  trackColor={{ true: "#0891B2" }}
+                  thumbColor="#FFF"
+                />
+              </View>
+
+              {hasWindow && (
+                <View style={styles.windowBox}>
+                  {/* Days picker */}
+                  <Text style={[styles.fieldLabel, { marginTop: 0 }]}>Pickup Days</Text>
+                  <View style={styles.dayChips}>
+                    {ALL_DAYS.map(day => (
+                      <Pressable
+                        key={day}
+                        style={[styles.dayChip, pickupDays.includes(day) && styles.dayChipActive]}
+                        onPress={() => toggleDay(day)}
+                      >
+                        <Text style={[styles.dayChipText, pickupDays.includes(day) && styles.dayChipTextActive]}>
+                          {day.slice(0, 3)}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  {/* Time range */}
+                  <View style={styles.timeRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.fieldLabel}>Window Start</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={windowStart}
+                        onChangeText={setWindowStart}
+                        placeholder="15:30"
+                        placeholderTextColor={C.mutedForeground}
+                        keyboardType="numbers-and-punctuation"
+                      />
+                    </View>
+                    <Text style={styles.timeSep}>to</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.fieldLabel}>Window End</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={windowEnd}
+                        onChangeText={setWindowEnd}
+                        placeholder="16:30"
+                        placeholderTextColor={C.mutedForeground}
+                        keyboardType="numbers-and-punctuation"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Tolerance */}
+                  <Text style={styles.fieldLabel}>Tolerance (minutes)</Text>
+                  <TextInput
+                    style={[styles.input, { width: 90 }]}
+                    value={toleranceMins}
+                    onChangeText={setToleranceMins}
+                    placeholder="30"
+                    placeholderTextColor={C.mutedForeground}
+                    keyboardType="number-pad"
+                  />
+                  <Text style={[styles.fieldLabel, { color: C.mutedForeground, fontWeight: "400", marginTop: 4 }]}>
+                    Allow scans up to {toleranceMins || "30"} min before/after window
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.modalActions}>
                 <Pressable style={[styles.modalBtn, { backgroundColor: C.muted }]} onPress={() => setShowAdd(false)}>
                   <Text style={[styles.modalBtnText, { color: C.primary }]}>Cancel</Text>
@@ -332,8 +467,10 @@ function GuardianCard({
   deactivating: string | null;
   onDeactivate: (e: GuardianEntry) => void;
 }) {
-  const expired = isExpired(entry);
+  const expired   = isExpired(entry);
   const isLoading = deactivating === entry.id;
+  const isUsed    = entry.is_single_use && !!entry.used_at;
+  const hasWindow = !!(entry.pickup_window_start && entry.pickup_window_end);
 
   return (
     <View style={[styles.card, !entry.is_active && { opacity: 0.6 }]}>
@@ -351,6 +488,35 @@ function GuardianCard({
         </View>
         <StatusBadge entry={entry} />
       </View>
+
+      {/* Intelligent QR badges */}
+      {(entry.is_single_use || hasWindow) && (
+        <View style={styles.iqrRow}>
+          {entry.is_single_use && (
+            <View style={[styles.iqrBadge, isUsed ? { backgroundColor: "#F3F4F6" } : { backgroundColor: "#EDE9FE" }]}>
+              <Ionicons
+                name={isUsed ? "checkmark-done" : "key"}
+                size={11}
+                color={isUsed ? "#9CA3AF" : "#7C3AED"}
+              />
+              <Text style={[styles.iqrBadgeText, isUsed ? { color: "#9CA3AF" } : { color: "#7C3AED" }]}>
+                {isUsed ? `Used ${formatDate(entry.used_at!)}` : "Single Use"}
+              </Text>
+            </View>
+          )}
+          {hasWindow && (
+            <View style={[styles.iqrBadge, { backgroundColor: "#E0F2FE" }]}>
+              <Ionicons name="time-outline" size={11} color="#0891B2" />
+              <Text style={[styles.iqrBadgeText, { color: "#0891B2" }]}>
+                {entry.pickup_window_start}–{entry.pickup_window_end}
+                {entry.pickup_days && entry.pickup_days.length > 0 && (
+                  ` · ${entry.pickup_days.map(d => d.slice(0, 3)).join(", ")}`
+                )}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {(entry.guardian_email || entry.guardian_phone) && (
         <View style={styles.cardContact}>
@@ -371,7 +537,7 @@ function GuardianCard({
 
       <View style={styles.cardFooter}>
         <Text style={styles.cardId} numberOfLines={1}>ID: {entry.id.slice(0, 18)}\u2026</Text>
-        {entry.is_active && !expired && (
+        {entry.is_active && !expired && !isUsed && (
           <Pressable
             style={[styles.deactivateBtn, isLoading && { opacity: 0.5 }]}
             onPress={() => onDeactivate(entry)}
@@ -429,6 +595,10 @@ const styles = StyleSheet.create({
   badge:     { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   badgeText: { fontSize: 11, fontWeight: "700" },
 
+  iqrRow:       { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 14, paddingBottom: 10 },
+  iqrBadge:     { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
+  iqrBadgeText: { fontSize: 11, fontWeight: "700" },
+
   cardContact: { paddingHorizontal: 14, paddingBottom: 10, gap: 4 },
   contactRow:  { flexDirection: "row", alignItems: "center", gap: 6 },
   contactText: { fontSize: 12, color: C.mutedForeground },
@@ -439,13 +609,27 @@ const styles = StyleSheet.create({
   deactivateBtnText: { fontSize: 12, fontWeight: "700", color: "#EF4444" },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalCard:    { backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, maxHeight: "85%" },
+  modalCard:    { backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, maxHeight: "92%" },
   modalHeader:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
   modalTitle:   { fontSize: 18, fontWeight: "900", color: C.text },
   fieldLabel:   { fontSize: 12, fontWeight: "700", color: C.mutedForeground, marginBottom: 6, marginTop: 12 },
   input:        { borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 12, fontSize: 14, color: C.text, backgroundColor: C.background },
-  expiryRow:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
+  expiryRow:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12, gap: 12 },
   modalActions: { flexDirection: "row", gap: 10, marginTop: 24 },
   modalBtn:     { paddingVertical: 14, borderRadius: 12, alignItems: "center", paddingHorizontal: 20 },
   modalBtnText: { fontWeight: "800", fontSize: 14 },
+
+  // Intelligent QR form
+  sectionDivider:     { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 22, marginBottom: 4 },
+  sectionDividerLine: { flex: 1, height: 1, backgroundColor: C.border },
+  sectionDividerText: { fontSize: 10, fontWeight: "800", color: C.mutedForeground, letterSpacing: 1 },
+
+  windowBox:   { backgroundColor: "#F8FAFC", borderRadius: 12, padding: 14, marginTop: 10, borderWidth: 1, borderColor: C.border },
+  dayChips:    { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 4 },
+  dayChip:     { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: C.muted, borderWidth: 1, borderColor: C.border },
+  dayChipActive:     { backgroundColor: "#0891B2", borderColor: "#0891B2" },
+  dayChipText:       { fontSize: 12, fontWeight: "700", color: "#374151" },
+  dayChipTextActive: { color: "#FFF" },
+  timeRow:     { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+  timeSep:     { fontSize: 13, color: C.mutedForeground, paddingBottom: 14, fontWeight: "600" },
 });
