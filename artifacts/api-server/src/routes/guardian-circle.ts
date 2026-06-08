@@ -87,6 +87,20 @@ router.post("/guardian-circle", requireAuth, async (req: Request, res: Response)
     return;
   }
 
+  // Parents may only add guardians to their own children
+  if (user.role === "parent") {
+    const { data: child } = await supabase
+      .from("children")
+      .select("id, parent_id")
+      .eq("id", String(child_id))
+      .single();
+
+    if (!child || String(child.parent_id) !== String(user.id)) {
+      res.status(403).json({ error: "Access denied: not your child" });
+      return;
+    }
+  }
+
   const { rows } = await pool.query<GuardianCircleEntry>(
     `INSERT INTO authorized_pickups
        (child_id, guardian_name, guardian_email, guardian_phone, expires_at, created_by)

@@ -2,10 +2,26 @@ import { Router } from "express";
 import { createHash } from "crypto";
 import { pool, ensureTables } from "../lib/pg.js";
 import { requireAuth } from "../lib/auth.js";
+import { supabase } from "../lib/supabase.js";
 import { SignatureService } from "../lib/SignatureService.js";
 import { SecurityObserver } from "../lib/SecurityObserver.js";
 import type { Request, Response } from "express";
 import type { TokenPayload } from "../lib/auth.js";
+
+/** Reusable parent-ownership guard. Returns true and sends 403 if denied. */
+async function denyIfNotOwned(res: Response, user: TokenPayload, childId: string): Promise<boolean> {
+  if (user.role !== "parent") return false;
+  const { data: child } = await supabase
+    .from("children")
+    .select("id, parent_id")
+    .eq("id", childId)
+    .single();
+  if (!child || String(child.parent_id) !== String(user.id)) {
+    res.status(403).json({ error: "Access denied: not your child" });
+    return true;
+  }
+  return false;
+}
 
 type AuthedRequest = Request & { user: TokenPayload };
 
@@ -70,7 +86,9 @@ router.post("/security/pickup-signature", requireAuth, async (req: Request, res:
 // GET /security/audit-log/:childId  (parent or operator — auth required)
 router.get("/security/audit-log/:childId", requireAuth, async (req: Request, res: Response) => {
   await ensureTables();
-  const { childId } = req.params;
+  const user    = (req as AuthedRequest).user;
+  const childId = String(req.params.childId);
+  if (await denyIfNotOwned(res, user, childId)) return;
 
   const { rows } = await pool.query<{
     pickup_id:    string;
@@ -145,7 +163,9 @@ router.get("/security/pickup-log/verify/:recordId", requireAuth, async (req: Req
 // Read-only Security Timeline — returns all child_activity_log entries for a
 // child, ordered newest first. This endpoint has zero write access.
 router.get("/security/timeline/:childId", requireAuth, async (req: Request, res: Response) => {
-  const { childId } = req.params;
+  const user    = (req as AuthedRequest).user;
+  const childId = String(req.params.childId);
+  if (await denyIfNotOwned(res, user, childId)) return;
 
   try {
     const { rows } = await pool.query<{

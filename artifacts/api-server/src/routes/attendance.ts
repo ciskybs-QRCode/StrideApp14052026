@@ -9,7 +9,7 @@ const AttendanceInsertSchema = z.object({
   session_id: z.number().int().positive().optional(),
   status:     z.string().max(64).optional(),
   notes:      z.string().max(1000).optional(),
-});
+}).strict();
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
