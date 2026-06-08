@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -44,26 +44,8 @@ export default function ChangePasswordPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
-        style={[
-          styles.inner,
-          {
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
-            paddingBottom: insets.bottom + 40,
-          },
-        ]}
-      >
-        <View style={styles.pageHeader}>
-          <View style={[styles.headerIcon, { backgroundColor: "#D1FAE5" }]}>
-            <Ionicons name="lock-closed-outline" size={26} color="#10B981" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Change Password</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              Update your account password
-            </Text>
-          </View>
-        </View>
+      <ScreenHeader title="Change Password" subtitle="Update your account password" />
+      <View style={[styles.inner, { paddingTop: 16, paddingBottom: insets.bottom + 40 }]}>
 
         {fields.map((f, i) => (
           <View key={f.label} style={{ marginBottom: i === 2 ? 8 : 20 }}>
@@ -107,10 +89,6 @@ export default function ChangePasswordPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, paddingHorizontal: 20 },
-  pageHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 28 },
-  headerIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  pageTitle: { fontSize: 22, fontWeight: "800" },
-  pageSubtitle: { fontSize: 13, marginTop: 2, lineHeight: 18 },
   fieldLabel: { fontSize: 13, fontWeight: "700", marginBottom: 10 },
   inputRow: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13 },
   input: { flex: 1, fontSize: 15 },

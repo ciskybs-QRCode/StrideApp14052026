@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   BillingStartType,
   BILLING_START_LABELS,
@@ -237,27 +237,15 @@ export default function FeeSettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Membership Fees" subtitle="Configure how the association charges membership fees" />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 120 },
+          { paddingTop: 16, paddingBottom: insets.bottom + 120 },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-
-        {/* ── Back + Title ── */}
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.foreground }]}>Membership Fees</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              Configure how the association charges membership fees
-            </Text>
-          </View>
-          <View style={[styles.iconBadge, { backgroundColor: "#DBEAFE" }]}>
-            <Ionicons name="cash-outline" size={20} color="#1E3A8A" />
-          </View>
-        </View>
 
         {/* ══════════════════════════════════════════════════════════════════
             SECTION 1 — Fee Amount
@@ -508,10 +496,6 @@ const styles = StyleSheet.create({
   loader:    { flex: 1, alignItems: "center", justifyContent: "center" },
   scroll:    { paddingHorizontal: 20, gap: 4 },
 
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 8 },
-  pageTitle: { fontSize: 22, fontWeight: "800" },
-  pageSubtitle: { fontSize: 13, marginTop: 2 },
-  iconBadge: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
 
   sectionHeader:   { marginTop: 24, marginBottom: 8 },
   sectionTitle:    { fontSize: 15, fontWeight: "700" },

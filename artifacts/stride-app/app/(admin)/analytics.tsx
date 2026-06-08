@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Static data ───────────────────────────────────────────────────────────────
 
@@ -136,14 +137,7 @@ export default function AdminAnalytics() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* ── HEADER ── */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border, paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
-        <View style={{ flex: 1, alignItems: "center" }}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Analytics</Text>
-          <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>{user?.schoolName || "Stride"}</Text>
-        </View>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Analytics" subtitle={user?.schoolName || "Stride"} light hideBack />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}

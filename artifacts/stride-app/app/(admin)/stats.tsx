@@ -23,6 +23,8 @@ import { useFeatures } from "@/context/FeaturesContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
+import { QRScanButton } from "@/components/QRScanButton";
+import { SOSButton } from "@/components/SOSButton";
 
 // ── Emergency number detection ────────────────────────────────────────────────
 
@@ -140,7 +142,6 @@ export default function AdminHome() {
   const [scanned, setScanned]               = useState(false);
   const [permission, requestPermission]     = useCameraPermissions();
   const [showSOS, setShowSOS]               = useState(false);
-  const [sosCount, setSosCount]             = useState(0);
   const [sosPhase, setSosPhase]             = useState<SosPhase>("type");
   const [sosType, setSosType]               = useState<SosType | null>(null);
   const [sosProcStep, setSosProcStep]       = useState(0);
@@ -150,8 +151,7 @@ export default function AdminHome() {
   const [campusAddress, setCampusAddress]   = useState("1 Main Street, Sydney NSW 2000");
   const [orgName, setOrgName]               = useState<string>("");
   const [orgLoadError, setOrgLoadError]     = useState(false);
-  const pulseAnim     = useRef(new Animated.Value(1)).current;
-  const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     AsyncStorage.getItem("stride_campus_address").catch(() => null).then(addr => {
@@ -218,27 +218,16 @@ export default function AdminHome() {
 
   // ── SOS ──────────────────────────────────────────────────────────────────────
 
-  const handleSOSPress = () => {
-    if (sosPressTimer.current) clearTimeout(sosPressTimer.current);
-    const newCount = sosCount + 1;
-    setSosCount(newCount);
-    if (newCount >= 2) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setSosPhase("type");
-      setSosType(null);
-      setSosProcStep(0);
-      setSosProcDone(false);
-      setShowSOS(true);
-      setSosCount(0);
-    } else {
-      Alert.alert("SOS", "Press again quickly to confirm the emergency.");
-      sosPressTimer.current = setTimeout(() => setSosCount(0), 3000);
-    }
+  const openSOS = () => {
+    setSosPhase("type");
+    setSosType(null);
+    setSosProcStep(0);
+    setSosProcDone(false);
+    setShowSOS(true);
   };
 
   const closeSOS = () => {
     setShowSOS(false);
-    setSosCount(0);
     setSosPhase("type");
     setSosType(null);
     setSosProcStep(0);
@@ -318,34 +307,23 @@ export default function AdminHome() {
 
         {/* ── QUICK ACTIONS ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
-        <View style={styles.quickActions}>
+        <View style={{ gap: 12, marginBottom: 16 }}>
+          <QRScanButton onPress={handleScan} label="Scan Member QR" />
           <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
-            onPress={handleScan}
-          >
-            <Ionicons name="qr-code-outline" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>SCAN{"\n"}QR</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#F0F4FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
+            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
             onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <Ionicons name="qr-code" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>YOUR{"\n"}QR CODE</Text>
+            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EEF2FF" }]}>
+              <Ionicons name="qr-code" size={26} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Your Admin QR Code</Text>
+              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Tap to display your badge</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
           </Pressable>
+          <SOSButton onConfirm={openSOS} />
         </View>
-
-        {/* ── SOS BUTTON ── */}
-        <Pressable
-          style={({ pressed }) => [styles.sosStandaloneBtn, { opacity: pressed ? 0.92 : 1 }]}
-          onPress={handleSOSPress}
-        >
-          <View style={styles.sosIconRing}>
-            <Ionicons name="warning" size={32} color="#EF4444" />
-          </View>
-          <Text style={styles.sosStandaloneBtnLabel}>SOS EMERGENCY</Text>
-          <Text style={styles.sosStandaloneBtnHint}>Press twice to activate</Text>
-        </Pressable>
 
         {/* ── ANALYTICS ENTRY CARD ── */}
         <Pressable
@@ -823,15 +801,11 @@ const styles = StyleSheet.create({
   periodBtnText: { fontSize: 13, fontWeight: "600" },
 
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
-  quickActions: { flexDirection: "row", gap: 12, marginBottom: 16 },
-  quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 20, gap: 8, borderWidth: 2 },
-  quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
 
-  sosStandaloneBtn:      { alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#EF4444", borderRadius: 20, paddingVertical: 24, marginBottom: 16 },
-  sosIconRing:           { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFF", alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  sosStandaloneBtnLabel: { fontSize: 20, fontWeight: "900", color: "#FFF", letterSpacing: 1.5 },
-  sosStandaloneBtnHint:  { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.75)", letterSpacing: 0.3 },
-  sosStandaloneBtnText:  { fontSize: 13, fontWeight: "800", color: "#FFF" },
+  qrCodeBtn: { flexDirection: "row", alignItems: "center", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  qrCodeBtnIcon: { width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  qrCodeBtnLabel: { fontSize: 15, fontWeight: "800" },
+  qrCodeBtnSub: { fontSize: 12, fontWeight: "500", marginTop: 2 },
 
   analyticsCard: { flexDirection: "row", alignItems: "center", borderRadius: 18, padding: 16, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },
   analyticsCardLeft: { flexDirection: "row", alignItems: "center", gap: 14, flex: 1 },

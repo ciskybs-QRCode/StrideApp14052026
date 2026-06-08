@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { api, ApiChild, ApiOperatorProfile, ApiStudent } from "@/lib/api";
 import { useTerminology } from "@/context/TerminologyContext";
 
@@ -279,16 +280,12 @@ export default function AdminUsers() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Page header */}
-        <View style={styles.pageHeaderRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Members</Text>
-            <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>User management</Text>
-          </View>
+      <ScreenHeader
+        title="Members"
+        subtitle="User management"
+        light
+        hideBack
+        right={
           <Pressable
             style={[styles.badgePdfBtn, { backgroundColor: colors.primary }]}
             onPress={() => router.push("/(admin)/pdf-badges" as Parameters<typeof router.push>[0])}
@@ -296,7 +293,12 @@ export default function AdminUsers() {
             <Ionicons name="print-outline" size={18} color="#FBBF24" />
             <Text style={styles.badgePdfBtnText}>Badge PDF</Text>
           </Pressable>
-        </View>
+        }
+      />
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
+      >
 
         {/* ── Load error banner ── */}
         {loadError && (

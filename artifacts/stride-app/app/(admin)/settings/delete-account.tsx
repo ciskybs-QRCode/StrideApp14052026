@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function DeleteAccountPage() {
   const router = useRouter();
@@ -32,26 +32,8 @@ export default function DeleteAccountPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
-        style={[
-          styles.inner,
-          {
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
-            paddingBottom: insets.bottom + 40,
-          },
-        ]}
-      >
-        <View style={styles.pageHeader}>
-          <View style={[styles.headerIcon, { backgroundColor: "#FEE2E2" }]}>
-            <Ionicons name="trash-outline" size={26} color="#EF4444" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: "#EF4444" }]}>Delete Account</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              Permanently remove your administrator account
-            </Text>
-          </View>
-        </View>
+      <ScreenHeader title="Delete Account" subtitle="Permanently remove your administrator account" />
+      <View style={[styles.inner, { paddingTop: 16, paddingBottom: insets.bottom + 40 }]}>
 
         <View style={[styles.warningBox, { backgroundColor: "#FEF2F2" }]}>
           <Ionicons name="warning-outline" size={20} color="#EF4444" />
@@ -123,10 +105,6 @@ export default function DeleteAccountPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, paddingHorizontal: 20 },
-  pageHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 24 },
-  headerIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  pageTitle: { fontSize: 22, fontWeight: "800" },
-  pageSubtitle: { fontSize: 13, marginTop: 2, lineHeight: 18 },
   warningBox: { flexDirection: "row", gap: 12, borderRadius: 16, padding: 16, marginBottom: 20, alignItems: "flex-start" },
   warningTitle: { fontSize: 14, fontWeight: "700", color: "#991B1B", marginBottom: 4 },
   warningDesc: { fontSize: 13, color: "#991B1B", lineHeight: 18 },

@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function ChangeEmailPage() {
   const router = useRouter();
@@ -37,26 +37,8 @@ export default function ChangeEmailPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
-        style={[
-          styles.inner,
-          {
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
-            paddingBottom: insets.bottom + 40,
-          },
-        ]}
-      >
-        <View style={styles.pageHeader}>
-          <View style={[styles.headerIcon, { backgroundColor: "#DBEAFE" }]}>
-            <Ionicons name="mail-outline" size={26} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Change Email</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              Update your administrator email address
-            </Text>
-          </View>
-        </View>
+      <ScreenHeader title="Change Email" subtitle="Update your administrator email address" />
+      <View style={[styles.inner, { paddingTop: 16, paddingBottom: insets.bottom + 40 }]}>
 
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.currentRow}>
@@ -101,10 +83,6 @@ export default function ChangeEmailPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, paddingHorizontal: 20 },
-  pageHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 28 },
-  headerIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  pageTitle: { fontSize: 22, fontWeight: "800" },
-  pageSubtitle: { fontSize: 13, marginTop: 2, lineHeight: 18 },
   card: { borderRadius: 16, marginBottom: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
   currentRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
   currentLabel: { fontSize: 11, fontWeight: "600" },

@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -308,26 +308,15 @@ export default function SchoolInformationPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="School Information" subtitle="Contact details, campuses and opening hours" />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: insets.bottom + 100 },
+          { paddingTop: 16, paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Page header */}
-        <View style={styles.pageHeader}>
-          <View style={[styles.headerIcon, { backgroundColor: "#CCFBF1" }]}>
-            <Ionicons name="school-outline" size={26} color="#0D9488" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>School Information</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              Contact details, campuses and opening hours
-            </Text>
-          </View>
-        </View>
 
         {/* Loading banner — shown while fetching from Supabase + AsyncStorage */}
         {loadingOrg && (
@@ -751,10 +740,6 @@ export default function SchoolInformationPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  pageHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 24 },
-  headerIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  pageTitle: { fontSize: 22, fontWeight: "800" },
-  pageSubtitle: { fontSize: 13, marginTop: 2, lineHeight: 18 },
   editBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
   editBtnText: { fontSize: 13, fontWeight: "600" },
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },

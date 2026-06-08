@@ -6,7 +6,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const FONT_KEY      = "stride_theme_font";
 const BTN_STYLE_KEY = "stride_theme_button_style";
@@ -94,22 +94,12 @@ export default function AppCustomizationPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="App Customisation" subtitle="Logo, colour palette, font and theme" />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.pageHeader}>
-          <View style={[styles.headerIcon, { backgroundColor: "#FFEDD5" }]}>
-            <Ionicons name="color-palette-outline" size={26} color="#EA580C" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>App Customisation</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              Logo, colour palette, font and theme
-            </Text>
-          </View>
-        </View>
 
         {/* Logo upload */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>Association Logo</Text>
@@ -245,10 +235,6 @@ export default function AppCustomizationPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  pageHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 24 },
-  headerIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  pageTitle: { fontSize: 22, fontWeight: "800" },
-  pageSubtitle: { fontSize: 13, marginTop: 2, lineHeight: 18 },
   sectionLabel: { fontSize: 14, fontWeight: "700", marginBottom: 10, marginTop: 4 },
   logoBtn: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 1.5, borderStyle: "dashed", borderRadius: 16, padding: 14, marginBottom: 20 },
   logoThumb: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },

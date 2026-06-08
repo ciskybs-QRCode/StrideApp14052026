@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAppData } from "@/context/AppDataContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { useTerminology } from "@/context/TerminologyContext";
@@ -256,23 +257,17 @@ export default function PromoCodesPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: insets.bottom + 100 }]} showsVerticalScrollIndicator={false}>
-
-        <View style={styles.pageHeader}>
-          <View style={[styles.headerIcon, { backgroundColor: "#FEF3C7" }]}>
-            <Ionicons name="pricetag-outline" size={26} color="#F59E0B" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Promo Codes</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              {activeCount} active · {promos.length} total
-            </Text>
-          </View>
+      <ScreenHeader
+        title="Promo Codes"
+        subtitle={`${activeCount} active · ${promos.length} total`}
+        right={
           <Pressable style={[styles.createBtn, { backgroundColor: colors.primary }]} onPress={() => { resetCreate(); setShowCreate(true); }}>
             <Ionicons name="add" size={18} color="#FFF" />
             <Text style={styles.createBtnText}>Create</Text>
           </Pressable>
-        </View>
+        }
+      />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]} showsVerticalScrollIndicator={false}>
 
         {/* Stats */}
         <View style={styles.statsRow}>
@@ -586,10 +581,6 @@ export default function PromoCodesPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-  pageHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 16 },
-  headerIcon: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  pageTitle: { fontSize: 22, fontWeight: "800" },
-  pageSubtitle: { fontSize: 13, marginTop: 2 },
   createBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 11 },
   createBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
   statsRow: { flexDirection: "row", gap: 10, marginBottom: 14 },

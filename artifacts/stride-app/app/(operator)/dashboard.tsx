@@ -179,7 +179,7 @@ const DELAY_OPTIONS: { value: AbsenceType; label: string; delayMins: number }[] 
 ];
 
 
-// ── Notifiche inbox helpers ────────────────────────────────────────────────────
+// ── Notification inbox helpers ────────────────────────────────────────────────
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -192,16 +192,16 @@ function notifIconForType(type: string): { icon: IoniconName; color: string } {
   return { icon: "notifications", color: "#1E3A8A" };
 }
 
-function fmtAge(iso: string): string {
+function fmtTimeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins} min fa`;
+  if (mins < 60) return `${mins} min ago`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h fa`;
-  return `${Math.floor(hrs / 24)}g fa`;
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
-interface NotificheInboxProps {
+interface NotificationInboxProps {
   notifications: import("@/lib/api").ApiPrivateNotification[];
   unreadCount: number;
   colors: ReturnType<typeof import("@/hooks/useColors").useColors>;
@@ -210,7 +210,7 @@ interface NotificheInboxProps {
   onViewAll: () => void;
 }
 
-function NotificheInbox({ notifications, unreadCount, colors, onMarkAll, onOpenNotif, onViewAll }: NotificheInboxProps) {
+function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOpenNotif, onViewAll }: NotificationInboxProps) {
   const unread = notifications.filter(n => !n.read).slice(0, 3);
 
   return (
@@ -218,17 +218,17 @@ function NotificheInbox({ notifications, unreadCount, colors, onMarkAll, onOpenN
       <View style={inboxStyles.header}>
         <View style={inboxStyles.headerLeft}>
           <Ionicons name="notifications" size={18} color="#1E3A8A" />
-          <Text style={[inboxStyles.title, { color: colors.foreground }]}>Notifiche</Text>
+          <Text style={[inboxStyles.title, { color: colors.foreground }]}>Notifications</Text>
           <View style={inboxStyles.badge}>
             <Text style={inboxStyles.badgeText}>{unreadCount}</Text>
           </View>
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Pressable onPress={onMarkAll}>
-            <Text style={[inboxStyles.linkText, { color: colors.mutedForeground }]}>Segna tutte</Text>
+            <Text style={[inboxStyles.linkText, { color: colors.mutedForeground }]}>Mark all read</Text>
           </Pressable>
           <Pressable onPress={onViewAll}>
-            <Text style={[inboxStyles.linkText, { color: "#1E3A8A" }]}>Vedi tutte →</Text>
+            <Text style={[inboxStyles.linkText, { color: "#1E3A8A" }]}>View all →</Text>
           </Pressable>
         </View>
       </View>
@@ -248,7 +248,7 @@ function NotificheInbox({ notifications, unreadCount, colors, onMarkAll, onOpenN
               <Text style={[inboxStyles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>{n.title}</Text>
               <Text style={[inboxStyles.rowBody, { color: colors.mutedForeground }]} numberOfLines={2}>{n.body}</Text>
             </View>
-            <Text style={[inboxStyles.rowAge, { color: colors.mutedForeground }]}>{fmtAge(n.created_at)}</Text>
+            <Text style={[inboxStyles.rowAge, { color: colors.mutedForeground }]}>{fmtTimeAgo(n.created_at)}</Text>
           </Pressable>
         );
       })}
@@ -1146,9 +1146,9 @@ export default function OperatorDashboard() {
           )}
         </View>
 
-        {/* ── Notifiche Lezioni Private ── */}
+        {/* ── Private Lesson Notifications ── */}
         {unreadCount > 0 && (
-          <NotificheInbox
+          <NotificationInbox
             notifications={notifications}
             unreadCount={unreadCount}
             colors={colors}
