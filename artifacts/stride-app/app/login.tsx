@@ -178,7 +178,7 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => Linking.openURL(`https://${process.env["EXPO_PUBLIC_DOMAIN"] ?? "stride-platform.com"}/register`)}
+              onPress={() => Linking.openURL(`https://${process.env["EXPO_PUBLIC_DOMAIN"] ?? "stride-platform.com"}/landing/register`)}
               style={styles.registerLink}
             >
               <Text style={styles.registerLinkText}>
