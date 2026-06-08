@@ -11,6 +11,9 @@ import StripeReturnPage     from "./pages/StripeReturn";
 import TermsPage            from "./pages/Terms";
 import PrivacyPage          from "./pages/Privacy";
 import ContactPage          from "./pages/Contact";
+import AboutPage            from "./pages/About";
+import PricingPage          from "./pages/Pricing";
+import FaqPage              from "./pages/Faq";
 
 export default function App() {
   const base = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
@@ -28,6 +31,9 @@ export default function App() {
         <Route path="/terms"             component={TermsPage} />
         <Route path="/privacy"           component={PrivacyPage} />
         <Route path="/contact"           component={ContactPage} />
+        <Route path="/about"             component={AboutPage} />
+        <Route path="/pricing"           component={PricingPage} />
+        <Route path="/faq"               component={FaqPage} />
         <Route component={Landing} />
       </Switch>
     </Router>

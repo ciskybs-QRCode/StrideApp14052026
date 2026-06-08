@@ -26,7 +26,9 @@ export function PageShell({ children, dark = false }: PageShellProps) {
             <span className={`text-base font-bold tracking-wide ${logoTxt}`}>Stride</span>
           </a>
           <div className="flex items-center gap-5">
-            <a href="/"        className={`text-sm font-medium transition-colors ${linkTxt}`}>Home</a>
+            <a href="/about"   className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>About</a>
+            <a href="/pricing" className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>Pricing</a>
+            <a href="/faq"     className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>FAQ</a>
             <a href="/contact" className={`text-sm font-medium transition-colors ${linkTxt}`}>Support</a>
             <a href="/register" className="bg-[#D4AF37] text-[#0A192F] text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-[#e8c44b] transition-colors no-underline">
               Get Started
@@ -45,25 +47,53 @@ export function PageShell({ children, dark = false }: PageShellProps) {
           <TrustBadge className="max-w-5xl mx-auto px-5" />
         </div>
 
-        {/* Links row */}
-        <div className="max-w-5xl mx-auto px-5 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <a href="/" className="flex items-center gap-2 no-underline">
-            <svg height="22" width="22" viewBox="0 0 36 36" fill="none">
-              <rect width="36" height="36" rx="9" fill="white" fillOpacity="0.1" />
-              <path d="M9 18h18M18 10l8 8-8 8" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="font-semibold text-white text-sm">Stride</span>
-          </a>
-
-          <span className="text-blue-400 text-xs text-center leading-relaxed">
-            &copy; {new Date().getFullYear()} Stride Platform &mdash; All transactions are encrypted and processed by Stripe.
-          </span>
-
-          <div className="flex gap-5 text-xs text-blue-300">
-            <a href="/privacy"  className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="/terms"    className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="/contact"  className="hover:text-white transition-colors">Contact</a>
+        {/* Links grid */}
+        <div className="max-w-5xl mx-auto px-5 py-8 grid grid-cols-2 sm:grid-cols-4 gap-6 border-b border-white/8">
+          <div>
+            <a href="/" className="flex items-center gap-2 no-underline mb-3">
+              <svg height="22" width="22" viewBox="0 0 36 36" fill="none">
+                <rect width="36" height="36" rx="9" fill="white" fillOpacity="0.1" />
+                <path d="M9 18h18M18 10l8 8-8 8" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="font-semibold text-white text-sm">Stride</span>
+            </a>
+            <p className="text-blue-400 text-xs leading-relaxed">
+              Activity management for the modern school.
+            </p>
           </div>
+
+          <div>
+            <p className="text-white text-xs font-black uppercase tracking-wider mb-3">Product</p>
+            <div className="flex flex-col gap-2">
+              <a href="/pricing" className="text-blue-300 text-xs hover:text-white transition-colors">Pricing</a>
+              <a href="/about"   className="text-blue-300 text-xs hover:text-white transition-colors">About</a>
+              <a href="/faq"     className="text-blue-300 text-xs hover:text-white transition-colors">FAQ</a>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-white text-xs font-black uppercase tracking-wider mb-3">Support</p>
+            <div className="flex flex-col gap-2">
+              <a href="/contact" className="text-blue-300 text-xs hover:text-white transition-colors">Contact Us</a>
+              <a href="/register" className="text-blue-300 text-xs hover:text-white transition-colors">Get Started</a>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-white text-xs font-black uppercase tracking-wider mb-3">Legal</p>
+            <div className="flex flex-col gap-2">
+              <a href="/privacy" className="text-blue-300 text-xs hover:text-white transition-colors">Privacy Policy</a>
+              <a href="/terms"   className="text-blue-300 text-xs hover:text-white transition-colors">Terms of Service</a>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="max-w-5xl mx-auto px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-blue-400 text-xs">
+            &copy; {new Date().getFullYear()} Stride Platform &mdash; All transactions encrypted by Stripe.
+          </span>
+          <span className="text-blue-400 text-xs">🇪🇺 Data stored in the EU</span>
         </div>
       </footer>
     </div>
