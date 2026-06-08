@@ -1,0 +1,15 @@
+We are now finalizing the Stride Web Ecosystem. I need you to build and integrate the following 9 pages to ensure a professional, secure, and complete web presence. All pages must share the 'Navy & Gold' branding and use the BrandingProvider logic to stay consistent.
+Core Landing Page (/): A high-conversion landing page. It must focus on 'Stride Security' (Free QR pick-ups, child-centric safety). It must include a 'For Schools' section and a 'For Parents' section, with clear CTAs.
+Tenant Registration (/register): A professional wizard for schools/associations to sign up for Stride, including a step to connect their Stripe account.
+Activation Page (/activate): A clean interface for users to confirm their email and set their initial password.
+Terms of Service (/terms): A clean, legally-sound document layout with a table of contents.
+Privacy Policy (/privacy): A comprehensive GDPR-compliant privacy policy with a specific 'Children's Data & Privacy' section.
+Contact & Support (/contact): A functional form that sends inquiries to support@stride.app with a 'Response time: < 24h' commitment badge.
+Billing Success (/billing-success): A professional confirmation page for tenant subscription payments with a link to 'Manage Subscription'.
+Billing Cancel (/billing-cancel): A reassuring page informing the admin that no charge was made and offering to retry.
+Stripe Return (/stripe-return): A status page for operators finishing their Express onboarding, explaining the next steps to start receiving payouts.
+Technical Requirements for ALL pages:
+Unified Footer: Include the TrustBadge (256-bit TLS, Stripe PCI DSS Level 1, Secured by Stride) and links to Privacy/Terms/Contact.
+Branding: All pages must use the PageShell component. If a tenant is viewing, it must inject their logo/colors. If it's a general Stride page, use our Navy & Gold branding.
+SEO & Performance: Each page must have proper metadata and fast loading times.
+Navigation: Ensure no page has broken links or 'href="#"'. Every link must be functional.

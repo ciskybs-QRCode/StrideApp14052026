@@ -19,7 +19,7 @@ export default function Contact() {
   const [sent,    setSent]    = useState(false);
   const [error,   setError]   = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!name.trim() || !email.trim() || !message.trim()) {
@@ -28,10 +28,23 @@ export default function Contact() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError("Please enter a valid email address."); return;
     }
-    // Open mailto as a fallback (replace with API call when backend contact endpoint exists)
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), topic, message: message.trim() }),
+      });
+      if (res.ok) {
+        setSent(true);
+        return;
+      }
+    } catch {
+      // fall through to mailto fallback
+    }
+    // Fallback: open mailto
     const subject = encodeURIComponent(`[Stride] ${topic} — ${name}`);
     const body    = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nTopic: ${topic}\n\n${message}`);
-    window.location.href = `mailto:support@stride.app?subject=${subject}&body=${body}`;
+    window.open(`mailto:support@stride.app?subject=${subject}&body=${body}`, "_blank");
     setSent(true);
   };
 
