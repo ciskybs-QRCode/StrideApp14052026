@@ -67,7 +67,8 @@ async function isMarketplaceEnabled(): Promise<boolean> {
 // Feature-flag guard — returns 404 for all marketplace endpoints when disabled.
 // State is read from system_config (DB) and cached for 30 s so that a super-admin
 // toggle propagates across all sessions within half a minute.
-router.use(async (_req: Request, res: Response, next: NextFunction) => {
+// Scoped to /marketplace/* so the guard does not intercept unrelated routes.
+router.use("/marketplace", async (_req: Request, res: Response, next: NextFunction) => {
   const enabled = await isMarketplaceEnabled();
   if (!enabled) {
     res.status(404).json({ error: "Not found" });

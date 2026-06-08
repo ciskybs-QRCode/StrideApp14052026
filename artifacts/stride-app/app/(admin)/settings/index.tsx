@@ -70,6 +70,14 @@ const NAV_ROWS = [
     bg: "#EDE9FE",
     badge: true,
   },
+  {
+    key: "regional-pricing",
+    title: "Global Pricing",
+    description: "Multi-currency regional seat rates",
+    icon: "globe-outline"             as const,
+    color: "#059669",
+    bg: "#ECFDF5",
+  },
 ] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, type TokenPayload } from "../lib/auth.js";
+import { getPricingForOrg } from "../lib/pricing-service.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -157,7 +158,7 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
 
     const org = orgData as OrgRow | null;
 
-    const currency       = org?.currency?.toLowerCase() ?? "eur";
+    const { currency }   = await getPricingForOrg(orgId);
     const connectId      = org?.stripe_connect_account_id ?? null;
     const orgStripeKey   = org?.stripe_secret_key ?? null;
     const orgName        = org?.name ?? "Stride";
@@ -340,7 +341,7 @@ router.post("/checkout/batch-session", requireAuth, async (req, res) => {
         .maybeSingle();
 
       const org          = orgData as OrgRow | null;
-      const currency     = org?.currency?.toLowerCase() ?? "eur";
+      const { currency } = await getPricingForOrg(group.orgId);
       const connectId    = org?.stripe_connect_account_id ?? null;
       const orgStripeKey = org?.stripe_secret_key ?? null;
       const orgName      = org?.name ?? `Organisation ${group.orgId}`;

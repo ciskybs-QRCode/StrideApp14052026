@@ -1785,3 +1785,47 @@ export async function getGovernanceLog(): Promise<GovernanceEvent[]> {
   const res = await request<{ events: GovernanceEvent[] }>("GET", "/super-admin/governance/log");
   return res.events;
 }
+
+// ── Regional Pricing ──────────────────────────────────────────────────────────
+
+export interface RegionalPriceRow {
+  id:                   number;
+  region_code:          string;
+  currency_code:        string;
+  price_per_seat_cents: number;
+  is_active:            boolean;
+  updated_at:           string;
+}
+
+export interface RegionalPricingData {
+  pricing:       RegionalPriceRow[];
+  orgRegionCode: string | null;
+}
+
+export async function getRegionalPricing(): Promise<RegionalPricingData> {
+  return request<RegionalPricingData>("GET", "/regional-pricing");
+}
+
+export async function createRegionalPricing(data: {
+  region_code:          string;
+  currency_code:        string;
+  price_per_seat_cents: number;
+  is_active:            boolean;
+}): Promise<RegionalPriceRow> {
+  return request<RegionalPriceRow>("POST", "/regional-pricing", data);
+}
+
+export async function updateRegionalPricing(
+  id: number,
+  data: Partial<{ currency_code: string; price_per_seat_cents: number; is_active: boolean }>,
+): Promise<RegionalPriceRow> {
+  return request<RegionalPriceRow>("PUT", `/regional-pricing/${id}`, data);
+}
+
+export async function deleteRegionalPricing(id: number): Promise<void> {
+  await request<void>("DELETE", `/regional-pricing/${id}`);
+}
+
+export async function setOrgRegion(region_code: string | null): Promise<void> {
+  await request<void>("PUT", "/regional-pricing/org-region", { region_code });
+}

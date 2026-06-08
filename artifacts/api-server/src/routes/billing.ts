@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
+import { getPricingForOrg } from "../lib/pricing-service.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -39,8 +40,9 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
     } | null;
 
     const memberCount = memberResult.count ?? 0;
-    const costPerSeatCents = org?.cost_per_seat_cents ?? 150; // $1.50 default
-    const currency = org?.currency ?? "EUR";
+    const { currency: regionalCurrency, pricePerSeatCents: regionalPrice } = await getPricingForOrg(orgId);
+    const costPerSeatCents = org?.cost_per_seat_cents ?? regionalPrice;
+    const currency = org?.currency ?? regionalCurrency.toUpperCase();
     const subscriptionStatus = org?.subscription_status ?? "trialing";
     const trialEndsAt = org?.trial_ends_at ?? null;
     const trialExpired = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
