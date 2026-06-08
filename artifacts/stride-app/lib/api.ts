@@ -793,11 +793,12 @@ export const api = {
       `/guardian-circle/check?childId=${encodeURIComponent(childId)}&guardianId=${encodeURIComponent(guardianId)}`,
     ),
 
-  scanGuardianQR: (guardianId: string, data: { child_id: string }) =>
+  scanGuardianQR: (guardianId: string, data: { child_id: string; class_start_time?: string }) =>
     request<{
-      verdict:      "ok" | "override_required";
-      reason?:      string;
-      guardian:     GuardianCircleApiEntry;
+      verdict:          "ok" | "override_required";
+      reason?:          string;
+      is_social_arrival?: boolean;
+      guardian:         GuardianCircleApiEntry;
     }>("POST", `/guardian-circle/${guardianId}/scan`, data),
 
   confirmGuardianOverride: (guardianId: string, data: { child_id: string; override_reason: string; override_note?: string }) =>

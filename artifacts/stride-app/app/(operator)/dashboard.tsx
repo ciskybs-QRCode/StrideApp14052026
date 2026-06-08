@@ -48,12 +48,13 @@ type ScanResult = {
 };
 
 type GuardianResult = {
-  guardianId?:  string;
-  childId?:     string;
-  guardianName: string;
-  relationship: string;
-  childName:    string;
-  isAuthorized: boolean;
+  guardianId?:     string;
+  childId?:        string;
+  guardianName:    string;
+  relationship:    string;
+  childName:       string;
+  isAuthorized:    boolean;
+  isSocialArrival?: boolean;
 };
 
 type OverrideData = {
@@ -314,6 +315,7 @@ export default function OperatorDashboard() {
 
   // ── Pending scheduled-course requests (operator must confirm or decline) ─────
   const [pendingCourses, setPendingCourses]           = useState<ApiScheduledCourse[]>([]);
+  const allCoursesRef = useRef<ApiScheduledCourse[]>([]);
   const [coursesLoadError, setCoursesLoadError]       = useState(false);
 
   // ── Clock-Out / QR logout state ─────────────────────────────────────────────
@@ -413,7 +415,10 @@ export default function OperatorDashboard() {
   useEffect(() => {
     setCoursesLoadError(false);
     api.getScheduledCourses()
-      .then(courses => setPendingCourses(courses.filter(c => c.status === "pending_confirmation")))
+      .then(courses => {
+        allCoursesRef.current = courses;
+        setPendingCourses(courses.filter(c => c.status === "pending_confirmation"));
+      })
       .catch(() => setCoursesLoadError(true));
   }, []);
 
@@ -555,6 +560,13 @@ export default function OperatorDashboard() {
     setOverrideData(null);
     setScanResult(null);
     setScanned(true);
+    if (result.isSocialArrival) {
+      pushLog({ time: nowTime(), action: `\u{1F7E2} Early Arrival: ${result.guardianName} for ${result.childName}`, type: "info" });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Social arrivals auto-dismiss after 4s
+      setTimeout(() => { setGuardianResult(null); setScanned(false); setShowScanner(false); }, 4000);
+      return;
+    }
     const tag = result.isAuthorized ? "✓ Pick-up authorised" : "✗ Pick-up NOT authorised";
     pushLog({ time: nowTime(), action: `${tag}: ${result.guardianName} per ${result.childName}`, type: result.isAuthorized ? "warning" : "error" });
     Haptics.notificationAsync(result.isAuthorized ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Error);
@@ -720,8 +732,25 @@ export default function OperatorDashboard() {
       setOverrideData(null);
 
       try {
-        const result = await api.scanGuardianQR(guardianId, { child_id: childId });
-        if (result.verdict === "ok") {
+        // Derive class_start_time from today's scheduled courses (for social buffer check)
+        const todayDow = new Date().getDay();
+        const todayCourse = allCoursesRef.current.find(c => c.day_of_week === todayDow && c.start_time);
+        const classStartTime = todayCourse?.start_time
+          ? String(todayCourse.start_time).slice(0, 5)
+          : undefined;
+
+        const result = await api.scanGuardianQR(guardianId, {
+          child_id: childId,
+          ...(classStartTime ? { class_start_time: classStartTime } : {}),
+        });
+
+        if (result.is_social_arrival) {
+          // ── Social Arrival — early, within buffer, no exception needed ───────
+          showGuardianResult({
+            guardianId, guardianName, relationship, childName,
+            isAuthorized: true, childId, isSocialArrival: true,
+          });
+        } else if (result.verdict === "ok") {
           showGuardianResult({ guardianId, guardianName, relationship, childName, isAuthorized: true, childId });
         } else {
           // ── Exception Protocol ───────────────────────────────────────────────
@@ -1967,18 +1996,26 @@ export default function OperatorDashboard() {
 
           {/* Guardian pickup result */}
           {guardianResult && (
-            <View style={[styles.guardianPanel, { backgroundColor: guardianResult.isAuthorized ? "#4C1D95" : "#7F1D1D" }]}>
+            <View style={[styles.guardianPanel, { backgroundColor: guardianResult.isSocialArrival ? "#064E3B" : guardianResult.isAuthorized ? "#4C1D95" : "#7F1D1D" }]}>
               <View style={styles.guardianHeader}>
-                <View style={[styles.guardianIconWrap, { backgroundColor: guardianResult.isAuthorized ? "rgba(167,139,250,0.25)" : "rgba(252,165,165,0.25)" }]}>
-                  <Ionicons name={guardianResult.isAuthorized ? "shield-checkmark" : "shield-outline"} size={28} color={guardianResult.isAuthorized ? "#A78BFA" : "#FCA5A5"} />
+                <View style={[styles.guardianIconWrap, { backgroundColor: guardianResult.isSocialArrival ? "rgba(52,211,153,0.2)" : guardianResult.isAuthorized ? "rgba(167,139,250,0.25)" : "rgba(252,165,165,0.25)" }]}>
+                  <Ionicons name={guardianResult.isSocialArrival ? "time-outline" : guardianResult.isAuthorized ? "shield-checkmark" : "shield-outline"} size={28} color={guardianResult.isSocialArrival ? "#34D399" : guardianResult.isAuthorized ? "#A78BFA" : "#FCA5A5"} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.guardianTitle}>{guardianResult.isAuthorized ? "Ritiro Autorizzato ✓" : "Ritiro NON Autorizzato ✗"}</Text>
+                  <Text style={styles.guardianTitle}>
+                    {guardianResult.isSocialArrival ? "Early Arrival" : guardianResult.isAuthorized ? "Ritiro Autorizzato ✓" : "Ritiro NON Autorizzato ✗"}
+                  </Text>
                   <Text style={styles.guardianSub}>{guardianResult.relationship}</Text>
                 </View>
-                <View style={[styles.guardianAuthBadge, { backgroundColor: guardianResult.isAuthorized ? "#10B981" : "#EF4444" }]}>
-                  <Ionicons name={guardianResult.isAuthorized ? "checkmark" : "close"} size={16} color="#FFF" />
-                </View>
+                {guardianResult.isSocialArrival ? (
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: "rgba(52,211,153,0.2)", borderWidth: 1, borderColor: "#34D399" }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#34D399", letterSpacing: 0.5 }}>EARLY</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.guardianAuthBadge, { backgroundColor: guardianResult.isAuthorized ? "#10B981" : "#EF4444" }]}>
+                    <Ionicons name={guardianResult.isAuthorized ? "checkmark" : "close"} size={16} color="#FFF" />
+                  </View>
+                )}
               </View>
               <View style={styles.guardianRow}>
                 <View style={styles.guardianField}>

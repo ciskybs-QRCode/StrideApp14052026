@@ -159,11 +159,62 @@ router.post("/guardian-circle", requireAuth, async (req: Request, res: Response)
 router.post("/guardian-circle/:id/scan", requireAuth, async (req: Request, res: Response) => {
   const user       = (req as AuthedRequest).user;
   const guardianId = String(req.params.id);
-  const { child_id } = req.body as { child_id?: string };
+  const { child_id, class_start_time } = req.body as { child_id?: string; class_start_time?: string };
 
   if (!child_id) {
     res.status(400).json({ error: "child_id is required" });
     return;
+  }
+
+  // ── Social arrival check ──────────────────────────────────────────────────
+  // If the scan is within social_buffer_minutes before the scheduled class
+  // start, log SOCIAL_ARRIVAL and suppress any exception protocol.
+  if (class_start_time && /^\d{2}:\d{2}$/.test(class_start_time)) {
+    try {
+      const orgId = user.orgId ?? 1;
+      const { rows: settingsRows } = await pool.query<{ social_buffer_minutes: number | null }>(
+        `SELECT social_buffer_minutes FROM admin_settings WHERE organization_id = $1`,
+        [orgId],
+      );
+      const bufferMins = settingsRows[0]?.social_buffer_minutes ?? 30;
+
+      const now      = new Date();
+      const nowMins  = now.getHours() * 60 + now.getMinutes();
+      const [sh, sm] = class_start_time.split(":").map(Number);
+      const startMins = (sh ?? 0) * 60 + (sm ?? 0);
+
+      if (nowMins >= startMins - bufferMins && nowMins < startMins) {
+        const { rows: guardianRows } = await pool.query(
+          `SELECT id, child_id, guardian_name, guardian_email, guardian_phone,
+                  is_active, expires_at, created_at,
+                  COALESCE(is_single_use, false)            AS is_single_use,
+                  used_at, pickup_days,
+                  TO_CHAR(pickup_window_start, 'HH24:MI')   AS pickup_window_start,
+                  TO_CHAR(pickup_window_end,   'HH24:MI')   AS pickup_window_end,
+                  COALESCE(window_tolerance_minutes, 30)    AS window_tolerance_minutes
+           FROM authorized_pickups
+           WHERE id = $1 AND child_id = $2
+           LIMIT 1`,
+          [guardianId, child_id],
+        );
+
+        if (guardianRows.length > 0) {
+          SecurityObserver.logActivity(child_id, "SOCIAL_ARRIVAL", {
+            guardian_id:       guardianId,
+            guardian_name:     guardianRows[0].guardian_name,
+            operator:          user.email,
+            class_start_time,
+            buffer_mins:       bufferMins,
+            mins_before_start: startMins - nowMins,
+          });
+
+          res.json({ verdict: "ok", is_social_arrival: true, guardian: guardianRows[0] });
+          return;
+        }
+      }
+    } catch {
+      // Social arrival check failed — fall through to normal validation
+    }
   }
 
   const result = await guardianService.scanGuardian(guardianId, child_id);

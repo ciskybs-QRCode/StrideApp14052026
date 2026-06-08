@@ -45,7 +45,12 @@ export class RescueCascadeService {
 
     await pool.query(`
       ALTER TABLE admin_settings
-        ADD COLUMN IF NOT EXISTS cascade_auto_trigger BOOLEAN DEFAULT FALSE
+        ADD COLUMN IF NOT EXISTS cascade_auto_trigger   BOOLEAN DEFAULT FALSE
+    `);
+
+    await pool.query(`
+      ALTER TABLE admin_settings
+        ADD COLUMN IF NOT EXISTS social_buffer_minutes  INTEGER DEFAULT 30
     `);
 
     await pool.query(`

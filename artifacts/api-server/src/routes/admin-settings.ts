@@ -22,13 +22,15 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
         allow_one_time_grace_access: false,
         grace_used_child_ids:        [],
         cascade_auto_trigger:        false,
+        social_buffer_minutes:       30,
       });
       return;
     }
 
     const row = rows[0] as Record<string, unknown>;
     // Ensure cascade_auto_trigger is always present (column may not exist on older rows)
-    if (!("cascade_auto_trigger" in row)) row.cascade_auto_trigger = false;
+    if (!("cascade_auto_trigger"    in row)) row.cascade_auto_trigger    = false;
+    if (!("social_buffer_minutes"   in row)) row.social_buffer_minutes   = 30;
     res.json(row);
   } catch (err) {
     req.log.error(err, "admin-settings GET: error");
@@ -47,6 +49,7 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "allow_one_time_grace_access",
     "grace_used_child_ids",
     "cascade_auto_trigger",
+    "social_buffer_minutes",
     "region_code",
     "stripe_connect_account_id",
     "stripe_secret_key",

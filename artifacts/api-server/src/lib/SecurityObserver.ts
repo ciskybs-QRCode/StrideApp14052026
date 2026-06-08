@@ -26,6 +26,7 @@ export type SecurityEventType =
   | "GUARDIAN_DEACTIVATED"
   | "GUARDIAN_SCANNED"   // Intelligent QR — successful validated scan
   | "OVERRIDE_SCANNED"   // Intelligent QR — operator confirmed exception protocol
+  | "SOCIAL_ARRIVAL"     // Intelligent QR — scan within social buffer before class start; no exception
   | (string & {});       // allow arbitrary future event types without breaking TS
 
 // ── Table bootstrap (idempotent, run once per process) ────────────────────────
