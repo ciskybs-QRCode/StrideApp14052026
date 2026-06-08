@@ -1,0 +1,49 @@
+Execute a comprehensive system refactor to transition the entire platform to a Zero-Trust architecture and a professional, unified UI standard. You are now authorized to perform breaking changes to ensure absolute integrity and consistency. Follow this sequence precisely:
+
+Security Lockdown (C-01 to C-04, M-06):
+
+Implement global tenant scoping: Add .eq('organization_id', user.orgId) to EVERY database query in attendance.ts, children.ts, access-check.ts, and blacklist.ts.
+
+Force requireAuth and orgId filtering on GET /terminology.
+
+Protect GET /kiosk-pin with requireRole(['admin', 'operator']).
+
+Enforce field whitelisting on all PATCH requests to prevent arbitrary column injection.
+
+Authentication & Session Hardening (M-01, M-04, M-05):
+
+Implement live blocked status checks inside requireAuth (re-verify against DB).
+
+Reduce JWT TTL to 7 days.
+
+Implement a fullLogout function in AuthContext that performs a multiRemove of all stride_* keys from AsyncStorage.
+
+Apply the aiLimiter (10 req/min) to all AI-dependent endpoints.
+
+Database Integrity & Cascades (M-03, M-07, M-08):
+
+Add onDelete: 'cascade' to all critical foreign key relations (bookings, operators, attendance, etc.).
+
+Add unique constraints to bookings.availabilityId and disciplines.(orgId, name).
+
+Run DB migrations immediately after schema changes.
+
+Unified UI Enforcement (Global Refactor):
+
+Zero-Deviation UI: Every single page must match the layout, card styling (white background, 16px radius, chevron icon), and padding of the 'Billing & Finance' hub.
+
+Iconography: Strip all inconsistent/coloured icons. Use only the clean, monochromatic iconography from the Billing section.
+
+Navigation: Restore the RoleSwitcherRow to the top of the Admin Dashboard. Fix all navigation links to use ScreenHeader with a functional back chevron.
+
+Settings Cleanup: Move ALL financial/subscription functions out of settings/index.tsx into the Billing Hub. Ensure zero financial functions remain in Settings.
+
+Robustness & Verification:
+
+Replace all console.log statements with the central logger singleton.
+
+Implement parseId utility to replace all raw parseInt calls (with NaN guards).
+
+Run verify-settings-clean.ts and confirm zero violations.
+
+Protocol: Apply these as independent modules. Verify each module with a typecheck and a runtime sanity check. If any step fails, do not proceed. I want a production-ready, bulletproof, and visually consistent codebase.

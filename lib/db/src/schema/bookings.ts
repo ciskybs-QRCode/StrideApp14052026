@@ -1,6 +1,6 @@
 import {
   pgTable, serial, integer, text, date, time,
-  numeric, timestamp, check, index,
+  numeric, timestamp, check, index, unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -82,6 +82,7 @@ export const bookings = pgTable(
     index("bookings_operator_idx").on(t.operatorId),
     index("bookings_org_idx").on(t.organizationId),
     index("bookings_availability_idx").on(t.availabilityId),
+    unique("bookings_availability_unique").on(t.availabilityId),
   ],
 );
 

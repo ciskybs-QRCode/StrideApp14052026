@@ -86,3 +86,19 @@ export const authLimiter = rateLimit({
   keyGenerator: (req) => `auth:${req.ip ?? "unknown"}`,
   message: { error: "Too many login attempts. Please wait 15 minutes and try again." },
 });
+
+/**
+ * AI endpoint limiter — applied to all OpenAI/GPT-backed routes.
+ * 10 calls per minute per user prevents runaway AI cost and quota exhaustion.
+ */
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const user = (req as AuthReq).user;
+    return user ? `ai:${user.id}` : `ai:ip:${req.ip ?? "unknown"}`;
+  },
+  message: { error: "AI request limit reached. Please wait a moment and try again." },
+});

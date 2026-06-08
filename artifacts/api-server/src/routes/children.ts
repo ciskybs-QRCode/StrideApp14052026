@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
-import { requireAuth, type TokenPayload } from "../lib/auth.js";
+import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -79,25 +79,47 @@ router.post("/members", requireAuth, async (req, res) => {
   res.status(201).json(data);
 });
 
-router.patch("/members/:id", requireAuth, async (req, res) => {
+router.patch("/members/:id", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user = (req as AuthReq).user;
   const { id } = req.params;
-  const body = req.body as Record<string, unknown>;
+
+  // Ownership check
+  const { data: existing } = await supabase
+    .from("members").select("id")
+    .eq("id", parseInt(String(id), 10)).eq("organization_id", user.orgId).maybeSingle();
+  if (!existing) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  // Field whitelist — prevent arbitrary column injection
+  const ALLOWED = [
+    "first_name","last_name","date_of_birth","allergies",
+    "notes","phone","emergency_contact","photo_uri","medical_notes",
+  ] as const;
+  const patch: Record<string, unknown> = {};
+  for (const key of ALLOWED) {
+    if (key in (req.body as Record<string, unknown>)) {
+      patch[key] = (req.body as Record<string, unknown>)[key];
+    }
+  }
+  if (Object.keys(patch).length === 0) {
+    res.status(400).json({ error: "No valid fields to update" });
+    return;
+  }
+
   const { data, error } = await supabase
-    .from("members")
-    .update(body)
-    .eq("id", parseInt(String(id)))
-    .select()
-    .single();
+    .from("members").update(patch).eq("id", parseInt(String(id), 10)).select().single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data);
 });
 
-router.delete("/members/:id", requireAuth, async (req, res) => {
+router.delete("/members/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
   const { id } = req.params;
-  const { error } = await supabase
-    .from("members")
-    .delete()
-    .eq("id", parseInt(String(id)));
+  // Ownership check before delete
+  const { data: existing } = await supabase
+    .from("members").select("id")
+    .eq("id", parseInt(String(id), 10)).eq("organization_id", user.orgId).maybeSingle();
+  if (!existing) { res.status(403).json({ error: "Forbidden" }); return; }
+  const { error } = await supabase.from("members").delete().eq("id", parseInt(String(id), 10));
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.status(204).send();
 });

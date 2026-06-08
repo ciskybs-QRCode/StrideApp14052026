@@ -1,8 +1,9 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
-import { requireAuth, type TokenPayload } from "../lib/auth.js";
+import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { pool, ensureTables } from "../lib/pg.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { aiLimiter } from "../lib/rate-limit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -20,7 +21,7 @@ Extract the following information and return ONLY a valid JSON object with exact
 }
 No prose. No markdown fences. Just the JSON object.`;
 
-router.post("/documents/analyze-medical-certificate", requireAuth, async (req, res) => {
+router.post("/documents/analyze-medical-certificate", requireAuth, requireRole("admin", "operator"), aiLimiter, async (req, res) => {
   const user = (req as AuthReq).user;
 
   await ensureTables();

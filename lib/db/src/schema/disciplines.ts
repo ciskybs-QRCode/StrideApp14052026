@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, timestamp, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,7 +12,9 @@ export const disciplines = pgTable("disciplines", {
   description:    text("description"),
   active:         boolean("active").notNull().default(true),
   createdAt:      timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  unique("disciplines_org_name_unique").on(t.organizationId, t.name),
+]);
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
 

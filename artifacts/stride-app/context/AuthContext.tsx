@@ -32,6 +32,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
+  fullLogout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   switchRole: (role: UserRole) => Promise<void>;
   isOwner: () => boolean;
@@ -131,6 +132,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  /**
+   * fullLogout — clears the JWT token AND every stride_* key from AsyncStorage.
+   * Use this on explicit sign-out to prevent grace-access bypass, legal signature
+   * records, and config toggles from leaking to the next user on a shared device.
+   */
+  const fullLogout = async () => {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const strideKeys = allKeys.filter(k => k.startsWith("stride_"));
+      await Promise.all([clearToken(), AsyncStorage.multiRemove(strideKeys)]);
+    } catch (e) {
+      console.error("Full logout error:", e);
+    }
+    setUser(null);
+  };
+
   const updateUser = async (updates: Partial<User>) => {
     if (!user) return;
     const updated = { ...user, ...updates };
@@ -155,6 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         logout,
+        fullLogout,
         updateUser,
         switchRole,
         isOwner,

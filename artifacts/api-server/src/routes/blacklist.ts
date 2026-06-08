@@ -46,11 +46,17 @@ router.post("/blacklist", requireAuth, requireRole("admin"), async (req, res) =>
   res.status(201).json(rows[0]);
 });
 
-// DELETE /blacklist/:id — admin: remove entry
+// DELETE /blacklist/:id — admin: remove entry (org-scoped to prevent cross-tenant deletion)
 router.delete("/blacklist/:id", requireAuth, requireRole("admin"), async (req, res) => {
   await ensureTables();
+  const user = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
   const { id } = req.params;
-  await pool.query("DELETE FROM blacklist WHERE id = $1", [parseInt(String(id), 10)]);
+  const { rowCount } = await pool.query(
+    "DELETE FROM blacklist WHERE id = $1 AND organization_id = $2",
+    [parseInt(String(id), 10), orgId],
+  );
+  if (!rowCount) { res.status(403).json({ error: "Forbidden" }); return; }
   res.status(204).end();
 });
 

@@ -19,6 +19,7 @@ import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { aiLimiter } from "../lib/rate-limit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -332,6 +333,7 @@ router.post(
   "/admin/copilot-query",
   requireAuth,
   requireRole("admin"),
+  aiLimiter,
   async (req, res) => {
     const user   = (req as AuthReq).user;
     const orgId  = Number((user as { orgId?: number }).orgId ?? 1);

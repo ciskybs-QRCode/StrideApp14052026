@@ -161,12 +161,13 @@ router.put(
   },
 );
 
-// ── GET /kiosk-pin (public — called by the kiosk account itself) ──────────────
-// The kiosk user doesn't have admin role, so a separate public-ish endpoint
-// lets the kiosk device read the PIN for its own org on startup.
+// ── GET /kiosk-pin — kiosk / operator / admin only ───────────────────────────
+// The kiosk account (role: "kiosk") reads this on startup.
+// Operators need it to unlock the kiosk on duty. Parents must NOT access it.
 router.get(
   "/kiosk-pin",
   requireAuth,
+  requireRole("admin", "operator", "kiosk"),
   async (req, res) => {
     const user = (req as AuthReq).user;
     const orgId = user.orgId ?? 1;

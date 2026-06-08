@@ -49,7 +49,7 @@ router.get(
   requireOwnerOrSuperAdmin,
   async (req, res) => {
     const user = (req as AuthReq).user;
-    console.log("[/super-admin/associations] request from:", user.email, "| role:", user.role);
+    req.log.info({ email: user.email, role: user.role }, "super-admin/associations request");
     const { data, error } = await sa
       .from("organizations")
       .select(

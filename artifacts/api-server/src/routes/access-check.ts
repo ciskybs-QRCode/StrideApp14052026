@@ -24,6 +24,7 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
     .from("children")
     .select("*")
     .eq("id", parseInt(String(childId), 10))
+    .eq("organization_id", orgId)
     .single();
 
   if (childErr || !child) {
@@ -101,6 +102,7 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
 // Admin can update payment_status and is_blocked on a child
 router.patch("/access-check/:childId/payment", requireAuth, requireRole("admin"), async (req, res) => {
   const { childId } = req.params;
+  const patchUser = (req as AuthReq).user;
   const { payment_status, is_blocked, block_reason } = req.body as {
     payment_status?: string;
     is_blocked?: boolean;
@@ -115,6 +117,7 @@ router.patch("/access-check/:childId/payment", requireAuth, requireRole("admin")
     .from("children")
     .update(updates)
     .eq("id", parseInt(String(childId), 10))
+    .eq("organization_id", patchUser.orgId ?? 1)
     .select("*")
     .single();
 

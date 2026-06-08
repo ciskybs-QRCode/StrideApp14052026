@@ -5,12 +5,13 @@ import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
-// GET /terminology — public, no auth — returns role terminology for the primary org
-router.get("/terminology", async (_req, res) => {
+// GET /terminology — auth required — returns role terminology scoped to the caller's org
+router.get("/terminology", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
   const { data } = await supabase
     .from("organizations")
     .select("member_label")
-    .eq("id", 1)
+    .eq("id", user.orgId)
     .maybeSingle();
   const raw = (data as { member_label?: string } | null)?.member_label ?? "";
   let primaryRoleName = "Member";
