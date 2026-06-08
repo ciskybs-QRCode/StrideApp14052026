@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import bcrypt from "bcryptjs";
 import { supabase as supabaseAdmin } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
 const router = Router();
@@ -109,6 +110,73 @@ router.delete(
 
     if (error) { res.status(500).json({ error: error.message }); return; }
     res.status(204).send();
+  },
+);
+
+// ── GET /admin/kiosk-pin ──────────────────────────────────────────────────────
+// Returns the current kiosk exit PIN for this org (or the default "4321").
+router.get(
+  "/admin/kiosk-pin",
+  requireAuth,
+  requireRole("admin"),
+  async (req, res) => {
+    const user = (req as AuthReq).user;
+    const orgId = user.orgId ?? 1;
+
+    const { rows } = await pool.query<{ kiosk_exit_pin: string }>(
+      `SELECT kiosk_exit_pin FROM admin_settings WHERE organization_id = $1`,
+      [orgId],
+    );
+    const pin = rows[0]?.kiosk_exit_pin ?? "4321";
+    res.json({ pin });
+  },
+);
+
+// ── PUT /admin/kiosk-pin ──────────────────────────────────────────────────────
+// Updates the kiosk exit PIN for this org.
+router.put(
+  "/admin/kiosk-pin",
+  requireAuth,
+  requireRole("admin"),
+  async (req, res) => {
+    const user = (req as AuthReq).user;
+    const orgId = user.orgId ?? 1;
+    const { pin } = req.body as { pin?: string };
+
+    if (!pin || !/^\d{4,8}$/.test(pin)) {
+      res.status(400).json({ error: "PIN must be 4–8 digits" });
+      return;
+    }
+
+    await pool.query(
+      `INSERT INTO admin_settings (organization_id, kiosk_exit_pin)
+       VALUES ($1, $2)
+       ON CONFLICT (organization_id)
+       DO UPDATE SET kiosk_exit_pin = $2, updated_at = NOW()`,
+      [orgId, pin],
+    );
+
+    req.log.info({ orgId }, "kiosk exit PIN updated");
+    res.json({ pin });
+  },
+);
+
+// ── GET /kiosk-pin (public — called by the kiosk account itself) ──────────────
+// The kiosk user doesn't have admin role, so a separate public-ish endpoint
+// lets the kiosk device read the PIN for its own org on startup.
+router.get(
+  "/kiosk-pin",
+  requireAuth,
+  async (req, res) => {
+    const user = (req as AuthReq).user;
+    const orgId = user.orgId ?? 1;
+
+    const { rows } = await pool.query<{ kiosk_exit_pin: string }>(
+      `SELECT kiosk_exit_pin FROM admin_settings WHERE organization_id = $1`,
+      [orgId],
+    );
+    const pin = rows[0]?.kiosk_exit_pin ?? "4321";
+    res.json({ pin });
   },
 );
 

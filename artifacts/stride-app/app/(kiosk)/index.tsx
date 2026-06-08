@@ -17,11 +17,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
-import { api } from "@/lib/api";
+import { api, getKioskPin } from "@/lib/api";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const KIOSK_EXIT_PIN = "4321";
+const FALLBACK_PIN = "4321";
 const LOGO = require("@/assets/images/stride-logo.png");
 const { width: SW, height: SH } = Dimensions.get("window");
 
@@ -108,6 +108,14 @@ export default function KioskScreen() {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Exit PIN (loaded from org settings on mount)
+  const exitPin = useRef<string>(FALLBACK_PIN);
+  React.useEffect(() => {
+    getKioskPin()
+      .then(pin => { exitPin.current = pin; })
+      .catch(() => { /* keep fallback */ });
+  }, []);
 
   // Hidden exit hatch
   const tapCount   = useRef(0);
@@ -242,7 +250,7 @@ export default function KioskScreen() {
   }, []);
 
   const handlePinConfirm = useCallback(async () => {
-    if (pinInput === KIOSK_EXIT_PIN) {
+    if (pinInput === exitPin.current) {
       setShowPin(false);
       await logout();
       router.replace("/login");

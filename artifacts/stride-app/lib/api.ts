@@ -1453,6 +1453,21 @@ export async function revokeKiosk(userId: number): Promise<void> {
   return request<void>("DELETE", `/admin/revoke-kiosk/${userId}`);
 }
 
+export async function getKioskPin(): Promise<string> {
+  const res = await request<{ pin: string }>("GET", "/kiosk-pin");
+  return res.pin ?? "4321";
+}
+
+export async function getAdminKioskPin(): Promise<string> {
+  const res = await request<{ pin: string }>("GET", "/admin/kiosk-pin");
+  return res.pin ?? "4321";
+}
+
+export async function setAdminKioskPin(pin: string): Promise<string> {
+  const res = await request<{ pin: string }>("PUT", "/admin/kiosk-pin", { pin });
+  return res.pin;
+}
+
 // ── Super-Admin ───────────────────────────────────────────────────────────────
 
 export type AssociationRecord = {

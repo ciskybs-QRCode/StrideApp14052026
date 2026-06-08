@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { listKiosks, createKiosk, revokeKiosk, type KioskAccount } from "@/lib/api";
+import { listKiosks, createKiosk, revokeKiosk, getAdminKioskPin, setAdminKioskPin, type KioskAccount } from "@/lib/api";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -138,14 +138,22 @@ export default function TerminalsScreen() {
   const [successAccount, setSuccessAccount] = useState<(KioskAccount & { generatedEmail: string }) | null>(null);
   const [successPassword, setSuccessPassword] = useState("");
 
+  // ── PIN state ──
+  const [pinValue, setPinValue]     = useState("");
+  const [pinSaving, setPinSaving]   = useState(false);
+  const [pinSaved, setPinSaved]     = useState(false);
+  const [pinError, setPinError]     = useState<string | null>(null);
+  const [showPin, setShowPin]       = useState(false);
+
   const passwordRef = useRef<TextInput>(null);
 
   const loadKiosks = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await listKiosks();
+      const [data, pin] = await Promise.all([listKiosks(), getAdminKioskPin()]);
       setKiosks(data);
+      setPinValue(pin);
     } catch (e: unknown) {
       setFetchError(e instanceof Error ? e.message : "Failed to load terminals");
     } finally {
@@ -154,6 +162,25 @@ export default function TerminalsScreen() {
   }, []);
 
   useEffect(() => { loadKiosks(); }, [loadKiosks]);
+
+  const handleSavePin = useCallback(async () => {
+    if (!/^\d{4,8}$/.test(pinValue)) {
+      setPinError("PIN must be 4–8 digits");
+      return;
+    }
+    setPinError(null);
+    setPinSaving(true);
+    try {
+      await setAdminKioskPin(pinValue);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPinSaved(true);
+      setTimeout(() => setPinSaved(false), 2500);
+    } catch (e: unknown) {
+      setPinError(e instanceof Error ? e.message : "Failed to save PIN");
+    } finally {
+      setPinSaving(false);
+    }
+  }, [pinValue]);
 
   const handleRevoke = useCallback((item: KioskAccount) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -245,6 +272,67 @@ export default function TerminalsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+
+        {/* ── EXIT PIN ── */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+          EXIT PIN
+        </Text>
+        <View style={[styles.pinCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.pinCardHeader}>
+            <View style={styles.pinIconBox}>
+              <Ionicons name="keypad-outline" size={20} color="#1E3A8A" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.pinCardTitle, { color: colors.foreground }]}>Kiosk Exit PIN</Text>
+              <Text style={[styles.pinCardDesc, { color: colors.mutedForeground }]}>
+                5 taps on top-right corner, then enter this PIN to exit kiosk mode
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.pinRow}>
+            <View style={[styles.pinInputWrap, { borderColor: pinError ? "#EF4444" : colors.border, backgroundColor: colors.background }]}>
+              <Ionicons name="lock-closed-outline" size={16} color={colors.mutedForeground} />
+              <TextInput
+                style={[styles.pinInput, { color: colors.foreground }]}
+                value={pinValue}
+                onChangeText={v => { setPinValue(v.replace(/\D/g, "").slice(0, 8)); setPinError(null); setPinSaved(false); }}
+                keyboardType="number-pad"
+                maxLength={8}
+                secureTextEntry={!showPin}
+                placeholder="4–8 digits"
+                placeholderTextColor={colors.mutedForeground}
+              />
+              <Pressable onPress={() => setShowPin(v => !v)} hitSlop={8}>
+                <Ionicons name={showPin ? "eye-off-outline" : "eye-outline"} size={16} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.pinSaveBtn,
+                { backgroundColor: pinSaved ? "#059669" : "#1E3A8A", opacity: pressed || pinSaving ? 0.8 : 1 },
+              ]}
+              onPress={handleSavePin}
+              disabled={pinSaving}
+            >
+              {pinSaving ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : pinSaved ? (
+                <Ionicons name="checkmark" size={18} color="#FFF" />
+              ) : (
+                <Text style={styles.pinSaveBtnText}>Save</Text>
+              )}
+            </Pressable>
+          </View>
+
+          {!!pinError && (
+            <View style={styles.pinErrRow}>
+              <Ionicons name="alert-circle-outline" size={13} color="#EF4444" />
+              <Text style={styles.pinErrText}>{pinError}</Text>
+            </View>
+          )}
+        </View>
 
         {/* ── PROVISION BUTTON ── */}
         <Pressable
@@ -585,6 +673,32 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 16, fontWeight: "700" },
   emptyDesc: { fontSize: 13, textAlign: "center", paddingHorizontal: 32, lineHeight: 20 },
+
+  pinCard: {
+    borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 24,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  },
+  pinCardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 14 },
+  pinIconBox: {
+    width: 40, height: 40, borderRadius: 10, backgroundColor: "#EFF6FF",
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  pinCardTitle: { fontSize: 14, fontWeight: "700", marginBottom: 3 },
+  pinCardDesc: { fontSize: 11, lineHeight: 16 },
+  pinRow: { flexDirection: "row", gap: 10, alignItems: "center" },
+  pinInputWrap: {
+    flex: 1, flexDirection: "row", alignItems: "center", gap: 8,
+    borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, height: 46,
+  },
+  pinInput: { flex: 1, fontSize: 16, fontWeight: "700", letterSpacing: 4 },
+  pinSaveBtn: {
+    height: 46, paddingHorizontal: 18, borderRadius: 12,
+    alignItems: "center", justifyContent: "center", minWidth: 60,
+  },
+  pinSaveBtnText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+  pinErrRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 8 },
+  pinErrText: { color: "#EF4444", fontSize: 12 },
 
   errorCard: {
     flexDirection: "row",
