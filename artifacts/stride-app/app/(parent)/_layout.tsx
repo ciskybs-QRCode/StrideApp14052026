@@ -189,7 +189,6 @@ export default function ParentTabLayout() {
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
       <RoleSwitcher />
       <BrandingLogoOverlay />
-      <BackButton />
 
       {/* ── Mandatory Legal Signature Gate ──────────────────────────────────── */}
       <Modal visible={blocked} transparent={false} animationType="slide" statusBarTranslucent>

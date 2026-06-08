@@ -131,25 +131,25 @@ export default function OperatorTabLayout() {
             tabBarBadgeStyle: { backgroundColor: "#FBBF24", color: "#1E3A8A", fontSize: 10, fontWeight: "800" },
           }}
         />
-        <Tabs.Screen name="calendar" options={{ title: "Calendar",  tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"    size={size} color={color} /> }} />
-        <Tabs.Screen name="students" options={{ title: "Members",  tabBarIcon: ({ color, size }) => <Ionicons name="people-outline"         size={size} color={color} /> }} />
-        <Tabs.Screen name="courses"  options={{ title: "Course",   tabBarIcon: ({ color, size }) => <Ionicons name="layers-outline"          size={size} color={color} /> }} />
-        <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline"         size={size} color={color} /> }} />
-        <Tabs.Screen name="sessions" options={{ href: null }} />
-        <Tabs.Screen name="invoicing" options={{ href: null }} />
-        <Tabs.Screen name="support"  options={{ href: null }} />
-        <Tabs.Screen name="profile"  options={{ href: null }} />
+        <Tabs.Screen name="calendar"        options={{ title: "Calendar",  tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"  size={size} color={color} /> }} />
+        <Tabs.Screen name="students"        options={{ title: "Members",   tabBarIcon: ({ color, size }) => <Ionicons name="people-outline"     size={size} color={color} /> }} />
+        <Tabs.Screen name="emergency-pulse" options={{ title: "Emergency", tabBarIcon: ({ color, size }) => <Ionicons name="warning-outline"    size={size} color={"#DC2626"} /> }} />
+        <Tabs.Screen name="settings"        options={{ title: "Settings",  tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline"   size={size} color={color} /> }} />
+        <Tabs.Screen name="courses"         options={{ href: null }} />
+        <Tabs.Screen name="sessions"        options={{ href: null }} />
+        <Tabs.Screen name="invoicing"       options={{ href: null }} />
+        <Tabs.Screen name="support"         options={{ href: null }} />
+        <Tabs.Screen name="profile"         options={{ href: null }} />
         <Tabs.Screen name="student-detail"  options={{ href: null }} />
         <Tabs.Screen name="private-lessons" options={{ href: null }} />
         <Tabs.Screen name="pdf-badges"      options={{ href: null }} />
         <Tabs.Screen name="alerts"          options={{ href: null }} />
-        <Tabs.Screen name="promo-codes"    options={{ href: null }} />
+        <Tabs.Screen name="promo-codes"     options={{ href: null }} />
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
       <RoleSwitcher />
       <BrandingLogoOverlay />
-      <BackButton />
 
       {/* ── Notification banner ── */}
       {activeNotif && (

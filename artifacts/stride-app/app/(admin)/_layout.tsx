@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
-import { BackButton } from "@/components/BackButton";
 import React from "react";
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -162,32 +161,37 @@ export default function AdminTabLayout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
       }}
     >
-      <Tabs.Screen name="stats"          options={{ title: "Home",          tabBarIcon: ({ color, size }) => <Ionicons name="home"              size={size} color={color} /> }} />
-      <Tabs.Screen name="users"          options={{ title: "Members",       tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline" size={size} color={color} /> }} />
+      {/* ── 5 visible tabs ── */}
+      <Tabs.Screen name="stats"           options={{ title: "Home",       tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
+      <Tabs.Screen name="operations-hub" options={{ title: "Operations", tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline"             size={size} color={color} /> }} />
+      <Tabs.Screen name="members-hub"    options={{ title: "Members",    tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"    size={size} color={color} /> }} />
+      <Tabs.Screen name="finance-hub"    options={{ title: "Finance",    tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline"           size={size} color={color} /> }} />
+      <Tabs.Screen name="settings"       options={{ title: "Settings",   tabBarIcon: ({ color, size }) => <SettingsTabIcon color={color} size={size} /> }} />
+
+      {/* ── Hidden deep-link screens (reached from hub pages) ── */}
+      <Tabs.Screen name="users"          options={{ href: null }} />
       <Tabs.Screen name="disciplines"    options={{ href: null }} />
-      <Tabs.Screen name="lessons"        options={{ title: "Activity",      tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"   size={size} color={color} /> }} />
-      <Tabs.Screen name="communications" options={{ title: "Messages",      tabBarIcon: ({ color, size }) => <Ionicons name="megaphone"          size={size} color={color} /> }} />
+      <Tabs.Screen name="lessons"        options={{ href: null }} />
+      <Tabs.Screen name="communications" options={{ href: null }} />
       <Tabs.Screen name="profile"        options={{ href: null }} />
-      <Tabs.Screen name="settings"       options={{ title: "Settings",      tabBarIcon: ({ color, size }) => <SettingsTabIcon color={color} size={size} /> }} />
-      <Tabs.Screen name="analytics"        options={{ href: null }} />
-      <Tabs.Screen name="activity"         options={{ href: null }} />
-      <Tabs.Screen name="setup"           options={{ href: null }} />
-      <Tabs.Screen name="pdf-badges"      options={{ href: null }} />
-      <Tabs.Screen name="blacklist"       options={{ href: null }} />
-      <Tabs.Screen name="alerts"          options={{ href: null }} />
-      <Tabs.Screen name="invoices"        options={{ href: null }} />
-      <Tabs.Screen name="reimbursements"  options={{ href: null }} />
-      <Tabs.Screen name="billing"         options={{ href: null }} />
-      <Tabs.Screen name="smart-roster"    options={{ href: null }} />
-      <Tabs.Screen name="copilot"         options={{ href: null }} />
-      <Tabs.Screen name="beacons"     options={{ href: null }} />
-      <Tabs.Screen name="marketplace" options={{ href: null }} />
-      <Tabs.Screen name="governance"  options={{ href: null }} />
+      <Tabs.Screen name="analytics"      options={{ href: null }} />
+      <Tabs.Screen name="activity"       options={{ href: null }} />
+      <Tabs.Screen name="setup"          options={{ href: null }} />
+      <Tabs.Screen name="pdf-badges"     options={{ href: null }} />
+      <Tabs.Screen name="blacklist"      options={{ href: null }} />
+      <Tabs.Screen name="alerts"         options={{ href: null }} />
+      <Tabs.Screen name="invoices"       options={{ href: null }} />
+      <Tabs.Screen name="reimbursements" options={{ href: null }} />
+      <Tabs.Screen name="billing"        options={{ href: null }} />
+      <Tabs.Screen name="smart-roster"   options={{ href: null }} />
+      <Tabs.Screen name="copilot"        options={{ href: null }} />
+      <Tabs.Screen name="beacons"        options={{ href: null }} />
+      <Tabs.Screen name="marketplace"    options={{ href: null }} />
+      <Tabs.Screen name="governance"     options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <RoleSwitcher />
     <BrandingLogoOverlay />
-    <BackButton />
     </View>
   );
 }
