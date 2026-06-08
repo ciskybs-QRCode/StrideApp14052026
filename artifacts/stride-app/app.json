@@ -14,11 +14,22 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.strideaccess.app"
+      "supportsTablet": true,
+      "bundleIdentifier": "com.strideaccess.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      },
+      "entitlements": {
+        "com.apple.developer.usernotifications.critical-alerts": true
+      }
     },
     "android": {
-      "package": "com.strideaccess.app"
+      "package": "com.strideaccess.app",
+      "permissions": [
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.USE_FULL_SCREEN_INTENT"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -37,6 +48,14 @@
         {
           "cameraPermission": "Allow Stride to access your camera for QR code scanning.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#1E3A8A",
+          "sounds": ["./assets/sounds/emergency_siren.wav"]
         }
       ]
     ],

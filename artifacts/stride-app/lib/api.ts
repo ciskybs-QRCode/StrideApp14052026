@@ -1925,3 +1925,56 @@ export async function acknowledgeRescue(cascade_contact_id: number, accept: bool
     accept,
   });
 }
+
+// ── Emergency Notifications ────────────────────────────────────────────────────
+
+export interface EmergencyPushResult {
+  suppressed:      boolean;
+  suppressReason?: string;
+  logId?:          number;
+  tokensCount:     number;
+  errors:          string[];
+}
+
+export interface EmergencyPushLog {
+  id:                        number;
+  category:                  string;
+  title:                     string;
+  body:                      string;
+  status:                    string;
+  suppressed:                boolean;
+  suppress_reason:           string | null;
+  tokens_count:              number | null;
+  twilio_fallback_triggered: boolean;
+  twilio_fallback_at:        string | null;
+  ack_deadline:              string | null;
+  acknowledged_at:           string | null;
+  created_at:                string;
+}
+
+export async function registerPushToken(params: {
+  token:    string;
+  platform: string;
+}): Promise<{ registered: boolean }> {
+  return request<{ registered: boolean }>("POST", "/notifications/register-token", params);
+}
+
+export async function triggerEmergencyPush(params: {
+  category:        string;
+  title?:          string;
+  body?:           string;
+  childId?:        string;
+  scanTime?:       string;
+  classStartTime?: string;
+}): Promise<EmergencyPushResult> {
+  return request<EmergencyPushResult>("POST", "/notifications/emergency", params);
+}
+
+export async function acknowledgeEmergencyPush(logId: number): Promise<{ acknowledged: boolean }> {
+  return request<{ acknowledged: boolean }>("POST", `/notifications/acknowledge/${logId}`);
+}
+
+export async function getEmergencyPushLog(): Promise<EmergencyPushLog[]> {
+  return request<EmergencyPushLog[]>("GET", "/notifications/push-log");
+}
+

@@ -20,6 +20,7 @@
     "cors": "^2",
     "csv-parse": "^6.2.1",
     "drizzle-orm": "catalog:",
+    "expo-server-sdk": "^6.1.0",
     "express": "^5",
     "express-rate-limit": "^8.5.2",
     "jsonwebtoken": "^9.0.3",
@@ -28,6 +29,7 @@
     "pino": "^9",
     "pino-http": "^10",
     "stripe": "^22.1.1",
+    "twilio": "^6.0.2",
     "xlsx": "^0.18.5",
     "zod": "catalog:"
   },

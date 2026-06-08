@@ -49,6 +49,7 @@ import marketplaceRouter from "./marketplace.js";
 import systemConfigRouter from "./system-config.js";
 import regionalPricingRouter from "./regional-pricing.js";
 import rescueRouter from "./rescue.js";
+import notificationsRouter from "./notifications.js";
 
 const router: IRouter = Router();
 
@@ -102,5 +103,6 @@ router.use(marketplaceRouter);
 router.use(systemConfigRouter);
 router.use(regionalPricingRouter);
 router.use(rescueRouter);
+router.use(notificationsRouter);
 
 export default router;

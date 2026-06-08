@@ -1,0 +1,342 @@
+/**
+ * EmergencyPushService — Critical Alert push notification infrastructure
+ *
+ * Delivery layers:
+ *   1. Expo Push API  (expo-server-sdk)  — primary
+ *   2. Twilio SMS + Voice               — fallback if ACK not received within 60 s
+ *
+ * Emergency categories: MEDICAL | FIRE | POLICE | DEPENDANT_MISSING
+ *
+ * Social buffer:
+ *   DEPENDANT_MISSING within social_buffer_minutes before class start is
+ *   suppressed — logged as SOCIAL_ARRIVAL_WARNING only.
+ */
+
+import Expo, { type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk";
+import twilio from "twilio";
+import { pool } from "./pg.js";
+import { logger } from "./logger.js";
+import { SecurityObserver } from "./SecurityObserver.js";
+
+export const EMERGENCY_CATEGORIES = ["MEDICAL", "FIRE", "POLICE", "DEPENDANT_MISSING"] as const;
+export type EmergencyCategory = (typeof EMERGENCY_CATEGORIES)[number];
+
+export interface EmergencyParams {
+  orgId:           number;
+  category:        EmergencyCategory;
+  title:           string;
+  body:            string;
+  data?:           Record<string, unknown>;
+  childId?:        string;
+  scanTime?:       string;
+  classStartTime?: string;
+  triggeredBy?:    string;
+}
+
+export interface SendResult {
+  suppressed:       boolean;
+  suppressReason?:  string;
+  logId?:           number;
+  tokensCount:      number;
+  errors:           string[];
+}
+
+const expo = new Expo();
+
+export class EmergencyPushService {
+
+  // ── DB Bootstrap ─────────────────────────────────────────────────────────────
+
+  static async ensureMigration(): Promise<void> {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS device_push_tokens (
+        id         SERIAL      PRIMARY KEY,
+        user_id    TEXT        NOT NULL,
+        org_id     INTEGER     NOT NULL,
+        token      TEXT        NOT NULL,
+        platform   TEXT        NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (user_id, token)
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS emergency_push_log (
+        id                        SERIAL      PRIMARY KEY,
+        org_id                    INTEGER     NOT NULL,
+        category                  TEXT        NOT NULL,
+        title                     TEXT        NOT NULL,
+        body                      TEXT        NOT NULL,
+        payload                   JSONB       NOT NULL DEFAULT '{}',
+        tokens_sent               TEXT[]      NOT NULL DEFAULT '{}',
+        status                    TEXT        NOT NULL DEFAULT 'pending_ack',
+        suppressed                BOOLEAN     NOT NULL DEFAULT FALSE,
+        suppress_reason           TEXT,
+        ack_deadline              TIMESTAMPTZ,
+        acknowledged_at           TIMESTAMPTZ,
+        twilio_fallback_triggered BOOLEAN     NOT NULL DEFAULT FALSE,
+        twilio_fallback_at        TIMESTAMPTZ,
+        created_at                TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    logger.info("EmergencyPushService: tables ready");
+  }
+
+  // ── Token Registration ────────────────────────────────────────────────────────
+
+  static async registerToken(
+    userId:   string,
+    orgId:    number,
+    token:    string,
+    platform: string,
+  ): Promise<void> {
+    await pool.query(
+      `INSERT INTO device_push_tokens (user_id, org_id, token, platform, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (user_id, token) DO UPDATE
+         SET org_id = $2, platform = $4, updated_at = NOW()`,
+      [userId, orgId, token, platform],
+    );
+  }
+
+  // ── Main Send ─────────────────────────────────────────────────────────────────
+
+  static async sendEmergencyPush(params: EmergencyParams): Promise<SendResult> {
+    const {
+      orgId, category, title, body, data,
+      childId, scanTime, classStartTime, triggeredBy,
+    } = params;
+
+    // ── Social buffer suppression (DEPENDANT_MISSING only) ──────────────────
+    if (category === "DEPENDANT_MISSING" && classStartTime) {
+      try {
+        const { rows } = await pool.query<{ social_buffer_minutes: number | null }>(
+          `SELECT social_buffer_minutes FROM admin_settings WHERE organization_id = $1`,
+          [orgId],
+        );
+        const bufferMins = rows[0]?.social_buffer_minutes ?? 30;
+
+        const now      = new Date();
+        const nowMins  = now.getHours() * 60 + now.getMinutes();
+        const [sh, sm] = classStartTime.split(":").map(Number);
+        const startMins = (sh ?? 0) * 60 + (sm ?? 0);
+
+        if (nowMins >= startMins - bufferMins && nowMins < startMins) {
+          const minsLeft      = startMins - nowMins;
+          const suppressReason = `Within social buffer (${minsLeft} min before class start — buffer ${bufferMins} min)`;
+
+          if (childId) {
+            SecurityObserver.logActivity(childId, "SOCIAL_ARRIVAL_WARNING", {
+              category, suppress_reason: suppressReason,
+              class_start_time: classStartTime, triggered_by: triggeredBy,
+            });
+          }
+
+          await pool.query(
+            `INSERT INTO emergency_push_log
+               (org_id, category, title, body, payload, suppressed, suppress_reason)
+             VALUES ($1, $2, $3, $4, $5, TRUE, $6)`,
+            [orgId, category, title, body, JSON.stringify(data ?? {}), suppressReason],
+          );
+
+          logger.info({ orgId, category, suppressReason }, "EmergencyPushService: suppressed by social buffer");
+          return { suppressed: true, suppressReason, tokensCount: 0, errors: [] };
+        }
+      } catch (err) {
+        logger.warn(err, "EmergencyPushService: social buffer check failed — proceeding with push");
+      }
+    }
+
+    // ── Fetch device tokens ────────────────────────────────────────────────────
+    const { rows: tokenRows } = await pool.query<{ token: string }>(
+      `SELECT token FROM device_push_tokens WHERE org_id = $1`,
+      [orgId],
+    );
+    const tokens = tokenRows.map(r => r.token).filter(t => Expo.isExpoPushToken(t));
+
+    // ── Build messages ────────────────────────────────────────────────────────
+    const messages: ExpoPushMessage[] = tokens.map(to => ({
+      to,
+      title,
+      body,
+      data: { ...data, category, _emergency: true },
+      // iOS critical alert (overrides Silent mode — requires Apple entitlement)
+      sound: { critical: true, name: "emergency_siren.wav", volume: 1 } as unknown as "default",
+      priority: "high",
+      channelId: "emergency",
+    }));
+
+    const errors: string[] = [];
+
+    // ── Log before send (for ACK deadline tracking) ───────────────────────────
+    const ackDeadline = new Date(Date.now() + 60_000).toISOString();
+    const { rows: logRows } = await pool.query<{ id: number }>(
+      `INSERT INTO emergency_push_log
+         (org_id, category, title, body, payload, tokens_sent, status, ack_deadline)
+       VALUES ($1, $2, $3, $4, $5, $6, 'pending_ack', $7)
+       RETURNING id`,
+      [orgId, category, title, body, JSON.stringify(data ?? {}), tokens, ackDeadline],
+    );
+    const logId = logRows[0]?.id;
+
+    // ── Send via Expo Push ────────────────────────────────────────────────────
+    let pushFailed = tokens.length === 0;
+
+    if (tokens.length > 0) {
+      try {
+        const chunks = expo.chunkPushNotifications(messages);
+        const tickets: ExpoPushTicket[] = [];
+        for (const chunk of chunks) {
+          const t = await expo.sendPushNotificationsAsync(chunk);
+          tickets.push(...t);
+        }
+        for (let i = 0; i < tickets.length; i++) {
+          const ticket = tickets[i];
+          if (ticket?.status === "error") {
+            errors.push(`Token[${i}]: ${ticket.message}`);
+            if ((ticket as { details?: { error?: string } }).details?.error === "DeviceNotRegistered") {
+              pool.query(`DELETE FROM device_push_tokens WHERE token = $1`, [tokens[i]])
+                .catch(() => {});
+            }
+          }
+        }
+        if (errors.length === tickets.length && tickets.length > 0) pushFailed = true;
+      } catch (err) {
+        errors.push(String(err));
+        pushFailed = true;
+      }
+    }
+
+    // ── SecurityObserver: EMERGENCY_PUSH ─────────────────────────────────────
+    if (childId) {
+      SecurityObserver.logActivity(childId, "EMERGENCY_PUSH", {
+        category, title, log_id: logId,
+        tokens_count: tokens.length,
+        push_failed: pushFailed,
+        triggered_by: triggeredBy,
+        ack_deadline: ackDeadline,
+        scan_time: scanTime,
+      });
+    }
+
+    // ── Immediate Twilio fallback if all pushes failed ────────────────────────
+    if (pushFailed) {
+      logger.warn({ orgId, category, errors }, "EmergencyPushService: push failed — immediate Twilio fallback");
+      await EmergencyPushService._sendTwilioFallback(orgId, category, body, logId);
+    }
+
+    logger.info({ orgId, category, logId, tokensCount: tokens.length }, "EmergencyPushService: push dispatched");
+    return { suppressed: false, logId, tokensCount: tokens.length, errors };
+  }
+
+  // ── Acknowledge Receipt ───────────────────────────────────────────────────────
+
+  static async acknowledge(logId: number): Promise<void> {
+    await pool.query(
+      `UPDATE emergency_push_log
+       SET status = 'acknowledged', acknowledged_at = NOW()
+       WHERE id = $1 AND status = 'pending_ack'`,
+      [logId],
+    );
+  }
+
+  // ── ACK Watchdog ——— runs every 30 s after boot ────────────────────────────
+
+  static startAckWatchdog(): void {
+    const INTERVAL = 30_000;
+
+    const check = async (): Promise<void> => {
+      try {
+        const { rows } = await pool.query<{
+          id: number; org_id: number; category: string; body: string;
+        }>(`
+          SELECT id, org_id, category, body
+          FROM emergency_push_log
+          WHERE status = 'pending_ack'
+            AND ack_deadline < NOW()
+            AND twilio_fallback_triggered = FALSE
+        `);
+        for (const row of rows) {
+          logger.warn({ logId: row.id, category: row.category },
+            "EmergencyPushService: ACK timeout — Twilio fallback");
+          await EmergencyPushService._sendTwilioFallback(
+            row.org_id, row.category as EmergencyCategory, row.body, row.id,
+          );
+        }
+      } catch (err) {
+        logger.error(err, "EmergencyPushService: watchdog error");
+      }
+    };
+
+    setTimeout(() => {
+      void check();
+      setInterval(() => void check(), INTERVAL);
+    }, INTERVAL);
+
+    logger.info("EmergencyPushService: ACK watchdog started (30 s interval)");
+  }
+
+  // ── Twilio Fallback ───────────────────────────────────────────────────────────
+
+  private static async _sendTwilioFallback(
+    orgId:    number,
+    category: string,
+    message:  string,
+    logId?:   number,
+  ): Promise<void> {
+    const accountSid = process.env["TWILIO_ACCOUNT_SID"];
+    const authToken  = process.env["TWILIO_AUTH_TOKEN"];
+    const from       = process.env["TWILIO_FROM_NUMBER"];
+
+    if (!accountSid || !authToken || !from) {
+      logger.warn({ orgId }, "EmergencyPushService: Twilio not configured — skipping SMS fallback");
+      return;
+    }
+
+    if (logId) {
+      await pool.query(
+        `UPDATE emergency_push_log
+         SET twilio_fallback_triggered = TRUE, twilio_fallback_at = NOW()
+         WHERE id = $1`,
+        [logId],
+      ).catch(() => {});
+    }
+
+    try {
+      const { rows: adminRows } = await pool.query<{ phone: string; name: string }>(
+        `SELECT u.phone, u.name
+         FROM users u
+         JOIN organization_members om ON om.user_id = u.id
+         WHERE om.organization_id = $1
+           AND om.role IN ('admin', 'super_admin')
+           AND u.phone IS NOT NULL AND u.phone <> ''
+         LIMIT 5`,
+        [orgId],
+      );
+
+      if (adminRows.length === 0) {
+        logger.warn({ orgId }, "EmergencyPushService: no admin phones for Twilio fallback");
+        return;
+      }
+
+      const client  = twilio(accountSid, authToken);
+      const smsBody = `\uD83D\uDEA8 STRIDE EMERGENCY [${category}]: ${message} — Open the Stride app immediately or call emergency services.`;
+      const catLabel = category.replace(/_/g, " ");
+      const twiml   = `<Response><Say voice="alice">Urgent Stride alert. ${catLabel} emergency reported. ${message}. Please open the Stride app immediately.</Say><Pause length="2"/><Say voice="alice">Repeating: ${catLabel} emergency. Check the Stride app now.</Say></Response>`;
+
+      for (const admin of adminRows) {
+        try {
+          await client.messages.create({ body: smsBody, from, to: admin.phone });
+          await client.calls.create({ twiml, from, to: admin.phone });
+          logger.info({ phone: admin.phone, category, orgId }, "EmergencyPushService: Twilio SMS+Voice sent");
+        } catch (e) {
+          logger.error({ err: e, phone: admin.phone }, "EmergencyPushService: Twilio send failed");
+        }
+      }
+    } catch (err) {
+      logger.error(err, "EmergencyPushService: Twilio fallback error");
+    }
+  }
+}

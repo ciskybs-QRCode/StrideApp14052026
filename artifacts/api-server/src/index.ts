@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { startReminderScheduler } from "./lib/reminder-scheduler.js";
 import { startTrialBillingScheduler } from "./lib/trial-billing-scheduler.js";
 import { RescueCascadeService } from "./lib/RescueCascadeService.js";
+import { EmergencyPushService } from "./lib/EmergencyPushService.js";
 
 const rawPort = process.env["PORT"];
 
@@ -30,4 +31,7 @@ app.listen(port, (err) => {
   RescueCascadeService.ensureMigration().catch(err =>
     logger.error(err, "RescueCascadeService: migration failed"),
   );
+  EmergencyPushService.ensureMigration()
+    .then(() => EmergencyPushService.startAckWatchdog())
+    .catch(err => logger.error(err, "EmergencyPushService: boot failed"));
 });

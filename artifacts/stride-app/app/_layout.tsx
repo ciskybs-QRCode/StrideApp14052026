@@ -30,6 +30,7 @@ import { SecurityEscalationProvider } from "@/context/SecurityEscalationContext"
 import { FeaturesProvider } from "@/context/FeaturesContext";
 import { TerminologyProvider } from "@/context/TerminologyContext";
 import { UnreadProvider } from "@/context/UnreadContext";
+import { EmergencyNotificationProvider } from "@/context/EmergencyNotificationContext";
 
 // ── Safe localStorage polyfill ───────────────────────────────────────────────
 // Inside sandboxed iframes (e.g. Replit canvas preview) the browser blocks
@@ -132,6 +133,7 @@ export default function RootLayout() {
           <TerminologyProvider>
           <OfflineSyncProvider>
             <AuthProvider>
+              <EmergencyNotificationProvider>
               <FeaturesProvider>
               <AppDataProvider>
                 <UnreadProvider>
@@ -156,6 +158,7 @@ export default function RootLayout() {
                 </UnreadProvider>
               </AppDataProvider>
               </FeaturesProvider>
+              </EmergencyNotificationProvider>
             </AuthProvider>
           </OfflineSyncProvider>
           </TerminologyProvider>
