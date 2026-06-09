@@ -40,13 +40,13 @@ NOT safe for INSERT (use `full_name`, NOT `name`):
 
 ## notifications table — type CHECK constraint
 
-Valid `type` values (hard constraint, not ALTER TABLE):
-```
-'booking_request' | 'booking_confirmed' | 'booking_cancelled' |
-'availability_approved' | 'availability_rejected' |
-'lesson_reminder' | 'payment_received'
-```
-Do NOT use: `lesson_cancelled`, `schedule_change`, `emergency_pulse` (these aren't in the constraint).
+Constraint in LOCAL postgres is managed in `pg.ts ensureTables()` — it DROPs and re-ADDs on every server start. Current set: 34 types (7 legacy + 27 production).
+
+**27 production types:** promo, attendance_alert, emergency, course_assignment, broadcast, check_in, course_pending_confirmation, feedback, lesson_decision, chat_message, emergency_resolved, lesson_disruption, emergency_medical, document, meeting, achievement, substitute_request, material, compliance, private_lesson_approved, emergency_police, emergency_fire, reimbursement, private_lesson_proposed, emergency_pulse, ble_timeout, security_escalation
+
+**7 legacy types (backward compat):** booking_request, booking_confirmed, booking_cancelled, availability_approved, availability_rejected, lesson_reminder, payment_received
+
+dev-tools trigger → correct type mapping: emergency-pulse→`emergency_pulse`, rescue-cascade→`substitute_request`, ble-transit-timeout→`ble_timeout`, security-escalation→`security_escalation`, push-notification→`broadcast`, payment-received→`reimbursement`.
 
 ## child_transit_states (NOT child_proximity_states)
 

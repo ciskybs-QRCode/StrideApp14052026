@@ -3,8 +3,11 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 // ── Notification types ────────────────────────────────────────────────────────
+// 27 production types + 7 legacy types kept for backward compatibility with
+// existing notification inserts (reminder-scheduler, private-bookings, etc.)
 
 export const notificationTypeValues = [
+  // ── Legacy types (backward compat) ────────────────────────────────────────
   "booking_request",
   "booking_confirmed",
   "booking_cancelled",
@@ -12,13 +15,37 @@ export const notificationTypeValues = [
   "availability_rejected",
   "lesson_reminder",
   "payment_received",
-  "workshop_created",
-  "workshop_approved",
-  "workshop_rejected",
-  "schedule_change",
-  "lesson_cancelled",
-  "lesson_postponed",
+  // ── Production types ──────────────────────────────────────────────────────
+  "promo",
+  "attendance_alert",
+  "emergency",
+  "course_assignment",
+  "broadcast",
+  "check_in",
+  "course_pending_confirmation",
+  "feedback",
+  "lesson_decision",
+  "chat_message",
+  "emergency_resolved",
+  "lesson_disruption",
+  "emergency_medical",
+  "document",
+  "meeting",
+  "achievement",
+  "substitute_request",
+  "material",
+  "compliance",
+  "private_lesson_approved",
+  "emergency_police",
+  "emergency_fire",
+  "reimbursement",
+  "private_lesson_proposed",
+  // ── Sandbox / safety types ─────────────────────────────────────────────────
+  "emergency_pulse",
+  "ble_timeout",
+  "security_escalation",
 ] as const;
+
 export type NotificationType = (typeof notificationTypeValues)[number];
 
 // ── notifications ─────────────────────────────────────────────────────────────

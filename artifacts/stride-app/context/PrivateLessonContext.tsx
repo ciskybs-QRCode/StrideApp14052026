@@ -53,14 +53,35 @@ function NotificationToast({ toast, onDismiss }: { toast: ToastData; onDismiss: 
     ]).start(() => onDismiss());
   };
 
-  const iconMap: Record<ApiPrivateNotification["type"], { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-    booking_request:        { icon: "calendar-outline", color: "#1E3A8A" },
-    booking_confirmed:      { icon: "checkmark-circle", color: "#059669" },
-    booking_cancelled:      { icon: "close-circle",    color: "#DC2626" },
-    availability_approved:  { icon: "checkmark-done",  color: "#059669" },
-    availability_rejected:  { icon: "ban-outline",     color: "#DC2626" },
-    lesson_reminder:        { icon: "time-outline",    color: "#FBBF24" },
-    payment_received:       { icon: "wallet-outline",  color: "#059669" },
+  const iconMap: Partial<Record<ApiPrivateNotification["type"], { icon: keyof typeof Ionicons.glyphMap; color: string }>> = {
+    booking_request:           { icon: "calendar-outline",      color: "#1E3A8A" },
+    booking_confirmed:         { icon: "checkmark-circle",      color: "#059669" },
+    booking_cancelled:         { icon: "close-circle",          color: "#DC2626" },
+    availability_approved:     { icon: "checkmark-done",        color: "#059669" },
+    availability_rejected:     { icon: "ban-outline",           color: "#DC2626" },
+    lesson_reminder:           { icon: "time-outline",          color: "#FBBF24" },
+    payment_received:          { icon: "wallet-outline",        color: "#059669" },
+    emergency:                 { icon: "warning",               color: "#DC2626" },
+    emergency_pulse:           { icon: "pulse",                 color: "#DC2626" },
+    emergency_medical:         { icon: "medkit-outline",        color: "#DC2626" },
+    emergency_police:          { icon: "shield",                color: "#DC2626" },
+    emergency_fire:            { icon: "flame-outline",         color: "#EA580C" },
+    emergency_resolved:        { icon: "checkmark-circle",      color: "#059669" },
+    security_escalation:       { icon: "lock-closed-outline",   color: "#DC2626" },
+    attendance_alert:          { icon: "alert-circle-outline",  color: "#D97706" },
+    ble_timeout:               { icon: "bluetooth-outline",     color: "#D97706" },
+    check_in:                  { icon: "qr-code-outline",       color: "#059669" },
+    chat_message:              { icon: "chatbubble-outline",    color: "#0284C7" },
+    broadcast:                 { icon: "megaphone-outline",     color: "#7C3AED" },
+    course_assignment:         { icon: "school-outline",        color: "#1E3A8A" },
+    substitute_request:        { icon: "swap-horizontal",       color: "#F59E0B" },
+    private_lesson_approved:   { icon: "ribbon-outline",        color: "#059669" },
+    private_lesson_proposed:   { icon: "calendar-outline",      color: "#1E3A8A" },
+    reimbursement:             { icon: "cash-outline",          color: "#059669" },
+    achievement:               { icon: "trophy-outline",        color: "#D4AF37" },
+    document:                  { icon: "document-text-outline", color: "#6366F1" },
+    meeting:                   { icon: "people-outline",        color: "#0891B2" },
+    promo:                     { icon: "pricetag-outline",      color: "#7C3AED" },
   };
   const { icon, color } = iconMap[toast.type] ?? { icon: "notifications-outline" as const, color: "#1E3A8A" };
 

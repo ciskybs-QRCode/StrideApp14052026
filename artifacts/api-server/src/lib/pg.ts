@@ -544,5 +544,25 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ps_op_idx    ON pickup_signatures (operator_id);
   `).catch(() => {});
 
+  // Expand notifications CHECK constraint to the full 34-type set (27 production
+  // types + 7 legacy types kept for backward compat with reminder-scheduler etc.)
+  await pool.query(`
+    ALTER TABLE notifications
+      DROP CONSTRAINT IF EXISTS notifications_type_check
+  `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
+    CHECK (type = ANY(ARRAY[
+      'booking_request','booking_confirmed','booking_cancelled',
+      'availability_approved','availability_rejected','lesson_reminder','payment_received',
+      'promo','attendance_alert','emergency','course_assignment','broadcast','check_in',
+      'course_pending_confirmation','feedback','lesson_decision','chat_message',
+      'emergency_resolved','lesson_disruption','emergency_medical','document','meeting',
+      'achievement','substitute_request','material','compliance','private_lesson_approved',
+      'emergency_police','emergency_fire','reimbursement','private_lesson_proposed',
+      'emergency_pulse','ble_timeout','security_escalation'
+    ]))
+  `).catch(() => {});
+
   initialized = true;
 }

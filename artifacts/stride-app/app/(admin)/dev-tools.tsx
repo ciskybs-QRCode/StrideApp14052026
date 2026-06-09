@@ -107,12 +107,54 @@ const TRIGGERS = [
 
 const CHANNEL_CONFIG: Record<string, { color: string; icon: keyof typeof Ionicons.glyphMap }> = {
   notification: { color: "#1E3A8A", icon: "notifications-outline" },
-  emergency:    { color: "#EF4444", icon: "warning-outline" },
+  emergency:    { color: "#DC2626", icon: "warning-outline" },
   system:       { color: "#6366F1", icon: "cog-outline" },
 };
 
 function channelCfg(channel: string) {
   return CHANNEL_CONFIG[channel] ?? { color: "#6B7280", icon: "ellipse-outline" };
+}
+
+// ── Notification type → badge color + icon ─────────────────────────────────────
+
+const TYPE_BADGE: Record<string, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  // ── Critical safety (Crimson) ──────────────────────────────────────────────
+  emergency_pulse:     { color: "#DC2626", bg: "#FEE2E2", icon: "pulse" },
+  emergency_medical:   { color: "#DC2626", bg: "#FEE2E2", icon: "medkit-outline" },
+  emergency_police:    { color: "#DC2626", bg: "#FEE2E2", icon: "shield" },
+  emergency_fire:      { color: "#B91C1C", bg: "#FEE2E2", icon: "flame-outline" },
+  emergency:           { color: "#DC2626", bg: "#FEE2E2", icon: "warning" },
+  security_escalation: { color: "#DC2626", bg: "#FEE2E2", icon: "lock-closed-outline" },
+  // ── Amber / warning ────────────────────────────────────────────────────────
+  ble_timeout:         { color: "#D97706", bg: "#FEF3C7", icon: "bluetooth-outline" },
+  attendance_alert:    { color: "#D97706", bg: "#FEF3C7", icon: "alert-circle-outline" },
+  // ── Green / success ────────────────────────────────────────────────────────
+  check_in:                 { color: "#059669", bg: "#D1FAE5", icon: "qr-code-outline" },
+  emergency_resolved:       { color: "#059669", bg: "#D1FAE5", icon: "checkmark-circle" },
+  achievement:              { color: "#059669", bg: "#D1FAE5", icon: "trophy-outline" },
+  private_lesson_approved:  { color: "#059669", bg: "#D1FAE5", icon: "ribbon-outline" },
+  reimbursement:            { color: "#059669", bg: "#D1FAE5", icon: "cash-outline" },
+  // ── Blue / informational ───────────────────────────────────────────────────
+  chat_message:             { color: "#0284C7", bg: "#E0F2FE", icon: "chatbubble-outline" },
+  document:                 { color: "#0284C7", bg: "#E0F2FE", icon: "document-text-outline" },
+  meeting:                  { color: "#0891B2", bg: "#CFFAFE", icon: "people-outline" },
+  course_assignment:        { color: "#1E3A8A", bg: "#DBEAFE", icon: "school-outline" },
+  course_pending_confirmation: { color: "#1E3A8A", bg: "#DBEAFE", icon: "time-outline" },
+  private_lesson_proposed:  { color: "#1E3A8A", bg: "#DBEAFE", icon: "calendar-outline" },
+  // ── Purple / system ────────────────────────────────────────────────────────
+  broadcast:                { color: "#7C3AED", bg: "#EDE9FE", icon: "megaphone-outline" },
+  promo:                    { color: "#7C3AED", bg: "#EDE9FE", icon: "pricetag-outline" },
+  // ── Gold / operational ────────────────────────────────────────────────────
+  substitute_request:       { color: "#B45309", bg: "#FEF3C7", icon: "swap-horizontal" },
+  lesson_decision:          { color: "#B45309", bg: "#FEF3C7", icon: "checkmark-done-circle-outline" },
+  lesson_disruption:        { color: "#B45309", bg: "#FEF3C7", icon: "alert-outline" },
+  feedback:                 { color: "#6366F1", bg: "#EDE9FE", icon: "star-outline" },
+  compliance:               { color: "#6366F1", bg: "#EDE9FE", icon: "shield-checkmark-outline" },
+  material:                 { color: "#6366F1", bg: "#EDE9FE", icon: "book-outline" },
+};
+
+function typeBadgeCfg(type: string) {
+  return TYPE_BADGE[type] ?? { color: "#6B7280", bg: "#F3F4F6", icon: "ellipse-outline" as keyof typeof Ionicons.glyphMap };
 }
 
 function timeAgo(iso: string): string {
@@ -268,11 +310,13 @@ function TriggerBtn({
 // ── Event row ─────────────────────────────────────────────────────────────────
 
 function EventRow({ event, colors }: { event: LogEvent; colors: ReturnType<typeof useColors> }) {
-  const cfg = channelCfg(event.channel);
+  const tbadge = typeBadgeCfg(event.type);
+  const chCfg  = channelCfg(event.channel);
   return (
     <View style={[styles.eventRow, { borderColor: colors.border }]}>
-      <View style={[styles.eventIcon, { backgroundColor: cfg.color + "18" }]}>
-        <Ionicons name={cfg.icon} size={16} color={cfg.color} />
+      {/* Type icon — colored by notification type */}
+      <View style={[styles.eventIcon, { backgroundColor: tbadge.bg }]}>
+        <Ionicons name={tbadge.icon} size={16} color={tbadge.color} />
       </View>
       <View style={styles.eventContent}>
         <Text style={[styles.eventTitle, { color: colors.foreground }]} numberOfLines={1}>
@@ -283,8 +327,15 @@ function EventRow({ event, colors }: { event: LogEvent; colors: ReturnType<typeo
         </Text>
       </View>
       <View style={styles.eventMeta}>
-        <View style={[styles.channelPill, { backgroundColor: cfg.color + "18" }]}>
-          <Text style={[styles.channelPillText, { color: cfg.color }]}>
+        {/* Type badge (primary) */}
+        <View style={[styles.typePill, { backgroundColor: tbadge.bg }]}>
+          <Text style={[styles.typePillText, { color: tbadge.color }]} numberOfLines={1}>
+            {event.type.replace(/_/g, " ")}
+          </Text>
+        </View>
+        {/* Channel pill (secondary) */}
+        <View style={[styles.channelPill, { backgroundColor: chCfg.color + "18" }]}>
+          <Text style={[styles.channelPillText, { color: chCfg.color }]}>
             {event.channel}
           </Text>
         </View>
@@ -652,6 +703,8 @@ const styles = StyleSheet.create({
   eventTitle:   { fontSize: 13, fontWeight: "700", marginBottom: 2 },
   eventBody:    { fontSize: 12, lineHeight: 17 },
   eventMeta:    { alignItems: "flex-end", gap: 4, flexShrink: 0 },
+  typePill:     { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, maxWidth: 100 },
+  typePillText: { fontSize: 9, fontWeight: "800", textTransform: "lowercase" },
   channelPill:  { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
   channelPillText: { fontSize: 9, fontWeight: "700", textTransform: "uppercase" },
   eventTime:    { fontSize: 10 },

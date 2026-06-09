@@ -1,0 +1,19 @@
+The database notification types have been audited and updated directly in Supabase. The `notifications_type_check` constraint now dynamically supports a total of 27 types (24 existing production types plus 3 new sandbox test types).
+
+Please perform a comprehensive refactor across the codebase to ensure absolute alignment:
+
+1. Update Notification Enums / Types:
+Locate all TypeScript definitions, enums, type aliases, and validation schemas (such as Zod schemas) that restrict or validate the notification `type` column in both the backend (`artifacts/api-server`) and frontend app (`artifacts/stride-app`). Update them to accept the comprehensive list of 27 types:
+'promo', 'attendance_alert', 'emergency', 'course_assignment', 'broadcast', 'check_in', 'course_pending_confirmation', 'feedback', 'lesson_decision', 'chat_message', 'emergency_resolved', 'lesson_disruption', 'emergency_medical', 'document', 'meeting', 'achievement', 'substitute_request', 'material', 'compliance', 'private_lesson_approved', 'emergency_police', 'emergency_fire', 'reimbursement', 'private_lesson_proposed', 'emergency_pulse', 'ble_timeout', 'security_escalation'.
+
+2. Refactor Sandbox Seeding (`dev-tools.ts`):
+- Rewrite the `POST /api/dev/sandbox/seed` endpoint using standard clean Supabase client syntax (`supabase.from().insert()`). Remove any temporary raw fetch bypasses or double-step insert/patch workarounds since PostgREST schema cache has been reloaded.
+- Fix the Parent-Child orphan bug by explicitly mapping the 6 seeded children to their primary parents using the real `parent_id` column.
+- Insert cross-reference records into the `authorized_pickups` / `guardian_circle` table for each child to ensure that when a parent logs in, their corresponding children load flawlessly on the mobile dashboard.
+- Ensure `DELETE /api/dev/sandbox/reset` wipes testing transaction records for org 999 including `authorized_pickups`.
+
+3. Dev-Tools UI Component Customization:
+In the `/admin/dev-tools` mobile screen UI monitor, ensure that the incoming real-time notifications are properly supported. Add visual styling or distinctive color badges for critical safety types (e.g., Crimson/Red for 'emergency_pulse', 'emergency_medical', 'emergency_police', 'emergency_fire', 'security_escalation'; Orange/Amber for 'ble_timeout', 'attendance_alert'; and standard professional colors for operational items like 'chat_message', 'document', 'reimbursement').
+
+4. Compilation Check:
+Run full typechecks on both `api-server` and `stride-app` packages to guarantee everything builds cleanly with zero errors.

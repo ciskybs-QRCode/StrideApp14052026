@@ -115,29 +115,15 @@ router.post("/dev/sandbox/seed", async (req: Request, res: Response) => {
 
     const hash = await bcrypt.hash(SANDBOX_PW, 10);
 
-    // 1. Upsert sandbox organisation.
-    // supabase-js validates INSERT/UPSERT column names against its in-memory
-    // schema cache (built from PostgREST's schema endpoint at startup).
-    // Columns added later via raw ALTER TABLE are not in that cache, so the
-    // client throws "column not in schema cache" before making any HTTP call.
-    //
-    // Solution: call the Supabase REST API directly via fetch — PostgREST
-    // itself is fine with those columns; only the JS client rejects them.
+    // ── 1. Upsert sandbox organisation ────────────────────────────────────────
+    // subscription_status and system_configured were added via ALTER TABLE and
+    // are not yet visible in PostgREST's schema cache for INSERT — use raw
+    // fetch for the initial upsert and a PATCH for those extra columns.
     const supabaseUrl  = process.env.SUPABASE_URL!;
     const serviceKey   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    // Step A — INSERT/upsert with only the schema-cache-safe columns.
-    //
-    // From inspecting the live organizations table:
-    //   • invite_code  — NOT NULL (no default), must be supplied
-    //   • trial_ends_at — NOT NULL, must be supplied
-    //   • plan — has DEFAULT 'trial' (real column; "subscription_status" is a
-    //             later ALTER TABLE addition not yet in PostgREST's schema cache)
-    //   • system_configured — also added via ALTER TABLE, excluded from INSERT
-    //
-    // Never include ALTER-TABLE-added columns in the POST body — PostgREST
-    // returns PGRST204 "column not in schema cache" for them.
-    const trialEnd = new Date(Date.now() + 90 * 24 * 3600_000).toISOString();
-    const orgInsertRes = await fetch(`${supabaseUrl}/rest/v1/organizations`, {
+    const trialEnd     = new Date(Date.now() + 90 * 24 * 3600_000).toISOString();
+
+    const orgRes = await fetch(`${supabaseUrl}/rest/v1/organizations`, {
       method:  "POST",
       headers: {
         "Content-Type": "application/json",
@@ -146,69 +132,56 @@ router.post("/dev/sandbox/seed", async (req: Request, res: Response) => {
         "Prefer":        "resolution=merge-duplicates,return=minimal",
       },
       body: JSON.stringify({
-        id:           SANDBOX_ORG_ID,
-        name:         "Stride Sandbox Org",
-        invite_code:  "SANDBOX-DEV99",
+        id:            SANDBOX_ORG_ID,
+        name:          "Stride Sandbox Org",
+        invite_code:   "SANDBOX-DEV99",
         trial_ends_at: trialEnd,
-        plan:         "active",
-        region:       "AU",
-        date_format:  "DD/MM/YYYY",
+        plan:          "active",
+        region:        "AU",
+        date_format:   "DD/MM/YYYY",
       }),
     });
-    if (!orgInsertRes.ok) {
-      const txt = await orgInsertRes.text().catch(() => "");
-      throw new Error(`org insert HTTP ${orgInsertRes.status}: ${txt}`);
+    if (!orgRes.ok) {
+      const txt = await orgRes.text().catch(() => "");
+      throw new Error(`org upsert HTTP ${orgRes.status}: ${txt}`);
     }
-
-    // Step B — PATCH the ALTER-TABLE-added columns that PostgREST's schema
-    // cache doesn't know about for INSERT but tolerates in PATCH for
-    // already-existing rows.
-    await fetch(
-      `${supabaseUrl}/rest/v1/organizations?id=eq.${SANDBOX_ORG_ID}`,
-      {
-        method:  "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${serviceKey}`,
-          "apikey":        serviceKey,
-          "Prefer":        "return=minimal",
-        },
-        body: JSON.stringify({ system_configured: true }),
+    await fetch(`${supabaseUrl}/rest/v1/organizations?id=eq.${SANDBOX_ORG_ID}`, {
+      method:  "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+        "apikey":        serviceKey,
+        "Prefer":        "return=minimal",
       },
-    ).catch(() => { /* non-critical — column may not exist yet */ });
+      body: JSON.stringify({ system_configured: true }),
+    }).catch(() => {});
 
-    // 2. Parents
+    // ── 2. Parents ────────────────────────────────────────────────────────────
     const PARENTS = [
       { email: "sandbox_parent1@test.com", name: "Alice Sanderson" },
-      { email: "sandbox_parent2@test.com", name: "Bob Testafer" },
-      { email: "sandbox_parent3@test.com", name: "Carol Dummy" },
+      { email: "sandbox_parent2@test.com", name: "Bob Testafer"    },
+      { email: "sandbox_parent3@test.com", name: "Carol Dummy"     },
     ];
 
-    const parentRows: { id: number }[] = [];
+    const parentRows: { id: number; name: string }[] = [];
     for (const p of PARENTS) {
       const { data, error } = await supabase
         .from("users")
         .upsert(
-          {
-            organization_id: SANDBOX_ORG_ID,
-            email:           p.email,
-            name:            p.name,
-            role:            "parent",
-            password_hash:   hash,
-          },
+          { organization_id: SANDBOX_ORG_ID, email: p.email, name: p.name, role: "parent", password_hash: hash },
           { onConflict: "email" },
         )
         .select("id")
         .single();
-      if (data) parentRows.push(data as { id: number });
+      if (data) parentRows.push({ id: (data as { id: number }).id, name: p.name });
       else if (error) req.log.warn({ msg: error.message }, "seed: parent upsert warning");
     }
 
-    // 3. Operators
+    // ── 3. Operators ──────────────────────────────────────────────────────────
     const OPERATORS = [
       { email: "sandbox_op1@test.com", name: "Dan Instructor" },
-      { email: "sandbox_op2@test.com", name: "Eva Coach" },
-      { email: "sandbox_op3@test.com", name: "Frank Trainer" },
+      { email: "sandbox_op2@test.com", name: "Eva Coach"      },
+      { email: "sandbox_op3@test.com", name: "Frank Trainer"  },
     ];
 
     const operatorRows: { id: number }[] = [];
@@ -216,13 +189,7 @@ router.post("/dev/sandbox/seed", async (req: Request, res: Response) => {
       const { data, error } = await supabase
         .from("users")
         .upsert(
-          {
-            organization_id: SANDBOX_ORG_ID,
-            email:           o.email,
-            name:            o.name,
-            role:            "operator",
-            password_hash:   hash,
-          },
+          { organization_id: SANDBOX_ORG_ID, email: o.email, name: o.name, role: "operator", password_hash: hash },
           { onConflict: "email" },
         )
         .select("id")
@@ -231,52 +198,83 @@ router.post("/dev/sandbox/seed", async (req: Request, res: Response) => {
       else if (error) req.log.warn({ msg: error.message }, "seed: operator upsert warning");
     }
 
-    // 4. Children (members)
+    // ── 4. Children (members) + authorized_pickups ────────────────────────────
+    // Members: original schema is (organization_id, user_id, full_name).
+    // first_name, last_name, parent_id are ALTER-TABLE additions not yet in
+    // PostgREST's schema cache — raw fetch keeps the INSERT safe.
+    // We set user_id = parent's user id for the base schema link.
+    // A PATCH for parent_id is attempted and will succeed once the cache
+    // is reloaded. authorized_pickups (local postgres) provides an immediate
+    // reliable parent-child link regardless of cache state.
     const CHILDREN = [
       { pIdx: 0, firstName: "Lily",  lastName: "Sanderson" },
       { pIdx: 0, firstName: "Max",   lastName: "Sanderson" },
-      { pIdx: 1, firstName: "Noah",  lastName: "Testafer" },
-      { pIdx: 1, firstName: "Zoe",   lastName: "Testafer" },
-      { pIdx: 2, firstName: "Mia",   lastName: "Dummy" },
-      { pIdx: 2, firstName: "Leo",   lastName: "Dummy" },
+      { pIdx: 1, firstName: "Noah",  lastName: "Testafer"  },
+      { pIdx: 1, firstName: "Zoe",   lastName: "Testafer"  },
+      { pIdx: 2, firstName: "Mia",   lastName: "Dummy"     },
+      { pIdx: 2, firstName: "Leo",   lastName: "Dummy"     },
     ];
 
-    // Members original schema: id, organization_id (NOT NULL), user_id (NOT NULL),
-    // full_name (NOT NULL), date_of_birth, notes, created_at, updated_at.
-    // first_name, last_name, parent_id, name, status are all ALTER-TABLE-added
-    // columns not in PostgREST's schema cache — must be omitted from INSERT.
-    // Use user_id = parent's user id (the closest original-schema equivalent).
     let childCount = 0;
     for (const c of CHILDREN) {
-      const userId = parentRows[c.pIdx]?.id;
-      if (!userId) continue;
+      const parent = parentRows[c.pIdx];
+      if (!parent) continue;
+
       const mbRes = await fetch(`${supabaseUrl}/rest/v1/members`, {
         method:  "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${serviceKey}`,
           "apikey":        serviceKey,
-          "Prefer":        "return=minimal",
+          "Prefer":        "return=representation",
         },
         body: JSON.stringify({
           organization_id: SANDBOX_ORG_ID,
-          user_id:         userId,
+          user_id:         parent.id,
           full_name:       `${c.firstName} ${c.lastName}`,
         }),
       });
-      if (mbRes.ok) childCount++;
-      else {
+
+      if (!mbRes.ok) {
         const t = await mbRes.text().catch(() => "");
         req.log.warn({ msg: t }, "seed: member insert warning");
+        continue;
+      }
+
+      childCount++;
+      const mbJson = await mbRes.json().catch(() => []) as Array<{ id: number }>;
+      const memberId = mbJson[0]?.id;
+
+      if (memberId) {
+        // Best-effort: set parent_id (succeeds once PostgREST cache is current)
+        await fetch(`${supabaseUrl}/rest/v1/members?id=eq.${memberId}`, {
+          method:  "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${serviceKey}`,
+            "apikey":        serviceKey,
+            "Prefer":        "return=minimal",
+          },
+          body: JSON.stringify({ parent_id: parent.id }),
+        }).catch(() => {});
+
+        // Reliable cross-reference in local postgres — tagged 'sandbox-seed'
+        // for easy cleanup in the reset endpoint
+        await pool.query(
+          `INSERT INTO authorized_pickups
+             (child_id, guardian_name, guardian_email, is_active, created_by)
+           VALUES ($1, $2, $3, true, 'sandbox-seed')`,
+          [String(memberId), parent.name, PARENTS[c.pIdx]?.email ?? ""],
+        ).catch(() => {});
       }
     }
 
-    // 5. Seed notification to mark the event
+    // ── 5. Broadcast notification to mark the seed event ─────────────────────
     const firstOpId = operatorRows[0]?.id ?? 1;
     await logEvent(
       "🌱 Sandbox Seeded",
       `Org 999 ready — ${parentRows.length} parents · ${operatorRows.length} operators · ${childCount} children`,
-      "booking_confirmed",
+      "broadcast",
       firstOpId,
     );
 
@@ -312,6 +310,8 @@ router.delete("/dev/sandbox/reset", async (req: Request, res: Response) => {
     await pool.query(`DELETE FROM child_transit_states WHERE child_id LIKE 'sandbox-ble-%'`).catch(() => {});
     await wipe(`DELETE FROM security_escalation_events WHERE organization_id = $1`);
     await wipe(`DELETE FROM operator_absences           WHERE org_id          = $1`);
+    // authorized_pickups — tagged 'sandbox-seed' in the seed endpoint
+    await pool.query(`DELETE FROM authorized_pickups WHERE created_by = 'sandbox-seed'`).catch(() => {});
 
     res.json({ ok: true, message: "Sandbox transactional data wiped. User/child seed records preserved." });
   } catch (err) {
@@ -344,7 +344,7 @@ router.post("/dev/trigger/emergency-pulse", async (req: Request, res: Response) 
     await logEvent(
       "🚨 Emergency Pulse Fired",
       `Dev trigger · Pulse ID ${rows[0].id} · Location: Main Campus`,
-      "booking_cancelled",
+      "emergency_pulse",
       triggeredBy,
     );
 
@@ -389,7 +389,7 @@ router.post("/dev/trigger/rescue-cascade", async (req: Request, res: Response) =
     await logEvent(
       "🔁 Rescue Cascade Triggered",
       `Dev trigger · Cascade ID ${cascadeId} · Discipline ${disciplineId}`,
-      "availability_approved",
+      "substitute_request",
     );
 
     res.status(201).json({ ok: true, cascade_id: cascadeId });
@@ -432,7 +432,7 @@ router.post("/dev/trigger/ble-transit-timeout", async (req: Request, res: Respon
     await logEvent(
       "📡 BLE Transit Timeout Simulated",
       `${childName} (ID ${childId}) set IN_TRANSIT 20 min ago — appears in /proximity/transit-warnings`,
-      "lesson_reminder",
+      "ble_timeout",
     );
 
     res.status(201).json({ ok: true, child_id: childId, child_name: childName, status: "IN_TRANSIT", minutes_ago: 20 });
@@ -468,7 +468,7 @@ router.post("/dev/trigger/security-escalation", async (req: Request, res: Respon
     await logEvent(
       "⚠️ Security Escalation — Phase 1",
       `Dev trigger · ${childName} (ID ${childId}) · Alert phase: 1`,
-      "booking_cancelled",
+      "security_escalation",
     );
 
     res.status(201).json({ ok: true, child_id: childId, child_name: childName, phase: 1 });
@@ -495,7 +495,7 @@ router.post("/dev/trigger/push-notification", async (req: Request, res: Response
     for (const user of recipients) {
       await pool.query(
         `INSERT INTO notifications (organization_id, recipient_id, type, title, body)
-         VALUES ($1, $2, 'lesson_reminder', '🔔 Test Push Notification', $3)`,
+         VALUES ($1, $2, 'broadcast', '🔔 Test Push Notification', $3)`,
         [
           SANDBOX_ORG_ID,
           user.id,
@@ -530,7 +530,7 @@ router.post("/dev/trigger/payment-received", async (req: Request, res: Response)
 
     await pool.query(
       `INSERT INTO notifications (organization_id, recipient_id, type, title, body)
-       VALUES ($1, $2, 'payment_received', '💳 Payment Received', $3)`,
+       VALUES ($1, $2, 'reimbursement', '💳 Payment Received', $3)`,
       [SANDBOX_ORG_ID, parent.id, `Dev · ${parent.name} paid $${amount}.00 AUD for Sandbox Course`],
     );
 
