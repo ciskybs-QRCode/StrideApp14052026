@@ -1,0 +1,20 @@
+Perform a strict, comprehensive technical "double-check" and end-to-end diagnostic suite across the entire repository to ensure absolute architectural readiness. You are restricted from adding new features or changing operational logic. Your sole objective is verification.
+
+Execute and verify the following layers in sequence:
+
+1. Type Safety & Compilation Audit:
+Run a full clean compilation check on all workspaces (`pnpm run typecheck` or equivalent for libs, api-server, and stride-app). Confirm that the removal of legacy schemas (availabilities, conversations, invoices, messages, operators) has left zero dangling imports, unmapped types, or broken references in the production code.
+
+2. Database Constraints & Initialization Verification:
+Inspect `artifacts/api-server/src/lib/pg.ts` and the `ensureTables()` sequence. Verify that all 9 newly formalized tables (`rescue_cascades`, `cascade_contacts`, etc.) are being initialized in the exact correct order of Foreign Key dependencies so that a fresh database instantiation will never crash on a constraint mismatch.
+
+3. Sandbox Integrity & Relation Query Test:
+Programmatically review the `POST /api/dev/sandbox/seed` logic. Confirm via static analysis or mock execution that:
+- Every child record inserted contains a valid, non-null `parent_id` matching a seeded parent.
+- Every child has an active row mapped inside the `authorized_pickups` table.
+- Verify that the `notifications` table successfully processes the 3 new emergency types ('emergency_pulse', 'ble_timeout', 'security_escalation') when triggered.
+
+4. Lineage Re-Run:
+Execute `pnpm --filter @workspace/scripts run audit:db` internally. Analyze its output to guarantee that there are exactly 0 Orphan Tables and 0 Undeclared Tables remaining in the live codebase.
+
+Strict Constraint: Do not write alternative implementations. If you find any minor typo or type mismatch, fix it silently using defensive programming. Output a detailed "Technical Verification Checklist" showing [PASS] or [FAIL] for each of the 4 layers above, along with the exact terminal logs of the typecheck and audit execution.
