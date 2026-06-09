@@ -107,7 +107,7 @@ export function AccountSettingsCard() {
       icon: "mail-outline",
       label: "Change Email",
       sub: user?.email,
-      iconBg: "#DBEAFE",
+      iconBg: "#1E3A8A12",
       iconColor: colors.primary,
       textColor: colors.foreground,
       onPress: () => { setNewEmail(user?.email ?? ""); setShowEmail(true); },
@@ -116,8 +116,8 @@ export function AccountSettingsCard() {
       icon: "lock-closed-outline",
       label: "Change Password",
       sub: undefined,
-      iconBg: "#D1FAE5",
-      iconColor: "#10B981",
+      iconBg: "#1E3A8A12",
+      iconColor: colors.primary,
       textColor: colors.foreground,
       onPress: () => { setPwCurrent(""); setPwNew(""); setPwConfirm(""); setShowPassword(true); },
     },
@@ -125,17 +125,17 @@ export function AccountSettingsCard() {
       icon: "log-out-outline",
       label: "Log Out",
       sub: undefined,
-      iconBg: "#FEF3C7",
-      iconColor: "#F59E0B",
-      textColor: "#F59E0B",
+      iconBg: "#1E3A8A12",
+      iconColor: colors.primary,
+      textColor: colors.foreground,
       onPress: () => setShowLogout(true),
     },
     {
       icon: "trash-outline",
       label: "Delete Account",
       sub: undefined,
-      iconBg: "#FEE2E2",
-      iconColor: "#EF4444",
+      iconBg: "#1E3A8A12",
+      iconColor: colors.primary,
       textColor: "#EF4444",
       onPress: () => { setDeleteText(""); setShowDelete(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); },
     },
@@ -187,7 +187,7 @@ export function AccountSettingsCard() {
           <View style={[styles.sheet, { backgroundColor: colors.card }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.modalTitleRow}>
-              <View style={[styles.modalIconBox, { backgroundColor: "#DBEAFE" }]}>
+              <View style={[styles.modalIconBox, { backgroundColor: "#1E3A8A12" }]}>
                 <Ionicons name="mail" size={20} color={colors.primary} />
               </View>
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Change Email</Text>
@@ -229,8 +229,8 @@ export function AccountSettingsCard() {
           <View style={[styles.sheet, { backgroundColor: colors.card }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.modalTitleRow}>
-              <View style={[styles.modalIconBox, { backgroundColor: "#D1FAE5" }]}>
-                <Ionicons name="lock-closed" size={20} color="#10B981" />
+              <View style={[styles.modalIconBox, { backgroundColor: "#1E3A8A12" }]}>
+                <Ionicons name="lock-closed" size={20} color={colors.primary} />
               </View>
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Change Password</Text>
             </View>
@@ -290,8 +290,8 @@ export function AccountSettingsCard() {
       >
         <View style={styles.centreOverlay}>
           <View style={[styles.centreCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.centreIconBox, { backgroundColor: "#FEF3C7" }]}>
-              <Ionicons name="log-out-outline" size={28} color="#F59E0B" />
+            <View style={[styles.centreIconBox, { backgroundColor: "#1E3A8A12" }]}>
+              <Ionicons name="log-out-outline" size={28} color={colors.primary} />
             </View>
             <Text style={[styles.modalTitle, { color: colors.foreground, textAlign: "center" }]}>Log Out?</Text>
             <Text style={[styles.modalDesc, { color: colors.mutedForeground, textAlign: "center" }]}>
@@ -301,7 +301,7 @@ export function AccountSettingsCard() {
               <Pressable style={[styles.btn, { backgroundColor: colors.muted }]} onPress={() => setShowLogout(false)}>
                 <Text style={[styles.btnText, { color: colors.foreground }]}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.btn, { backgroundColor: "#F59E0B" }]} onPress={() => { setShowLogout(false); logout(); }}>
+              <Pressable style={[styles.btn, { backgroundColor: colors.primary }]} onPress={() => { setShowLogout(false); logout(); }}>
                 <Ionicons name="log-out-outline" size={15} color="#FFF" />
                 <Text style={[styles.btnText, { color: "#FFF" }]}>Log Out</Text>
               </Pressable>

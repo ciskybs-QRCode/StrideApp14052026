@@ -1,0 +1,17 @@
+We have a critical architectural routing failure and incomplete UI harmonization on the Parent/Member side. Look at `Screen Shot 2026-06-09 at 20.17.49.png`. While the bottom tab navigation layout is now fixed to 5 items, the internal screen elements still violate our branding rules, and Super Admin routing is completely broken. Execute the following strict fixes immediately:
+
+1. Absolute Super Admin Routing Overhaul (Critical Fix):
+The application is incorrectly routing Super Admin accounts directly into the Parent/Member operational side dashboard. 
+- Open and inspect the primary authentication router and fan-out component (specifically look at `artifacts/stride-app/app/(member)/dashboard.tsx` or the root routing switch inside `index.tsx` / `AuthContext`).
+- Locate the role matching switch. If the authenticated user's role is exactly 'super_admin', you MUST explicitly perform a clean navigation redirect to `/(super_admin)/dashboard`. 
+- Ensure that under NO circumstances does a 'super_admin' user bypass this block or trigger a fallback that routes them to the parent home layout (`/(parent)/home`). If the user role is 'super_admin', completely block the mounting of the member dashboard and send them to the global platform management space.
+
+2. Enforce Navy/Gold Branding on Parent Settings Screen:
+- Open `artifacts/stride-app/app/(tabs)/parent/settings.tsx` (or the equivalent settings component rendering the account options seen in `20.17.49.png`).
+- Eradicate the pastel/childish icon backgrounds: remove the light blue background from "Change Email", the light green from "Change Password", the light orange from "Log Out", and the light red from "Delete Account".
+- Replace all of them with standardized UI container tokens: use `#1E3A8A12` (transparent Navy Blue tint) for the icon backgrounds and `#1E3A8A` (Solid Navy Blue) or Gold for the icons themselves. No other colors are permitted.
+- Clean up the header structure: ensure there is only a single, crisp, professionally aligned "Account" title layout with defensive top padding so it does not collide with the phone's physical notch or island display boundaries.
+
+3. Complete Verification:
+- Ensure all screen modifications strictly compile with zero TypeScript errors. Run `tsc --noEmit` on the `stride-app` package to guarantee no component properties are broken.
+- Confirm with a terminal log that both tasks are successfully written to disk.

@@ -27,6 +27,10 @@ export default function MemberDashboard() {
     );
   }
 
+  if (user.role === "super_admin") {
+    return <Redirect href={"/(super_admin)/dashboard" as never} />;
+  }
+
   if (user.role === "admin") {
     return <Redirect href="/(admin)/stats" />;
   }
