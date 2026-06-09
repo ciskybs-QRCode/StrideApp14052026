@@ -183,7 +183,10 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="documents" options={{ title: "Settings",tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />
         <Tabs.Screen name="checkout"    options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />
-        <Tabs.Screen name="alerts"      options={{ href: null }} />
+        <Tabs.Screen name="alerts"          options={{ href: null }} />
+        <Tabs.Screen name="guardian-circle" options={{ href: null }} />
+        <Tabs.Screen name="org-search"      options={{ href: null }} />
+        <Tabs.Screen name="pickup-audit"    options={{ href: null }} />
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />

@@ -26,9 +26,9 @@ import { useAppData } from "@/context/AppDataContext";
 // ── Role badge helper ──────────────────────────────────────────────────────
 
 const ROLE_META: Record<string, { label: string; iconBg: string; iconColor: string; icon: string }> = {
-  admin:    { label: "Admin",      iconBg: "#EDE9FE", iconColor: "#7C3AED", icon: "shield-checkmark" },
-  operator: { label: "Operator", iconBg: "#DBEAFE", iconColor: "#1E3A8A", icon: "school" },
-  parent:   { label: "Member",     iconBg: "#D1FAE5", iconColor: "#047857", icon: "person" },
+  admin:    { label: "Admin",    iconBg: "#1E3A8A15", iconColor: "#1E3A8A", icon: "shield-checkmark" },
+  operator: { label: "Operator", iconBg: "#1E3A8A15", iconColor: "#1E3A8A", icon: "school" },
+  parent:   { label: "Member",   iconBg: "#FBBF2415", iconColor: "#1E3A8A", icon: "person" },
 };
 
 // ── Propose Discount/Scholarship Modal ─────────────────────────────────────
@@ -101,8 +101,8 @@ function ProposeDiscountModal({
 
           {/* Header */}
           <View style={ds.sheetHeader}>
-            <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="pricetag" size={22} color="#059669" />
+            <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: "#1E3A8A12", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="pricetag" size={22} color="#1E3A8A" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[ds.sheetTitle, { color: colors.primary }]}>Propose Discount / Scholarship</Text>
@@ -118,8 +118,8 @@ function ProposeDiscountModal({
           {submitted ? (
             /* Success state */
             <View style={{ alignItems: "center", paddingVertical: 32, gap: 12 }}>
-              <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="checkmark-circle" size={44} color="#059669" />
+              <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#FBBF2418", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="checkmark-circle" size={44} color="#1E3A8A" />
               </View>
               <Text style={{ fontSize: 18, fontWeight: "800", color: colors.primary, textAlign: "center" }}>
                 Proposal Sent to Admin
@@ -218,9 +218,9 @@ function ProposeDiscountModal({
               </View>
 
               {/* Disclaimer */}
-              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#EFF6FF", borderRadius: 12, padding: 12, marginBottom: 4 }}>
-                <Ionicons name="information-circle-outline" size={16} color="#1D4ED8" />
-                <Text style={{ flex: 1, fontSize: 12, color: "#1D4ED8", lineHeight: 17 }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#1E3A8A08", borderRadius: 12, padding: 12, marginBottom: 4 }}>
+                <Ionicons name="information-circle-outline" size={16} color="#1E3A8A" />
+                <Text style={{ flex: 1, fontSize: 12, color: "#1E3A8A", lineHeight: 17 }}>
                   This proposal will be reviewed and approved or declined by Admin. No changes are applied until Admin confirms.
                 </Text>
               </View>
@@ -364,8 +364,8 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/invoicing" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#FEF3C7" }]}>
-            <Ionicons name="briefcase-outline" size={26} color="#D97706" />
+          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
+            <Ionicons name="briefcase-outline" size={26} color="#1E3A8A" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>Payroll & Earnings</Text>
@@ -373,7 +373,7 @@ export default function OperatorSettingsScreen() {
               View monthly earnings and export payslips
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#D97706" />
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
         <Pressable
@@ -383,8 +383,8 @@ export default function OperatorSettingsScreen() {
             setShowProposalModal(true);
           }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#D1FAE5" }]}>
-            <Ionicons name="pricetag-outline" size={26} color="#059669" />
+          <View style={[styles.featureIconBox, { backgroundColor: "#FBBF2415" }]}>
+            <Ionicons name="pricetag-outline" size={26} color="#1E3A8A" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>Propose Discount / Scholarship</Text>
@@ -392,14 +392,14 @@ export default function OperatorSettingsScreen() {
               Suggest a fee reduction for a member — sent to Admin
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#059669" />
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
         <Pressable
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/support" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#EFF6FF" }]}>
+          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
             <Ionicons name="shield-checkmark-outline" size={26} color="#1E3A8A" />
           </View>
           <View style={{ flex: 1 }}>
@@ -415,7 +415,7 @@ export default function OperatorSettingsScreen() {
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Payment Details</Text>
         <View style={[styles.bankCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.bankHeader}>
-            <View style={[styles.bankIconBox, { backgroundColor: "#EEF2FF" }]}>
+            <View style={[styles.bankIconBox, { backgroundColor: "#1E3A8A12" }]}>
               <Ionicons name="card-outline" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>

@@ -1,0 +1,17 @@
+The initial 'Member Side' visualization and Super Admin login tests revealed significant regressions, unrequested features, and legacy placeholder styling. We need to perform an immediate technical cleanup to align the codebase. Apply the following strict refactors:
+
+1. Super Admin Post-Login Routing (Critical Fix):
+Analyze the Authentication Flow (`artifacts/stride-app/context/AuthContext` or the login screen logic). Ensure that after a successful login (email/password), the post-login routing explicitly checks the logged-in user's role. If `user.role === 'super_admin'`, they must land on the `/super-admin` dashboard. If `user.role === 'admin'` or `'operator'`, they land on their respective `/tabs/home` for the main operational org. If `user.role === 'parent'`, they land on `/tabs/parent`. Do not allow Super Admins to be redirected to the Parent dashboard.
+
+2. Eradicate Unrequested Member Tab Pages:
+Analyze `image_0.png`, `image_1.png`, `image_2.png`. In the Parent (Member) Bottom Tab Navigator (`artifacts/stride-app/app/(tabs)/parent`), remove the 'org', 'plc', and 'gua' tab buttons. These are unrequested features. Ensure those screen files are also deleted from the navigation group. The member only needs a clean, standard dashboard as previously defined.
+
+3. Eliminate Legacy Placeholder Styling Globally (The "Harlequin Icon" Problem):
+Analyze `image_3.png` (Settings screen). The mixed blue, green, orange, and red icon backgrounds are legacy placeholders ('Arlecchino' style). We must not use these colored icon components anymore. 
+Refactor the entire codebase (`artifacts/stride-app`): replace all instances of legacy, colored background icon components with clean, standardized icon components styled ONLY with the Navy Blue / Gold palette tokens (`theme_navy`, `theme_gold`). Hardcode no other hex colors. Ensure this dynamic branding applies to ALL icon components globally, across all user roles.
+
+4. Refactor Parent Emergency Pulse Modal Design:
+Analyze the frontend UI for the parent's Emergency Pulse acknowledgement screen ("Safe/Missing" input). Ensure this modal is not using placeholder styles. Refactor it to use the full dynamic branding: clean Navy Blue background, clear white/gold safe/missing toggle buttons, and dynamic text based on the organization's name from context.
+
+5. Validation:
+After completing these four strict cleanups, run a full clean compilation check on `stride-app` and `api-server` packages. Provide terminal output log confirming zero type mismatches.
