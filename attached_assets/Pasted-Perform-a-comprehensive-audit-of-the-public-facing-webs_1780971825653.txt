@@ -1,0 +1,20 @@
+Perform a comprehensive audit of the public-facing website and registration funnel (everything under the public folder/pages). I need a structured report in English detailing the capabilities and logic of the website layer, specifically:
+​Public Website Feature Map:
+​List every page and its specific purpose (e.g., Landing, Register, Activate, Terms, Privacy, Contact).
+​For the Registration Wizard, detail each of the 4 steps: describe the inputs required, the validation logic, and what happens at the 'Review & Launch' stage (specifically regarding Stripe Connect integration).
+​Lead Generation & Conversion Logic:
+​Explain the flow of the Contact form: describe the primary POST /api/contact logic and the fallback mechanism.
+​Detail the 'Activate' page logic: list the 4 UI states (loading, success, already, error) and the specific triggers for each.
+​Branding & Technical Infrastructure:
+​Briefly explain how the BrandingProvider influences the public site (e.g., currency auto-detection).
+​Detail the current deployment state of the Landing page: confirm that the landing page is correctly decoupled from the core application (App.tsx) and acts as an independent entry point.
+​User Trust Elements:
+​List the security-focused components implemented (e.g., GDPR badges, sticky ToC sidebars, mobile responsiveness).
+​Strict Instructions for the Audit:
+​Be exhaustive: document every interaction point an unregistered user has with the platform.
+​If any logic for a page is currently 'stubbed' or missing, clearly state it as 'Pending Implementation'.
+​Use a bulleted list format for maximum clarity
+​Payment & Custom Branding Audit:
+​Explain the technical mechanism used to render payment and workshop registration pages dynamically (loading school-specific logos, colors, and content based on org_id).
+​Confirm the implementation of the 'Bypass Commission' logic: describe exactly how the system handles payment routing when an organization uses their own Stripe keys, ensuring funds go directly to them without passing through Stride's commission fee logic.
+​Detail how the database stores these transactions to ensure the organization has a full record of payments without Stride acting as a financial intermediary.
