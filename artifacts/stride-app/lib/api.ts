@@ -957,6 +957,8 @@ export interface EmergencyPulse {
   status:         "active" | "resolved";
   triggered_at:   string;
   resolved_at:    string | null;
+  type?:           "emergency_pulse" | "ble_timeout" | "security_escalation";
+  dependent_name?: string;
 }
 
 export interface PulseStatus extends EmergencyPulse {

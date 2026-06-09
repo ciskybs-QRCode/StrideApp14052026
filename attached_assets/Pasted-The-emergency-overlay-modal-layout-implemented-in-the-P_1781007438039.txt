@@ -1,0 +1,33 @@
+The emergency overlay modal layout implemented in the Parent side contains severe architectural, text vocabulary, and design regressions (as seen in the latest screenshot). We need an immediate, aggressive refactor of this component (likely `EmergencyModal.tsx` or the main overlay handler inside `artifacts/stride-app`).
+
+Apply the following strict refactoring rules:
+
+1. Eradicate Cartoonish/Heavy Styling (UI/UX Slim-down):
+- Remove the heavy, thick borders around the buttons and icon containers.
+- Reduce the padding and oversized rounded corners to match a professional, sleek enterprise look. No bubble/childish elements.
+- The alert icon container must be a sharp, minimal layout, not an oversized yellow squircle.
+- Use a clean visual hierarchy: sharp borders, crisp contrasts, and balanced Navy Blue background with thin, elegant Gold accents for interactive elements.
+
+2. Purge Inaccurate Terminology ("Child" to "Dependent"):
+- Completely remove the words "child", "children", and "bambini" from the user interface.
+- Replace them with agnostic, professional vocabulary: use "Dependent" or "Dependent Member".
+- Example: "My Child is Safe" MUST become "Dependent is Safe". "Confirm your child's current safety status" MUST become "Confirm dependent's safety status".
+
+3. Implement Dynamic Copy based on Emergency Type Context:
+The modal must inspect the incoming notification or trigger payload type ('emergency_pulse', 'ble_timeout', 'security_escalation') and dynamically render completely different headers, subheadings, and context copy:
+- CASE 'ble_timeout' (15-Minute Late Code Red):
+  * Header text: "CHECK-IN TIMEOUT ALERT"
+  * Description: "[Dependent Name] has not checked into their scheduled session. The 15-minute grace period has expired. Please verify their whereabouts and status immediately."
+  * Primary Button: "Dependent is Safe / With Me"
+  * Secondary Button: "Escalate / Need Assistance"
+- CASE 'emergency_pulse' (Global School Broadcast):
+  * Header text: "BROADCAST EMERGENCY ALERT"
+  * Description: "Your organization [School Name] has issued a facility-wide emergency broadcast. Please acknowledge your dependent's current safety status immediately."
+- CASE 'security_escalation':
+  * Header text: "SECURITY ESCALATION NOTICE"
+  * Description: "A security alert has been registered for your linked dependent's group. Review active logs and confirm safety status."
+
+4. Verification Checklist:
+- Dynamically fallback to standard organization context fields if dependent metadata is loading.
+- Ensure the two action buttons trigger the corresponding local API transactional logs.
+- Run a clean `stride-app` typecheck to confirm zero compile errors.
