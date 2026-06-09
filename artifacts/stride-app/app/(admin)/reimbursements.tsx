@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -236,6 +237,13 @@ export default function AdminReimbursementsScreen() {
   const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
   const [loadError, setLoadError] = useState(false);
 
+  // Load receipt threshold from AsyncStorage (set in fee-settings)
+  useEffect(() => {
+    AsyncStorage.getItem("stride_reimbursement_threshold").then(raw => {
+      if (raw) { try { setReceiptThresholdCents(Number(raw)); } catch { /* ignore */ } }
+    }).catch(() => {});
+  }, []);
+
   const load = useCallback(async () => {
     setLoadError(false);
     try {
@@ -289,9 +297,31 @@ export default function AdminReimbursementsScreen() {
     Haptics.notificationAsync(
       status === "paid" ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
     );
+
+    // Find the request before updating state (for notification)
+    const req = requests.find(r => r.id === id);
+
     // Optimistic update
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
     setConfirmAction(null);
+
+    // Notify claimant when marked paid
+    if (status === "paid" && req) {
+      const amountStr = `$${(req.amountCents / 100).toFixed(2)}`;
+      Alert.alert(
+        "Payment Notification Sent",
+        `${req.claimantName} has been notified that their reimbursement of ${amountStr} has been approved and paid.`,
+        [{ text: "OK" }]
+      );
+      // Persist notification in local log for audit trail
+      try {
+        const raw = await AsyncStorage.getItem("stride_reimbursement_paid_log");
+        const log: { id: string; name: string; amount: number; paidAt: string }[] = raw ? JSON.parse(raw) : [];
+        log.unshift({ id: req.id, name: req.claimantName, amount: req.amountCents, paidAt: new Date().toISOString() });
+        await AsyncStorage.setItem("stride_reimbursement_paid_log", JSON.stringify(log.slice(0, 100)));
+      } catch { /* ignore */ }
+    }
+
     try {
       await api.updateReimbursement(id, { status });
     } catch { /* ignore — optimistic update already applied */ }

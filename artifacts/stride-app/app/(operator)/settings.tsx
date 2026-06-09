@@ -257,6 +257,11 @@ const ds = StyleSheet.create({
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
+const BANK_KEY = "stride_operator_bank_details";
+
+interface BankDetails { iban: string; swift: string; accountName: string; }
+const EMPTY_BANK: BankDetails = { iban: "", swift: "", accountName: "" };
+
 export default function OperatorSettingsScreen() {
   const { user, updateUser } = useAuth();
   const colors = useColors();
@@ -265,6 +270,31 @@ export default function OperatorSettingsScreen() {
 
   const meta = ROLE_META[user?.role ?? "operator"] ?? ROLE_META.operator;
   const [showProposalModal, setShowProposalModal] = useState(false);
+
+  // ── Bank Details ──────────────────────────────────────────────────────────
+  const [bank, setBank] = useState<BankDetails>(EMPTY_BANK);
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankSaved, setBankSaved] = useState(false);
+
+  React.useEffect(() => {
+    AsyncStorage.getItem(BANK_KEY).then(raw => {
+      if (raw) { try { setBank(JSON.parse(raw) as BankDetails); } catch { /* ignore */ } }
+    }).catch(() => {});
+  }, []);
+
+  const handleSaveBank = async () => {
+    setBankSaving(true);
+    try {
+      await AsyncStorage.setItem(BANK_KEY, JSON.stringify(bank));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setBankSaved(true);
+      setTimeout(() => setBankSaved(false), 2500);
+    } catch {
+      Alert.alert("Error", "Could not save bank details. Please try again.");
+    } finally {
+      setBankSaving(false);
+    }
+  };
 
   const handlePickPhoto = async () => {
     if (Platform.OS !== "web") {
@@ -381,6 +411,65 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color="#D4AF37" />
         </Pressable>
 
+        {/* ── Payment / Bank Details ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Payment Details</Text>
+        <View style={[styles.bankCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.bankHeader}>
+            <View style={[styles.bankIconBox, { backgroundColor: "#EEF2FF" }]}>
+              <Ionicons name="card-outline" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bankTitle, { color: colors.foreground }]}>Bank Account</Text>
+              <Text style={[styles.bankSub, { color: colors.mutedForeground }]}>
+                For payroll deposits and reimbursements
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[styles.bankLabel, { color: colors.mutedForeground }]}>Account Name</Text>
+          <TextInput
+            style={[styles.bankInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
+            placeholder="Full legal name or trading name"
+            placeholderTextColor={colors.mutedForeground}
+            value={bank.accountName}
+            onChangeText={v => setBank(p => ({ ...p, accountName: v }))}
+            autoCapitalize="words"
+          />
+
+          <Text style={[styles.bankLabel, { color: colors.mutedForeground }]}>IBAN</Text>
+          <TextInput
+            style={[styles.bankInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
+            placeholder="e.g. GB29 NWBK 6016 1331 9268 19"
+            placeholderTextColor={colors.mutedForeground}
+            value={bank.iban}
+            onChangeText={v => setBank(p => ({ ...p, iban: v.toUpperCase() }))}
+            autoCapitalize="characters"
+            autoCorrect={false}
+          />
+
+          <Text style={[styles.bankLabel, { color: colors.mutedForeground }]}>Swift / BIC</Text>
+          <TextInput
+            style={[styles.bankInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
+            placeholder="e.g. NWBKGB2L"
+            placeholderTextColor={colors.mutedForeground}
+            value={bank.swift}
+            onChangeText={v => setBank(p => ({ ...p, swift: v.toUpperCase() }))}
+            autoCapitalize="characters"
+            autoCorrect={false}
+          />
+
+          <Pressable
+            style={[styles.bankSaveBtn, { backgroundColor: bankSaved ? "#10B981" : colors.primary, opacity: bankSaving ? 0.7 : 1 }]}
+            onPress={handleSaveBank}
+            disabled={bankSaving}
+          >
+            <Ionicons name={bankSaved ? "checkmark-circle" : "save-outline"} size={16} color="#FBBF24" />
+            <Text style={styles.bankSaveBtnText}>
+              {bankSaving ? "SAVING…" : bankSaved ? "SAVED!" : "SAVE BANK DETAILS"}
+            </Text>
+          </Pressable>
+        </View>
+
         {/* ── Account ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
         <RoleSwitcherRow />
@@ -440,4 +529,14 @@ const styles = StyleSheet.create({
   featureTitle: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
   featureDesc: { fontSize: 12, lineHeight: 16 },
   version: { fontSize: 12, textAlign: "center", marginBottom: 20, marginTop: 4 },
+
+  bankCard: { borderRadius: 18, borderWidth: 1, padding: 18, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  bankHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  bankIconBox: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  bankTitle: { fontSize: 15, fontWeight: "700" },
+  bankSub: { fontSize: 12, marginTop: 1 },
+  bankLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, marginTop: 12 },
+  bankInput: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, borderWidth: 1 },
+  bankSaveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14, marginTop: 18 },
+  bankSaveBtnText: { color: "#FBBF24", fontWeight: "800", fontSize: 13, letterSpacing: 0.5 },
 });

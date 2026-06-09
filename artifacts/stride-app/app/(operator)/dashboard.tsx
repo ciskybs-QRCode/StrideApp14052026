@@ -35,8 +35,6 @@ import {
   useSubstitution,
 } from "@/context/SubstitutionContext";
 
-const LOGO = require("@/assets/images/stride-logo.png");
-
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type ScanResult = {
@@ -1048,7 +1046,7 @@ export default function OperatorDashboard() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi, {firstName}</Text>
             <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              {user?.schoolName || "Stride"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              {user?.schoolName ?? "My School"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </Text>
           </View>
           <View style={[styles.gpsBadge, { backgroundColor: isGPS ? "#D1FAE5" : "#FEE2E2" }]}>
@@ -2249,7 +2247,9 @@ export default function OperatorDashboard() {
             {logoSource ? (
               <Image source={{ uri: logoSource }} style={styles.qrFullLogo} contentFit="contain" />
             ) : (
-              <Image source={LOGO} style={styles.qrFullLogo} contentFit="contain" />
+              <View style={[styles.qrFullLogo, { alignItems: "center", justifyContent: "center", backgroundColor: colors.muted, borderRadius: 16 }]}>
+                <Ionicons name="school-outline" size={40} color={colors.primary} />
+              </View>
             )}
             <Text style={[styles.qrFullTitle, { color: colors.primary }]}>Operator Pass</Text>
             <View style={[styles.qrFullBox, { backgroundColor: "#F0F4FF" }]}>

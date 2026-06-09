@@ -1,0 +1,26 @@
+Apply a strict global UI/UX harmonization and branding synchronization across all screens in `artifacts/stride-app` (Admin, Operator, and Parent sides). You must adhere to a rigid functional, clean design philosophy ("Brutto ma Funzionante" - high utility, zero decorative overflow). 
+
+STRICT CODEBASE RULES (Zero Creative Freedom):
+1. No Screen Overflow: All visual elements, cards, and text MUST be strictly contained within the phone's physical display boundaries. Use ScrollViews defensively. Never push critical text or action buttons outside the viewable viewport.
+2. Dynamic Branding Enforcement: Every single screen across all three user roles (Admin, Operator, Parent) must dynamically read and apply the configuration set by the Admin in the application's branding/setup manager (e.g., using the Navy Blue / Gold palette tokens or dynamic theme context). Do not hardcode hex colors anywhere.
+3. Persistent Header Logo: Add or maintain a persistent app logo placeholder in the top-left corner of the header on EVERY single operational page across all roles, dynamically reading the asset URL or logo choice defined by the Admin setup.
+4. Clean Typography: Adjust font sizes down globally if any text blocks are tight or wrapping poorly. Ensure clear visual hierarchy using scannable typography tokens.
+
+SPECIFIC SCREEN MODIFICATIONS:
+- Operator / Teacher Side:
+  * Remove the legacy "Stride" branding logo from the top-left of the Dashboard page.
+  * Rename the "Dashboard" navigation tab and page title to "Home", and update the bottom tab bar icon to a clean house/home icon.
+  * The "Report Absence" button must be strictly scoped: display it ONLY for the logged-in operator's own profile ("Mio") and their linked children. Remove the global absence button for general members from this specific context.
+  * In Settings > Payroll & Earnings: Remove the phrase "Admin & Payroll" from the header text; leave ONLY "Payroll". Reduce font sizes slightly to guarantee the layout fits cleanly without clipping or overlapping on smaller screens.
+  * Bank Details Section: Implement a dedicated, clean input form within the Operator Settings for operators/volunteers to securely input and save their bank details (IBAN, Swift, Account Name) for weekly/bi-weekly/monthly payouts.
+
+- Admin Side:
+  * Payout Schedule Rules: In Admin Settings, ensure there is a clear configuration interface allowing the Admin to toggle operator payout frequencies (Weekly, Bi-weekly, Monthly).
+  * Bank Payout Reminders: Ensure the backend/frontend logic wires up a notification trigger to send a clear reminder alert to the Admin exactly 1 day before, and on the morning of, the scheduled payout date, based on the automated PDF breakdown invoices generated for the operators.
+  * Reimbursment Portal: Create a unified Reimbursement Request section accessible by Admins, Operators, and Parents. Users must be able to upload a file (JPG, PDF, or a Drive/Dropbox link) as a receipt. In the Admin settings, provide an input field where the Admin sets a threshold amount above which a receipt upload is mandatory.
+  * Payment/Reimbursement Notifications: Trigger an automated real-time app notification to the operator as soon as their invoice or reimbursement request is marked as "Paid" by the Admin.
+
+Refactor execution checklist:
+- Modify UI files using existing design tokens.
+- Do not install new external navigation or styling libraries.
+- Run a full clean typecheck on `stride-app` to ensure zero broken component properties.
