@@ -302,8 +302,8 @@ export default function DocumentsScreen() {
             style={styles.docTileHeader}
             onPress={() => setExpandedSection(expandedSection === "new" ? null : "new")}
           >
-            <View style={[styles.docTileIconBox, { backgroundColor: "#EFF6FF" }]}>
-              <Ionicons name="document-text-outline" size={22} color="#1E3A8A" />
+            <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="document-text-outline" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.docTileTitle, { color: colors.foreground }]}>New Documents</Text>
@@ -434,8 +434,8 @@ export default function DocumentsScreen() {
             style={styles.docTileHeader}
             onPress={() => setExpandedSection(expandedSection === "archive" ? null : "archive")}
           >
-            <View style={[styles.docTileIconBox, { backgroundColor: "#D1FAE5" }]}>
-              <Ionicons name="folder-open-outline" size={22} color="#059669" />
+            <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="folder-open-outline" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Document Archive</Text>
@@ -472,8 +472,8 @@ export default function DocumentsScreen() {
             style={styles.docTileHeader}
             onPress={() => setExpandedSection(expandedSection === "consent" ? null : "consent")}
           >
-            <View style={[styles.docTileIconBox, { backgroundColor: "#FEF3C7" }]}>
-              <Ionicons name="camera-outline" size={22} color="#D97706" />
+            <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="camera-outline" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Photo/Video Consent</Text>

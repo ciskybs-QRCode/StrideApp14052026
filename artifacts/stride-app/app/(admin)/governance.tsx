@@ -15,6 +15,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useFeatures } from "@/context/FeaturesContext";
 import { useColors } from "@/hooks/useColors";
 import { request } from "@/lib/api";
+import { ScreenHeader } from "@/components/ScreenHeader";
+import { useRouter } from "expo-router";
 
 interface GovernanceEvent {
   id: number;
@@ -27,6 +29,7 @@ interface GovernanceEvent {
 export default function GovernanceScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const router = useRouter();
   const { user } = useAuth();
   const { marketplaceEnabled, refresh } = useFeatures();
   const [toggling, setToggling] = useState(false);
@@ -74,144 +77,147 @@ export default function GovernanceScreen() {
   const isOn = marketplaceEnabled;
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{
-        paddingHorizontal: 20,
-        paddingBottom: insets.bottom + 48,
-        paddingTop: 24,
-      }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerIconWrap}>
-          <Ionicons name="shield-checkmark" size={30} color="#D4AF37" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>System Governance</Text>
-          <Text style={[styles.headerSub, { color: colors.secondary }]}>
-            Control platform-wide feature availability
-          </Text>
-        </View>
-      </View>
-
-      {/* Platform Modules */}
-      <Text style={[styles.sectionLabel, { color: colors.primary }]}>Platform Modules</Text>
-
-      {/* Marketplace Toggle Card */}
-      <View
-        style={[
-          styles.moduleCard,
-          {
-            backgroundColor: colors.card,
-            borderColor: isOn ? "#D4AF37" : colors.border,
-            borderWidth: isOn ? 1.5 : 1,
-          },
-        ]}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScreenHeader title="System Governance" onBack={() => router.push("/(admin)/operations-hub")} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: insets.bottom + 48,
+          paddingTop: 16,
+        }}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.moduleLeft}>
-          <View
-            style={[
-              styles.moduleIcon,
-              { backgroundColor: isOn ? "rgba(212,175,55,0.14)" : "rgba(156,163,175,0.10)" },
-            ]}
-          >
-            <Ionicons name="storefront" size={26} color={isOn ? "#D4AF37" : "#9CA3AF"} />
+        {/* Header Summary */}
+        <View style={styles.header}>
+          <View style={[styles.headerIconWrap, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+            <Ionicons name="shield-checkmark" size={30} color="#1E3A8A" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.moduleName, { color: colors.text }]}>Marketplace Module</Text>
-            <Text style={[styles.moduleDesc, { color: colors.secondary }]}>
-              Products, insurance partners, Stripe Connect commission
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Platform Access</Text>
+            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
+              Control platform-wide feature availability
             </Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: isOn ? "rgba(34,197,94,0.10)" : "rgba(239,68,68,0.08)" },
-              ]}
-            >
-              <View style={[styles.statusDot, { backgroundColor: isOn ? "#22C55E" : "#EF4444" }]} />
-              <Text style={[styles.statusText, { color: isOn ? "#16A34A" : "#DC2626" }]}>
-                {isOn ? "Active — visible to all users" : "Hidden from all admins & parents"}
-              </Text>
-            </View>
           </View>
         </View>
-        <View style={styles.switchWrap}>
-          {toggling ? (
-            <ActivityIndicator size="small" color="#D4AF37" />
-          ) : (
-            <Switch
-              value={isOn}
-              onValueChange={handleMarketplaceToggle}
-              trackColor={{ false: "#D1D5DB", true: "#D4AF37" }}
-              thumbColor={isOn ? "#1E3A8A" : "#F9FAFB"}
-              ios_backgroundColor="#D1D5DB"
-            />
-          )}
-        </View>
-      </View>
 
-      {/* Info box */}
-      <View
-        style={[
-          styles.infoBox,
-          { backgroundColor: "rgba(30,58,138,0.05)", borderColor: "rgba(30,58,138,0.14)" },
-        ]}
-      >
-        <Ionicons name="information-circle-outline" size={16} color={colors.primary} style={{ marginTop: 1 }} />
-        <Text style={[styles.infoText, { color: colors.secondary }]}>
-          <Text style={{ fontWeight: "700", color: colors.primary }}>ON</Text>
-          {": Parents see the marketplace banner. Admins see the marketplace card. API routes open.\n"}
-          <Text style={{ fontWeight: "700", color: "#DC2626" }}>OFF</Text>
-          {": Module invisible to all users. All API routes return 404. Database and product data are preserved."}
-        </Text>
-      </View>
+        {/* Platform Modules */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>Platform Modules</Text>
 
-      {/* Activity Log */}
-      <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 32 }]}>
-        Activity Log
-      </Text>
-
-      {eventsLoading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
-      ) : events.length === 0 ? (
-        <Text style={[styles.emptyText, { color: colors.secondary }]}>
-          No governance actions recorded yet.
-        </Text>
-      ) : (
-        events.map((e) => {
-          const isEnableEvent = e.title.toLowerCase().includes("on");
-          return (
+        {/* Marketplace Toggle Card */}
+        <View
+          style={[
+            styles.moduleCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderWidth: 1,
+            },
+          ]}
+        >
+          <View style={styles.moduleLeft}>
             <View
-              key={e.id}
-              style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                styles.moduleIcon,
+                { backgroundColor: "rgba(30,58,138,0.1)" },
+              ]}
             >
+              <Ionicons name="storefront" size={26} color="#1E3A8A" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.moduleName, { color: colors.text }]}>Marketplace Module</Text>
+              <Text style={[styles.moduleDesc, { color: colors.mutedForeground }]}>
+                Products, insurance partners, Stripe Connect commission
+              </Text>
               <View
                 style={[
-                  styles.logDot,
-                  { backgroundColor: isEnableEvent ? "#22C55E" : "#EF4444" },
+                  styles.statusBadge,
+                  { backgroundColor: isOn ? "rgba(34,197,94,0.10)" : "rgba(239,68,68,0.08)" },
                 ]}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.logTitle, { color: colors.text }]}>{e.title}</Text>
-                {!!e.description && (
-                  <Text style={[styles.logDesc, { color: colors.secondary }]}>
-                    {e.description}
-                  </Text>
-                )}
-                <Text style={[styles.logTime, { color: colors.secondary }]}>
-                  {new Date(e.created_at).toLocaleString("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
+              >
+                <View style={[styles.statusDot, { backgroundColor: isOn ? "#22C55E" : "#EF4444" }]} />
+                <Text style={[styles.statusText, { color: isOn ? "#16A34A" : "#DC2626" }]}>
+                  {isOn ? "Active — visible to all users" : "Hidden from all admins & parents"}
                 </Text>
               </View>
             </View>
-          );
-        })
-      )}
-    </ScrollView>
+          </View>
+          <View style={styles.switchWrap}>
+            {toggling ? (
+              <ActivityIndicator size="small" color="#1E3A8A" />
+            ) : (
+              <Switch
+                value={isOn}
+                onValueChange={handleMarketplaceToggle}
+                trackColor={{ false: "#D1D5DB", true: "#1E3A8A" }}
+                thumbColor={isOn ? "#FBBF24" : "#F9FAFB"}
+                ios_backgroundColor="#D1D5DB"
+              />
+            )}
+          </View>
+        </View>
+
+        {/* Info box */}
+        <View
+          style={[
+            styles.infoBox,
+            { backgroundColor: "rgba(30,58,138,0.05)", borderColor: "rgba(30,58,138,0.1)" },
+          ]}
+        >
+          <Ionicons name="information-circle-outline" size={16} color={colors.primary} style={{ marginTop: 1 }} />
+          <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+            <Text style={{ fontWeight: "700", color: colors.primary }}>ON</Text>
+            {": Parents see the marketplace banner. Admins see the marketplace card. API routes open.\n"}
+            <Text style={{ fontWeight: "700", color: "#DC2626" }}>OFF</Text>
+            {": Module invisible to all users. All API routes return 404. Database and product data are preserved."}
+          </Text>
+        </View>
+
+        {/* Activity Log */}
+        <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 32 }]}>
+          Activity Log
+        </Text>
+
+        {eventsLoading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+        ) : events.length === 0 ? (
+          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+            No governance actions recorded yet.
+          </Text>
+        ) : (
+          events.map((e) => {
+            const isEnableEvent = e.title.toLowerCase().includes("on");
+            return (
+              <View
+                key={e.id}
+                style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View
+                  style={[
+                    styles.logDot,
+                    { backgroundColor: isEnableEvent ? "#22C55E" : "#EF4444" },
+                  ]}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.logTitle, { color: colors.text }]}>{e.title}</Text>
+                  {!!e.description && (
+                    <Text style={[styles.logDesc, { color: colors.mutedForeground }]}>
+                      {e.description}
+                    </Text>
+                  )}
+                  <Text style={[styles.logTime, { color: colors.mutedForeground }]}>
+                    {new Date(e.created_at).toLocaleString("en-US", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </Text>
+                </View>
+              </View>
+            );
+          })
+        )}
+      </ScrollView>
+    </View>
   );
 }
 

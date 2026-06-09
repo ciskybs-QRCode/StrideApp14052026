@@ -7,6 +7,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
+import { useRouter } from "expo-router";
 import {
   api,
   type ApiDiscipline, type ApiOperatorProfile, type ApiAvailabilitySlot, type ApiUser,
@@ -29,6 +31,7 @@ type Tab = "operators" | "disciplines" | "availability" | "scheduler";
 export default function AdminLessonsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [tab, setTab]           = useState<Tab>("operators");
   const [refreshing, setRefreshing] = useState(false);
@@ -290,11 +293,12 @@ export default function AdminLessonsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Activity Management" onBack={() => router.push("/(admin)/operations-hub")} />
 
       {/* ── Content ── */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: 20, paddingBottom: insets.bottom + 120 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
@@ -304,7 +308,7 @@ export default function AdminLessonsScreen() {
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Activity</Text>
             <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>Operators, disciplines & availability</Text>
           </View>
-          <View style={[styles.headerBadge, { backgroundColor: `${colors.primary}14` }]}>
+          <View style={[styles.headerBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
             <Ionicons name="people-outline" size={20} color={colors.primary} />
           </View>
         </View>
@@ -361,9 +365,9 @@ export default function AdminLessonsScreen() {
             {profiles.map(p => (
               <View key={p.id} style={[styles.card, { backgroundColor: colors.card }]}>
                 <View style={[styles.profileAvatar, {
-                  backgroundColor: p.profile_type === "paid" ? `${colors.secondary}80` : colors.muted,
+                  backgroundColor: "rgba(30,58,138,0.1)",
                 }]}>
-                  <Ionicons name="person" size={22} color={p.profile_type === "paid" ? colors.primary : colors.mutedForeground} />
+                  <Ionicons name="person" size={22} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.cardTitle, { color: colors.foreground }]}>{p.user?.name ?? `User #${p.user_id}`}</Text>
@@ -1151,8 +1155,8 @@ export default function AdminLessonsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <View style={[styles.modalHeaderStrip, { backgroundColor: colors.primary }]}>
-              <View style={[styles.modalHeaderIcon, { backgroundColor: colors.secondary }]}>
-                <Ionicons name="barbell-outline" size={20} color={colors.primary} />
+              <View style={[styles.modalHeaderIcon, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+                <Ionicons name="barbell-outline" size={20} color="#FFF" />
               </View>
               <View>
                 <Text style={styles.modalHeaderTitle}>{editingDisc ? "Edit Discipline" : "New Discipline"}</Text>
@@ -1213,8 +1217,8 @@ export default function AdminLessonsScreen() {
 
             {/* Header strip */}
             <View style={[styles.modalHeaderStrip, { backgroundColor: colors.primary }]}>
-              <View style={[styles.modalHeaderIcon, { backgroundColor: colors.secondary }]}>
-                <Ionicons name="checkmark-done-outline" size={20} color={colors.primary} />
+              <View style={[styles.modalHeaderIcon, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+                <Ionicons name="checkmark-done-outline" size={20} color="#FFF" />
               </View>
               <View>
                 <Text style={styles.modalHeaderTitle}>Review Availability</Text>

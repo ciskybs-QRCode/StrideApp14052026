@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 
+import { ScreenHeader } from "@/components/ScreenHeader";
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type CheckInMethod = string | null;
@@ -317,21 +319,7 @@ export default function SessionsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* ── Header ── */}
-      <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="people-circle" size={22} color="#1E3A8A" />
-          </View>
-          <View>
-            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Roll Call</Text>
-            <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-              {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
-            </Text>
-          </View>
-        </View>
-      </View>
-
+      <ScreenHeader title="Roll Call" subtitle={new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })} />
       {sessions.length === 0 ? (
         <View style={[styles.centred, { flex: 1 }]}>
           <Ionicons name="calendar-outline" size={48} color={colors.mutedForeground} />

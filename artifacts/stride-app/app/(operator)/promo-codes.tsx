@@ -19,6 +19,8 @@ import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { useRealtime } from "@/context/RealtimeContext";
 
+import { ScreenHeader } from "@/components/ScreenHeader";
+
 type DiscountType = "percent" | "lessons" | "gift";
 
 interface OperatorPromo {
@@ -154,23 +156,20 @@ export default function OperatorPromoCodesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.navigate("/(operator)/settings" as never)} hitSlop={10}>
-          <Ionicons name="arrow-back" size={22} color="#FFF" />
-        </Pressable>
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={styles.headerTitle}>Promo & Discounts</Text>
-          <Text style={styles.headerSub}>{promos.length} code{promos.length !== 1 ? "s" : ""} created</Text>
-        </View>
-        <Pressable
-          style={[styles.createBtn, { backgroundColor: colors.secondary }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCreate(true); }}
-        >
-          <Ionicons name="add" size={18} color={colors.primary} />
-          <Text style={[styles.createBtnText, { color: colors.primary }]}>New Code</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="Promo & Discounts"
+        subtitle={`${promos.length} code${promos.length !== 1 ? "s" : ""} created`}
+        onBack={() => router.navigate("/(operator)/settings")}
+        right={
+          <Pressable
+            style={[styles.createBtn, { backgroundColor: colors.secondary }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCreate(true); }}
+          >
+            <Ionicons name="add" size={18} color={colors.primary} />
+            <Text style={[styles.createBtnText, { color: colors.primary }]}>New Code</Text>
+          </Pressable>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}

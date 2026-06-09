@@ -182,16 +182,16 @@ export default function OperatorStudents() {
             <Text style={styles.statNumber}>{students.length}</Text>
             <Text style={styles.statLabel}>Total</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: "#10B981" }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
             <Text style={styles.statNumber}>{students.filter(s => s.checkedIn).length}</Text>
             <Text style={styles.statLabel}>Present</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: "#F59E0B" }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
             <Text style={styles.statNumber}>{students.filter(s => !s.checkedIn).length}</Text>
             <Text style={styles.statLabel}>Absent</Text>
           </View>
           {pendingCount > 0 && (
-            <View style={[styles.statCard, { backgroundColor: "#EF4444" }]}>
+            <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
               <Text style={styles.statNumber}>{pendingCount}</Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
@@ -215,7 +215,7 @@ export default function OperatorStudents() {
           {FILTERS.map(f => (
             <Pressable
               key={f.key}
-              style={[styles.filterBtn, filter === f.key && { backgroundColor: f.key === "approvals" && pendingCount > 0 ? "#EF4444" : colors.primary }]}
+              style={[styles.filterBtn, filter === f.key && { backgroundColor: colors.primary }]}
               onPress={() => setFilter(f.key)}
             >
               <Text style={[styles.filterText, filter === f.key && { color: "#FFF" }]}>{f.label}</Text>
@@ -264,17 +264,23 @@ export default function OperatorStudents() {
 
                     <Text style={[styles.approvalCourse, { color: colors.primary }]}>{req.course_name}</Text>
                     <View style={styles.approvalMeta}>
-                      <Ionicons name="person-outline" size={13} color={colors.mutedForeground} />
+                      <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="person-outline" size={13} color={colors.primary} />
+                      </View>
                       <Text style={[styles.approvalMetaText, { color: colors.mutedForeground }]}>{req.participant_name}</Text>
                       {req.participant_age !== undefined && (
                         <>
-                          <Ionicons name="calendar-outline" size={13} color={colors.mutedForeground} />
+                          <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+                            <Ionicons name="calendar-outline" size={13} color={colors.primary} />
+                          </View>
                           <Text style={[styles.approvalMetaText, { color: colors.mutedForeground }]}>Age {req.participant_age}</Text>
                         </>
                       )}
                       {req.participant_skill_level && (
                         <>
-                          <Ionicons name="star-outline" size={13} color={colors.mutedForeground} />
+                          <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+                            <Ionicons name="star-outline" size={13} color={colors.primary} />
+                          </View>
                           <Text style={[styles.approvalMetaText, { color: colors.mutedForeground }]}>{req.participant_skill_level}</Text>
                         </>
                       )}
@@ -344,11 +350,15 @@ export default function OperatorStudents() {
                 <Text style={[styles.studentName, { color: colors.primary }]}>{s.name}</Text>
                 <Text style={[styles.studentCourse, { color: colors.mutedForeground }]}>{s.courses.join(", ")}</Text>
                 <View style={styles.studentMeta}>
-                  <Ionicons name="star" size={12} color="#FBBF24" />
+                  <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="star" size={12} color="#FBBF24" />
+                  </View>
                   <Text style={[styles.studentStars, { color: colors.mutedForeground }]}>{s.stars}</Text>
                   {s.allergies !== "None" && s.allergies !== "Nessuna" && (
                     <>
-                      <Ionicons name="medkit" size={12} color="#EF4444" />
+                      <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="medkit" size={12} color="#EF4444" />
+                      </View>
                       <Text style={{ fontSize: 11, color: "#EF4444" }}>Allergies</Text>
                     </>
                   )}

@@ -291,7 +291,7 @@ export default function OperatorSettingsScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 },
+          { paddingTop: 20, paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

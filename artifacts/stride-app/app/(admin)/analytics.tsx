@@ -149,8 +149,8 @@ export default function AdminAnalytics() {
         ══════════════════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionIconBox, { backgroundColor: "#DBEAFE" }]}>
-              <Ionicons name="trending-up-outline" size={18} color="#3B82F6" />
+            <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="trending-up-outline" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Trends</Text>
           </View>
@@ -210,8 +210,8 @@ export default function AdminAnalytics() {
         ══════════════════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionIconBox, { backgroundColor: "#D1FAE5" }]}>
-              <Ionicons name="cash-outline" size={18} color="#10B981" />
+            <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="cash-outline" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Payment Status</Text>
           </View>
@@ -258,8 +258,8 @@ export default function AdminAnalytics() {
         ══════════════════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionIconBox, { backgroundColor: "#EDE9FE" }]}>
-              <Ionicons name="school-outline" size={18} color="#7C3AED" />
+            <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="school-outline" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Course Occupancy</Text>
           </View>
@@ -295,8 +295,8 @@ export default function AdminAnalytics() {
         ══════════════════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionIconBox, { backgroundColor: "#FEF3C7" }]}>
-              <Ionicons name="people-outline" size={18} color="#F59E0B" />
+            <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="people-outline" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Age Distribution</Text>
           </View>
@@ -320,8 +320,8 @@ export default function AdminAnalytics() {
         ══════════════════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionIconBox, { backgroundColor: "#FCE7F3" }]}>
-              <Ionicons name="pulse-outline" size={18} color="#EC4899" />
+            <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="pulse-outline" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Recent Activity</Text>
           </View>
@@ -349,8 +349,8 @@ export default function AdminAnalytics() {
         ══════════════════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionIconBox, { backgroundColor: "#D1FAE5" }]}>
-              <Ionicons name="download-outline" size={18} color="#059669" />
+            <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="download-outline" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Data Export</Text>
           </View>
@@ -358,18 +358,18 @@ export default function AdminAnalytics() {
 
           <View style={styles.exportGrid}>
             {[
-              { label: "Attendance",    icon: "people-outline"    as const, color: "#3B82F6", desc: "Daily attendance records" },
-              { label: "Income",        icon: "cash-outline"      as const, color: "#10B981", desc: "Revenue & payments" },
-              { label: "Registrations", icon: "school-outline"    as const, color: "#7C3AED", desc: "Student enrollments" },
-              { label: "Annual Report", icon: "bar-chart-outline" as const, color: "#F59E0B", desc: "Full year summary" },
+              { label: "Attendance",    icon: "people-outline"    as const, color: colors.primary, desc: "Daily attendance records" },
+              { label: "Income",        icon: "cash-outline"      as const, color: colors.primary, desc: "Revenue & payments" },
+              { label: "Registrations", icon: "school-outline"    as const, color: colors.primary, desc: "Student enrollments" },
+              { label: "Annual Report", icon: "bar-chart-outline" as const, color: colors.primary, desc: "Full year summary" },
             ].map(item => (
               <Pressable
                 key={item.label}
                 style={({ pressed }) => [styles.exportBtn, { backgroundColor: colors.card, opacity: pressed ? 0.85 : 1 }]}
                 onPress={() => handleExport(item.label)}
               >
-                <View style={[styles.exportIconWrap, { backgroundColor: `${item.color}18` }]}>
-                  <Ionicons name={item.icon} size={26} color={item.color} />
+                <View style={[styles.exportIconWrap, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                  <Ionicons name={item.icon} size={26} color={colors.primary} />
                 </View>
                 <Text style={[styles.exportLabel, { color: colors.primary }]}>{item.label}</Text>
                 <Text style={[styles.exportDesc, { color: colors.mutedForeground }]}>{item.desc}</Text>

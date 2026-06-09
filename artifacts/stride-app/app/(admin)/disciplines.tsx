@@ -18,16 +18,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiDiscipline } from "@/lib/api";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 
 // Icon palette — cycles through fixed colours for visual variety
 const ICON_PALETTE = [
-  { bg: "#EDE9FE", fg: "#7C3AED" },
-  { bg: "#FEF3C7", fg: "#B45309" },
-  { bg: "#D1FAE5", fg: "#059669" },
-  { bg: "#DBEAFE", fg: "#1E3A8A" },
-  { bg: "#FCE7F3", fg: "#BE185D" },
-  { bg: "#FEE2E2", fg: "#DC2626" },
+  { bg: "rgba(30,58,138,0.1)", fg: "#1E3A8A" },
 ];
 
 function getColor(index: number) {
@@ -171,35 +167,23 @@ export default function DisciplinesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Global Disciplines" onBack={() => router.push("/(admin)/operations-hub")} />
 
-      {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Global Disciplines</Text>
-            <Text style={styles.headerSub}>
-              {activeCount} active · {inactiveCount} inactive
-            </Text>
-          </View>
-          <View style={[styles.headerBadge, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="musical-notes" size={20} color={colors.primary} />
-          </View>
-        </View>
-
-        {/* Add button */}
-        <Pressable style={styles.addBtn} onPress={openNew}>
-          <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
-          <Text style={[styles.addBtnText, { color: colors.primary }]}>Add Discipline</Text>
-        </Pressable>
-      </View>
-
-      {/* ── List ── */}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
         onStartShouldSetResponder={() => true}
       >
+        <View style={styles.statsRow}>
+          <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
+            {activeCount} active · {inactiveCount} inactive
+          </Text>
+          <Pressable style={[styles.addBtnSmall, { backgroundColor: colors.primary }]} onPress={openNew}>
+            <Ionicons name="add" size={16} color="#FFF" />
+            <Text style={styles.addBtnSmallText}>Add</Text>
+          </Pressable>
+        </View>
 
         {disciplines.length === 0 && (
           <View style={styles.emptyState}>
@@ -268,8 +252,8 @@ export default function DisciplinesScreen() {
 
             {/* Modal header */}
             <View style={[styles.modalHeader, { backgroundColor: colors.primary }]}>
-              <View style={[styles.modalHeaderIcon, { backgroundColor: colors.secondary }]}>
-                <Ionicons name={editTarget ? "create-outline" : "add-circle-outline"} size={20} color={colors.primary} />
+              <View style={[styles.modalHeaderIcon, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+                <Ionicons name={editTarget ? "create-outline" : "add-circle-outline"} size={20} color="#FFF" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle}>{editTarget ? "Edit Discipline" : "New Discipline"}</Text>
@@ -430,6 +414,9 @@ function DisciplineCard({
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  statsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  addBtnSmall: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  addBtnSmallText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
   container:      { flex: 1 },
   loader:         { flex: 1, alignItems: "center", justifyContent: "center" },
   header:         { paddingHorizontal: 20, paddingBottom: 16 },

@@ -23,6 +23,8 @@ import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
+import { ScreenHeader } from "@/components/ScreenHeader";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type MaterialType = "video" | "audio" | "image" | "document";
@@ -360,18 +362,14 @@ export default function OperatorCoursesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="My Courses" hideBack />
       <ScrollView
         contentContainerStyle={[styles.scroll, {
-          paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
+          paddingTop: 16,
           paddingBottom: insets.bottom + 100,
         }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>My Courses</Text>
-        <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-          Manage teaching materials for your assigned classes
-        </Text>
-
         {/* Authorisation note */}
         <View style={[styles.accessNote, { backgroundColor: "#DBEAFE", borderColor: "#BFDBFE" }]}>
           <Ionicons name="shield-checkmark-outline" size={16} color="#1D4ED8" />

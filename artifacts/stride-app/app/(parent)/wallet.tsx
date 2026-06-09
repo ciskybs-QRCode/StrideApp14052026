@@ -175,14 +175,14 @@ export default function WalletScreen() {
         <View style={[styles.paymentMethodCard, { backgroundColor: colors.primary }]}>
           <View style={styles.pmTop}>
             <View style={styles.pmIconCircle}>
-              <Ionicons name="shield-checkmark" size={22} color="#FBBF24" />
+              <Ionicons name="shield-checkmark" size={22} color={colors.secondary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.pmTitle}>Secure Web Checkout</Text>
               <Text style={styles.pmSub}>Powered by Stripe</Text>
             </View>
-            <View style={[styles.pmBadge, { backgroundColor: "rgba(251,191,36,0.2)", borderColor: "#FBBF24" }]}>
-              <Text style={styles.pmBadgeText}>PCI DSS</Text>
+            <View style={[styles.pmBadge, { backgroundColor: "rgba(212,175,55,0.2)", borderColor: colors.secondary }]}>
+              <Text style={[styles.pmBadgeText, { color: colors.secondary }]}>PCI DSS</Text>
             </View>
           </View>
           <Text style={styles.pmDesc}>
@@ -203,11 +203,11 @@ export default function WalletScreen() {
           {bankDetails ? (
             <>
               <View style={styles.bankCardTop}>
-                <View style={[styles.bankIcon, { backgroundColor: bankDetails.format === "au" ? "#EFF6FF" : "#F0FDF4" }]}>
+                <View style={[styles.bankIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
                   <Ionicons
                     name={bankDetails.format === "au" ? "business-outline" : "globe-outline"}
                     size={20}
-                    color={bankDetails.format === "au" ? "#1E3A8A" : "#16A34A"}
+                    color={colors.primary}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -236,7 +236,7 @@ export default function WalletScreen() {
             </>
           ) : (
             <Pressable style={styles.bankAddRow} onPress={openBankModal}>
-              <View style={[styles.bankIcon, { backgroundColor: colors.muted }]}>
+              <View style={[styles.bankIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
                 <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>

@@ -17,6 +17,8 @@ import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 import type { ApiStudent } from "@/lib/api";
 
+import { ScreenHeader } from "@/components/ScreenHeader";
+
 export default function StudentDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { students, courses, addStars, updateStudentPresence } = useAppData();
@@ -81,10 +83,11 @@ export default function StudentDetail() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title={student.name} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: insets.bottom + 40 },
+          { paddingTop: 16, paddingBottom: insets.bottom + 40 },
         ]}
         showsVerticalScrollIndicator={false}
       >

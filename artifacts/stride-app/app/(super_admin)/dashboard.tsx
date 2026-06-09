@@ -1241,47 +1241,47 @@ export default function SuperAdminDashboard() {
   const displayCurrency = financial?.orgs[0]?.currency ?? "EUR";
 
   return (
-    <View style={[d.container, { backgroundColor: "#1E3A8A" }]}>
-      {/* ── HEADER ── */}
-      <View style={[d.header, { paddingTop: insets.top + 8 }]}>
-        <View style={d.headerRow}>
-          <View style={d.headerLeft}>
-            <View style={d.goldBadge}>
-              <Ionicons name="shield-checkmark" size={10} color="#1E3A8A" />
-              <Text style={d.goldBadgeText}>PLATFORM CONTROL PANEL</Text>
+    <View style={[d.container, { flex: 1 }]}>
+        {/* ── HEADER ── */}
+        <View style={[d.header, { paddingTop: 8 }]}>
+          <View style={d.headerRow}>
+            <View style={d.headerLeft}>
+              <View style={d.goldBadge}>
+                <Ionicons name="shield-checkmark" size={10} color="#1E3A8A" />
+                <Text style={d.goldBadgeText}>PLATFORM CONTROL PANEL</Text>
+              </View>
+              <Text style={d.headerTitle}>Command Center</Text>
+              <Text style={d.headerSub}>{user?.email ?? "Super Administrator"}</Text>
             </View>
-            <Text style={d.headerTitle}>Command Center</Text>
-            <Text style={d.headerSub}>{user?.email ?? "Super Administrator"}</Text>
-          </View>
-          <View style={d.headerRight}>
-            <Pressable style={({ pressed }) => [d.headerBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={() => { setRefreshing(true); loadData(true); }}>
-              <Ionicons name="refresh-outline" size={20} color="#FBBF24" />
-            </Pressable>
-            <Pressable style={({ pressed }) => [d.headerBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={() => setRoleModalVisible(true)}>
-              <Ionicons name="swap-horizontal-outline" size={20} color="rgba(255,255,255,0.8)" />
-            </Pressable>
-            <Pressable style={({ pressed }) => [d.headerBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={logout}>
-              <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.55)" />
-            </Pressable>
+            <View style={d.headerRight}>
+              <Pressable style={({ pressed }) => [d.headerBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={() => { setRefreshing(true); loadData(true); }}>
+                <Ionicons name="refresh-outline" size={20} color="#FBBF24" />
+              </Pressable>
+              <Pressable style={({ pressed }) => [d.headerBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={() => setRoleModalVisible(true)}>
+                <Ionicons name="swap-horizontal-outline" size={20} color="rgba(255,255,255,0.8)" />
+              </Pressable>
+              <Pressable style={({ pressed }) => [d.headerBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={logout}>
+                <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.55)" />
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* ── BODY ── */}
-      <View style={d.body}>
-        {loading ? (
-          <View style={d.loadingBox}>
-            <ActivityIndicator size="large" color="#1E3A8A" />
-            <Text style={d.loadingText}>Loading platform data…</Text>
-          </View>
-        ) : (
-          <ScrollView
-            style={d.scroll}
-            contentContainerStyle={[d.scrollContent, { paddingBottom: insets.bottom + 40 }]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(true); }} tintColor="#1E3A8A" />}
-          >
+        {/* ── BODY ── */}
+        <View style={d.body}>
+          {loading ? (
+            <View style={d.loadingBox}>
+              <ActivityIndicator size="large" color="#1E3A8A" />
+              <Text style={d.loadingText}>Loading platform data…</Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={d.scroll}
+              contentContainerStyle={[d.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(true); }} tintColor="#1E3A8A" />}
+            >
 
             {/* ── GLOBAL METRICS ── */}
             <SectionHeader title="GLOBAL METRICS" />

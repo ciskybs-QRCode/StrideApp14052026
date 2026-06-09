@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -36,6 +37,7 @@ export default function AppCustomizationPage() {
   const { user, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [logoFileName, setLogoFileName] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState(user?.schoolName || "");
@@ -94,7 +96,10 @@ export default function AppCustomizationPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="App Customisation" subtitle="Logo, colour palette, font and theme" />
+      <ScreenHeader
+        title="App Customisation"
+        onBack={() => router.push("/(admin)/settings")}
+      />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
@@ -106,23 +111,23 @@ export default function AppCustomizationPage() {
         <Pressable style={[styles.logoBtn, { borderColor: logoFileName ? colors.primary : colors.border, backgroundColor: colors.card }]} onPress={handlePickLogo}>
           {logoFileName ? (
             <>
-              <View style={[styles.logoThumb, { backgroundColor: colors.primary }]}>
-                <Ionicons name="image" size={22} color="#FFF" />
+              <View style={[styles.logoThumb, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                <Ionicons name="image" size={22} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.logoBtnTitle, { color: colors.primary }]}>Logo uploaded</Text>
                 <Text style={[styles.logoBtnSub, { color: colors.mutedForeground }]} numberOfLines={1}>{logoFileName}</Text>
               </View>
-              <Ionicons name="checkmark-circle" size={22} color="#10B981" />
+              <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
             </>
           ) : (
             <>
-              <Ionicons name="cloud-upload-outline" size={28} color={colors.mutedForeground} />
+              <Ionicons name="cloud-upload-outline" size={28} color={colors.primary} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.logoBtnTitle, { color: colors.primary }]}>Upload Logo</Text>
                 <Text style={[styles.logoBtnSub, { color: colors.mutedForeground }]}>JPG, PNG — max 5 MB</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
             </>
           )}
         </Pressable>
@@ -143,7 +148,7 @@ export default function AppCustomizationPage() {
           {PRESET_COLORS.map((p, i) => (
             <Pressable
               key={i}
-              style={[styles.colorTile, { borderColor: selectedColorIdx === i ? p.primary : "transparent" }]}
+              style={[styles.colorTile, { borderColor: selectedColorIdx === i ? colors.primary : "transparent" }]}
               onPress={() => { setSelectedColorIdx(i); setApplied(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             >
               <View style={styles.colorTileSwatch}>
@@ -151,8 +156,8 @@ export default function AppCustomizationPage() {
                 <View style={{ flex: 2, backgroundColor: p.secondary }} />
               </View>
               <View style={styles.colorTileFooter}>
-                <Text style={[styles.colorTileName, { color: selectedColorIdx === i ? p.primary : colors.foreground }]} numberOfLines={1}>{p.name}</Text>
-                {selectedColorIdx === i && <Ionicons name="checkmark-circle" size={13} color={p.primary} />}
+                <Text style={[styles.colorTileName, { color: selectedColorIdx === i ? colors.primary : colors.foreground }]} numberOfLines={1}>{p.name}</Text>
+                {selectedColorIdx === i && <Ionicons name="checkmark-circle" size={13} color={colors.primary} />}
               </View>
             </Pressable>
           ))}
@@ -218,13 +223,13 @@ export default function AppCustomizationPage() {
 
         {/* Placeholder: Dark Mode */}
         <View style={[styles.placeholderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="moon-outline" size={24} color={colors.mutedForeground} />
+          <Ionicons name="moon-outline" size={24} color={colors.primary} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.placeholderTitle, { color: colors.foreground }]}>Dark Mode</Text>
             <Text style={[styles.placeholderDesc, { color: colors.mutedForeground }]}>Switch between light and dark interfaces — coming soon</Text>
           </View>
-          <View style={[styles.soonBadge, { backgroundColor: colors.muted }]}>
-            <Text style={[styles.soonText, { color: colors.mutedForeground }]}>Soon</Text>
+          <View style={[styles.soonBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+            <Text style={[styles.soonText, { color: colors.primary }]}>Soon</Text>
           </View>
         </View>
       </ScrollView>

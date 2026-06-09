@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 import { api } from "@/lib/api";
-import { type PayoutFrequency, PAYOUT_FREQUENCY_KEY, PAYOUT_CUSTOM_DAYS_KEY, RECEIPT_THRESHOLD_KEY } from "@/lib/strideChannel";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const CONFIG_ITEMS = [
   {
@@ -26,8 +26,6 @@ const CONFIG_ITEMS = [
     label: "Push Notifications",
     description: "Receive alerts for new users and activity",
     icon: "notifications-outline" as const,
-    iconBg: "#DBEAFE",
-    iconColor: "#1E3A8A",
     defaultValue: true,
   },
   {
@@ -35,8 +33,6 @@ const CONFIG_ITEMS = [
     label: "Auto Invoicing",
     description: "Generate invoices automatically each month",
     icon: "receipt-outline" as const,
-    iconBg: "#D1FAE5",
-    iconColor: "#10B981",
     defaultValue: true,
   },
   {
@@ -44,8 +40,6 @@ const CONFIG_ITEMS = [
     label: "Member Alerts",
     description: "Notify members on late arrivals or absences",
     icon: "people-outline" as const,
-    iconBg: "#FEF3C7",
-    iconColor: "#F59E0B",
     defaultValue: true,
   },
   {
@@ -53,8 +47,6 @@ const CONFIG_ITEMS = [
     label: "Payment Reminders",
     description: "Send reminders for overdue payments",
     icon: "card-outline" as const,
-    iconBg: "#FFEDD5",
-    iconColor: "#EA580C",
     defaultValue: false,
   },
   {
@@ -62,8 +54,6 @@ const CONFIG_ITEMS = [
     label: "Attendance Reports",
     description: "Weekly attendance summary emailed to admin",
     icon: "clipboard-outline" as const,
-    iconBg: "#EDE9FE",
-    iconColor: "#7C3AED",
     defaultValue: false,
   },
   {
@@ -71,8 +61,6 @@ const CONFIG_ITEMS = [
     label: "Waitlist Alerts",
     description: "Notify when a spot opens in a full course",
     icon: "time-outline" as const,
-    iconBg: "#CCFBF1",
-    iconColor: "#0D9488",
     defaultValue: true,
   },
 ];
@@ -99,13 +87,6 @@ export default function AppConfigurationPage() {
   const [graceEnabled, setGraceEnabled] = useState(false);
   const [loadingGrace, setLoadingGrace] = useState(true);
   const [savingGrace, setSavingGrace]   = useState(false);
-
-  // Finance
-  const [payoutFrequency, setPayoutFrequency] = useState<PayoutFrequency>("monthly");
-  const [customDaysInput, setCustomDaysInput] = useState("30");
-  const [customDaysSaved, setCustomDaysSaved] = useState(false);
-  const [receiptThresholdInput, setReceiptThresholdInput] = useState("");
-  const [thresholdSaved, setThresholdSaved] = useState(false);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -134,41 +115,7 @@ export default function AppConfigurationPage() {
         } catch { /* ignore corrupt storage */ }
       }
     }).catch(() => {});
-    // Load finance settings
-    AsyncStorage.getItem(PAYOUT_FREQUENCY_KEY).then(v => {
-      if (v) setPayoutFrequency(v as PayoutFrequency);
-    });
-    AsyncStorage.getItem(PAYOUT_CUSTOM_DAYS_KEY).then(v => {
-      if (v) setCustomDaysInput(v);
-    });
-    AsyncStorage.getItem(RECEIPT_THRESHOLD_KEY).then(v => {
-      if (v) setReceiptThresholdInput(v);
-    });
   }, []);
-
-  const handleSetPayoutFrequency = useCallback(async (f: PayoutFrequency) => {
-    setPayoutFrequency(f);
-    try { await AsyncStorage.setItem(PAYOUT_FREQUENCY_KEY, f); } catch { /* ignore */ }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
-
-  const handleSaveCustomDays = useCallback(async () => {
-    const n = parseInt(customDaysInput, 10);
-    const clamped = isNaN(n) || n < 1 ? "30" : String(Math.min(n, 365));
-    setCustomDaysInput(clamped);
-    try { await AsyncStorage.setItem(PAYOUT_CUSTOM_DAYS_KEY, clamped); } catch { /* ignore */ }
-    setCustomDaysSaved(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => setCustomDaysSaved(false), 2500);
-  }, [customDaysInput]);
-
-  const handleSaveThreshold = useCallback(async () => {
-    const trimmed = receiptThresholdInput.trim();
-    try { await AsyncStorage.setItem(RECEIPT_THRESHOLD_KEY, trimmed); } catch { /* ignore */ }
-    setThresholdSaved(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => setThresholdSaved(false), 2500);
-  }, [receiptThresholdInput]);
 
   const handleGraceToggle = useCallback(async (value: boolean) => {
     setSavingGrace(true);
@@ -232,28 +179,20 @@ export default function AppConfigurationPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader
+        title="App Configuration"
+        onBack={() => router.push("/(admin)/settings")}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
           {
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16),
+            paddingTop: 16,
             paddingBottom: insets.bottom + 100,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.pageHeader}>
-          <View style={[styles.headerIcon, { backgroundColor: "#DBEAFE" }]}>
-            <Ionicons name="settings-outline" size={26} color="#1E3A8A" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>App Configuration</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              System-wide toggles and notification settings
-            </Text>
-          </View>
-        </View>
-
         {/* Settings list */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           {CONFIG_ITEMS.map((item, i) => (
@@ -264,8 +203,8 @@ export default function AppConfigurationPage() {
                 i < CONFIG_ITEMS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
               ]}
             >
-              <View style={[styles.rowIcon, { backgroundColor: item.iconBg }]}>
-                <Ionicons name={item.icon} size={18} color={item.iconColor} />
+              <View style={[styles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                <Ionicons name={item.icon} size={18} color={colors.primary} />
               </View>
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
@@ -284,8 +223,8 @@ export default function AppConfigurationPage() {
         {/* Role Terminology */}
         <View style={{ marginBottom: 8 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="text-outline" size={18} color="#B45309" />
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="text-outline" size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Role Terminology</Text>
@@ -330,8 +269,8 @@ export default function AppConfigurationPage() {
         {/* Birthday Notification Template */}
         <View style={{ marginBottom: 8 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="gift-outline" size={18} color="#D97706" />
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="gift-outline" size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Birthday Notification</Text>
@@ -369,12 +308,12 @@ export default function AppConfigurationPage() {
 
         {/* ── Grace Access ── */}
         <View style={[styles.sectionHeaderRow, { marginBottom: 12 }]}>
-          <View style={[styles.sectionDot, { backgroundColor: "#D97706" }]} />
+          <View style={[styles.sectionDot, { backgroundColor: colors.primary }]} />
           <Text style={[styles.sectionTitle, { color: colors.primary }]}>Access Control</Text>
         </View>
         <View style={[styles.row, { backgroundColor: colors.card, borderRadius: 18, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }]}>
-          <View style={[styles.rowIcon, { backgroundColor: "#FEF3C7" }]}>
-            <Ionicons name="time-outline" size={18} color="#D97706" />
+          <View style={[styles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+            <Ionicons name="time-outline" size={18} color={colors.primary} />
           </View>
           <View style={styles.rowText}>
             <Text style={[styles.rowLabel, { color: colors.foreground }]}>Grace Access</Text>
@@ -389,138 +328,11 @@ export default function AppConfigurationPage() {
               value={graceEnabled}
               onValueChange={handleGraceToggle}
               disabled={savingGrace}
-              trackColor={{ false: "#D1D5DB", true: "#FBBF24" }}
-              thumbColor={graceEnabled ? "#1E3A8A" : "#F3F4F6"}
+              trackColor={{ false: colors.muted, true: colors.secondary }}
+              thumbColor={graceEnabled ? colors.primary : "#9CA3AF"}
             />
           )}
         </View>
-
-        {/* ── Finance ── */}
-        <View style={[styles.sectionHeaderRow, { marginBottom: 12 }]}>
-          <View style={[styles.sectionDot, { backgroundColor: "#7C3AED" }]} />
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Finance</Text>
-        </View>
-
-        {/* Payout Frequency */}
-        <View style={[{ backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3, gap: 12 }]}>
-          <View style={styles.row}>
-            <View style={[styles.rowIcon, { backgroundColor: "#EDE9FE" }]}>
-              <Ionicons name="repeat-outline" size={18} color="#7C3AED" />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Payout Frequency</Text>
-              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Sets billing cycle & operator invoice reminders</Text>
-            </View>
-          </View>
-          {/* Row 1: Weekly · Bi-weekly · Monthly */}
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            {(["weekly", "fortnightly", "monthly"] as PayoutFrequency[]).map(f => {
-              const active = payoutFrequency === f;
-              const label = f === "fortnightly" ? "Bi-weekly" : f === "weekly" ? "Weekly" : "Monthly";
-              return (
-                <Pressable key={f} style={{ flex: 1, backgroundColor: active ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 10, alignItems: "center" }} onPress={() => handleSetPayoutFrequency(f)}>
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: active ? "#FBBF24" : colors.mutedForeground }}>{label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          {/* Row 2: Quarterly · 6 Months · Custom */}
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            {(["quarterly", "semi-annual", "custom"] as PayoutFrequency[]).map(f => {
-              const active = payoutFrequency === f;
-              const label = f === "quarterly" ? "Quarterly" : f === "semi-annual" ? "6 Months" : "Custom";
-              return (
-                <Pressable key={f} style={{ flex: 1, backgroundColor: active ? "#1E3A8A" : colors.muted, borderRadius: 10, paddingVertical: 10, alignItems: "center" }} onPress={() => handleSetPayoutFrequency(f)}>
-                  <Text style={{ fontSize: 11, fontWeight: "800", color: active ? "#FBBF24" : colors.mutedForeground }}>{label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          {/* Custom days — compact inline row */}
-          {payoutFrequency === "custom" && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 2 }}>
-              <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: "500" }}>Every</Text>
-              <TextInput
-                style={{ width: 60, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, fontWeight: "700", textAlign: "center", color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }}
-                value={customDaysInput}
-                onChangeText={setCustomDaysInput}
-                keyboardType="number-pad"
-                maxLength={3}
-                returnKeyType="done"
-                onSubmitEditing={handleSaveCustomDays}
-              />
-              <Text style={{ fontSize: 13, color: colors.mutedForeground, fontWeight: "500", flex: 1 }}>days</Text>
-              <Pressable
-                style={{ backgroundColor: customDaysSaved ? "#10B981" : "#1E3A8A", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 9 }}
-                onPress={handleSaveCustomDays}
-              >
-                <Text style={{ color: "#FBBF24", fontWeight: "700", fontSize: 13 }}>{customDaysSaved ? "✓ Saved" : "Save"}</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-
-        {/* Receipt Threshold Amount */}
-        <View style={[{ backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3, gap: 12 }]}>
-          <View style={styles.row}>
-            <View style={[styles.rowIcon, { backgroundColor: "#FEE2E2", width: 42, height: 42, borderRadius: 12 }]}>
-              <Ionicons name="receipt-outline" size={20} color="#DC2626" />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Receipt Threshold</Text>
-              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Receipt required for reimbursements above this amount. Set to 0 to always require one.</Text>
-            </View>
-          </View>
-          <View style={{ gap: 10, paddingHorizontal: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Text style={{ fontSize: 20, fontWeight: "700", color: colors.mutedForeground }}>$</Text>
-              <TextInput
-                style={[styles.termInput, { flex: 1, color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-                value={receiptThresholdInput}
-                onChangeText={setReceiptThresholdInput}
-                placeholder="50.00"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="decimal-pad"
-                returnKeyType="done"
-                onSubmitEditing={handleSaveThreshold}
-              />
-            </View>
-            <Pressable
-              style={{ backgroundColor: thresholdSaved ? "#10B981" : colors.primary, borderRadius: 12, paddingVertical: 13, alignItems: "center" }}
-              onPress={handleSaveThreshold}
-            >
-              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>{thresholdSaved ? "Saved ✓" : "Save"}</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 12, opacity: pressed ? 0.88 : 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/invoices" as never); }}
-        >
-          <View style={[styles.rowIcon, { backgroundColor: "#DBEAFE", width: 42, height: 42, borderRadius: 12 }]}>
-            <Ionicons name="document-text-outline" size={20} color="#1E3A8A" />
-          </View>
-          <View style={styles.rowText}>
-            <Text style={[styles.rowLabel, { color: colors.foreground }]}>Invoices</Text>
-            <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Review and approve operator payment requests</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 16, opacity: pressed ? 0.88 : 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/reimbursements" as never); }}
-        >
-          <View style={[styles.rowIcon, { backgroundColor: "#D1FAE5", width: 42, height: 42, borderRadius: 12 }]}>
-            <Ionicons name="cash-outline" size={20} color="#059669" />
-          </View>
-          <View style={styles.rowText}>
-            <Text style={[styles.rowLabel, { color: colors.foreground }]}>Reimbursements</Text>
-            <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>Manage expense claims from all members</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#059669" />
-        </Pressable>
 
         {/* Info box */}
         <View style={[styles.infoBox, { backgroundColor: colors.card }]}>

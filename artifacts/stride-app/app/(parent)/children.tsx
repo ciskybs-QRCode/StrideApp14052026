@@ -387,8 +387,8 @@ export default function ChildrenScreen() {
         {/* ── Primary Account Holder Card ── */}
         <View style={[styles.primaryCard, { backgroundColor: colors.card }]}>
           <View style={styles.primaryCardInner}>
-            <View style={[styles.primaryAvatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.primaryAvatarText}>{(user?.name ?? "?").charAt(0).toUpperCase()}</Text>
+            <View style={[styles.primaryAvatar, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Text style={[styles.primaryAvatarText, { color: colors.primary }]}>{(user?.name ?? "?").charAt(0).toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -414,7 +414,7 @@ export default function ChildrenScreen() {
           style={({ pressed }) => [styles.addMemberCard, { borderColor: colors.primary, opacity: pressed ? 0.75 : 1 }]}
           onPress={() => { setShowAddChild(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
         >
-          <View style={[styles.addMemberIconCircle, { backgroundColor: "#EEF2FF" }]}>
+          <View style={[styles.addMemberIconCircle, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
             <Ionicons name="person-add-outline" size={22} color={colors.primary} />
           </View>
           <Text style={[styles.addMemberCardText, { color: colors.primary }]}>Add {secondaryRoleName}</Text>

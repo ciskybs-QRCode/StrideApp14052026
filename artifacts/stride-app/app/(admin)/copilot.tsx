@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { adminCopilotQuery, type CopilotResponse } from "@/lib/api";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,30 +32,31 @@ interface Message {
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
 const CLR = {
-  bg:        "#0F1F40",
-  navBg:     "#0A1830",
-  surface:   "#162A50",
-  surfaceAlt:"#0C1A35",
+  bg:        "#F8F9FF",
+  navBg:     "#FFFFFF",
+  surface:   "#FFFFFF",
+  surfaceAlt:"#F8F9FF",
   userBubble:"#1E3A8A",
-  gold:      "#D4AF37",
-  goldDim:   "rgba(212,175,55,0.30)",
-  goldFaint: "rgba(212,175,55,0.13)",
-  border:    "rgba(255,255,255,0.13)",
-  text:      "#F1F5F9",
-  textMuted: "rgba(241,245,249,0.62)",
-  textDim:   "rgba(241,245,249,0.38)",
+  gold:      "#1E3A8A",
+  goldDim:   "rgba(30,58,138,0.1)",
+  goldFaint: "rgba(30,58,138,0.05)",
+  border:    "#D1D9F0",
+  text:      "#1E3A8A",
+  textMuted: "#6B7BA4",
+  textDim:   "#6B7BA4",
   green:     "#10B981",
+  accentGold: "#FBBF24",
 } as const;
 
 // ─── Intent metadata ──────────────────────────────────────────────────────────
 
 const INTENT_META: Record<string, { label: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  missing_payments:  { label: "Missing Payments",  color: "#F59E0B", icon: "card-outline" },
-  expired_documents: { label: "Expired Docs",       color: "#EF4444", icon: "document-outline" },
-  operator_absences: { label: "Absences",           color: "#A78BFA", icon: "person-remove-outline" },
-  member_summary:    { label: "Members",            color: "#10B981", icon: "people-outline" },
-  revenue_summary:   { label: "Revenue",            color: "#60A5FA", icon: "trending-up-outline" },
-  unknown:           { label: "General",            color: "#94A3B8", icon: "help-circle-outline" },
+  missing_payments:  { label: "Missing Payments",  color: "#1E3A8A", icon: "card-outline" },
+  expired_documents: { label: "Expired Docs",       color: "#1E3A8A", icon: "document-outline" },
+  operator_absences: { label: "Absences",           color: "#1E3A8A", icon: "person-remove-outline" },
+  member_summary:    { label: "Members",            color: "#1E3A8A", icon: "people-outline" },
+  revenue_summary:   { label: "Revenue",            color: "#1E3A8A", icon: "trending-up-outline" },
+  unknown:           { label: "General",            color: "#1E3A8A", icon: "help-circle-outline" },
 };
 
 // ─── Quick suggestions ────────────────────────────────────────────────────────
@@ -87,14 +89,14 @@ const mg = StyleSheet.create({
   grid:  { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   tile:  {
     flex: 1, minWidth: "44%",
-    backgroundColor: "rgba(212,175,55,0.07)",
-    borderWidth: 1, borderColor: "rgba(212,175,55,0.2)",
+    backgroundColor: "rgba(30,58,138,0.05)",
+    borderWidth: 1, borderColor: "rgba(30,58,138,0.1)",
     borderRadius: 11,
     paddingVertical: 11, paddingHorizontal: 12,
     alignItems: "center",
   },
-  value: { color: "#D4AF37", fontSize: 24, fontWeight: "800", lineHeight: 28 },
-  label: { color: "rgba(241,245,249,0.45)", fontSize: 10, fontWeight: "600", marginTop: 3, textAlign: "center" },
+  value: { color: "#1E3A8A", fontSize: 24, fontWeight: "800", lineHeight: 28 },
+  label: { color: "#6B7BA4", fontSize: 10, fontWeight: "600", marginTop: 3, textAlign: "center" },
 });
 
 // ─── Revenue Rows ─ revenue_summary ───────────────────────────────────────────
@@ -124,10 +126,10 @@ function RevenueRows({ rows }: { rows: string[][] }) {
 
 const rr = StyleSheet.create({
   row:      { flexDirection: "row", alignItems: "center", gap: 8 },
-  month:    { color: "rgba(241,245,249,0.45)", fontSize: 11, width: 58, flexShrink: 0 },
-  barTrack: { flex: 1, flexDirection: "row", height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.06)", overflow: "hidden" },
-  bar:      { backgroundColor: "#D4AF37", borderRadius: 3 },
-  amount:   { color: "#F1F5F9", fontSize: 11, fontWeight: "700", width: 68, textAlign: "right", flexShrink: 0 },
+  month:    { color: "#6B7BA4", fontSize: 11, width: 58, flexShrink: 0 },
+  barTrack: { flex: 1, flexDirection: "row", height: 5, borderRadius: 3, backgroundColor: "rgba(30,58,138,0.06)", overflow: "hidden" },
+  bar:      { backgroundColor: "#1E3A8A", borderRadius: 3 },
+  amount:   { color: "#1E3A8A", fontSize: 11, fontWeight: "700", width: 68, textAlign: "right", flexShrink: 0 },
 });
 
 // ─── Data Table ───────────────────────────────────────────────────────────────
@@ -164,10 +166,10 @@ function DataTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
 }
 
 const tbl = StyleSheet.create({
-  hCell:   { color: "#D4AF37", fontSize: 9, fontWeight: "800", letterSpacing: 0.7, paddingHorizontal: 6, paddingVertical: 5 },
-  divider: { height: 1, backgroundColor: "rgba(212,175,55,0.18)", marginBottom: 2 },
-  rowAlt:  { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 4 },
-  cell:    { color: "#94A3B8", fontSize: 11, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 3.5 },
+  hCell:   { color: "#1E3A8A", fontSize: 9, fontWeight: "800", letterSpacing: 0.7, paddingHorizontal: 6, paddingVertical: 5 },
+  divider: { height: 1, backgroundColor: "rgba(30,58,138,0.1)", marginBottom: 2 },
+  rowAlt:  { backgroundColor: "rgba(30,58,138,0.03)", borderRadius: 4 },
+  cell:    { color: "#6B7BA4", fontSize: 11, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 3.5 },
 });
 
 // ─── Typing indicator ─────────────────────────────────────────────────────────
@@ -205,8 +207,8 @@ function TypingIndicator() {
 }
 
 const ty = StyleSheet.create({
-  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: "#D4AF37" },
-  label: { color: "rgba(241,245,249,0.3)", fontSize: 11.5, marginLeft: 2 },
+  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: "#1E3A8A" },
+  label: { color: "#6B7BA4", fontSize: 11.5, marginLeft: 2 },
 });
 
 // ─── Message bubble ───────────────────────────────────────────────────────────
@@ -332,15 +334,15 @@ const ab = StyleSheet.create({
     overflow: "hidden",
   },
   header:       { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 9 },
-  copilotBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(212,175,55,0.13)", borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2.5 },
-  copilotText:  { color: CLR.gold, fontSize: 8, fontWeight: "800", letterSpacing: 1.2 },
+  copilotBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(30,58,138,0.1)", borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2.5 },
+  copilotText:  { color: "#1E3A8A", fontSize: 8, fontWeight: "800", letterSpacing: 1.2 },
   badge:        { flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2.5 },
   badgeText:    { fontSize: 8, fontWeight: "800", letterSpacing: 1 },
   intentBadge:  { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 5, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2.5 },
   intentText:   { fontSize: 10, fontWeight: "700" },
-  summary:      { color: "#E8EEFF", fontSize: 13.5, lineHeight: 20 },
-  footer:       { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.14)" },
-  footerText:   { color: "rgba(255,255,255,0.50)", fontSize: 10 },
+  summary:      { color: "#1E3A8A", fontSize: 13.5, lineHeight: 20 },
+  footer:       { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(30,58,138,0.1)" },
+  footerText:   { color: "#6B7BA4", fontSize: 10 },
   ts:           { color: CLR.textDim, fontSize: 10, marginTop: 4, marginLeft: 13 },
 });
 
@@ -350,7 +352,7 @@ function WelcomeBanner() {
   return (
     <View style={wb.card}>
       <View style={wb.iconWrap}>
-        <Ionicons name="sparkles" size={22} color="#D4AF37" />
+        <Ionicons name="sparkles" size={22} color="#1E3A8A" />
       </View>
       <Text style={wb.title}>Admin Copilot</Text>
       <Text style={wb.body}>
@@ -368,13 +370,13 @@ function WelcomeBanner() {
 }
 
 const wb = StyleSheet.create({
-  card:    { backgroundColor: "rgba(212,175,55,0.06)", borderWidth: 1, borderColor: "rgba(212,175,55,0.16)", borderRadius: 18, padding: 20, marginBottom: 20, alignItems: "center" },
-  iconWrap:{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(212,175,55,0.12)", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  card:    { backgroundColor: "rgba(30,58,138,0.05)", borderWidth: 1, borderColor: "rgba(30,58,138,0.1)", borderRadius: 18, padding: 20, marginBottom: 20, alignItems: "center" },
+  iconWrap:{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center", marginBottom: 12 },
   title:   { color: CLR.text, fontSize: 17, fontWeight: "800", marginBottom: 6 },
   body:    { color: CLR.textMuted, fontSize: 13, lineHeight: 19, textAlign: "center", marginBottom: 14 },
   pills:   { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center" },
-  pill:    { backgroundColor: "rgba(255,255,255,0.10)", borderRadius: 6, paddingHorizontal: 9, paddingVertical: 3 },
-  pillText:{ color: "rgba(241,245,249,0.65)", fontSize: 10.5, fontWeight: "600" },
+  pill:    { backgroundColor: "rgba(30,58,138,0.08)", borderRadius: 6, paddingHorizontal: 9, paddingVertical: 3 },
+  pillText:{ color: "#6B7BA4", fontSize: 10.5, fontWeight: "600" },
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
@@ -426,41 +428,8 @@ export default function CopilotScreen() {
   const TAB_H = Platform.OS === "web" ? 84 : 49;
 
   return (
-    <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom + TAB_H }]}>
-
-      {/* ── Navbar ────────────────────────────────────────────── */}
-      <View style={s.navbar}>
-        <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          hitSlop={14}
-        >
-          <Ionicons name="chevron-back" size={22} color="rgba(241,245,249,0.55)" />
-        </Pressable>
-
-        <View style={s.navCenter}>
-          <View style={s.navRow}>
-            <View style={s.navIcon}>
-              <Ionicons name="sparkles" size={12} color="#D4AF37" />
-            </View>
-            <Text style={s.navTitle}>Admin Copilot</Text>
-            <View style={s.livePill}>
-              <View style={s.liveDot} />
-              <Text style={s.liveText}>LIVE</Text>
-            </View>
-          </View>
-          <Text style={s.navSub}>Natural Language Analytics Engine</Text>
-        </View>
-
-        <Pressable
-          hitSlop={14}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setMessages([]);
-          }}
-        >
-          <Ionicons name="trash-outline" size={18} color="rgba(241,245,249,0.28)" />
-        </Pressable>
-      </View>
+    <View style={[s.root, { backgroundColor: CLR.bg }]}>
+      <ScreenHeader title="Copilot" onBack={() => router.push("/(admin)/copilot")} />
 
       {/* ── Quick chips ───────────────────────────────────────── */}
       <View style={s.chipsWrap}>
@@ -502,31 +471,32 @@ export default function CopilotScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={insets.bottom + 10}
       >
-        <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+        <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 14), paddingTop: 10, borderTopWidth: 1, borderTopColor: CLR.border }]}>
           <TextInput
             style={s.input}
             value={input}
             onChangeText={setInput}
             placeholder="Ask anything about your school data..."
-            placeholderTextColor="rgba(241,245,249,0.22)"
+            placeholderTextColor={CLR.textMuted}
             returnKeyType="send"
             onSubmitEditing={() => sendMessage(input)}
             multiline
             maxLength={400}
             editable={!loading}
-            selectionColor="#D4AF37"
+            selectionColor={CLR.userBubble}
           />
           <Pressable
             style={({ pressed }) => [
               s.sendBtn,
               { opacity: loading || !input.trim() ? 0.38 : pressed ? 0.82 : 1 },
+              { backgroundColor: CLR.userBubble }
             ]}
             onPress={() => sendMessage(input)}
             disabled={loading || !input.trim()}
           >
             {loading
-              ? <ActivityIndicator color="#07111F" size="small" />
-              : <Ionicons name="arrow-up" size={20} color="#07111F" />
+              ? <ActivityIndicator color="#FFF" size="small" />
+              : <Ionicons name="arrow-up" size={20} color="#FFF" />
             }
           </Pressable>
         </View>
@@ -538,20 +508,20 @@ export default function CopilotScreen() {
 // ─── Screen styles ────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: CLR.bg },
+  root: { flex: 1 },
 
   /* Navbar */
   navbar: {
     flexDirection: "row", alignItems: "center", gap: 12,
     paddingHorizontal: 18, paddingVertical: 13,
     backgroundColor: CLR.navBg,
-    borderBottomWidth: 1, borderBottomColor: "rgba(212,175,55,0.13)",
+    borderBottomWidth: 1, borderBottomColor: CLR.border,
   },
   navCenter: { flex: 1 },
   navRow:    { flexDirection: "row", alignItems: "center", gap: 7 },
   navIcon:   {
     width: 24, height: 24, borderRadius: 7,
-    backgroundColor: "rgba(212,175,55,0.12)",
+    backgroundColor: "rgba(30,58,138,0.1)",
     alignItems: "center", justifyContent: "center",
   },
   navTitle:  { fontSize: 16, fontWeight: "800", color: CLR.text, letterSpacing: -0.3 },
@@ -584,32 +554,18 @@ const s = StyleSheet.create({
   /* Input bar */
   inputBar: {
     backgroundColor: CLR.navBg,
-    borderTopWidth: 1, borderTopColor: "rgba(212,175,55,0.16)",
     paddingHorizontal: 14, paddingTop: 12,
     flexDirection: "row", alignItems: "flex-end", gap: 10,
   },
   input: {
     flex: 1,
-    backgroundColor: CLR.surface,
-    borderWidth: 1.5,
-    borderColor: "rgba(212,175,55,0.38)",
+    backgroundColor: "rgba(30,58,138,0.05)",
     borderRadius: 16,
     paddingHorizontal: 15, paddingVertical: 11,
     color: CLR.text, fontSize: 14, maxHeight: 100,
-    /* Gold ambient glow (iOS) */
-    shadowColor: "#D4AF37",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
   },
   sendBtn: {
     width: 44, height: 44, borderRadius: 13,
-    backgroundColor: CLR.gold,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
-    shadowColor: "#D4AF37",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 5,
   },
 });

@@ -30,16 +30,17 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api, type ProximityBeacon, type ChildBeaconAssignment, type ProximityRecentEntry, type ApiStudent } from "@/lib/api";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const ZONES = ["entrance", "studio-a", "studio-b", "lobby", "cafeteria", "exit"] as const;
 
 type ZoneCategory = "core" | "transition" | "external_safe_zone" | "exit";
 
 const ZONE_CATEGORIES: { value: ZoneCategory; label: string; color: string; desc: string }[] = [
-  { value: "core",               label: "Core",          color: "#0EA5E9", desc: "Main premises (studios, entrance)" },
-  { value: "transition",         label: "Transition",    color: "#8B5CF6", desc: "Within-school buffer zones" },
-  { value: "external_safe_zone", label: "External Safe", color: "#F59E0B", desc: "Outside but known safe (e.g. bathroom)" },
-  { value: "exit",               label: "Exit",          color: "#EF4444", desc: "School exit scanners" },
+  { value: "core",               label: "Core",          color: "#1E3A8A", desc: "Main premises (studios, entrance)" },
+  { value: "transition",         label: "Transition",    color: "#1E3A8A", desc: "Within-school buffer zones" },
+  { value: "external_safe_zone", label: "External Safe", color: "#1E3A8A", desc: "Outside but known safe (e.g. bathroom)" },
+  { value: "exit",               label: "Exit",          color: "#1E3A8A", desc: "School exit scanners" },
 ];
 
 function generateUUID(): string {
@@ -194,43 +195,31 @@ export default function BeaconsScreen() {
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[S.header, { paddingTop: insets.top + 8, backgroundColor: "#0C4A6E" }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={S.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </Pressable>
-        <View style={S.headerCenter}>
-          <Ionicons name="bluetooth" size={20} color="#38BDF8" />
-          <Text style={S.headerTitle}>BLE Proximity Check-in</Text>
-        </View>
-        <Pressable onPress={() => void loadAll()} hitSlop={12} style={S.backBtn}>
-          <Ionicons name="refresh" size={20} color="rgba(255,255,255,0.6)" />
-        </Pressable>
-      </View>
+      <ScreenHeader title="BLE Proximity" onBack={() => router.push("/(admin)/operations-hub")} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
 
         {/* How It Works */}
         <View style={S.infoCard}>
           <View style={S.infoRow}>
-            <View style={[S.infoStep, { backgroundColor: "#0EA5E920" }]}>
-              <Ionicons name="radio" size={18} color="#0EA5E9" />
+            <View style={[S.infoStep, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="radio" size={18} color={colors.primary} />
               <Text style={S.infoStepText}>Scanner detects{"\n"}wearable UUID</Text>
             </View>
             <Ionicons name="arrow-forward" size={14} color="#9CA3AF" />
-            <View style={[S.infoStep, { backgroundColor: "#7C3AED20" }]}>
-              <Ionicons name="cloud-upload-outline" size={18} color="#7C3AED" />
+            <View style={[S.infoStep, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
               <Text style={S.infoStepText}>POST /proximity{"\n"}/detect</Text>
             </View>
             <Ionicons name="arrow-forward" size={14} color="#9CA3AF" />
-            <View style={[S.infoStep, { backgroundColor: "#05996920" }]}>
-              <Ionicons name="checkmark-circle" size={18} color="#059669" />
+            <View style={[S.infoStep, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
               <Text style={S.infoStepText}>Auto CHECK_IN{"\n"}"Via Proximity"</Text>
             </View>
           </View>
           <Text style={S.infoHint}>
             Use the{" "}
-            <Text style={{ fontWeight: "800", color: "#0EA5E9" }}>Simulate</Text>
+            <Text style={{ fontWeight: "800", color: colors.primary }}>Simulate</Text>
             {" "}button on any wearable assignment below to test the detection flow end-to-end.
           </Text>
         </View>
@@ -327,10 +316,10 @@ export default function BeaconsScreen() {
                 disabled={isSimulating}
               >
                 {isSimulating
-                  ? <ActivityIndicator size="small" color="#0EA5E9" />
-                  : <Ionicons name="flash" size={14} color="#0EA5E9" />
+                  ? <ActivityIndicator size="small" color={colors.primary} />
+                  : <Ionicons name="flash" size={14} color={colors.primary} />
                 }
-                <Text style={S.simulateBtnText}>
+                <Text style={[S.simulateBtnText, { color: colors.primary }]}>
                   {isSimulating ? "Detecting…" : "Simulate Signal"}
                 </Text>
               </Pressable>
@@ -356,7 +345,7 @@ export default function BeaconsScreen() {
           const childName = student?.first_name ?? student?.name ?? `Child ${e.child_id}`;
           return (
             <View key={e.id} style={[S.recentRow, { backgroundColor: colors.card }]}>
-              <View style={[S.recentDot, { backgroundColor: "#0EA5E9" }]} />
+              <View style={[S.recentDot, { backgroundColor: colors.primary }]} />
               <View style={{ flex: 1 }}>
                 <Text style={[S.recentChild, { color: colors.foreground }]}>{childName}</Text>
                 <Text style={[S.recentMeta, { color: colors.mutedForeground }]}>
@@ -368,8 +357,8 @@ export default function BeaconsScreen() {
                 </Text>
               </View>
               <View style={{ alignItems: "flex-end", gap: 4 }}>
-                <View style={S.bleBadge}>
-                  <Text style={S.bleBadgeText}>BLE AUTO</Text>
+                <View style={[S.bleBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                  <Text style={[S.bleBadgeText, { color: colors.primary }]}>BLE AUTO</Text>
                 </View>
                 <Text style={[S.recentTime, { color: colors.mutedForeground }]}>{relTime(e.timestamp)}</Text>
               </View>
@@ -568,8 +557,8 @@ const S = StyleSheet.create({
   assignCard:    { borderRadius: 14, padding: 14, marginBottom: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   uuidRow:       { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 10 },
   uuidText:      { fontFamily: "monospace" as const, fontSize: 11, color: "#6B7280" },
-  simulateBtn:   { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1.5, borderColor: "#0EA5E9", borderRadius: 10, paddingVertical: 9 },
-  simulateBtnText: { color: "#0EA5E9", fontWeight: "700", fontSize: 13 },
+  simulateBtn:   { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1.5, borderColor: "#1E3A8A", borderRadius: 10, paddingVertical: 9 },
+  simulateBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 13 },
 
   // Recent
   recentRow:   { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, padding: 12, marginBottom: 8 },
@@ -577,8 +566,8 @@ const S = StyleSheet.create({
   recentChild: { fontSize: 13, fontWeight: "700" },
   recentMeta:  { fontSize: 11, marginTop: 2 },
   recentTime:  { fontSize: 10 },
-  bleBadge:    { backgroundColor: "#0EA5E920", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  bleBadgeText:{ color: "#0EA5E9", fontSize: 9, fontWeight: "800", letterSpacing: 0.8 },
+  bleBadge:    { backgroundColor: "rgba(30,58,138,0.1)", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  bleBadgeText:{ color: "#1E3A8A", fontSize: 9, fontWeight: "800", letterSpacing: 0.8 },
 
   // Empty
   emptyCard: { alignItems: "center", gap: 8, borderRadius: 14, padding: 24, marginBottom: 8 },
@@ -601,6 +590,6 @@ const S = StyleSheet.create({
   childChip:     { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
   childChipText: { fontSize: 13, fontWeight: "600" },
 
-  modalPrimaryBtn:     { backgroundColor: "#0EA5E9", borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 4 },
+  modalPrimaryBtn:     { backgroundColor: "#1E3A8A", borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 4 },
   modalPrimaryBtnText: { color: "#FFF", fontWeight: "900", fontSize: 15 },
 });

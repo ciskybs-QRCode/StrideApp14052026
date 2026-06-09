@@ -10,7 +10,7 @@ export default function SuperAdminLayout() {
 
   return (
     <Stack
-      screenOptions={{ headerShown: true, title: "Super Admin Console" }}
+      screenOptions={{ headerShown: false }}
     />
   );
 }

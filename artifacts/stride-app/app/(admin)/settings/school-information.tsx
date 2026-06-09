@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -43,22 +44,22 @@ interface HoursEntry {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MAIN_FIELDS = [
-  { key: "name" as const,    label: "School Name",  placeholder: "e.g. Rising Stars Academy", icon: "school-outline" as const, iconBg: "#DBEAFE", iconColor: "#1E3A8A" },
-  { key: "address" as const, label: "Address",      placeholder: "1 Main Street, City",   icon: "location-outline" as const,  iconBg: "#CCFBF1", iconColor: "#0D9488" },
-  { key: "phone" as const,   label: "Phone",        placeholder: "+61 2 9000 0000",       icon: "call-outline" as const,      iconBg: "#D1FAE5", iconColor: "#10B981" },
-  { key: "email" as const,   label: "Email",        placeholder: "info@school.com",       icon: "mail-outline" as const,      iconBg: "#EDE9FE", iconColor: "#7C3AED" },
-  { key: "website" as const, label: "Website",      placeholder: "www.school.com",        icon: "globe-outline" as const,     iconBg: "#FFEDD5", iconColor: "#EA580C" },
-  { key: "taxId" as const,   label: "Tax ID / ABN", placeholder: "ABN 12 345 678 901",    icon: "card-outline" as const,      iconBg: "#FEF3C7", iconColor: "#F59E0B" },
+  { key: "name" as const,    label: "School Name",  placeholder: "e.g. Rising Stars Academy", icon: "school-outline" as const },
+  { key: "address" as const, label: "Address",      placeholder: "1 Main Street, City",   icon: "location-outline" as const },
+  { key: "phone" as const,   label: "Phone",        placeholder: "+61 2 9000 0000",       icon: "call-outline" as const },
+  { key: "email" as const,   label: "Email",        placeholder: "info@school.com",       icon: "mail-outline" as const },
+  { key: "website" as const, label: "Website",      placeholder: "www.school.com",        icon: "globe-outline" as const },
+  { key: "taxId" as const,   label: "Tax ID / ABN", placeholder: "ABN 12 345 678 901",    icon: "card-outline" as const },
 ];
 type SchoolInfo = Record<typeof MAIN_FIELDS[number]["key"], string>;
 
 const SOCIAL_FIELDS = [
-  { key: "instagram" as const, label: "Instagram",  placeholder: "instagram.com/yourschool",  icon: "logo-instagram" as const, iconBg: "#FDE8F5", iconColor: "#C026D3" },
-  { key: "facebook" as const,  label: "Facebook",   placeholder: "facebook.com/yourschool",   icon: "logo-facebook" as const,  iconBg: "#DBEAFE", iconColor: "#1D4ED8" },
-  { key: "tiktok" as const,    label: "TikTok",     placeholder: "tiktok.com/@yourschool",    icon: "musical-note-outline" as const, iconBg: "#F0FDF4", iconColor: "#16A34A" },
-  { key: "youtube" as const,   label: "YouTube",    placeholder: "youtube.com/@yourschool",   icon: "logo-youtube" as const,   iconBg: "#FEE2E2", iconColor: "#DC2626" },
-  { key: "whatsapp" as const,  label: "WhatsApp",   placeholder: "+61 4xx xxx xxx",           icon: "logo-whatsapp" as const,  iconBg: "#D1FAE5", iconColor: "#16A34A" },
-  { key: "linkedin" as const,  label: "LinkedIn",   placeholder: "linkedin.com/company/name", icon: "logo-linkedin" as const,  iconBg: "#E0F2FE", iconColor: "#0284C7" },
+  { key: "instagram" as const, label: "Instagram",  placeholder: "instagram.com/yourschool",  icon: "logo-instagram" as const },
+  { key: "facebook" as const,  label: "Facebook",   placeholder: "facebook.com/yourschool",   icon: "logo-facebook" as const },
+  { key: "tiktok" as const,    label: "TikTok",     placeholder: "tiktok.com/@yourschool",    icon: "musical-note-outline" as const },
+  { key: "youtube" as const,   label: "YouTube",    placeholder: "youtube.com/@yourschool",   icon: "logo-youtube" as const },
+  { key: "whatsapp" as const,  label: "WhatsApp",   placeholder: "+61 4xx xxx xxx",           icon: "logo-whatsapp" as const },
+  { key: "linkedin" as const,  label: "LinkedIn",   placeholder: "linkedin.com/company/name", icon: "logo-linkedin" as const },
 ];
 type SocialLinks = Record<typeof SOCIAL_FIELDS[number]["key"], string>;
 
@@ -71,12 +72,12 @@ const DEFAULT_SOCIAL: SocialLinks = {
   linkedin:  "",
 };
 
-const CAMPUS_TYPES: { value: CampusType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }[] = [
-  { value: "studio",  label: "Studio",  icon: "musical-notes-outline", color: "#1E3A8A", bg: "#DBEAFE" },
-  { value: "hall",    label: "Hall",    icon: "business-outline",       color: "#7C3AED", bg: "#EDE9FE" },
-  { value: "outdoor", label: "Outdoor", icon: "leaf-outline",           color: "#059669", bg: "#D1FAE5" },
-  { value: "online",  label: "Online",  icon: "wifi-outline",           color: "#0D9488", bg: "#CCFBF1" },
-  { value: "other",   label: "Other",   icon: "ellipse-outline",        color: "#6B7280", bg: "#F3F4F6" },
+const CAMPUS_TYPES: { value: CampusType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: "studio",  label: "Studio",  icon: "musical-notes-outline" },
+  { value: "hall",    label: "Hall",    icon: "business-outline"       },
+  { value: "outdoor", label: "Outdoor", icon: "leaf-outline"           },
+  { value: "online",  label: "Online",  icon: "wifi-outline"           },
+  { value: "other",   label: "Other",   icon: "ellipse-outline"        },
 ];
 
 const DAYS_OF_WEEK: HoursEntry[] = [
@@ -102,16 +103,18 @@ const DEFAULT_INFO: SchoolInfo = {
   taxId:   "",
 };
 
-function campusTypeInfo(type: CampusType) {
-  return CAMPUS_TYPES.find(t => t.value === type) ?? CAMPUS_TYPES[4];
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function SchoolInformationPage() {
-  const { user, updateUser } = useAuth();
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
+  export default function SchoolInformationPage() {
+    const { user, updateUser } = useAuth();
+    const colors = useColors();
+    const insets = useSafeAreaInsets();
+    const router = useRouter();
+
+  const campusTypeInfo = (type: CampusType) => {
+    const base = CAMPUS_TYPES.find(t => t.value === type) ?? CAMPUS_TYPES[4];
+    return { ...base, color: colors.primary, bg: "rgba(30,58,138,0.1)" };
+  };
 
   // Loading state for initial data fetch
   const [loadingOrg, setLoadingOrg] = useState(true);
@@ -308,7 +311,7 @@ export default function SchoolInformationPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="School Information" subtitle="Contact details, campuses and opening hours" />
+      <ScreenHeader title="School Information" onBack={() => router.push("/(admin)/settings")} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -350,8 +353,8 @@ export default function SchoolInformationPage() {
                 i < MAIN_FIELDS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
               ]}
             >
-              <View style={[styles.fieldIcon, { backgroundColor: field.iconBg }]}>
-                <Ionicons name={field.icon} size={16} color={field.iconColor} />
+              <View style={[styles.fieldIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                <Ionicons name={field.icon} size={16} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{field.label}</Text>
@@ -415,8 +418,8 @@ export default function SchoolInformationPage() {
                   i < SOCIAL_FIELDS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                 ]}
               >
-                <View style={[styles.fieldIcon, { backgroundColor: field.iconBg }]}>
-                  <Ionicons name={field.icon} size={16} color={field.iconColor} />
+                <View style={[styles.fieldIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                  <Ionicons name={field.icon} size={16} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{field.label}</Text>
@@ -693,11 +696,11 @@ export default function SchoolInformationPage() {
               {CAMPUS_TYPES.map(t => (
                 <Pressable
                   key={t.value}
-                  style={[styles.typeChip, campusDraft.type === t.value && { borderColor: t.color, backgroundColor: t.bg }]}
+                  style={[styles.typeChip, campusDraft.type === t.value && { borderColor: colors.primary, backgroundColor: "rgba(30,58,138,0.1)" }]}
                   onPress={() => setCampusDraft(p => ({ ...p, type: t.value }))}
                 >
-                  <Ionicons name={t.icon} size={16} color={campusDraft.type === t.value ? t.color : "#9CA3AF"} />
-                  <Text style={[styles.typeChipText, { color: campusDraft.type === t.value ? t.color : "#9CA3AF" }]}>{t.label}</Text>
+                  <Ionicons name={t.icon} size={16} color={campusDraft.type === t.value ? colors.primary : "#9CA3AF"} />
+                  <Text style={[styles.typeChipText, { color: campusDraft.type === t.value ? colors.primary : "#9CA3AF" }]}>{t.label}</Text>
                 </Pressable>
               ))}
             </View>

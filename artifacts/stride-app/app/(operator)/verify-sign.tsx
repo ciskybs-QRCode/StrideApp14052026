@@ -18,6 +18,8 @@ import colors from "@/constants/colors";
 
 const C = colors.light;
 
+import { ScreenHeader } from "@/components/ScreenHeader";
+
 export default function VerifySign() {
   const { childId, childName, guardianName, relationship } = useLocalSearchParams<{
     childId:      string;
@@ -100,21 +102,14 @@ export default function VerifySign() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable style={styles.closeBtn} onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="close" size={22} color={C.primary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Verify &amp; Sign</Text>
-        <View style={{ width: 36 }} />
-      </View>
-
-      {/* Child / Guardian info card */}
+    <View style={{ flex: 1, backgroundColor: C.background }}>
+      <ScreenHeader title="Verify & Sign" />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Child / Guardian info card */}
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
           <View style={[styles.infoIcon, { backgroundColor: C.primary + "15" }]}>
@@ -215,6 +210,7 @@ export default function VerifySign() {
 
       <View style={{ height: 48 }} />
     </ScrollView>
+    </View>
   );
 }
 

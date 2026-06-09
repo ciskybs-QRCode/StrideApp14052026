@@ -3,7 +3,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Clipboard helper ───────────────────────────────────────────────────────────
 
@@ -95,12 +96,12 @@ const QUICK_TEMPLATES = [
 ];
 
 const ATTACHMENT_TYPES: { type: AttachmentType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { type: "pdf",   label: "PDF",   icon: "document-outline",      color: "#EF4444" },
-  { type: "image", label: "Image", icon: "image-outline",         color: "#3B82F6" },
-  { type: "video", label: "Video", icon: "videocam-outline",      color: "#8B5CF6" },
-  { type: "audio", label: "Audio", icon: "musical-note-outline",  color: "#F59E0B" },
-  { type: "doc",   label: "Word",  icon: "document-text-outline", color: "#2563EB" },
-  { type: "excel", label: "Excel", icon: "grid-outline",          color: "#16A34A" },
+  { type: "pdf",   label: "PDF",   icon: "document-outline",      color: "#1E3A8A" },
+  { type: "image", label: "Image", icon: "image-outline",         color: "#1E3A8A" },
+  { type: "video", label: "Video", icon: "videocam-outline",      color: "#1E3A8A" },
+  { type: "audio", label: "Audio", icon: "musical-note-outline",  color: "#1E3A8A" },
+  { type: "doc",   label: "Word",  icon: "document-text-outline", color: "#1E3A8A" },
+  { type: "excel", label: "Excel", icon: "grid-outline",          color: "#1E3A8A" },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -134,9 +135,9 @@ function getRecipientCount(r: RecipientSelection, counts: UserCounts): number {
 }
 
 const ROLE_COLORS: Record<CommUser["role"], { bg: string; text: string }> = {
-  parent:   { bg: "#DBEAFE", text: "#1E3A8A" },
-  operator: { bg: "#EDE9FE", text: "#7C3AED" },
-  student:  { bg: "#D1FAE5", text: "#059669" },
+  parent:   { bg: "rgba(30,58,138,0.1)", text: "#1E3A8A" },
+  operator: { bg: "rgba(30,58,138,0.1)", text: "#1E3A8A" },
+  student:  { bg: "rgba(30,58,138,0.1)", text: "#1E3A8A" },
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -145,6 +146,7 @@ export default function AdminCommunications() {
   const { addDocument, courses } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   // ── Tab ──────────────────────────────────────────────────────────────────────
   const [commTab, setCommTab] = useState<"messages" | "receipts">("messages");
@@ -366,8 +368,9 @@ export default function AdminCommunications() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Communications" onBack={() => router.push("/(admin)/operations-hub")} />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── PAGE HEADER ── */}

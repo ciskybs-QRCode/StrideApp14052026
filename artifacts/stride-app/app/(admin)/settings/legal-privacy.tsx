@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData, type LegalAdminDoc } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -27,21 +28,19 @@ const LEGAL_TYPES: {
   value: LegalAdminDoc["type"];
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  bg: string;
 }[] = [
-  { value: "terms",   label: "Terms",   icon: "document-text-outline",       color: "#1E3A8A", bg: "#DBEAFE" },
-  { value: "privacy", label: "Privacy", icon: "shield-outline",              color: "#7C3AED", bg: "#EDE9FE" },
-  { value: "cookies", label: "Cookies", icon: "disc-outline",                color: "#059669", bg: "#D1FAE5" },
-  { value: "waiver",  label: "Waiver",  icon: "medkit-outline",              color: "#DC2626", bg: "#FEE2E2" },
-  { value: "other",   label: "Other",   icon: "ellipsis-horizontal-outline", color: "#6B7280", bg: "#F3F4F6" },
+  { value: "terms",   label: "Terms",   icon: "document-text-outline"       },
+  { value: "privacy", label: "Privacy", icon: "shield-outline"              },
+  { value: "cookies", label: "Cookies", icon: "disc-outline"                },
+  { value: "waiver",  label: "Waiver",  icon: "medkit-outline"              },
+  { value: "other",   label: "Other",   icon: "ellipsis-horizontal-outline" },
 ];
 
 type SourceType = "file" | "link";
 
 const FILE_FORMAT_GROUPS = [
-  { label: "PDF / Word",  mimeTypes: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"], ext: "PDF · DOC · DOCX", icon: "document-outline" as const, bg: "#DBEAFE", color: "#1E3A8A" },
-  { label: "Image",       mimeTypes: ["image/jpeg", "image/png", "image/tiff"],                                                                               ext: "JPG · PNG · TIFF", icon: "image-outline" as const,    bg: "#D1FAE5", color: "#059669" },
+  { label: "PDF / Word",  mimeTypes: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"], ext: "PDF · DOC · DOCX", icon: "document-outline" as const },
+  { label: "Image",       mimeTypes: ["image/jpeg", "image/png", "image/tiff"],                                                                               ext: "JPG · PNG · TIFF", icon: "image-outline" as const    },
 ];
 
 function todayStr(): string {
@@ -49,8 +48,9 @@ function todayStr(): string {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
-function legalTypeInfo(type: LegalAdminDoc["type"]) {
-  return LEGAL_TYPES.find(t => t.value === type) ?? LEGAL_TYPES[4];
+function legalTypeInfo(type: LegalAdminDoc["type"], colors: any) {
+  const base = LEGAL_TYPES.find(t => t.value === type) ?? LEGAL_TYPES[4];
+  return { ...base, color: colors.primary, bg: "rgba(30,58,138,0.1)" };
 }
 
 function isValidUrl(url: string): boolean {
@@ -313,8 +313,8 @@ export default function LegalPrivacyPage() {
                   style={[styles.pickFormatBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={g.label === "Image" ? onPickImg : onPickDoc}
                 >
-                  <View style={[styles.pickFormatIcon, { backgroundColor: g.bg }]}>
-                    <Ionicons name={g.icon} size={18} color={g.color} />
+                  <View style={[styles.pickFormatIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                    <Ionicons name={g.icon} size={18} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.pickFormatLabel, { color: colors.foreground }]}>{g.label}</Text>
@@ -360,32 +360,23 @@ export default function LegalPrivacyPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader
+        title="Legal & Privacy"
+        onBack={() => router.push("/(admin)/settings")}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16), paddingBottom: insets.bottom + 100 },
+          { paddingTop: 16, paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Page header */}
-        <View style={styles.pageHeader}>
-          <View style={[styles.headerIcon, { backgroundColor: "#EDE9FE" }]}>
-            <Ionicons name="shield-checkmark-outline" size={26} color="#7C3AED" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Legal & Privacy</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              Manage terms, policies and mandatory signatures
-            </Text>
-          </View>
-        </View>
-
         {/* Stats */}
         <View style={styles.statsRow}>
           {[
-            { label: "Documents",    value: legalAdminDocs.length, color: colors.primary, bg: "#DBEAFE" },
-            { label: "Mandatory",    value: mandatoryCount,        color: "#7C3AED",       bg: "#EDE9FE" },
-            { label: "High Priority",value: priorityCount,         color: "#DC2626",       bg: "#FEE2E2" },
+            { label: "Documents",    value: legalAdminDocs.length, color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "Mandatory",    value: mandatoryCount,        color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "High Priority",value: priorityCount,         color: colors.primary, bg: "rgba(30,58,138,0.1)" },
           ].map(s => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
               <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
@@ -407,8 +398,8 @@ export default function LegalPrivacyPage() {
           }]}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/blacklist" as never); }}
         >
-          <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name="ban-outline" size={22} color="#DC2626" />
+          <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="ban-outline" size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.sectionTitle, { color: colors.foreground, fontSize: 15, fontWeight: "700" }]}>Blacklist</Text>
@@ -416,7 +407,7 @@ export default function LegalPrivacyPage() {
               Manage and block individuals from new registrations
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+          <Ionicons name="chevron-forward" size={18} color={colors.primary} />
         </Pressable>
 
         {/* Section header */}
@@ -431,7 +422,7 @@ export default function LegalPrivacyPage() {
         {/* Document list */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           {legalAdminDocs.map((doc, i) => {
-            const info = legalTypeInfo(doc.type);
+            const info = legalTypeInfo(doc.type, colors);
             const hasFile = !!doc.fileUri || !!doc.fileName;
             const hasLink = !!doc.linkUrl;
             return (
@@ -450,27 +441,27 @@ export default function LegalPrivacyPage() {
                       <Text style={[styles.typeBadgeText, { color: info.color }]}>{info.label}</Text>
                     </View>
                     {doc.highPriority && (
-                      <View style={[styles.flagBadge, { backgroundColor: "#FEE2E2" }]}>
-                        <Ionicons name="alert-circle" size={9} color="#EF4444" />
-                        <Text style={[styles.flagText, { color: "#EF4444" }]}>High Priority</Text>
+                      <View style={[styles.flagBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                        <Ionicons name="alert-circle" size={9} color={colors.primary} />
+                        <Text style={[styles.flagText, { color: colors.primary }]}>High Priority</Text>
                       </View>
                     )}
                     {doc.mandatorySignature && (
-                      <View style={[styles.flagBadge, { backgroundColor: "#EDE9FE" }]}>
-                        <Ionicons name="lock-closed" size={9} color="#7C3AED" />
-                        <Text style={[styles.flagText, { color: "#7C3AED" }]}>Mandatory</Text>
+                      <View style={[styles.flagBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                        <Ionicons name="lock-closed" size={9} color={colors.primary} />
+                        <Text style={[styles.flagText, { color: colors.primary }]}>Mandatory</Text>
                       </View>
                     )}
                     {hasFile && (
-                      <View style={[styles.flagBadge, { backgroundColor: "#DBEAFE" }]}>
-                        <Ionicons name="document" size={9} color="#1E3A8A" />
-                        <Text style={[styles.flagText, { color: "#1E3A8A" }]}>File</Text>
+                      <View style={[styles.flagBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                        <Ionicons name="document" size={9} color={colors.primary} />
+                        <Text style={[styles.flagText, { color: colors.primary }]}>File</Text>
                       </View>
                     )}
                     {hasLink && (
-                      <View style={[styles.flagBadge, { backgroundColor: linkBrand(doc.linkUrl!).bg }]}>
-                        <Ionicons name="link" size={9} color={linkBrand(doc.linkUrl!).color} />
-                        <Text style={[styles.flagText, { color: linkBrand(doc.linkUrl!).color }]}>{linkBrand(doc.linkUrl!).label}</Text>
+                      <View style={[styles.flagBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                        <Ionicons name="link" size={9} color={colors.primary} />
+                        <Text style={[styles.flagText, { color: colors.primary }]}>{linkBrand(doc.linkUrl!).label}</Text>
                       </View>
                     )}
                   </View>
@@ -628,11 +619,11 @@ export default function LegalPrivacyPage() {
               {LEGAL_TYPES.map(t => (
                 <Pressable
                   key={t.value}
-                  style={[styles.typeBtn, newType === t.value && { backgroundColor: t.bg, borderColor: t.color }]}
+                  style={[styles.typeBtn, newType === t.value && { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary }]}
                   onPress={() => setNewType(t.value)}
                 >
-                  <Ionicons name={t.icon} size={16} color={newType === t.value ? t.color : colors.mutedForeground} />
-                  <Text style={[styles.typeBtnText, { color: newType === t.value ? t.color : colors.mutedForeground }]}>{t.label}</Text>
+                  <Ionicons name={t.icon} size={16} color={newType === t.value ? colors.primary : colors.mutedForeground} />
+                  <Text style={[styles.typeBtnText, { color: newType === t.value ? colors.primary : colors.mutedForeground }]}>{t.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -758,7 +749,7 @@ export default function LegalPrivacyPage() {
         <View style={styles.overlay}>
           {showDetail && (() => {
             const doc = showDetail;
-            const info = legalTypeInfo(doc.type);
+            const info = legalTypeInfo(doc.type, colors);
             const hasFile = !!doc.fileUri || !!doc.fileName;
             const hasLink = !!doc.linkUrl;
             const brand = hasLink ? linkBrand(doc.linkUrl!) : null;
@@ -894,7 +885,7 @@ export default function LegalPrivacyPage() {
         <View style={styles.overlay}>
           {viewerDoc && (() => {
             const doc = viewerDoc;
-            const info = legalTypeInfo(doc.type);
+            const info = legalTypeInfo(doc.type, colors);
             const hasLink = !!doc.linkUrl;
             const brand = hasLink ? linkBrand(doc.linkUrl!) : null;
             return (

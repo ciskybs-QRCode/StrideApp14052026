@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { listAssociations, extendTrial, type AssociationRecord } from "@/lib/api";
 
@@ -361,114 +362,119 @@ export default function AssociationsScreen() {
   const expiringCount = orgs.filter(o => { const d = daysUntil(o.trial_ends_at); return d >= 0 && d <= 30; }).length;
 
   return (
-    <View style={[styles.container]}>
+    <View style={{ flex: 1, backgroundColor: "#1E3A8A" }}>
+      <ScreenHeader title="Associations" />
+      <View style={[styles.container, { flex: 1 }]}>
 
-      {/* ── HEADER ── */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12),
-          },
-        ]}
-      >
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.headerEyebrow}>PLATFORM CONTROL</Text>
-            <Text style={styles.headerTitle}>Associations</Text>
+        {/* ── HEADER ── */}
+        <View
+          style={[
+            styles.header,
+            {
+              paddingTop: 12,
+            },
+          ]}
+        >
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.headerEyebrow}>PLATFORM CONTROL</Text>
+              <Text style={styles.headerTitle}>Associations</Text>
+            </View>
+            <View style={styles.headerActions}>
+              <Pressable style={styles.headerIconBtn} onPress={load}>
+                <Ionicons name="refresh-outline" size={20} color="#FBBF24" />
+              </Pressable>
+              <Pressable style={styles.headerIconBtn} onPress={confirmLogout}>
+                <Ionicons name="log-out-outline" size={20} color="#FBBF24" />
+              </Pressable>
+            </View>
           </View>
-          <View style={styles.headerActions}>
-            <Pressable style={styles.headerIconBtn} onPress={load}>
-              <Ionicons name="refresh-outline" size={20} color="#FBBF24" />
-            </Pressable>
-            <Pressable style={styles.headerIconBtn} onPress={confirmLogout}>
-              <Ionicons name="log-out-outline" size={20} color="#FBBF24" />
-            </Pressable>
+
+          {/* Stats row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statChip}>
+              <Ionicons name="business-outline" size={13} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.statText}>{orgs.length} tenants</Text>
+            </View>
+            {expiredCount > 0 && (
+              <View style={[styles.statChip, { backgroundColor: "rgba(220,38,38,0.25)" }]}>
+                <Ionicons name="close-circle-outline" size={13} color="#FCA5A5" />
+                <Text style={[styles.statText, { color: "#FCA5A5" }]}>{expiredCount} expired</Text>
+              </View>
+            )}
+            {expiringCount > 0 && (
+              <View style={[styles.statChip, { backgroundColor: "rgba(217,119,6,0.25)" }]}>
+                <Ionicons name="warning-outline" size={13} color="#FCD34D" />
+                <Text style={[styles.statText, { color: "#FCD34D" }]}>{expiringCount} expiring</Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Stats row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statChip}>
-            <Ionicons name="business-outline" size={13} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statText}>{orgs.length} tenants</Text>
-          </View>
-          {expiredCount > 0 && (
-            <View style={[styles.statChip, { backgroundColor: "rgba(220,38,38,0.25)" }]}>
-              <Ionicons name="close-circle-outline" size={13} color="#FCA5A5" />
-              <Text style={[styles.statText, { color: "#FCA5A5" }]}>{expiredCount} expired</Text>
+        {/* ── BODY ── */}
+        <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
+          {loading ? (
+            <View style={styles.centeredState}>
+              <ActivityIndicator size="large" color="#1E3A8A" />
+              <Text style={styles.centeredText}>Loading associations…</Text>
             </View>
-          )}
-          {expiringCount > 0 && (
-            <View style={[styles.statChip, { backgroundColor: "rgba(217,119,6,0.25)" }]}>
-              <Ionicons name="warning-outline" size={13} color="#FCD34D" />
-              <Text style={[styles.statText, { color: "#FCD34D" }]}>{expiringCount} expiring</Text>
+          ) : error ? (
+            <View style={styles.centeredState}>
+              <Ionicons name="cloud-offline-outline" size={40} color="#9CA3AF" />
+              <Text style={[styles.centeredText, { color: "#DC2626" }]}>{error}</Text>
+              <Pressable onPress={load} style={styles.retryBtn}>
+                <Text style={styles.retryText}>Retry</Text>
+              </Pressable>
             </View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={[
+                styles.scroll,
+                { paddingBottom: insets.bottom + 40 },
+              ]}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.sectionLabel}>ACTIVE ASSOCIATIONS ({orgs.length})</Text>
+
+              {orgs.length === 0 ? (
+                <View style={[styles.emptyCard, { backgroundColor: "#F9FAFB", borderColor: "#E5E7EB" }]}>
+                  <Ionicons name="business-outline" size={32} color="#9CA3AF" />
+                  <Text style={styles.emptyTitle}>No associations yet</Text>
+                  <Text style={styles.emptyDesc}>
+                    Register your first tenant school via the Pioneer Wizard.
+                  </Text>
+                </View>
+              ) : (
+                orgs.map(org => (
+                  <AssociationCard
+                    key={org.id}
+                    org={org}
+                    onExtend={setExtendTarget}
+                  />
+                ))
+              )}
+
+              {/* Pilot Tenants Reference */}
+              <View style={[styles.pilotCard, { backgroundColor: "#1E3A8A" }]}>
+                <Text style={styles.pilotTitle}>Pilot Configuration Reference</Text>
+                {[
+                  { label: "Tenant A", desc: "AU Non-Profit Cultural Association · AUD · Associations Incorporation Act 2015 (WA)" },
+                  { label: "Tenant B", desc: "AU Commercial Dance School · AUD · Australian ABN Corporate" },
+                  { label: "Tenant C", desc: "IT Artistic Gymnastics Club · EUR · Italian ASD/SSD Tax-Sport Regulations" },
+                ].map(t => (
+                  <View key={t.label} style={styles.pilotRow}>
+                    <View style={styles.pilotDot} />
+                    <View style={styles.pilotRowText}>
+                      <Text style={styles.pilotRowLabel}>{t.label}</Text>
+                      <Text style={styles.pilotRowDesc}>{t.desc}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
           )}
         </View>
       </View>
-
-      {/* ── BODY ── */}
-      {loading ? (
-        <View style={styles.centeredState}>
-          <ActivityIndicator size="large" color="#1E3A8A" />
-          <Text style={styles.centeredText}>Loading associations…</Text>
-        </View>
-      ) : error ? (
-        <View style={styles.centeredState}>
-          <Ionicons name="cloud-offline-outline" size={40} color="#9CA3AF" />
-          <Text style={[styles.centeredText, { color: "#DC2626" }]}>{error}</Text>
-          <Pressable onPress={load} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Retry</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={[
-            styles.scroll,
-            { paddingBottom: insets.bottom + 40 },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.sectionLabel}>ACTIVE ASSOCIATIONS ({orgs.length})</Text>
-
-          {orgs.length === 0 ? (
-            <View style={[styles.emptyCard, { backgroundColor: "#F9FAFB", borderColor: "#E5E7EB" }]}>
-              <Ionicons name="business-outline" size={32} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>No associations yet</Text>
-              <Text style={styles.emptyDesc}>
-                Register your first tenant school via the Pioneer Wizard.
-              </Text>
-            </View>
-          ) : (
-            orgs.map(org => (
-              <AssociationCard
-                key={org.id}
-                org={org}
-                onExtend={setExtendTarget}
-              />
-            ))
-          )}
-
-          {/* Pilot Tenants Reference */}
-          <View style={[styles.pilotCard, { backgroundColor: "#1E3A8A" }]}>
-            <Text style={styles.pilotTitle}>Pilot Configuration Reference</Text>
-            {[
-              { label: "Tenant A", desc: "AU Non-Profit Cultural Association · AUD · Associations Incorporation Act 2015 (WA)" },
-              { label: "Tenant B", desc: "AU Commercial Dance School · AUD · Australian ABN Corporate" },
-              { label: "Tenant C", desc: "IT Artistic Gymnastics Club · EUR · Italian ASD/SSD Tax-Sport Regulations" },
-            ].map(t => (
-              <View key={t.label} style={styles.pilotRow}>
-                <View style={styles.pilotDot} />
-                <View style={styles.pilotRowText}>
-                  <Text style={styles.pilotRowLabel}>{t.label}</Text>
-                  <Text style={styles.pilotRowDesc}>{t.desc}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      )}
 
       {/* ── EXTEND MODAL ── */}
       <ExtendModal

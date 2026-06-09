@@ -369,7 +369,7 @@ export default function ParentHome() {
           style={({ pressed }) => [styles.privateLessonCard, { backgroundColor: colors.primary, opacity: pressed ? 0.92 : 1 }]}
           onPress={() => router.push("/(parent)/book-lesson")}
         >
-          <View style={[styles.privateLessonIcon, { backgroundColor: colors.secondary }]}>
+          <View style={[styles.privateLessonIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
             <Ionicons name="school-outline" size={24} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -427,25 +427,25 @@ export default function ParentHome() {
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
         <View style={styles.quickActions}>
           <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => openQR("parent")}
           >
             <Ionicons name="qr-code" size={28} color={colors.primary} />
             <Text style={[styles.quickBtnText, { color: colors.primary }]}>SHOW{"\n"}QR PASS</Text>
           </Pressable>
           <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", transform: pressed ? [{ scale: 0.96 }] : [] }]}
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => setShowAbsence(true)}
           >
-            <Ionicons name="alert-circle-outline" size={28} color="#F59E0B" />
-            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>REPORT{"\n"}ABSENCE/DELAY</Text>
+            <Ionicons name="alert-circle-outline" size={28} color={colors.primary} />
+            <Text style={[styles.quickBtnText, { color: colors.primary }]}>REPORT{"\n"}ABSENCE/DELAY</Text>
           </Pressable>
           <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#ECFDF5", borderColor: "#059669", transform: pressed ? [{ scale: 0.96 }] : [] }]}
+            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
             onPress={() => router.push("/(parent)/org-search" as Parameters<typeof router.push>[0])}
           >
-            <Ionicons name="shield-checkmark" size={28} color="#059669" />
-            <Text style={[styles.quickBtnText, { color: "#059669" }]}>FIND{"\n"}SCHOOLS</Text>
+            <Ionicons name="shield-checkmark" size={28} color={colors.primary} />
+            <Text style={[styles.quickBtnText, { color: colors.primary }]}>FIND{"\n"}SCHOOLS</Text>
           </Pressable>
         </View>
 
@@ -491,17 +491,17 @@ export default function ParentHome() {
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact the Office</Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
           <View style={styles.contactRow}>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => Linking.openURL("https://wa.me/390212345678")}>
-              <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
-              <Text style={[styles.contactBtnText, { color: "#25D366" }]}>WhatsApp</Text>
+            <Pressable style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]} onPress={() => Linking.openURL("https://wa.me/390212345678")}>
+              <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
+              <Text style={[styles.contactBtnText, { color: colors.primary }]}>WhatsApp</Text>
             </Pressable>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "#EDE9FE" }]} onPress={() => Linking.openURL("mailto:office@dancevillage.com")}>
-              <Ionicons name="mail" size={22} color="#7C3AED" />
-              <Text style={[styles.contactBtnText, { color: "#7C3AED" }]}>Email</Text>
+            <Pressable style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]} onPress={() => Linking.openURL("mailto:office@dancevillage.com")}>
+              <Ionicons name="mail" size={22} color={colors.primary} />
+              <Text style={[styles.contactBtnText, { color: colors.primary }]}>Email</Text>
             </Pressable>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "#DBEAFE" }]} onPress={() => Linking.openURL("tel:+390212345678")}>
-              <Ionicons name="call" size={22} color="#1E3A8A" />
-              <Text style={[styles.contactBtnText, { color: "#1E3A8A" }]}>Call</Text>
+            <Pressable style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]} onPress={() => Linking.openURL("tel:+390212345678")}>
+              <Ionicons name="call" size={22} color={colors.primary} />
+              <Text style={[styles.contactBtnText, { color: colors.primary }]}>Call</Text>
             </Pressable>
           </View>
         </View>

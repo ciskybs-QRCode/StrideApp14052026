@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSecurityEscalation, type SecurityAlert } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
 
+import { ScreenHeader } from "@/components/ScreenHeader";
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const PARENT_PHONE = "+39 347 1234 567";
@@ -127,10 +129,11 @@ export default function OperatorAlerts() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Safety Alerts" />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + (Platform.OS === "web" ? 72 : 24), paddingBottom: insets.bottom + 100 },
+          { paddingTop: 16, paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >

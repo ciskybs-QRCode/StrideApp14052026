@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiBlacklistEntry, type ApiUser } from "@/lib/api";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 interface AddForm {
   email: string;
@@ -135,22 +136,20 @@ export default function BlacklistScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Blacklist" onBack={() => router.push("/(admin)/governance")} />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
           paddingBottom: insets.bottom + 100,
           paddingHorizontal: 16,
+          paddingTop: 16,
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View style={styles.pageHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Blacklist</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>{entries.length} {entries.length === 1 ? "entry" : "entries"}</Text>
-          </View>
-          <Pressable
+        {/* Subtitle / Stats row */}
+        <View style={styles.statsRow}>
+           <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>{entries.length} {entries.length === 1 ? "entry" : "entries"}</Text>
+           <Pressable
             style={[styles.addBtn, { backgroundColor: colors.primary }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowAdd(true); }}
           >
@@ -160,9 +159,9 @@ export default function BlacklistScreen() {
         </View>
 
         {/* Info banner */}
-        <View style={[styles.infoBanner, { backgroundColor: "#FEF3C7" }]}>
-          <Ionicons name="information-circle-outline" size={18} color="#92400E" />
-          <Text style={styles.infoText}>
+        <View style={[styles.infoBanner, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+          <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+          <Text style={[styles.infoText, { color: colors.primary }]}>
             New registrations are automatically checked against this list. Any match will block the registration.
           </Text>
         </View>
@@ -183,8 +182,8 @@ export default function BlacklistScreen() {
               onPress={() => { setDetailEntry(entry); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             >
               <View style={styles.entryHeader}>
-                <View style={[styles.entryIcon, { backgroundColor: "#FEE2E2" }]}>
-                  <Ionicons name="ban-outline" size={20} color="#DC2626" />
+                <View style={[styles.entryIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                  <Ionicons name="ban-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   {(entry.first_name || entry.last_name) ? (
@@ -200,8 +199,8 @@ export default function BlacklistScreen() {
                   ) : null}
                   {entry.reason ? (
                     <View style={styles.reasonBadge}>
-                      <Ionicons name="alert-circle-outline" size={11} color="#DC2626" />
-                      <Text style={styles.entryReason}>{entry.reason}</Text>
+                      <Ionicons name="alert-circle-outline" size={11} color={colors.primary} />
+                      <Text style={[styles.entryReason, { color: colors.primary }]}>{entry.reason}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -437,6 +436,7 @@ export default function BlacklistScreen() {
 }
 
 const styles = StyleSheet.create({
+  statsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
   container: { flex: 1 },
   pageHeader: { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 12 },
   pageTitle: { fontSize: 28, fontWeight: "800" },

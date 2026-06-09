@@ -133,9 +133,9 @@ export default function EmergencyPulseDashboard() {
   const totalWithKnown = pulse.safe_count + pulse.missing_count;
 
   return (
-    <View style={[S.root, { paddingTop: insets.top, backgroundColor: "#0A0A0F" }]}>
+    <View style={[S.root, { backgroundColor: "#0A0A0F" }]}>
       {/* Header */}
-      <View style={S.header}>
+      <View style={[S.header, { paddingTop: insets.top }]}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={S.backArrow}>
           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </Pressable>

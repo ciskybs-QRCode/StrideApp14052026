@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useSubstitution, type RescheduleAction, MOCK_SUBS } from "@/context/SubstitutionContext";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -107,16 +108,16 @@ interface AdminScheduleItem {
 const DAYS_SHORT = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
 const TYPE_CONFIG: Record<ActivityType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  lesson:   { label: "Lesson",   icon: "musical-notes",   color: "#1E3A8A", bg: "#DBEAFE" },
-  seminar:  { label: "Seminar",  icon: "school",          color: "#7C3AED", bg: "#EDE9FE" },
-  meeting:  { label: "Meeting",  icon: "people",          color: "#0D9488", bg: "#CCFBF1" },
-  workshop: { label: "Workshop", icon: "construct",       color: "#D97706", bg: "#FEF3C7" },
+  lesson:   { label: "Lesson",   icon: "musical-notes",   color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+  seminar:  { label: "Seminar",  icon: "school",          color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+  meeting:  { label: "Meeting",  icon: "people",          color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+  workshop: { label: "Workshop", icon: "construct",       color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
 };
 
 const ADMIN_TYPE_CONFIG: Record<AdminItemType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  secretary_hours:  { label: "Secretary Hours",       icon: "time",         color: "#1E3A8A", bg: "#DBEAFE" },
-  staff_meeting:    { label: "Staff Meeting",         icon: "people",       color: "#7C3AED", bg: "#EDE9FE" },
-  parent_teacher:   { label: "Member Consultation",   icon: "chatbubbles",  color: "#D97706", bg: "#FEF3C7" },
+  secretary_hours:  { label: "Secretary Hours",       icon: "time",         color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+  staff_meeting:    { label: "Staff Meeting",         icon: "people",       color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+  parent_teacher:   { label: "Member Consultation",   icon: "chatbubbles",  color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
 };
 
 const STATUS_CONFIG: Record<ActivityStatus, { label: string; color: string; bg: string }> = {
@@ -569,32 +570,9 @@ export default function ActivityScreen() {
 
   // ── Main Render ───────────────────────────────────────────────────────────────
 
-  const pt = Platform.OS === "web" ? insets.top + 67 : insets.top + 16;
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: pt, backgroundColor: colors.background }]}>
-        <View>
-          <Text style={[styles.pageTitle, { color: colors.primary }]}>Activity</Text>
-          <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-            {tab === "courses" ? `${activities.length} activities` : `${adminItems.length} scheduled items`}
-          </Text>
-        </View>
-
-        {/* Tab Switcher */}
-        <View style={[styles.tabSwitcher, { backgroundColor: colors.card }]}>
-          {(["courses","admin"] as const).map(t => (
-            <Pressable key={t} onPress={() => setTab(t)}
-              style={[styles.tabSwitchBtn, t === tab && { backgroundColor: colors.primary }]}>
-              <Text style={[styles.tabSwitchText, { color: t === tab ? "#FFF" : colors.mutedForeground }]}>
-                {t === "courses" ? "Courses" : "Admin"}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
+      <ScreenHeader title="Activity" onBack={() => router.push("/(admin)/operations-hub")} />
 
       {/* ── SMART ALERTS BANNER ── */}
       {unresolved.length > 0 && (
@@ -626,6 +604,20 @@ export default function ActivityScreen() {
       {/* ── COURSES TAB ── */}
       {tab === "courses" && (
         <>
+          {/* Tab Switcher */}
+          <View style={styles.tabSwitcherRow}>
+            <View style={[styles.tabSwitcher, { backgroundColor: colors.card }]}>
+              {(["courses","admin"] as const).map(t => (
+                <Pressable key={t} onPress={() => setTab(t)}
+                  style={[styles.tabSwitchBtn, t === tab && { backgroundColor: colors.primary }]}>
+                  <Text style={[styles.tabSwitchText, { color: t === tab ? "#FFF" : colors.mutedForeground }]}>
+                    {t === "courses" ? "Courses" : "Admin"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
           {/* Type filter */}
           <View style={styles.filterRowOuter}>
             <ScrollView
@@ -711,7 +703,21 @@ export default function ActivityScreen() {
 
       {/* ── ADMIN SCHEDULE TAB ── */}
       {tab === "admin" && (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <>
+          {/* Tab Switcher */}
+          <View style={styles.tabSwitcherRow}>
+            <View style={[styles.tabSwitcher, { backgroundColor: colors.card }]}>
+              {(["courses","admin"] as const).map(t => (
+                <Pressable key={t} onPress={() => setTab(t)}
+                  style={[styles.tabSwitchBtn, t === tab && { backgroundColor: colors.primary }]}>
+                  <Text style={[styles.tabSwitchText, { color: t === tab ? "#FFF" : colors.mutedForeground }]}>
+                    {t === "courses" ? "Courses" : "Admin"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {(["secretary_hours","staff_meeting","parent_teacher"] as AdminItemType[]).map(type => {
             const items = adminItems.filter(i => i.type === type);
             if (items.length === 0) return null;
@@ -731,6 +737,7 @@ export default function ActivityScreen() {
           })}
           <View style={{ height: 120 }} />
         </ScrollView>
+        </>
       )}
 
       {/* FAB */}
@@ -960,7 +967,7 @@ export default function ActivityScreen() {
       {/* ── CREATE / EDIT ACTIVITY MODAL ── */}
       <Modal visible={showActivityModal} animationType="slide" onRequestClose={() => setShowActivityModal(false)}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { paddingTop: pt, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable onPress={() => setShowActivityModal(false)} style={styles.backBtn}>
               <Ionicons name="close" size={24} color={colors.mutedForeground} />
             </Pressable>
@@ -1282,7 +1289,7 @@ export default function ActivityScreen() {
       {/* ── ADMIN SCHEDULE MODAL ── */}
       <Modal visible={showAdminModal} animationType="slide" onRequestClose={() => setShowAdminModal(false)}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { paddingTop: pt, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable onPress={() => setShowAdminModal(false)} style={styles.backBtn}>
               <Ionicons name="close" size={24} color={colors.mutedForeground} />
             </Pressable>
@@ -1315,9 +1322,9 @@ export default function ActivityScreen() {
             {renderRow("Type",
               <PickerRow
                 options={[
-                  { value: "secretary_hours" as const, label: "Secretary",    color: "#1E3A8A", bg: "#DBEAFE" },
-                  { value: "staff_meeting" as const, label: "Staff Meeting", color: "#7C3AED", bg: "#EDE9FE" },
-                  { value: "parent_teacher" as const, label: "Member Consultation", color: "#D97706", bg: "#FEF3C7" },
+                  { value: "secretary_hours" as const, label: "Secretary",    color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+                  { value: "staff_meeting" as const, label: "Staff Meeting", color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+                  { value: "parent_teacher" as const, label: "Member Consultation", color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
                 ]}
                 value={adminDraft.type}
                 onSelect={v => setAdminDraft(d => ({ ...d, type: v }))}
@@ -1400,6 +1407,7 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSubtitle: { fontSize: 13, marginTop: 2 },
 
+  tabSwitcherRow: { paddingHorizontal: 16, paddingBottom: 8 },
   tabSwitcher: { flexDirection: "row", borderRadius: 12, padding: 3, gap: 2, marginTop: 4 },
   tabSwitchBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9 },
   tabSwitchText: { fontSize: 13, fontWeight: "700" },

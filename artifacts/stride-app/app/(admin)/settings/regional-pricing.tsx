@@ -13,7 +13,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import {
   getRegionalPricing,
@@ -176,6 +178,7 @@ function PriceModal({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function RegionalPricingScreen() {
+  const router = useRouter();
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
 
@@ -254,36 +257,24 @@ export default function RegionalPricingScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader
+        title="Global Pricing"
+        onBack={() => router.push("/(admin)/settings")}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
           {
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
+            paddingTop: 16,
             paddingBottom: insets.bottom + 100,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.titleRow}>
-          <View>
-            <Text style={[styles.title, { color: colors.primary }]}>Global Pricing</Text>
-            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              Multi-currency regional rates
-            </Text>
-          </View>
-          <Pressable
-            style={[styles.addBtn, { backgroundColor: "#1E3A8A" }]}
-            onPress={() => setModal({ visible: true, mode: "create" })}
-          >
-            <Ionicons name="add" size={20} color="#D4AF37" />
-          </Pressable>
-        </View>
-
         {/* Org region selector */}
-        <View style={[styles.card, { backgroundColor: "#1E3A8A" }]}>
+        <View style={[styles.card, { backgroundColor: colors.primary }]}>
           <View style={styles.cardHeader}>
-            <Ionicons name="globe-outline" size={18} color="#D4AF37" />
+            <Ionicons name="globe-outline" size={18} color="#FFF" />
             <Text style={styles.cardTitleWhite}>Organisation Region</Text>
           </View>
           <Text style={styles.cardDescWhite}>
@@ -293,18 +284,18 @@ export default function RegionalPricingScreen() {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
             <Pressable
-              style={[styles.chip, { backgroundColor: !orgRegionCode ? "#D4AF37" : "rgba(255,255,255,0.15)" }]}
+              style={[styles.chip, { backgroundColor: !orgRegionCode ? "#FFF" : "rgba(255,255,255,0.15)" }]}
               onPress={() => handleSetOrgRegion(null)}
             >
-              <Text style={[styles.chipText, { color: !orgRegionCode ? "#0A192F" : "#fff" }]}>None</Text>
+              <Text style={[styles.chipText, { color: !orgRegionCode ? colors.primary : "#fff" }]}>None</Text>
             </Pressable>
             {pricing.filter(p => p.is_active).map(p => (
               <Pressable
                 key={p.region_code}
-                style={[styles.chip, { backgroundColor: orgRegionCode === p.region_code ? "#D4AF37" : "rgba(255,255,255,0.15)" }]}
+                style={[styles.chip, { backgroundColor: orgRegionCode === p.region_code ? "#FFF" : "rgba(255,255,255,0.15)" }]}
                 onPress={() => handleSetOrgRegion(p.region_code)}
               >
-                <Text style={[styles.chipText, { color: orgRegionCode === p.region_code ? "#0A192F" : "#fff" }]}>
+                <Text style={[styles.chipText, { color: orgRegionCode === p.region_code ? colors.primary : "#fff" }]}>
                   {p.region_code}
                 </Text>
               </Pressable>
@@ -332,8 +323,8 @@ export default function RegionalPricingScreen() {
               i > 0 && { borderTopWidth: 0 },
             ]}
           >
-            <View style={[styles.regionBadge, { backgroundColor: item.is_active ? "#DBEAFE" : "#F1F5F9" }]}>
-              <Text style={[styles.regionCode, { color: item.is_active ? "#1E3A8A" : "#94A3B8" }]}>
+            <View style={[styles.regionBadge, { backgroundColor: item.is_active ? "rgba(30,58,138,0.1)" : colors.muted }]}>
+              <Text style={[styles.regionCode, { color: item.is_active ? colors.primary : colors.mutedForeground }]}>
                 {item.region_code}
               </Text>
             </View>
@@ -343,15 +334,15 @@ export default function RegionalPricingScreen() {
                 {formatCents(item.price_per_seat_cents, item.currency_code)} / seat
               </Text>
               {orgRegionCode === item.region_code && (
-                <View style={styles.activePill}>
-                  <Text style={styles.activePillText}>Your region</Text>
+                <View style={[styles.activePill, { backgroundColor: "rgba(16, 185, 129, 0.1)" }]}>
+                  <Text style={[styles.activePillText, { color: "#10B981" }]}>Your region</Text>
                 </View>
               )}
             </View>
             <View style={styles.rowActions}>
               {!item.is_active && (
-                <View style={[styles.inactivePill, { backgroundColor: "#FEE2E2" }]}>
-                  <Text style={[styles.inactivePillText, { color: "#991B1B" }]}>Off</Text>
+                <View style={[styles.inactivePill, { backgroundColor: "rgba(239, 68, 68, 0.1)" }]}>
+                  <Text style={[styles.inactivePillText, { color: "#EF4444" }]}>Off</Text>
                 </View>
               )}
               <Pressable
@@ -384,6 +375,16 @@ export default function RegionalPricingScreen() {
         </Text>
       </ScrollView>
 
+      {/* Floating Add Button for better UX since we removed the header one */}
+      {!loading && !modal.visible && (
+        <Pressable
+          style={[styles.floatingAddBtn, { backgroundColor: colors.primary, bottom: insets.bottom + 20 }]}
+          onPress={() => setModal({ visible: true, mode: "create" })}
+        >
+          <Ionicons name="add" size={28} color="#FFF" />
+        </Pressable>
+      )}
+
       {modal.visible && (
         <PriceModal
           state={modal}
@@ -395,16 +396,9 @@ export default function RegionalPricingScreen() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll:    { paddingHorizontal: 20 },
-
-  titleRow:   { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 },
-  title:      { fontSize: 26, fontWeight: "800" },
-  subtitle:   { fontSize: 13, marginTop: 2 },
-  addBtn:     { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
 
   card:        { borderRadius: 18, padding: 18, marginBottom: 20 },
   cardHeader:  { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
@@ -429,8 +423,8 @@ const styles = StyleSheet.create({
   rowContent:   { flex: 1 },
   rowCurrency:  { fontSize: 15, fontWeight: "700" },
   rowPrice:     { fontSize: 12, marginTop: 1 },
-  activePill:   { alignSelf: "flex-start", backgroundColor: "#DCFCE7", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
-  activePillText: { color: "#166534", fontSize: 10, fontWeight: "700" },
+  activePill:   { alignSelf: "flex-start", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
+  activePillText: { fontSize: 10, fontWeight: "700" },
   rowActions:   { flexDirection: "row", alignItems: "center", gap: 14 },
   inactivePill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
   inactivePillText: { fontSize: 10, fontWeight: "700" },
@@ -439,6 +433,21 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
 
   hint: { fontSize: 12, textAlign: "center", marginTop: 20, lineHeight: 18 },
+
+  floatingAddBtn: {
+    position: "absolute",
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
 
   // Modal
   modalContainer: { flex: 1 },

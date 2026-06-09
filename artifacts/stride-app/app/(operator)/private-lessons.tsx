@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiAvailabilitySlot, type ApiCourseAvailTemplate, type ApiDiscipline, type ApiLocation, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
 
+import { ScreenHeader } from "@/components/ScreenHeader";
+
 // ── Date / time helpers ───────────────────────────────────────────────────────
 
 function toISODate(d: Date): string {
@@ -397,25 +399,21 @@ export default function OperatorPrivateLessonsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
-        <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.navigate("/(operator)/dashboard" as never)}>
-            <Ionicons name="arrow-back" size={20} color="#FFF" />
-          </Pressable>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.headerTitle}>Private Lessons</Text>
-            <Text style={styles.headerSub}>Availability, bookings & earnings</Text>
-          </View>
+      <ScreenHeader
+        title="Private Lessons"
+        subtitle="Availability, bookings & earnings"
+        onBack={() => router.navigate("/(operator)/dashboard")}
+        right={
           <Pressable
             style={[styles.qrBtn, { backgroundColor: colors.secondary }]}
             onPress={() => setShowQrEntry(true)}
           >
             <Ionicons name="qr-code-outline" size={20} color={colors.primary} />
           </Pressable>
-        </View>
+        }
+      />
 
+      <View style={styles.headerTabsWrap}>
         <View style={styles.tabBar}>
           {(["bookings", "availability", "notifications"] as Tab[]).map(key => {
             const cfg: Record<Tab, { label: string; icon: React.ComponentProps<typeof Ionicons>["name"] }> = {
@@ -1389,6 +1387,7 @@ const styles = StyleSheet.create({
   modalHeaderStrip:   { flexDirection: "row", alignItems: "center", gap: 12, padding: 18 },
   modalHeaderIcon:    { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   modalHeaderTitle:   { fontSize: 16, fontWeight: "800", color: "#FFF" },
+  headerTabsWrap:     { paddingHorizontal: 16, paddingBottom: 8 },
   modalHeaderSub:     { fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 1 },
   modalBody:          { padding: 20 },
   modalTitle:         { fontSize: 18, fontWeight: "800", marginBottom: 16 },

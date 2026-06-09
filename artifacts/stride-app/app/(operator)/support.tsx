@@ -19,6 +19,8 @@ import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 import type { ApiOrg } from "@/lib/api";
 
+import { ScreenHeader } from "@/components/ScreenHeader";
+
 const EMERGENCY_MAP: Record<string, { number: string; country: string }> = {
   AU: { number: "000", country: "Australia" },
   NSW: { number: "000", country: "Australia" },
@@ -245,12 +247,11 @@ export default function OperatorSupport() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Protocols & Support" hideBack />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Protocols & Support</Text>
-
         {/* ── Absence Reporting ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 4, marginBottom: 12 }]}>Absence Reporting</Text>
 
@@ -267,7 +268,7 @@ export default function OperatorSupport() {
               <Ionicons
                 name={idx === 0 ? "flash" : "calendar"}
                 size={13}
-                color={absenceTab === idx ? "#FFF" : colors.mutedForeground}
+                color={absenceTab === idx ? colors.secondary : colors.mutedForeground}
                 style={{ marginBottom: 2 }}
               />
               <Text style={[styles.segTabText, { color: absenceTab === idx ? "#FFF" : colors.mutedForeground }]}>
@@ -436,8 +437,8 @@ export default function OperatorSupport() {
                   onPress={handleSubmitFutureAbsence}
                   disabled={absSubmitting}
                 >
-                  <Ionicons name="calendar-outline" size={18} color="#1E3A8A" />
-                  <Text style={styles.submitBtnText}>
+                  <Ionicons name="calendar-outline" size={18} color={colors.secondary} />
+                  <Text style={[styles.submitBtnText, { color: colors.secondary }]}>
                     {absSubmitting ? "Saving..." : "Schedule Absence"}
                   </Text>
                 </Pressable>

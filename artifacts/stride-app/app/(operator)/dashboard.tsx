@@ -184,11 +184,6 @@ const DELAY_OPTIONS: { value: AbsenceType; label: string; delayMins: number }[] 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 function notifIconForType(type: string): { icon: IoniconName; color: string } {
-  if (type === "payment_received")  return { icon: "wallet",            color: "#059669" };
-  if (type === "booking_confirmed") return { icon: "checkmark-circle",  color: "#059669" };
-  if (type === "booking_cancelled") return { icon: "close-circle",      color: "#DC2626" };
-  if (type === "booking_request")   return { icon: "calendar",          color: "#1E3A8A" };
-  if (type === "lesson_reminder")   return { icon: "time",              color: "#D97706" };
   return { icon: "notifications", color: "#1E3A8A" };
 }
 
@@ -217,7 +212,9 @@ function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOp
     <View style={[inboxStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={inboxStyles.header}>
         <View style={inboxStyles.headerLeft}>
-          <Ionicons name="notifications" size={18} color="#1E3A8A" />
+          <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="notifications" size={16} color="#1E3A8A" />
+          </View>
           <Text style={[inboxStyles.title, { color: colors.foreground }]}>Notifications</Text>
           <View style={inboxStyles.badge}>
             <Text style={inboxStyles.badgeText}>{unreadCount}</Text>
@@ -238,11 +235,11 @@ function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOp
         return (
           <Pressable
             key={n.id}
-            style={({ pressed }) => [inboxStyles.row, { backgroundColor: pressed ? `${color}08` : "transparent" }]}
+            style={({ pressed }) => [inboxStyles.row, { backgroundColor: pressed ? "rgba(30,58,138,0.05)" : "transparent" }]}
             onPress={() => onOpenNotif(n.id)}
           >
-            <View style={[inboxStyles.rowIcon, { backgroundColor: `${color}18` }]}>
-              <Ionicons name={icon} size={18} color={color} />
+            <View style={[inboxStyles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name={icon} size={18} color="#1E3A8A" />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={[inboxStyles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>{n.title}</Text>

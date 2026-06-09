@@ -309,7 +309,7 @@ export default function OperatorCalendar() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 120 },
+          { paddingTop: 16, paddingBottom: insets.bottom + 120 },
         ]}
         showsVerticalScrollIndicator={false}
       >

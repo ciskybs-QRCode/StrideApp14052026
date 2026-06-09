@@ -40,3 +40,20 @@ Existing tab structure preserved. The `emergency-pulse` tab was already present 
 ## Test user password fix
 
 Test users (`admin@test.com`, `operatore@test.com`, `genitore@test.com`, `kiosk@test.com`) had stale bcrypt hashes. Reset via Supabase admin client using `bcrypt.hash("stride123", 10)`. If passwords stop working again, re-run the same update.
+
+## Monochromatic navy restyling system (app-wide)
+
+Design tokens applied to all screens:
+- Icon background: `"rgba(30,58,138,0.1)"`
+- Icon color: `colors.primary` (`#1E3A8A`)
+- Exceptions keeping semantic colors: SOS action buttons (fire=red/medical=green/police=blue), status badge chips (active=green, expired=red, trialing=orange)
+- Finance section belongs ONLY in finance-hub — removed from app-configuration.tsx
+- `super_admin/_layout.tsx` uses `headerShown: false`; each super_admin screen renders its own ScreenHeader
+
+## Common subagent restyling bugs to watch for
+
+1. **`onBack` without `useRouter` instantiation**: Subagents add `onBack={() => router.push(...)}` but forget `const router = useRouter()` inside the component. Fix: add both the import and the hook call.
+2. **Module-level helper deleted that uses hook values**: Helpers like `campusTypeInfo(type)` that reference `colors.primary` must live INSIDE the component as arrow functions — not at module level. Deleting them entirely leaves call sites broken.
+3. **Wrong colors alias**: Files using `const C = colors.light` (raw constant) must use `C.*`, not `colors.*` for color access.
+4. **Missing style keys**: Subagents sometimes reference style keys (e.g. `styles.tabSwitcherRow`) that don't exist in the StyleSheet. Fix: add the missing key.
+5. **`pt` shorthand**: Subagents sometimes write `paddingTop: pt` without defining `pt`. Replace with `insets.top` directly.

@@ -237,7 +237,10 @@ export default function FeeSettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Membership Fees" subtitle="Configure how the association charges membership fees" />
+      <ScreenHeader
+        title="Membership Fees"
+        onBack={() => router.push("/(admin)/settings")}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -400,7 +403,7 @@ export default function FeeSettingsScreen() {
           title="Live Preview"
           subtitle="What a member joining 15 days ago would owe for their first cycle."
         />
-        <View style={[styles.previewCard, { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}>
+        <View style={[styles.previewCard, { backgroundColor: colors.primary, borderColor: colors.primary }]}>
           <View style={styles.previewRow}>
             <View style={[styles.previewIcon, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
               <Ionicons name="calculator-outline" size={20} color="#FFF" />
