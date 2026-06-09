@@ -523,6 +523,151 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ap_active_idx ON authorized_pickups (child_id, is_active);
   `).catch(() => {});
 
+  // ── Formally declared tables (previously undeclared, referenced in services) ──
+
+  // Rescue cascade orchestration — autonomous operator absence cover
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS rescue_cascades (
+      id                      SERIAL      PRIMARY KEY,
+      org_id                  INTEGER     NOT NULL,
+      absence_id              INTEGER,
+      discipline_id           INTEGER,
+      course_name             TEXT,
+      class_datetime          TIMESTAMPTZ,
+      absent_operator_id      TEXT        NOT NULL,
+      absent_operator_name    TEXT,
+      status                  TEXT        NOT NULL DEFAULT 'pending',
+      auto_triggered          BOOLEAN     NOT NULL DEFAULT FALSE,
+      resolved_at             TIMESTAMPTZ,
+      resolved_by_operator_id TEXT,
+      created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cascade_contacts (
+      id                SERIAL      PRIMARY KEY,
+      cascade_id        INTEGER     NOT NULL REFERENCES rescue_cascades(id) ON DELETE CASCADE,
+      operator_id       TEXT        NOT NULL,
+      operator_name     TEXT,
+      rank              INTEGER     NOT NULL,
+      skill_score       NUMERIC(4,3),
+      reliability_score NUMERIC(4,3),
+      composite_score   NUMERIC(4,3),
+      contacted_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      status            TEXT        NOT NULL DEFAULT 'pending',
+      responded_at      TIMESTAMPTZ,
+      created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).catch(() => {});
+
+  // Emergency push notification infrastructure — tokens + delivery log
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS device_push_tokens (
+      id         SERIAL      PRIMARY KEY,
+      user_id    TEXT        NOT NULL,
+      org_id     INTEGER     NOT NULL,
+      token      TEXT        NOT NULL,
+      platform   TEXT        NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (user_id, token)
+    )
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS emergency_push_log (
+      id                        SERIAL      PRIMARY KEY,
+      org_id                    INTEGER     NOT NULL,
+      category                  TEXT        NOT NULL,
+      title                     TEXT        NOT NULL,
+      body                      TEXT        NOT NULL,
+      payload                   JSONB       NOT NULL DEFAULT '{}',
+      tokens_sent               TEXT[]      NOT NULL DEFAULT '{}',
+      status                    TEXT        NOT NULL DEFAULT 'pending_ack',
+      suppressed                BOOLEAN     NOT NULL DEFAULT FALSE,
+      suppress_reason           TEXT,
+      ack_deadline              TIMESTAMPTZ,
+      acknowledged_at           TIMESTAMPTZ,
+      twilio_fallback_triggered BOOLEAN     NOT NULL DEFAULT FALSE,
+      twilio_fallback_at        TIMESTAMPTZ,
+      created_at                TIMESTAMPTZ DEFAULT NOW()
+    )
+  `).catch(() => {});
+
+  // Digital Proof of Presence — cryptographic pickup record chain
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pickup_records (
+      id             UUID             NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      pickup_id      UUID             NOT NULL DEFAULT gen_random_uuid(),
+      child_id       TEXT             NOT NULL,
+      operator_id    TEXT             NOT NULL,
+      parent_id      TEXT,
+      timestamp      TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+      lat            DOUBLE PRECISION,
+      lng            DOUBLE PRECISION,
+      signature_blob TEXT             NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS pr_child_idx    ON pickup_records (child_id);
+    CREATE INDEX IF NOT EXISTS pr_operator_idx ON pickup_records (operator_id);
+    CREATE INDEX IF NOT EXISTS pr_pickup_idx   ON pickup_records (pickup_id);
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS verification_hashes (
+      id         SERIAL      PRIMARY KEY,
+      record_id  UUID        NOT NULL REFERENCES pickup_records(id),
+      hash_value TEXT        NOT NULL,
+      hash_algo  TEXT        NOT NULL DEFAULT 'SHA-256',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS vh_record_idx ON verification_hashes (record_id);
+  `).catch(() => {});
+
+  // Regional pricing tiers — per-region seat price overrides
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS regional_pricing (
+      id                   SERIAL      PRIMARY KEY,
+      region_code          TEXT        NOT NULL UNIQUE,
+      currency_code        TEXT        NOT NULL,
+      price_per_seat_cents INTEGER     NOT NULL DEFAULT 0,
+      is_active            BOOLEAN     NOT NULL DEFAULT TRUE,
+      created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).catch(() => {});
+
+  // Security escalation events — phase-based child safety alerts
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS security_escalation_events (
+      id              SERIAL      PRIMARY KEY,
+      organization_id INTEGER     NOT NULL,
+      child_id        TEXT        NOT NULL,
+      child_name      TEXT,
+      phase           INTEGER     NOT NULL DEFAULT 1,
+      triggered_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      status          TEXT        NOT NULL DEFAULT 'active',
+      resolved_at     TIMESTAMPTZ,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS sec_esc_org_idx   ON security_escalation_events (organization_id);
+    CREATE INDEX IF NOT EXISTS sec_esc_child_idx ON security_escalation_events (child_id);
+  `).catch(() => {});
+
+  // Organization members — user ↔ org role lookup (mirrors Supabase user_organizations)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS organization_members (
+      id              SERIAL      PRIMARY KEY,
+      user_id         TEXT        NOT NULL,
+      organization_id INTEGER     NOT NULL,
+      role            TEXT        NOT NULL DEFAULT 'member',
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (user_id, organization_id)
+    );
+    CREATE INDEX IF NOT EXISTS org_mem_org_idx  ON organization_members (organization_id);
+    CREATE INDEX IF NOT EXISTS org_mem_user_idx ON organization_members (user_id);
+  `).catch(() => {});
+
   // Digital Proof of Presence — tamper-evident pickup signature log
   await pool.query(`
     CREATE TABLE IF NOT EXISTS pickup_signatures (

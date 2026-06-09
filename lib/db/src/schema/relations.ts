@@ -1,58 +1,18 @@
 import { relations } from "drizzle-orm";
 import { disciplines }    from "./disciplines";
-import { operators }      from "./operators";
-import { availabilities } from "./availabilities";
 import { bookings }       from "./bookings";
 import { notifications }  from "./notifications";
 
 // ── disciplines ───────────────────────────────────────────────────────────────
 
 export const disciplinesRelations = relations(disciplines, ({ many }) => ({
-  /** All availability slots that use this discipline */
-  availabilities: many(availabilities),
   /** All bookings for this discipline */
-  bookings:       many(bookings),
-}));
-
-// ── operators ─────────────────────────────────────────────────────────────────
-
-export const operatorsRelations = relations(operators, ({ many }) => ({
-  /** All availability slots submitted by this operator */
-  availabilities: many(availabilities),
-  /** All lessons booked with this operator */
-  bookings:       many(bookings),
-}));
-
-// ── availabilities ────────────────────────────────────────────────────────────
-
-export const availabilitiesRelations = relations(availabilities, ({ one, many }) => ({
-  /** The operator who owns this slot */
-  operator: one(operators, {
-    fields:     [availabilities.operatorId],
-    references: [operators.id],
-  }),
-  /** The discipline being offered in this slot */
-  discipline: one(disciplines, {
-    fields:     [availabilities.disciplineId],
-    references: [disciplines.id],
-  }),
-  /** Booking that consumed this slot (at most one, since slot is single-use) */
   bookings: many(bookings),
 }));
 
 // ── bookings ──────────────────────────────────────────────────────────────────
 
 export const bookingsRelations = relations(bookings, ({ one, many }) => ({
-  /** The availability slot that was booked */
-  availability: one(availabilities, {
-    fields:     [bookings.availabilityId],
-    references: [availabilities.id],
-  }),
-  /** The operator delivering the lesson */
-  operator: one(operators, {
-    fields:     [bookings.operatorId],
-    references: [operators.id],
-  }),
   /** The discipline being taught */
   discipline: one(disciplines, {
     fields:     [bookings.disciplineId],

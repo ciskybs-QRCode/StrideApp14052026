@@ -35,3 +35,18 @@ The API server connects to TWO different databases:
 **Why this matters:** Never use `supabase.from("bookings")` or `supabase.from("invoices")` — those tables only exist in the direct PG. Use `pool.query()` for them. The `executeSql` tool in code_execution queries the direct PG, not Supabase.
 
 **How to apply:** Any new query for `bookings`, `invoices`, `operators`, `member_medical_certs`, `operator_absences` must use `pool.query`. Use `supabase.from()` only for tables confirmed to exist there (users, children, organizations, reimbursements, private_bookings, scheduled_courses, enrollments, etc.).
+
+## Drizzle schema orphan cleanup (June 2026)
+Deleted 5 legacy Drizzle schema files that no longer had any route or service references:
+`availabilities`, `conversations`, `invoices`, `messages`, `operators`.
+`relations.ts` was updated to remove all references to `operators`/`availabilities` — only
+`disciplines`, `bookings`, and `notifications` relations remain.
+`index.ts` barrel now exports only the 8 live schemas.
+
+## pg.ts — 9 undeclared tables formalized
+Added explicit `CREATE TABLE IF NOT EXISTS` blocks for all 9 formerly undeclared tables:
+`rescue_cascades`, `cascade_contacts`, `device_push_tokens`, `emergency_push_log`,
+`pickup_records`, `verification_hashes`, `regional_pricing`,
+`security_escalation_events`, `organization_members`.
+FK ordering: rescue_cascades before cascade_contacts; pickup_records before verification_hashes.
+All use `.catch(() => {})` — safe idempotent re-runs.
