@@ -197,6 +197,21 @@ export default function SettingsIndex() {
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` \u00B7 ${user.schoolName}` : ""}
         </Text>
+
+        {__DEV__ && (
+          <>
+            <Text style={[styles.groupLabel, { color: "#EF4444" }]}>DEVELOPER</Text>
+            <HubCard
+              icon="bug-outline"
+              title="Dev Tools"
+              description="Sandbox seed, system triggers, notification log"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/(admin)/dev-tools" as never);
+              }}
+            />
+          </>
+        )}
       </ScrollView>
     </View>
   );

@@ -188,6 +188,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="beacons"        options={{ href: null }} />
       <Tabs.Screen name="marketplace"    options={{ href: null }} />
       <Tabs.Screen name="governance"     options={{ href: null }} />
+      <Tabs.Screen name="dev-tools"      options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <RoleSwitcher />
