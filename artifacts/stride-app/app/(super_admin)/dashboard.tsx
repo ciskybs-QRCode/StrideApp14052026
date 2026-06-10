@@ -8,7 +8,7 @@ import {
   StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, type UserRole } from "@/context/AuthContext";
 import {
   getPlatformMetrics, listAssociations, extendTrial, setSuspension,
   getFinancialAnalytics, createTenant, listAdmins, addSuperAdmin,
@@ -1077,15 +1077,16 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
 
 // ── Role Switcher Modal ───────────────────────────────────────────────────────
 
-type SimRole = { icon: keyof typeof Ionicons.glyphMap; label: string; desc: string; color: string; bg: string; route: string };
+type SimRole = { icon: keyof typeof Ionicons.glyphMap; label: string; desc: string; color: string; bg: string; route: string; role: UserRole };
 const SIM_ROLES: SimRole[] = [
-  { icon: "stats-chart-outline",  label: "Admin View",    desc: "School management & billing", color: "#7C3AED", bg: "#F5F3FF", route: "/(admin)/stats" },
-  { icon: "calendar-outline",     label: "Operator View", desc: "Dashboard, QR scanner & ops",  color: "#059669", bg: "#ECFDF5", route: "/(operator)/dashboard" },
-  { icon: "home-outline",         label: "Member View",   desc: "Bookings, wallet & dependants", color: "#D97706", bg: "#FFFBEB", route: "/(parent)/home" },
+  { icon: "stats-chart-outline",  label: "Admin View",    desc: "School management & billing", color: "#7C3AED", bg: "#F5F3FF", route: "/(admin)/stats",        role: "admin"    },
+  { icon: "calendar-outline",     label: "Operator View", desc: "Dashboard, QR scanner & ops",  color: "#059669", bg: "#ECFDF5", route: "/(operator)/dashboard", role: "operator" },
+  { icon: "home-outline",         label: "Member View",   desc: "Bookings, wallet & dependants", color: "#D97706", bg: "#FFFBEB", route: "/(parent)/home",       role: "parent"   },
 ];
 
 function RoleSwitcherModal({ visible, onClose, onNavigate }: { visible: boolean; onClose: () => void; onNavigate: (route: string) => void }) {
   const insets = useSafeAreaInsets();
+  const { switchRole } = useAuth();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={em.overlay} onPress={onClose}>
@@ -1102,7 +1103,7 @@ function RoleSwitcherModal({ visible, onClose, onNavigate }: { visible: boolean;
               <Pressable
                 key={r.route}
                 style={({ pressed }) => [s.roleBtn, { opacity: pressed ? 0.8 : 1, backgroundColor: r.bg, borderColor: r.color + "33" }]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNavigate(r.route); onClose(); }}
+                onPress={async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); await switchRole(r.role); onNavigate(r.route); onClose(); }}
               >
                 <View style={[s.roleIcon, { backgroundColor: r.color + "18" }]}><Ionicons name={r.icon} size={22} color={r.color} /></View>
                 <View style={{ flex: 1 }}>

@@ -445,7 +445,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       const mappedCourses = Array.isArray(coursesData) ? (coursesData as ApiCourse[]).map(mapCourse) : [];
       setCourses(mappedCourses);
 
-      if (role === "parent") {
+      if (role === "parent" || role === "super_admin") {
         const [childrenRes, enrollmentsRes, delegatesRes, docsRes, paymentsRes] = await Promise.allSettled([
           api.getChildren(),
           api.getEnrollments(),
@@ -491,7 +491,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
         }
       }
 
-      if (role === "operator" || role === "admin") {
+      if (role === "operator" || role === "admin" || role === "super_admin") {
         const [studentsRes, lessonsRes, docsRes] = await Promise.allSettled([
           api.getStudents(),
           api.getLessons(),
