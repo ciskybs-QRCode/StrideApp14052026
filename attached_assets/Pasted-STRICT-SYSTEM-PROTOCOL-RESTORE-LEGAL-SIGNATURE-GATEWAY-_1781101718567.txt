@@ -1,0 +1,29 @@
+STRICT SYSTEM PROTOCOL: RESTORE LEGAL SIGNATURE GATEWAY & SCREEN ISOLATION.
+
+CRITICAL WARNING (NO COMMERCIAL JUNK TERMINOLOGY):
+- Eradicate the obsolete and amateur phrase "invoice dall'insegnante" or "invoice from teacher" everywhere. Invoices, receipts, and financial breakdowns are issued exclusively by the ASSOCIATION ("Associazione"), never by individual instructors/teachers. Update all language strings to reflect corporate compliance.
+- Your previous document layout refactor broke the core legal workflow. We are reverting to the strict, high-fidelity compliance wizard. No shortcuts.
+
+TASK 1: NAVIGATION ISOLATION (SEPARATE PAGES, NO INLINE COLLAPSIBLES)
+1. Completely remove the accordion/collapsible logic where clicking "Medical Certificate" simultaneously opens the "Photo Consent" section. This is messy and broken.
+2. Structure the navigation so that tapping ANY document card (whether a pending signature, a medical upload, or a historical archive doc) navigates the user to a DEDICATED, clean, full-screen page or separate sub-route. 
+3. Historical/Signed documents in the archive MUST be clickable and open a read-only viewer screen showing the document content and the recorded signature timestamp. Currently, they do nothing.
+
+TASK 2: RE-IMPLEMENT STRICT ENFORCEMENT ON PENDING SIGNATURES
+Inside the dedicated signature screen for any pending mandatory document, you must strictly enforce the following sequence:
+1. ENFORCE SCROLL: The Signature Pad and Submit button MUST be disabled by default. They are only unlocked once the user executes a full vertical scroll down to the absolute bottom of the document text window.
+2. COMPLIANCE CHECKBOX: Add a mandatory checkbox element stating: "Ho letto, compreso e accetto i termini del documento". This checkbox must be ticked to unlock the signature phase.
+
+TASK 3: RESTORE MEDIA CONSENT MATRIX & SIGNATURE VALIDATION
+For the specialized "Photo and Video Consent" (Consenso Foto e Video) document screen:
+1. SELECTION MATRIX: Render the 3 explicit selection options BEFORE the signature section:
+   - Full Consent (Uso Pubblico e Promozionale)
+   - Internal Use Only (Solo Uso Interno/Didattico)
+   - Denied (Nessun Consenso)
+2. LOCK STEP: The user MUST select one of these 3 options. Selection is strictly mandatory to unlock the signing step.
+3. CONFIRMATION LOOP: Once signed on the pad, provide two explicit actions:
+   - [Reset Signature] (Pulisci/Resetta la firma)
+   - [Confirm Signature] (Conferma la firma)
+4. SUBMIT: The final "Invia/Inoltra" button only becomes active after the signature has been confirmed.
+
+Verify with `tsc --noEmit` that all routes and type expressions compile perfectly. Do not close this session until the enterprise workflow is exactly as described.

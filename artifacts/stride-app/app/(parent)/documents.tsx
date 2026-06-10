@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as WebBrowser from "expo-web-browser";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -25,7 +25,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useUnread } from "@/context/UnreadContext";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
-import { SignaturePad } from "@/components/SignaturePad";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { api } from "@/lib/api";
@@ -69,12 +68,12 @@ export default function DocumentsScreen() {
   const insets = useSafeAreaInsets();
   const { secondaryRoleName } = useTerminology();
   const { markDocsRead } = useUnread();
+  const router = useRouter();
 
   useFocusEffect(useCallback(() => { markDocsRead(); }, [markDocsRead]));
 
-  const [showSign, setShowSign] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<"new" | "archive" | "consent" | null>(null);
+  const [expandedSection, setExpandedSection] = useState<"new" | "cert" | null>(null);
 
   // Medical certificate AI upload
   const [certAnalyzing, setCertAnalyzing] = useState(false);
@@ -88,7 +87,6 @@ export default function DocumentsScreen() {
   const [addChildName, setAddChildName] = useState("");
   const [addChildAge, setAddChildAge] = useState("");
   const [addingChild, setAddingChild] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(PROFILE_EXTRA_KEY).catch(() => null).then(raw => {
@@ -104,12 +102,6 @@ export default function DocumentsScreen() {
   const pendingDocs = documents.filter(d => !d.signed && d.required);
   const archivedDocs = documents.filter(d => d.signed);
   const newDocs = documents.filter(d => !d.signed && !d.required);
-
-  const handleSign = async (id: string) => {
-    await signDocument(id);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowSign(null);
-  };
 
   const handleDownload = async (doc: typeof documents[0]) => {
     if (doc.fileUrl) {
@@ -303,7 +295,7 @@ export default function DocumentsScreen() {
                   <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
                   <Text style={[styles.docStatus, { color: "#EF4444" }]}>Signature required</Text>
                 </View>
-                <Pressable style={styles.signBtn} onPress={() => setShowSign(doc.id)}>
+                <Pressable style={styles.signBtn} onPress={() => router.push({ pathname: "/(parent)/doc-sign", params: { docId: doc.id } })}>
                   <Text style={styles.signBtnText}>SIGN</Text>
                 </Pressable>
               </View>
@@ -336,7 +328,7 @@ export default function DocumentsScreen() {
                     <View style={styles.docInfo}>
                       <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
                       <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>
-                        From {doc.sentBy === "admin" ? "Administration" : "Teacher"} · {doc.sentAt}
+                        From {doc.sentBy === "admin" ? "Administration" : "Associazione"} · {doc.sentAt}
                       </Text>
                     </View>
                     <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
@@ -349,11 +341,11 @@ export default function DocumentsScreen() {
           </View>
         )}
 
-        {/* Medical Certificate Upload — always accessible as its own clean tile */}
+        {/* Medical Certificate Upload */}
         <View style={[styles.docTile, { backgroundColor: colors.card }]}>
           <Pressable
             style={styles.docTileHeader}
-            onPress={() => setExpandedSection(expandedSection === "consent" ? null : "consent")}
+            onPress={() => setExpandedSection(expandedSection === "cert" ? null : "cert")}
           >
             <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
               <Ionicons name="medical-outline" size={22} color={colors.primary} />
@@ -362,9 +354,9 @@ export default function DocumentsScreen() {
               <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Medical Certificate</Text>
               <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>AI-verified upload</Text>
             </View>
-            <Ionicons name={expandedSection === "consent" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
+            <Ionicons name={expandedSection === "cert" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
           </Pressable>
-          {expandedSection === "consent" && (
+          {expandedSection === "cert" && (
             <View style={styles.docTileBody}>
               {certAnalyzing ? (
                 <View style={styles.certAnalyzingBox}>
@@ -434,12 +426,9 @@ export default function DocumentsScreen() {
           )}
         </View>
 
-        {/* Tile 2: Document Archive */}
+        {/* Document Archive — each item navigates to dedicated read-only viewer */}
         <View style={[styles.docTile, { backgroundColor: colors.card }]}>
-          <Pressable
-            style={styles.docTileHeader}
-            onPress={() => setExpandedSection(expandedSection === "archive" ? null : "archive")}
-          >
+          <View style={styles.docTileHeader}>
             <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
               <Ionicons name="folder-open-outline" size={22} color={colors.primary} />
             </View>
@@ -449,114 +438,47 @@ export default function DocumentsScreen() {
                 {archivedDocs.length} signed document{archivedDocs.length !== 1 ? "s" : ""}
               </Text>
             </View>
-            <Ionicons name={expandedSection === "archive" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          {expandedSection === "archive" && (
-            <View style={styles.docTileBody}>
-              {archivedDocs.map(doc => (
-                <View key={doc.id} style={[styles.docCard, { backgroundColor: colors.background }]}>
-                  <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#10B981" />
-                  <View style={styles.docInfo}>
-                    <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
-                    <Text style={[styles.docStatus, { color: "#10B981" }]}>Signed on {doc.signedDate}</Text>
-                  </View>
-                  <Pressable style={[styles.downloadBtn, { backgroundColor: colors.muted }]} onPress={() => handleDownload(doc)}>
-                    <Ionicons name="download-outline" size={16} color={colors.primary} />
-                  </Pressable>
+          </View>
+          <View style={styles.docTileBody}>
+            {archivedDocs.map(doc => (
+              <Pressable
+                key={doc.id}
+                style={[styles.docCard, { backgroundColor: colors.background }]}
+                onPress={() => router.push({ pathname: "/(parent)/doc-view", params: { docId: doc.id } })}
+              >
+                <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#10B981" />
+                <View style={styles.docInfo}>
+                  <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                  <Text style={[styles.docStatus, { color: "#10B981" }]}>Signed on {doc.signedDate}</Text>
                 </View>
-              ))}
-              {archivedDocs.length === 0 && (
-                <Text style={[styles.emptyTileText, { color: colors.mutedForeground }]}>No archived documents yet</Text>
-              )}
-            </View>
-          )}
+                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+              </Pressable>
+            ))}
+            {archivedDocs.length === 0 && (
+              <Text style={[styles.emptyTileText, { color: colors.mutedForeground }]}>No archived documents yet</Text>
+            )}
+          </View>
         </View>
 
-        {/* Tile 3: Photo/Video Consent */}
-        <View style={[styles.docTile, { backgroundColor: colors.card }]}>
-          <Pressable
-            style={styles.docTileHeader}
-            onPress={() => setExpandedSection(expandedSection === "consent" ? null : "consent")}
-          >
+        {/* Photo/Video Consent — navigates to dedicated signature flow */}
+        <Pressable
+          style={[styles.docTile, { backgroundColor: colors.card }]}
+          onPress={() => router.push("/(parent)/doc-consent")}
+        >
+          <View style={styles.docTileHeader}>
             <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
               <Ionicons name="camera-outline" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Photo/Video Consent</Text>
+              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Consenso Foto e Video</Text>
               <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>
-                {mediaConsent === "full" ? "Full consent granted" : mediaConsent === "internal" ? "Internal use only" : "No consent"}
+                {mediaConsent === "full" ? "Full consent granted" : mediaConsent === "internal" ? "Internal use only" : "No consent recorded — tap to sign"}
               </Text>
             </View>
-            <Ionicons name={expandedSection === "consent" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          {expandedSection === "consent" && (
-            <View style={[styles.docTileBody, { gap: 10 }]}>
-              {([
-                { key: "full"     as const, label: "Full Consent (Social/Promo)",   icon: "camera"  as const },
-                { key: "internal" as const, label: "Internal Educational Use Only",  icon: "school"  as const },
-                { key: "none"     as const, label: "No Consent",                     icon: "eye-off" as const },
-              ]).map(option => (
-                <Pressable
-                  key={option.key}
-                  style={[styles.consentOption, mediaConsent === option.key && { backgroundColor: colors.primary }]}
-                  onPress={() => setMediaConsent(option.key)}
-                >
-                  <Ionicons name={option.icon} size={18} color={mediaConsent === option.key ? "#FFF" : colors.primary} />
-                  <Text style={[styles.consentText, mediaConsent === option.key && { color: "#FFF" }]}>{option.label}</Text>
-                  <Ionicons
-                    name={mediaConsent === option.key ? "radio-button-on" : "radio-button-off"}
-                    size={18}
-                    color={mediaConsent === option.key ? "#FFF" : colors.mutedForeground}
-                  />
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-
-      {/* ── Sign Document Modal ── */}
-      <Modal
-        visible={!!showSign}
-        transparent
-        animationType="slide"
-        onRequestClose={() => { setShowSign(null); setHasSignature(false); }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { position: "relative", maxHeight: "90%", paddingTop: 44 }]}>
-            <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowSign(null); setHasSignature(false); }} hitSlop={14}>
-              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
-            </Pressable>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
-              {showSign && (() => {
-                const doc = documents.find(d => d.id === showSign);
-                return doc ? (
-                  <>
-                    <Text style={[styles.modalTitle, { color: colors.primary }]}>Sign Document</Text>
-                    <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{doc.title}</Text>
-                    <SignaturePad onHasSignatureChange={setHasSignature} strokeColor={colors.primary} />
-                    <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-                      <Pressable
-                        style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]}
-                        onPress={() => { setShowSign(null); setHasSignature(false); }}
-                      >
-                        <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-                      </Pressable>
-                      <Pressable
-                        style={[styles.modalBtn, { flex: 1, backgroundColor: hasSignature ? colors.primary : colors.border }]}
-                        onPress={() => { if (hasSignature) handleSign(doc.id); }}
-                        disabled={!hasSignature}
-                      >
-                        <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Signature</Text>
-                      </Pressable>
-                    </View>
-                  </>
-                ) : null;
-              })()}
-            </ScrollView>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
           </View>
-        </View>
-      </Modal>
+        </Pressable>
+      </ScrollView>
 
       {/* ── Edit Profile — Fullscreen Modal ── */}
       <Modal visible={showProfile} transparent={false} animationType="slide" onRequestClose={() => setShowProfile(false)}>
