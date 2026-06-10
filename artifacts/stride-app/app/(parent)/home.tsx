@@ -101,14 +101,14 @@ export default function ParentHome() {
 
   // Hard-reset stale pulse state the moment super_admin takes over this screen
   useEffect(() => {
-    if (user?.role === "super_admin") {
+    if (user?.roles?.includes("super_admin")) {
       setActivePulse(null);
       setShowPulseAlert(false);
     }
-  }, [user?.role]);
+  }, [user?.roles]);
 
   useEffect(() => {
-    if (user?.role === "super_admin") return;
+    if (user?.roles?.includes("super_admin")) return;
     let cancelled = false;
     const check = async () => {
       try {
@@ -551,7 +551,7 @@ export default function ParentHome() {
       </ScrollView>
 
       {/* ── Emergency Alert Modal — never shown to super_admin ── */}
-      <Modal visible={showPulseAlert && user?.role !== "super_admin"} transparent animationType="fade" statusBarTranslucent>
+      <Modal visible={showPulseAlert && !user?.roles?.includes("super_admin")} transparent animationType="fade" statusBarTranslucent>
         <View style={styles.pulseOverlay}>
           <View style={[styles.pulseCard, { backgroundColor: colors.primary, borderColor: `${colors.secondary}25` }]}>
 

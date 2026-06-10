@@ -91,7 +91,7 @@ export default function ParentTabLayout() {
     d => d.mandatorySignature && !signedAdminDocIds.includes(d.id)
   );
   const totalMandatory = legalAdminDocs.filter(d => d.mandatorySignature).length;
-  const blocked = unsignedMandatoryDocs.length > 0 && user?.role !== "super_admin";
+  const blocked = unsignedMandatoryDocs.length > 0 && !user?.roles?.includes("super_admin");
   const currentDoc = unsignedMandatoryDocs[currentDocIdx] ?? unsignedMandatoryDocs[0];
 
   const canSign = Boolean(
