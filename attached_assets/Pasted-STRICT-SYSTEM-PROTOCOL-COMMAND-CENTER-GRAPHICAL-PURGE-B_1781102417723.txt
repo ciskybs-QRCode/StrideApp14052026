@@ -1,0 +1,25 @@
+STRICT SYSTEM PROTOCOL: COMMAND CENTER GRAPHICAL PURGE & BRAND ENFORCEMENT.
+
+CRITICAL WARNING (NO PASTELS, NO HARLEQUIN INTERFACES):
+- The current Super Admin "Command Center" dashboard looks completely unprofessional. The metric blocks look like a rainbow collection of soft pastel crayons (light blue, light purple, light green, light yellow, light pink). This violates our strict corporate Navy Blue and Gold design tokens.
+- Eradicate every single soft pastel background block from the global metrics grid.
+- Do NOT touch the database or logic. This is a strict visual and aesthetic cleanup task.
+
+TASK 1: STANDARDIZE METRIC CARD ARCHITECTURE
+1. Locate the file rendering the Super Admin Command Center dashboard (typically `artifacts/stride-app/app/(super_admin)/dashboard.tsx` or the main platform control metrics panel).
+2. For all 6 metric cards ("TOTAL SCHOOLS", "GLOBAL MEMBERS", "ACTIVE SUBS", "IN TRIAL", "EXPIRED", "PLATFORM HEALTH"), completely remove the colored card background fills.
+3. Standardize the card container UI using an elegant, unified design:
+   - Card Background: Solid White (`#FFFFFF`) or an ultra-clean neutral slate shadow background.
+   - Card Border: A very subtle, sharp gray border line (e.g., `1px solid #E2E8F0`) or a faint Navy line token.
+   - Text/Data Hierarchy: Large metric numbers must be bold and rendered in crisp, dominant corporate dark gray or deep Navy Blue (`#1E3A8A`).
+
+TASK 2: UNIFIED BRAND ICON WRAPPERS & ACCENTS
+1. The tiny circle icons inside the cards must be stripped of their multi-colored pastel backgrounds.
+2. Icon Background Wrappers: Standardize all of them using our specific corporate Navy Blue tint transparency (`rgba(30, 58, 138, 0.05)`).
+3. Icon Glyphs: Render the vector icons in solid Navy Blue (`#1E3A8A`) or corporate Gold (`#D4AF37`) to maintain an elite brand ecosystem.
+4. Exception for Alert Status ("EXPIRED"): You may use a standard dark alert color (like an enterprise dark crimson text or a small danger-dot indicator) for bad metrics, but the card container itself must remain clean white/neutral—NOT a solid pink block.
+
+TASK 3: HEADER ALIGNMENT Check
+Ensure the top "Platform Control Panel" badge and dynamic island spacing are perfectly aligned, symmetric, and fit inside the phone display boundaries without cutting or bad clipping.
+
+Run `tsc --noEmit` to verify zero structural breaks. Rebuild the bundle and display the polished dashboard grid immediately.

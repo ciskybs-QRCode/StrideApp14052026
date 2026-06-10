@@ -94,8 +94,8 @@ const sh = StyleSheet.create({
 type MetricItem = { key: string; label: string; value: string | number; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string };
 function MetricCard({ item }: { item: MetricItem }) {
   return (
-    <View style={[mc.card, { width: CARD_W, backgroundColor: item.bg }]}>
-      <View style={[mc.circle, { backgroundColor: item.color + "22" }]}>
+    <View style={[mc.card, { width: CARD_W }]}>
+      <View style={mc.circle}>
         <Ionicons name={item.icon} size={20} color={item.color} />
       </View>
       <Text style={[mc.value, { color: item.color }]}>{item.value}</Text>
@@ -104,8 +104,8 @@ function MetricCard({ item }: { item: MetricItem }) {
   );
 }
 const mc = StyleSheet.create({
-  card:   { borderRadius: 16, padding: 16, marginBottom: 8 },
-  circle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  card:   { borderRadius: 16, padding: 16, marginBottom: 8, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0" },
+  circle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", marginBottom: 10, backgroundColor: "rgba(30,58,138,0.05)" },
   value:  { fontSize: 28, fontWeight: "900", marginBottom: 2 },
   label:  { fontSize: 10, fontWeight: "700", letterSpacing: 0.8, color: "#6B7280" },
 });
@@ -1219,15 +1219,15 @@ export default function SuperAdminDashboard() {
   );
 
   const metricItems: MetricItem[] = metrics ? [
-    { key: "schools",  label: "TOTAL SCHOOLS",   value: metrics.totalOrgs,    icon: "business",          color: "#1E3A8A", bg: "#EFF6FF" },
-    { key: "members",  label: "GLOBAL MEMBERS",  value: metrics.totalMembers, icon: "people",            color: "#7C3AED", bg: "#F5F3FF" },
-    { key: "active",   label: "ACTIVE SUBS",     value: metrics.activeCount,  icon: "checkmark-circle",  color: "#059669", bg: "#ECFDF5" },
-    { key: "trialing", label: "IN TRIAL",        value: metrics.trialingCount,icon: "timer-outline",     color: "#D97706", bg: "#FFFBEB" },
-    { key: "expired",  label: "EXPIRED",         value: metrics.expiredCount, icon: "close-circle",      color: "#DC2626", bg: "#FEF2F2" },
+    { key: "schools",  label: "TOTAL SCHOOLS",   value: metrics.totalOrgs,    icon: "business",          color: "#1E3A8A", bg: "#FFFFFF" },
+    { key: "members",  label: "GLOBAL MEMBERS",  value: metrics.totalMembers, icon: "people",            color: "#1E3A8A", bg: "#FFFFFF" },
+    { key: "active",   label: "ACTIVE SUBS",     value: metrics.activeCount,  icon: "checkmark-circle",  color: "#D4AF37", bg: "#FFFFFF" },
+    { key: "trialing", label: "IN TRIAL",        value: metrics.trialingCount,icon: "timer-outline",     color: "#D97706", bg: "#FFFFFF" },
+    { key: "expired",  label: "EXPIRED",         value: metrics.expiredCount, icon: "close-circle",      color: "#DC2626", bg: "#FFFFFF" },
     {
       key: "health", label: "PLATFORM HEALTH",
       value: metrics.totalOrgs > 0 ? `${Math.round(((metrics.activeCount + metrics.trialingCount) / metrics.totalOrgs) * 100)}%` : "—",
-      icon: "pulse-outline", color: "#0891B2", bg: "#ECFEFF",
+      icon: "pulse-outline", color: "#D4AF37", bg: "#FFFFFF",
     },
   ] : [];
 
