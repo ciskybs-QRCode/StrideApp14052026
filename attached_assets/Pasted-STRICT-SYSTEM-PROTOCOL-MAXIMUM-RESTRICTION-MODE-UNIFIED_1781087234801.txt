@@ -1,0 +1,20 @@
+STRICT SYSTEM PROTOCOL: MAXIMUM RESTRICTION MODE & UNIFIED ARCHITECTURE AUDIT.
+
+CRITICAL WARNING (NO BULLSHIT POLICY): 
+- From this moment on, you are in Strict Execution Mode. Do NOT modify, alter, refactor, rewrite, or touch a single line of code, database schema, or architecture unless explicitly ordered in the prompt.
+- There is ZERO room for personal ideas, creative shortcuts, or optimization initiatives. 
+- If any requested task requires modifying unrelated files or structural configurations, you MUST STOP immediately, write a detailed proposal, and WAIT for explicit user permission. Failure to follow this rule will break the system.
+
+THE SINGLE SOURCE OF TRUTH DIRECTIVE:
+From now on, the absolute visual, structural, and behavioral Source of Truth for this entire application (Stride) consists exclusively of the screens accessed via the Super Admin account when executing a role switch (ActiveRole context inside Expo Router). 
+
+The standalone screen variations rendered during direct external user logins (e.g., standard member or admin logins) must be integrated and unified into this identical component pathway. We will not maintain dual-code layouts.
+
+YOUR IMMEDIATE ISOLATED TASK (ANALYSIS ONLY - DO NOT EXECUTE):
+Before writing or changing any code, perform a deep inspection comparing the current standalone layout files against the layouts rendered via the Super Admin switcher. Present a concise markdown report detailing:
+
+1. DIFFERENCE LOG: Identify exactly what elements, text content, documents, or styles differ between the standalone screens and the Super Admin switch-simulated screens (e.g., the 3-document vs 7-document discrepancy).
+2. INTEGRATION PLAN: Outline exactly how you plan to merge these screens so that both direct login routes and Super Admin switch states share the exact same React components and Navy Blue/Gold design tokens.
+3. DATA INTEGRITY: Confirm that no existing user metadata or Supabase tracking flags will be dropped during this consolidation.
+
+REMINDER: This is a READ-ONLY inspection and planning task. Provide the structural analysis and wait for my explicit confirmation before changing a single pixel or line of code.
