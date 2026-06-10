@@ -289,77 +289,83 @@ export default function DocumentsScreen() {
         {/* ── Document & Legal Centre ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>Document & Legal Centre</Text>
 
+        {/* Pending Signatures — always visible, never buried in a dropdown */}
         {pendingDocs.length > 0 && (
-          <View style={styles.alertBanner}>
-            <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
-            <Text style={styles.alertText}>{pendingDocs.length} document{pendingDocs.length !== 1 ? "s" : ""} require{pendingDocs.length === 1 ? "s" : ""} your signature</Text>
+          <>
+            <View style={styles.alertBanner}>
+              <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
+              <Text style={styles.alertText}>{pendingDocs.length} document{pendingDocs.length !== 1 ? "s" : ""} require{pendingDocs.length === 1 ? "s" : ""} your signature</Text>
+            </View>
+            {pendingDocs.map(doc => (
+              <View key={doc.id} style={[styles.docCard, { backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444", borderLeftWidth: 4, borderRadius: 12, marginBottom: 8 }]}>
+                <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#EF4444" />
+                <View style={styles.docInfo}>
+                  <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                  <Text style={[styles.docStatus, { color: "#EF4444" }]}>Signature required</Text>
+                </View>
+                <Pressable style={styles.signBtn} onPress={() => setShowSign(doc.id)}>
+                  <Text style={styles.signBtnText}>SIGN</Text>
+                </Pressable>
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* School Notices — informational docs from school, no item count */}
+        {newDocs.length > 0 && (
+          <View style={[styles.docTile, { backgroundColor: colors.card }]}>
+            <Pressable
+              style={styles.docTileHeader}
+              onPress={() => setExpandedSection(expandedSection === "new" ? null : "new")}
+            >
+              <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.docTileTitle, { color: colors.foreground }]}>School Notices</Text>
+                <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>Documents from your school</Text>
+              </View>
+              <View style={styles.unreadDot} />
+              <Ionicons name={expandedSection === "new" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
+            </Pressable>
+            {expandedSection === "new" && (
+              <View style={styles.docTileBody}>
+                {newDocs.map(doc => (
+                  <Pressable key={doc.id} style={[styles.docCard, { backgroundColor: colors.background }]} onPress={() => handlePreview(doc)}>
+                    <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={colors.primary} />
+                    <View style={styles.docInfo}>
+                      <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                      <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>
+                        From {doc.sentBy === "admin" ? "Administration" : "Teacher"} · {doc.sentAt}
+                      </Text>
+                    </View>
+                    <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
+                      <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? colors.primary : colors.mutedForeground} />
+                    </Pressable>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
-        {/* Tile 1: New Documents */}
+        {/* Medical Certificate Upload — always accessible as its own clean tile */}
         <View style={[styles.docTile, { backgroundColor: colors.card }]}>
           <Pressable
             style={styles.docTileHeader}
-            onPress={() => setExpandedSection(expandedSection === "new" ? null : "new")}
+            onPress={() => setExpandedSection(expandedSection === "consent" ? null : "consent")}
           >
             <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-              <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+              <Ionicons name="medical-outline" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>New Documents</Text>
-              <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>
-                {newDocs.length + pendingDocs.length} item{(newDocs.length + pendingDocs.length) !== 1 ? "s" : ""} available
-              </Text>
+              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Medical Certificate</Text>
+              <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>AI-verified upload</Text>
             </View>
-            {(newDocs.length > 0 || pendingDocs.length > 0) && <View style={styles.unreadDot} />}
-            <Ionicons name={expandedSection === "new" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
+            <Ionicons name={expandedSection === "consent" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
           </Pressable>
-          {expandedSection === "new" && (
+          {expandedSection === "consent" && (
             <View style={styles.docTileBody}>
-              {pendingDocs.length > 0 && (
-                <>
-                  <Text style={[styles.subSectionLabel, { color: "#EF4444" }]}>Signature Required</Text>
-                  {pendingDocs.map(doc => (
-                    <View key={doc.id} style={[styles.docCard, { backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444", borderLeftWidth: 4 }]}>
-                      <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#EF4444" />
-                      <View style={styles.docInfo}>
-                        <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
-                        <Text style={[styles.docStatus, { color: "#EF4444" }]}>Signature required</Text>
-                      </View>
-                      <Pressable style={styles.signBtn} onPress={() => setShowSign(doc.id)}>
-                        <Text style={styles.signBtnText}>SIGN</Text>
-                      </Pressable>
-                    </View>
-                  ))}
-                </>
-              )}
-              {newDocs.length > 0 && (
-                <>
-                  <Text style={[styles.subSectionLabel, { color: colors.primary }]}>From School</Text>
-                  {newDocs.map(doc => (
-                    <Pressable key={doc.id} style={[styles.docCard, { backgroundColor: colors.background }]} onPress={() => handlePreview(doc)}>
-                      <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={colors.primary} />
-                      <View style={styles.docInfo}>
-                        <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
-                        <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>
-                          From {doc.sentBy === "admin" ? "Administration" : "Teacher"} · {doc.sentAt}
-                        </Text>
-                      </View>
-                      <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
-                        <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? colors.primary : colors.mutedForeground} />
-                      </Pressable>
-                    </Pressable>
-                  ))}
-                </>
-              )}
-              {newDocs.length === 0 && pendingDocs.length === 0 && (
-                <Text style={[styles.emptyTileText, { color: colors.mutedForeground }]}>No new documents</Text>
-              )}
-
-              {/* ── Upload Certificate ── */}
-              <View style={[styles.certDivider, { backgroundColor: colors.border }]} />
-              <Text style={[styles.subSectionLabel, { color: colors.primary, marginTop: 8 }]}>Upload Certificate</Text>
-
               {certAnalyzing ? (
                 <View style={styles.certAnalyzingBox}>
                   <ActivityIndicator size="small" color="#D4AF37" />

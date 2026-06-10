@@ -233,14 +233,14 @@ export function EmergencyNotificationProvider({
 
       {/* Blocking gate — cannot be dismissed via hardware back */}
       <PermissionGate
-        visible={showGate}
+        visible={showGate && user?.role !== "super_admin"}
         onEnable={handleGateEnable}
         onSkip={handleGateSkip}
       />
 
       {/* Soft re-prompt (shown after a previous snooze) */}
       <CriticalAlertPermissionPrompt
-        visible={showPrompt}
+        visible={showPrompt && user?.role !== "super_admin"}
         onEnable={handleRequestPermissions}
         onDismiss={() => setShowPrompt(false)}
       />

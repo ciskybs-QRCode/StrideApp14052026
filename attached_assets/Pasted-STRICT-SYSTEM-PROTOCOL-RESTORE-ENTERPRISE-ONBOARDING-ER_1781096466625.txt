@@ -1,0 +1,20 @@
+STRICT SYSTEM PROTOCOL: RESTORE ENTERPRISE ONBOARDING & ERADICATE EMERGENCY OVERLAY.
+
+CRITICAL WARNING (ZERO TOLERANCE FOR JUNK CODE):
+- The current UI state is unacceptable. The professional onboarding flow has been replaced by a messy dropdown containing a junk list of 19 items. The advanced multi-step document signature workflow (mandatory scroll, validation flags, signature authorization, and granular media choices like Full/Internal/No Consent for Photos/Videos) has been completely bypassed.
+- You must RESTORE the high-fidelity enterprise onboarding workflow immediately. Do NOT invent temporary layouts.
+
+TASK 1: ERADICATE EMERGENCY ALERT MODAL FOR SUPER_ADMIN GLOBALLY
+1. The emergency alert modal ("Broadcast Emergency Alert") is still locking the screen on layout switches (showing "Hello, Super"). This means the modal component is mounted HIGHER than `app/(parent)/home.tsx`.
+2. Locate where this alert layout overlay is globally injected. Check `app/_layout.tsx`, `app/(parent)/_layout.tsx`, or any generic layout wrapping the authenticated shells.
+3. Apply a strict global UI guard directly inside the component return statement: 
+   If `user?.role === 'super_admin'`, this emergency overlay component MUST return `null`. Super Admins simulating roles must have total, unrestricted access to inspect screens without being intercepted by active alerts.
+
+TASK 2: RESTATING THE "PRO" DOCUMENT SIGNATURE & ONBOARDING WORKFLOW
+1. Locate the core high-fidelity Onboarding/Signature component that contains the advanced logic (Scroll-to-bottom enforcement, checkmarks, signature validation pad, and the specific Photo/Video consent selection matrix: Full Consent / Internal Use Only / Denied).
+2. Look through your component history or files like `app/onboarding.tsx` or specialized modal signature wrappers.
+3. Force the application to launch this EXACT professional onboarding screen whenever a simulated or real Member/Parent has unsigned documents. 
+4. Trash the current "19 items available" junk dropdown list from the Account screen. Unsigned documents must cleanly redirect the user into the restored step-by-step corporate signature wizard.
+5. Signed/historical documents must be clearly separated into an archived/read-only history tab, keeping the main interface clean.
+
+Run `tsc --noEmit` to ensure absolutely zero TypeScript errors after restoring these component paths. Deliver a clear confirmation once the professional flow is fully active.

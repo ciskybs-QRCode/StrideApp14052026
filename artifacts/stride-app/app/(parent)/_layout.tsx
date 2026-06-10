@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
+import { useAuth } from "@/context/AuthContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { useColors } from "@/hooks/useColors";
 import { BackButton } from "@/components/BackButton";
@@ -67,6 +68,7 @@ export default function ParentTabLayout() {
   const insets    = useSafeAreaInsets();
   const isIOS     = Platform.OS === "ios";
   const isWeb     = Platform.OS === "web";
+  const { user }                                       = useAuth();
   const { cartBadgeCount }                            = useRealtime();
   const { legalAdminDocs, signedAdminDocIds, signAdminDoc } = useAppData();
   const { secondaryRoleName }                         = useTerminology();
@@ -89,7 +91,7 @@ export default function ParentTabLayout() {
     d => d.mandatorySignature && !signedAdminDocIds.includes(d.id)
   );
   const totalMandatory = legalAdminDocs.filter(d => d.mandatorySignature).length;
-  const blocked = unsignedMandatoryDocs.length > 0;
+  const blocked = unsignedMandatoryDocs.length > 0 && user?.role !== "super_admin";
   const currentDoc = unsignedMandatoryDocs[currentDocIdx] ?? unsignedMandatoryDocs[0];
 
   const canSign = Boolean(
