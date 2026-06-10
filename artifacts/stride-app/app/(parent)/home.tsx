@@ -100,6 +100,7 @@ export default function ParentHome() {
   }, [pulseRingAnim]);
 
   useEffect(() => {
+    if (user?.role === "super_admin") return;
     let cancelled = false;
     const check = async () => {
       try {
@@ -117,7 +118,7 @@ export default function ParentHome() {
     void check();
     const interval = setInterval(check, 15000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [ackStatus]);
+  }, [ackStatus, user?.role]);
 
   const handlePulseAck = async (status: "safe" | "missing") => {
     if (!activePulse || ackSubmitting) return;

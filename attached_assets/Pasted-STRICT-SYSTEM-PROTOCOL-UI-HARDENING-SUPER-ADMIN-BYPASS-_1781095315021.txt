@@ -1,0 +1,23 @@
+STRICT SYSTEM PROTOCOL: UI HARDENING & SUPER_ADMIN BYPASS INJECTION.
+
+CRITICAL WARNING (NO BULLSHIT POLICY):
+- Do NOT touch the database, do NOT change the routes structure, and do NOT alter any working data contexts.
+- Absolutely ZERO creative interpretation allowed. Fix exactly what is requested below and pass the TypeScript compiler check. Keep all layouts strictly within the phone display boundaries.
+
+TASK 1: COMPLETE BYPASS OF EMERGENCY/BROADCAST ALERT FOR SUPER_ADMIN
+1. Locate the React Native component responsible for rendering the Emergency Alert / Broadcast Emergency Modal (the overlay shown with "My Child is Safe" / "Dependent is Safe" / "I Need Assistance"). It is triggered globally or inside `app/(parent)/home.tsx` / `app/(member)/dashboard.tsx`.
+2. Inspect the visibility condition or the React `useEffect` that forces this modal to open.
+3. Inject a strict guard clause at the very top of the modal's rendering logic or trigger effect: 
+   If `user?.role === 'super_admin'`, the modal MUST return `null` or state visibility MUST remain strictly `false`.
+   Super Admins simulating or managing views must NEVER have their screen intercepted or locked by active organization facility broadcasts or dependent pulse alerts.
+
+TASK 2: CLEAN UP THE PASTELL/HARLEQUIN ICONS (ACCOUNT SETTINGS)
+1. Open the Account/Settings screen file: `artifacts/stride-app/app/(tabs)/parent/settings.tsx` (or the unified file handling the Account list view shown in the screenshot).
+2. Locate the icon container elements for: "Change Email", "Change Password", "Log Out", and "Delete Account".
+3. Eradicate all soft/pastel background fills (light blue, light green, light orange, light pink wrappers).
+4. Standardize the UI using our corporate Navy Blue and Gold palette tokens:
+   - Icon Background Wrappers: Must use a subtle, unified Navy Blue tint transparency (e.g., `rgba(30, 58, 138, 0.07)` or equivalent design system token).
+   - Icons/Vectors: Solid Navy Blue (`#1E3A8A`) or Gold (`#D4AF37`) depending on action severity.
+   - "Delete Account": Can retain red text color for danger hierarchy, but the icon wrapper background must be clean and unified, not a bright pink block.
+
+Run `tsc --noEmit` immediately after these changes to verify zero compilation breaks. Report when finished so the user can refresh the view.

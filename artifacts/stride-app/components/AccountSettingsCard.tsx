@@ -324,7 +324,7 @@ export function AccountSettingsCard() {
             showsVerticalScrollIndicator={false}
           >
             <View style={[styles.centreCard, { backgroundColor: colors.card }]}>
-              <View style={[styles.centreIconBox, { backgroundColor: "#FEE2E2" }]}>
+              <View style={[styles.centreIconBox, { backgroundColor: "#1E3A8A12" }]}>
                 <Ionicons name="trash-outline" size={28} color="#EF4444" />
               </View>
               <Text style={[styles.modalTitle, { color: "#EF4444", textAlign: "center" }]}>
@@ -348,7 +348,7 @@ export function AccountSettingsCard() {
                 { icon: "calendar-outline"      as const, text: "All bookings will be cancelled" },
               ].map(item => (
                 <View key={item.text} style={[styles.consequenceRow, { borderColor: colors.border }]}>
-                  <View style={[styles.consequenceIcon, { backgroundColor: "#FEE2E2" }]}>
+                  <View style={[styles.consequenceIcon, { backgroundColor: "#1E3A8A12" }]}>
                     <Ionicons name={item.icon} size={14} color="#EF4444" />
                   </View>
                   <Text style={[styles.consequenceText, { color: colors.foreground }]}>{item.text}</Text>
