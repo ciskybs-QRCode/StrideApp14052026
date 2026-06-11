@@ -187,7 +187,31 @@ export default function DocumentsScreen() {
     setShowProfile(true);
   };
 
+  // Task 2: Italy locale inference — when phone prefix is +39, clear US placeholder defaults
+  useEffect(() => {
+    if (!editExtra.phone.startsWith("+39")) return;
+    const US_CITIES    = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"];
+    const US_POSTCODES = ["10001", "90001", "60601", "77001", "85001"];
+    setEditExtra(prev => ({
+      ...prev,
+      country:  (!prev.country || prev.country === "US") ? "IT" : prev.country,
+      city:     US_CITIES.includes(prev.city)    ? "" : prev.city,
+      postcode: US_POSTCODES.includes(prev.postcode) ? "" : prev.postcode,
+    }));
+  }, [editExtra.phone]);
+
   const handleSaveProfile = async () => {
+    // Task 1: required field gate — block save if critical registration fields are empty
+    const missing: string[] = [];
+    if (!editExtra.firstName.trim())    missing.push("First Name");
+    if (!editExtra.lastName.trim())     missing.push("Last Name");
+    if (!editExtra.dateOfBirth.trim())  missing.push("Date of Birth");
+    if (!editExtra.phone.trim())        missing.push("Phone");
+    if (!editExtra.addressLine1.trim()) missing.push("Address");
+    if (missing.length > 0) {
+      Alert.alert("Required Fields", `Please complete the following before saving:\n${missing.join(", ")}.`);
+      return;
+    }
     const fullName = `${editExtra.firstName.trim()} ${editExtra.lastName.trim()}`.trim();
     if (fullName) await updateUser({ name: fullName });
     setProfileExtra(editExtra);

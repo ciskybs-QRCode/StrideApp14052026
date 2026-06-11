@@ -1,0 +1,31 @@
+STRICT MILITARY CODE PROTOCOL: LOGIC EXTRACTION & BACKEND CONDITIONALS ONLY. 
+
+🛑 GRAPHICS AND STYLES ARE COMPLETELY LOCKDOWNED 🛑
+YOU ARE ABSOLUTELY FORBIDDEN FROM TOUCHING, REWRITING, OR MODIFYING A SINGLE LINE OF UI CODE, STYLESHEETS, COLORS, PADDING, MARGINS, FLEXBOX PROPERTIES, OR VISUAL LAYOUT CONTEXTS. DO NOT ATTEMPT TO "IMPROVE" THE LOOK. IF YOU TOUCH A SINGLE VISUAL PIXEL, THE BUILD WILL BE TERMINATED AND PENALIZED. WORK ONLY ON STATE, VALIDATION, HANDLERS, AND ROUTING LOGIC.
+
+EXECUTE THESE 5 ARCHITECTURAL LOGIC TASKS BEHIND THE SEENS:
+
+TASK 1: SIGN-UP VALIDATION LOGIC (NO EMPTY FIELDS)
+- Open the backend logic / submission handler for Account Registration (`app/(auth)/sign-up.tsx` or equivalent signup controller).
+- Enforce strict programmatic validation on the submission object. The registration transaction must exit with an error if 'First Name', 'Last Name', 'Date of Birth', 'Phone', or 'Full Address' are empty. 
+- Ensure that upon database creation, these fields are 100% populated. No visual changes to inputs.
+
+TASK 2: CONDITIONAL GPS/LOCALIZATION INFERENCE
+- Inside the initialization/state hook of the Profile flow, write a logical check: If the country code or initial phone input evaluates to '+39' (Italy), programmatically switch the internal logic fallback state for City / Postcode away from US defaults (like 'New York') to generic local placeholders or dynamic geolocation variables. 
+- Leave the text input components and their styles EXACTLY as they are.
+
+TASK 3: JUST-IN-TIME (JIT) ENROLLMENT INTERCEPTION
+- Open the function handling Course Enrollment / Lesson Booking actions for Members.
+- Insert a dynamic programmatic gateway BEFORE the database call: check the user's profile state (`hasSignedMediaConsent`).
+- If `false`, immediately interrupt the enrollment execution flow and trigger a clean routing redirect to `/doc-consent`. Once consent is captured in the backend, allow the block to lift.
+
+TASK 4: MUTATION RE-SIGNING FORCE LOOP
+- Inside the profile update/settings controller, if the user modifies their choice of Photo/Video consent (e.g., toggling between options), do NOT commit a standard silent update to the database.
+- Intercept the `onSave` handler and programmatically route the user back to the verification pad (`/doc-consent`) to force a fresh signature execution, as a legal mutation requires re-signing.
+
+TASK 5: UNDER-18 DEPENDANT CONTROLLER BLOCK
+- In the Dependant Profile creation handler, intercept the submission payload.
+- Calculate the age based on the inputted Date of Birth. If the age is mathematically < 18, block the execution sequence and force an active flag requirement for Parental/Guardian Legal Authorization before writing to Firestore.
+
+COMPILATION MANDATE:
+Run `tsc --noEmit`. Verify that ONLY logical functions, route triggers, and state variables were modified. Do NOT change a single design token or style property. Rebuild the logical stack now.

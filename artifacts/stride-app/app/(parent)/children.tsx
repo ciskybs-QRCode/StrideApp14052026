@@ -170,17 +170,8 @@ export default function ChildrenScreen() {
     }
   };
 
-  const handleAddChild = async () => {
-    if (!newChildName.trim() || !newChildSurname.trim() || !newChildDob) {
-      Alert.alert("Required Fields", "Please enter first name, last name and date of birth.");
-      return;
-    }
-    const dobStr = newChildDob.toISOString().split("T")[0];
-    const age = calcAgeFromDob(dobStr);
-    if (age < 0 || age > 100) {
-      Alert.alert("Invalid Date", "Date of birth appears incorrect.");
-      return;
-    }
+  // Task 5: extracted commit — called after guardian authorization is confirmed
+  const commitAddChild = async (dobStr: string, age: number) => {
     await addChild({
       name: `${newChildName.trim()} ${newChildSurname.trim()}`,
       age,
@@ -197,7 +188,38 @@ export default function ChildrenScreen() {
     setShowAddChild(false);
   };
 
+  const handleAddChild = async () => {
+    if (!newChildName.trim() || !newChildSurname.trim() || !newChildDob) {
+      Alert.alert("Required Fields", "Please enter first name, last name and date of birth.");
+      return;
+    }
+    const dobStr = newChildDob.toISOString().split("T")[0];
+    const age = calcAgeFromDob(dobStr);
+    if (age < 0 || age > 100) {
+      Alert.alert("Invalid Date", "Date of birth appears incorrect.");
+      return;
+    }
+    // Task 5: under-18 dependent requires explicit guardian authorization before write
+    if (age < 18) {
+      Alert.alert(
+        "Autorizzazione Tutore",
+        "This dependent is a minor (under 18). By proceeding you confirm you are the legal parent or guardian and accept full responsibility for their enrolment.",
+        [
+          { text: "Annulla", style: "cancel" },
+          { text: "Conferma", onPress: () => { void commitAddChild(dobStr, age); } },
+        ]
+      );
+      return;
+    }
+    await commitAddChild(dobStr, age);
+  };
+
   const handleSaveMedical = async () => {
+    // Task 4: consent mutation re-signing gate — any change to consent choice requires re-signing
+    if (child && editMediaConsent !== child.mediaConsent) {
+      router.push("/(parent)/doc-consent");
+      return;
+    }
     await updateChild(selectedChild, { allergies, medicalWaiver, mediaConsent: editMediaConsent });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowMedical(false);
