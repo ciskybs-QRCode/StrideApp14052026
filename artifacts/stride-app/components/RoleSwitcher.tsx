@@ -1,7 +1,29 @@
+/**
+ * RoleSwitcher — two exports for two placement contexts:
+ *
+ *   RoleSwitcher     — floating pill button; used as an overlay in layout files
+ *                      (rendered after <Tabs> so it floats above all tab screens).
+ *                      Only visible when the user holds more than one role.
+ *
+ *   RoleSwitcherRow  — embedded settings row with the same sheet; used inside
+ *                      profile / settings ScrollViews.
+ *
+ * Both share the same <RoleSheet> bottom-sheet modal.
+ * Role labels, icons, and branding come from ROLE_META + useColors().
+ * Switching calls switchActiveRole(role) which handles routing internally.
+ */
+
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -19,36 +41,101 @@ const ROLE_META: Record<UserRole, {
   kiosk:       { label: "Kiosk",    icon: "tv-outline",       color: "#1E3A8A" },
 };
 
-// ── Inline settings row (non-floating) ───────────────────────────────────────
+// ── Shared bottom-sheet ───────────────────────────────────────────────────────
 
-/**
- * Renders a "Switch Role" settings card embedded in any profile / settings screen.
- *
- * Uses `allRoles` (DB-verified) from AuthContext when available, falling back to
- * `user.roles` (client-side derived).  Inherits tenant branding via `useColors()`.
- * Calls `switchActiveRole(role)` which both updates state AND routes correctly —
- * no separate router.replace call is needed here.
- *
- * Only renders when the user holds more than one role.
- */
-export function RoleSwitcherRow() {
+interface RoleSheetProps {
+  open:           boolean;
+  onClose:        () => void;
+  availableRoles: UserRole[];
+  activeRole:     UserRole;
+  onSwitch:       (role: UserRole) => void;
+  colors:         ReturnType<typeof useColors>;
+}
+
+function RoleSheet({ open, onClose, availableRoles, activeRole, onSwitch, colors }: RoleSheetProps) {
+  const current    = ROLE_META[activeRole];
+  const otherRoles = availableRoles.filter(r => r !== activeRole);
+
+  return (
+    <Modal
+      visible={open}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <Pressable style={sh.backdrop} onPress={onClose}>
+        <Pressable style={[sh.sheet, { backgroundColor: colors.background }]} onPress={() => {}}>
+          <View style={sh.handle} />
+
+          <Text style={[sh.title, { color: colors.foreground }]}>Switch Role</Text>
+          <Text style={[sh.sub, { color: colors.mutedForeground }]}>
+            Access the app with a different profile
+          </Text>
+
+          {/* Current role (non-interactive) */}
+          <View style={[sh.row, {
+            backgroundColor: `${current.color}12`,
+            borderColor:     `${current.color}30`,
+            borderWidth: 1,
+          }]}>
+            <View style={[sh.icon, { backgroundColor: `${current.color}20` }]}>
+              <Ionicons name={current.icon} size={20} color={current.color} />
+            </View>
+            <Text style={[sh.rowLabel, { color: current.color, flex: 1 }]}>
+              {current.label}
+            </Text>
+            <View style={[sh.activePill, { backgroundColor: `${colors.primary}18` }]}>
+              <Text style={[sh.activePillText, { color: colors.primary }]}>Active</Text>
+            </View>
+          </View>
+
+          {/* Switchable roles */}
+          {otherRoles.map(role => {
+            const meta = ROLE_META[role];
+            return (
+              <Pressable
+                key={role}
+                style={({ pressed }) => [
+                  sh.row,
+                  { backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 },
+                ]}
+                onPress={() => onSwitch(role)}
+              >
+                <View style={[sh.icon, { backgroundColor: `${meta.color}18` }]}>
+                  <Ionicons name={meta.icon} size={20} color={meta.color} />
+                </View>
+                <Text style={[sh.rowLabel, { color: colors.foreground, flex: 1 }]}>
+                  {meta.label}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+              </Pressable>
+            );
+          })}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ── Shared hook ───────────────────────────────────────────────────────────────
+
+function useRoleSwitcher() {
   const { user, allRoles, switchActiveRole } = useAuth();
   const colors = useColors();
   const [open, setOpen] = useState(false);
 
-  if (!user) return null;
-
-  // Prefer DB-verified allRoles; fall back to client-derived user.roles
   const availableRoles: UserRole[] =
     allRoles.length > 0
       ? allRoles.map(r => r.role).filter((v, i, a) => a.indexOf(v) === i)
-      : user.roles;
+      : (user?.roles ?? []);
 
-  if (availableRoles.length <= 1) return null;
+  const activeRole: UserRole = user?.activeRole ?? user?.role ?? "parent";
+  const current = ROLE_META[activeRole];
 
-  const activeRole   = user.activeRole ?? user.role;
-  const current      = ROLE_META[activeRole];
-  const otherRoles   = availableRoles.filter(r => r !== activeRole);
+  const handleOpen = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setOpen(true);
+  };
 
   const handleSwitch = async (role: UserRole) => {
     setOpen(false);
@@ -56,85 +143,137 @@ export function RoleSwitcherRow() {
     await switchActiveRole(role);
   };
 
+  return {
+    user, colors, open, setOpen,
+    availableRoles, activeRole, current,
+    handleOpen, handleSwitch,
+  };
+}
+
+// ── RoleSwitcher — floating pill overlay (used in layout files) ───────────────
+
+/**
+ * Renders a floating "Switch Role" pill anchored to the bottom-right corner.
+ * Placed after <Tabs> in layout files so it floats above all tab screens.
+ * Invisible (returns null) when the user holds only one role.
+ */
+export function RoleSwitcher() {
+  const {
+    user, colors, open, setOpen,
+    availableRoles, activeRole, current,
+    handleOpen, handleSwitch,
+  } = useRoleSwitcher();
+
+  if (!user || availableRoles.length <= 1) return null;
+
   return (
     <>
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-      >
-        <Pressable style={rowStyles.backdrop} onPress={() => setOpen(false)}>
-          <View style={rowStyles.sheet}>
-            <View style={rowStyles.sheetHandle} />
+      <RoleSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        availableRoles={availableRoles}
+        activeRole={activeRole}
+        onSwitch={role => { void handleSwitch(role); }}
+        colors={colors}
+      />
 
-            {/* ── Header ── */}
-            <Text style={[rowStyles.sheetTitle, { color: colors.foreground }]}>Switch Role</Text>
-            <Text style={[rowStyles.sheetSub, { color: colors.mutedForeground }]}>
-              Access the app with a different profile
-            </Text>
-
-            {/* ── Current role ── */}
-            <View style={[rowStyles.sheetRow, {
-              backgroundColor: `${current.color}10`,
-              borderColor:     `${current.color}30`,
-              borderWidth: 1,
-            }]}>
-              <View style={[rowStyles.sheetIcon, { backgroundColor: `${current.color}20` }]}>
-                <Ionicons name={current.icon} size={20} color={current.color} />
-              </View>
-              <Text style={[rowStyles.sheetRowLabel, { color: current.color }]}>{current.label}</Text>
-              <View style={[rowStyles.activePill, { backgroundColor: `${colors.primary}18` }]}>
-                <Text style={[rowStyles.activePillText, { color: colors.primary }]}>Active</Text>
-              </View>
-            </View>
-
-            {/* ── Other roles ── */}
-            {otherRoles.map(role => {
-              const meta = ROLE_META[role];
-              return (
-                <Pressable
-                  key={role}
-                  style={({ pressed }) => [
-                    rowStyles.sheetRow,
-                    { backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 },
-                  ]}
-                  onPress={() => { void handleSwitch(role); }}
-                >
-                  <View style={[rowStyles.sheetIcon, { backgroundColor: `${meta.color}18` }]}>
-                    <Ionicons name={meta.icon} size={20} color={meta.color} />
-                  </View>
-                  <Text style={[rowStyles.sheetRowLabel, { color: colors.foreground }]}>{meta.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-                </Pressable>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
-
-      {/* ── Trigger row ── */}
+      {/* Floating pill */}
       <Pressable
         style={({ pressed }) => [
-          rowStyles.row,
-          { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
+          pill.container,
+          {
+            backgroundColor: current.color,
+            shadowColor: current.color,
+            opacity: pressed ? 0.85 : 1,
+          },
         ]}
-        onPress={() => {
-          setOpen(true);
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }}
+        onPress={handleOpen}
+        accessibilityLabel="Switch role"
+        accessibilityRole="button"
       >
-        <View style={[rowStyles.rowIcon, { backgroundColor: `${current.color}18` }]}>
+        <Ionicons name={current.icon} size={15} color="#FFF" />
+        <Text style={pill.label}>{current.label}</Text>
+        <Ionicons name="chevron-up" size={13} color="rgba(255,255,255,0.8)" />
+      </Pressable>
+    </>
+  );
+}
+
+const pill = StyleSheet.create({
+  container: {
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 110 : 88,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 24,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 999,
+  },
+  label: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+});
+
+// ── RoleSwitcherRow — embedded settings row (used in profile / settings) ──────
+
+/**
+ * Renders a full-width "Switch Role" row with the same bottom sheet.
+ * Drop this inside a ScrollView / settings list.
+ * Invisible when the user holds only one role.
+ */
+export function RoleSwitcherRow() {
+  const {
+    user, colors, open, setOpen,
+    availableRoles, activeRole, current,
+    handleOpen, handleSwitch,
+  } = useRoleSwitcher();
+
+  if (!user || availableRoles.length <= 1) return null;
+
+  return (
+    <>
+      <RoleSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        availableRoles={availableRoles}
+        activeRole={activeRole}
+        onSwitch={role => { void handleSwitch(role); }}
+        colors={colors}
+      />
+
+      <Pressable
+        style={({ pressed }) => [
+          row.container,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            opacity: pressed ? 0.8 : 1,
+          },
+        ]}
+        onPress={handleOpen}
+        accessibilityLabel="Switch role"
+        accessibilityRole="button"
+      >
+        <View style={[row.iconBox, { backgroundColor: `${current.color}18` }]}>
           <Ionicons name={current.icon} size={20} color={current.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[rowStyles.rowLabel, { color: colors.foreground }]}>Switch Role</Text>
-          <Text style={[rowStyles.rowSub, { color: colors.mutedForeground }]}>
+          <Text style={[row.label, { color: colors.foreground }]}>Switch Role</Text>
+          <Text style={[row.sub, { color: colors.mutedForeground }]}>
             Active context: {current.label}
           </Text>
         </View>
-        <View style={[rowStyles.activePill, { backgroundColor: `${current.color}15`, flexShrink: 0 }]}>
-          <Text style={[rowStyles.activePillText, { color: current.color }]} numberOfLines={1}>
+        <View style={[row.activePill, { backgroundColor: `${current.color}15` }]}>
+          <Text style={[row.activePillText, { color: current.color }]} numberOfLines={1}>
             {current.label}
           </Text>
         </View>
@@ -144,8 +283,8 @@ export function RoleSwitcherRow() {
   );
 }
 
-const rowStyles = StyleSheet.create({
-  row: {
+const row = StyleSheet.create({
+  container: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
@@ -155,35 +294,35 @@ const rowStyles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
   },
-  rowIcon: {
+  iconBox: {
     width: 40,
     height: 40,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  rowLabel: { fontSize: 15, fontWeight: "700", marginBottom: 1 },
-  rowSub:   { fontSize: 12 },
-  activePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  activePillText: { fontSize: 11, fontWeight: "700" },
+  label:         { fontSize: 15, fontWeight: "700", marginBottom: 1 },
+  sub:           { fontSize: 12 },
+  activePill:    { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  activePillText:{ fontSize: 11, fontWeight: "700" },
+});
+
+// ── Shared sheet styles ───────────────────────────────────────────────────────
+
+const sh = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: "#FFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: Platform.OS === "ios" ? 40 : 28,
     gap: 10,
   },
-  sheetHandle: {
+  handle: {
     width: 40,
     height: 4,
     borderRadius: 2,
@@ -191,31 +330,23 @@ const rowStyles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 8,
   },
-  sheetTitle: { fontSize: 18, fontWeight: "800", marginBottom: 2 },
-  sheetSub:   { fontSize: 13, marginBottom: 6 },
-  sheetRow: {
+  title:         { fontSize: 18, fontWeight: "800", marginBottom: 2 },
+  sub:           { fontSize: 13, marginBottom: 6 },
+  row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     padding: 14,
     borderRadius: 14,
   },
-  sheetIcon: {
+  icon: {
     width: 42,
     height: 42,
     borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
   },
-  sheetRowLabel: { flex: 1, fontSize: 15, fontWeight: "700" },
+  rowLabel:      { fontSize: 15, fontWeight: "700" },
+  activePill:    { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  activePillText:{ fontSize: 11, fontWeight: "700" },
 });
-
-// ── Legacy floating pill (kept as no-op for import compatibility) ─────────────
-
-/**
- * @deprecated Use RoleSwitcherRow instead.
- * This component is intentionally a no-op to prevent accidental usage.
- */
-export function RoleSwitcher() {
-  return null;
-}
