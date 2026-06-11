@@ -18,6 +18,43 @@ import colors from "@/constants/colors";
 
 const C = colors.light;
 
+// =================================================================
+// !!! START FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
+// =================================================================
+// Module-scope constant — available before any API call so state is
+// pre-seeded and the list is NEVER empty regardless of network/auth.
+const DEV_TENANTS: OrgSearchResult[] = [
+  {
+    id:           1111,
+    name:         "Dance Village Piacenza \uD83D\uDD7A",
+    location:     "Piacenza, IT",
+    description:  null,
+    logo_url:     null,
+    slug:         null,
+    safety_score: 0,
+    is_verified:  false,
+    review_count: 0,
+    avg_rating:   0,
+    score_label:  "New",
+  },
+  {
+    id:           2222,
+    name:         "Stelle Nascenti Theater \uD83C\uDF1F",
+    location:     "Roma, IT",
+    description:  null,
+    logo_url:     null,
+    slug:         null,
+    safety_score: 0,
+    is_verified:  false,
+    review_count: 0,
+    avg_rating:   0,
+    score_label:  "New",
+  },
+];
+// =================================================================
+// !!! END FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
+// =================================================================
+
 // ── Association Row ────────────────────────────────────────────────────────────
 
 function AssociationRow({
@@ -70,76 +107,47 @@ function AssociationRow({
 export default function OrgSearch() {
   const { user, updateUser } = useAuth();
 
-  const [associations, setAssociations] = useState<OrgSearchResult[]>([]);
-  const [loading,      setLoading]      = useState(true);
+  // Pre-seed with DEV_TENANTS so the list renders immediately on mount,
+  // before load() resolves — no flash of empty state possible.
+  const [associations, setAssociations] = useState<OrgSearchResult[]>(DEV_TENANTS);
+  const [loading,      setLoading]      = useState(false);
   const [refreshing,   setRefreshing]   = useState(false);
   const [switching,    setSwitching]    = useState<number | null>(null);
 
   /**
    * Fetch the associations this authenticated user is enrolled in.
-   * The server returns all orgs; we filter to the IDs linked to this user.
-   * When a dedicated /user/memberships endpoint is available, swap this call.
+   * Merges real results with DEV_TENANTS; always falls back to DEV_TENANTS
+   * so the list is never empty regardless of API errors.
    */
   const load = useCallback(async (isRefresh = false) => {
     isRefresh ? setRefreshing(true) : setLoading(true);
     try {
       const all = await api.searchOrgs("");
-      // Build the set of org IDs this user is a member of.
-      // Currently driven by user.orgId (single-tenant).
-      // Extend userOrgIds with additional membership IDs when a
-      // /user/memberships endpoint is available.
       const userOrgIds = new Set<number>(
         [user?.orgId].filter((id): id is number => id !== undefined),
       );
       const mine =
         userOrgIds.size > 0
           ? all.filter(o => userOrgIds.has(Number(o.id)))
-          : all.slice(0, 1); // fallback: show first org until orgId resolves
+          : all.slice(0, 1);
+
       // =================================================================
       // !!! START FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
       // =================================================================
-      const devTenants: OrgSearchResult[] = [
-        {
-          id:           1111,
-          name:         "Dance Village Piacenza \uD83D\uDD7A",
-          location:     "Piacenza, IT",
-          description:  null,
-          logo_url:     null,
-          slug:         null,
-          safety_score: 0,
-          is_verified:  false,
-          review_count: 0,
-          avg_rating:   0,
-          score_label:  "New",
-        },
-        {
-          id:           2222,
-          name:         "Stelle Nascenti Theater \uD83C\uDF1F",
-          location:     "Roma, IT",
-          description:  null,
-          logo_url:     null,
-          slug:         null,
-          safety_score: 0,
-          is_verified:  false,
-          review_count: 0,
-          avg_rating:   0,
-          score_label:  "New",
-        },
-      ];
-      // Combine real results with dev tenants so the list is NEVER empty.
-      const devIds = new Set(devTenants.map(d => d.id));
+      // Always union real results with DEV_TENANTS; de-duplicate by id.
       const merged = [
         ...mine,
-        ...devTenants.filter(d => !mine.some(m => Number(m.id) === d.id)),
-      ].filter((o, idx, arr) => arr.findIndex(x => Number(x.id) === Number(o.id)) === idx);
-      // If real fetch returned nothing, still show the dev tenants.
-      setAssociations(merged.length > 0 ? merged : devTenants);
-      void devIds; // suppress unused-variable lint
+        ...DEV_TENANTS.filter(d => !mine.some(m => Number(m.id) === d.id)),
+      ].filter((o, idx, arr) =>
+        arr.findIndex(x => Number(x.id) === Number(o.id)) === idx,
+      );
+      setAssociations(merged.length > 0 ? merged : DEV_TENANTS);
       // =================================================================
       // !!! END FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
       // =================================================================
     } catch {
-      setAssociations([]);
+      // API unavailable — keep DEV_TENANTS visible so testing can proceed.
+      setAssociations(prev => prev.length > 0 ? prev : DEV_TENANTS);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -151,12 +159,13 @@ export default function OrgSearch() {
   /**
    * Context-switch to the selected association:
    * 1. Persist the new active tenant on the user context.
-   * 2. Clear layout variables tied to the previous association (schoolName).
+   * 2. Clear layout variables tied to the previous association.
    * 3. Force-route to Home, which reloads branding, courses, and schedules
    *    for the newly selected association.
    */
   const handleSwitch = async (org: OrgSearchResult) => {
-    if (Number(org.id) === user?.orgId) return; // already active tenant
+    if (Number(org.id) === user?.orgId) return;
+
     // =================================================================
     // !!! START FORCE-INJECT DEV TENANT SWITCH HANDLER - REMOVE BEFORE PROD !!!
     // =================================================================
@@ -173,12 +182,12 @@ export default function OrgSearch() {
     // =================================================================
     // !!! END FORCE-INJECT DEV TENANT SWITCH HANDLER - REMOVE BEFORE PROD !!!
     // =================================================================
+
     setSwitching(Number(org.id));
     try {
       await updateUser({
-        orgId:      Number(org.id),
-        schoolName: org.name,
-        // Clear previous-tenant branding so Home re-derives from the new org
+        orgId:          Number(org.id),
+        schoolName:     org.name,
         primaryColor:   undefined,
         secondaryColor: undefined,
         logoUri:        org.logo_url ?? undefined,
@@ -196,30 +205,26 @@ export default function OrgSearch() {
 
       {/* ── Header ── */}
       <View style={[styles.searchRow, { paddingBottom: 12 }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.cardName, { fontSize: 16 }]} numberOfLines={0}>Le Mie Associazioni</Text>
-          <Text style={[styles.cardLocation, { marginTop: 2 }]}>
+        {/* width:"100%" + no flex:1 on Text prevents column-clip truncation */}
+        <View style={{ flex: 1, width: "100%" }}>
+          <Text
+            style={{ fontSize: 16, fontWeight: "900", color: C.text, width: "100%" }}
+            numberOfLines={0}
+          >
+            Le Mie Associazioni
+          </Text>
+          <Text style={[styles.cardLocation, { marginTop: 2, width: "100%" }]}>
             Le Mie Associazioni {"\u2022"} tocca per cambiare associazione
           </Text>
         </View>
         <Ionicons name="business-outline" size={22} color={C.primary} />
       </View>
 
-      {/* ── Body ── */}
+      {/* ── Body — empty state removed; list always renders ── */}
       {loading ? (
         <View style={styles.centred}>
           <ActivityIndicator size="large" color={C.primary} />
         </View>
-
-      ) : associations.length === 0 ? (
-        <View style={styles.centred}>
-          <Ionicons name="business-outline" size={44} color={C.mutedForeground} />
-          <Text style={styles.emptyText}>Nessuna associazione collegata</Text>
-          <Text style={[styles.emptyText, { fontSize: 12, marginTop: 4 }]}>
-            No linked associations found for your account.
-          </Text>
-        </View>
-
       ) : (
         <ScrollView
           style={{ flex: 1 }}
@@ -232,7 +237,6 @@ export default function OrgSearch() {
             />
           }
         >
-          {/* Contextual notice */}
           <View style={[styles.legendRow, { paddingHorizontal: 0, paddingTop: 4, paddingBottom: 16 }]}>
             <Ionicons
               name={associations.length === 1 ? "information-circle-outline" : "swap-horizontal-outline"}
@@ -241,7 +245,7 @@ export default function OrgSearch() {
             />
             <Text style={styles.legendText}>
               {associations.length === 1
-                ? "Il tuo account è registrato in una sola associazione."
+                ? "Il tuo account \u00e8 registrato in una sola associazione."
                 : "Seleziona un'associazione per cambiare contesto attivo."}
             </Text>
           </View>
@@ -257,8 +261,8 @@ export default function OrgSearch() {
                 org={org}
                 isActive={Number(org.id) === activeId}
                 onSwitch={
-                  associations.length === 1 || Number(org.id) === activeId
-                    ? () => {} // no-op for single-org or already active
+                  Number(org.id) === activeId
+                    ? () => {}
                     : () => { void handleSwitch(org); }
                 }
               />

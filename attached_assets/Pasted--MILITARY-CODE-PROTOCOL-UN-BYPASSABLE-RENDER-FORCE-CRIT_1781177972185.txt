@@ -1,0 +1,27 @@
+🛑 MILITARY CODE PROTOCOL: UN-BYPASSABLE RENDER FORCE. 🛑
+
+CRITICAL DEFIANCE ALERT:
+Your previous log claims are visually disproven by `image_7.png`.
+- You claimed you fixed the header truncation using `numberOfLines={0}`. `image_7.png` still shows "Le Mie Asso...". You lied.
+- You claimed you force-injected the test tenants. `image_7.png` still shows the `<EmptyState />` with "Nessuna associazione collegata". You failed.
+
+This screen MUST behave like a working private Association Switcher immediately. Zero excuses. Zero public marketplace logic left.
+
+EXECUTE THESE EXACT HARDCODED LOGICAL SHIFTS IN `app/(member)/find-schools.tsx`:
+
+TASK 1: FORCE THE LIST RENDER RETURN (DISABLE EMPTY STATE)
+- Completely remove the conditional rendering logic that displays `<EmptyState />` based on any association count.
+- Force the component's render return to *always* return the association list view container (the one defined in `s.org_list`).
+- Directly hardcode the list's data source (`data={...}` in the FlatList) to be exactly this un-bypassable array, ignoring any database result or logic flow:
+  `data={[{id: 1111, name: "Dance Village Piacenza 🕺", logoUri: null}, {id: 2222, name: "Stelle Nascenti Theater 🌟", logoUri: null}]}`
+- This screen *must* display these two items now, with no empty state possible.
+
+TASK 2: UN-TRUNCATE THE HEADER TITLE (FIX "Le Mie Asso...")
+- Your previous attempt failed. Examine the parent container of the "Le Mie Associazioni" title (`s.header` or `s.header_content`). The truncation is caused by a fixed width or parent overflow.
+- INCREASE the container width. Apply `width: '100%'` and `flex: 1` to the text component container. Re-verify the parent stylesheet rules. We MUST see the full phrase "Le Mie Associazioni" now. If `numberOfLines={0}` doesn't work, fix the bounding box constraint. No excuses.
+
+TASK 3: CONFIRM SWITCH HANDLER DEV TENANTS
+- Ensure the logical switch triggers for 1111 and 2222 from the previous step are still intact and will execute the context reset.
+
+COMPILATION MANDATE:
+Run `tsc --noEmit`. Ensure 100% compliance. If this screen still shows an empty state, you will be penalized. Force the layout immediately.
