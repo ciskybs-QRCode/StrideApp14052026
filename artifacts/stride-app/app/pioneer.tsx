@@ -155,12 +155,12 @@ export default function Pioneer() {
     setCompleting(true);
     try {
       const preset = COLOR_PRESETS[selectedPreset];
-      // Save branding locally
-      saveBranding({ primaryColor: preset.primary, secondaryColor: preset.secondary, logoUrl: logoUri ?? null });
-      await updateUser({ schoolName, primaryColor: preset.primary, secondaryColor: preset.secondary, logoUri: logoUri ?? undefined });
 
-      // Persist to backend
-      await api.pioneerComplete({
+      // 1. Persist org configuration to the backend (real Supabase insertion via /org/configure).
+      //    The orgId was captured during handleRegister; this call writes school details,
+      //    studios, branding, age groups, and skill levels to that existing org row and
+      //    confirms the admin ↔ org relationship in organization_members.
+      const res = await api.pioneerComplete({
         schoolName: schoolName.trim(),
         registrationNumber: regNumber.trim() || undefined,
         contactPhone: contactPhone.trim() || undefined,
@@ -172,10 +172,34 @@ export default function Pioneer() {
         skillLevels,
       });
 
+      if (!res.configured) {
+        throw new Error("Server returned configured=false — organisation setup incomplete.");
+      }
+
+      // 2. Commit branding locally and update the AuthContext session with the
+      //    confirmed schoolName, colours, and the orgId already on the user object.
+      saveBranding({ primaryColor: preset.primary, secondaryColor: preset.secondary, logoUrl: logoUri ?? null });
+      await updateUser({
+        schoolName:     schoolName.trim(),
+        primaryColor:   preset.primary,
+        secondaryColor: preset.secondary,
+        logoUri:        logoUri ?? undefined,
+        // Reaffirm orgId so the admin dashboard loads the correct tenant.
+        // user.orgId was set during handleRegister; we preserve it here.
+        orgId: user?.orgId,
+      });
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // 3. Redirect to the Admin Home dashboard (stats is the Home tab in the admin layout).
       router.replace("/(admin)/stats");
     } catch (err: unknown) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Setup failed. Please try again.");
+      // Task 4: surface the full rejection so no error is ever silent.
+      console.error("\u274c BACKEND REJECTION:", err);
+      Alert.alert(
+        "Errore di Rete / Database",
+        err instanceof Error ? err.message : "Impossibile creare l'associazione. Controlla la connessione e riprova.",
+      );
     } finally {
       setCompleting(false);
     }

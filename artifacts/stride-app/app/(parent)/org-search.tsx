@@ -18,43 +18,6 @@ import colors from "@/constants/colors";
 
 const C = colors.light;
 
-// =================================================================
-// !!! START FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
-// =================================================================
-// Module-scope constant — available before any API call so state is
-// pre-seeded and the list is NEVER empty regardless of network/auth.
-const DEV_TENANTS: OrgSearchResult[] = [
-  {
-    id:           1111,
-    name:         "Dance Village Piacenza \uD83D\uDD7A",
-    location:     "Piacenza, IT",
-    description:  null,
-    logo_url:     null,
-    slug:         null,
-    safety_score: 0,
-    is_verified:  false,
-    review_count: 0,
-    avg_rating:   0,
-    score_label:  "New",
-  },
-  {
-    id:           2222,
-    name:         "Stelle Nascenti Theater \uD83C\uDF1F",
-    location:     "Roma, IT",
-    description:  null,
-    logo_url:     null,
-    slug:         null,
-    safety_score: 0,
-    is_verified:  false,
-    review_count: 0,
-    avg_rating:   0,
-    score_label:  "New",
-  },
-];
-// =================================================================
-// !!! END FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
-// =================================================================
-
 // ── Association Row ────────────────────────────────────────────────────────────
 
 function AssociationRow({
@@ -107,17 +70,15 @@ function AssociationRow({
 export default function OrgSearch() {
   const { user, updateUser } = useAuth();
 
-  // Pre-seed with DEV_TENANTS so the list renders immediately on mount,
-  // before load() resolves — no flash of empty state possible.
-  const [associations, setAssociations] = useState<OrgSearchResult[]>(DEV_TENANTS);
-  const [loading,      setLoading]      = useState(false);
+  const [associations, setAssociations] = useState<OrgSearchResult[]>([]);
+  const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
   const [switching,    setSwitching]    = useState<number | null>(null);
 
   /**
    * Fetch the associations this authenticated user is enrolled in.
-   * Merges real results with DEV_TENANTS; always falls back to DEV_TENANTS
-   * so the list is never empty regardless of API errors.
+   * The server returns all orgs; we filter to the IDs linked to this user.
+   * When a dedicated /user/memberships endpoint is available, swap this call.
    */
   const load = useCallback(async (isRefresh = false) => {
     isRefresh ? setRefreshing(true) : setLoading(true);
@@ -130,24 +91,9 @@ export default function OrgSearch() {
         userOrgIds.size > 0
           ? all.filter(o => userOrgIds.has(Number(o.id)))
           : all.slice(0, 1);
-
-      // =================================================================
-      // !!! START FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
-      // =================================================================
-      // Always union real results with DEV_TENANTS; de-duplicate by id.
-      const merged = [
-        ...mine,
-        ...DEV_TENANTS.filter(d => !mine.some(m => Number(m.id) === d.id)),
-      ].filter((o, idx, arr) =>
-        arr.findIndex(x => Number(x.id) === Number(o.id)) === idx,
-      );
-      setAssociations(merged.length > 0 ? merged : DEV_TENANTS);
-      // =================================================================
-      // !!! END FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
-      // =================================================================
+      setAssociations(mine);
     } catch {
-      // API unavailable — keep DEV_TENANTS visible so testing can proceed.
-      setAssociations(prev => prev.length > 0 ? prev : DEV_TENANTS);
+      setAssociations([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -165,36 +111,6 @@ export default function OrgSearch() {
    */
   const handleSwitch = async (org: OrgSearchResult) => {
     if (Number(org.id) === user?.orgId) return;
-
-    // =================================================================
-    // !!! START FORCE-INJECT DEV TENANT SWITCH HANDLER - REMOVE BEFORE PROD !!!
-    // =================================================================
-    if (Number(org.id) === 1111) {
-      await updateUser({
-        orgId:          1111,
-        schoolName:     "Dance Village Piacenza",
-        primaryColor:   "#1E4620",
-        secondaryColor: "#E0E0E0",
-        logoUri:        "https://placehold.co/150x150/1e4620/ffffff?text=DV",
-      });
-      router.replace("/(parent)/home");
-      return;
-    }
-    if (Number(org.id) === 2222) {
-      await updateUser({
-        orgId:          2222,
-        schoolName:     "Stelle Nascenti Theater",
-        primaryColor:   "#0A192F",
-        secondaryColor: "#D4AF37",
-        logoUri:        "https://placehold.co/150x150/0a192f/d4af37?text=SN",
-      });
-      router.replace("/(parent)/home");
-      return;
-    }
-    // =================================================================
-    // !!! END FORCE-INJECT DEV TENANT SWITCH HANDLER - REMOVE BEFORE PROD !!!
-    // =================================================================
-
     setSwitching(Number(org.id));
     try {
       await updateUser({
@@ -217,7 +133,6 @@ export default function OrgSearch() {
 
       {/* ── Header ── */}
       <View style={[styles.searchRow, { paddingBottom: 12 }]}>
-        {/* width:"100%" + no flex:1 on Text prevents column-clip truncation */}
         <View style={{ flex: 1, width: "100%" }}>
           <Text
             style={{ fontSize: 16, fontWeight: "900", color: C.text, width: "100%" }}
@@ -232,11 +147,21 @@ export default function OrgSearch() {
         <Ionicons name="business-outline" size={22} color={C.primary} />
       </View>
 
-      {/* ── Body — empty state removed; list always renders ── */}
+      {/* ── Body ── */}
       {loading ? (
         <View style={styles.centred}>
           <ActivityIndicator size="large" color={C.primary} />
         </View>
+
+      ) : associations.length === 0 ? (
+        <View style={styles.centred}>
+          <Ionicons name="business-outline" size={44} color={C.mutedForeground} />
+          <Text style={styles.emptyText}>Nessuna associazione collegata</Text>
+          <Text style={[styles.emptyText, { fontSize: 12, marginTop: 4 }]}>
+            No linked associations found for your account.
+          </Text>
+        </View>
+
       ) : (
         <ScrollView
           style={{ flex: 1 }}
@@ -286,7 +211,7 @@ export default function OrgSearch() {
   );
 }
 
-// ── Styles (unchanged) ────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   root:      { flex: 1, backgroundColor: C.background },

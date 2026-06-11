@@ -1,0 +1,29 @@
+🛑 TOTAL CLEANUP & CRITICAL PRODUCTION FIX: RE-ENABLE REAL DATABASE ASSOCIATION CREATION 🛑
+
+TRUNCATE ALL FICTION immediately. We are done testing static visual themes. The application must now function as a true, production-grade multi-tenant platform.
+
+TASK 1: COMPLETE ROLLBACK OF DEV MOCKS
+- Go to `app/(member)/find-schools.tsx` (and any related files).
+- COMPLETELY DELETE the `devTenants` array, the forced `data={[{id: 1111...}]}` overrides, and any hardcoded conditional color logic (`primaryColor`, `secondaryColor`) injected in the previous turns.
+- Restore the list view to read dynamically and exclusively from the real API/database results state.
+
+TASK 2: REPAIR THE BROKEN "CREA" BUTTON (REAL SUPABASE INSERTION)
+- Go to the organization creation screen / onboarding wizard (e.g., `app/(admin)/create-org` or wherever the registration form lives).
+- Locate the execution handler bound to the "Crea" submit button. The button is currently DEAD (clicking it does absolutely nothing, indicating a silent crash or a commented-out promise).
+- UN-COMMENT or rewrite the live backend/Supabase database mutation. Ensure it reads the form input data (Name, City, Address, etc.) and performs a REAL row insertion into the organizations/tenants table.
+
+TASK 3: MULTI-ROLE DATA RELATIONSHIP LINKING
+- The developer needs to test 4 real interconnected roles. Upon successful database creation of the organization:
+  1. Capture the newly generated, live database `orgId`.
+  2. Perform the required secondary database insert to structurally link the current logged-in user ID to this new `orgId` as an authorized 'Admin'.
+  3. Execute `updateUser` within the global `AuthContext` to update the real state session with the new `orgId` and `schoolName`.
+  4. Trigger a clean layout redirect to the live Admin home dashboard: `router.replace("/(admin)/home")`.
+
+TASK 4: AGGRESSIVE ON-SCREEN ERROR VISIBILITY (NO MORE SILENT FAILS)
+- Wrap the entire transaction in a bulletproof `try/catch` block.
+- Inside the `catch(error)` block, you MUST implement a native UI popup so the developer can see what the database is rejecting:
+  `Alert.alert("Errore di Rete / Database", error.message || "Impossibile creare l'associazione");`
+- Print the absolute full trace to the console: `console.error("❌ BACKEND REJECTION:", error);`
+
+COMPILATION MANDATE:
+Run `tsc --noEmit`. Ensure all temporary fake code is purged and the live Supabase creation wizard is 100% reactive, bound to the database, and unblocked. Rebuild now.
