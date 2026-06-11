@@ -1222,7 +1222,7 @@ export default function SuperAdminDashboard() {
     { key: "schools",  label: "TOTAL SCHOOLS",   value: metrics.totalOrgs,    icon: "business",          color: "#1E3A8A", bg: "#FFFFFF" },
     { key: "members",  label: "GLOBAL MEMBERS",  value: metrics.totalMembers, icon: "people",            color: "#1E3A8A", bg: "#FFFFFF" },
     { key: "active",   label: "ACTIVE SUBS",     value: metrics.activeCount,  icon: "checkmark-circle",  color: "#D4AF37", bg: "#FFFFFF" },
-    { key: "trialing", label: "IN TRIAL",        value: metrics.trialingCount,icon: "timer-outline",     color: "#D97706", bg: "#FFFFFF" },
+    { key: "trialing", label: "IN TRIAL",        value: metrics.trialingCount,icon: "timer-outline",     color: "#D4AF37", bg: "#FFFFFF" },
     { key: "expired",  label: "EXPIRED",         value: metrics.expiredCount, icon: "close-circle",      color: "#DC2626", bg: "#FFFFFF" },
     {
       key: "health", label: "PLATFORM HEALTH",
