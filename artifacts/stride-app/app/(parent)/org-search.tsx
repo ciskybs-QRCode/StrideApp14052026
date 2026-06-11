@@ -170,12 +170,24 @@ export default function OrgSearch() {
     // !!! START FORCE-INJECT DEV TENANT SWITCH HANDLER - REMOVE BEFORE PROD !!!
     // =================================================================
     if (Number(org.id) === 1111) {
-      await updateUser({ orgId: 1111, schoolName: "Dance Village Piacenza" });
+      await updateUser({
+        orgId:          1111,
+        schoolName:     "Dance Village Piacenza",
+        primaryColor:   "#1E4620",
+        secondaryColor: "#E0E0E0",
+        logoUri:        "https://placehold.co/150x150/1e4620/ffffff?text=DV",
+      });
       router.replace("/(parent)/home");
       return;
     }
     if (Number(org.id) === 2222) {
-      await updateUser({ orgId: 2222, schoolName: "Stelle Nascenti Theater" });
+      await updateUser({
+        orgId:          2222,
+        schoolName:     "Stelle Nascenti Theater",
+        primaryColor:   "#0A192F",
+        secondaryColor: "#D4AF37",
+        logoUri:        "https://placehold.co/150x150/0a192f/d4af37?text=SN",
+      });
       router.replace("/(parent)/home");
       return;
     }
