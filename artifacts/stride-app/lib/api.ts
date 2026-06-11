@@ -275,12 +275,26 @@ export const api = {
 
   /**
    * GET /user/roles — returns every real DB-verified role the current user
-   * holds across all organisations (from organization_members + users.role).
-   * Used by AuthContext to populate `user.roles` and `allRoles` with real
-   * DB facts instead of client-side derivation.
+   * holds across all organisations (from organization_members, operator_profiles,
+   * parent_profiles, and users.role).
    */
   getUserRoles: () =>
     request<{ roles: { role: string; orgId: number }[] }>("GET", "/user/roles"),
+
+  /**
+   * POST /user/activate-operator — upserts an operator_profiles row for the
+   * current user + their active orgId, granting them the operator/teacher role
+   * without modifying their primary organization_members row.
+   */
+  activateOperator: () =>
+    request<{ activated: boolean; role: string; orgId: number }>("POST", "/user/activate-operator"),
+
+  /**
+   * POST /user/activate-parent — upserts a parent_profiles row for the current
+   * user + their active orgId, granting them the parent/member role.
+   */
+  activateParent: () =>
+    request<{ activated: boolean; role: string; orgId: number }>("POST", "/user/activate-parent"),
 
   pioneerComplete: (data: {
     schoolName: string;

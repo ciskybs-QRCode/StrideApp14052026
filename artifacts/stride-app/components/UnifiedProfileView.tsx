@@ -14,8 +14,10 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
-import React from "react";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -29,6 +31,7 @@ import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { api } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -127,10 +130,56 @@ const OPERATOR_SCHEDULE_ROWS = [
 
 export default function UnifiedProfileView({ currentRole }: Props) {
   const router  = useRouter();
-  const { user } = useAuth();
+  const { user, allRoles, refreshAllRoles } = useAuth();
   const { children, documents, legalAdminDocs, signedAdminDocIds } = useAppData();
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
+
+  const [provisioningOp, setProvisioningOp] = useState(false);
+  const [provisioningPa, setProvisioningPa] = useState(false);
+
+  const hasRole = (role: string) =>
+    allRoles.some(r => r.role === role) || (user?.roles ?? []).includes(role as never);
+
+  const activateOperator = async () => {
+    setProvisioningOp(true);
+    try {
+      await api.activateOperator();
+      await refreshAllRoles();
+      Alert.alert(
+        "Profilo Attivato",
+        "Il profilo Insegnante/Operatore è stato attivato. Puoi ora passare a quel ruolo dal selettore.",
+      );
+    } catch (err: unknown) {
+      console.error("❌ activateOperator failed:", err);
+      Alert.alert(
+        "Errore Attivazione",
+        err instanceof Error ? err.message : "Impossibile attivare il profilo operatore.",
+      );
+    } finally {
+      setProvisioningOp(false);
+    }
+  };
+
+  const activateParent = async () => {
+    setProvisioningPa(true);
+    try {
+      await api.activateParent();
+      await refreshAllRoles();
+      Alert.alert(
+        "Profilo Attivato",
+        "Il profilo Genitore/Membro è stato attivato. Puoi ora passare a quel ruolo dal selettore.",
+      );
+    } catch (err: unknown) {
+      console.error("❌ activateParent failed:", err);
+      Alert.alert(
+        "Errore Attivazione",
+        err instanceof Error ? err.message : "Impossibile attivare il profilo genitore.",
+      );
+    } finally {
+      setProvisioningPa(false);
+    }
+  };
 
   const badge    = ROLE_BADGE[currentRole];
   const initials = (user?.name ?? "?")
@@ -283,6 +332,83 @@ export default function UnifiedProfileView({ currentRole }: Props) {
                 </Pressable>
               ))}
             </View>
+
+            {/* ── PROFILO PROFESSIONALE — self-provisioning ── */}
+            <Text style={[s.groupLabel, { color: colors.mutedForeground, marginTop: 10 }]}>
+              PROFILO PROFESSIONALE
+            </Text>
+            <View style={[s.infoBox, { backgroundColor: `${colors.primary}08`, borderColor: `${colors.primary}20`, borderWidth: 1, marginBottom: 10 }]}>
+              <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
+              <Text style={[s.infoText, { color: colors.mutedForeground }]}>
+                In quanto Admin, puoi aggiungere ruoli aggiuntivi per il tuo stesso account — per insegnare o iscrivere i tuoi figli — senza creare un account separato.
+              </Text>
+            </View>
+
+            {/* Activate Operator / Teacher */}
+            <Pressable
+              style={({ pressed }) => [
+                s.provisionCard,
+                {
+                  borderColor:     hasRole("operator") ? "#0369A1" : colors.border,
+                  backgroundColor: hasRole("operator") ? "#DBEAFE" : colors.card,
+                  opacity: pressed || provisioningOp ? 0.8 : 1,
+                },
+              ]}
+              onPress={() => { void activateOperator(); }}
+              disabled={provisioningOp || hasRole("operator")}
+            >
+              <View style={[s.provisionIcon, { backgroundColor: "#0369A120" }]}>
+                {provisioningOp
+                  ? <ActivityIndicator size="small" color="#0369A1" />
+                  : <Ionicons name="school" size={22} color="#0369A1" />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.provisionTitle, { color: hasRole("operator") ? "#0369A1" : colors.foreground }]}>
+                  {hasRole("operator") ? "Profilo Insegnante Attivo" : "Attiva Profilo Insegnante"}
+                </Text>
+                <Text style={[s.provisionDesc, { color: colors.mutedForeground }]}>
+                  {hasRole("operator")
+                    ? "Puoi ora switchare al ruolo Insegnante"
+                    : "Inserisce una riga in operator_profiles per il tuo account"}
+                </Text>
+              </View>
+              {hasRole("operator")
+                ? <Ionicons name="checkmark-circle" size={22} color="#0369A1" />
+                : <Ionicons name="add-circle-outline" size={22} color="#0369A1" />}
+            </Pressable>
+
+            {/* Activate Parent / Member */}
+            <Pressable
+              style={({ pressed }) => [
+                s.provisionCard,
+                {
+                  borderColor:     hasRole("parent") ? "#047857" : colors.border,
+                  backgroundColor: hasRole("parent") ? "#D1FAE5" : colors.card,
+                  opacity: pressed || provisioningPa ? 0.8 : 1,
+                },
+              ]}
+              onPress={() => { void activateParent(); }}
+              disabled={provisioningPa || hasRole("parent")}
+            >
+              <View style={[s.provisionIcon, { backgroundColor: "#04785720" }]}>
+                {provisioningPa
+                  ? <ActivityIndicator size="small" color="#047857" />
+                  : <Ionicons name="person-add-outline" size={22} color="#047857" />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.provisionTitle, { color: hasRole("parent") ? "#047857" : colors.foreground }]}>
+                  {hasRole("parent") ? "Profilo Genitore Attivo" : "Attiva Profilo Genitore"}
+                </Text>
+                <Text style={[s.provisionDesc, { color: colors.mutedForeground }]}>
+                  {hasRole("parent")
+                    ? "Puoi ora switchare al ruolo Genitore/Membro"
+                    : "Inserisce una riga in parent_profiles per il tuo account"}
+                </Text>
+              </View>
+              {hasRole("parent")
+                ? <Ionicons name="checkmark-circle" size={22} color="#047857" />
+                : <Ionicons name="add-circle-outline" size={22} color="#047857" />}
+            </Pressable>
           </>
         )}
 
@@ -680,4 +806,33 @@ const s = StyleSheet.create({
 
   // Version footer
   version: { fontSize: 12, textAlign: "center", marginTop: 4, marginBottom: 20 },
+
+  // Self-provisioning cards (admin "PROFILO PROFESSIONALE" section)
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderRadius: 12,
+    padding: 12,
+  },
+  infoText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  provisionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 16,
+    marginBottom: 10,
+  },
+  provisionIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  provisionTitle: { fontSize: 14, fontWeight: "700", marginBottom: 2 },
+  provisionDesc:  { fontSize: 12, lineHeight: 16 },
 });

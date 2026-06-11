@@ -392,48 +392,125 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
 
 // ── GET /user/roles ───────────────────────────────────────────────────────────
 // Returns every real DB-verified role this user holds, across all orgs.
-// The client uses this to populate `user.roles` and `allRoles` in AuthContext,
-// replacing the client-side `rolesForPrimary()` derivation with real DB facts.
-//
-// Response: { roles: { role: string; orgId: number }[] }
-//   - super_admin → orgId 0 (platform-wide, not org-scoped)
-//   - admin/operator/parent → orgId = organization_members.organization_id
+// Sources (unioned, deduped):
+//   1. users.role = 'super_admin'       → { role: 'super_admin', orgId: 0 }
+//   2. organization_members rows        → primary role per org
+//   3. operator_profiles (active=true)  → 'operator' role per org
+//   4. parent_profiles   (active=true)  → 'parent'   role per org
+// Falls back to JWT claims when all tables are empty (legacy / offline).
 router.get("/user/roles", requireAuth, async (req, res) => {
-  const user = (req as AuthReq).user;
-  const userId = parseInt(user.id, 10);
+  const user   = (req as AuthReq).user;
+  const userId = String(user.id);
 
   const results: { role: string; orgId: number }[] = [];
 
-  // 1. Check primary role on the users row (catches super_admin and legacy single-role users)
+  const push = (role: string, orgId: number) => {
+    if (!results.find(r => r.role === role && r.orgId === orgId))
+      results.push({ role, orgId });
+  };
+
+  // 1. Primary role from users table (catches super_admin)
   const { data: dbUser } = await supabase
     .from("users")
     .select("role, organization_id")
-    .eq("id", userId)
+    .eq("id", parseInt(userId, 10))
     .maybeSingle() as { data: { role: string; organization_id: number | null } | null };
 
-  if (dbUser?.role === "super_admin") {
-    results.push({ role: "super_admin", orgId: 0 });
-  }
+  if (dbUser?.role === "super_admin") push("super_admin", 0);
 
-  // 2. Enumerate all organization_members rows for this user
+  // 2. organization_members — one primary role per org
   const { data: memberships } = await supabase
     .from("organization_members")
     .select("role, organization_id")
     .eq("user_id", userId) as { data: { role: string; organization_id: number }[] | null };
 
-  for (const m of memberships ?? []) {
-    const duplicate = results.find(r => r.role === m.role && r.orgId === m.organization_id);
-    if (!duplicate) results.push({ role: m.role, orgId: m.organization_id });
-  }
+  for (const m of memberships ?? []) push(m.role, m.organization_id);
 
-  // 3. Fallback: if no memberships found, include the JWT role+orgId so the
-  //    client always gets at least one valid entry (e.g. legacy orgs that
-  //    pre-date the organization_members table).
+  // 3. operator_profiles — self-provisioned teacher/operator role
+  const { data: opProfiles } = await supabase
+    .from("operator_profiles")
+    .select("organization_id")
+    .eq("user_id", parseInt(userId, 10))
+    .eq("active", true) as { data: { organization_id: number }[] | null };
+
+  for (const op of opProfiles ?? []) push("operator", op.organization_id);
+
+  // 4. parent_profiles — self-provisioned parent/member role
+  const { data: ppProfiles } = await supabase
+    .from("parent_profiles")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .eq("active", true) as { data: { organization_id: number }[] | null };
+
+  for (const pp of ppProfiles ?? []) push("parent", pp.organization_id);
+
+  // 5. Fallback — include JWT claims so the client always has at least one entry
   if (results.length === 0 && user.role !== "super_admin") {
-    results.push({ role: user.role, orgId: user.orgId });
+    push(user.role, user.orgId);
   }
 
   res.json({ roles: results });
+});
+
+// ── POST /user/activate-operator ─────────────────────────────────────────────
+// Self-provision an operator/teacher profile for the current authenticated user
+// within their active orgId.  Safe to call multiple times (upserts on conflict).
+router.post("/user/activate-operator", requireAuth, async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  const orgId  = user.orgId;
+
+  if (!orgId) {
+    res.status(400).json({ error: "No active organisation on this session" });
+    return;
+  }
+
+  try {
+    // Upsert: if a profile already exists for this user+org, reactivate it.
+    const { error } = await supabase
+      .from("operator_profiles")
+      .upsert(
+        { user_id: userId, organization_id: orgId, profile_type: "volunteer", active: true },
+        { onConflict: "user_id,organization_id" },
+      );
+
+    if (error) throw new Error(error.message);
+
+    res.json({ activated: true, role: "operator", orgId });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "DB error";
+    res.status(500).json({ error: msg });
+  }
+});
+
+// ── POST /user/activate-parent ────────────────────────────────────────────────
+// Self-provision a parent/member profile for the current authenticated user
+// within their active orgId.  Safe to call multiple times (upserts on conflict).
+router.post("/user/activate-parent", requireAuth, async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const userId = String(user.id);
+  const orgId  = user.orgId;
+
+  if (!orgId) {
+    res.status(400).json({ error: "No active organisation on this session" });
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("parent_profiles")
+      .upsert(
+        { user_id: userId, organization_id: orgId, active: true },
+        { onConflict: "user_id,organization_id" },
+      );
+
+    if (error) throw new Error(error.message);
+
+    res.json({ activated: true, role: "parent", orgId });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "DB error";
+    res.status(500).json({ error: msg });
+  }
 });
 
 export default router;

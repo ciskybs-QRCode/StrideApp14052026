@@ -668,6 +668,24 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS org_mem_user_idx ON organization_members (user_id);
   `).catch(() => {});
 
+  // Parent profiles — self-provisioned parent/member role for multi-role users.
+  // An admin or operator can activate a "parent" context for their own account
+  // without changing their primary organization_members row (which has a unique
+  // constraint on user_id + organization_id).  The GET /user/roles endpoint
+  // reads this table in addition to organization_members and operator_profiles.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS parent_profiles (
+      id              SERIAL      PRIMARY KEY,
+      user_id         TEXT        NOT NULL,
+      organization_id INTEGER     NOT NULL,
+      active          BOOLEAN     NOT NULL DEFAULT TRUE,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (user_id, organization_id)
+    );
+    CREATE INDEX IF NOT EXISTS pp_user_idx ON parent_profiles (user_id);
+    CREATE INDEX IF NOT EXISTS pp_org_idx  ON parent_profiles (organization_id);
+  `).catch(() => {});
+
   // Digital Proof of Presence — tamper-evident pickup signature log
   await pool.query(`
     CREATE TABLE IF NOT EXISTS pickup_signatures (

@@ -1,0 +1,23 @@
+INSPECT, ENFORCE UI UNIFORMITY, AND IMPLEMENT SELF-PROVISIONING MULTI-ROLE FLOWS.
+
+🛑 GRAPHICAL IDENTITY CONSTRAINT 🛑
+All roles (Admin, Operator, Member) MUST share the exact same visual shell architecture, layout guidelines, header typography, and dynamic branding manager colors. Switching roles must feel like a seamless permission shift, NOT a completely different app design. Maintain structural identity across all roots.
+
+TASK 1: DISCOVER OR BUILD THE ROLE SWITCHER WIDGET
+- Scan `app/(shared)/profile.tsx`, `components/`, or settings layouts to check if a visual role-switching selector already exists.
+- If NO role switcher exists in the UI, inject a clean, unified "Cambia Ruolo" (Role Switcher) component inside the Profile / Settings screen.
+- This selector must read from `allRoles` in `AuthContext` and invoke `switchActiveRole(role)` upon selection. It must perfectly inherit the active tenant's dynamic branding colors.
+
+TASK 2: IMPLEMENT "SELF-ASSIGN ROLES" FOR THE ADMIN ACCOUNT
+- When a user is logged in as an **Admin**, they must have the ability to provision other roles for their own account within their school context (e.g., to teach or register their own children).
+- In the Admin settings or profile view, add two explicitly functional toggles/buttons:
+  1. "Attiva Profilo Operatore/Insegnante" (Activate Teacher Profile)
+  2. "Attiva Profilo Genitore/Membro" (Activate Parent Profile)
+- When clicked, these buttons must execute REAL production database mutations (Supabase/API endpoints):
+  - For Operator: Insert a row linking the current `userId` into the `operators` table for the active `orgId`.
+  - For Member: Insert a row linking the current `userId` into the `parents` table for the active `orgId`.
+- After a successful insert, trigger a silent fetch of `api.getUserRoles()` to refresh the `allRoles` context array so the new role immediately appears in their switcher list without forcing a logout.
+
+TASK 3: VERIFY AND STABILIZE
+- Wrap database inserts in safe execution blocks with the required `try/catch` handlers.
+- Throw native UI `Alert` warnings on rejection. Ensure `tsc --noEmit` returns 0.

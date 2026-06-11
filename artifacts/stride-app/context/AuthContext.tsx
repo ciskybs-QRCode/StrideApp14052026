@@ -69,6 +69,12 @@ interface AuthContextType {
   switchActiveRole: (role: UserRole) => Promise<void>;
   /** @deprecated use switchActiveRole which also routes correctly */
   switchRole: (role: UserRole) => Promise<void>;
+  /**
+   * Re-fetch GET /user/roles from the server and update allRoles + user.roles
+   * in state and AsyncStorage.  Call this after self-provisioning a new role
+   * so the switcher reflects the change immediately without forcing a logout.
+   */
+  refreshAllRoles: () => Promise<void>;
   isOwner: () => boolean;
 }
 
@@ -316,6 +322,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await switchActiveRole(role);
   };
 
+  // ── refreshAllRoles ────────────────────────────────────────────────────────
+  /**
+   * Re-fetches GET /user/roles and syncs allRoles + user.roles in state and
+   * AsyncStorage.  Called after self-provisioning so the role switcher shows
+   * the new role immediately, without forcing a logout/login cycle.
+   */
+  const refreshAllRoles = async () => {
+    if (!user) return;
+    const freshRoles = await fetchAllRoles();
+    if (!freshRoles) return;
+
+    const roleList = freshRoles
+      .map(r => r.role)
+      .filter((v, i, a) => a.indexOf(v) === i) as UserRole[];
+
+    setAllRoles(freshRoles);
+
+    const updatedUser: User = { ...user, roles: roleList.length > 0 ? roleList : user.roles };
+    try {
+      await Promise.all([
+        AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser)),
+        AsyncStorage.setItem(ALL_ROLES_KEY, JSON.stringify(freshRoles)),
+      ]);
+    } catch (e) {
+      console.error("refreshAllRoles storage error:", e);
+    }
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -328,6 +363,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateUser,
         switchActiveRole,
         switchRole,
+        refreshAllRoles,
         isOwner,
       }}
     >

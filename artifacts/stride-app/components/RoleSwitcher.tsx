@@ -1,46 +1,59 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth, UserRole } from "@/context/AuthContext";
+import { useColors } from "@/hooks/useColors";
 
 // ── Role metadata ─────────────────────────────────────────────────────────────
 
 const ROLE_META: Record<UserRole, {
   label: string;
   icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
-  homeRoute: string;
   color: string;
 }> = {
-  super_admin: { label: "Platform", icon: "globe-outline",      homeRoute: "/(super_admin)/associations", color: "#FBBF24" },
-  admin:       { label: "Admin",    icon: "shield-checkmark",   homeRoute: "/(admin)/stats",             color: "#6D28D9" },
-  operator:    { label: "Operator", icon: "school",             homeRoute: "/(operator)/dashboard",      color: "#0369A1" },
-  parent:      { label: "Member",   icon: "person",             homeRoute: "/(parent)/home",             color: "#047857" },
-  kiosk:       { label: "Kiosk",    icon: "tv-outline",         homeRoute: "/(kiosk)/",                  color: "#1E3A8A" },
+  super_admin: { label: "Platform",    icon: "globe-outline",    color: "#FBBF24" },
+  admin:       { label: "Admin",       icon: "shield-checkmark", color: "#6D28D9" },
+  operator:    { label: "Insegnante",  icon: "school",           color: "#0369A1" },
+  parent:      { label: "Genitore",    icon: "person",           color: "#047857" },
+  kiosk:       { label: "Kiosk",       icon: "tv-outline",       color: "#1E3A8A" },
 };
 
 // ── Inline settings row (non-floating) ───────────────────────────────────────
 
 /**
- * Renders a "Switch Role" settings card that can be embedded in any screen.
- * Only renders when the user has more than one available role.
+ * Renders a "Cambia Ruolo" settings card embedded in any profile / settings screen.
+ *
+ * Uses `allRoles` (DB-verified) from AuthContext when available, falling back to
+ * `user.roles` (client-side derived).  Inherits tenant branding via `useColors()`.
+ * Calls `switchActiveRole(role)` which both updates state AND routes correctly —
+ * no separate router.replace call is needed here.
+ *
+ * Only renders when the user holds more than one role.
  */
 export function RoleSwitcherRow() {
-  const { user, switchRole } = useAuth();
-  const router = useRouter();
+  const { user, allRoles, switchActiveRole } = useAuth();
+  const colors = useColors();
   const [open, setOpen] = useState(false);
 
-  if (!user || !user.roles || user.roles.length <= 1) return null;
+  if (!user) return null;
 
-  const current = ROLE_META[user.role];
-  const otherRoles = user.roles.filter(r => r !== user.role);
+  // Prefer DB-verified allRoles; fall back to client-derived user.roles
+  const availableRoles: UserRole[] =
+    allRoles.length > 0
+      ? allRoles.map(r => r.role).filter((v, i, a) => a.indexOf(v) === i)
+      : user.roles;
+
+  if (availableRoles.length <= 1) return null;
+
+  const activeRole   = user.activeRole ?? user.role;
+  const current      = ROLE_META[activeRole];
+  const otherRoles   = availableRoles.filter(r => r !== activeRole);
 
   const handleSwitch = async (role: UserRole) => {
     setOpen(false);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await switchRole(role);
-    router.replace(ROLE_META[role].homeRoute as never);
+    await switchActiveRole(role);
   };
 
   return (
@@ -54,36 +67,45 @@ export function RoleSwitcherRow() {
         <Pressable style={rowStyles.backdrop} onPress={() => setOpen(false)}>
           <View style={rowStyles.sheet}>
             <View style={rowStyles.sheetHandle} />
-            <Text style={rowStyles.sheetTitle}>Switch Role</Text>
-            <Text style={rowStyles.sheetSub}>
-              Access the app with a different profile
+
+            {/* ── Header ── */}
+            <Text style={[rowStyles.sheetTitle, { color: colors.foreground }]}>Cambia Ruolo</Text>
+            <Text style={[rowStyles.sheetSub, { color: colors.mutedForeground }]}>
+              Accedi all'app con un profilo diverso
             </Text>
 
-            {/* Current role */}
-            <View style={[rowStyles.sheetRow, { backgroundColor: `${current.color}10`, borderColor: `${current.color}30`, borderWidth: 1 }]}>
+            {/* ── Current role ── */}
+            <View style={[rowStyles.sheetRow, {
+              backgroundColor: `${current.color}10`,
+              borderColor:     `${current.color}30`,
+              borderWidth: 1,
+            }]}>
               <View style={[rowStyles.sheetIcon, { backgroundColor: `${current.color}20` }]}>
                 <Ionicons name={current.icon} size={20} color={current.color} />
               </View>
               <Text style={[rowStyles.sheetRowLabel, { color: current.color }]}>{current.label}</Text>
-              <View style={rowStyles.activePill}>
-                <Text style={rowStyles.activePillText}>Active</Text>
+              <View style={[rowStyles.activePill, { backgroundColor: `${colors.primary}18` }]}>
+                <Text style={[rowStyles.activePillText, { color: colors.primary }]}>Attivo</Text>
               </View>
             </View>
 
-            {/* Other roles */}
+            {/* ── Other roles ── */}
             {otherRoles.map(role => {
               const meta = ROLE_META[role];
               return (
                 <Pressable
                   key={role}
-                  style={({ pressed }) => [rowStyles.sheetRow, { opacity: pressed ? 0.75 : 1 }]}
-                  onPress={() => handleSwitch(role)}
+                  style={({ pressed }) => [
+                    rowStyles.sheetRow,
+                    { backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 },
+                  ]}
+                  onPress={() => { void handleSwitch(role); }}
                 >
                   <View style={[rowStyles.sheetIcon, { backgroundColor: `${meta.color}18` }]}>
                     <Ionicons name={meta.icon} size={20} color={meta.color} />
                   </View>
-                  <Text style={[rowStyles.sheetRowLabel, { color: "#1F2937" }]}>{meta.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  <Text style={[rowStyles.sheetRowLabel, { color: colors.foreground }]}>{meta.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
                 </Pressable>
               );
             })}
@@ -91,24 +113,32 @@ export function RoleSwitcherRow() {
         </Pressable>
       </Modal>
 
+      {/* ── Trigger row ── */}
       <Pressable
-        style={({ pressed }) => [rowStyles.row, { opacity: pressed ? 0.8 : 1 }]}
+        style={({ pressed }) => [
+          rowStyles.row,
+          { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
+        ]}
         onPress={() => {
           setOpen(true);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }}
       >
         <View style={[rowStyles.rowIcon, { backgroundColor: `${current.color}18` }]}>
           <Ionicons name={current.icon} size={20} color={current.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={rowStyles.rowLabel}>Switch Role</Text>
-          <Text style={rowStyles.rowSub}>Current view: {current.label}</Text>
+          <Text style={[rowStyles.rowLabel, { color: colors.foreground }]}>Cambia Ruolo</Text>
+          <Text style={[rowStyles.rowSub, { color: colors.mutedForeground }]}>
+            Contesto attivo: {current.label}
+          </Text>
         </View>
         <View style={[rowStyles.activePill, { backgroundColor: `${current.color}15`, flexShrink: 0 }]}>
-          <Text style={[rowStyles.activePillText, { color: current.color }]} numberOfLines={1}>{current.label}</Text>
+          <Text style={[rowStyles.activePillText, { color: current.color }]} numberOfLines={1}>
+            {current.label}
+          </Text>
         </View>
-        <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
+        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} style={{ marginLeft: 4 }} />
       </Pressable>
     </>
   );
@@ -122,10 +152,8 @@ const rowStyles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: "#F9FAFB",
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
   rowIcon: {
     width: 40,
@@ -134,16 +162,14 @@ const rowStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  rowLabel: { fontSize: 15, fontWeight: "700", color: "#1F2937", marginBottom: 1 },
-  rowSub:   { fontSize: 12, color: "#6B7280" },
+  rowLabel: { fontSize: 15, fontWeight: "700", marginBottom: 1 },
+  rowSub:   { fontSize: 12 },
   activePill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
-    backgroundColor: "#ECFDF5",
   },
-  activePillText: { fontSize: 11, fontWeight: "700", color: "#047857" },
-  // Modal sheet
+  activePillText: { fontSize: 11, fontWeight: "700" },
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
@@ -165,8 +191,8 @@ const rowStyles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 8,
   },
-  sheetTitle: { fontSize: 18, fontWeight: "800", color: "#1F2937", marginBottom: 2 },
-  sheetSub:   { fontSize: 13, color: "#6B7280", marginBottom: 6 },
+  sheetTitle: { fontSize: 18, fontWeight: "800", marginBottom: 2 },
+  sheetSub:   { fontSize: 13, marginBottom: 6 },
   sheetRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -184,7 +210,7 @@ const rowStyles = StyleSheet.create({
   sheetRowLabel: { flex: 1, fontSize: 15, fontWeight: "700" },
 });
 
-// ── Legacy floating pill (kept for reference, no longer used) ─────────────────
+// ── Legacy floating pill (kept as no-op for import compatibility) ─────────────
 
 /**
  * @deprecated Use RoleSwitcherRow instead.
