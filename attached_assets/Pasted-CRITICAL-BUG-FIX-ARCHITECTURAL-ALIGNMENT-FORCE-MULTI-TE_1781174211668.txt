@@ -1,0 +1,49 @@
+CRITICAL BUG FIX & ARCHITECTURAL ALIGNMENT: FORCE MULTI-TENANT DISPLAY FOR MULTI-ROLE DEVELOPER.
+
+🛑 GRAPHICS & STYLES LOCKDOWN 🛑
+DO NOT ALTER ANY DESIGN TOKENS, COLORS, PADDING, OR FLEXBOX PROPS. FIX ONLY THE STATE LOGIC AND CLEAN UP TRUNCATED TEXT LABELS.
+
+THE PROBLEM:
+You implemented the mock injection inside the API resolution block, but since the Super Admin account has 0 real Member memberships in the production DB, the code short-circuits directly into the `<EmptyState />` component ("Nessuna associazione collegata") and completely hides the mock data. This breaks development testing for a multi-role user.
+
+The developer operates across 4 real roles (Super Admin, Admin, Operator, Member) and the Member context MUST behave identically to a live production Member with multiple active associations.
+
+EXECUTE THIS LOGICAL FIX IMMEDIATELY IN `app/(member)/find-schools.tsx` (or Tenant Switcher screen):
+
+TASK 1: OVERRIDE EMPTY STATE & HARD-INJECT 2 REAL TEST TENANTS
+- Locate the component's render state or the `load()` function.
+- Do NOT let an empty API array trigger the Empty State screen if we are in a development/testing context.
+- Programmatically FORCE the core `associations` state array to ALWAYS contain these two complete local objects, bypassing any empty database array check:
+
+// =================================================================
+// !!! START FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
+// =================================================================
+const devTenants = [
+  {
+    id: 1111,
+    name: "Dance Village Piacenza 🕺",
+    logoUri: null,
+  },
+  {
+    id: 2222,
+    name: "Stelle Nascenti Theater 🌟",
+    logoUri: null,
+  }
+];
+// Combine these devTenants with any real fetched items so the list is NEVER empty.
+// =================================================================
+// !!! END FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
+// =================================================================
+
+TASK 2: REWRITE SWITCH HANDLER FOR DEV TENANTS
+- Update `handleSwitch(org)`: If the user taps an item with ID 1111 or 2222, execute the `updateUser` context push exactly as a real member would:
+  - For 1111 -> Set `orgId: 1111`, `schoolName: "Dance Village Piacenza"`.
+  - For 2222 -> Set `orgId: 2222`, `schoolName: "Stelle Nascenti Theater"`.
+- Ensure it successfully fires `router.replace("/(parent)/home")` to test the branding reset.
+
+TASK 3: STRING CLEANUP & TRANSLATION FIX
+- Fix the header text layout: Ensure "Le Mie Associazioni" does not get truncated into "Le Mie Asso...". Adjust the container width if necessary, or make the string fit.
+- Translate the subtext "My Associations • tap to switch active tenant" completely into clean Italian: "Le Mie Associazioni • tocca per cambiare associazione".
+
+COMPILATION MANDATE:
+Run `tsc --noEmit`. Ensure the list renders these two test associations immediately upon switching to the Member view. Do not touch layout structures. Rebuild now.

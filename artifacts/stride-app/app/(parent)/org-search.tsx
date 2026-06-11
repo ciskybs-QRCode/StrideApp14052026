@@ -96,26 +96,48 @@ export default function OrgSearch() {
           ? all.filter(o => userOrgIds.has(Number(o.id)))
           : all.slice(0, 1); // fallback: show first org until orgId resolves
       // =================================================================
-      // !!! START TEMP MOCK FOR TENANT SWITCH TESTING - REMOVE BEFORE PROD !!!
+      // !!! START FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
       // =================================================================
-      const mockOrg: OrgSearchResult = {
-        id:           9999,
-        name:         "Associazione Test Gold \uD83C\uDF1F",
-        location:     "Milano, IT",
-        description:  null,
-        logo_url:     null,
-        slug:         null,
-        safety_score: 0,
-        is_verified:  false,
-        review_count: 0,
-        avg_rating:   0,
-        score_label:  "New",
-      };
-      mine.push(mockOrg);
+      const devTenants: OrgSearchResult[] = [
+        {
+          id:           1111,
+          name:         "Dance Village Piacenza \uD83D\uDD7A",
+          location:     "Piacenza, IT",
+          description:  null,
+          logo_url:     null,
+          slug:         null,
+          safety_score: 0,
+          is_verified:  false,
+          review_count: 0,
+          avg_rating:   0,
+          score_label:  "New",
+        },
+        {
+          id:           2222,
+          name:         "Stelle Nascenti Theater \uD83C\uDF1F",
+          location:     "Roma, IT",
+          description:  null,
+          logo_url:     null,
+          slug:         null,
+          safety_score: 0,
+          is_verified:  false,
+          review_count: 0,
+          avg_rating:   0,
+          score_label:  "New",
+        },
+      ];
+      // Combine real results with dev tenants so the list is NEVER empty.
+      const devIds = new Set(devTenants.map(d => d.id));
+      const merged = [
+        ...mine,
+        ...devTenants.filter(d => !mine.some(m => Number(m.id) === d.id)),
+      ].filter((o, idx, arr) => arr.findIndex(x => Number(x.id) === Number(o.id)) === idx);
+      // If real fetch returned nothing, still show the dev tenants.
+      setAssociations(merged.length > 0 ? merged : devTenants);
+      void devIds; // suppress unused-variable lint
       // =================================================================
-      // !!! END TEMP MOCK FOR TENANT SWITCH TESTING - REMOVE BEFORE PROD !!!
+      // !!! END FORCE-INJECT DEV TENANTS FOR MULTI-ROLE TESTING !!!
       // =================================================================
-      setAssociations(mine);
     } catch {
       setAssociations([]);
     } finally {
@@ -136,15 +158,20 @@ export default function OrgSearch() {
   const handleSwitch = async (org: OrgSearchResult) => {
     if (Number(org.id) === user?.orgId) return; // already active tenant
     // =================================================================
-    // !!! START TEMP MOCK SWITCH HANDLER !!!
+    // !!! START FORCE-INJECT DEV TENANT SWITCH HANDLER - REMOVE BEFORE PROD !!!
     // =================================================================
-    if (Number(org.id) === 9999) {
-      await updateUser({ orgId: 9999, schoolName: "Associazione Test Gold \uD83C\uDF1F" });
+    if (Number(org.id) === 1111) {
+      await updateUser({ orgId: 1111, schoolName: "Dance Village Piacenza" });
+      router.replace("/(parent)/home");
+      return;
+    }
+    if (Number(org.id) === 2222) {
+      await updateUser({ orgId: 2222, schoolName: "Stelle Nascenti Theater" });
       router.replace("/(parent)/home");
       return;
     }
     // =================================================================
-    // !!! END TEMP MOCK SWITCH HANDLER !!!
+    // !!! END FORCE-INJECT DEV TENANT SWITCH HANDLER - REMOVE BEFORE PROD !!!
     // =================================================================
     setSwitching(Number(org.id));
     try {
@@ -170,9 +197,9 @@ export default function OrgSearch() {
       {/* ── Header ── */}
       <View style={[styles.searchRow, { paddingBottom: 12 }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.cardName, { fontSize: 16 }]}>Le Mie Associazioni</Text>
+          <Text style={[styles.cardName, { fontSize: 16 }]} numberOfLines={0}>Le Mie Associazioni</Text>
           <Text style={[styles.cardLocation, { marginTop: 2 }]}>
-            My Associations · tap to switch active tenant
+            Le Mie Associazioni {"\u2022"} tocca per cambiare associazione
           </Text>
         </View>
         <Ionicons name="business-outline" size={22} color={C.primary} />
