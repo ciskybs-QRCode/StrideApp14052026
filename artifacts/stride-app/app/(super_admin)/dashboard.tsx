@@ -1244,7 +1244,7 @@ export default function SuperAdminDashboard() {
   return (
     <View style={[d.container, { flex: 1 }]}>
         {/* ── HEADER ── */}
-        <View style={[d.header, { paddingTop: 55 }]}>
+        <View style={d.header}>
           <View style={d.headerRow}>
             <View style={d.headerLeft}>
               <View style={d.goldBadge}>
@@ -1569,10 +1569,10 @@ export default function SuperAdminDashboard() {
 
 const d = StyleSheet.create({
   container:     { flex: 1 },
-  header:        { backgroundColor: "#1E3A8A", paddingHorizontal: 20, paddingBottom: 20 },
+  header:        { backgroundColor: "#1E3A8A", paddingHorizontal: 20, paddingTop: 70, paddingBottom: 20 },
   headerRow:     { flexDirection: "row", alignItems: "flex-start" },
   headerLeft:    { flex: 1 },
-  goldBadge:     { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#FBBF24", alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 },
+  goldBadge:     { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#FBBF24", alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, marginTop: 8, marginBottom: 10 },
   goldBadgeText: { fontSize: 10, fontWeight: "900", color: "#1E3A8A", letterSpacing: 0.5 },
   headerTitle:   { fontSize: 26, fontWeight: "900", color: "#FFF", marginBottom: 3 },
   headerSub:     { fontSize: 12, color: "rgba(255,255,255,0.55)" },
