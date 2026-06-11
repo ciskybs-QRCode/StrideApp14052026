@@ -1244,7 +1244,7 @@ export default function SuperAdminDashboard() {
   return (
     <View style={[d.container, { flex: 1 }]}>
         {/* ── HEADER ── */}
-        <View style={[d.header, { paddingTop: insets.top + 12 }]}>
+        <View style={[d.header, { paddingTop: 55 }]}>
           <View style={d.headerRow}>
             <View style={d.headerLeft}>
               <View style={d.goldBadge}>
@@ -1278,7 +1278,7 @@ export default function SuperAdminDashboard() {
           ) : (
             <ScrollView
               style={d.scroll}
-              contentContainerStyle={[d.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+              contentContainerStyle={[d.scrollContent, { paddingBottom: 100 }]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(true); }} tintColor="#1E3A8A" />}
