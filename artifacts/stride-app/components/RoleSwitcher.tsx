@@ -12,17 +12,17 @@ const ROLE_META: Record<UserRole, {
   icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
   color: string;
 }> = {
-  super_admin: { label: "Platform",    icon: "globe-outline",    color: "#FBBF24" },
-  admin:       { label: "Admin",       icon: "shield-checkmark", color: "#6D28D9" },
-  operator:    { label: "Insegnante",  icon: "school",           color: "#0369A1" },
-  parent:      { label: "Genitore",    icon: "person",           color: "#047857" },
-  kiosk:       { label: "Kiosk",       icon: "tv-outline",       color: "#1E3A8A" },
+  super_admin: { label: "Platform", icon: "globe-outline",    color: "#FBBF24" },
+  admin:       { label: "Admin",    icon: "shield-checkmark", color: "#6D28D9" },
+  operator:    { label: "Operator", icon: "school",           color: "#0369A1" },
+  parent:      { label: "Parent",   icon: "person",           color: "#047857" },
+  kiosk:       { label: "Kiosk",    icon: "tv-outline",       color: "#1E3A8A" },
 };
 
 // ── Inline settings row (non-floating) ───────────────────────────────────────
 
 /**
- * Renders a "Cambia Ruolo" settings card embedded in any profile / settings screen.
+ * Renders a "Switch Role" settings card embedded in any profile / settings screen.
  *
  * Uses `allRoles` (DB-verified) from AuthContext when available, falling back to
  * `user.roles` (client-side derived).  Inherits tenant branding via `useColors()`.
@@ -69,9 +69,9 @@ export function RoleSwitcherRow() {
             <View style={rowStyles.sheetHandle} />
 
             {/* ── Header ── */}
-            <Text style={[rowStyles.sheetTitle, { color: colors.foreground }]}>Cambia Ruolo</Text>
+            <Text style={[rowStyles.sheetTitle, { color: colors.foreground }]}>Switch Role</Text>
             <Text style={[rowStyles.sheetSub, { color: colors.mutedForeground }]}>
-              Accedi all'app con un profilo diverso
+              Access the app with a different profile
             </Text>
 
             {/* ── Current role ── */}
@@ -85,7 +85,7 @@ export function RoleSwitcherRow() {
               </View>
               <Text style={[rowStyles.sheetRowLabel, { color: current.color }]}>{current.label}</Text>
               <View style={[rowStyles.activePill, { backgroundColor: `${colors.primary}18` }]}>
-                <Text style={[rowStyles.activePillText, { color: colors.primary }]}>Attivo</Text>
+                <Text style={[rowStyles.activePillText, { color: colors.primary }]}>Active</Text>
               </View>
             </View>
 
@@ -128,9 +128,9 @@ export function RoleSwitcherRow() {
           <Ionicons name={current.icon} size={20} color={current.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[rowStyles.rowLabel, { color: colors.foreground }]}>Cambia Ruolo</Text>
+          <Text style={[rowStyles.rowLabel, { color: colors.foreground }]}>Switch Role</Text>
           <Text style={[rowStyles.rowSub, { color: colors.mutedForeground }]}>
-            Contesto attivo: {current.label}
+            Active context: {current.label}
           </Text>
         </View>
         <View style={[rowStyles.activePill, { backgroundColor: `${current.color}15`, flexShrink: 0 }]}>

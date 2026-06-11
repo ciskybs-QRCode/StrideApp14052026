@@ -270,7 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const switchActiveRole = async (newRole: UserRole) => {
     if (!user) {
-      Alert.alert("Errore Ruolo", "Sessione non disponibile. Effettua nuovamente il login.");
+      Alert.alert("Role Switch Failed", "No active session. Please log in again.");
       return;
     }
 
@@ -285,8 +285,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           { allRoles, userRoles: user.roles },
         );
         Alert.alert(
-          "Errore Ruolo",
-          "L'utente non ha i permessi reali nel DB per il ruolo selezionato.",
+          "Role Switch Denied",
+          "This account does not hold the selected role in the database.",
         );
         return;
       }
@@ -311,8 +311,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: unknown) {
       console.error("\u274c switchActiveRole ERROR:", err);
       Alert.alert(
-        "Errore Ruolo",
-        err instanceof Error ? err.message : "Cambio ruolo fallito. Riprova.",
+        "Role Switch Failed",
+        err instanceof Error ? err.message : "Could not switch role. Please try again.",
       );
     }
   };

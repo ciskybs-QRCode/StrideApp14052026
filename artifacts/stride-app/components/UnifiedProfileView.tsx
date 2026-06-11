@@ -147,14 +147,14 @@ export default function UnifiedProfileView({ currentRole }: Props) {
       await api.activateOperator();
       await refreshAllRoles();
       Alert.alert(
-        "Profilo Attivato",
-        "Il profilo Insegnante/Operatore è stato attivato. Puoi ora passare a quel ruolo dal selettore.",
+        "Profile Activated",
+        "Your Operator/Teacher profile has been activated. You can now switch to that role using the role switcher.",
       );
     } catch (err: unknown) {
-      console.error("❌ activateOperator failed:", err);
+      console.error("activateOperator failed:", err);
       Alert.alert(
-        "Errore Attivazione",
-        err instanceof Error ? err.message : "Impossibile attivare il profilo operatore.",
+        "Activation Failed",
+        err instanceof Error ? err.message : "Unable to activate the Operator profile. Please try again.",
       );
     } finally {
       setProvisioningOp(false);
@@ -167,14 +167,14 @@ export default function UnifiedProfileView({ currentRole }: Props) {
       await api.activateParent();
       await refreshAllRoles();
       Alert.alert(
-        "Profilo Attivato",
-        "Il profilo Genitore/Membro è stato attivato. Puoi ora passare a quel ruolo dal selettore.",
+        "Profile Activated",
+        "Your Parent/Member profile has been activated. You can now switch to that role using the role switcher.",
       );
     } catch (err: unknown) {
-      console.error("❌ activateParent failed:", err);
+      console.error("activateParent failed:", err);
       Alert.alert(
-        "Errore Attivazione",
-        err instanceof Error ? err.message : "Impossibile attivare il profilo genitore.",
+        "Activation Failed",
+        err instanceof Error ? err.message : "Unable to activate the Parent profile. Please try again.",
       );
     } finally {
       setProvisioningPa(false);
@@ -333,14 +333,14 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               ))}
             </View>
 
-            {/* ── PROFILO PROFESSIONALE — self-provisioning ── */}
+            {/* ── PROFESSIONAL PROFILE — self-provisioning ── */}
             <Text style={[s.groupLabel, { color: colors.mutedForeground, marginTop: 10 }]}>
-              PROFILO PROFESSIONALE
+              PROFESSIONAL PROFILE
             </Text>
             <View style={[s.infoBox, { backgroundColor: `${colors.primary}08`, borderColor: `${colors.primary}20`, borderWidth: 1, marginBottom: 10 }]}>
               <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
               <Text style={[s.infoText, { color: colors.mutedForeground }]}>
-                In quanto Admin, puoi aggiungere ruoli aggiuntivi per il tuo stesso account — per insegnare o iscrivere i tuoi figli — senza creare un account separato.
+                As an Admin, you can provision additional roles on your own account — to teach classes or enroll dependents — without creating a separate account.
               </Text>
             </View>
 
@@ -364,12 +364,12 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.provisionTitle, { color: hasRole("operator") ? "#0369A1" : colors.foreground }]}>
-                  {hasRole("operator") ? "Profilo Insegnante Attivo" : "Attiva Profilo Insegnante"}
+                  {hasRole("operator") ? "Operator Profile Active" : "Activate Operator Profile"}
                 </Text>
                 <Text style={[s.provisionDesc, { color: colors.mutedForeground }]}>
                   {hasRole("operator")
-                    ? "Puoi ora switchare al ruolo Insegnante"
-                    : "Inserisce una riga in operator_profiles per il tuo account"}
+                    ? "You can now switch to the Operator role"
+                    : "Provisions an operator_profiles row for your account"}
                 </Text>
               </View>
               {hasRole("operator")
@@ -397,12 +397,12 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.provisionTitle, { color: hasRole("parent") ? "#047857" : colors.foreground }]}>
-                  {hasRole("parent") ? "Profilo Genitore Attivo" : "Attiva Profilo Genitore"}
+                  {hasRole("parent") ? "Parent Profile Active" : "Activate Parent Profile"}
                 </Text>
                 <Text style={[s.provisionDesc, { color: colors.mutedForeground }]}>
                   {hasRole("parent")
-                    ? "Puoi ora switchare al ruolo Genitore/Membro"
-                    : "Inserisce una riga in parent_profiles per il tuo account"}
+                    ? "You can now switch to the Parent/Member role"
+                    : "Provisions a parent_profiles row for your account"}
                 </Text>
               </View>
               {hasRole("parent")
@@ -807,7 +807,7 @@ const s = StyleSheet.create({
   // Version footer
   version: { fontSize: 12, textAlign: "center", marginTop: 4, marginBottom: 20 },
 
-  // Self-provisioning cards (admin "PROFILO PROFESSIONALE" section)
+  // Self-provisioning cards (admin "PROFESSIONAL PROFILE" section)
   infoBox: {
     flexDirection: "row",
     alignItems: "flex-start",
