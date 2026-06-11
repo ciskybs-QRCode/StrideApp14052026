@@ -1,0 +1,42 @@
+STRICT TESTING PROTOCOL: INJECT A HIGHLY ISOLATED TEMP MOCK TENANT WITH LOUD REMOVAL TAGS.
+
+🛑 ZERO GRAPHICS OR STYLE CHANGES ALLOWED 🛑
+
+CONTEXT:
+We need to test the multi-tenant switcher layout and the `handleSwitch` context redirect, but the database currently only has 1 association for this user. We are going to inject a temporary mock organization, but you MUST wrap it in loud, explicit comment tags so it can be cleanly purged later without leaving "ghost code".
+
+EXECUTE THIS EXACT INJECTION IN `app/(member)/find-schools.tsx`:
+
+1. Locate where the array of associations is set or loaded into the component state (inside the `load()` function or after the API fetch).
+2. Append a temporary hardcoded object, but you MUST strictly wrap it exactly like this:
+
+// =================================================================
+// !!! START TEMP MOCK FOR TENANT SWITCH TESTING - REMOVE BEFORE PROD !!!
+// =================================================================
+const mockOrg = {
+  id: 9999,
+  name: "Associazione Test Gold 🌟",
+  logoUri: null, 
+  // Include any other strict properties required by your TS interface
+};
+// Append 'mockOrg' to the loaded associations array here before setting state
+// =================================================================
+// !!! END TEMP MOCK FOR TENANT SWITCH TESTING - REMOVE BEFORE PROD !!!
+// =================================================================
+
+3. Inside your `handleSwitch(org)` function, intercept the ID 9999 to simulate the context change without breaking the real backend:
+
+// =================================================================
+// !!! START TEMP MOCK SWITCH HANDLER !!!
+// =================================================================
+if (org.id === 9999) {
+  // Simulate switching to a fake tenant by resetting the context with dummy data
+  updateUser({ orgId: 9999, schoolName: "Associazione Test Gold 🌟" });
+  router.replace("/(parent)/home");
+  return;
+}
+// =================================================================
+// !!! END TEMP MOCK SWITCH HANDLER !!!
+// =================================================================
+
+Run `tsc --noEmit` to ensure zero compilation or type-safety issues. Do not alter any styles or layout visual tokens.

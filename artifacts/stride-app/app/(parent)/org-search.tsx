@@ -95,6 +95,26 @@ export default function OrgSearch() {
         userOrgIds.size > 0
           ? all.filter(o => userOrgIds.has(Number(o.id)))
           : all.slice(0, 1); // fallback: show first org until orgId resolves
+      // =================================================================
+      // !!! START TEMP MOCK FOR TENANT SWITCH TESTING - REMOVE BEFORE PROD !!!
+      // =================================================================
+      const mockOrg: OrgSearchResult = {
+        id:           9999,
+        name:         "Associazione Test Gold \uD83C\uDF1F",
+        location:     "Milano, IT",
+        description:  null,
+        logo_url:     null,
+        slug:         null,
+        safety_score: 0,
+        is_verified:  false,
+        review_count: 0,
+        avg_rating:   0,
+        score_label:  "New",
+      };
+      mine.push(mockOrg);
+      // =================================================================
+      // !!! END TEMP MOCK FOR TENANT SWITCH TESTING - REMOVE BEFORE PROD !!!
+      // =================================================================
       setAssociations(mine);
     } catch {
       setAssociations([]);
@@ -115,6 +135,17 @@ export default function OrgSearch() {
    */
   const handleSwitch = async (org: OrgSearchResult) => {
     if (Number(org.id) === user?.orgId) return; // already active tenant
+    // =================================================================
+    // !!! START TEMP MOCK SWITCH HANDLER !!!
+    // =================================================================
+    if (Number(org.id) === 9999) {
+      await updateUser({ orgId: 9999, schoolName: "Associazione Test Gold \uD83C\uDF1F" });
+      router.replace("/(parent)/home");
+      return;
+    }
+    // =================================================================
+    // !!! END TEMP MOCK SWITCH HANDLER !!!
+    // =================================================================
     setSwitching(Number(org.id));
     try {
       await updateUser({
