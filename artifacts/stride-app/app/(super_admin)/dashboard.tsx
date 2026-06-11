@@ -1244,7 +1244,7 @@ export default function SuperAdminDashboard() {
   return (
     <View style={[d.container, { flex: 1 }]}>
         {/* ── HEADER ── */}
-        <View style={[d.header, { paddingTop: 8 }]}>
+        <View style={[d.header, { paddingTop: insets.top + 12 }]}>
           <View style={d.headerRow}>
             <View style={d.headerLeft}>
               <View style={d.goldBadge}>
