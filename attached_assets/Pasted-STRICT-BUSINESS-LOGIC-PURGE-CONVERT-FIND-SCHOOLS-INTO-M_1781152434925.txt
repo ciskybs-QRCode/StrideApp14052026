@@ -1,0 +1,27 @@
+STRICT BUSINESS LOGIC PURGE: CONVERT "FIND SCHOOLS" INTO "MY ASSOCIATIONS" TENANT SWITCHER.
+
+CRITICAL ARCHITECTURAL CORRECTION:
+The current `find_schools` screen is conceptually BROKEN. You implemented a generic public marketplace directory with review metrics ("Excellent ≥ 85", "Good", etc.). This is a private multi-tenant application. Members do not browse random public organizations; they are explicitly invited or linked to specific private Associations.
+
+You must destroy the boilerplate marketplace logic and convert this into a strict Tenant Switcher for users mapped to multiple organizations.
+
+EXECUTE THESE LOGICAL REWRITES IMMEDIATELY (ZERO GRAPHIC CHANGES ALLOWED):
+
+TASK 1: PURGE BOILERPLATE DIRECTORY FILTERS & LABELS
+- Open `app/(member)/find-schools.tsx` (or the corresponding file linked to the "FIND SCHOOLS" action).
+- Completely REMOVE the rating filter tokens, scores, and mock database queries looking for public entities.
+- Rename the core component context and header reference from "Find Schools" / "Organisations" to "Le Mie Associazioni" / "My Associations".
+
+TASK 2: IMPLEMENT THE MULTI-TENANT SWITCHER LOGIC
+- Rewrite the data fetching hook on this screen: It must query the Firestore `users` or `memberships` collection filtering EXCLUSIVELY by the currently authenticated user's ID (`uid`).
+- Fetch the list of Association Profiles (`tenantId` / Association names) that this specific user is legally registered under.
+- If the user belongs to only ONE association, programmatically bypass or display a clean notice stating they are currently active in that specific tenant.
+
+TASK 3: CONTEXT SWITCHING HANDLER
+- On the list item press handler (`onPress`), implement the active tenant switcher logic:
+  1. Update the local or global state context (e.g., `activeTenantId` or your global Context provider) with the selected Association's ID.
+  2. Clear any cached layout variables for the previous association.
+  3. Force-route the user back to the Member Home Dashboard (`app/(member)/home.tsx`), which will now dynamically load the logo, branding colors, courses, and schedules of the newly selected Association.
+
+COMPILATION MANDATE:
+Run `tsc --noEmit`. Verify that all marketplace logic has been wiped out and replaced with your strict multi-tenant association switching array. Do not alter any styles or component positions. Rebuild the logical routing now.

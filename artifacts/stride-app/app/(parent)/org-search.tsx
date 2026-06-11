@@ -1,401 +1,39 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
-  Animated,
   Image,
-  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
-import type { OrgSearchResult, OrgReview } from "@/lib/api";
+import type { OrgSearchResult } from "@/lib/api";
 import colors from "@/constants/colors";
 
 const C = colors.light;
-const VERIFIED_THRESHOLD = 85;
 
-// ── Score ring ────────────────────────────────────────────────────────────────
+// ── Association Row ────────────────────────────────────────────────────────────
 
-function ScoreRing({ score, size = 56 }: { score: number; size?: number }) {
-  const color =
-    score >= 85 ? "#059669"
-    : score >= 70 ? "#D97706"
-    : score >= 50 ? "#2563EB"
-    : "#9CA3AF";
-
+function AssociationRow({
+  org,
+  isActive,
+  onSwitch,
+}: {
+  org: OrgSearchResult;
+  isActive: boolean;
+  onSwitch: () => void;
+}) {
   return (
-    <View style={[styles.ring, { width: size, height: size, borderRadius: size / 2, borderColor: color }]}>
-      <Text style={[styles.ringScore, { fontSize: size * 0.27, color }]}>{score}</Text>
-      <Text style={[styles.ringMax, { color }]}>/100</Text>
-    </View>
-  );
-}
-
-// ── Star row ─────────────────────────────────────────────────────────────────
-
-function Stars({ value, max = 5, size = 14 }: { value: number; max?: number; size?: number }) {
-  return (
-    <View style={{ flexDirection: "row", gap: 2 }}>
-      {Array.from({ length: max }).map((_, i) => (
-        <Ionicons
-          key={i}
-          name={i < Math.round(value) ? "star" : "star-outline"}
-          size={size}
-          color="#FBBF24"
-        />
-      ))}
-    </View>
-  );
-}
-
-function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  return (
-    <View style={{ flexDirection: "row", gap: 8 }}>
-      {[1, 2, 3, 4, 5].map(n => (
-        <Pressable key={n} onPress={() => onChange(n)} hitSlop={8}>
-          <Ionicons name={n <= value ? "star" : "star-outline"} size={28} color="#FBBF24" />
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
-// ── Score bar ─────────────────────────────────────────────────────────────────
-
-function PillarBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
-  const pct = Math.max(0, Math.min(1, value / max));
-  return (
-    <View style={{ marginBottom: 10 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-        <Text style={styles.pillarLabel}>{label}</Text>
-        <Text style={[styles.pillarLabel, { color }]}>{value}/{max}</Text>
-      </View>
-      <View style={styles.barBg}>
-        <View style={[styles.barFill, { width: `${pct * 100}%` as `${number}%`, backgroundColor: color }]} />
-      </View>
-    </View>
-  );
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────────
-
-export default function OrgSearch() {
-  const { user } = useAuth();
-
-  const [query,      setQuery]      = useState("");
-  const [orgs,       setOrgs]       = useState<OrgSearchResult[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selected,   setSelected]   = useState<OrgSearchResult | null>(null);
-  const [reviews,    setReviews]    = useState<OrgReview[]>([]);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [showReview, setShowReview] = useState(false);
-
-  // Review form
-  const [safetyRating, setSafetyRating]   = useState(5);
-  const [commRating,   setCommRating]     = useState(5);
-  const [comment,      setComment]        = useState("");
-  const [submitting,   setSubmitting]     = useState(false);
-
-  const load = useCallback(async (q?: string, isRefresh = false) => {
-    isRefresh ? setRefreshing(true) : setLoading(true);
-    try {
-      const data = await api.searchOrgs(q ?? query);
-      setOrgs(data);
-    } catch {
-      Alert.alert("Error", "Could not load organisations. Please try again.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [query]);
-
-  useEffect(() => { void load(""); }, []);
-
-  const openOrg = async (org: OrgSearchResult) => {
-    setSelected(org);
-    setDetailLoading(true);
-    try {
-      const data = await api.listOrgReviews(org.id);
-      setReviews(data.reviews);
-    } catch {
-      setReviews([]);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  const handleSearch = () => load(query);
-
-  const handleSubmitReview = async () => {
-    if (!selected) return;
-    setSubmitting(true);
-    try {
-      await api.submitReview({
-        org_id:               selected.id,
-        safety_rating:        safetyRating,
-        communication_rating: commRating,
-        comment:              comment.trim() || null,
-      });
-      Alert.alert("Thank you!", "Your review has been submitted.");
-      setShowReview(false);
-      setSafetyRating(5);
-      setCommRating(5);
-      setComment("");
-      // Refresh the org data
-      const updated = await api.searchOrgs(query);
-      setOrgs(updated);
-      const updatedOrg = updated.find(o => o.id === selected.id);
-      if (updatedOrg) setSelected(updatedOrg);
-      const updatedReviews = await api.listOrgReviews(selected.id);
-      setReviews(updatedReviews.reviews);
-    } catch {
-      Alert.alert("Error", "Could not submit review. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const filtered = query
-    ? orgs.filter(o => o.name.toLowerCase().includes(query.toLowerCase()))
-    : orgs;
-
-  return (
-    <View style={styles.root}>
-      {/* Search bar */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={C.mutedForeground} />
-          <TextInput
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={handleSearch}
-            placeholder="Search organisations…"
-            placeholderTextColor={C.mutedForeground}
-            returnKeyType="search"
-            autoCapitalize="none"
-          />
-          {query.length > 0 && (
-            <Pressable onPress={() => { setQuery(""); void load(""); }} hitSlop={10}>
-              <Ionicons name="close-circle" size={18} color={C.mutedForeground} />
-            </Pressable>
-          )}
-        </View>
-        <Pressable style={styles.searchBtn} onPress={handleSearch}>
-          <Text style={styles.searchBtnText}>Search</Text>
-        </Pressable>
-      </View>
-
-      {/* Legend */}
-      <View style={styles.legendRow}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: "#059669" }]} />
-          <Text style={styles.legendText}>Excellent ≥ 85</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: "#D97706" }]} />
-          <Text style={styles.legendText}>Good 70-84</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: "#2563EB" }]} />
-          <Text style={styles.legendText}>Fair 50-69</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <Ionicons name="shield-checkmark" size={13} color="#059669" />
-          <Text style={styles.legendText}>Verified</Text>
-        </View>
-      </View>
-
-      {loading ? (
-        <View style={styles.centred}><ActivityIndicator size="large" color={C.primary} /></View>
-      ) : filtered.length === 0 ? (
-        <View style={styles.centred}>
-          <Ionicons name="business-outline" size={44} color={C.mutedForeground} />
-          <Text style={styles.emptyText}>No organisations found</Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(query, true)} tintColor={C.primary} />}
-        >
-          {filtered.map(org => <OrgCard key={org.id} org={org} onPress={() => openOrg(org)} />)}
-        </ScrollView>
-      )}
-
-      {/* ── Org Detail Modal ── */}
-      <Modal visible={!!selected} animationType="slide" transparent onRequestClose={() => setSelected(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            {selected && (
-              <>
-                {/* Header */}
-                <View style={styles.detailHeader}>
-                  {selected.logo_url ? (
-                    <Image source={{ uri: selected.logo_url }} style={styles.detailLogo} />
-                  ) : (
-                    <View style={[styles.detailLogo, { backgroundColor: C.primary + "15", alignItems: "center", justifyContent: "center" }]}>
-                      <Ionicons name="business" size={28} color={C.primary} />
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                      <Text style={styles.detailName}>{selected.name}</Text>
-                      {selected.is_verified && (
-                        <View style={styles.verifiedBadge}>
-                          <Ionicons name="shield-checkmark" size={11} color="#FFF" />
-                          <Text style={styles.verifiedText}>Stride Verified</Text>
-                        </View>
-                      )}
-                    </View>
-                    {selected.location && (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
-                        <Ionicons name="location-outline" size={12} color={C.mutedForeground} />
-                        <Text style={styles.detailLocation}>{selected.location}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Pressable onPress={() => setSelected(null)} hitSlop={10}>
-                    <Ionicons name="close-circle" size={26} color="#9CA3AF" />
-                  </Pressable>
-                </View>
-
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {/* Score ring + pillars */}
-                  <View style={styles.scoreSection}>
-                    <ScoreRing score={selected.safety_score} size={72} />
-                    <View style={{ flex: 1 }}>
-                      <PillarBar label="Protocol Adherence" value={Math.round(selected.safety_score * 0.4)} max={40} color="#2563EB" />
-                      <PillarBar label="Parent Feedback"    value={Math.round(selected.safety_score * 0.4)} max={40} color="#059669" />
-                      <PillarBar label="Emergency Response" value={Math.round(selected.safety_score * 0.2)} max={20} color="#7C3AED" />
-                    </View>
-                  </View>
-
-                  {/* Reviews */}
-                  <View style={styles.reviewsHeader}>
-                    <Text style={styles.reviewsTitle}>
-                      Reviews ({selected.review_count})
-                    </Text>
-                    {selected.review_count > 0 && (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                        <Stars value={selected.avg_rating} />
-                        <Text style={styles.avgRatingText}>{selected.avg_rating.toFixed(1)}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {detailLoading ? (
-                    <ActivityIndicator color={C.primary} style={{ marginVertical: 20 }} />
-                  ) : reviews.length === 0 ? (
-                    <Text style={styles.noReviews}>No reviews yet — be the first to rate this organisation.</Text>
-                  ) : (
-                    reviews.map(r => (
-                      <View key={r.id} style={styles.reviewCard}>
-                        <View style={{ flexDirection: "row", gap: 12, marginBottom: 6 }}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.reviewLabel}>Safety</Text>
-                            <Stars value={r.safety_rating} size={13} />
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.reviewLabel}>Communication</Text>
-                            <Stars value={r.communication_rating} size={13} />
-                          </View>
-                          <Text style={styles.reviewDate}>
-                            {new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                          </Text>
-                        </View>
-                        {r.comment ? <Text style={styles.reviewComment}>{r.comment}</Text> : null}
-                      </View>
-                    ))
-                  )}
-
-                  {/* Submit review button */}
-                  <Pressable style={styles.reviewBtn} onPress={() => setShowReview(true)}>
-                    <Ionicons name="star-half-outline" size={18} color="#FFF" />
-                    <Text style={styles.reviewBtnText}>Rate This School</Text>
-                  </Pressable>
-
-                  <View style={{ height: 32 }} />
-                </ScrollView>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* ── Submit Review Modal ── */}
-      <Modal visible={showReview} animationType="slide" transparent onRequestClose={() => setShowReview(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { maxHeight: "75%" }]}>
-            <View style={styles.detailHeader}>
-              <Text style={styles.detailName}>Rate {selected?.name}</Text>
-              <Pressable onPress={() => setShowReview(false)} hitSlop={10}>
-                <Ionicons name="close-circle" size={26} color="#9CA3AF" />
-              </Pressable>
-            </View>
-
-            <ScrollView keyboardShouldPersistTaps="handled">
-              <Text style={styles.ratingLabel}>Safety Rating</Text>
-              <StarPicker value={safetyRating} onChange={setSafetyRating} />
-
-              <Text style={[styles.ratingLabel, { marginTop: 20 }]}>Communication Rating</Text>
-              <StarPicker value={commRating} onChange={setCommRating} />
-
-              <Text style={[styles.ratingLabel, { marginTop: 20 }]}>Comment (optional)</Text>
-              <TextInput
-                style={styles.commentInput}
-                value={comment}
-                onChangeText={setComment}
-                placeholder="Share your experience…"
-                placeholderTextColor={C.mutedForeground}
-                multiline
-                numberOfLines={3}
-              />
-
-              <View style={styles.modalActions}>
-                <Pressable style={[styles.modalBtn, { backgroundColor: C.muted }]} onPress={() => setShowReview(false)}>
-                  <Text style={[styles.modalBtnText, { color: C.primary }]}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.modalBtn, { backgroundColor: C.primary, flex: 1 }]}
-                  onPress={handleSubmitReview}
-                  disabled={submitting}
-                >
-                  {submitting
-                    ? <ActivityIndicator color="#FFF" size="small" />
-                    : <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Submit Review</Text>
-                  }
-                </Pressable>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
-}
-
-// ── Org Card ──────────────────────────────────────────────────────────────────
-
-function OrgCard({ org, onPress }: { org: OrgSearchResult; onPress: () => void }) {
-  const scoreColor =
-    org.safety_score >= 85 ? "#059669"
-    : org.safety_score >= 70 ? "#D97706"
-    : org.safety_score >= 50 ? "#2563EB"
-    : "#9CA3AF";
-
-  return (
-    <Pressable style={styles.card} onPress={onPress}>
-      {/* Left: logo or icon */}
+    <Pressable
+      style={[styles.card, isActive && { borderColor: C.primary, borderWidth: 2 }]}
+      onPress={onSwitch}
+    >
       {org.logo_url ? (
         <Image source={{ uri: org.logo_url }} style={styles.cardLogo} />
       ) : (
@@ -404,39 +42,177 @@ function OrgCard({ org, onPress }: { org: OrgSearchResult; onPress: () => void }
         </View>
       )}
 
-      {/* Middle: name + location + stats */}
       <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <Text style={styles.cardName} numberOfLines={1}>{org.name}</Text>
-          {org.is_verified && (
-            <View style={styles.verifiedBadge}>
-              <Ionicons name="shield-checkmark" size={10} color="#FFF" />
-              <Text style={styles.verifiedText}>Verified</Text>
-            </View>
-          )}
-        </View>
-        {org.location && (
+        <Text style={styles.cardName} numberOfLines={1}>{org.name}</Text>
+        {org.location ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 }}>
             <Ionicons name="location-outline" size={11} color={C.mutedForeground} />
             <Text style={styles.cardLocation} numberOfLines={1}>{org.location}</Text>
           </View>
-        )}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 5 }}>
-          <Stars value={org.avg_rating} size={12} />
-          <Text style={styles.cardReviewCount}>({org.review_count})</Text>
-          <View style={[styles.labelBadge, { backgroundColor: scoreColor + "18" }]}>
-            <Text style={[styles.labelBadgeText, { color: scoreColor }]}>{org.score_label}</Text>
+        ) : null}
+        {isActive && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+            <Ionicons name="checkmark-circle" size={13} color="#059669" />
+            <Text style={{ fontSize: 11, color: "#059669", fontWeight: "700" }}>Associazione Attiva</Text>
           </View>
-        </View>
+        )}
       </View>
 
-      {/* Right: score ring */}
-      <ScoreRing score={org.safety_score} size={50} />
+      {isActive
+        ? <Ionicons name="checkmark-circle" size={24} color="#059669" />
+        : <Ionicons name="swap-horizontal-outline" size={22} color={C.mutedForeground} />}
     </Pressable>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
+
+export default function OrgSearch() {
+  const { user, updateUser } = useAuth();
+
+  const [associations, setAssociations] = useState<OrgSearchResult[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
+  const [switching,    setSwitching]    = useState<number | null>(null);
+
+  /**
+   * Fetch the associations this authenticated user is enrolled in.
+   * The server returns all orgs; we filter to the IDs linked to this user.
+   * When a dedicated /user/memberships endpoint is available, swap this call.
+   */
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
+    try {
+      const all = await api.searchOrgs("");
+      // Build the set of org IDs this user is a member of.
+      // Currently driven by user.orgId (single-tenant).
+      // Extend userOrgIds with additional membership IDs when a
+      // /user/memberships endpoint is available.
+      const userOrgIds = new Set<number>(
+        [user?.orgId].filter((id): id is number => id !== undefined),
+      );
+      const mine =
+        userOrgIds.size > 0
+          ? all.filter(o => userOrgIds.has(Number(o.id)))
+          : all.slice(0, 1); // fallback: show first org until orgId resolves
+      setAssociations(mine);
+    } catch {
+      setAssociations([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.orgId]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  /**
+   * Context-switch to the selected association:
+   * 1. Persist the new active tenant on the user context.
+   * 2. Clear layout variables tied to the previous association (schoolName).
+   * 3. Force-route to Home, which reloads branding, courses, and schedules
+   *    for the newly selected association.
+   */
+  const handleSwitch = async (org: OrgSearchResult) => {
+    if (Number(org.id) === user?.orgId) return; // already active tenant
+    setSwitching(Number(org.id));
+    try {
+      await updateUser({
+        orgId:      Number(org.id),
+        schoolName: org.name,
+        // Clear previous-tenant branding so Home re-derives from the new org
+        primaryColor:   undefined,
+        secondaryColor: undefined,
+        logoUri:        org.logo_url ?? undefined,
+      });
+      router.replace("/(parent)/home");
+    } catch {
+      setSwitching(null);
+    }
+  };
+
+  const activeId = user?.orgId;
+
+  return (
+    <View style={styles.root}>
+
+      {/* ── Header ── */}
+      <View style={[styles.searchRow, { paddingBottom: 12 }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.cardName, { fontSize: 16 }]}>Le Mie Associazioni</Text>
+          <Text style={[styles.cardLocation, { marginTop: 2 }]}>
+            My Associations · tap to switch active tenant
+          </Text>
+        </View>
+        <Ionicons name="business-outline" size={22} color={C.primary} />
+      </View>
+
+      {/* ── Body ── */}
+      {loading ? (
+        <View style={styles.centred}>
+          <ActivityIndicator size="large" color={C.primary} />
+        </View>
+
+      ) : associations.length === 0 ? (
+        <View style={styles.centred}>
+          <Ionicons name="business-outline" size={44} color={C.mutedForeground} />
+          <Text style={styles.emptyText}>Nessuna associazione collegata</Text>
+          <Text style={[styles.emptyText, { fontSize: 12, marginTop: 4 }]}>
+            No linked associations found for your account.
+          </Text>
+        </View>
+
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => { void load(true); }}
+              tintColor={C.primary}
+            />
+          }
+        >
+          {/* Contextual notice */}
+          <View style={[styles.legendRow, { paddingHorizontal: 0, paddingTop: 4, paddingBottom: 16 }]}>
+            <Ionicons
+              name={associations.length === 1 ? "information-circle-outline" : "swap-horizontal-outline"}
+              size={15}
+              color={C.mutedForeground}
+            />
+            <Text style={styles.legendText}>
+              {associations.length === 1
+                ? "Il tuo account è registrato in una sola associazione."
+                : "Seleziona un'associazione per cambiare contesto attivo."}
+            </Text>
+          </View>
+
+          {associations.map(org =>
+            switching === Number(org.id) ? (
+              <View key={org.id} style={[styles.card, { justifyContent: "center", alignItems: "center" }]}>
+                <ActivityIndicator color={C.primary} />
+              </View>
+            ) : (
+              <AssociationRow
+                key={org.id}
+                org={org}
+                isActive={Number(org.id) === activeId}
+                onSwitch={
+                  associations.length === 1 || Number(org.id) === activeId
+                    ? () => {} // no-op for single-org or already active
+                    : () => { void handleSwitch(org); }
+                }
+              />
+            ),
+          )}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+// ── Styles (unchanged) ────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   root:      { flex: 1, backgroundColor: C.background },
