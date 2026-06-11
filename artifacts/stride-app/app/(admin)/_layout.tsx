@@ -9,7 +9,6 @@ import { useUnread } from "@/context/UnreadContext";
 import { useBillingStatus } from "@/hooks/useBillingStatus";
 import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
-import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { BILLING_TIERS } from "@/lib/billingEngine";
 
 // ── Account Suspension Hard-Lockout ───────────────────────────────────────────
@@ -191,7 +190,6 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="dev-tools"      options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
-    <RoleSwitcher />
     <BrandingLogoOverlay />
     </View>
   );

@@ -150,78 +150,16 @@ function useRoleSwitcher() {
   };
 }
 
-// ── RoleSwitcher — floating pill overlay (used in layout files) ───────────────
+// ── RoleSwitcher — static alias of RoleSwitcherRow ───────────────────────────
 
 /**
- * Renders a floating "Switch Role" pill anchored to the bottom-right corner.
- * Placed after <Tabs> in layout files so it floats above all tab screens.
- * Invisible (returns null) when the user holds only one role.
+ * Static "Switch Role" row.  Identical to RoleSwitcherRow — no absolute
+ * positioning or floating behaviour.  Safe to render anywhere in the tree.
+ * Kept as a named export so existing layout imports don't need updating.
  */
 export function RoleSwitcher() {
-  const {
-    user, colors, open, setOpen,
-    availableRoles, activeRole, current,
-    handleOpen, handleSwitch,
-  } = useRoleSwitcher();
-
-  if (!user || availableRoles.length <= 1) return null;
-
-  return (
-    <>
-      <RoleSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        availableRoles={availableRoles}
-        activeRole={activeRole}
-        onSwitch={role => { void handleSwitch(role); }}
-        colors={colors}
-      />
-
-      {/* Floating pill */}
-      <Pressable
-        style={({ pressed }) => [
-          pill.container,
-          {
-            backgroundColor: current.color,
-            shadowColor: current.color,
-            opacity: pressed ? 0.85 : 1,
-          },
-        ]}
-        onPress={handleOpen}
-        accessibilityLabel="Switch role"
-        accessibilityRole="button"
-      >
-        <Ionicons name={current.icon} size={15} color="#FFF" />
-        <Text style={pill.label}>{current.label}</Text>
-        <Ionicons name="chevron-up" size={13} color="rgba(255,255,255,0.8)" />
-      </Pressable>
-    </>
-  );
+  return <RoleSwitcherRow />;
 }
-
-const pill = StyleSheet.create({
-  container: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 110 : 88,
-    right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 24,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 8,
-    elevation: 6,
-    zIndex: 999,
-  },
-  label: {
-    color: "#FFF",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-});
 
 // ── RoleSwitcherRow — embedded settings row (used in profile / settings) ──────
 

@@ -10,7 +10,6 @@ import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { useRealtime, type BookingNotification } from "@/context/RealtimeContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
-import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 // ── Booking notification banner ───────────────────────────────────────────────
 
@@ -148,7 +147,6 @@ export default function OperatorTabLayout() {
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
-      <RoleSwitcher />
       <BrandingLogoOverlay />
 
       {/* ── Notification banner ── */}

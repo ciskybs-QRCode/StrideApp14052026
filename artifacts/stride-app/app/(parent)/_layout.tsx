@@ -21,7 +21,6 @@ import { useColors } from "@/hooks/useColors";
 import { BackButton } from "@/components/BackButton";
 import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
-import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { SignaturePad } from "@/components/SignaturePad";
 import { useTerminology } from "@/context/TerminologyContext";
 import { useUnread } from "@/context/UnreadContext";
@@ -195,7 +194,6 @@ export default function ParentTabLayout() {
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
-      <RoleSwitcher />
       <BrandingLogoOverlay />
 
       {/* ── Mandatory Legal Signature Gate ──────────────────────────────────── */}

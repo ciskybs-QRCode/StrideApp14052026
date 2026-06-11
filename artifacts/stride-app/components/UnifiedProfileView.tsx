@@ -258,11 +258,11 @@ export default function UnifiedProfileView({ currentRole }: Props) {
           </View>
         </View>
 
+        {/* ── ROLE SWITCHER — top of profile, shown only when user has multiple roles ── */}
+        <RoleSwitcherRow />
+
         {/* ── ACCOUNT (shared across all roles) ── */}
         <AccountSettingsCard />
-
-        {/* ── ROLE SWITCHER (only shown when multiple roles) ── */}
-        <RoleSwitcherRow />
 
         {/* ════════════════════════════════════════════════════════════════
             ADMIN-ONLY SECTION
