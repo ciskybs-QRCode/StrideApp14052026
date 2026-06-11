@@ -273,6 +273,15 @@ export const api = {
   validateInvite: (token: string) =>
     request<{ valid: boolean; orgId: number; orgName: string }>("GET", `/auth/invite/${token}`),
 
+  /**
+   * GET /user/roles — returns every real DB-verified role the current user
+   * holds across all organisations (from organization_members + users.role).
+   * Used by AuthContext to populate `user.roles` and `allRoles` with real
+   * DB facts instead of client-side derivation.
+   */
+  getUserRoles: () =>
+    request<{ roles: { role: string; orgId: number }[] }>("GET", "/user/roles"),
+
   pioneerComplete: (data: {
     schoolName: string;
     registrationNumber?: string;

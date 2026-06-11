@@ -390,4 +390,50 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
   res.json({ configured: true, ageGroups, skillLevels });
 });
 
+// ── GET /user/roles ───────────────────────────────────────────────────────────
+// Returns every real DB-verified role this user holds, across all orgs.
+// The client uses this to populate `user.roles` and `allRoles` in AuthContext,
+// replacing the client-side `rolesForPrimary()` derivation with real DB facts.
+//
+// Response: { roles: { role: string; orgId: number }[] }
+//   - super_admin → orgId 0 (platform-wide, not org-scoped)
+//   - admin/operator/parent → orgId = organization_members.organization_id
+router.get("/user/roles", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+
+  const results: { role: string; orgId: number }[] = [];
+
+  // 1. Check primary role on the users row (catches super_admin and legacy single-role users)
+  const { data: dbUser } = await supabase
+    .from("users")
+    .select("role, organization_id")
+    .eq("id", userId)
+    .maybeSingle() as { data: { role: string; organization_id: number | null } | null };
+
+  if (dbUser?.role === "super_admin") {
+    results.push({ role: "super_admin", orgId: 0 });
+  }
+
+  // 2. Enumerate all organization_members rows for this user
+  const { data: memberships } = await supabase
+    .from("organization_members")
+    .select("role, organization_id")
+    .eq("user_id", userId) as { data: { role: string; organization_id: number }[] | null };
+
+  for (const m of memberships ?? []) {
+    const duplicate = results.find(r => r.role === m.role && r.orgId === m.organization_id);
+    if (!duplicate) results.push({ role: m.role, orgId: m.organization_id });
+  }
+
+  // 3. Fallback: if no memberships found, include the JWT role+orgId so the
+  //    client always gets at least one valid entry (e.g. legacy orgs that
+  //    pre-date the organization_members table).
+  if (results.length === 0 && user.role !== "super_admin") {
+    results.push({ role: user.role, orgId: user.orgId });
+  }
+
+  res.json({ roles: results });
+});
+
 export default router;

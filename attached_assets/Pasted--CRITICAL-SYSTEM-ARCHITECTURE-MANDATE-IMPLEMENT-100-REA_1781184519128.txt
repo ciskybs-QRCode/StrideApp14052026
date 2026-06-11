@@ -1,0 +1,35 @@
+🛑 CRITICAL SYSTEM ARCHITECTURE MANDATE: IMPLEMENT 100% REAL MULTI-ROLE SWITCHING BACKEND & STATE 🛑
+
+CONTEXT & CORE REQUIREMENT:
+The developer is testing the system as a simultaneous multi-role user. In production, a school founder (Admin) is frequently also a teacher (Operator) and a parent with enrolled children (Member). The application MUST natively support a single user account holding multiple real role privileges and switching between them seamlessly. Fake data or hardcoded mock mockups are strictly prohibited.
+
+EXECUTE THIS CORE REFRACTORING ACROSS `AuthContext` AND THE ROLE SWITCHING LAYER IMMEDIATELY:
+
+TASK 1: MULTI-ROLEPrivilege CHECK IN DATABASE
+- Ensure that the user session or initialization logic checks all structural tables/roles for the authenticated `userId`:
+  1. `super_admin` flag/table -> Grants access to `/(super_admin)`
+  2. `organization_members` (where role = 'Admin') -> Grants access to `/(admin)` for that specific `orgId`
+  3. `operators` / teachers table -> Grants access to `/(operator)` for that specific `orgId`
+  4. `parents` / members table -> Grants access to `/(member)` for that specific `orgId`
+
+TASK 2: IMPLEMENT `switchActiveRole(newRole)` IN AUTH CONTEXT
+- In the global `AuthContext`, introduce a bulletproof state token: `activeRole` (can be 'super_admin', 'admin', 'operator', or 'member').
+- Implement a real function `switchActiveRole(role)` that:
+  1. Validates the user has the right to access that role.
+  2. Sets the `activeRole` state.
+  3. Dynamically re-routes the user using `router.replace` to the exact real layout root:
+     - 'super_admin' -> `/(super_admin)/dashboard`
+     - 'admin'       -> `/(admin)/stats`
+     - 'operator'    -> `/(operator)/home`
+     - 'member'      -> `/(member)/home` (or `/(parent)/home`)
+
+TASK 3: FIX DATA ISOLATION BY ACTIVE ROLE
+- Ensure that when `activeRole` is changed, all components dynamically reload data based on that specific role's permissions using the real `orgId`.
+  - As Admin: Full access to settings, billing, creation.
+  - As Operator: Reads real calendar events/lessons assigned to their operator ID.
+  - As Member: Reads real connected dependent profiles (children) linked to their parent account in the database.
+
+TASK 4: ZERO TRAPPING & ERROR ALERTS
+- If a switch fails or a table lookup rejects the permission, display a native `Alert.alert("Errore Ruolo", "L'utente non ha i permessi reali nel DB per il ruolo selezionato")` and print the error to the console.
+
+Run `tsc --noEmit` to guarantee full compilation without style disruptions. Clean up the routing paths to ensure zero infinite loops.
