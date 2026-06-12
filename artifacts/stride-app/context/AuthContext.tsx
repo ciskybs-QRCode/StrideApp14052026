@@ -146,6 +146,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (storedRoles) {
           try { setAllRoles(JSON.parse(storedRoles) as RoleEntry[]); } catch { /* ignore */ }
         }
+
+        // Background refresh — don't block UI startup, but sync fresh roles from
+        // the server so allRoles is never permanently stale across deploys.
+        fetchAllRoles().then(freshRoles => {
+          if (!freshRoles) return;
+          setAllRoles(freshRoles);
+          const uniqueRoleNames = freshRoles
+            .map(r => r.role)
+            .filter((v, i, a) => a.indexOf(v) === i);
+          setUser(prev => prev ? { ...prev, roles: uniqueRoleNames } : prev);
+          AsyncStorage.setItem(ALL_ROLES_KEY, JSON.stringify(freshRoles)).catch(() => {});
+        }).catch(() => { /* network errors are non-fatal on startup */ });
       }
     } catch (e) {
       console.error("Auth load error:", e);
@@ -276,10 +288,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // ── 1. Permission check ────────────────────────────────────────────────
+      // ciskybs@gmail.com is the platform super-user — it holds all 4 roles by
+      // design and bypasses the mutual-exclusivity DB check.
+      const isSuperUserAccount  = user.email === 'ciskybs@gmail.com';
       const permittedInAllRoles = allRoles.some(r => r.role === newRole);
       const permittedInDerived  = user.roles.includes(newRole);
 
-      if (!permittedInAllRoles && !permittedInDerived) {
+      if (!isSuperUserAccount && !permittedInAllRoles && !permittedInDerived) {
         console.error(
           `\u274c switchActiveRole DENIED: user ${user.email} does not hold role "${newRole}" in DB.`,
           { allRoles, userRoles: user.roles },
@@ -293,9 +308,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // ── 2. Resolve orgId for the new role ──────────────────────────────────
       // Use the first matching org from the real DB allRoles list; fall back to
-      // the user's current orgId (handles legacy single-org accounts).
-      const entry    = allRoles.find(r => r.role === newRole);
-      const targetOrgId = entry?.orgId && entry.orgId > 0 ? entry.orgId : user.orgId;
+      // the user's current orgId (handles legacy single-org and bypass accounts).
+      const entry       = allRoles.find(r => r.role === newRole);
+      const targetOrgId = (entry?.orgId && entry.orgId > 0) ? entry.orgId : user.orgId;
 
       // ── 3. Persist new active role ──────────────────────────────────────────
       await updateUser({

@@ -1,0 +1,19 @@
+🛑 CRITICAL ARCHITECTURAL MANDATE: HARDCODE SUPER-USER BYPASS FOR 'ciskybs@gmail.com' & ENFORCE PRODUCTION ROLE LIMITS 🛑
+
+Refactor the authentication, role-checking middleware (`requireRole`), and the dependent creation logic to strictly enforce this dual-behavior system:
+
+RULE 1: THE 4-ROLE SUPER-USER BYPASS (Strictly for ciskybs@gmail.com)
+- If the logged-in user email is EXACTLY "ciskybs@gmail.com", bypass ALL mutual exclusivity restrictions. 
+- This account is the ONLY one authorized to hold and switch between all 4 roles: `super_admin`, `admin`, `operator`, and `parent` (member).
+- DEPENDENT CREATION BYPASS: When "ciskybs@gmail.com" creates a dependent (child/member), the server must automatically resolve or provision a matching row in `parent_profiles` linked to this user_id, map it to the active `organization_id`, and execute the insert flawlessly. No silent drops, no 403 blocks.
+
+RULE 2: THE STANDARD PRODUCTION FLOW (For all other accounts)
+- Any other user account can hold a MAXIMUM of 3 roles: `admin`, `operator`, and `parent` (member). They can NEVER access or become `super_admin`.
+- Production lifecycle flow: A new user registers ➔ creates an organization (becomes Admin) ➔ sends invitation links to create Members/Parents ➔ Admin can promote a Member to Operator, and if necessary, promote an Operator to an additional Admin role.
+
+TASK TO EXECUTE IMMEDIATELY:
+1. Update `requireRole` middleware on the backend: If `user.email === 'ciskybs@gmail.com'`, grant immediate authorization for any requested role gate.
+2. Fix the dependent creation endpoint (`POST /dependents` or `/children`): Ensure that if the email is "ciskybs@gmail.com", it auto-injects the required database foreign keys (`organization_id` from active context and `parent_id` from the user's profile row) instead of throwing constraint errors.
+3. On the frontend dependent creation form, wrap the submit execution in a try/catch block. If it fails, trigger a native `Alert.alert("Error", error.message)`.
+
+Run `tsc --noEmit` to ensure a clean compilation (Exit 0) and cold-restart the API server. Fix this now.

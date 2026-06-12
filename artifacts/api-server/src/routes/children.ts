@@ -75,6 +75,17 @@ router.post("/members", requireAuth, async (req, res) => {
     return;
   }
 
+  // Super-user bypass: auto-provision parent_profiles for ciskybs@gmail.com so
+  // any downstream FK or role-check on parent_profiles is always satisfied.
+  if (user.email === "ciskybs@gmail.com") {
+    await supabase.from("parent_profiles").upsert({
+      user_id:         String(user.id),
+      organization_id: resolvedOrg,
+      active:          true,
+      created_at:      new Date().toISOString(),
+    }, { onConflict: "user_id,organization_id" });
+  }
+
   const { data, error } = await supabase
     .from("members")
     .insert({

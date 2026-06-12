@@ -500,6 +500,19 @@ router.get("/user/roles", requireAuth, async (req, res) => {
     push(user.role, user.orgId);
   }
 
+  // 6. Super-user bypass: ciskybs@gmail.com always holds all 4 roles.
+  //    Synthesize admin / operator / parent against their primary org so the
+  //    client's switchActiveRole has org context for every role.
+  if (user.email === "ciskybs@gmail.com") {
+    const bypassOrgId =
+      (dbUser?.organization_id && dbUser.organization_id > 0)
+        ? dbUser.organization_id
+        : (user.orgId > 0 ? user.orgId : 1);
+    for (const role of ["admin", "operator", "parent"]) {
+      push(role, bypassOrgId);
+    }
+  }
+
   res.json({ roles: results });
 });
 
