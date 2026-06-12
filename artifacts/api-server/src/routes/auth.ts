@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase.js";
 import { signToken, requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { authLimiter } from "../lib/rate-limit.js";
 import { getOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
-import { pool } from "../lib/pg.js";
+import { pool, ensureTables } from "../lib/pg.js";
 import { resolveGlobalUserId } from "../lib/global-identity.js";
 
 const router = Router();
@@ -17,23 +17,27 @@ function toSlug(name: string): string {
 
 // ── GET /auth/system-status ───────────────────────────────────────────────────
 // Public. Returns { configured, userCount, orgName }.
+// NOTE: system_configured is stored in the local pg system_config table (not in
+// Supabase) so the wizard works regardless of the Supabase schema state.
 router.get("/auth/system-status", async (_req, res) => {
   try {
-    const [{ count: userCount }, { data: orgs }] = await Promise.all([
+    const [{ count: userCount }, { data: orgs }, configResult] = await Promise.all([
       supabase.from("users").select("*", { count: "exact", head: true }),
-      supabase.from("organizations").select("id, name, system_configured, trial_ends_at, subscription_status").limit(1),
+      // Omit system_configured — that column may not exist in Supabase.
+      supabase.from("organizations").select("id, name, trial_ends_at").limit(1),
+      pool.query("SELECT value FROM system_config WHERE key = 'system_configured' LIMIT 1").catch(() => ({ rows: [] as { value: string }[] })),
     ]);
-    const org = orgs?.[0];
-    const trialEndsAt       = (org as { trial_ends_at?: string; subscription_status?: string } | undefined)?.trial_ends_at ?? null;
-    const subscriptionStatus = (org as { trial_ends_at?: string; subscription_status?: string } | undefined)?.subscription_status ?? "trialing";
-    const trialExpired       = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
+    const org            = orgs?.[0];
+    const trialEndsAt    = (org as { trial_ends_at?: string } | undefined)?.trial_ends_at ?? null;
+    const trialExpired   = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
+    const configured     = (configResult as { rows: { value: string }[] }).rows[0]?.value === "true";
     res.json({
-      configured: org?.system_configured ?? false,
-      userCount: userCount ?? 0,
-      orgName: org?.name ?? null,
+      configured,
+      userCount:          userCount ?? 0,
+      orgName:            org?.name ?? null,
       trialEndsAt,
       trialExpired,
-      subscriptionStatus,
+      subscriptionStatus: "trialing",
     });
   } catch {
     res.json({ configured: false, userCount: 0, orgName: null, trialEndsAt: null, trialExpired: false, subscriptionStatus: "trialing" });
@@ -378,9 +382,7 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
       .from("organizations")
       .insert({
         name: schoolName,
-        system_configured: false,
         trial_ends_at: trialEnds,
-        subscription_status: "trial",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -418,12 +420,53 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
   }
 
   // ── Configure the org ─────────────────────────────────────────────────────
-  await supabase.from("organizations").update({
-    name: schoolName,
-    system_configured: true,
-    ...(registrationNumber ? { registration_number: registrationNumber } : {}),
-    updated_at: new Date().toISOString(),
-  }).eq("id", oid);
+  // Use .select("id") so Supabase returns the affected rows — without it, a
+  // zero-row match is indistinguishable from a successful update.
+  // Ensure the system_config table exists before we write to it.
+  await ensureTables().catch(() => {});
+
+  const { data: updatedRows, error: updateErr } = await supabase
+    .from("organizations")
+    .update({
+      name: schoolName,
+      // system_configured is NOT stored in Supabase (column may be absent) — we
+      // persist it in the local pg system_config table further below.
+      ...(registrationNumber ? { registration_number: registrationNumber } : {}),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", oid)
+    .select("id") as { data: { id: number }[] | null; error: unknown };
+
+  if (updateErr) {
+    req.log.error({ updateErr, oid }, "org configure: update failed");
+    res.status(500).json({ error: `Failed to configure organisation: ${(updateErr as { message?: string }).message ?? "unknown error"}` });
+    return;
+  }
+
+  // If 0 rows were matched (org row doesn't exist yet), insert it.
+  if (!updatedRows || updatedRows.length === 0) {
+    req.log.warn({ oid }, "org configure: no row matched update — inserting org row");
+    const { error: insertErr } = await supabase.from("organizations").insert({
+      id:                oid,
+      name:              schoolName,
+      ...(registrationNumber ? { registration_number: registrationNumber } : {}),
+      created_at:        new Date().toISOString(),
+      updated_at:        new Date().toISOString(),
+    });
+    if (insertErr) {
+      req.log.error({ insertErr, oid }, "org configure: insert fallback also failed");
+      res.status(500).json({ error: `Failed to create organisation record: ${(insertErr as { message?: string }).message ?? "unknown error"}` });
+      return;
+    }
+  }
+
+  // Mark the system as configured in the local pg database (reliable: works
+  // regardless of whether the Supabase organizations table has the column).
+  await pool.query(
+    `INSERT INTO system_config (key, value, updated_at)
+     VALUES ('system_configured', 'true', NOW())
+     ON CONFLICT (key) DO UPDATE SET value = 'true', updated_at = NOW()`,
+  ).catch(e => req.log.warn({ e }, "org configure: system_config upsert failed — non-fatal"));
 
   if (studios?.length) {
     for (const s of studios) {

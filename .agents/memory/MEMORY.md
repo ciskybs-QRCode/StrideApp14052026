@@ -7,6 +7,7 @@
 - [Stride kiosk & sessions](stride-kiosk-sessions.md) — dual QR entity dispatch, operator clock, roll call roster, no-show disarm.
 - [Stride curly-quote parser bug](stride-curly-quotes.md) — Babel/Metro and Vite treat Unicode curly quotes U+201C/U+201D as string delimiters in JSX; always use ASCII alternatives or escape codes.
 - [Stride Global System Architecture](stride-pioneer.md) — Pioneer wizard, invite loop, pending_activation flow, system-status routing fully implemented.
+- [Stride system_configured hybrid storage](stride-system-config.md) — system_configured lives in pg system_config table (not Supabase organizations) because ensureTables() targets Replit PostgreSQL, not Supabase.
 - [Stride OpenAI Vision integration](stride-openai-vision.md) — AI integration provisioned; lib/integrations-openai-ai-server built; image client needed optional-chaining fix for response.data; react lib removed from root tsconfig (not needed server-side).
 - [Stride Emergency Pulse](stride-emergency-pulse.md) — full crisis broadcast system: DB tables, 5 API routes, operator dashboard screen, dashboard button, parent home polling + full-screen ack modal.
 - [Stride BLE Proximity Check-in](stride-ble-proximity.md) — frictionless auto check-in + Safe-Zone logic: 3 DB tables (proximity_beacons+zone_category, child_beacon_assignments, child_transit_states), 10 API routes, admin beacons.tsx with zone_category picker, operator dashboard transit-warning panel.

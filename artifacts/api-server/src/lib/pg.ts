@@ -109,10 +109,23 @@ export async function ensureTables(): Promise<void> {
     ADD COLUMN IF NOT EXISTS activation_status TEXT DEFAULT 'active';
   `).catch(() => {});
 
-  // Pioneer: system_configured flag on organizations
+  // Pioneer: system_configured flag on organizations (best-effort; only works if
+  // DATABASE_URL points to Supabase — silent no-op if it's the Replit PostgreSQL)
   await pool.query(`
     ALTER TABLE IF EXISTS organizations
     ADD COLUMN IF NOT EXISTS system_configured BOOLEAN DEFAULT FALSE;
+  `).catch(() => {});
+
+  // Reliable fallback: store pioneer config state in the local pg database so the
+  // wizard works regardless of whether Supabase has the system_configured column.
+  // NOTE: system_config already exists with schema (key, value, updated_at) —
+  // the CREATE is a no-op if present, preserving the existing rows.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS system_config (
+      key        TEXT PRIMARY KEY,
+      value      TEXT    NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `).catch(() => {});
 
   // Invite tokens (admin-generated shareable registration links)
