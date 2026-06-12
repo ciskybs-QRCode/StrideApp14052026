@@ -273,9 +273,25 @@ router.post("/auth/register", authLimiter, async (req, res) => {
     ...(globalUserId !== null ? { globalUserId } : {}),
   });
 
+  // Pioneer double opt-in: generate & store a 6-digit email verification code.
+  // In dev/staging the code is returned in the response for convenience.
+  // In production, swap the res.json payload for an actual email send.
+  let _devCode: string | undefined;
+  if (isPioneer) {
+    await ensureTables().catch(() => {});
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    await pool.query(
+      `INSERT INTO email_verification_tokens (user_id, token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '1 hour') ON CONFLICT (token) DO NOTHING`,
+      [newUser.id, code],
+    ).catch(() => {});
+    if (process.env.NODE_ENV !== "production") _devCode = code;
+  }
+
   res.status(201).json({
     token,
     isPioneer,
+    ...(_devCode ? { _devCode } : {}),
     user: {
       id: String(newUser.id),
       name: newUser.name,
@@ -285,6 +301,93 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       ...(globalUserId !== null ? { globalUserId } : {}),
     },
   });
+});
+
+// ── POST /auth/verify-email ────────────────────────────────────────────────────
+// Validates the 6-digit code issued during pioneer registration.
+router.post("/auth/verify-email", requireAuth, async (req, res) => {
+  await ensureTables().catch(() => {});
+  const { code } = req.body as { code?: string };
+  const authUser = (req as AuthReq).user;
+  if (!code?.trim()) {
+    res.status(400).json({ error: "Verification code required" });
+    return;
+  }
+  const uid = parseInt(String(authUser.id), 10);
+  const result = await pool.query(
+    `SELECT id FROM email_verification_tokens
+     WHERE user_id = $1 AND token = $2 AND expires_at > NOW() AND used_at IS NULL`,
+    [uid, code.trim()],
+  ).catch(() => ({ rows: [] as unknown[] }));
+  if (!(result as { rows: unknown[] }).rows.length) {
+    res.status(400).json({ error: "Invalid or expired code — request a new one." });
+    return;
+  }
+  await pool.query(
+    `UPDATE email_verification_tokens SET used_at = NOW() WHERE user_id = $1 AND token = $2`,
+    [uid, code.trim()],
+  ).catch(() => {});
+  res.json({ verified: true });
+});
+
+// ── POST /auth/resend-verification ────────────────────────────────────────────
+// Invalidates old codes and issues a fresh 6-digit verification code.
+router.post("/auth/resend-verification", requireAuth, authLimiter, async (req, res) => {
+  await ensureTables().catch(() => {});
+  const authUser = (req as AuthReq).user;
+  const uid = parseInt(String(authUser.id), 10);
+  await pool.query(
+    `UPDATE email_verification_tokens SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL`,
+    [uid],
+  ).catch(() => {});
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  await pool.query(
+    `INSERT INTO email_verification_tokens (user_id, token, expires_at)
+     VALUES ($1, $2, NOW() + INTERVAL '1 hour')`,
+    [uid, code],
+  ).catch(() => {});
+  res.json({
+    sent: true,
+    ...(process.env.NODE_ENV !== "production" ? { _devCode: code } : {}),
+  });
+});
+
+// ── POST /org/compliance-log ──────────────────────────────────────────────────
+// Records legal acceptance (Terms + Privacy Policy) with IP, user-agent, and
+// typed signature for the organization compliance audit trail.
+router.post("/org/compliance-log", requireAuth, async (req, res) => {
+  await ensureTables().catch(() => {});
+  const authUser = (req as AuthReq).user;
+  const { signatureText, acceptedTerms, acceptedPrivacy } = req.body as {
+    signatureText?: string;
+    acceptedTerms?: boolean;
+    acceptedPrivacy?: boolean;
+  };
+  if (!acceptedTerms || !acceptedPrivacy) {
+    res.status(400).json({ error: "Both Terms and Privacy Policy must be accepted" });
+    return;
+  }
+  if (!signatureText?.trim()) {
+    res.status(400).json({ error: "Digital signature is required" });
+    return;
+  }
+  const ip =
+    (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ??
+    req.ip ?? "unknown";
+  const ua = (req.headers["user-agent"] as string | undefined) ?? "unknown";
+  await pool.query(
+    `INSERT INTO organization_compliance_logs
+     (user_id, org_id, ip_address, user_agent, accepted_terms, accepted_privacy, signature_text, signed_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+    [
+      parseInt(String(authUser.id), 10),
+      authUser.orgId ?? 0,
+      ip, ua,
+      true, true,
+      signatureText.trim(),
+    ],
+  );
+  res.json({ logged: true });
 });
 
 // ── GET /auth/activate/:token ─────────────────────────────────────────────────

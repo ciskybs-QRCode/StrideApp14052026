@@ -262,7 +262,16 @@ export const api = {
   },
 
   register: (name: string, email: string, password: string, org_slug?: string) =>
-    request<{ token: string; user: ApiUser; isPioneer?: boolean }>("POST", "/auth/register", { name, email, password, org_slug }),
+    request<{ token: string; user: ApiUser; isPioneer?: boolean; _devCode?: string }>("POST", "/auth/register", { name, email, password, org_slug }),
+
+  verifyEmail: (code: string) =>
+    request<{ verified: boolean }>("POST", "/auth/verify-email", { code }),
+
+  resendVerification: () =>
+    request<{ sent: boolean; _devCode?: string }>("POST", "/auth/resend-verification", {}),
+
+  complianceLog: (data: { signatureText: string; acceptedTerms: boolean; acceptedPrivacy: boolean }) =>
+    request<{ logged: boolean }>("POST", "/org/compliance-log", data),
 
   systemStatus: () =>
     request<{ configured: boolean; userCount: number; orgName: string | null; trialEndsAt: string | null; trialExpired: boolean; subscriptionStatus: string }>("GET", "/auth/system-status"),

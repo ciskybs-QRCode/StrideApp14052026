@@ -1,14 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
-  Linking,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -22,209 +21,355 @@ import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { api, setToken } from "@/lib/api";
 
+// ── Brand ─────────────────────────────────────────────────────────────────────
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
-const TOTAL_STEPS = 5;
+const WIZARD_STEPS = 4; // steps 1-4 shown in indicator (after credentials)
 
-const COLOR_PRESETS = [
-  { label: "Stride Classic",  primary: "#1E3A8A", secondary: "#FBBF24" },
-  { label: "Midnight Gold",   primary: "#111827", secondary: "#D97706" },
-  { label: "Forest & Amber",  primary: "#064E3B", secondary: "#F59E0B" },
-  { label: "Royal & Crimson", primary: "#1E1B4B", secondary: "#DC2626" },
-  { label: "Slate & Sky",     primary: "#1E3A5F", secondary: "#38BDF8" },
-];
+// ── Auto-localization ──────────────────────────────────────────────────────────
+type Region = "IT" | "AU" | "GLOBAL";
 
-const AGE_GROUPS  = ["Under 6", "6–9", "10–13", "14–18", "Adult", "All Ages"];
-const SKILL_LVLS  = ["Beginner", "Intermediate", "Advanced", "Open Class"];
+function detectRegion(): Region {
+  try {
+    const locale = Intl.DateTimeFormat().resolvedOptions().locale;
+    const code   = locale.split("-").pop()?.toUpperCase() ?? "";
+    if (code === "IT") return "IT";
+    if (code === "AU") return "AU";
+  } catch { /* noop */ }
+  return "GLOBAL";
+}
 
-interface Studio { name: string; capacity: string; }
+interface RegionCfg {
+  flag: string; label: string;
+  phonePrefix: string; phonePlaceholder: string;
+  streetLabel: string; postcodeLabel: string;
+  cityLabel: string; stateLabel: string; stateOptions: string[];
+  taxLabel1: string; taxLabel2: string;
+  taxPlaceholder1: string; taxPlaceholder2: string;
+}
 
-function StepIndicator({ current }: { current: number }) {
+const REGION_CFG: Record<Region, RegionCfg> = {
+  IT: {
+    flag: "🇮🇹", label: "Italia",
+    phonePrefix: "+39", phonePlaceholder: "02 1234 5678",
+    streetLabel: "Via / Piazza", postcodeLabel: "CAP",
+    cityLabel: "Città", stateLabel: "Provincia",
+    stateOptions: ["AG","AL","AN","AO","AR","AP","AT","AV","BA","BT","BL","BN","BG","BI",
+      "BO","BZ","BS","BR","CA","CL","CB","CE","CT","CZ","CH","CO","CS","CR","KR","CN",
+      "EN","FM","FE","FI","FG","FC","FR","GE","GO","GR","IM","IS","SP","AQ","LT","LE",
+      "LC","LI","LO","LU","MC","MN","MS","MT","ME","MI","MO","MB","NA","NO","NU","OG",
+      "OT","OR","PD","PA","PR","PV","PG","PU","PE","PC","PI","PT","PN","PZ","PO","RG",
+      "RA","RC","RE","RI","RN","RO","SA","SS","SV","SI","SR","SO","TA","TE","TR","TO",
+      "TP","TN","TV","TS","UD","VA","VE","VB","VC","VR","VV","VI","VT"],
+    taxLabel1: "Partita IVA", taxLabel2: "Codice Fiscale",
+    taxPlaceholder1: "IT12345678901", taxPlaceholder2: "RSSMRA80A01H501T",
+  },
+  AU: {
+    flag: "🇦🇺", label: "Australia",
+    phonePrefix: "+61", phonePlaceholder: "04XX XXX XXX",
+    streetLabel: "Street Address", postcodeLabel: "Postcode",
+    cityLabel: "Suburb / City", stateLabel: "State",
+    stateOptions: ["NSW","VIC","QLD","SA","WA","TAS","ACT","NT"],
+    taxLabel1: "ABN", taxLabel2: "ACN (optional)",
+    taxPlaceholder1: "12 345 678 901", taxPlaceholder2: "123 456 789",
+  },
+  GLOBAL: {
+    flag: "🌍", label: "Global",
+    phonePrefix: "+", phonePlaceholder: "Phone number",
+    streetLabel: "Street Address", postcodeLabel: "Postcode / ZIP",
+    cityLabel: "City", stateLabel: "State / Region", stateOptions: [],
+    taxLabel1: "Tax ID / Business Number", taxLabel2: "Secondary ID (optional)",
+    taxPlaceholder1: "Tax identification number", taxPlaceholder2: "Secondary number",
+  },
+};
+
+// ── Legal text (long enough to require scrolling) ─────────────────────────────
+const TERMS_TEXT = `STRIDE PLATFORM — TERMS AND CONDITIONS
+Last updated: January 2025
+
+1. ACCEPTANCE
+By completing setup and activating your Stride account ("Account"), you ("Administrator") agree to be bound by these Terms. If you do not agree, do not proceed.
+
+2. PLATFORM DESCRIPTION
+Stride is a dance-school management platform providing tools for enrollment management, attendance tracking, payment processing, parent communication, and operational scheduling. It is licensed on a subscription basis to dance schools, performing arts academies, and similar organisations.
+
+3. ADMINISTRATOR RESPONSIBILITIES
+As designated Administrator you are responsible for: (a) accuracy of all organisational data entered into the platform; (b) maintaining the confidentiality of all credentials; (c) obtaining necessary consents from parents and guardians before enrolling minors; (d) complying with all applicable data protection laws in your jurisdiction; and (e) ensuring all platform users within your Organisation adhere to these Terms.
+
+4. SUBSCRIPTION AND PAYMENT
+Platform access is subject to the plan selected during onboarding. Trial periods are non-renewable. Continued access after expiry requires an active paid subscription. All fees are non-refundable except as required by law. Stride reserves the right to suspend access for non-payment with 7 days notice.
+
+5. DATA OWNERSHIP
+All data you input into Stride remains your property. Stride processes this data solely to provide platform services and does not sell it to third parties. See the Privacy Policy for full details.
+
+6. INTELLECTUAL PROPERTY
+The Stride platform — including all software, design, trademarks, and documentation — is owned by Stride Technologies and protected by intellectual property laws. You are granted a limited, non-exclusive, non-transferable licence to use the platform for its intended purpose.
+
+7. ACCEPTABLE USE
+You agree not to: (a) use the platform for any unlawful purpose; (b) upload malicious code or harmful content; (c) attempt to gain unauthorised access to other accounts or systems; (d) reverse-engineer or resell the platform.
+
+8. LIMITATION OF LIABILITY
+To the maximum extent permitted by law, Stride shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform, including loss of data, revenue, or business opportunity. Our total aggregate liability shall not exceed the fees paid in the 12 months preceding the claim.
+
+9. TERMINATION
+Either party may terminate with 30 days written notice. You may export your data within a 14-day grace period; after that, data will be permanently deleted in accordance with our retention schedules.
+
+10. GOVERNING LAW
+These Terms are governed by the laws of the jurisdiction in which your Organisation primarily operates, without regard to conflict-of-law principles. Any disputes shall be resolved by the courts of that jurisdiction.
+
+11. AMENDMENTS
+Stride may modify these Terms at any time with reasonable notice. Continued use of the platform after notification constitutes acceptance of the revised Terms.`;
+
+const PRIVACY_TEXT = `STRIDE PLATFORM — PRIVACY POLICY
+Last updated: January 2025
+
+1. DATA CONTROLLER
+Stride Technologies Pty Ltd ("Stride") acts as data controller for personal data processed through this platform. Contact: privacy@stride.app
+
+2. DATA WE COLLECT
+Account Data: name, email address, hashed password, phone number, organisation details.
+Operational Data: student enrolment records, attendance logs, payment transactions, health notes, and guardian contact details entered by your Organisation.
+Technical Data: IP addresses, device identifiers, session tokens, and usage analytics.
+Legal Data: consent records, e-signature data, compliance audit logs with IP and device information.
+
+3. HOW WE USE YOUR DATA
+Personal data is used to: provide and maintain platform services; process payments and issue receipts; send operational notifications and reminders; generate reports and analytics for your Organisation; comply with legal obligations; and improve platform functionality.
+
+4. LEGAL BASIS FOR PROCESSING
+We process data on the following grounds: (a) performance of the platform services contract; (b) your explicit consent where required; (c) legitimate interests in platform operation and security; (d) compliance with legal obligations applicable in your jurisdiction.
+
+5. DATA SHARING
+We share data only with: authorised platform sub-processors (cloud infrastructure, payment gateways); your Organisation's designated staff; and regulatory authorities when legally required. We do not sell, rent, or trade personal data with third parties for marketing purposes.
+
+6. DATA RETENTION
+Account data is retained for the duration of your active subscription plus a 90-day post-termination window. Student records and compliance logs are retained for 7 years to satisfy legal record-keeping requirements. You may request earlier deletion subject to applicable legal constraints.
+
+7. INTERNATIONAL TRANSFERS
+Data may be stored on servers in the European Economic Area, Australia, or the United States. All transfers comply with applicable frameworks including GDPR, the Australian Privacy Act 1988, and standard contractual clauses where required.
+
+8. YOUR RIGHTS
+Depending on your jurisdiction, you may: access, correct, or delete your personal data; restrict or object to processing; receive a portable copy of your data; withdraw consent at any time without affecting lawful prior processing. Submit requests to privacy@stride.app — we respond within 30 days.
+
+9. COOKIES AND TRACKING
+The mobile application uses essential session tokens only. No advertising cookies, cross-site tracking, or third-party analytics SDKs are used without your explicit consent.
+
+10. CHILDREN'S PRIVACY
+The platform is not intended for direct access by children under 13. Organisations are responsible for obtaining appropriate parental or guardian consent before entering any minor students' data into the platform.
+
+11. CHANGES TO THIS POLICY
+We will notify you of material changes via in-app notification or email at least 14 days before they take effect.`;
+
+// ── Step indicator ─────────────────────────────────────────────────────────────
+function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <View style={si.row}>
-      {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+      {Array.from({ length: total }, (_, i) => (
         <React.Fragment key={i}>
           <View style={[si.dot, i < current ? si.done : i === current ? si.active : si.idle]}>
             {i < current
               ? <Ionicons name="checkmark" size={12} color="#FFF" />
-              : <Text style={[si.dotNum, i === current && si.dotNumActive]}>{i + 1}</Text>
-            }
+              : <Text style={[si.dotNum, i === current && si.dotNumActive]}>{i + 1}</Text>}
           </View>
-          {i < TOTAL_STEPS - 1 && <View style={[si.line, i < current && si.lineDone]} />}
+          {i < total - 1 && <View style={[si.line, i < current && si.lineDone]} />}
         </React.Fragment>
       ))}
     </View>
   );
 }
-
 const si = StyleSheet.create({
-  row:         { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 28 },
-  dot:         { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  done:        { backgroundColor: "#10B981" },
-  active:      { backgroundColor: GOLD },
-  idle:        { backgroundColor: "rgba(255,255,255,0.15)" },
-  line:        { flex: 1, height: 2, backgroundColor: "rgba(255,255,255,0.15)", maxWidth: 28 },
-  lineDone:    { backgroundColor: "#10B981" },
-  dotNum:      { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.5)" },
-  dotNumActive:{ color: NAVY },
+  row:          { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 28 },
+  dot:          { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  done:         { backgroundColor: "#10B981" },
+  active:       { backgroundColor: GOLD },
+  idle:         { backgroundColor: "rgba(255,255,255,0.15)" },
+  line:         { flex: 1, height: 2, backgroundColor: "rgba(255,255,255,0.15)", maxWidth: 28 },
+  lineDone:     { backgroundColor: "#10B981" },
+  dotNum:       { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.5)" },
+  dotNumActive: { color: NAVY },
 });
 
+// ── Chip presets ──────────────────────────────────────────────────────────────
+const AGE_GROUPS  = ["Under 6", "6–9", "10–13", "14–18", "Adult", "All Ages"];
+const SKILL_LVLS  = ["Beginner", "Intermediate", "Advanced", "Open Class"];
+const STEP_LABELS = ["Account Credentials", "Personal Profile", "Organisation Details", "System Assets", "Legal & Signature"];
+
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function Pioneer() {
-  const insets  = useSafeAreaInsets();
-  const router  = useRouter();
-  const { user, login, updateUser, refreshAllRoles } = useAuth();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { user, updateUser, refreshAllRoles } = useAuth();
   const { saveBranding } = useBranding();
   const scrollRef = useRef<ScrollView>(null);
 
-  // super_admin switching into admin context skips the registration step too
+  const region = useMemo(detectRegion, []);
+  const cfg    = REGION_CFG[region];
+
   const alreadyAdmin = user?.role === "admin" || user?.role === "super_admin";
-  const [step, setStep] = useState(alreadyAdmin ? 1 : 0);
+  const [step, setStep]           = useState(alreadyAdmin ? 1 : 0);
+  const [credState, setCredState] = useState<"form" | "verify">("form");
 
-  // Step 0 — Registration
-  const [regName,  setRegName]  = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPwd,   setRegPwd]   = useState("");
-  const [showPwd,  setShowPwd]  = useState(false);
-  const [regErr,   setRegErr]   = useState("");
-  const [regLoading, setRegLoading] = useState(false);
+  // ── Step 0 ────────────────────────────────────────────────────────────────
+  const [email,      setEmail]      = useState("");
+  const [password,   setPassword]   = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [showPwd,    setShowPwd]    = useState(false);
+  const [devCode,    setDevCode]    = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [s0Err,      setS0Err]      = useState("");
+  const [s0Busy,     setS0Busy]     = useState(false);
 
-  // Step 1 — School Details
-  const [schoolName, setSchoolName]   = useState(user?.schoolName ?? "");
-  const [regNumber,  setRegNumber]    = useState("");
-  const [contactPhone, setContactPhone] = useState("");
+  // ── Step 1 ────────────────────────────────────────────────────────────────
+  const [fullName, setFullName] = useState(user?.name ?? "");
+  const [phone,    setPhone]    = useState(cfg.phonePrefix);
 
-  // Step 2 — Stripe (just a link)
-  const [stripeLinked, setStripeLinked] = useState(false);
+  // ── Step 2 ────────────────────────────────────────────────────────────────
+  const [schoolName,    setSchoolName]    = useState(user?.schoolName ?? "");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [postcode,      setPostcode]      = useState("");
+  const [city,          setCity]          = useState("");
+  const [stateRegion,   setStateRegion]   = useState(cfg.stateOptions[0] ?? "");
+  const [taxId1,        setTaxId1]        = useState("");
+  const [taxId2,        setTaxId2]        = useState("");
 
-  // Step 3 — Branding
-  const [selectedPreset, setSelectedPreset] = useState(0);
-  const [logoUri, setLogoUri] = useState<string | null>(null);
-
-  // Step 4 — Studios
-  const [studios, setStudios] = useState<Studio[]>([{ name: "", capacity: "20" }]);
-
-  // Step 5 — Course Templates
-  const [ageGroups, setAgeGroups]   = useState<string[]>([]);
+  // ── Step 3 ────────────────────────────────────────────────────────────────
+  const [ageGroups,   setAgeGroups]   = useState<string[]>([]);
   const [skillLevels, setSkillLevels] = useState<string[]>([]);
-  const [completing, setCompleting] = useState(false);
+  const [studios, setStudios] = useState<{ name: string; capacity: string }[]>([{ name: "", capacity: "20" }]);
 
+  // ── Step 4 ────────────────────────────────────────────────────────────────
+  const [termsScrolled,   setTermsScrolled]   = useState(false);
+  const [privacyScrolled, setPrivacyScrolled] = useState(false);
+  const [acceptTerms,     setAcceptTerms]     = useState(false);
+  const [acceptPrivacy,   setAcceptPrivacy]   = useState(false);
+  const [signatureText,   setSignatureText]   = useState("");
+  const [completing,      setCompleting]      = useState(false);
+  const [s4Err,           setS4Err]           = useState("");
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const scrollToTop = () => scrollRef.current?.scrollTo({ y: 0, animated: true });
-
   const next = (n?: number) => {
     setStep(s => n ?? s + 1);
-    setTimeout(scrollToTop, 50);
+    setTimeout(scrollToTop, 60);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
+  const isNearBottom = (e: NativeSyntheticEvent<NativeScrollEvent>): boolean => {
+    const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - 30;
+  };
 
-  // ── Step 0: Pioneer registration ─────────────────────────────────────────
+  // ── Step 0a: Register ─────────────────────────────────────────────────────
   const handleRegister = async () => {
-    if (!regName.trim())  { setRegErr("Enter your name."); return; }
-    if (!regEmail.trim()) { setRegErr("Enter your email."); return; }
-    if (regPwd.length < 6){ setRegErr("Password must be at least 6 characters."); return; }
-    setRegLoading(true); setRegErr("");
+    if (!email.trim())           { setS0Err("Email is required."); return; }
+    if (!email.includes("@"))    { setS0Err("Enter a valid email address."); return; }
+    if (password.length < 6)     { setS0Err("Password must be at least 6 characters."); return; }
+    if (password !== confirmPwd) { setS0Err("Passwords do not match."); return; }
+    setS0Busy(true); setS0Err("");
     try {
-      const { token, user: apiUser } = await api.register(regName.trim(), regEmail.trim(), regPwd);
+      const { token, user: apiUser, _devCode } = await api.register(
+        email.trim().split("@")[0], email.trim(), password,
+      );
       await setToken(token);
       await updateUser({
         id: String(apiUser.id), name: apiUser.name, email: apiUser.email,
-        role: "admin", roles: ["admin", "operator", "parent"],
-        orgId: apiUser.orgId ?? 1,
-        schoolName: schoolName.trim() || "My School",
-        primaryColor: COLOR_PRESETS[0].primary,
-        secondaryColor: COLOR_PRESETS[0].secondary,
+        role: "admin", roles: ["admin"], orgId: apiUser.orgId ?? 1,
+        schoolName: "", primaryColor: NAVY, secondaryColor: GOLD,
       });
+      if (_devCode) setDevCode(_devCode);
+      setFullName(apiUser.name ?? "");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      next(1);
-    } catch (err: unknown) {
-      setRegErr(err instanceof Error ? err.message : "Registration failed");
+      setCredState("verify");
+    } catch (err) {
+      setS0Err(err instanceof Error ? err.message : "Registration failed. Try again.");
     } finally {
-      setRegLoading(false);
+      setS0Busy(false);
     }
   };
 
-  // ── Step 3: Logo picker ───────────────────────────────────────────────────
-  const pickLogo = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") { Alert.alert("Permission needed", "Allow photo access to upload your logo."); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-    if (!result.canceled && result.assets[0]) setLogoUri(result.assets[0].uri);
+  // ── Step 0b: Verify email ─────────────────────────────────────────────────
+  const handleVerifyEmail = async () => {
+    if (verifyCode.trim().length < 6) { setS0Err("Enter the 6-digit code."); return; }
+    setS0Busy(true); setS0Err("");
+    try {
+      await api.verifyEmail(verifyCode.trim());
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPhone(cfg.phonePrefix);
+      next(1);
+    } catch (err) {
+      setS0Err(err instanceof Error ? err.message : "Verification failed.");
+    } finally {
+      setS0Busy(false);
+    }
   };
 
-  // ── Step 5: Complete wizard ───────────────────────────────────────────────
-  const handleComplete = async () => {
-    if (!schoolName.trim()) { Alert.alert("School name required", "Please enter your school name."); return; }
-    setCompleting(true);
+  const handleResendCode = async () => {
+    setS0Busy(true);
     try {
-      const preset = COLOR_PRESETS[selectedPreset];
+      const res = await api.resendVerification();
+      if (res._devCode) { setDevCode(res._devCode); setVerifyCode(""); }
+      Alert.alert("New code sent", "A fresh verification code has been generated.");
+    } catch { /* silent */ } finally { setS0Busy(false); }
+  };
 
-      // 1. Send org configuration to the backend.
-      //    For super_admin with no orgId: the server creates the org, inserts the
-      //    user into organization_members as admin, and returns a fresh JWT + orgId.
-      //    For a normal admin: the server updates their existing org row.
+  // ── Step 1: Personal profile ──────────────────────────────────────────────
+  const handleStep1 = () => {
+    if (!fullName.trim()) { Alert.alert("Name required", "Enter your full name."); return; }
+    next();
+  };
+
+  // ── Step 2: Organisation ──────────────────────────────────────────────────
+  const handleStep2 = () => {
+    if (!schoolName.trim()) { Alert.alert("School name required", "Enter your school or association name."); return; }
+    next();
+  };
+
+  // ── Step 3: Assets ────────────────────────────────────────────────────────
+  const addStudio    = () => setStudios(s => [...s, { name: "", capacity: "20" }]);
+  const removeStudio = (i: number) => setStudios(s => s.filter((_, j) => j !== i));
+  const updateStudio = (i: number, field: "name" | "capacity", v: string) =>
+    setStudios(s => s.map((st, j) => j === i ? { ...st, [field]: v } : st));
+  const toggleAge   = (v: string) => setAgeGroups(a  => a.includes(v) ? a.filter(x => x !== v) : [...a, v]);
+  const toggleSkill = (v: string) => setSkillLevels(a => a.includes(v) ? a.filter(x => x !== v) : [...a, v]);
+  const handleStep3 = () => {
+    if (!studios.some(s => s.name.trim())) {
+      Alert.alert("Studio required", "Add at least one studio room to continue.");
+      return;
+    }
+    next();
+  };
+
+  // ── Step 4: Complete ──────────────────────────────────────────────────────
+  const handleComplete = async () => {
+    if (!acceptTerms || !acceptPrivacy) { setS4Err("Accept both the Terms and Privacy Policy."); return; }
+    if (!signatureText.trim())          { setS4Err("Digital signature is required."); return; }
+    setCompleting(true); setS4Err("");
+    try {
+      await api.complianceLog({ signatureText: signatureText.trim(), acceptedTerms: true, acceptedPrivacy: true });
       const result = await api.pioneerComplete({
-        schoolName: schoolName.trim(),
-        registrationNumber: regNumber.trim() || undefined,
-        contactPhone: contactPhone.trim() || undefined,
-        studios: studios.filter(s => s.name.trim()).map(s => ({
-          name: s.name.trim(),
-          capacity: parseInt(s.capacity, 10) || 20,
+        schoolName:   schoolName.trim(),
+        contactPhone: phone.trim() !== cfg.phonePrefix ? phone.trim() : undefined,
+        studios:      studios.filter(s => s.name.trim()).map(s => ({
+          name: s.name.trim(), capacity: parseInt(s.capacity, 10) || 20,
         })),
         ageGroups,
         skillLevels,
       });
-
-      if (!result.configured) {
-        throw new Error("Server returned configured=false — organisation setup incomplete.");
-      }
-
-      // 2. If the server issued a new JWT (super_admin org-creation path), store it
-      //    so all subsequent API calls carry the correct orgId.
-      if (result.token) {
-        await setToken(result.token);
-      }
-
-      // 3. Commit branding + session — use orgId from server response (definitive)
-      //    or fall back to what was already on the user object.
-      const confirmedOrgId = result.orgId ?? user?.orgId;
-      saveBranding({ primaryColor: preset.primary, secondaryColor: preset.secondary, logoUrl: logoUri ?? null });
-      await updateUser({
-        schoolName:     schoolName.trim(),
-        primaryColor:   preset.primary,
-        secondaryColor: preset.secondary,
-        logoUri:        logoUri ?? undefined,
-        orgId:          confirmedOrgId,
-        // Ensure active role is admin so the admin layout loads correctly
-        role:       "admin",
-        activeRole: "admin",
-      });
-
-      // 4. Refresh the DB-verified role list so allRoles reflects the new
-      //    organization_members row just inserted for this user.
+      if (!result.configured) throw new Error("Setup returned incomplete. Please try again.");
+      if (result.token) await setToken(result.token);
+      saveBranding({ primaryColor: NAVY, secondaryColor: GOLD, logoUrl: null });
+      await updateUser({ schoolName: schoolName.trim(), orgId: result.orgId ?? user?.orgId, role: "admin", activeRole: "admin" });
       await refreshAllRoles();
-
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      // 5. Redirect to Admin Home dashboard.
       router.replace("/(admin)/stats");
-    } catch (err: unknown) {
-      console.error("pioneer handleComplete failed:", err);
-      Alert.alert(
-        "Setup Failed",
-        err instanceof Error ? err.message : "Could not save your organisation. Check your connection and try again.",
-      );
+    } catch (err) {
+      setS4Err(err instanceof Error ? err.message : "Setup failed. Check your connection and try again.");
     } finally {
       setCompleting(false);
     }
   };
 
-  const addStudio = () => setStudios(s => [...s, { name: "", capacity: "20" }]);
-  const removeStudio = (i: number) => setStudios(s => s.filter((_, idx) => idx !== i));
-  const updateStudio = (i: number, field: keyof Studio, val: string) =>
-    setStudios(s => s.map((st, idx) => idx === i ? { ...st, [field]: val } : st));
+  const canFinish = acceptTerms && acceptPrivacy && signatureText.trim().length > 0 && !completing;
 
-  const toggleAge   = (v: string) => setAgeGroups(a  => a.includes(v) ? a.filter(x => x !== v) : [...a, v]);
-  const toggleSkill = (v: string) => setSkillLevels(a => a.includes(v) ? a.filter(x => x !== v) : [...a, v]);
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: NAVY }}
@@ -232,322 +377,435 @@ export default function Pioneer() {
     >
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 48 }]}
+        contentContainerStyle={[st.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 48 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.badge}>
+        {/* ── Header ── */}
+        <View style={st.header}>
+          <View style={st.badge}>
             <Ionicons name="star-outline" size={13} color={NAVY} />
-            <Text style={styles.badgeText}>PIONEER SETUP</Text>
+            <Text style={st.badgeText}>PIONEER SETUP</Text>
           </View>
-          {step === 0
-            ? <Text style={styles.title}>Welcome to Stride</Text>
-            : <Text style={styles.title}>Configure Your School</Text>
-          }
-          {step === 0
-            ? <Text style={styles.subtitle}>You're the first user. Create your administrator account to begin.</Text>
-            : <Text style={styles.subtitle}>Step {step} of {TOTAL_STEPS} — {["School Details","Payments","Branding","Venues","Courses"][step - 1]}</Text>
-          }
-          {step > 0 && <StepIndicator current={step - 1} />}
+          <Text style={st.title}>
+            {step === 0
+              ? (credState === "verify" ? "Verify Your Email" : "Create Your Account")
+              : "Configure Your School"}
+          </Text>
+          <Text style={st.subtitle}>
+            {step === 0 && credState === "form"
+              ? "You are the first user. Create your administrator account to begin."
+              : step === 0 && credState === "verify"
+              ? `A 6-digit code was sent to ${email}. Enter it below to confirm.`
+              : `Step ${step} of ${WIZARD_STEPS} — ${STEP_LABELS[step]}`}
+          </Text>
+          <View style={st.regionBadge}>
+            <Text style={st.regionText}>{cfg.flag} {cfg.label} · {region} localisation</Text>
+          </View>
+          {step >= 1 && <StepIndicator current={step - 1} total={WIZARD_STEPS} />}
         </View>
 
-        {/* ── Step 0: Register ── */}
-        {step === 0 && (
-          <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: NAVY }]}>Create Admin Account</Text>
-            <Text style={styles.cardSub}>This is the master account for your school platform.</Text>
+        {/* ════ STEP 0a — Registration form ════ */}
+        {step === 0 && credState === "form" && (
+          <View style={st.card}>
+            <Text style={st.cardTitle}>Account Credentials</Text>
+            <Text style={st.cardSub}>Your email and password for this administrator account. We will verify your email before continuing.</Text>
 
-            <Text style={styles.label}>Your Name</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="person-outline" size={17} color="#9CA3AF" />
-              <TextInput style={styles.input} value={regName} onChangeText={t => { setRegName(t); setRegErr(""); }}
-                placeholder="Jane Smith" placeholderTextColor="#9CA3AF" autoCapitalize="words" />
+            <Text style={st.label}>Email Address *</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="mail-outline" size={16} color="#9CA3AF" />
+              <TextInput style={st.input} value={email} onChangeText={setEmail}
+                placeholder="you@example.com" placeholderTextColor="#9CA3AF"
+                keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
             </View>
 
-            <Text style={styles.label}>Email Address</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="mail-outline" size={17} color="#9CA3AF" />
-              <TextInput style={styles.input} value={regEmail} onChangeText={t => { setRegEmail(t); setRegErr(""); }}
-                placeholder="admin@yourschool.com" placeholderTextColor="#9CA3AF"
-                keyboardType="email-address" autoCapitalize="none" />
-            </View>
-
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="lock-closed-outline" size={17} color="#9CA3AF" />
-              <TextInput style={[styles.input, { flex: 1 }]} value={regPwd} onChangeText={t => { setRegPwd(t); setRegErr(""); }}
-                placeholder="Min. 6 characters" placeholderTextColor="#9CA3AF" secureTextEntry={!showPwd} />
+            <Text style={st.label}>Password * (min. 6 characters)</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="lock-closed-outline" size={16} color="#9CA3AF" />
+              <TextInput style={st.input} value={password} onChangeText={setPassword}
+                placeholder="Create a strong password" placeholderTextColor="#9CA3AF"
+                secureTextEntry={!showPwd} />
               <Pressable onPress={() => setShowPwd(v => !v)} hitSlop={8}>
-                <Ionicons name={showPwd ? "eye-off-outline" : "eye-outline"} size={17} color="#9CA3AF" />
+                <Ionicons name={showPwd ? "eye-off-outline" : "eye-outline"} size={18} color="#9CA3AF" />
               </Pressable>
             </View>
 
-            {!!regErr && (
-              <View style={styles.errBox}>
-                <Ionicons name="alert-circle-outline" size={15} color="#EF4444" />
-                <Text style={styles.errText}>{regErr}</Text>
-              </View>
-            )}
-
-            <Pressable style={[styles.primaryBtn, regLoading && { opacity: 0.7 }]} onPress={handleRegister} disabled={regLoading}>
-              {regLoading ? <ActivityIndicator color="#FFF" size="small" />
-                : <><Ionicons name="rocket-outline" size={18} color={NAVY} /><Text style={styles.primaryBtnText}>Launch Pioneer Setup</Text></>}
-            </Pressable>
-
-            <View style={styles.infoBox}>
-              <Ionicons name="shield-checkmark-outline" size={14} color={NAVY} />
-              <Text style={styles.infoText}>
-                You'll be the permanent system administrator. Additional roles can be promoted later via the Users panel.
-              </Text>
+            <Text style={st.label}>Confirm Password *</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="lock-closed-outline" size={16} color="#9CA3AF" />
+              <TextInput style={st.input} value={confirmPwd} onChangeText={setConfirmPwd}
+                placeholder="Repeat password" placeholderTextColor="#9CA3AF"
+                secureTextEntry={!showPwd} />
+              {confirmPwd.length > 0 && (
+                <Ionicons
+                  name={password === confirmPwd ? "checkmark-circle" : "close-circle"}
+                  size={18} color={password === confirmPwd ? "#10B981" : "#EF4444"} />
+              )}
             </View>
+
+            {s0Err ? <ErrorBox msg={s0Err} /> : null}
+
+            <Pressable style={[st.primaryBtn, s0Busy && st.btnDisabled]} onPress={handleRegister} disabled={s0Busy}>
+              {s0Busy ? <ActivityIndicator color={NAVY} /> : (
+                <>
+                  <Text style={st.primaryBtnText}>Create Account</Text>
+                  <Ionicons name="arrow-forward-outline" size={18} color={NAVY} />
+                </>
+              )}
+            </Pressable>
           </View>
         )}
 
-        {/* ── Step 1: School Details ── */}
+        {/* ════ STEP 0b — Email verification ════ */}
+        {step === 0 && credState === "verify" && (
+          <View style={st.card}>
+            <View style={st.verifyIcon}>
+              <Ionicons name="mail" size={32} color={NAVY} />
+            </View>
+            <Text style={st.cardTitle}>Check Your Inbox</Text>
+            <Text style={st.cardSub}>
+              A 6-digit code was sent to <Text style={{ fontWeight: "700" }}>{email}</Text>. It expires in 1 hour.
+            </Text>
+
+            {devCode ? (
+              <View style={st.devBanner}>
+                <Ionicons name="code-slash-outline" size={14} color="#92400E" />
+                <Text style={st.devBannerText}>
+                  Dev mode — code: <Text style={{ fontWeight: "800", letterSpacing: 3 }}>{devCode}</Text>
+                </Text>
+              </View>
+            ) : null}
+
+            <Text style={st.label}>Verification Code</Text>
+            <TextInput
+              style={st.codeInput}
+              value={verifyCode}
+              onChangeText={v => setVerifyCode(v.replace(/\D/g, "").slice(0, 6))}
+              placeholder="• • • • • •"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              maxLength={6}
+              textAlign="center"
+            />
+
+            {s0Err ? <ErrorBox msg={s0Err} /> : null}
+
+            <Pressable
+              style={[st.primaryBtn, (verifyCode.length < 6 || s0Busy) && st.btnDisabled]}
+              onPress={handleVerifyEmail}
+              disabled={verifyCode.length < 6 || s0Busy}
+            >
+              {s0Busy ? <ActivityIndicator color={NAVY} /> : (
+                <>
+                  <Text style={st.primaryBtnText}>Verify & Continue</Text>
+                  <Ionicons name="checkmark-circle-outline" size={18} color={NAVY} />
+                </>
+              )}
+            </Pressable>
+
+            <Pressable style={st.ghostBtn} onPress={handleResendCode} disabled={s0Busy}>
+              <Ionicons name="refresh-outline" size={14} color="rgba(255,255,255,0.5)" />
+              <Text style={st.ghostBtnText}>Resend code</Text>
+            </Pressable>
+
+            <Pressable style={st.backBtn} onPress={() => setCredState("form")}>
+              <Ionicons name="arrow-back-outline" size={14} color="rgba(255,255,255,0.35)" />
+              <Text style={st.backBtnText}>Back</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* ════ STEP 1 — Personal profile ════ */}
         {step === 1 && (
-          <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: NAVY }]}>School / Association Details</Text>
-            <Text style={styles.cardSub}>This information appears on invoices, documents, and parent-facing communications.</Text>
+          <View style={st.card}>
+            <Text style={st.cardTitle}>Personal Profile</Text>
+            <Text style={st.cardSub}>Your contact details as the primary platform administrator.</Text>
 
-            <Text style={styles.label}>School / Association Name *</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="business-outline" size={17} color="#9CA3AF" />
-              <TextInput style={styles.input} value={schoolName} onChangeText={setSchoolName}
-                placeholder="Riverside Dance Academy" placeholderTextColor="#9CA3AF" />
+            <Text style={st.label}>Full Name *</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="person-outline" size={16} color="#9CA3AF" />
+              <TextInput style={st.input} value={fullName} onChangeText={setFullName}
+                placeholder="First and last name" placeholderTextColor="#9CA3AF"
+                autoCapitalize="words" />
             </View>
 
-            <Text style={styles.label}>WA Registration / ABN (optional)</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="document-text-outline" size={17} color="#9CA3AF" />
-              <TextInput style={styles.input} value={regNumber} onChangeText={setRegNumber}
-                placeholder="e.g. 51 824 753 556" placeholderTextColor="#9CA3AF" keyboardType="default" />
+            <Text style={st.label}>Phone Number</Text>
+            <View style={st.inputWrap}>
+              <View style={st.prefixBadge}>
+                <Text style={st.prefixText}>{cfg.phonePrefix}</Text>
+              </View>
+              <TextInput
+                style={[st.input, { paddingLeft: 4 }]}
+                value={phone.startsWith(cfg.phonePrefix) ? phone.slice(cfg.phonePrefix.length) : phone}
+                onChangeText={v => setPhone(cfg.phonePrefix + v.replace(/\D/g, ""))}
+                placeholder={cfg.phonePlaceholder}
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+              />
             </View>
 
-            <Text style={styles.label}>Primary Contact Phone (optional)</Text>
-            <View style={styles.inputWrap}>
-              <Ionicons name="call-outline" size={17} color="#9CA3AF" />
-              <TextInput style={styles.input} value={contactPhone} onChangeText={setContactPhone}
-                placeholder="+61 400 000 000" placeholderTextColor="#9CA3AF" keyboardType="phone-pad" />
-            </View>
-
-            <View style={styles.infoBox}>
-              <Ionicons name="location-outline" size={14} color={NAVY} />
-              <Text style={styles.infoText}>
-                Stride is optimised for Western Australia regulations, but works across all Australian states and territories.
-              </Text>
-            </View>
-
-            <Pressable style={styles.primaryBtn} onPress={() => next()}>
-              <Text style={styles.primaryBtnText}>Continue</Text>
+            <Pressable style={st.primaryBtn} onPress={handleStep1}>
+              <Text style={st.primaryBtnText}>Continue</Text>
               <Ionicons name="arrow-forward-outline" size={18} color={NAVY} />
             </Pressable>
           </View>
         )}
 
-        {/* ── Step 2: Stripe Connect ── */}
+        {/* ════ STEP 2 — Organisation details ════ */}
         {step === 2 && (
-          <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: NAVY }]}>Payment Setup</Text>
-            <Text style={styles.cardSub}>Connect Stripe to collect membership fees, course payments, and process operator payroll.</Text>
+          <View style={st.card}>
+            <Text style={st.cardTitle}>Organisation Details</Text>
+            <Text style={st.cardSub}>Your school's official name and registered address.</Text>
 
-            <View style={[styles.featureRow, { backgroundColor: "#F0FDF4", borderColor: "#A7F3D0" }]}>
-              <Ionicons name="card-outline" size={22} color="#059669" />
+            <Text style={st.label}>School / Association Name *</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="business-outline" size={16} color="#9CA3AF" />
+              <TextInput style={st.input} value={schoolName} onChangeText={setSchoolName}
+                placeholder="e.g. Accademia di Danza Milano" placeholderTextColor="#9CA3AF"
+                autoCapitalize="words" />
+            </View>
+
+            <Text style={st.label}>{cfg.streetLabel}</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="location-outline" size={16} color="#9CA3AF" />
+              <TextInput style={st.input} value={streetAddress} onChangeText={setStreetAddress}
+                placeholder={cfg.streetLabel} placeholderTextColor="#9CA3AF" />
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: "700", color: "#065F46" }}>Stripe Connect</Text>
-                <Text style={{ fontSize: 12, color: "#059669", marginTop: 2 }}>
-                  PCI-compliant payments. Funds go directly to your school's bank account.
-                </Text>
+                <Text style={st.label}>{cfg.postcodeLabel}</Text>
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} value={postcode} onChangeText={setPostcode}
+                    placeholder={cfg.postcodeLabel} placeholderTextColor="#9CA3AF" />
+                </View>
+              </View>
+              <View style={{ flex: 2 }}>
+                <Text style={st.label}>{cfg.cityLabel}</Text>
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} value={city} onChangeText={setCity}
+                    placeholder={cfg.cityLabel} placeholderTextColor="#9CA3AF" />
+                </View>
               </View>
             </View>
 
-            {stripeLinked ? (
-              <View style={[styles.featureRow, { backgroundColor: "#F0FDF4", borderColor: "#A7F3D0" }]}>
-                <Ionicons name="checkmark-circle" size={22} color="#10B981" />
-                <Text style={{ fontSize: 14, fontWeight: "700", color: "#065F46", flex: 1 }}>Stripe account connected!</Text>
-              </View>
+            {cfg.stateOptions.length > 0 ? (
+              <>
+                <Text style={st.label}>{cfg.stateLabel}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+                  <View style={{ flexDirection: "row", gap: 8, paddingVertical: 4 }}>
+                    {cfg.stateOptions.map(opt => (
+                      <Pressable key={opt} style={[st.chip, stateRegion === opt && st.chipOn]} onPress={() => setStateRegion(opt)}>
+                        <Text style={[st.chipText, stateRegion === opt && st.chipTextOn]}>{opt}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+              </>
             ) : (
-              <Pressable
-                style={[styles.primaryBtn, { backgroundColor: "#635BFF" }]}
-                onPress={async () => {
-                  try {
-                    const data = await api.stripeOnboarding?.() as unknown as { url?: string } | undefined;
-                    if (data?.url) {
-                      await Linking.openURL(data.url);
-                      setStripeLinked(true);
-                    }
-                  } catch {
-                    Alert.alert("Stripe not configured", "Stripe Connect setup can be completed later from Admin Settings → Finance.");
-                  }
-                }}
-              >
-                <Ionicons name="card" size={18} color="#FFF" />
-                <Text style={[styles.primaryBtnText, { color: "#FFF" }]}>Connect Stripe Account</Text>
-              </Pressable>
+              <>
+                <Text style={st.label}>{cfg.stateLabel}</Text>
+                <View style={st.inputWrap}>
+                  <TextInput style={st.input} value={stateRegion} onChangeText={setStateRegion}
+                    placeholder={cfg.stateLabel} placeholderTextColor="#9CA3AF" />
+                </View>
+              </>
             )}
 
-            <Pressable style={styles.skipBtn} onPress={() => next()}>
-              <Text style={styles.skipText}>Skip for now (connect later in Settings)</Text>
-              <Ionicons name="chevron-forward-outline" size={14} color="#6B7280" />
+            <View style={st.divider} />
+            <Text style={st.sectionHdr}>Tax / Business Information</Text>
+
+            <Text style={st.label}>{cfg.taxLabel1}</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="document-text-outline" size={16} color="#9CA3AF" />
+              <TextInput style={st.input} value={taxId1} onChangeText={setTaxId1}
+                placeholder={cfg.taxPlaceholder1} placeholderTextColor="#9CA3AF" autoCapitalize="characters" />
+            </View>
+
+            <Text style={st.label}>{cfg.taxLabel2}</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="document-text-outline" size={16} color="#9CA3AF" />
+              <TextInput style={st.input} value={taxId2} onChangeText={setTaxId2}
+                placeholder={cfg.taxPlaceholder2} placeholderTextColor="#9CA3AF" autoCapitalize="characters" />
+            </View>
+
+            <Pressable style={st.primaryBtn} onPress={handleStep2}>
+              <Text style={st.primaryBtnText}>Continue</Text>
+              <Ionicons name="arrow-forward-outline" size={18} color={NAVY} />
             </Pressable>
           </View>
         )}
 
-        {/* ── Step 3: Branding ── */}
+        {/* ════ STEP 3 — System assets ════ */}
         {step === 3 && (
-          <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: NAVY }]}>School Branding</Text>
-            <Text style={styles.cardSub}>Your colours appear across all parent and operator views. Choose a preset or customise later.</Text>
+          <View style={st.card}>
+            <Text style={st.cardTitle}>System Assets</Text>
+            <Text style={st.cardSub}>Configure teaching groups, skill levels, and your studio rooms. At least one studio is required.</Text>
 
-            {/* Logo picker */}
-            <Pressable style={styles.logoPicker} onPress={pickLogo}>
-              {logoUri
-                ? <Image source={{ uri: logoUri }} style={styles.logoPreview} />
-                : <View style={styles.logoPlaceholder}>
-                    <Ionicons name="image-outline" size={28} color="#9CA3AF" />
-                    <Text style={styles.logoPlaceholderText}>Tap to upload logo</Text>
-                  </View>
-              }
-            </Pressable>
-
-            {/* Colour presets */}
-            <Text style={styles.label}>Colour Palette</Text>
-            <View style={styles.presetGrid}>
-              {COLOR_PRESETS.map((p, i) => (
-                <Pressable
-                  key={i}
-                  style={[styles.presetCard, selectedPreset === i && styles.presetCardSelected]}
-                  onPress={() => { setSelectedPreset(i); Haptics.selectionAsync(); }}
-                >
-                  <View style={{ flexDirection: "row", gap: 4, marginBottom: 6 }}>
-                    <View style={[styles.presetSwatch, { backgroundColor: p.primary }]} />
-                    <View style={[styles.presetSwatch, { backgroundColor: p.secondary }]} />
-                  </View>
-                  <Text style={styles.presetLabel}>{p.label}</Text>
-                  {selectedPreset === i && (
-                    <View style={styles.presetCheck}>
-                      <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                    </View>
-                  )}
+            <Text style={st.sectionHdr}>Age Groups</Text>
+            <View style={st.chipGrid}>
+              {AGE_GROUPS.map(ag => (
+                <Pressable key={ag} style={[st.chip, ageGroups.includes(ag) && st.chipOn]}
+                  onPress={() => { toggleAge(ag); Haptics.selectionAsync(); }}>
+                  <Text style={[st.chipText, ageGroups.includes(ag) && st.chipTextOn]}>{ag}</Text>
                 </Pressable>
               ))}
             </View>
 
-            <Pressable style={styles.primaryBtn} onPress={() => next()}>
-              <Text style={styles.primaryBtnText}>Apply & Continue</Text>
-              <Ionicons name="arrow-forward-outline" size={18} color={NAVY} />
-            </Pressable>
-          </View>
-        )}
+            <Text style={[st.sectionHdr, { marginTop: 16 }]}>Skill Levels</Text>
+            <View style={st.chipGrid}>
+              {SKILL_LVLS.map(sl => (
+                <Pressable key={sl} style={[st.chip, skillLevels.includes(sl) && st.chipOn]}
+                  onPress={() => { toggleSkill(sl); Haptics.selectionAsync(); }}>
+                  <Text style={[st.chipText, skillLevels.includes(sl) && st.chipTextOn]}>{sl}</Text>
+                </Pressable>
+              ))}
+            </View>
 
-        {/* ── Step 4: Studios & Venues ── */}
-        {step === 4 && (
-          <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: NAVY }]}>Studios & Venues</Text>
-            <Text style={styles.cardSub}>Define your teaching spaces. These are used for scheduling and capacity management.</Text>
+            <View style={st.divider} />
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <Text style={st.sectionHdr}>Studio Rooms *</Text>
+              <View style={st.reqBadge}><Text style={st.reqBadgeText}>Min. 1 required</Text></View>
+            </View>
 
-            {studios.map((s, i) => (
-              <View key={i} style={styles.studioRow}>
-                <View style={[styles.studioNum, { backgroundColor: `${NAVY}10` }]}>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: NAVY }}>#{i + 1}</Text>
+            {studios.map((stud, i) => (
+              <View key={i} style={st.studioRow}>
+                <View style={[st.studioNum, { backgroundColor: `${NAVY}10` }]}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: NAVY }}>#{i + 1}</Text>
                 </View>
                 <View style={{ flex: 1, gap: 8 }}>
-                  <View style={styles.inputWrap}>
+                  <View style={st.inputWrap}>
                     <Ionicons name="business-outline" size={15} color="#9CA3AF" />
-                    <TextInput style={styles.input} value={s.name} onChangeText={v => updateStudio(i, "name", v)}
+                    <TextInput style={st.input} value={stud.name} onChangeText={v => updateStudio(i, "name", v)}
                       placeholder={`Studio ${String.fromCharCode(65 + i)}`} placeholderTextColor="#9CA3AF" />
                   </View>
-                  <View style={styles.inputWrap}>
+                  <View style={st.inputWrap}>
                     <Ionicons name="people-outline" size={15} color="#9CA3AF" />
-                    <TextInput style={styles.input} value={s.capacity} onChangeText={v => updateStudio(i, "capacity", v)}
-                      placeholder="Max capacity" placeholderTextColor="#9CA3AF" keyboardType="numeric" />
+                    <TextInput style={st.input} value={stud.capacity} onChangeText={v => updateStudio(i, "capacity", v)}
+                      placeholder="Capacity" placeholderTextColor="#9CA3AF" keyboardType="numeric" />
                   </View>
                 </View>
                 {studios.length > 1 && (
-                  <Pressable onPress={() => removeStudio(i)} hitSlop={8} style={{ paddingLeft: 8 }}>
+                  <Pressable onPress={() => removeStudio(i)} hitSlop={8} style={{ paddingLeft: 8, paddingTop: 14 }}>
                     <Ionicons name="trash-outline" size={20} color="#EF4444" />
                   </Pressable>
                 )}
               </View>
             ))}
 
-            <Pressable style={styles.addStudioBtn} onPress={addStudio}>
+            <Pressable style={st.addBtn} onPress={addStudio}>
               <Ionicons name="add-circle-outline" size={18} color={NAVY} />
-              <Text style={[styles.addStudioText, { color: NAVY }]}>Add Another Studio</Text>
+              <Text style={[st.addBtnText, { color: NAVY }]}>Add Another Studio</Text>
             </Pressable>
 
-            <Pressable style={styles.primaryBtn} onPress={() => next()}>
-              <Text style={styles.primaryBtnText}>Continue</Text>
+            <Pressable style={st.primaryBtn} onPress={handleStep3}>
+              <Text style={st.primaryBtnText}>Continue</Text>
               <Ionicons name="arrow-forward-outline" size={18} color={NAVY} />
             </Pressable>
           </View>
         )}
 
-        {/* ── Step 5: Course Templates ── */}
-        {step === 5 && (
-          <View style={styles.card}>
-            <Text style={[styles.cardTitle, { color: NAVY }]}>Course Templates</Text>
-            <Text style={styles.cardSub}>
-              Select the age groups and skill levels your school offers. These filter course listings for parents enrolling their children.
-            </Text>
+        {/* ════ STEP 4 — Legal & e-signature ════ */}
+        {step === 4 && (
+          <View style={st.card}>
+            <Text style={st.cardTitle}>Legal Acceptance</Text>
+            <Text style={st.cardSub}>Scroll through each document to unlock the checkboxes, then sign with your full name.</Text>
 
-            <Text style={styles.label}>Age Groups</Text>
-            <View style={styles.chipGrid}>
-              {AGE_GROUPS.map(g => (
-                <Pressable
-                  key={g}
-                  style={[styles.chip, ageGroups.includes(g) && styles.chipSelected]}
-                  onPress={() => { toggleAge(g); Haptics.selectionAsync(); }}
-                >
-                  <Text style={[styles.chipText, ageGroups.includes(g) && styles.chipTextSelected]}>{g}</Text>
-                </Pressable>
-              ))}
+            {/* Terms & Conditions */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+              <Text style={st.sectionHdr}>Terms & Conditions</Text>
+              {!termsScrolled && <ScrollHint />}
             </View>
-
-            <Text style={[styles.label, { marginTop: 16 }]}>Skill Levels</Text>
-            <View style={styles.chipGrid}>
-              {SKILL_LVLS.map(s => (
-                <Pressable
-                  key={s}
-                  style={[styles.chip, skillLevels.includes(s) && styles.chipSelected]}
-                  onPress={() => { toggleSkill(s); Haptics.selectionAsync(); }}
-                >
-                  <Text style={[styles.chipText, skillLevels.includes(s) && styles.chipTextSelected]}>{s}</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={[styles.infoBox, { marginTop: 20 }]}>
-              <Ionicons name="information-circle-outline" size={14} color={NAVY} />
-              <Text style={styles.infoText}>
-                You can always add more courses, disciplines, and age groups later from the Admin Dashboard.
-              </Text>
-            </View>
-
-            <Pressable
-              style={[styles.primaryBtn, { marginTop: 20, backgroundColor: "#10B981" }, completing && { opacity: 0.7 }]}
-              onPress={handleComplete}
-              disabled={completing}
+            <ScrollView
+              style={st.legalScroll} nestedScrollEnabled
+              onScroll={e => { if (isNearBottom(e)) setTermsScrolled(true); }}
+              scrollEventThrottle={80}
             >
-              {completing
-                ? <ActivityIndicator color="#FFF" size="small" />
-                : <><Ionicons name="checkmark-circle-outline" size={20} color="#FFF" /><Text style={[styles.primaryBtnText, { color: "#FFF" }]}>Complete Setup & Launch</Text></>
-              }
+              <Text style={st.legalText}>{TERMS_TEXT}</Text>
+            </ScrollView>
+            <Pressable
+              style={[st.checkRow, !termsScrolled && st.checkRowOff]}
+              onPress={() => termsScrolled && setAcceptTerms(v => !v)}
+            >
+              <Ionicons
+                name={acceptTerms ? "checkbox" : "square-outline"} size={22}
+                color={acceptTerms ? "#10B981" : termsScrolled ? NAVY : "#D1D5DB"} />
+              <Text style={[st.checkLabel, !termsScrolled && { color: "#9CA3AF" }]}>
+                I have read and accept the Terms & Conditions
+              </Text>
             </Pressable>
 
-            <Pressable style={styles.backBtn} onPress={() => next(step - 1)}>
-              <Ionicons name="arrow-back-outline" size={15} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.backText}>Back</Text>
+            <View style={st.divider} />
+
+            {/* Privacy Policy */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={st.sectionHdr}>Privacy Policy</Text>
+              {!privacyScrolled && <ScrollHint />}
+            </View>
+            <ScrollView
+              style={st.legalScroll} nestedScrollEnabled
+              onScroll={e => { if (isNearBottom(e)) setPrivacyScrolled(true); }}
+              scrollEventThrottle={80}
+            >
+              <Text style={st.legalText}>{PRIVACY_TEXT}</Text>
+            </ScrollView>
+            <Pressable
+              style={[st.checkRow, !privacyScrolled && st.checkRowOff]}
+              onPress={() => privacyScrolled && setAcceptPrivacy(v => !v)}
+            >
+              <Ionicons
+                name={acceptPrivacy ? "checkbox" : "square-outline"} size={22}
+                color={acceptPrivacy ? "#10B981" : privacyScrolled ? NAVY : "#D1D5DB"} />
+              <Text style={[st.checkLabel, !privacyScrolled && { color: "#9CA3AF" }]}>
+                I have read and accept the Privacy Policy
+              </Text>
+            </Pressable>
+
+            <View style={st.divider} />
+
+            {/* Digital signature */}
+            <Text style={st.sectionHdr}>Digital Confirmation</Text>
+            <Text style={st.cardSub}>
+              Type your full legal name below as your digital signature. This acceptance is permanently
+              recorded with a timestamp, IP address, and device information.
+            </Text>
+            <View style={[st.inputWrap, {
+              borderColor: signatureText.trim() ? "#10B981" : "#E5E7EB",
+              borderWidth: signatureText.trim() ? 2 : 1.5,
+            }]}>
+              <Ionicons name="create-outline" size={16} color={signatureText.trim() ? "#10B981" : "#9CA3AF"} />
+              <TextInput
+                style={[st.input, { fontStyle: signatureText ? "italic" : "normal" }]}
+                value={signatureText} onChangeText={setSignatureText}
+                placeholder="Full legal name (typed signature)" placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+              />
+            </View>
+
+            {s4Err ? <ErrorBox msg={s4Err} /> : null}
+
+            <Pressable style={[st.primaryBtn, !canFinish && st.btnDisabled]} onPress={handleComplete} disabled={!canFinish}>
+              {completing ? <ActivityIndicator color={NAVY} /> : (
+                <>
+                  <Text style={st.primaryBtnText}>Complete Setup & Launch</Text>
+                  <Ionicons name="rocket-outline" size={18} color={NAVY} />
+                </>
+              )}
             </Pressable>
           </View>
         )}
 
-        {/* Back nav for steps 2-4 */}
-        {step > 1 && step < 5 && (
-          <Pressable style={styles.backBtn} onPress={() => next(step - 1)}>
-            <Ionicons name="arrow-back-outline" size={15} color="rgba(255,255,255,0.5)" />
-            <Text style={styles.backText}>Back</Text>
+        {/* ── Back navigation ── */}
+        {step === 1 && !alreadyAdmin && (
+          <Pressable style={st.backBtn} onPress={() => { setStep(0); setCredState("verify"); }}>
+            <Ionicons name="arrow-back-outline" size={14} color="rgba(255,255,255,0.35)" />
+            <Text style={st.backBtnText}>Back</Text>
+          </Pressable>
+        )}
+        {step >= 2 && (
+          <Pressable style={st.backBtn} onPress={() => next(step - 1)}>
+            <Ionicons name="arrow-back-outline" size={14} color="rgba(255,255,255,0.35)" />
+            <Text style={st.backBtnText}>Back</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -555,59 +813,85 @@ export default function Pioneer() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll:    { paddingHorizontal: 20, gap: 0 },
-  header:    { alignItems: "center", marginBottom: 24, gap: 8 },
-  badge:     { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: GOLD, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
-  badgeText: { fontSize: 11, fontWeight: "800", color: NAVY, letterSpacing: 1.5 },
-  title:     { fontSize: 28, fontWeight: "900", color: "#FFF", textAlign: "center" },
-  subtitle:  { fontSize: 14, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 20, marginBottom: 8 },
+// ── Small inline helpers ──────────────────────────────────────────────────────
+function ErrorBox({ msg }: { msg: string }) {
+  return (
+    <View style={st.errBox}>
+      <Ionicons name="alert-circle-outline" size={16} color="#EF4444" />
+      <Text style={st.errText}>{msg}</Text>
+    </View>
+  );
+}
+function ScrollHint() {
+  return (
+    <View style={st.scrollHint}>
+      <Ionicons name="arrow-down" size={10} color="#6B7280" />
+      <Text style={st.scrollHintText}>Scroll to read</Text>
+    </View>
+  );
+}
 
-  card:      { backgroundColor: "#FFF", borderRadius: 24, padding: 22, gap: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12, marginBottom: 16 },
-  cardTitle: { fontSize: 20, fontWeight: "800", marginBottom: 4 },
-  cardSub:   { fontSize: 13, color: "#6B7280", marginBottom: 16, lineHeight: 19 },
+// ── Styles ─────────────────────────────────────────────────────────────────────
+const st = StyleSheet.create({
+  scroll:      { flexGrow: 1, paddingHorizontal: 20 },
 
-  label:     { fontSize: 12, fontWeight: "700", color: "#374151", marginTop: 10, marginBottom: 6 },
-  inputWrap: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: "#F9FAFB" },
-  input:     { flex: 1, fontSize: 14, color: "#1F2937" },
+  header:      { alignItems: "center", marginBottom: 24 },
+  badge:       { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: GOLD, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 16 },
+  badgeText:   { fontSize: 11, fontWeight: "800", color: NAVY, letterSpacing: 1 },
+  title:       { fontSize: 26, fontWeight: "900", color: "#FFF", textAlign: "center", lineHeight: 32, marginBottom: 8 },
+  subtitle:    { fontSize: 14, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 20, marginBottom: 10, paddingHorizontal: 8 },
+  regionBadge: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 20 },
+  regionText:  { fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: "600" },
 
-  primaryBtn:     { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: GOLD, borderRadius: 14, paddingVertical: 15, marginTop: 16 },
-  primaryBtnText: { fontWeight: "800", fontSize: 15, color: NAVY },
+  card:        { backgroundColor: "#FFF", borderRadius: 24, padding: 22, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12, marginBottom: 16 },
+  cardTitle:   { fontSize: 20, fontWeight: "800", color: NAVY, marginBottom: 4 },
+  cardSub:     { fontSize: 13, color: "#6B7280", marginBottom: 14, lineHeight: 19 },
 
-  skipBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 12, marginTop: 4 },
-  skipText: { fontSize: 13, color: "#6B7280", fontWeight: "500" },
+  label:       { fontSize: 12, fontWeight: "700", color: "#374151", marginTop: 12, marginBottom: 6 },
+  inputWrap:   { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: "#F9FAFB" },
+  input:       { flex: 1, fontSize: 14, color: "#1F2937" },
+  prefixBadge: { backgroundColor: `${NAVY}15`, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  prefixText:  { fontSize: 13, fontWeight: "700", color: NAVY },
 
-  backBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, marginBottom: 4 },
-  backText: { fontSize: 13, color: "rgba(255,255,255,0.5)", fontWeight: "600" },
+  codeInput:   { fontSize: 28, fontWeight: "700", color: NAVY, borderWidth: 2, borderColor: NAVY, borderRadius: 14, paddingVertical: 18, marginVertical: 12, letterSpacing: 8, textAlign: "center", backgroundColor: `${NAVY}05` },
+  verifyIcon:  { width: 64, height: 64, borderRadius: 32, backgroundColor: `${GOLD}22`, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 8 },
 
-  errBox:   { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: "#FECACA" },
-  errText:  { flex: 1, fontSize: 13, color: "#EF4444" },
+  devBanner:      { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF9C3", borderWidth: 1, borderColor: "#FDE68A", borderRadius: 10, padding: 10, marginBottom: 4 },
+  devBannerText:  { flex: 1, fontSize: 13, color: "#92400E" },
 
-  infoBox:  { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: `${NAVY}08`, borderWidth: 1, borderColor: `${NAVY}20`, borderRadius: 12, padding: 12, marginTop: 12 },
-  infoText: { flex: 1, fontSize: 12, color: NAVY, lineHeight: 17 },
+  primaryBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: GOLD, borderRadius: 14, paddingVertical: 15, marginTop: 16 },
+  primaryBtnText:  { fontWeight: "800", fontSize: 15, color: NAVY },
+  btnDisabled:     { opacity: 0.4 },
+  ghostBtn:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 10, marginTop: 2 },
+  ghostBtnText:    { fontSize: 13, color: "rgba(255,255,255,0.45)", fontWeight: "500" },
+  backBtn:         { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, marginBottom: 4 },
+  backBtnText:     { fontSize: 13, color: "rgba(255,255,255,0.35)", fontWeight: "600" },
 
-  featureRow: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginVertical: 8, borderWidth: 1 },
+  errBox:    { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: "#FECACA" },
+  errText:   { flex: 1, fontSize: 13, color: "#EF4444" },
 
-  logoPicker:       { height: 100, borderRadius: 16, borderWidth: 1.5, borderColor: "#E5E7EB", borderStyle: "dashed", alignItems: "center", justifyContent: "center", backgroundColor: "#F9FAFB", overflow: "hidden", marginVertical: 4 },
-  logoPreview:      { width: "100%", height: "100%", resizeMode: "contain" },
-  logoPlaceholder:  { alignItems: "center", gap: 6 },
-  logoPlaceholderText: { fontSize: 13, color: "#9CA3AF" },
+  sectionHdr: { fontSize: 13, fontWeight: "700", color: "#374151", marginBottom: 8 },
+  divider:    { height: 1, backgroundColor: "#F3F4F6", marginVertical: 14 },
+  reqBadge:   { backgroundColor: "#FEF2F2", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  reqBadgeText: { fontSize: 10, fontWeight: "700", color: "#EF4444" },
 
-  presetGrid:        { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
-  presetCard:        { borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E7EB", padding: 10, minWidth: "30%", flex: 1, alignItems: "center", position: "relative" },
-  presetCardSelected:{ borderColor: "#10B981", backgroundColor: "#F0FDF4" },
-  presetSwatch:      { width: 20, height: 20, borderRadius: 10 },
-  presetLabel:       { fontSize: 10, fontWeight: "600", color: "#374151", textAlign: "center", marginTop: 2 },
-  presetCheck:       { position: "absolute", top: 4, right: 4 },
+  chipGrid:       { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
+  chip:           { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5, borderColor: "#E5E7EB", backgroundColor: "#F9FAFB" },
+  chipOn:         { backgroundColor: `${NAVY}10`, borderColor: NAVY },
+  chipText:       { fontSize: 13, color: "#6B7280", fontWeight: "600" },
+  chipTextOn:     { color: NAVY, fontWeight: "700" },
 
-  studioRow:     { flexDirection: "row", alignItems: "flex-start", gap: 10, marginVertical: 8 },
-  studioNum:     { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", marginTop: 12 },
-  addStudioBtn:  { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, marginTop: 4 },
-  addStudioText: { fontSize: 14, fontWeight: "600" },
+  studioRow:   { flexDirection: "row", alignItems: "flex-start", gap: 10, marginVertical: 8 },
+  studioNum:   { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center", marginTop: 12 },
+  addBtn:      { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, marginTop: 4 },
+  addBtnText:  { fontSize: 14, fontWeight: "600" },
 
-  chipGrid:         { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
-  chip:             { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1.5, borderColor: "#E5E7EB", backgroundColor: "#F9FAFB" },
-  chipSelected:     { backgroundColor: `${NAVY}10`, borderColor: NAVY },
-  chipText:         { fontSize: 13, color: "#6B7280", fontWeight: "600" },
-  chipTextSelected: { color: NAVY, fontWeight: "700" },
+  legalScroll:  { maxHeight: 260, borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, backgroundColor: "#F9FAFB", paddingHorizontal: 12, paddingTop: 10, marginVertical: 6 },
+  legalText:    { fontSize: 12, color: "#374151", lineHeight: 19, paddingBottom: 20 },
+  scrollHint:   { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#F3F4F6", borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
+  scrollHintText: { fontSize: 10, color: "#6B7280" },
+
+  checkRow:    { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingHorizontal: 2 },
+  checkRowOff: { opacity: 0.45 },
+  checkLabel:  { flex: 1, fontSize: 13, fontWeight: "600", color: "#374151", lineHeight: 18 },
 });

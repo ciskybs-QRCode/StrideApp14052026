@@ -740,5 +740,35 @@ export async function ensureTables(): Promise<void> {
     ]))
   `).catch(() => {});
 
+  // Pioneer double opt-in: email verification tokens
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_verification_tokens (
+      id         SERIAL PRIMARY KEY,
+      user_id    INTEGER NOT NULL,
+      token      TEXT    NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '1 hour'),
+      used_at    TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS evt_user_idx ON email_verification_tokens (user_id);
+  `).catch(() => {});
+
+  // Organization compliance audit log (legal acceptance with IP + signature)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS organization_compliance_logs (
+      id               SERIAL PRIMARY KEY,
+      user_id          INTEGER NOT NULL,
+      org_id           INTEGER NOT NULL DEFAULT 0,
+      ip_address       TEXT,
+      user_agent       TEXT,
+      accepted_terms   BOOLEAN NOT NULL DEFAULT FALSE,
+      accepted_privacy BOOLEAN NOT NULL DEFAULT FALSE,
+      signature_text   TEXT,
+      signed_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS ocl_user_idx ON organization_compliance_logs (user_id);
+    CREATE INDEX IF NOT EXISTS ocl_org_idx  ON organization_compliance_logs (org_id);
+  `).catch(() => {});
+
   initialized = true;
 }

@@ -1,0 +1,28 @@
+🛑 TOTAL ARCHITECTURAL REFACTOR: LOCALIZED 5-STEP WIZARD, EMAIL DOUBLE OPT-IN, AND LEGAL SIGN-OFF GATE 🛑
+
+We need to completely scrap the current unorganized Pioneer Wizard layout and build a professional, localized, secure onboarding flow available for both Mobile (Expo/React Native) and Web.
+
+IMPLEMENT THE FOLLOWING SPECIFICATIONS IMMEDIATELY:
+
+1. AUTO-LOCALIZATION ENGINE (NO REQ POPUPS):
+- Detect user location using Device Locale (language/region context) combined with backend IP lookup.
+- Dynamically format placeholders, inputs, and validation rules based on the detected country:
+  * If ITALY (IT): Prefixes (+39), Address fields (Via, CAP, Città, Provincia), Tax Fields (Partita IVA / Codice Fiscale).
+  * If AUSTRALIA (AU): Prefixes (+61), Address fields (Street, Postcode, State), Tax Fields (ABN / ACN).
+  * Global fallback for other countries.
+
+2. THE 5-STEP ONBOARDING STRUCTURE:
+- STEP 1: Account Credentials. Email & Password are strictly mandatory. Upon submission, create the DB user row with `is_verified = false` and trigger a verification email link. Block further access until verified.
+- STEP 2: Personal Profile. Full name, localized phone number, and primary contact details.
+- STEP 3: Organization Details. School/Association Name, fully localized business address, and Tax ID (PIVA / ABN depending on region).
+- STEP 4: Initial System Asset Provisioning. Select age groups/skill levels and enforce adding at least 1 studio room/location.
+- STEP 5: Legal & E-Signature Gate. Render full-text containers for Terms & Conditions and Privacy Policy. The "Accept" checkboxes must remain disabled until the user scrolls to the bottom of both documents. Include a formal digital confirmation/signature validation input.
+
+3. AUTHENTICATION & DATABASE ENFORCEMENT:
+- Protect the backend router: Reject any operations from users where `is_verified` is false.
+- Ensure all legal acceptance logs (Timestamp, IP, Consent Flag, Signature verification data) are strictly recorded inside a new table `organization_compliance_logs`.
+
+4. WEB LANDING PAGE CAPABILITY:
+- Ensure the API architecture fully supports this exact registration workflow payload from a web client interface, allowing identical processing via a browser/PC.
+
+Execute `tsc --noEmit` to verify strict compilation compliance across the new multi-step form routers, update backend verification handling, and cold-restart the API server. Let's make this onboarding flawless.
