@@ -65,11 +65,16 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const user = (req as Request & { user?: TokenPayload }).user;
-    if (!user || !roles.includes(user.role)) {
+    if (!user) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
-    next();
+    // super_admin holds all privileges — let them through any role gate
+    if (user.role === "super_admin" || roles.includes(user.role)) {
+      next();
+      return;
+    }
+    res.status(403).json({ error: "Forbidden" });
   };
 }
 

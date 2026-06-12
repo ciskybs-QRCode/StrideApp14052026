@@ -303,7 +303,7 @@ export const api = {
     studios?: { name: string; capacity: number }[];
     ageGroups?: string[];
     skillLevels?: string[];
-  }) => request<{ configured: boolean }>("POST", "/org/configure", data),
+  }) => request<{ configured: boolean; orgId?: number; token?: string }>("POST", "/org/configure", data),
 
   // Children
   getChildren: async (): Promise<ApiChild[]> =>

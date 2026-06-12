@@ -354,6 +354,9 @@ router.get("/auth/invite/:token", async (req, res) => {
 
 // ── POST /org/configure ───────────────────────────────────────────────────────
 // Pioneer wizard completion. Sets system_configured = true.
+// Also handles the super_admin "create my own org" case: when the caller has no
+// orgId yet, a fresh organization row is created and the user is linked as admin.
+// Returns { configured, orgId, token? } — token is re-issued when orgId changed.
 router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res) => {
   const { schoolName, registrationNumber, contactPhone, studios, ageGroups, skillLevels } = req.body as {
     schoolName: string;
@@ -364,9 +367,57 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
     skillLevels?: string[];
   };
 
-  const { orgId } = (req as AuthReq).user;
-  const oid = orgId ?? 1;
+  const authUser = (req as AuthReq).user;
+  let oid: number = authUser.orgId ?? 0;
+  let newToken: string | undefined;
 
+  // ── Create org on-the-fly for super_admin (or any user with no org yet) ──
+  if (!oid) {
+    const trialEnds = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: newOrg, error: orgErr } = await supabase
+      .from("organizations")
+      .insert({
+        name: schoolName,
+        system_configured: false,
+        trial_ends_at: trialEnds,
+        subscription_status: "trial",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single() as { data: { id: number } | null; error: unknown };
+
+    if (orgErr || !newOrg) {
+      req.log.error({ orgErr }, "Failed to create organization");
+      res.status(500).json({ error: "Failed to create organization" });
+      return;
+    }
+
+    oid = newOrg.id;
+
+    // Link user as admin of the new org
+    await supabase.from("organization_members").upsert({
+      user_id: String(authUser.id),
+      organization_id: oid,
+      role: "admin",
+      joined_at: new Date().toISOString(),
+    }, { onConflict: "user_id,organization_id" });
+
+    // Update the user's primary organization in the users table
+    await supabase.from("users")
+      .update({ organization_id: oid, updated_at: new Date().toISOString() })
+      .eq("id", authUser.id);
+
+    // Issue a fresh JWT so subsequent API calls carry the correct orgId
+    newToken = signToken({
+      id:    authUser.id,
+      email: authUser.email,
+      role:  authUser.role,   // preserves super_admin
+      orgId: oid,
+    });
+  }
+
+  // ── Configure the org ─────────────────────────────────────────────────────
   await supabase.from("organizations").update({
     name: schoolName,
     system_configured: true,
@@ -383,11 +434,11 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
           organization_id: oid,
           active: true,
         });
-      } catch { /* non-fatal */ }
+      } catch { /* non-fatal: studio insert failures don't abort setup */ }
     }
   }
 
-  res.json({ configured: true, ageGroups, skillLevels });
+  res.json({ configured: true, orgId: oid, ageGroups, skillLevels, ...(newToken ? { token: newToken } : {}) });
 });
 
 // ── GET /user/roles ───────────────────────────────────────────────────────────
