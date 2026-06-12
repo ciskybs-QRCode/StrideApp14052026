@@ -1,0 +1,26 @@
+🛑 CRITICAL ARCHITECTURAL MANDATE: ELIMINATE REPLIT INTERNAL POSTGRESQL AND MIGRATE 100% TO SUPABASE 🛑
+
+THE PROBLEM:
+The current architecture is unacceptably split between two separate databases: Replit Internal PostgreSQL (via pool/DATABASE_URL) and Supabase. This creates extreme vendor lock-in, breaks data portability, and is a massive compliance/legal liability. The entire application MUST rely EXCLUSIVELY on Supabase. No hybrid backends.
+
+EXECUTE THIS COMPREHENSIVE MIGRATION AND REFACTOR IMMEDIATELY:
+
+1. DROP REPLIT POSTGRESQL DEPENDENCY:
+- Completely stop using the Replit internal PostgreSQL database pool (`pool` from `pg.ts`).
+- All future database operations, tables, and configurations must live strictly inside SUPABASE.
+
+2. SCHEMA MIGRATION TO SUPABASE:
+- Connect to Supabase and explicitly create the missing structures there:
+  * Create the `system_config` table (with columns: `key`, `value`, `updated_at`) directly in your Supabase instance, OR alter the `organizations` table to properly support the configuration state.
+  * If any other tracking or compliance table (like `organization_compliance_logs`) was created locally, migrate its DDL schema to Supabase immediately.
+
+3. CODE REFACTORING (auth.ts, pg.ts, etc.):
+- Rewrite `GET /auth/system-status` and `POST /org/configure` to read and write the wizard configuration status (`configured: true/false`) directly from/to SUPABASE.
+- Replace any local SQL `INSERT` or `SELECT` queries with the official Supabase client syntax (`supabase.from('system_config')...`) or direct Supabase connection pooling.
+
+4. CLEANUP AND VERIFICATION:
+- Remove any fallback logic that quietly writes to the local Replit DB when a Supabase column is missing. If a column is missing, fail loud so we know we need to add it to Supabase.
+- Run `tsc --noEmit` to guarantee full type safety after removing the local DB pool.
+- Cold-reboot the API server. 
+
+From this moment on, Supabase is the SINGLE SOURCE OF TRUTH for 100% of the application's data. Unify the backend now.
