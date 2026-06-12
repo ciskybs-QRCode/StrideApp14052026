@@ -531,12 +531,17 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
   const addChild = async (child: Omit<Child, "id">) => {
     const nameParts = child.name.trim().split(/\s+/);
     const firstName = nameParts[0] ?? "";
-    const lastName = nameParts.slice(1).join(" ");
+    const lastName  = nameParts.slice(1).join(" ");
+
+    // Use the user's real orgId — never fall back to a hardcoded org.
+    // `|| 1` handles the edge case where orgId is 0 (super_admin before pioneer).
+    const resolvedOrgId = (user?.orgId && user.orgId > 0) ? user.orgId : undefined;
+
     const payload = {
       full_name: child.name,
       first_name: firstName,
       ...(lastName ? { last_name: lastName } : {}),
-      organization_id: 1,
+      ...(resolvedOrgId !== undefined ? { organization_id: resolvedOrgId } : {}),
       ...(child.dateOfBirth ? { date_of_birth: child.dateOfBirth } : {}),
       gold_stars: child.stars ?? 0,
       ...(child.allergies && child.allergies !== "None" ? { allergies_list: child.allergies } : {}),
@@ -544,15 +549,21 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       media_consent: child.mediaConsent,
       ...(child.photoUrl ? { photo_url: child.photoUrl } : {}),
     };
+
     const tempId = `temp_${Date.now()}`;
     setChildrenData(prev => [...prev, { ...child, id: tempId }]);
-    const res = await withOfflineFallback(
-      () => api.addChild(payload),
-      { type: "addChild", params: payload as Record<string, unknown> },
-    );
-    if (res) {
-      const newChild = mapChild(res as ApiChild, []);
+
+    // Do NOT use withOfflineFallback for creation — silent queuing hides DB
+    // errors and leaves ghost temp entries in the list forever.  Instead, let
+    // errors propagate so the calling screen can show a proper Alert.
+    try {
+      const res = await api.addChild(payload);
+      const newChild = mapChild(res, []);
       setChildrenData(prev => prev.map(c => c.id === tempId ? newChild : c));
+    } catch (err) {
+      // Remove the optimistic placeholder so no ghost entry remains
+      setChildrenData(prev => prev.filter(c => c.id !== tempId));
+      throw err; // propagate to the UI
     }
   };
 

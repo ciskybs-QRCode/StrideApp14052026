@@ -170,22 +170,33 @@ export default function ChildrenScreen() {
     }
   };
 
-  // Task 5: extracted commit — called after guardian authorization is confirmed
+  // Extracted commit — called after guardian authorization is confirmed.
+  // Errors are always surfaced via Alert so failures are never silent.
   const commitAddChild = async (dobStr: string, age: number) => {
-    await addChild({
-      name: `${newChildName.trim()} ${newChildSurname.trim()}`,
-      age,
-      dateOfBirth: dobStr,
-      allergies: newChildAllergies.trim() || "None",
-      medicalWaiver: newChildWaiver,
-      mediaConsent: newChildMediaConsent,
-      stars: 0,
-      courses: [],
-      photoUrl: newChildPhotoUri ?? undefined,
-    });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    resetAddChildForm();
-    setShowAddChild(false);
+    try {
+      await addChild({
+        name: `${newChildName.trim()} ${newChildSurname.trim()}`,
+        age,
+        dateOfBirth: dobStr,
+        allergies: newChildAllergies.trim() || "None",
+        medicalWaiver: newChildWaiver,
+        mediaConsent: newChildMediaConsent,
+        stars: 0,
+        courses: [],
+        photoUrl: newChildPhotoUri ?? undefined,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      resetAddChildForm();
+      setShowAddChild(false);
+    } catch (err: unknown) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        "Creation Failed",
+        err instanceof Error
+          ? err.message
+          : "Could not save dependent. Please check your connection and try again.",
+      );
+    }
   };
 
   const handleAddChild = async () => {
@@ -206,7 +217,7 @@ export default function ChildrenScreen() {
         "This dependent is a minor (under 18). By proceeding you confirm you are the legal parent or guardian and accept full responsibility for their enrolment.",
         [
           { text: "Annulla", style: "cancel" },
-          { text: "Conferma", onPress: () => { void commitAddChild(dobStr, age); } },
+          { text: "Conferma", onPress: () => { commitAddChild(dobStr, age).catch(() => {}); } },
         ]
       );
       return;

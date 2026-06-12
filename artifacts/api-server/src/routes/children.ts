@@ -66,16 +66,29 @@ router.post("/members", requireAuth, async (req, res) => {
     return;
   }
 
+  // Resolve org: prefer body-supplied orgId, then JWT orgId; never allow 0 (invalid)
+  const resolvedOrg = Number(body.organization_id) || Number(user.orgId) || null;
+  if (!resolvedOrg) {
+    res.status(400).json({
+      error: "No organization context. Complete school setup before adding dependents.",
+    });
+    return;
+  }
+
   const { data, error } = await supabase
     .from("members")
     .insert({
       ...body,
       user_id: parseInt(user.id),
-      organization_id: body.organization_id ?? (user.orgId ?? 1),
+      organization_id: resolvedOrg,
     })
     .select()
     .single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
+  if (error) {
+    req.log.error({ err: error, userId: user.id, orgId: resolvedOrg }, "POST /members insert failed");
+    res.status(500).json({ error: error.message });
+    return;
+  }
   res.status(201).json(data);
 });
 
