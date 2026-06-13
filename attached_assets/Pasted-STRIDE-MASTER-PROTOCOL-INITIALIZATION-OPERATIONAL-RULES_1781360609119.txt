@@ -1,0 +1,55 @@
+STRIDE MASTER PROTOCOL — INITIALIZATION
+OPERATIONAL RULES:
+
+VISUAL GUIDELINES: All UI/UX modifications must be strictly limited to the brand's color palette: Navy Blue (#1E3A8A) and Gold/Yellow (#D4AF37).
+
+LANGUAGE COMPLIANCE: Every label, placeholder, tooltip, or element added/modified must be in English exclusively.
+
+CODE INTEGRITY: This is a Graphic-Only Directive. NO functional code, logic, or backend architecture can be touched, modified, or refactored without explicit written authorization for each specific instance.
+
+MILITARY PRECISION: Responses must be clear, concise, and structured. No fluff.
+
+MISSION DIRECTIVE:
+Restructure and redesign the Super Admin dashboard (exclusive screen) to comply with the Stride design standard. The current layout is visually unacceptable and requires immediate sanitization. Execute the following modifications with surgical precision.
+
+1. HEADER SANITIZATION & RESTRUCTURING:
+
+Eliminate High-Blue Header: Remove the thick Navy Blue header section entirely. Replace it with the standardized, slim, minimal white header bar used in other roles.
+
+Add Standardized Role Switcher: Implement the standardized Role Switcher component/button, placing it in the header. Visually it must be identical in position and graphics to those present in Parent/Operator/Admin roles.
+
+Remove Icon Cluster: Permanently remove the current top icons used for Switch, Refresh, and Logout from the Super Admin main screen.
+
+2. INFORMATION ARCHITECTURE & ROUTING:
+The current Super Admin dashboard content (currently displayed randomly on one page) must be converted into a structured Menu-based Dashboard.
+
+Convert functions to Cards/Menu Items:
+
+TENANT MANAGEMENT
+
+USER ADMINISTRATION
+
+OWNER SETTINGS
+
+RECENT ACTIVITY
+
+Navigation Logic: The dashboard must display these as distinct, clickable cards or list items. Upon tapping, each must utilize routing to open a new, dedicated sub-page where the specific information and actions for that module reside.
+
+Professional Iconography: Each of the four menu items must be assigned a distinct, professional, and minimalist icon. Icons must be consistent with the Stride brand and color palette. Absolutely no colorful or unprofessional ("Harlequin") icons.
+
+3. SUPER ADMIN ACCOUNT/SETTINGS PAGE:
+
+Create Settings Route: Implement a dedicated settings or profile sub-page for the Super Admin, identical in structure to other roles.
+
+Account Actions: On this page, include clear interface elements and backend routing connections for:
+
+Changing Password
+
+Changing Email
+
+Logging Out
+
+Security Restriction: CRITICAL: Do not, under any circumstances, implement or display a "Delete Account" button or function on this Super Admin settings page.
+
+4. VISUAL REORDERING & LOGIC:
+Reorder all remaining data and elements currently on the Super Admin screen into a logical, acceptable hierarchy. Replace the jumbled layout with a clean, grid or list-based design that adheres to modern UI standards. ensure all text is correctly aligned, labeled, and sized appropriately.

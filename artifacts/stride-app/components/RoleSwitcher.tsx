@@ -161,6 +161,52 @@ export function RoleSwitcher() {
   return <RoleSwitcherRow />;
 }
 
+// ── RoleSwitcherHeaderButton — compact icon for ScreenHeader right slot ──────
+
+/**
+ * Minimal role-switcher trigger for placement in a header right slot.
+ * Shows the active role icon + chevron. Invisible if only one role.
+ */
+export function RoleSwitcherHeaderButton() {
+  const {
+    user, colors, open, setOpen,
+    availableRoles, activeRole, current,
+    handleOpen, handleSwitch,
+  } = useRoleSwitcher();
+
+  if (!user || availableRoles.length <= 1) return null;
+
+  return (
+    <>
+      <RoleSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        availableRoles={availableRoles}
+        activeRole={activeRole}
+        onSwitch={r => { void handleSwitch(r); }}
+        colors={colors}
+      />
+      <Pressable
+        onPress={handleOpen}
+        hitSlop={10}
+        accessibilityLabel="Switch role"
+        accessibilityRole="button"
+        style={({ pressed }) => ({
+          opacity: pressed ? 0.65 : 1,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 3,
+          paddingHorizontal: 4,
+          paddingVertical: 4,
+        })}
+      >
+        <Ionicons name={current.icon} size={19} color={colors.primary} />
+        <Ionicons name="chevron-down" size={12} color={colors.mutedForeground} />
+      </Pressable>
+    </>
+  );
+}
+
 // ── RoleSwitcherRow — embedded settings row (used in profile / settings) ──────
 
 /**
