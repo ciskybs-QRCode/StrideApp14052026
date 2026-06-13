@@ -22,6 +22,7 @@ import { useColors } from "@/hooks/useColors";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { useAppData } from "@/context/AppDataContext";
+import { api } from "@/lib/api";
 
 // ── Role badge helper ──────────────────────────────────────────────────────
 
@@ -277,20 +278,38 @@ export default function OperatorSettingsScreen() {
   const [bankSaved, setBankSaved] = useState(false);
 
   React.useEffect(() => {
-    AsyncStorage.getItem(BANK_KEY).then(raw => {
-      if (raw) { try { setBank(JSON.parse(raw) as BankDetails); } catch { /* ignore */ } }
-    }).catch(() => {});
+    // Load from API first (authoritative), fallback to AsyncStorage
+    api.getBankDetails().then(d => {
+      if (d && (d.accountName || d.iban || d.swift)) {
+        setBank({ accountName: d.accountName ?? "", iban: d.iban ?? "", swift: d.swift ?? "" });
+        AsyncStorage.setItem(BANK_KEY, JSON.stringify({ accountName: d.accountName ?? "", iban: d.iban ?? "", swift: d.swift ?? "" })).catch(() => {});
+      } else {
+        AsyncStorage.getItem(BANK_KEY).then(raw => {
+          if (raw) { try { setBank(JSON.parse(raw) as BankDetails); } catch { /* ignore */ } }
+        }).catch(() => {});
+      }
+    }).catch(() => {
+      AsyncStorage.getItem(BANK_KEY).then(raw => {
+        if (raw) { try { setBank(JSON.parse(raw) as BankDetails); } catch { /* ignore */ } }
+      }).catch(() => {});
+    });
   }, []);
 
   const handleSaveBank = async () => {
     setBankSaving(true);
     try {
-      await AsyncStorage.setItem(BANK_KEY, JSON.stringify(bank));
+      // Persist to API (Supabase) and AsyncStorage
+      await Promise.all([
+        api.saveBankDetails({ accountName: bank.accountName, iban: bank.iban, swift: bank.swift }),
+        AsyncStorage.setItem(BANK_KEY, JSON.stringify(bank)),
+      ]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setBankSaved(true);
       setTimeout(() => setBankSaved(false), 2500);
     } catch {
-      Alert.alert("Error", "Could not save bank details. Please try again.");
+      // Fallback: at least save locally
+      try { await AsyncStorage.setItem(BANK_KEY, JSON.stringify(bank)); } catch { /* ignore */ }
+      Alert.alert("Saved Locally", "Bank details saved locally. Sync will retry when online.");
     } finally {
       setBankSaving(false);
     }
@@ -368,9 +387,9 @@ export default function OperatorSettingsScreen() {
             <Ionicons name="briefcase-outline" size={26} color="#1E3A8A" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.featureTitle, { color: colors.foreground }]}>Payroll & Earnings</Text>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>Payroll</Text>
             <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
-              View monthly earnings and export payslips
+              {user?.schoolName ? user.schoolName + " · " : ""}View earnings &amp; export payslips
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />

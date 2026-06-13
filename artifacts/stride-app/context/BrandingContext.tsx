@@ -2,10 +2,12 @@
  * BrandingContext — Global White-Label Theme Provider
  *
  * Loads and persists org-level branding (logo URL, primary colour, secondary
- * colour) across all three roles.  AsyncStorage is the primary store so the
- * app works offline.  When Supabase is configured, any branding saved by the
- * Admin is broadcast via a Realtime channel so every connected device updates
- * instantly without a restart.
+ * colour, app name) across all three roles.
+ *
+ * Priority order:
+ *   1. Supabase Realtime broadcast (instant live update)
+ *   2. GET /api/admin-settings/public-branding (server-authoritative on mount)
+ *   3. AsyncStorage (offline cache)
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -25,6 +27,7 @@ export interface BrandingState {
   logoUrl:        string | null;
   primaryColor:   string | null;
   secondaryColor: string | null;
+  appName:        string | null;
 }
 
 interface BrandingContextType {
@@ -35,15 +38,42 @@ interface BrandingContextType {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY    = "stride_branding";
-const CHANNEL_NAME   = "stride:branding";
+const STORAGE_KEY     = "stride_branding";
+const CHANNEL_NAME    = "stride:branding";
 const BROADCAST_EVENT = "branding_updated";
 
 const DEFAULT_STATE: BrandingState = {
   logoUrl:        null,
   primaryColor:   null,
   secondaryColor: null,
+  appName:        null,
 };
+
+// ── Fetch public branding from API (no auth required) ────────────────────────
+
+async function fetchPublicBranding(orgId = 1): Promise<Partial<BrandingState>> {
+  try {
+    const domain = (process.env.EXPO_PUBLIC_DOMAIN as string | undefined);
+    const base   = domain ? `https://${domain}/api` : "/api";
+    const res    = await fetch(`${base}/admin-settings/public-branding?orgId=${orgId}`, {
+      method:  "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) return {};
+    const data = await res.json() as {
+      brand_primary_color?: string | null;
+      brand_logo_url?:      string | null;
+      brand_app_name?:      string | null;
+    };
+    return {
+      logoUrl:      data.brand_logo_url      ?? null,
+      primaryColor: data.brand_primary_color ?? null,
+      appName:      data.brand_app_name      ?? null,
+    };
+  } catch {
+    return {};
+  }
+}
 
 // ── Context ──────────────────────────────────────────────────────────────────
 
@@ -60,8 +90,6 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const channelRef = useRef<ReturnType<NonNullable<typeof supabase>["channel"]> | null>(null);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
   const applyAndPersist = useCallback(async (next: BrandingState) => {
     setBranding(next);
     try {
@@ -69,23 +97,42 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     } catch { /* localStorage may be blocked in some web iframe contexts */ }
   }, []);
 
-  // ── Load from AsyncStorage on mount ──────────────────────────────────────
+  // ── 1. Load AsyncStorage first (instant / offline), then fetch from API ───
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then(raw => {
-        if (raw) setBranding(JSON.parse(raw) as BrandingState);
-      })
-      .catch(() => {})
-      .finally(() => setIsLoaded(true));
-  }, []);
+    let mounted = true;
+    (async () => {
+      // Load cache first
+      let cached: BrandingState | null = null;
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          cached = JSON.parse(raw) as BrandingState;
+          if (mounted) setBranding(cached);
+        }
+      } catch { /* ignore */ }
+      if (mounted) setIsLoaded(true);
 
-  // ── Supabase Realtime — subscribe to branding broadcasts ─────────────────
+      // Then hydrate from server (best-effort, no auth needed)
+      const remote = await fetchPublicBranding(1);
+      if (mounted && Object.keys(remote).length > 0) {
+        const merged: BrandingState = {
+          logoUrl:        remote.logoUrl        ?? cached?.logoUrl        ?? null,
+          primaryColor:   remote.primaryColor   ?? cached?.primaryColor   ?? null,
+          secondaryColor: remote.secondaryColor ?? cached?.secondaryColor ?? null,
+          appName:        remote.appName        ?? cached?.appName        ?? null,
+        };
+        await applyAndPersist(merged);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [applyAndPersist]);
+
+  // ── 2. Supabase Realtime — subscribe to branding broadcasts ──────────────
 
   useEffect(() => {
     if (!supabase) return;
     const sb = supabase;
-
     const ch = sb.channel(CHANNEL_NAME);
     channelRef.current = ch;
 
@@ -93,7 +140,6 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
       "broadcast",
       { event: BROADCAST_EVENT },
       ({ payload }: { payload: BrandingState }) => {
-        // Received from another device / admin session — apply immediately
         applyAndPersist(payload).catch(() => {});
       }
     ).subscribe();
@@ -118,7 +164,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
           event:   BROADCAST_EVENT,
           payload: next,
         });
-      } catch { /* Supabase not configured — graceful degradation */ }
+      } catch { /* Supabase not configured */ }
     }
   }, [branding, applyAndPersist]);
 

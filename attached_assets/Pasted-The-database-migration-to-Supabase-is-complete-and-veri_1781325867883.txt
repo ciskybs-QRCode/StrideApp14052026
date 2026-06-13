@@ -1,0 +1,30 @@
+The database migration to Supabase is complete and verified. Now we must immediately build the core business logic and clean up the UI across all roles (Admin, Operator, Parent). Execute the following implementations with absolute precision, keeping all visual elements strictly within the viewport boundaries (no overflowing layouts).
+
+### TASK 1: Global Branding & UI Cleanup
+1. Global Branding Sync: Ensure that the application logo and color scheme dynamically match the branding setup defined by the Admin in the settings page. This branding must apply to the top-left logo and theme colors across ALL roles (Admin, Operator, Parent).
+2. Operator Dashboard Cleanup: 
+   - Remove the hardcoded "Stride" logo from the top left.
+   - Rename the "Dashboard" page to "Home" and update its icon in the bottom navigation bar.
+   - The "Report Absence" button must ONLY be visible for the logged-in operator's profile and their linked children. Remove the global absence button for all members.
+3. Settings/Payroll UI: In the Operator settings under "Payroll & Earnings", change the header to just "Payroll" (remove "Admin & Payroll"). Reduce font sizes slightly to fix layout overflow/clipping. Display the Dynamic Organization Name (set by the admin) beneath it.
+
+### TASK 2: Advanced QR Code Check-In Logic
+Modify the QR code scanning sequence to enforce the following payment and status checks in real-time:
+1. Validity Check: Upon scanning, verify if the member's payment is active or expired.
+2. Expired Payment (Grace Period): If expired, display a reminder message. Check if the Admin enabled the "Single Grace Entry" option. If true, allow entry ONLY for this session and flag future entries as blocked.
+3. Severely Expired: If expired beyond the grace limit, display a block message on the operator's scanner and a "Contact Administration" prompt on the parent's device presentation screen.
+4. Suspended/Blocked Status: If a member or their child has been manually "Suspended/Blocked" by an Admin (e.g., behavioral issues), the QR scan must immediately return a "SUSPENDED" status message to both the operator and parent.
+5. Anti-Re-registration: The system must index and block the phone, email, first name, and last name of blocked individuals to prevent them from creating new accounts or re-registering under a duplicate profile.
+
+### TASK 3: Operator Payroll & PDF Invoice Generation
+1. Operator Bank Details: Create a section in the Operator settings where operators/teachers/volunteers can securely input and save their bank details for payouts.
+2. PDF Invoice Generation: Build a utility for operators to generate a weekly/bi-weekly/monthly breakdown PDF. The PDF must itemize: Date, Class Type, Hours Worked, Unit Cost per Hour, Subtotal per Day, and Final Total. Once generated, this invoice is automatically submitted to the Admin.
+3. Admin Payout Dashboard: Create an Admin view to display pending operator invoices and payout notifications. Add an Admin setting to configure organization-wide payout frequencies (Weekly, Bi-weekly, Monthly). Trigger automated system reminders to the Admin 1 day before and on the exact day of the scheduled payout. Payout status should update upon bank confirmation.
+
+### TASK 4: Reimbursement Request System
+1. Multi-Role Submission: Allow Admins, Operators, and Parents to submit expense reimbursement requests (e.g., purchasing association materials).
+2. Receipt Uploads: Users must be able to upload a file link (Google Drive/Dropbox), a JPG, or a PDF containing the official receipt.
+3. Admin Control Threshold: Provide a setting in the Admin panel to define a monetary threshold above which a receipt upload is strictly mandatory.
+4. Notification Pipeline: Trigger real-time notifications to the submitting operator or parent when an Admin approves, rejects, or officially pays out a reimbursement request.
+
+Execute these tasks sequentially. Verify type safety across all modified routes, update Firestore/Postgres queries via the pooler, and ensure the server restarts cleanly without breaking existing sessions.

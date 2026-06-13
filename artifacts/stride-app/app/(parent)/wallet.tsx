@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
+import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
@@ -68,6 +69,7 @@ export default function WalletScreen() {
   const { payments, bookings, courses } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   // ── Bank details state ───────────────────────────────────────────────────────
   const [bankDetails, setBankDetails]       = useState<BankDetails | null>(null);
@@ -259,6 +261,21 @@ export default function WalletScreen() {
             </Text>
           </View>
         )}
+
+        {/* ── Reimbursements quick link ── */}
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/reimbursements" as never); }}
+          style={[styles.reimbCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <View style={[styles.reimbIcon, { backgroundColor: "#FEF3C710" }]}>
+            <Ionicons name="receipt-outline" size={22} color="#F59E0B" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.reimbTitle, { color: colors.foreground }]}>Rimborsi</Text>
+            <Text style={[styles.reimbSub, { color: colors.mutedForeground }]}>Invia e monitora le tue richieste di rimborso</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
 
         {/* Active Subscriptions */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Active Subscriptions</Text>
@@ -545,6 +562,10 @@ const styles = StyleSheet.create({
   successBannerText: { flex: 1, fontSize: 13, fontWeight: "600", lineHeight: 18 },
 
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
+  reimbCard:    { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 16, gap: 12 },
+  reimbIcon:    { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  reimbTitle:   { fontSize: 14, fontWeight: "700" },
+  reimbSub:     { fontSize: 12, marginTop: 2 },
   subCard:      { flexDirection: "column", borderRadius: 16, padding: 16, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
   subCardLeft:  { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
   subIcon:      { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },

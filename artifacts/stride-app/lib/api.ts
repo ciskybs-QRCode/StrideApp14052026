@@ -699,6 +699,20 @@ export const api = {
   updateAdminSettings: (data: Partial<ApiAdminSettings>) =>
     request<ApiAdminSettings>("PUT", "/admin-settings", data),
 
+  // Operator bank details
+  getBankDetails: () =>
+    request<{ accountName: string | null; iban: string | null; swift: string | null; notes: string | null }>("GET", "/operator-bank-details"),
+  saveBankDetails: (data: { accountName?: string; iban?: string; swift?: string; notes?: string }) =>
+    request<{ ok: boolean }>("PUT", "/operator-bank-details", data),
+
+  // Operator invoices
+  getOperatorInvoices: () =>
+    request<ApiOperatorInvoice[]>("GET", "/operator-invoices"),
+  submitOperatorInvoice: (data: { periodLabel: string; periodMonth: string; totalCents: number; lineItems: unknown[] }) =>
+    request<ApiOperatorInvoice>("POST", "/operator-invoices", data),
+  updateOperatorInvoice: (id: number, data: { status?: string; adminNote?: string }) =>
+    request<ApiOperatorInvoice>("PATCH", `/operator-invoices/${id}`, data),
+
   // Blacklist
   getBlacklist: async (): Promise<ApiBlacklistEntry[]> =>
     (await isDemoSession()) ? [...DEMO_BLACKLIST] : request<ApiBlacklistEntry[]>("GET", "/blacklist"),
@@ -1409,6 +1423,20 @@ export interface ApiOperatorEarnings {
   total_earnings_cents: number;
 }
 
+export interface ApiOperatorInvoice {
+  id: number;
+  organization_id: number;
+  operator_id: number;
+  period_label: string;
+  period_month: string;
+  total_cents: number;
+  status: "pending" | "approved" | "paid" | "rejected";
+  line_items: Array<{ description: string; units: number; rate_cents: number; amount_cents: number }>;
+  admin_note: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+}
+
 export interface ApiPrivateNotification {
   id: number;
   organization_id: number;
@@ -1463,6 +1491,14 @@ export interface ApiAdminSettings {
   organization_id: number;
   allow_one_time_grace_access: boolean;
   grace_used_child_ids: number[];
+  cascade_auto_trigger?: boolean;
+  social_buffer_minutes?: number;
+  brand_primary_color?: string | null;
+  brand_logo_url?: string | null;
+  brand_app_name?: string | null;
+  payout_frequency?: "weekly" | "biweekly" | "monthly";
+  reimbursement_receipt_threshold_cents?: number;
+  payout_next_date?: string | null;
   updated_at?: string;
 }
 

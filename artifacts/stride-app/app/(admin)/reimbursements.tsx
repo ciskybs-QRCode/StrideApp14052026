@@ -237,11 +237,22 @@ export default function AdminReimbursementsScreen() {
   const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
   const [loadError, setLoadError] = useState(false);
 
-  // Load receipt threshold from AsyncStorage (set in fee-settings)
+  // Load receipt threshold from API (server-authoritative) with AsyncStorage as fallback
   useEffect(() => {
-    AsyncStorage.getItem("stride_reimbursement_threshold").then(raw => {
-      if (raw) { try { setReceiptThresholdCents(Number(raw)); } catch { /* ignore */ } }
-    }).catch(() => {});
+    api.getAdminSettings().then(s => {
+      if (s?.reimbursement_receipt_threshold_cents != null) {
+        setReceiptThresholdCents(s.reimbursement_receipt_threshold_cents);
+        AsyncStorage.setItem("stride_reimbursement_threshold", String(s.reimbursement_receipt_threshold_cents)).catch(() => {});
+      } else {
+        AsyncStorage.getItem("stride_reimbursement_threshold").then(raw => {
+          if (raw) { try { setReceiptThresholdCents(Number(raw)); } catch { /* ignore */ } }
+        }).catch(() => {});
+      }
+    }).catch(() => {
+      AsyncStorage.getItem("stride_reimbursement_threshold").then(raw => {
+        if (raw) { try { setReceiptThresholdCents(Number(raw)); } catch { /* ignore */ } }
+      }).catch(() => {});
+    });
   }, []);
 
   const load = useCallback(async () => {

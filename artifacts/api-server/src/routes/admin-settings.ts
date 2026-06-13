@@ -5,7 +5,23 @@ import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
-// GET /admin-settings — fetch (or auto-create) org settings
+// ── GET /admin-settings/public-branding — no auth required ───────────────────
+// Returns only non-sensitive branding fields (logo, colors, app name).
+router.get("/admin-settings/public-branding", async (req, res) => {
+  const orgId = parseInt((req.query.orgId as string) ?? "1", 10) || 1;
+  try {
+    const { rows } = await pool.query(
+      `SELECT brand_primary_color, brand_logo_url, brand_app_name
+       FROM admin_settings WHERE organization_id = $1`,
+      [orgId],
+    );
+    res.json(rows[0] ?? { brand_primary_color: null, brand_logo_url: null, brand_app_name: null });
+  } catch {
+    res.json({ brand_primary_color: null, brand_logo_url: null, brand_app_name: null });
+  }
+});
+
+// ── GET /admin-settings ───────────────────────────────────────────────────────
 router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), async (req, res) => {
   const user  = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
@@ -18,19 +34,24 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
 
     if (rows.length === 0) {
       res.json({
-        organization_id:             orgId,
-        allow_one_time_grace_access: false,
-        grace_used_child_ids:        [],
-        cascade_auto_trigger:        false,
-        social_buffer_minutes:       30,
+        organization_id:                       orgId,
+        allow_one_time_grace_access:           false,
+        grace_used_child_ids:                  [],
+        cascade_auto_trigger:                  false,
+        social_buffer_minutes:                 30,
+        payout_frequency:                      "monthly",
+        reimbursement_receipt_threshold_cents: 5000,
+        payout_next_date:                      null,
       });
       return;
     }
 
     const row = rows[0] as Record<string, unknown>;
-    // Ensure cascade_auto_trigger is always present (column may not exist on older rows)
     if (!("cascade_auto_trigger"    in row)) row.cascade_auto_trigger    = false;
     if (!("social_buffer_minutes"   in row)) row.social_buffer_minutes   = 30;
+    if (!("payout_frequency"        in row)) row.payout_frequency        = "monthly";
+    if (!("reimbursement_receipt_threshold_cents" in row)) row.reimbursement_receipt_threshold_cents = 5000;
+    if (!("payout_next_date"        in row)) row.payout_next_date        = null;
     res.json(row);
   } catch (err) {
     req.log.error(err, "admin-settings GET: error");
@@ -38,13 +59,12 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
   }
 });
 
-// PUT /admin-settings — upsert org settings
+// ── PUT /admin-settings ───────────────────────────────────────────────────────
 router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res) => {
   const user  = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
   const body  = req.body as Record<string, unknown>;
 
-  // Build dynamic SET clause from body, plus fixed fields
   const allowed = [
     "allow_one_time_grace_access",
     "grace_used_child_ids",
@@ -57,6 +77,9 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "brand_primary_color",
     "brand_logo_url",
     "brand_app_name",
+    "payout_frequency",
+    "reimbursement_receipt_threshold_cents",
+    "payout_next_date",
   ];
 
   const setClauses: string[] = ["updated_at = NOW()"];
@@ -81,6 +104,8 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
 
     const row = rows[0] as Record<string, unknown>;
     if (!("cascade_auto_trigger" in row)) row.cascade_auto_trigger = false;
+    if (!("payout_frequency"     in row)) row.payout_frequency     = "monthly";
+    if (!("reimbursement_receipt_threshold_cents" in row)) row.reimbursement_receipt_threshold_cents = 5000;
 
     req.log.info({ orgId, settings: body }, "admin settings updated");
     res.json(row);
