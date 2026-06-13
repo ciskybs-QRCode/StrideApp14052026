@@ -17,20 +17,18 @@ function toSlug(name: string): string {
 
 // ── GET /auth/system-status ───────────────────────────────────────────────────
 // Public. Returns { configured, userCount, orgName }.
-// NOTE: system_configured is stored in the local pg system_config table (not in
-// Supabase) so the wizard works regardless of the Supabase schema state.
+// system_configured is stored in the Supabase system_config table (single source of truth).
 router.get("/auth/system-status", async (_req, res) => {
   try {
-    const [{ count: userCount }, { data: orgs }, configResult] = await Promise.all([
+    const [{ count: userCount }, { data: orgs }, { data: configRows }] = await Promise.all([
       supabase.from("users").select("*", { count: "exact", head: true }),
-      // Omit system_configured — that column may not exist in Supabase.
       supabase.from("organizations").select("id, name, trial_ends_at").limit(1),
-      pool.query("SELECT value FROM system_config WHERE key = 'system_configured' LIMIT 1").catch(() => ({ rows: [] as { value: string }[] })),
+      supabase.from("system_config").select("value").eq("key", "system_configured").limit(1),
     ]);
     const org            = orgs?.[0];
     const trialEndsAt    = (org as { trial_ends_at?: string } | undefined)?.trial_ends_at ?? null;
     const trialExpired   = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
-    const configured     = (configResult as { rows: { value: string }[] }).rows[0]?.value === "true";
+    const configured     = (configRows as { value: string }[] | null)?.[0]?.value === "true";
     res.json({
       configured,
       userCount:          userCount ?? 0,
@@ -563,13 +561,11 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
     }
   }
 
-  // Mark the system as configured in the local pg database (reliable: works
-  // regardless of whether the Supabase organizations table has the column).
-  await pool.query(
-    `INSERT INTO system_config (key, value, updated_at)
-     VALUES ('system_configured', 'true', NOW())
-     ON CONFLICT (key) DO UPDATE SET value = 'true', updated_at = NOW()`,
-  ).catch(e => req.log.warn({ e }, "org configure: system_config upsert failed — non-fatal"));
+  // Mark the system as configured in Supabase (single source of truth).
+  await supabase.from("system_config").upsert(
+    { key: "system_configured", value: "true", updated_at: new Date().toISOString() },
+    { onConflict: "key" },
+  ).then(({ error: e }) => { if (e) req.log.warn({ e }, "org configure: system_config upsert failed — non-fatal"); });
 
   if (studios?.length) {
     for (const s of studios) {
