@@ -362,57 +362,13 @@ export default function AssociationsScreen() {
   const expiringCount = orgs.filter(o => { const d = daysUntil(o.trial_ends_at); return d >= 0 && d <= 30; }).length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1E3A8A" }}>
-      <ScreenHeader title="Associations" />
-      <View style={[styles.container, { flex: 1 }]}>
-
-        {/* ── HEADER ── */}
-        <View
-          style={[
-            styles.header,
-            {
-              paddingTop: 12,
-            },
-          ]}
-        >
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.headerEyebrow}>PLATFORM CONTROL</Text>
-              <Text style={styles.headerTitle}>Associations</Text>
-            </View>
-            <View style={styles.headerActions}>
-              <Pressable style={styles.headerIconBtn} onPress={load}>
-                <Ionicons name="refresh-outline" size={20} color="#FBBF24" />
-              </Pressable>
-              <Pressable style={styles.headerIconBtn} onPress={confirmLogout}>
-                <Ionicons name="log-out-outline" size={20} color="#FBBF24" />
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Stats row */}
-          <View style={styles.statsRow}>
-            <View style={styles.statChip}>
-              <Ionicons name="business-outline" size={13} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.statText}>{orgs.length} tenants</Text>
-            </View>
-            {expiredCount > 0 && (
-              <View style={[styles.statChip, { backgroundColor: "rgba(220,38,38,0.25)" }]}>
-                <Ionicons name="close-circle-outline" size={13} color="#FCA5A5" />
-                <Text style={[styles.statText, { color: "#FCA5A5" }]}>{expiredCount} expired</Text>
-              </View>
-            )}
-            {expiringCount > 0 && (
-              <View style={[styles.statChip, { backgroundColor: "rgba(217,119,6,0.25)" }]}>
-                <Ionicons name="warning-outline" size={13} color="#FCD34D" />
-                <Text style={[styles.statText, { color: "#FCD34D" }]}>{expiringCount} expiring</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* ── BODY ── */}
-        <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
+    <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
+      <ScreenHeader
+        title="Associations"
+        subtitle={`${orgs.length} school${orgs.length !== 1 ? "s" : ""}`}
+        light
+      />
+      <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
           {loading ? (
             <View style={styles.centeredState}>
               <ActivityIndicator size="large" color="#1E3A8A" />
@@ -434,6 +390,22 @@ export default function AssociationsScreen() {
               ]}
               showsVerticalScrollIndicator={false}
             >
+              {(expiredCount > 0 || expiringCount > 0) && (
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                  {expiredCount > 0 && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#FEF2F2", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}>
+                      <Ionicons name="close-circle-outline" size={13} color="#DC2626" />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#DC2626" }}>{expiredCount} expired</Text>
+                    </View>
+                  )}
+                  {expiringCount > 0 && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#FFFBEB", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}>
+                      <Ionicons name="warning-outline" size={13} color="#D97706" />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#D97706" }}>{expiringCount} expiring soon</Text>
+                    </View>
+                  )}
+                </View>
+              )}
               <Text style={styles.sectionLabel}>ACTIVE ASSOCIATIONS ({orgs.length})</Text>
 
               {orgs.length === 0 ? (
@@ -474,7 +446,6 @@ export default function AssociationsScreen() {
             </ScrollView>
           )}
         </View>
-      </View>
 
       {/* ── EXTEND MODAL ── */}
       <ExtendModal

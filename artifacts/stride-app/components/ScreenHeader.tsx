@@ -65,7 +65,7 @@ export function ScreenHeader({
         styles.outer,
         {
           backgroundColor: bg,
-          paddingTop: insets.top + (Platform.OS === "web" ? 0 : 0),
+          paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 44 : 0),
           borderBottomColor: light ? colors.border : "transparent",
           borderBottomWidth: light ? 1 : 0,
         },
