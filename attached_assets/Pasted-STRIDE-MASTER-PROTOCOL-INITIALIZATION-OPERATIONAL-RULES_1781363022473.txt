@@ -1,0 +1,44 @@
+STRIDE MASTER PROTOCOL — INITIALIZATION
+OPERATIONAL RULES:
+
+VISUAL GUIDELINES: All UI/UX modifications must be strictly limited to the brand's color palette: Navy Blue (#1E3A8A) and Gold/Yellow (#D4AF37).
+
+LANGUAGE COMPLIANCE: Every label, placeholder, tooltip, or element added/modified must be in English exclusively.
+
+CODE INTEGRITY: This is a Graphic-Only Directive. NO functional code, logic, or backend architecture can be touched, modified, or refactored without explicit written authorization for each specific instance.
+
+MILITARY PRECISION: Responses must be clear, concise, and structured. No fluff.
+
+MISSION DIRECTIVE: EMERGENCY UI REPAIR
+The current Super Admin interface is critically flawed due to ignored instructions and destructive design choices. This mission is a total sanitization and restoration of logical, professional aesthetics. Execute the following modifications with absolute precision.
+
+1. MAIN SUPER ADMIN DASHBOARD (Image 1 Context) — CLEANUP & RESTORATION:
+
+Header Sanitization: Permanently remove the blue bar and ALL tiny icons from the very top header (World, Refresh, Logout icons must be deleted from this view). Keep only the minimal white bar and the "Super Admin" page title, centrally aligned.
+
+Primary Role Switcher Deployment: Implement the official, standardized, prominent card-style Role Switcher component (like the one used in Parent/Operator/Admin roles) and place it as the first element at the top of the main screen content area (below the header title). It must NOT be a tiny icon, but a full card.
+
+Metrics Restoration: Immediately restore the four statistical data cards: Schools, Active, Members, Health (the ones with the large numbers like '3' and '0' that were previously visible and accepted). Place them immediately below the new standardized switcher.
+
+Management Console Menu Redundancy Fix: The menu list should now only contain three distinct, clickable cards with professional, minimalist icons:
+
+TENANT MANAGEMENT (Opens devoted sub-page)
+
+USER ADMINISTRATION (Opens devoted sub-page)
+
+RECENT ACTIVITY (Opens devoted sub-page)
+
+Permanently remove "Owner Settings" as it is redundant and visually inconsistent.
+
+Permanently remove the "Account" section card from this main console list.
+
+2. ACCOUNT & CREDENTIALS CONSOLIDATION (Images 2 & 4 Context) — MERGE:
+We must eliminate the redundancy between the "Owner Settings" and "Account Settings" concepts.
+
+Keep the single "Account Settings" button in the lower section of the main dashboard.
+
+Create a Consolidated Account Page: When "Account Settings" is clicked, it opens a sub-page based on the clean structure of reference image_2.
+
+Integrate Credentials: On this consolidated Account sub-page, integrate the platform-level credential forms (image_4 forms) alongside the personal email/password update forms. Create distinct sections within the page: "Personal Security" and "Platform Credentials".
+
+Critique Removal (Image 2): On this Account sub-page, keep only the specific forms for Change Email, Change Password, and Sign Out. ZERO "Delete Account" button or mention. Remove the ugly role switcher card currently visible in image_2.

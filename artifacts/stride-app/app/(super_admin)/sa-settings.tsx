@@ -1,53 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator, Alert, Pressable, ScrollView,
   StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useAuth } from "@/context/AuthContext";
-import { updateOwnerEmail, updateOwnerPassword, setToken } from "@/lib/api";
+import {
+  getOwnerSettings, updateOwnerEmail, updateOwnerPassword, setToken,
+} from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
-// ── Settings Row ──────────────────────────────────────────────────────────────
-
-function SettingsRow({
-  icon, label, subtitle, onPress, danger = false, rightLabel,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  subtitle?: string;
-  onPress: () => void;
-  danger?: boolean;
-  rightLabel?: string;
-}) {
-  return (
-    <Pressable
-      style={({ pressed }) => [sr.row, { opacity: pressed ? 0.75 : 1 }]}
-      onPress={onPress}
-    >
-      <View style={[sr.iconBox, danger && { backgroundColor: "#FEF2F2" }]}>
-        <Ionicons name={icon} size={20} color={danger ? "#DC2626" : "#1E3A8A"} />
-      </View>
-      <View style={sr.text}>
-        <Text style={[sr.label, danger && { color: "#DC2626" }]}>{label}</Text>
-        {subtitle ? <Text style={sr.subtitle}>{subtitle}</Text> : null}
-      </View>
-      {rightLabel ? <Text style={sr.rightLabel}>{rightLabel}</Text> : <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />}
-    </Pressable>
-  );
-}
-const sr = StyleSheet.create({
-  row:     { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: "#FFF", borderRadius: 14, marginBottom: 8, borderWidth: 1, borderColor: "#E2E8F0" },
-  iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  text:    { flex: 1 },
-  label:   { fontSize: 15, fontWeight: "700", color: "#111827" },
-  subtitle:{ fontSize: 12, color: "#6B7280", marginTop: 1 },
-  rightLabel: { fontSize: 13, fontWeight: "700", color: "#1E3A8A" },
-});
-
-// ── Inline form cards ─────────────────────────────────────────────────────────
+// ── Expand-to-reveal form card ────────────────────────────────────────────────
 
 function FormCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -58,29 +22,165 @@ function FormCard({ title, children }: { title: string; children: React.ReactNod
   );
 }
 const fc = StyleSheet.create({
-  card:  { backgroundColor: "#FFF", borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#E2E8F0" },
-  title: { fontSize: 11, fontWeight: "800", letterSpacing: 1, color: "#9CA3AF", marginBottom: 14 },
+  card:  { backgroundColor: "#F0F4FF", borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: "#D1D9F0" },
+  title: { fontSize: 10, fontWeight: "800", letterSpacing: 1, color: "#6B7BA4", marginBottom: 12 },
+});
+
+// ── Field with left icon ──────────────────────────────────────────────────────
+
+function FieldRow({ icon, ...props }: { icon: keyof typeof Ionicons.glyphMap } & React.ComponentProps<typeof TextInput>) {
+  return (
+    <View style={fld.row}>
+      <Ionicons name={icon} size={15} color="#6B7BA4" />
+      <TextInput style={fld.input} placeholderTextColor="#9CA3AF" {...props} />
+    </View>
+  );
+}
+const fld = StyleSheet.create({
+  row:   { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFF", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 8 },
+  input: { flex: 1, fontSize: 14, color: "#1E3A8A", padding: 0 },
+});
+
+// ── Feedback banner ───────────────────────────────────────────────────────────
+
+function Msg({ msg }: { msg: { ok: boolean; text: string } }) {
+  return (
+    <View style={[msgS.box, { backgroundColor: msg.ok ? "#ECFDF5" : "#FEF2F2" }]}>
+      <Ionicons name={msg.ok ? "checkmark-circle-outline" : "alert-circle-outline"} size={14} color={msg.ok ? "#059669" : "#EF4444"} />
+      <Text style={[msgS.text, { color: msg.ok ? "#059669" : "#EF4444" }]}>{msg.text}</Text>
+    </View>
+  );
+}
+const msgS = StyleSheet.create({
+  box:  { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 8, padding: 10, marginBottom: 10 },
+  text: { fontSize: 12, flex: 1 },
+});
+
+// ── Save button ───────────────────────────────────────────────────────────────
+
+function SaveBtn({ label, onPress, loading }: { label: string; onPress: () => void; loading: boolean }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [svB.btn, { opacity: pressed || loading ? 0.7 : 1 }]}
+      onPress={onPress}
+      disabled={loading}
+    >
+      {loading
+        ? <ActivityIndicator color="#FFF" size="small" />
+        : <Text style={svB.text}>{label}</Text>}
+    </Pressable>
+  );
+}
+const svB = StyleSheet.create({
+  btn:  { backgroundColor: "#1E3A8A", borderRadius: 10, height: 44, alignItems: "center", justifyContent: "center", marginTop: 4 },
+  text: { color: "#FFF", fontWeight: "700", fontSize: 14, letterSpacing: 0.5 },
+});
+
+// ── Section header ────────────────────────────────────────────────────────────
+
+function SectionHead({ label }: { label: string }) {
+  return <Text style={sh.label}>{label}</Text>;
+}
+const sh = StyleSheet.create({
+  label: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#9CA3AF", marginBottom: 10, marginTop: 6 },
 });
 
 // ── Account Settings Screen ───────────────────────────────────────────────────
 
 export default function SASettingsScreen() {
-  const { user, logout } = useAuth();
+  const { user, isOwner, logout } = useAuth();
 
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [showPwForm,    setShowPwForm]    = useState(false);
+  // ── Platform owner email (for owner credential section) ────────────────────
+  const [ownerEmail, setOwnerEmail] = useState(user?.email ?? "");
+  useEffect(() => {
+    if (!isOwner()) return;
+    getOwnerSettings().then(s => setOwnerEmail(s.email)).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Email form
-  const [newEmail,    setNewEmail]    = useState("");
-  const [emailPw,     setEmailPw]     = useState("");
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailMsg,    setEmailMsg]    = useState<{ ok: boolean; text: string } | null>(null);
+  // ── Personal security state ────────────────────────────────────────────────
+  const [persEmail,    setPersEmail]    = useState("");
+  const [persEmailPw,  setPersEmailPw]  = useState("");
+  const [persEmailSav, setPersEmailSav] = useState(false);
+  const [persEmailMsg, setPersEmailMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // Password form
-  const [curPw,    setCurPw]    = useState("");
-  const [newPw,    setNewPw]    = useState("");
-  const [pwSaving, setPwSaving] = useState(false);
-  const [pwMsg,    setPwMsg]    = useState<{ ok: boolean; text: string } | null>(null);
+  const [persCurPw,  setPersCurPw]  = useState("");
+  const [persNewPw,  setPersNewPw]  = useState("");
+  const [persPwSav,  setPersPwSav]  = useState(false);
+  const [persPwMsg,  setPersPwMsg]  = useState<{ ok: boolean; text: string } | null>(null);
+
+  // ── Platform credentials state (owner only) ────────────────────────────────
+  const [platEmail,    setPlatEmail]    = useState("");
+  const [platEmailPw,  setPlatEmailPw]  = useState("");
+  const [platEmailSav, setPlatEmailSav] = useState(false);
+  const [platEmailMsg, setPlatEmailMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const [platCurPw,  setPlatCurPw]  = useState("");
+  const [platNewPw,  setPlatNewPw]  = useState("");
+  const [platPwSav,  setPlatPwSav]  = useState(false);
+  const [platPwMsg,  setPlatPwMsg]  = useState<{ ok: boolean; text: string } | null>(null);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
+  const handlePersEmail = async () => {
+    if (!persEmail.trim() || !persEmailPw) { setPersEmailMsg({ ok: false, text: "Enter new email and current password." }); return; }
+    setPersEmailSav(true); setPersEmailMsg(null);
+    try {
+      const res = await updateOwnerEmail(persEmail.trim(), persEmailPw);
+      await setToken(res.token);
+      setOwnerEmail(res.email);
+      setPersEmail(""); setPersEmailPw("");
+      setPersEmailMsg({ ok: true, text: "Email updated successfully." });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: unknown) {
+      setPersEmailMsg({ ok: false, text: (e as Error).message ?? "Failed to update email." });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally { setPersEmailSav(false); }
+  };
+
+  const handlePersPassword = async () => {
+    if (!persCurPw || !persNewPw) { setPersPwMsg({ ok: false, text: "Please fill in both password fields." }); return; }
+    setPersPwSav(true); setPersPwMsg(null);
+    try {
+      await updateOwnerPassword(persCurPw, persNewPw);
+      setPersCurPw(""); setPersNewPw("");
+      setPersPwMsg({ ok: true, text: "Password updated successfully." });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: unknown) {
+      setPersPwMsg({ ok: false, text: (e as Error).message ?? "Failed to update password." });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally { setPersPwSav(false); }
+  };
+
+  const handlePlatEmail = async () => {
+    if (!platEmail.trim() || !platEmailPw) { setPlatEmailMsg({ ok: false, text: "Enter new email and current password." }); return; }
+    setPlatEmailSav(true); setPlatEmailMsg(null);
+    try {
+      const res = await updateOwnerEmail(platEmail.trim(), platEmailPw);
+      await setToken(res.token);
+      setOwnerEmail(res.email);
+      setPlatEmail(""); setPlatEmailPw("");
+      setPlatEmailMsg({ ok: true, text: `Platform email updated to ${res.email}.` });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: unknown) {
+      setPlatEmailMsg({ ok: false, text: (e as Error).message ?? "Failed to update platform email." });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally { setPlatEmailSav(false); }
+  };
+
+  const handlePlatPassword = async () => {
+    if (!platCurPw || !platNewPw) { setPlatPwMsg({ ok: false, text: "Please fill in both password fields." }); return; }
+    setPlatPwSav(true); setPlatPwMsg(null);
+    try {
+      await updateOwnerPassword(platCurPw, platNewPw);
+      setPlatCurPw(""); setPlatNewPw("");
+      setPlatPwMsg({ ok: true, text: "Platform password updated successfully." });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: unknown) {
+      setPlatPwMsg({ ok: false, text: (e as Error).message ?? "Failed to update platform password." });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally { setPlatPwSav(false); }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -102,7 +202,7 @@ export default function SASettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Account Settings" subtitle="Profile & security" light />
+      <ScreenHeader title="Account Settings" subtitle="Credentials & security" light />
 
       <ScrollView
         style={styles.scroll}
@@ -110,7 +210,7 @@ export default function SASettingsScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Identity */}
+        {/* Identity card */}
         <View style={styles.identityCard}>
           <View style={styles.avatarRing}>
             <Ionicons name="shield-checkmark" size={28} color="#1E3A8A" />
@@ -121,123 +221,101 @@ export default function SASettingsScreen() {
           </View>
         </View>
 
-        {/* Role switcher */}
-        <Text style={styles.sectionLabel}>ROLE ACCESS</Text>
-        <RoleSwitcherRow />
+        {/* ── PERSONAL SECURITY ───────────────────────────────────────────── */}
+        <SectionHead label="PERSONAL SECURITY" />
 
-        {/* Security */}
-        <Text style={styles.sectionLabel}>SECURITY</Text>
+        <FormCard title="CHANGE EMAIL">
+          <FieldRow
+            icon="mail-outline"
+            value={persEmail}
+            onChangeText={setPersEmail}
+            placeholder="New email address"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <FieldRow
+            icon="lock-closed-outline"
+            value={persEmailPw}
+            onChangeText={setPersEmailPw}
+            placeholder="Current password (to confirm)"
+            secureTextEntry
+          />
+          {persEmailMsg && <Msg msg={persEmailMsg} />}
+          <SaveBtn label="Update Email" onPress={() => void handlePersEmail()} loading={persEmailSav} />
+        </FormCard>
 
-        <SettingsRow
-          icon="mail-outline"
-          label="Change Email"
-          subtitle="Update your account email address"
-          onPress={() => { setShowEmailForm(v => !v); setEmailMsg(null); }}
-        />
+        <FormCard title="CHANGE PASSWORD">
+          <FieldRow
+            icon="lock-closed-outline"
+            value={persCurPw}
+            onChangeText={setPersCurPw}
+            placeholder="Current password"
+            secureTextEntry
+          />
+          <FieldRow
+            icon="lock-open-outline"
+            value={persNewPw}
+            onChangeText={setPersNewPw}
+            placeholder="New password (min 8 characters)"
+            secureTextEntry
+          />
+          {persPwMsg && <Msg msg={persPwMsg} />}
+          <SaveBtn label="Update Password" onPress={() => void handlePersPassword()} loading={persPwSav} />
+        </FormCard>
 
-        {showEmailForm && (
-          <FormCard title="CHANGE EMAIL">
-            <TextInput
-              style={styles.field}
-              value={newEmail}
-              onChangeText={setNewEmail}
-              placeholder="New email address"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={[styles.field, { marginTop: 10 }]}
-              value={emailPw}
-              onChangeText={setEmailPw}
-              placeholder="Current password (to confirm)"
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry
-            />
-            {emailMsg && (
-              <View style={[styles.msgBox, { backgroundColor: emailMsg.ok ? "#ECFDF5" : "#FEF2F2" }]}>
-                <Ionicons name={emailMsg.ok ? "checkmark-circle-outline" : "alert-circle-outline"} size={14} color={emailMsg.ok ? "#059669" : "#EF4444"} />
-                <Text style={[styles.msgText, { color: emailMsg.ok ? "#059669" : "#EF4444" }]}>{emailMsg.text}</Text>
-              </View>
-            )}
-            <Pressable
-              style={({ pressed }) => [styles.saveBtn, { opacity: pressed || emailSaving ? 0.7 : 1 }]}
-              disabled={emailSaving}
-              onPress={async () => {
-                if (!newEmail.trim() || !emailPw) { setEmailMsg({ ok: false, text: "Enter new email and current password." }); return; }
-                setEmailSaving(true); setEmailMsg(null);
-                try {
-                  const result = await updateOwnerEmail(newEmail.trim(), emailPw);
-                  await setToken(result.token);
-                  setNewEmail(""); setEmailPw("");
-                  setEmailMsg({ ok: true, text: "Email updated successfully." });
-                  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                } catch (e: unknown) {
-                  setEmailMsg({ ok: false, text: (e as Error).message ?? "Failed to update email." });
-                  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                } finally { setEmailSaving(false); }
-              }}
-            >
-              {emailSaving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>Update Email</Text>}
-            </Pressable>
-          </FormCard>
+        {/* ── PLATFORM CREDENTIALS (owner only) ───────────────────────────── */}
+        {isOwner() && (
+          <>
+            <SectionHead label="PLATFORM CREDENTIALS" />
+
+            <View style={styles.ownerNote}>
+              <Ionicons name="key-outline" size={14} color="#1E3A8A" />
+              <Text style={styles.ownerNoteText}>Current platform email: <Text style={{ fontWeight: "900" }}>{ownerEmail}</Text></Text>
+            </View>
+
+            <FormCard title="PLATFORM OWNER EMAIL">
+              <FieldRow
+                icon="mail-outline"
+                value={platEmail}
+                onChangeText={setPlatEmail}
+                placeholder="New platform owner email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <FieldRow
+                icon="lock-closed-outline"
+                value={platEmailPw}
+                onChangeText={setPlatEmailPw}
+                placeholder="Current password (to confirm)"
+                secureTextEntry
+              />
+              {platEmailMsg && <Msg msg={platEmailMsg} />}
+              <SaveBtn label="Update Platform Email" onPress={() => void handlePlatEmail()} loading={platEmailSav} />
+            </FormCard>
+
+            <FormCard title="PLATFORM OWNER PASSWORD">
+              <FieldRow
+                icon="lock-closed-outline"
+                value={platCurPw}
+                onChangeText={setPlatCurPw}
+                placeholder="Current password"
+                secureTextEntry
+              />
+              <FieldRow
+                icon="lock-open-outline"
+                value={platNewPw}
+                onChangeText={setPlatNewPw}
+                placeholder="New password (min 8 characters)"
+                secureTextEntry
+              />
+              {platPwMsg && <Msg msg={platPwMsg} />}
+              <SaveBtn label="Update Platform Password" onPress={() => void handlePlatPassword()} loading={platPwSav} />
+            </FormCard>
+          </>
         )}
 
-        <SettingsRow
-          icon="lock-closed-outline"
-          label="Change Password"
-          subtitle="Update your login password"
-          onPress={() => { setShowPwForm(v => !v); setPwMsg(null); }}
-        />
-
-        {showPwForm && (
-          <FormCard title="CHANGE PASSWORD">
-            <TextInput
-              style={styles.field}
-              value={curPw}
-              onChangeText={setCurPw}
-              placeholder="Current password"
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry
-            />
-            <TextInput
-              style={[styles.field, { marginTop: 10 }]}
-              value={newPw}
-              onChangeText={setNewPw}
-              placeholder="New password (min 8 characters)"
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry
-            />
-            {pwMsg && (
-              <View style={[styles.msgBox, { backgroundColor: pwMsg.ok ? "#ECFDF5" : "#FEF2F2" }]}>
-                <Ionicons name={pwMsg.ok ? "checkmark-circle-outline" : "alert-circle-outline"} size={14} color={pwMsg.ok ? "#059669" : "#EF4444"} />
-                <Text style={[styles.msgText, { color: pwMsg.ok ? "#059669" : "#EF4444" }]}>{pwMsg.text}</Text>
-              </View>
-            )}
-            <Pressable
-              style={({ pressed }) => [styles.saveBtn, { opacity: pressed || pwSaving ? 0.7 : 1 }]}
-              disabled={pwSaving}
-              onPress={async () => {
-                if (!curPw || !newPw) { setPwMsg({ ok: false, text: "Please fill in both password fields." }); return; }
-                setPwSaving(true); setPwMsg(null);
-                try {
-                  await updateOwnerPassword(curPw, newPw);
-                  setCurPw(""); setNewPw("");
-                  setPwMsg({ ok: true, text: "Password updated successfully." });
-                  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                } catch (e: unknown) {
-                  setPwMsg({ ok: false, text: (e as Error).message ?? "Failed to update password." });
-                  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                } finally { setPwSaving(false); }
-              }}
-            >
-              {pwSaving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>Update Password</Text>}
-            </Pressable>
-          </FormCard>
-        )}
-
-        {/* Logout */}
-        <Text style={styles.sectionLabel}>SESSION</Text>
+        {/* ── SIGN OUT ─────────────────────────────────────────────────────── */}
+        <SectionHead label="SESSION" />
         <Pressable
           style={({ pressed }) => [styles.logoutBtn, { opacity: pressed ? 0.85 : 1 }]}
           onPress={handleLogout}
@@ -245,25 +323,22 @@ export default function SASettingsScreen() {
           <Ionicons name="log-out-outline" size={20} color="#1E3A8A" />
           <Text style={styles.logoutText}>Sign Out</Text>
         </Pressable>
+
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: "#F8FAFC" },
-  scroll:       { flex: 1 },
-  content:      { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 60 },
-  identityCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: "#E2E8F0" },
-  avatarRing:   { width: 52, height: 52, borderRadius: 16, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  userName:     { fontSize: 16, fontWeight: "800", color: "#111827" },
-  userEmail:    { fontSize: 12, color: "#6B7280", marginTop: 2 },
-  sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#9CA3AF", marginBottom: 10 },
-  field:        { backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 14, height: 52, fontSize: 15, color: "#111827" },
-  msgBox:       { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 8, padding: 10, marginTop: 10 },
-  msgText:      { fontSize: 12, flex: 1 },
-  saveBtn:      { backgroundColor: "#1E3A8A", borderRadius: 10, height: 44, alignItems: "center", justifyContent: "center", marginTop: 14 },
-  saveBtnText:  { color: "#FFF", fontWeight: "700", fontSize: 14, letterSpacing: 0.5 },
-  logoutBtn:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16, marginTop: 4 },
-  logoutText:   { fontSize: 16, fontWeight: "900", color: "#1E3A8A" },
+  container:     { flex: 1, backgroundColor: "#F8FAFC" },
+  scroll:        { flex: 1 },
+  content:       { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 60 },
+  identityCard:  { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "#E2E8F0" },
+  avatarRing:    { width: 52, height: 52, borderRadius: 16, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  userName:      { fontSize: 16, fontWeight: "800", color: "#111827" },
+  userEmail:     { fontSize: 12, color: "#6B7280", marginTop: 2 },
+  ownerNote:     { flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#EFF6FF", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 10, borderWidth: 1, borderColor: "#BFDBFE" },
+  ownerNoteText: { fontSize: 12, color: "#1E3A8A", flex: 1 },
+  logoutBtn:     { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16 },
+  logoutText:    { fontSize: 16, fontWeight: "900", color: "#1E3A8A" },
 });
