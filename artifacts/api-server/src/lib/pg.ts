@@ -2,12 +2,41 @@ import pg from "pg";
 
 const { Pool } = pg;
 
-// Development: Replit's internal PostgreSQL (fast, local, no network restrictions).
-// Production: set DATABASE_URL to the Supabase direct connection string in the
-// production environment secrets, where outbound PostgreSQL is not blocked.
-if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
+if (!process.env.SUPABASE_DB_URL) throw new Error("SUPABASE_DB_URL is required");
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+/**
+ * Supabase passwords may contain special chars ([, #, ]) that break URL
+ * parsing. # in particular is treated as a fragment separator, silently
+ * truncating the password. We rebuild the URL with the password segment
+ * percent-encoded so the pg library parses it correctly.
+ */
+function sanitiseConnectionString(raw: string): string {
+  try {
+    new URL(raw);
+    return raw; // already valid — no special chars to escape
+  } catch {
+    const afterProto = raw.split("://")[1] ?? "";
+    const atIdx      = afterProto.lastIndexOf("@");
+    const userinfo   = afterProto.substring(0, atIdx);
+    const hostpart   = afterProto.substring(atIdx + 1);
+    const colonIdx   = userinfo.indexOf(":");
+    const user       = userinfo.substring(0, colonIdx);
+    const pass       = userinfo.substring(colonIdx + 1);
+    return `postgresql://${user}:${encodeURIComponent(pass)}@${hostpart}`;
+  }
+}
+
+// REQUIRED for Supabase transaction pooler (port 6543): prepared statements
+// are not supported in transaction pooling mode. Setting prepareThreshold to 0
+// on the Client prototype disables automatic prepared statements globally.
+pg.defaults.parseInputDatesAsUTC = true;
+(pg.Client.prototype as unknown as Record<string, unknown>)["prepareThreshold"] = 0;
+
+export const pool = new Pool({
+  connectionString: sanitiseConnectionString(process.env.SUPABASE_DB_URL),
+  ssl: { rejectUnauthorized: false },
+  max: 10,
+});
 
 let initialized = false;
 
