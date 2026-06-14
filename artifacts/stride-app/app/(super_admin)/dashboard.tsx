@@ -45,7 +45,7 @@ const MENU_CARDS: MenuCard[] = [
   },
 ];
 
-// ── Metric cards (2 × 2 grid) ─────────────────────────────────────────────────
+// ── Metric grid (2-col wrap + full-width churned card) ────────────────────────
 
 type MetricItem = {
   key: string;
@@ -53,6 +53,8 @@ type MetricItem = {
   label: string;
   value: string | number;
   accent: string;
+  bg: string;
+  fullWidth?: boolean;
 };
 
 function MetricGrid({ metrics }: { metrics: PlatformMetrics | null }) {
@@ -62,33 +64,76 @@ function MetricGrid({ metrics }: { metrics: PlatformMetrics | null }) {
     ? `${Math.round(((metrics.activeCount + metrics.trialingCount) / metrics.totalOrgs) * 100)}%`
     : "—";
 
-  const items: MetricItem[] = [
-    { key: "schools",  icon: "business",         label: "TOTAL SCHOOLS",  value: metrics.totalOrgs,    accent: "#1E3A8A" },
-    { key: "active",   icon: "checkmark-circle",  label: "ACTIVE SUBS",   value: metrics.activeCount,  accent: "#D4AF37" },
-    { key: "members",  icon: "people",            label: "GLOBAL MEMBERS", value: metrics.totalMembers, accent: "#1E3A8A" },
-    { key: "health",   icon: "pulse-outline",     label: "HEALTH",         value: health,               accent: "#059669" },
+  const topItems: MetricItem[] = [
+    { key: "schools", icon: "business",         label: "TOTAL SCHOOLS",  value: metrics.totalOrgs,    accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "active",  icon: "checkmark-circle",  label: "ACTIVE SUBS",   value: metrics.activeCount,  accent: "#D4AF37", bg: "#FFFBEB" },
+    { key: "members", icon: "people",            label: "GLOBAL MEMBERS", value: metrics.totalMembers, accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "health",  icon: "pulse-outline",     label: "HEALTH",         value: health,               accent: "#059669", bg: "#ECFDF5" },
   ];
 
   return (
-    <View style={mg.grid}>
-      {items.map(item => (
-        <View key={item.key} style={mg.card}>
-          <View style={[mg.iconBox, { backgroundColor: item.accent + "12" }]}>
-            <Ionicons name={item.icon} size={20} color={item.accent} />
+    <View style={mg.container}>
+      {/* 2 × 2 top grid */}
+      <View style={mg.grid}>
+        {topItems.map(item => (
+          <View key={item.key} style={[mg.card, { width: "47.5%" }]}>
+            <View style={[mg.iconBox, { backgroundColor: item.bg }]}>
+              <Ionicons name={item.icon} size={18} color={item.accent} />
+            </View>
+            <Text style={[mg.value, { color: item.accent }]}>{String(item.value)}</Text>
+            <Text style={mg.label}>{item.label}</Text>
           </View>
-          <Text style={[mg.value, { color: item.accent }]}>{String(item.value)}</Text>
-          <Text style={mg.label}>{item.label}</Text>
+        ))}
+      </View>
+
+      {/* Full-width Churned card (red alert) */}
+      <View style={mg.churnedCard}>
+        <View style={mg.churnedLeft}>
+          <View style={mg.churnedIcon}>
+            <Ionicons name="close-circle" size={20} color="#DC2626" />
+          </View>
+          <View>
+            <Text style={mg.churnedLabel}>CHURNED SCHOOLS</Text>
+            <Text style={mg.churnedSub}>Subscriptions ended — not continuing</Text>
+          </View>
         </View>
-      ))}
+        <Text style={mg.churnedValue}>{metrics.expiredCount}</Text>
+      </View>
     </View>
   );
 }
+
 const mg = StyleSheet.create({
-  grid:    { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
-  card:    { width: "47.5%", backgroundColor: "#FFF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "flex-start" },
-  iconBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  value:   { fontSize: 28, fontWeight: "900", lineHeight: 32, marginBottom: 4 },
-  label:   { fontSize: 10, fontWeight: "700", color: "#9CA3AF", letterSpacing: 0.8 },
+  container:    { marginBottom: 14 },
+  grid:         { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 10 },
+  card:         { backgroundColor: "#FFF", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "flex-start" },
+  iconBox:      { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  value:        { fontSize: 26, fontWeight: "900", lineHeight: 30, marginBottom: 3 },
+  label:        { fontSize: 10, fontWeight: "700", color: "#9CA3AF", letterSpacing: 0.8 },
+  churnedCard:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#FFF5F5", borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: "#FCA5A5" },
+  churnedLeft:  { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  churnedIcon:  { width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  churnedLabel: { fontSize: 11, fontWeight: "900", color: "#DC2626", letterSpacing: 0.5 },
+  churnedSub:   { fontSize: 10, color: "#F87171", marginTop: 2 },
+  churnedValue: { fontSize: 28, fontWeight: "900", color: "#DC2626" },
+});
+
+// ── Statistics sub-header ─────────────────────────────────────────────────────
+
+function StatsHeader() {
+  return (
+    <View style={sh.row}>
+      <View style={sh.iconBox}>
+        <Ionicons name="bar-chart-outline" size={16} color="#1E3A8A" />
+      </View>
+      <Text style={sh.label}>PLATFORM STATISTICS</Text>
+    </View>
+  );
+}
+const sh = StyleSheet.create({
+  row:    { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  iconBox:{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" },
+  label:  { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#1E3A8A" },
 });
 
 // ── Nav card ──────────────────────────────────────────────────────────────────
@@ -101,22 +146,22 @@ function NavCard({ card, onPress }: { card: MenuCard; onPress: () => void }) {
       accessibilityRole="button"
     >
       <View style={nc.iconBox}>
-        <Ionicons name={card.icon} size={24} color="#1E3A8A" />
+        <Ionicons name={card.icon} size={22} color="#1E3A8A" />
       </View>
       <View style={nc.textBlock}>
         <Text style={nc.title}>{card.title}</Text>
         <Text style={nc.subtitle}>{card.subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+      <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
     </Pressable>
   );
 }
 const nc = StyleSheet.create({
-  card:      { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#FFF", borderRadius: 16, padding: 18, marginBottom: 10, borderWidth: 1, borderColor: "#E2E8F0" },
-  iconBox:   { width: 48, height: 48, borderRadius: 14, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  card:      { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#FFF", borderRadius: 14, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: "#E2E8F0" },
+  iconBox:   { width: 44, height: 44, borderRadius: 12, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   textBlock: { flex: 1 },
-  title:     { fontSize: 15, fontWeight: "800", color: "#111827", marginBottom: 3 },
-  subtitle:  { fontSize: 12, color: "#6B7280", lineHeight: 16 },
+  title:     { fontSize: 14, fontWeight: "800", color: "#111827", marginBottom: 2 },
+  subtitle:  { fontSize: 11, color: "#6B7280", lineHeight: 15 },
 });
 
 // ── Main Dashboard Hub ─────────────────────────────────────────────────────────
@@ -134,7 +179,7 @@ export default function SuperAdminDashboard() {
     try {
       setMetrics(await getPlatformMetrics());
     } catch {
-      // metric strip remains hidden on failure
+      // metric grid remains hidden on failure
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -151,11 +196,7 @@ export default function SuperAdminDashboard() {
   return (
     <View style={styles.container}>
       {/* Slim white header — title only, no icons */}
-      <ScreenHeader
-        title="Super Admin"
-        hideBack
-        light
-      />
+      <ScreenHeader title="Super Admin" hideBack light />
 
       {loading ? (
         <View style={styles.loadingBox}>
@@ -177,11 +218,16 @@ export default function SuperAdminDashboard() {
           {/* ── Standardised Role Switcher — first content element ── */}
           <RoleSwitcherRow />
 
-          {/* ── 4 Metric cards ── */}
-          <MetricGrid metrics={metrics} />
-
           {/* ── Management Console ── */}
           <Text style={styles.sectionLabel}>MANAGEMENT CONSOLE</Text>
+
+          {/* Statistics sub-header + metric cards */}
+          <StatsHeader />
+          <MetricGrid metrics={metrics} />
+
+          {/* Nav cards — divider */}
+          <View style={styles.divider} />
+
           {MENU_CARDS.map(card => (
             <NavCard key={card.id} card={card} onPress={() => navigate(card.route)} />
           ))}
@@ -192,7 +238,7 @@ export default function SuperAdminDashboard() {
             onPress={() => navigate("/(super_admin)/sa-settings")}
           >
             <View style={styles.accountIcon}>
-              <Ionicons name="person-circle-outline" size={22} color="#D4AF37" />
+              <Ionicons name="settings-outline" size={20} color="#FFF" />
             </View>
             <Text style={styles.accountLabel}>Account Settings</Text>
             <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
@@ -208,8 +254,9 @@ const styles = StyleSheet.create({
   loadingBox:   { flex: 1, alignItems: "center", justifyContent: "center" },
   scroll:       { flex: 1 },
   content:      { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 52 },
-  sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#9CA3AF", marginBottom: 10 },
-  accountRow:   { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 20, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: "#FFF", borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0" },
-  accountIcon:  { width: 38, height: 38, borderRadius: 11, backgroundColor: "#FFFBEB", alignItems: "center", justifyContent: "center" },
+  sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#9CA3AF", marginBottom: 12 },
+  divider:      { height: 1, backgroundColor: "#F1F5F9", marginVertical: 10 },
+  accountRow:   { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 18, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: "#FFF", borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0" },
+  accountIcon:  { width: 38, height: 38, borderRadius: 11, backgroundColor: "#1E3A8A", alignItems: "center", justifyContent: "center" },
   accountLabel: { flex: 1, fontSize: 14, fontWeight: "700", color: "#111827" },
 });
