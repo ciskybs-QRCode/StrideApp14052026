@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { api, setToken } from "@/lib/api";
+import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 
 // ── Brand ─────────────────────────────────────────────────────────────────────
 const NAVY = "#1E3A8A";
@@ -28,16 +29,6 @@ const WIZARD_STEPS = 4; // steps 1-4 shown in indicator (after credentials)
 
 // ── Auto-localization ──────────────────────────────────────────────────────────
 type Region = "IT" | "AU" | "GLOBAL";
-
-function detectRegion(): Region {
-  try {
-    const locale = Intl.DateTimeFormat().resolvedOptions().locale;
-    const code   = locale.split("-").pop()?.toUpperCase() ?? "";
-    if (code === "IT") return "IT";
-    if (code === "AU") return "AU";
-  } catch { /* noop */ }
-  return "GLOBAL";
-}
 
 interface RegionCfg {
   flag: string; label: string;
@@ -201,7 +192,8 @@ export default function Pioneer() {
   const { saveBranding } = useBranding();
   const scrollRef = useRef<ScrollView>(null);
 
-  const region = useMemo(detectRegion, []);
+  const deviceLocale = useMemo(getDeviceLocale, []);
+  const region = deviceLocale.region;
   const cfg    = REGION_CFG[region];
 
   const alreadyAdmin = user?.role === "admin" || user?.role === "super_admin";
@@ -220,7 +212,9 @@ export default function Pioneer() {
 
   // ── Step 1 ────────────────────────────────────────────────────────────────
   const [fullName, setFullName] = useState(user?.name ?? "");
-  const [phone,    setPhone]    = useState(cfg.phonePrefix);
+  const [phone,    setPhone]    = useState(
+    region === "GLOBAL" ? deviceLocale.phonePrefix : cfg.phonePrefix
+  );
 
   // ── Step 2 ────────────────────────────────────────────────────────────────
   const [schoolName,    setSchoolName]    = useState(user?.schoolName ?? "");

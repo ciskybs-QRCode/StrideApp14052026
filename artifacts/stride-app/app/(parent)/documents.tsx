@@ -28,6 +28,7 @@ import { useTerminology } from "@/context/TerminologyContext";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { api } from "@/lib/api";
+import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 
 const PROFILE_EXTRA_KEY = "stride_profile_extra";
 
@@ -89,12 +90,27 @@ export default function DocumentsScreen() {
   const [addingChild, setAddingChild] = useState(false);
 
   useEffect(() => {
+    const detected = getDeviceLocale();
     AsyncStorage.getItem(PROFILE_EXTRA_KEY).catch(() => null).then(raw => {
       if (raw) {
-        try { setProfileExtra(JSON.parse(raw)); } catch {}
-      } else if (user?.name) {
-        const parts = user.name.split(" ");
-        setProfileExtra(prev => ({ ...prev, firstName: parts[0] || "", lastName: parts.slice(1).join(" ") }));
+        try {
+          const parsed: ProfileExtra = JSON.parse(raw);
+          // Back-fill country and phone prefix from device locale if not yet saved
+          if (!parsed.country) parsed.country = detected.countryCode;
+          if (!parsed.phone)   parsed.phone   = detected.phonePrefix;
+          setProfileExtra(parsed);
+        } catch {}
+      } else {
+        const base: Partial<ProfileExtra> = {
+          country: detected.countryCode,
+          phone:   detected.phonePrefix,
+        };
+        if (user?.name) {
+          const parts = user.name.split(" ");
+          base.firstName = parts[0] || "";
+          base.lastName  = parts.slice(1).join(" ");
+        }
+        setProfileExtra(prev => ({ ...prev, ...base }));
       }
     });
   }, []);
@@ -187,14 +203,14 @@ export default function DocumentsScreen() {
     setShowProfile(true);
   };
 
-  // Task 2: Italy locale inference — when phone prefix is +39, clear US placeholder defaults
+  // Clear any US placeholder city / postcode values when the phone prefix changes
   useEffect(() => {
-    if (!editExtra.phone.startsWith("+39")) return;
     const US_CITIES    = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"];
     const US_POSTCODES = ["10001", "90001", "60601", "77001", "85001"];
     setEditExtra(prev => ({
       ...prev,
-      country:  (!prev.country || prev.country === "US") ? "IT" : prev.country,
+      // If no country is set yet, seed from the device locale (not Italy by default)
+      country:  prev.country || getDeviceLocale().countryCode,
       city:     US_CITIES.includes(prev.city)    ? "" : prev.city,
       postcode: US_POSTCODES.includes(prev.postcode) ? "" : prev.postcode,
     }));
