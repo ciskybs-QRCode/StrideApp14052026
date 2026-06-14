@@ -366,7 +366,6 @@ export default function AssociationsScreen() {
       <ScreenHeader
         title="Associations"
         subtitle={`${orgs.length} school${orgs.length !== 1 ? "s" : ""}`}
-        light
       />
       <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
           {loading ? (

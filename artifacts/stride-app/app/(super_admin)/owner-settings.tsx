@@ -75,7 +75,7 @@ export default function OwnerSettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Owner Settings" subtitle="Platform credentials" light />
+      <ScreenHeader title="Owner Settings" subtitle="Platform credentials" />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 

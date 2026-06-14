@@ -283,7 +283,6 @@ export default function AdminUsers() {
       <ScreenHeader
         title="Members"
         subtitle="User management"
-        light
         right={
           <Pressable
             style={[styles.badgePdfBtn, { backgroundColor: colors.primary }]}

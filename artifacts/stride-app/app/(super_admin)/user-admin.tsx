@@ -320,13 +320,12 @@ export default function UserAdminScreen() {
       <ScreenHeader
         title="User Administration"
         subtitle={`${admins.length} account${admins.length !== 1 ? "s" : ""}`}
-        light
         right={
           <Pressable
             style={({ pressed }) => [styles.addBtn, { opacity: pressed ? 0.75 : 1 }]}
             onPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAddAdminVisible(true); }}
           >
-            <Ionicons name="add" size={20} color="#1E3A8A" />
+            <Ionicons name="add" size={20} color="#D4AF37" />
           </Pressable>
         }
       />

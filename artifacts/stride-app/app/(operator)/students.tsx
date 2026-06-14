@@ -152,8 +152,6 @@ export default function OperatorStudents() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Students"
-        light
-        hideBack
         right={
           <Pressable
             style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}

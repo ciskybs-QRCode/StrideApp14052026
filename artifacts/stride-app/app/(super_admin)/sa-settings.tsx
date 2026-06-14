@@ -202,7 +202,7 @@ export default function SASettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Account Settings" subtitle="Credentials & security" light />
+      <ScreenHeader title="Account Settings" subtitle="Credentials & security" />
 
       <ScrollView
         style={styles.scroll}

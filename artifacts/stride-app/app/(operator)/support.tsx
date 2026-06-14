@@ -247,7 +247,7 @@ export default function OperatorSupport() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Protocols & Support" hideBack />
+      <ScreenHeader title="Protocols & Support" />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}

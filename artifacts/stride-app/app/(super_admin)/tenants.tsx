@@ -389,13 +389,12 @@ export default function TenantsScreen() {
       <ScreenHeader
         title="Tenant Management"
         subtitle={`${orgs.length} school${orgs.length !== 1 ? "s" : ""}`}
-        light
         right={
           <Pressable
             style={({ pressed }) => [styles.addBtn, { opacity: pressed ? 0.75 : 1 }]}
             onPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAddTenantVisible(true); }}
           >
-            <Ionicons name="add" size={20} color="#1E3A8A" />
+            <Ionicons name="add" size={20} color="#D4AF37" />
           </Pressable>
         }
       />

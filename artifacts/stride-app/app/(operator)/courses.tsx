@@ -362,7 +362,7 @@ export default function OperatorCoursesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="My Courses" hideBack />
+      <ScreenHeader title="My Courses" />
       <ScrollView
         contentContainerStyle={[styles.scroll, {
           paddingTop: 16,

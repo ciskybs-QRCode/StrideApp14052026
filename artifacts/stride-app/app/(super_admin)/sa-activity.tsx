@@ -119,7 +119,7 @@ export default function SAActivityScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Recent Activity" subtitle="Platform events & financials" light />
+      <ScreenHeader title="Recent Activity" subtitle="Platform events & financials" />
 
       {loading ? (
         <View style={styles.loadingBox}><ActivityIndicator size="large" color="#1E3A8A" /></View>
