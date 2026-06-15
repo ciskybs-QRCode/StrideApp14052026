@@ -59,21 +59,64 @@ function fmtDate(d: string) {
 // ── Activity types ─────────────────────────────────────────────────────────────
 
 const ACTIVITY_TYPES = [
-  { id: "group_class",    label: "Lezione di Gruppo",          icon: "people-outline" as const,                     color: "#1E3A8A" },
-  { id: "private_lesson", label: "Lezione Privata",            icon: "person-outline" as const,                     color: "#7C3AED" },
-  { id: "workshop",       label: "Workshop / Seminario",       icon: "school-outline" as const,                     color: "#F59E0B" },
-  { id: "parent_meeting", label: "Colloquio con Genitore",     icon: "chatbubble-ellipses-outline" as const,        color: "#10B981" },
-  { id: "staff_meeting",  label: "Riunione Staff",             icon: "business-outline" as const,                   color: "#EF4444" },
-  { id: "special_event",  label: "Evento Speciale",            icon: "star-outline" as const,                       color: "#EC4899" },
-  { id: "extra_hours",    label: "Ore Extra / Sostituzione",   icon: "add-circle-outline" as const,                 color: "#6B7280" },
-  { id: "other",          label: "Altro",                      icon: "ellipsis-horizontal-circle-outline" as const, color: "#9CA3AF" },
+  { id: "group_class",    label: "Group Class",         icon: "people-outline" as const,                     color: "#1E3A8A" },
+  { id: "private_lesson", label: "Private Lesson",      icon: "person-outline" as const,                     color: "#7C3AED" },
+  { id: "workshop",       label: "Workshop / Seminar",  icon: "school-outline" as const,                     color: "#F59E0B" },
+  { id: "parent_meeting", label: "Parent Meeting",      icon: "chatbubble-ellipses-outline" as const,        color: "#10B981" },
+  { id: "staff_meeting",  label: "Staff Meeting",       icon: "business-outline" as const,                   color: "#EF4444" },
+  { id: "special_event",  label: "Special Event",       icon: "star-outline" as const,                       color: "#EC4899" },
+  { id: "extra_hours",    label: "Extra Hours / Cover", icon: "add-circle-outline" as const,                 color: "#6B7280" },
+  { id: "other",          label: "Other",               icon: "ellipsis-horizontal-circle-outline" as const, color: "#9CA3AF" },
 ] as const;
 
 const AVAIL_STORAGE_KEY = "stride_operator_availability";
+const ROOMS_KEY         = "stride_association_rooms";
+
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+
+const MONTH_NAMES_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const CAL_DAY_HEADS    = ["M","T","W","T","F","S","S"];
+
+function getMonthMatrix(year: number, month: number): (Date | null)[][] {
+  const firstDay    = new Date(year, month, 1);
+  const startDow    = (firstDay.getDay() + 6) % 7; // Mon=0 … Sun=6
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const matrix: (Date | null)[][] = [];
+  let week: (Date | null)[]       = [];
+  for (let i = 0; i < startDow; i++) week.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    week.push(new Date(year, month, d));
+    if (week.length === 7) { matrix.push(week); week = []; }
+  }
+  while (week.length > 0 && week.length < 7) week.push(null);
+  if (week.some(Boolean)) matrix.push(week);
+  return matrix;
+}
+
+function getWeekStartKey(d: Date): string {
+  const copy = new Date(d);
+  const dow  = copy.getDay();
+  const diff = dow === 0 ? -6 : 1 - dow; // back to Monday
+  copy.setDate(copy.getDate() + diff);
+  const y = copy.getFullYear();
+  const m = String(copy.getMonth() + 1).padStart(2, "0");
+  const day = String(copy.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Locale-aware date format hint (uses device locale settings)
+const deviceLocale = (() => { try { return Intl.DateTimeFormat().resolvedOptions().locale; } catch { return "en-AU"; } })();
+const datePlaceholder = (() => {
+  try {
+    const ex = new Date(2026, 8, 15);
+    return new Intl.DateTimeFormat(deviceLocale, { year: "numeric", month: "2-digit", day: "2-digit" }).format(ex);
+  } catch { return "YYYY-MM-DD"; }
+})();
 
 type LocalAvailSlot = {
   id: string;
   activityType: string;
+  activityTypes: string[];
   activityLabel: string;
   location: string;
   recurring: boolean;
@@ -84,6 +127,7 @@ type LocalAvailSlot = {
   notes: string;
   savedAt: string;
   synced: boolean;
+  activeWeeks?: string[];
 };
 
 type Tab = "availability" | "bookings" | "notifications";
@@ -136,8 +180,14 @@ export default function OperatorPrivateLessonsScreen() {
   const [courseAvailSaving, setCourseAvailSaving] = useState(false);
 
   // Activity-type availability (new form — works offline)
-  const [slotActivityType, setSlotActivityType] = useState<string>("");
+  const [slotActivityTypes, setSlotActivityTypes] = useState<string[]>([]);
   const [localSlots, setLocalSlots] = useState<LocalAvailSlot[]>([]);
+  // Admin-added rooms (from AsyncStorage)
+  const [adminRooms, setAdminRooms] = useState<string[]>([]);
+  // Monthly week-availability calendar
+  const [avCalYear,  setAvCalYear]  = useState(new Date().getFullYear());
+  const [avCalMonth, setAvCalMonth] = useState(new Date().getMonth());
+  const [availWeeks, setAvailWeeks] = useState<Set<string>>(new Set());
 
   // QR scan
   const [showQrEntry, setShowQrEntry] = useState(false);
@@ -186,11 +236,15 @@ export default function OperatorPrivateLessonsScreen() {
     setRefreshing(false);
   }, [load]);
 
-  useEffect(() => { load(); loadLocalSlots(); }, [load, loadLocalSlots]);
+  useEffect(() => {
+    load();
+    loadLocalSlots();
+    AsyncStorage.getItem(ROOMS_KEY).then(raw => { if (raw) setAdminRooms(JSON.parse(raw) as string[]); }).catch(() => {});
+  }, [load, loadLocalSlots]);
 
   const resetForm = () => {
     setSlotDisciplineId(null);
-    setSlotActivityType("");
+    setSlotActivityTypes([]);
     setSlotLocation("");
     setSlotDate(null);
     setSlotStart("");
@@ -200,6 +254,7 @@ export default function OperatorPrivateLessonsScreen() {
     setDayTimeSlots({});
     setActiveDayEdit(null);
     setSlotNotes("");
+    setAvailWeeks(new Set());
   };
 
   // Mode A — Submit private lesson availability from accordion draft
@@ -273,22 +328,23 @@ export default function OperatorPrivateLessonsScreen() {
   // ── Activity-type availability submission (offline-first) ───────────────────
 
   const submitActivityAvail = async () => {
-    if (!slotActivityType) { Alert.alert("Campo mancante", "Seleziona il tipo di attivita'."); return; }
-    if (!plLocation.trim()) { Alert.alert("Campo mancante", "Inserisci la sede o la sala."); return; }
+    if (slotActivityTypes.length === 0) { Alert.alert("Missing field", "Select at least one activity type."); return; }
+    if (!plLocation.trim()) { Alert.alert("Missing field", "Select or enter a venue / studio."); return; }
     if (slotRecurring) {
-      if (recurringDays.length === 0) { Alert.alert("Giorni mancanti", "Seleziona almeno un giorno della settimana."); return; }
+      if (recurringDays.length === 0) { Alert.alert("Missing days", "Select at least one day of the week."); return; }
       const incomplete = recurringDays.find(d => !dayTimeSlots[d]?.start || !dayTimeSlots[d]?.end);
-      if (incomplete !== undefined) { Alert.alert("Orari mancanti", "Imposta orario inizio e fine per ogni giorno selezionato."); return; }
+      if (incomplete !== undefined) { Alert.alert("Missing times", "Set start and end time for every selected day."); return; }
     } else {
-      if (!slotDate || !slotStart || !slotEnd) { Alert.alert("Campi mancanti", "Inserisci data, orario inizio e fine."); return; }
+      if (!slotDate || !slotStart || !slotEnd) { Alert.alert("Missing fields", "Enter date, start time and end time."); return; }
     }
     setSaving(true);
     try {
-      const actInfo = ACTIVITY_TYPES.find(a => a.id === slotActivityType);
+      const actLabels = slotActivityTypes.map(id => ACTIVITY_TYPES.find(a => a.id === id)?.label ?? id).join(", ");
       const newSlot: LocalAvailSlot = {
         id: Date.now().toString(),
-        activityType: slotActivityType,
-        activityLabel: actInfo?.label ?? slotActivityType,
+        activityType: slotActivityTypes[0] ?? "",
+        activityTypes: slotActivityTypes,
+        activityLabel: actLabels,
         location: plLocation.trim(),
         recurring: slotRecurring,
         daySlots: slotRecurring
@@ -300,6 +356,7 @@ export default function OperatorPrivateLessonsScreen() {
         notes: slotNotes.trim(),
         savedAt: new Date().toISOString(),
         synced: false,
+        activeWeeks: availWeeks.size > 0 ? Array.from(availWeeks).sort() : undefined,
       };
       // Save locally first (always succeeds)
       const updated = [newSlot, ...localSlots];
@@ -310,8 +367,7 @@ export default function OperatorPrivateLessonsScreen() {
       const discId = disciplines[0]?.id;
       if (discId) {
         try {
-          const label = actInfo?.label ?? slotActivityType;
-          const notePrefix = `[${label}] `;
+          const notePrefix = `[${actLabels}] `;
           if (slotRecurring) {
             const submissions = recurringDays.flatMap(day =>
               nextOccurrences(day, 4).map(d => api.submitAvailability({
@@ -344,7 +400,7 @@ export default function OperatorPrivateLessonsScreen() {
       }
       await load();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setSlotActivityType("");
+      setSlotActivityTypes([]);
       setPlLocation("");
       setSlotRecurring(false);
       setRecurringDays([]);
@@ -353,12 +409,13 @@ export default function OperatorPrivateLessonsScreen() {
       setSlotStart("");
       setSlotEnd("");
       setSlotNotes("");
+      setAvailWeeks(new Set());
       Alert.alert(
-        "\u2713 Disponibilita' Inviata",
-        "La tua disponibilita' e' stata salvata e inviata all'admin per l'organizzazione del roster.",
+        "Availability Submitted",
+        "Your availability has been saved and sent to the admin for roster planning.",
       );
     } catch (e: unknown) {
-      Alert.alert("Errore", e instanceof Error ? e.message : "Salvataggio fallito");
+      Alert.alert("Error", e instanceof Error ? e.message : "Save failed");
     } finally { setSaving(false); }
   };
 
@@ -536,8 +593,8 @@ export default function OperatorPrivateLessonsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        title="La Mia Disponibilita'"
-        subtitle="My schedule & availability"
+        title="My Availability"
+        subtitle="Schedule & availability"
         onBack={() => router.navigate("/(operator)/dashboard")}
         right={
           <Pressable
@@ -638,34 +695,40 @@ export default function OperatorPrivateLessonsScreen() {
                   onPress={() => setAvailMode(m)}
                 >
                   <Text style={{ fontSize: 13, fontWeight: "700", color: availMode === m ? colors.primary : colors.mutedForeground }}>
-                    {m === "private" ? "📋 Disponibilita'" : "📅 Corsi Regolari"}
+                    {m === "private" ? "📋 My Availability" : "📅 Regular Courses"}
                   </Text>
                 </Pressable>
               ))}
             </View>
 
-            {/* ── MODE A: Discipline-first accordion availability scheduler ── */}
+            {/* ── MODE A: Availability scheduler ── */}
             {availMode === "private" && (
               <>
                 {/* Info banner */}
                 <View style={{ backgroundColor: `${colors.primary}10`, borderRadius: 14, padding: 14, marginBottom: 18, flexDirection: "row", gap: 10 }}>
                   <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 1 }} />
                   <Text style={{ flex: 1, fontSize: 13, color: colors.primary, lineHeight: 19 }}>
-                    Indica quando sei disponibile e per quale attivita'. L'admin organizzera' il roster con l'aiuto dell'AI.
+                    Tell the admin when you are available and for which activity types. The AI will help build the roster.
                   </Text>
                 </View>
 
-                {/* ── Activity type picker ── */}
-                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.6 }}>
-                  Tipo di attivita' *
+                {/* ── Activity type picker (multi-select) ── */}
+                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                  Activity Type *
                 </Text>
+                <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 12 }}>Select one or more</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
                   {ACTIVITY_TYPES.map(act => {
-                    const sel = slotActivityType === act.id;
+                    const sel = slotActivityTypes.includes(act.id);
                     return (
                       <Pressable
                         key={act.id}
-                        onPress={() => { setSlotActivityType(act.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                        onPress={() => {
+                          setSlotActivityTypes(prev =>
+                            prev.includes(act.id) ? prev.filter(x => x !== act.id) : [...prev, act.id]
+                          );
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        }}
                         style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 9,
                           borderRadius: 12, borderWidth: 1.5,
                           borderColor: sel ? act.color : colors.border,
@@ -675,21 +738,23 @@ export default function OperatorPrivateLessonsScreen() {
                         <Text style={{ fontSize: 13, fontWeight: "700", color: sel ? act.color : colors.foreground }}>
                           {act.label}
                         </Text>
+                        {sel && <Ionicons name="checkmark-circle" size={14} color={act.color} />}
                       </Pressable>
                     );
                   })}
                 </View>
 
-                {/* ── Location ── */}
+                {/* ── Venue / Studio ── */}
                 <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 }}>
-                  Sede / Sala *
+                  Venue / Studio *
                 </Text>
-                {locations.length > 0 ? (
+                {(locations.length > 0 || adminRooms.length > 0) ? (
                   <View style={{ marginBottom: 20 }}>
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                      {/* API locations */}
                       {locations.map(loc => (
                         <Pressable
-                          key={loc.id}
+                          key={`loc-${loc.id}`}
                           onPress={() => setPlLocation(loc.name)}
                           style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5,
                             borderColor: plLocation === loc.name ? colors.primary : colors.border,
@@ -701,13 +766,28 @@ export default function OperatorPrivateLessonsScreen() {
                           </Text>
                         </Pressable>
                       ))}
+                      {/* Admin-added rooms */}
+                      {adminRooms.map(room => (
+                        <Pressable
+                          key={`room-${room}`}
+                          onPress={() => setPlLocation(room)}
+                          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5,
+                            borderColor: plLocation === room ? colors.primary : colors.border,
+                            backgroundColor: plLocation === room ? `${colors.primary}12` : colors.card }}
+                        >
+                          <Text style={{ fontSize: 13, fontWeight: "600",
+                            color: plLocation === room ? colors.primary : colors.mutedForeground }}>
+                            {room}
+                          </Text>
+                        </Pressable>
+                      ))}
                     </View>
                     <TextInput
                       style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12,
                         paddingVertical: 10, fontSize: 14, color: colors.foreground, backgroundColor: colors.card }}
-                      value={locations.some(l => l.name === plLocation) ? "" : plLocation}
+                      value={[...locations.map(l => l.name), ...adminRooms].includes(plLocation) ? "" : plLocation}
                       onChangeText={setPlLocation}
-                      placeholder="Altra sede..."
+                      placeholder="Other venue..."
                       placeholderTextColor={colors.mutedForeground}
                     />
                   </View>
@@ -717,7 +797,7 @@ export default function OperatorPrivateLessonsScreen() {
                       paddingVertical: 10, fontSize: 14, color: colors.foreground, backgroundColor: colors.card, marginBottom: 20 }}
                     value={plLocation}
                     onChangeText={setPlLocation}
-                    placeholder="es. Studio 1, Sala grande, Palestra..."
+                    placeholder="e.g. Studio 1, Main Hall, Gym..."
                     placeholderTextColor={colors.mutedForeground}
                   />
                 )}
@@ -732,20 +812,20 @@ export default function OperatorPrivateLessonsScreen() {
                       onPress={() => { setSlotRecurring(rec); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                     >
                       <Text style={{ fontSize: 13, fontWeight: "700", color: slotRecurring === rec ? colors.primary : colors.mutedForeground }}>
-                        {rec ? "Settimanale (ripetuto)" : "Una Tantum"}
+                        {rec ? "Weekly (Recurring)" : "One-time"}
                       </Text>
                     </Pressable>
                   ))}
                 </View>
 
-                {/* ── RECURRING: day chips + per-day times ── */}
+                {/* ── RECURRING: day chips + per-day times (typed HH / MM) ── */}
                 {slotRecurring && (
                   <>
                     <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.6 }}>
-                      Giorni della settimana *
+                      Days of the week *
                     </Text>
                     <View style={{ flexDirection: "row", gap: 5, marginBottom: 18 }}>
-                      {["Lu","Ma","Me","Gi","Ve","Sa","Do"].map((lbl, idx) => {
+                      {["Mo","Tu","We","Th","Fr","Sa","Su"].map((lbl, idx) => {
                         const dow = idx === 6 ? 0 : idx + 1;
                         const active = recurringDays.includes(dow);
                         return (
@@ -764,40 +844,77 @@ export default function OperatorPrivateLessonsScreen() {
                     </View>
 
                     {recurringDays.slice().sort((a, b) => a - b).map(dow => {
-                      const DAYS_ITA = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
+                      const DAYS_EN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
                       const ts = dayTimeSlots[dow] ?? { start: "", end: "" };
+                      const parseHH = (t: string) => t ? t.split(":")[0] ?? "" : "";
+                      const parseMM = (t: string) => t ? t.split(":")[1] ?? "" : "";
+                      const buildTime = (hh: string, mm: string) => {
+                        const h = hh.padStart(2, "0");
+                        const m = mm.padStart(2, "0");
+                        return `${h}:${m}`;
+                      };
                       return (
-                        <View key={dow} style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10,
+                        <View key={dow} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10,
                           backgroundColor: colors.card, borderRadius: 14, padding: 12,
                           borderWidth: 1, borderColor: colors.border }}>
                           <View style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: `${colors.primary}15`,
                             alignItems: "center", justifyContent: "center" }}>
-                            <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>{DAYS_ITA[dow]}</Text>
+                            <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>{DAYS_EN[dow]}</Text>
                           </View>
+                          {/* FROM */}
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase" }}>Dalle</Text>
-                            <TextInput
-                              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 8,
-                                fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
-                              value={ts.start}
-                              onChangeText={v => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), start: v } }))}
-                              placeholder="09:00"
-                              placeholderTextColor={colors.mutedForeground}
-                              keyboardType="numbers-and-punctuation"
-                            />
+                            <Text style={{ fontSize: 9, color: colors.mutedForeground, marginBottom: 3, textTransform: "uppercase", textAlign: "center" }}>From</Text>
+                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 }}>
+                              <TextInput
+                                style={{ width: 36, borderWidth: 1, borderColor: colors.border, borderRadius: 7, paddingVertical: 6,
+                                  fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
+                                value={parseHH(ts.start)}
+                                onChangeText={h => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), start: buildTime(h.replace(/\D/g,"").slice(0,2), parseMM(s[dow]?.start ?? "")) } }))}
+                                placeholder="HH"
+                                placeholderTextColor={colors.mutedForeground}
+                                keyboardType="number-pad"
+                                maxLength={2}
+                              />
+                              <Text style={{ fontSize: 14, fontWeight: "700", color: colors.mutedForeground }}>:</Text>
+                              <TextInput
+                                style={{ width: 36, borderWidth: 1, borderColor: colors.border, borderRadius: 7, paddingVertical: 6,
+                                  fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
+                                value={parseMM(ts.start)}
+                                onChangeText={m => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), start: buildTime(parseHH(s[dow]?.start ?? ""), m.replace(/\D/g,"").slice(0,2)) } }))}
+                                placeholder="MM"
+                                placeholderTextColor={colors.mutedForeground}
+                                keyboardType="number-pad"
+                                maxLength={2}
+                              />
+                            </View>
                           </View>
-                          <Text style={{ fontSize: 16, color: colors.mutedForeground, paddingTop: 18 }}>-</Text>
+                          <Text style={{ fontSize: 14, color: colors.mutedForeground, marginTop: 14 }}>-</Text>
+                          {/* TO */}
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase" }}>Alle</Text>
-                            <TextInput
-                              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 8,
-                                fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
-                              value={ts.end}
-                              onChangeText={v => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), end: v } }))}
-                              placeholder="10:00"
-                              placeholderTextColor={colors.mutedForeground}
-                              keyboardType="numbers-and-punctuation"
-                            />
+                            <Text style={{ fontSize: 9, color: colors.mutedForeground, marginBottom: 3, textTransform: "uppercase", textAlign: "center" }}>To</Text>
+                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 }}>
+                              <TextInput
+                                style={{ width: 36, borderWidth: 1, borderColor: colors.border, borderRadius: 7, paddingVertical: 6,
+                                  fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
+                                value={parseHH(ts.end)}
+                                onChangeText={h => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), end: buildTime(h.replace(/\D/g,"").slice(0,2), parseMM(s[dow]?.end ?? "")) } }))}
+                                placeholder="HH"
+                                placeholderTextColor={colors.mutedForeground}
+                                keyboardType="number-pad"
+                                maxLength={2}
+                              />
+                              <Text style={{ fontSize: 14, fontWeight: "700", color: colors.mutedForeground }}>:</Text>
+                              <TextInput
+                                style={{ width: 36, borderWidth: 1, borderColor: colors.border, borderRadius: 7, paddingVertical: 6,
+                                  fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
+                                value={parseMM(ts.end)}
+                                onChangeText={m => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), end: buildTime(parseHH(s[dow]?.end ?? ""), m.replace(/\D/g,"").slice(0,2)) } }))}
+                                placeholder="MM"
+                                placeholderTextColor={colors.mutedForeground}
+                                keyboardType="number-pad"
+                                maxLength={2}
+                              />
+                            </View>
                           </View>
                         </View>
                       );
@@ -809,7 +926,7 @@ export default function OperatorPrivateLessonsScreen() {
                 {!slotRecurring && (
                   <>
                     <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 }}>
-                      Data *
+                      Date *
                     </Text>
                     <TextInput
                       style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12,
@@ -818,46 +935,152 @@ export default function OperatorPrivateLessonsScreen() {
                       onChangeText={v => {
                         try { const d = new Date(v + "T00:00:00"); if (!isNaN(d.getTime())) setSlotDate(d); else setSlotDate(null); } catch { setSlotDate(null); }
                       }}
-                      placeholder="YYYY-MM-DD  (es. 2026-09-15)"
+                      placeholder={`YYYY-MM-DD  (e.g. ${datePlaceholder})`}
                       placeholderTextColor={colors.mutedForeground}
                       keyboardType="numbers-and-punctuation"
                     />
 
+                    {/* One-time: From / To with HH:MM typed inputs */}
                     <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase" }}>Dalle *</Text>
-                        <TextInput
-                          style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10,
-                            paddingVertical: 10, fontSize: 16, fontWeight: "700", color: colors.foreground, backgroundColor: colors.card, textAlign: "center" }}
-                          value={slotStart}
-                          onChangeText={setSlotStart}
-                          placeholder="09:00"
-                          placeholderTextColor={colors.mutedForeground}
-                          keyboardType="numbers-and-punctuation"
-                        />
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase" }}>From *</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3,
+                          borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingVertical: 8, backgroundColor: colors.card }}>
+                          <TextInput
+                            style={{ width: 40, fontSize: 17, fontWeight: "700", color: colors.foreground, textAlign: "center" }}
+                            value={slotStart.split(":")[0] ?? ""}
+                            onChangeText={h => setSlotStart(`${h.replace(/\D/g,"").slice(0,2).padStart(2,"0")}:${slotStart.split(":")[1] ?? "00"}`)}
+                            placeholder="HH"
+                            placeholderTextColor={colors.mutedForeground}
+                            keyboardType="number-pad"
+                            maxLength={2}
+                          />
+                          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.foreground }}>:</Text>
+                          <TextInput
+                            style={{ width: 40, fontSize: 17, fontWeight: "700", color: colors.foreground, textAlign: "center" }}
+                            value={slotStart.split(":")[1] ?? ""}
+                            onChangeText={m => setSlotStart(`${slotStart.split(":")[0] ?? "00"}:${m.replace(/\D/g,"").slice(0,2).padStart(2,"0")}`)}
+                            placeholder="MM"
+                            placeholderTextColor={colors.mutedForeground}
+                            keyboardType="number-pad"
+                            maxLength={2}
+                          />
+                        </View>
                       </View>
                       <View style={{ alignSelf: "flex-end", paddingBottom: 12 }}>
                         <Text style={{ fontSize: 20, color: colors.mutedForeground }}>-</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase" }}>Alle *</Text>
-                        <TextInput
-                          style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10,
-                            paddingVertical: 10, fontSize: 16, fontWeight: "700", color: colors.foreground, backgroundColor: colors.card, textAlign: "center" }}
-                          value={slotEnd}
-                          onChangeText={setSlotEnd}
-                          placeholder="11:00"
-                          placeholderTextColor={colors.mutedForeground}
-                          keyboardType="numbers-and-punctuation"
-                        />
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase" }}>To *</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3,
+                          borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingVertical: 8, backgroundColor: colors.card }}>
+                          <TextInput
+                            style={{ width: 40, fontSize: 17, fontWeight: "700", color: colors.foreground, textAlign: "center" }}
+                            value={slotEnd.split(":")[0] ?? ""}
+                            onChangeText={h => setSlotEnd(`${h.replace(/\D/g,"").slice(0,2).padStart(2,"0")}:${slotEnd.split(":")[1] ?? "00"}`)}
+                            placeholder="HH"
+                            placeholderTextColor={colors.mutedForeground}
+                            keyboardType="number-pad"
+                            maxLength={2}
+                          />
+                          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.foreground }}>:</Text>
+                          <TextInput
+                            style={{ width: 40, fontSize: 17, fontWeight: "700", color: colors.foreground, textAlign: "center" }}
+                            value={slotEnd.split(":")[1] ?? ""}
+                            onChangeText={m => setSlotEnd(`${slotEnd.split(":")[0] ?? "00"}:${m.replace(/\D/g,"").slice(0,2).padStart(2,"0")}`)}
+                            placeholder="MM"
+                            placeholderTextColor={colors.mutedForeground}
+                            keyboardType="number-pad"
+                            maxLength={2}
+                          />
+                        </View>
                       </View>
                     </View>
                   </>
                 )}
 
-                {/* ── Notes ── */}
+                {/* ── Weekly calendar: select available weeks ── */}
+                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                  Available Weeks
+                </Text>
+                <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 12, lineHeight: 16 }}>
+                  Tap a week to mark it as available. Unticked weeks = unavailable (holidays, breaks, etc.)
+                </Text>
+                <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.border, marginBottom: 20 }}>
+                  {/* Month nav */}
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <Pressable
+                      onPress={() => { if (avCalMonth === 0) { setAvCalMonth(11); setAvCalYear(y => y - 1); } else setAvCalMonth(m => m - 1); }}
+                      style={{ padding: 6 }}>
+                      <Ionicons name="chevron-back" size={20} color={colors.primary} />
+                    </Pressable>
+                    <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>
+                      {MONTH_NAMES_FULL[avCalMonth]} {avCalYear}
+                    </Text>
+                    <Pressable
+                      onPress={() => { if (avCalMonth === 11) { setAvCalMonth(0); setAvCalYear(y => y + 1); } else setAvCalMonth(m => m + 1); }}
+                      style={{ padding: 6 }}>
+                      <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                    </Pressable>
+                  </View>
+                  {/* Day-of-week headers */}
+                  <View style={{ flexDirection: "row", marginBottom: 4 }}>
+                    {CAL_DAY_HEADS.map((h, i) => (
+                      <View key={i} style={{ flex: 1, alignItems: "center" }}>
+                        <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground }}>{h}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  {/* Week rows */}
+                  {getMonthMatrix(avCalYear, avCalMonth).map((week, wi) => {
+                    const firstDate = week.find(Boolean) as Date | undefined;
+                    const weekKey = firstDate ? getWeekStartKey(firstDate) : null;
+                    const isActive = weekKey ? availWeeks.has(weekKey) : false;
+                    const todayNow = new Date();
+                    return (
+                      <Pressable
+                        key={wi}
+                        onPress={() => {
+                          if (!weekKey) return;
+                          setAvailWeeks(prev => { const c = new Set(prev); if (c.has(weekKey)) c.delete(weekKey); else c.add(weekKey); return c; });
+                          Haptics.selectionAsync();
+                        }}
+                        style={{ flexDirection: "row", borderRadius: 10, marginBottom: 3, overflow: "hidden",
+                          backgroundColor: isActive ? `${colors.primary}15` : "transparent",
+                          borderWidth: isActive ? 1 : 0, borderColor: isActive ? colors.primary : "transparent" }}>
+                        {week.map((date, di) => {
+                          const isToday = date && date.toDateString() === todayNow.toDateString();
+                          return (
+                            <View key={di} style={{ flex: 1, alignItems: "center", paddingVertical: 7 }}>
+                              {date ? (
+                                <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center",
+                                  backgroundColor: isToday ? colors.primary : "transparent" }}>
+                                  <Text style={{ fontSize: 13, fontWeight: isActive ? "700" : "400",
+                                    color: isToday ? "#FFF" : (isActive ? colors.primary : colors.foreground) }}>
+                                    {date.getDate()}
+                                  </Text>
+                                </View>
+                              ) : <View style={{ width: 26, height: 26 }} />}
+                            </View>
+                          );
+                        })}
+                      </Pressable>
+                    );
+                  })}
+                  {/* Summary */}
+                  {availWeeks.size > 0 && (
+                    <View style={{ backgroundColor: "#D1FAE5", borderRadius: 10, padding: 10, marginTop: 8, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#065F46" }}>
+                        {availWeeks.size} week{availWeeks.size !== 1 ? "s" : ""} selected as available
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* ── Notes for admin ── */}
                 <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 }}>
-                  Note per l'admin (facoltativo)
+                  Notes for Admin (optional)
                 </Text>
                 <TextInput
                   style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 12,
@@ -865,7 +1088,7 @@ export default function OperatorPrivateLessonsScreen() {
                     height: 72, textAlignVertical: "top", marginBottom: 22 }}
                   value={slotNotes}
                   onChangeText={setSlotNotes}
-                  placeholder="es. Preferisco la mattina, posso coprire assenze..."
+                  placeholder="e.g. I prefer mornings, available for cover shifts..."
                   placeholderTextColor={colors.mutedForeground}
                   multiline
                 />
@@ -881,7 +1104,7 @@ export default function OperatorPrivateLessonsScreen() {
                   {saving
                     ? <ActivityIndicator size="small" color="#FFF" />
                     : <Ionicons name="send-outline" size={18} color="#FFF" />}
-                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Invia Disponibilita'</Text>
+                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Submit Availability</Text>
                 </Pressable>
 
                 {/* ── Local slots history ── */}
@@ -890,13 +1113,14 @@ export default function OperatorPrivateLessonsScreen() {
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
                       <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
                       <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                        Inviate di recente
+                        Recently Submitted
                       </Text>
                       <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
                     </View>
                     {localSlots.slice(0, 10).map(s => {
-                      const actInfo = ACTIVITY_TYPES.find(a => a.id === s.activityType);
-                      const DAYS_ITA_S = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
+                      const primaryType = s.activityTypes?.[0] ?? s.activityType;
+                      const actInfo = ACTIVITY_TYPES.find(a => a.id === primaryType);
+                      const DAYS_EN_S = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
                       return (
                         <View key={s.id} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 10,
                           borderWidth: 1, borderLeftWidth: 4, borderColor: actInfo?.color ?? colors.border }}>
@@ -905,26 +1129,31 @@ export default function OperatorPrivateLessonsScreen() {
                             <Text style={{ flex: 1, fontSize: 14, fontWeight: "800", color: colors.foreground }}>{s.activityLabel}</Text>
                             <View style={{ backgroundColor: s.synced ? "#D1FAE5" : "#FEF3C7", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
                               <Text style={{ fontSize: 10, fontWeight: "700", color: s.synced ? "#065F46" : "#92400E" }}>
-                                {s.synced ? "Sincronizzato" : "In attesa"}
+                                {s.synced ? "Synced" : "Pending"}
                               </Text>
                             </View>
                           </View>
                           <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 2 }}>
-                            {s.recurring ? "Ogni settimana" : (s.date ?? "")} · {s.location}
+                            {s.recurring ? "Weekly" : (s.date ?? "")} · {s.location}
                           </Text>
                           {s.recurring && s.daySlots && (
                             <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
-                              {s.daySlots.map(d => `${DAYS_ITA_S[d.dayOfWeek]} ${d.start}-${d.end}`).join("  |  ")}
+                              {s.daySlots.map(d => `${DAYS_EN_S[d.dayOfWeek]} ${d.start}-${d.end}`).join("  |  ")}
                             </Text>
                           )}
                           {!s.recurring && s.startTime && s.endTime && (
                             <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{s.startTime} - {s.endTime}</Text>
                           )}
+                          {s.activeWeeks && s.activeWeeks.length > 0 && (
+                            <Text style={{ fontSize: 11, color: "#059669", marginTop: 3 }}>
+                              {s.activeWeeks.length} week{s.activeWeeks.length !== 1 ? "s" : ""} selected
+                            </Text>
+                          )}
                           {s.notes ? (
                             <Text style={{ fontSize: 12, color: colors.mutedForeground, fontStyle: "italic", marginTop: 4 }}>"{s.notes}"</Text>
                           ) : null}
                           <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 5 }}>
-                            {new Date(s.savedAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}
+                            {new Date(s.savedAt).toLocaleDateString(deviceLocale, { day: "numeric", month: "long", year: "numeric" })}
                           </Text>
                         </View>
                       );
