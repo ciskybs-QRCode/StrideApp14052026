@@ -31,20 +31,21 @@ const WIZARD_STEPS = 4; // steps 1-4 shown in indicator (after credentials)
 type Region = "IT" | "AU" | "GLOBAL";
 
 interface RegionCfg {
-  flag: string; label: string;
+  flag: string; label: string; localeName: string;
   phonePrefix: string; phonePlaceholder: string;
   streetLabel: string; postcodeLabel: string;
   cityLabel: string; stateLabel: string; stateOptions: string[];
   taxLabel1: string; taxLabel2: string;
   taxPlaceholder1: string; taxPlaceholder2: string;
+  schoolNamePlaceholder: string;
 }
 
 const REGION_CFG: Record<Region, RegionCfg> = {
   IT: {
-    flag: "🇮🇹", label: "Italia",
+    flag: "🇮🇹", label: "Italia", localeName: "Localizzazione italiana",
     phonePrefix: "+39", phonePlaceholder: "02 1234 5678",
     streetLabel: "Via / Piazza", postcodeLabel: "CAP",
-    cityLabel: "Città", stateLabel: "Provincia",
+    cityLabel: "Citta'", stateLabel: "Provincia",
     stateOptions: ["AG","AL","AN","AO","AR","AP","AT","AV","BA","BT","BL","BN","BG","BI",
       "BO","BZ","BS","BR","CA","CL","CB","CE","CT","CZ","CH","CO","CS","CR","KR","CN",
       "EN","FM","FE","FI","FG","FC","FR","GE","GO","GR","IM","IS","SP","AQ","LT","LE",
@@ -54,23 +55,26 @@ const REGION_CFG: Record<Region, RegionCfg> = {
       "TP","TN","TV","TS","UD","VA","VE","VB","VC","VR","VV","VI","VT"],
     taxLabel1: "Partita IVA", taxLabel2: "Codice Fiscale",
     taxPlaceholder1: "IT12345678901", taxPlaceholder2: "RSSMRA80A01H501T",
+    schoolNamePlaceholder: "es. Accademia di Danza Roma",
   },
   AU: {
-    flag: "🇦🇺", label: "Australia",
+    flag: "🇦🇺", label: "Australia", localeName: "AU localisation",
     phonePrefix: "+61", phonePlaceholder: "04XX XXX XXX",
     streetLabel: "Street Address", postcodeLabel: "Postcode",
     cityLabel: "Suburb / City", stateLabel: "State",
     stateOptions: ["NSW","VIC","QLD","SA","WA","TAS","ACT","NT"],
     taxLabel1: "ABN", taxLabel2: "ACN (optional)",
     taxPlaceholder1: "12 345 678 901", taxPlaceholder2: "123 456 789",
+    schoolNamePlaceholder: "e.g. Sydney Dance Academy",
   },
   GLOBAL: {
-    flag: "🌍", label: "Global",
+    flag: "🌍", label: "Global", localeName: "Global localisation",
     phonePrefix: "+", phonePlaceholder: "Phone number",
     streetLabel: "Street Address", postcodeLabel: "Postcode / ZIP",
     cityLabel: "City", stateLabel: "State / Region", stateOptions: [],
     taxLabel1: "Tax ID / Business Number", taxLabel2: "Secondary ID (optional)",
     taxPlaceholder1: "Tax identification number", taxPlaceholder2: "Secondary number",
+    schoolNamePlaceholder: "e.g. City Dance Studio",
   },
 };
 
@@ -193,7 +197,9 @@ export default function Pioneer() {
   const scrollRef = useRef<ScrollView>(null);
 
   const deviceLocale = useMemo(getDeviceLocale, []);
-  const region = deviceLocale.region;
+  const [manualRegion,     setManualRegion]     = useState<Region | null>(null);
+  const [showRegionPicker, setShowRegionPicker] = useState(false);
+  const region = manualRegion ?? deviceLocale.region;
   const cfg    = REGION_CFG[region];
 
   const alreadyAdmin = user?.role === "admin" || user?.role === "super_admin";
@@ -393,9 +399,62 @@ export default function Pioneer() {
               ? `A 6-digit code was sent to ${email}. Enter it below to confirm.`
               : `Step ${step} of ${WIZARD_STEPS} — ${STEP_LABELS[step]}`}
           </Text>
-          <View style={st.regionBadge}>
-            <Text style={st.regionText}>{cfg.flag} {cfg.label} · {region} localisation</Text>
-          </View>
+          {/* ── Locale chip — tappable to override auto-detection ── */}
+          <Pressable
+            style={[st.regionBadge, showRegionPicker && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}
+            onPress={() => { setShowRegionPicker(v => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <Text style={st.regionText}>{cfg.flag} {cfg.label} · {cfg.localeName}</Text>
+            <Ionicons
+              name={showRegionPicker ? "chevron-up" : "chevron-down"}
+              size={12}
+              color="rgba(255,255,255,0.7)"
+              style={{ marginLeft: 4 }}
+            />
+          </Pressable>
+          {showRegionPicker && (
+            <View style={{
+              flexDirection: "row", gap: 6, marginBottom: 4,
+              backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 10,
+              borderTopLeftRadius: 0, borderTopRightRadius: 0,
+              padding: 8,
+            }}>
+              {(["IT", "AU", "GLOBAL"] as Region[]).map(r => {
+                const rc = REGION_CFG[r];
+                const active = region === r;
+                return (
+                  <Pressable
+                    key={r}
+                    style={{
+                      flex: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center",
+                      backgroundColor: active ? "rgba(255,255,255,0.25)" : "transparent",
+                      borderWidth: active ? 1 : 0,
+                      borderColor: "rgba(255,255,255,0.5)",
+                    }}
+                    onPress={() => {
+                      setManualRegion(r);
+                      setStateRegion(REGION_CFG[r].stateOptions[0] ?? "");
+                      setShowRegionPicker(false);
+                      Haptics.selectionAsync();
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{rc.flag}</Text>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: active ? "#FFF" : "rgba(255,255,255,0.6)", marginTop: 2 }}>
+                      {r}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+          {manualRegion && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 }}>
+              <Ionicons name="pencil-outline" size={10} color="rgba(255,255,255,0.5)" />
+              <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>
+                Impostazione manuale (rilevato: {deviceLocale.flag} {deviceLocale.region})
+              </Text>
+            </View>
+          )}
           {step >= 1 && <StepIndicator current={step - 1} total={WIZARD_STEPS} />}
         </View>
 
@@ -555,7 +614,7 @@ export default function Pioneer() {
             <View style={st.inputWrap}>
               <Ionicons name="business-outline" size={16} color="#9CA3AF" />
               <TextInput style={st.input} value={schoolName} onChangeText={setSchoolName}
-                placeholder="e.g. Accademia di Danza Milano" placeholderTextColor="#9CA3AF"
+                placeholder={cfg.schoolNamePlaceholder} placeholderTextColor="#9CA3AF"
                 autoCapitalize="words" />
             </View>
 
