@@ -360,6 +360,7 @@ export default function ActivityScreen() {
 
   // ── Year-over-year duplicate ──
   const [showYoY, setShowYoY]                   = useState(false);
+  const [showCreateChoice, setShowCreateChoice] = useState(false);
 
   // ── New tag input ──
   const [newTagInput, setNewTagInput]           = useState("");
@@ -707,15 +708,26 @@ export default function ActivityScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const openCreate = () => {
+  const startFresh = () => {
     setEditingActivity(null);
     setDraft(BLANK_ACTIVITY());
     setActiveWeeks(new Set());
     setDurationMode("preset");
     setShowTagInput(false);
     setNewTagInput("");
+    setShowCreateChoice(false);
+    setShowYoY(false);
     setShowActivityModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const openCreate = () => {
+    if (activities.length > 0) {
+      setShowCreateChoice(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else {
+      startFresh();
+    }
   };
 
   const openEdit = (a: Activity) => {
@@ -1357,28 +1369,6 @@ export default function ActivityScreen() {
 
           <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
 
-            {/* ─── YoY duplicate banner ─── */}
-            {activities.length > 0 && !editingActivity && (
-              <Pressable
-                style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: `${colors.primary}12`,
-                  borderRadius: 14, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: `${colors.primary}30` }}
-                onPress={() => setShowYoY(true)}
-              >
-                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary,
-                  alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name="copy-outline" size={18} color="#FFF" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary }}>
-                    Duplicate last year's activity
-                  </Text>
-                  <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>
-                    Clone an existing activity as a starting point
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-              </Pressable>
-            )}
 
             {/* ─── SECTION: TITLE ─── */}
             {renderSectionHeader("ACTIVITY TITLE")}
@@ -1412,8 +1402,8 @@ export default function ActivityScreen() {
                 const active = draft.type === "custom" && draft.customTypeName === ct;
                 return (
                   <Pressable key={ct} onPress={() => { setDraft(d => ({ ...d, type: "custom", customTypeName: ct })); Haptics.selectionAsync(); }}
-                    style={[styles.pickerChip, active && { backgroundColor: "#F3F4F6", borderColor: "#6B7280", borderWidth: 1.5 }]}>
-                    <Text style={[styles.pickerChipText, { color: active ? "#6B7280" : colors.mutedForeground }]}>{ct}</Text>
+                    style={[styles.pickerChip, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{ct}</Text>
                   </Pressable>
                 );
               })}
@@ -1841,10 +1831,21 @@ export default function ActivityScreen() {
               >
                 <Ionicons name="calendar-outline" size={16} color="#10B981" />
                 <Text style={[styles.addSlotText, { color: "#10B981" }]}>
-                  Calendar {activeWeeks.size > 0 ? `(${activeWeeks.size} wk${activeWeeks.size > 1 ? "s" : ""})` : ""}
+                  {activeWeeks.size > 0 ? `${activeWeeks.size} week${activeWeeks.size > 1 ? "s" : ""} selected` : "Select weeks"}
                 </Text>
               </Pressable>
             </View>
+            {activeWeeks.size > 0 && draft.schedule.length > 0 && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8,
+                backgroundColor: "#D1FAE5", borderRadius: 10, padding: 10, marginBottom: 4 }}>
+                <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#059669", flex: 1 }}>
+                  {activeWeeks.size * draft.schedule.length} session{activeWeeks.size * draft.schedule.length > 1 ? "s" : ""} planned
+                  {"  ·  "}{activeWeeks.size} week{activeWeeks.size > 1 ? "s" : ""}
+                  {"  ·  "}{draft.schedule.length} slot{draft.schedule.length > 1 ? "s" : ""}/week
+                </Text>
+              </View>
+            )}
 
             {/* ─── SECTION: CAPACITY ─── */}
             {renderSectionHeader("CAPACITY")}
@@ -2056,6 +2057,70 @@ export default function ActivityScreen() {
                 <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Confirm</Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ══════════════════════════════════════════════════
+          NEW ACTIVITY — start-fresh vs copy choice
+      ══════════════════════════════════════════════════ */}
+      <Modal visible={showCreateChoice} animationType="slide" transparent onRequestClose={() => setShowCreateChoice(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+            paddingHorizontal: 20, paddingTop: 20, paddingBottom: insets.bottom + 20 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary,
+                alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                <Ionicons name="sparkles" size={18} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: colors.foreground }}>New Activity</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>
+                  Start fresh or copy from a previous year
+                </Text>
+              </View>
+              <Pressable onPress={() => setShowCreateChoice(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 16 }} />
+
+            {/* Option A — start fresh */}
+            <Pressable onPress={startFresh}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: colors.card,
+                borderRadius: 16, padding: 16, marginBottom: 10,
+                borderWidth: 1, borderColor: colors.border }}>
+              <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: `${colors.primary}15`,
+                alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: colors.foreground }}>Start from scratch</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                  Blank form — fill everything from zero
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+            </Pressable>
+
+            {/* Option B — copy from previous year */}
+            <Pressable onPress={() => { setShowCreateChoice(false); setShowYoY(true); }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: `${colors.primary}10`,
+                borderRadius: 16, padding: 16, marginBottom: 4,
+                borderWidth: 1.5, borderColor: `${colors.primary}40` }}>
+              <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: colors.primary,
+                alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="copy-outline" size={22} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: colors.primary }}>Copy from previous year</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                  Pre-fill from an existing activity — just update the dates
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
           </View>
         </View>
       </Modal>
