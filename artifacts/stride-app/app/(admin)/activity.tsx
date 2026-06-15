@@ -213,7 +213,7 @@ const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
   title: "", type: "lesson", customTypeName: "",
   disciplines: [],
   level: "all", extraTags: [],
-  ageGroup: "all", ageMin: 3, ageMax: 99,
+  ageGroup: "all", ageMin: 6, ageMax: 7,
   schedule: [{ day: "Mon", startTime: "09:00" }],
   campusId: "c1", campusName: "Main Studio", room: "",
   teacherId: "t1", teacherName: "",
@@ -244,76 +244,67 @@ const adminStatusConfig: Record<AdminItemStatus, { color: string; bg: string; la
 
 // ── Drum Scroll Picker ────────────────────────────────────────────────────────
 
-const DRUM_ITEM_H = 36;
-const DRUM_VISIBLE = 3;
-
-function AgeScrollPicker({
+function AgePicker({
   value, min, max, onChange, colors,
 }: {
   value: number; min: number; max: number;
   onChange: (v: number) => void;
   colors: ReturnType<typeof useColors>;
 }) {
-  const ref = useRef<ScrollView>(null);
+  const [open, setOpen] = useState(false);
   const items = Array.from({ length: max - min + 1 }, (_, i) => i + min);
+  const scrollRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    const idx = value - min;
-    ref.current?.scrollTo({ y: idx * DRUM_ITEM_H, animated: false });
-  }, [min, max]);
-
-  const handleScrollEnd = (y: number) => {
-    const idx = Math.round(y / DRUM_ITEM_H);
-    const clamped = Math.max(0, Math.min(items.length - 1, idx));
-    const selected = items[clamped];
-    if (selected !== value) {
-      onChange(selected);
-      Haptics.selectionAsync();
-    }
+  const handleOpen = () => {
+    setOpen(true);
+    // scroll to current value after modal renders
+    setTimeout(() => {
+      const idx = value - min;
+      scrollRef.current?.scrollTo({ y: idx * 44, animated: false });
+    }, 80);
   };
 
   return (
-    <View style={{ height: DRUM_ITEM_H * DRUM_VISIBLE, overflow: "hidden" }}>
-      {/* centre-line highlight */}
-      <View pointerEvents="none" style={{
-        position: "absolute", top: DRUM_ITEM_H * 1, left: 0, right: 0,
-        height: DRUM_ITEM_H, backgroundColor: `${colors.primary}18`,
-        borderRadius: 10, zIndex: 1,
-      }} />
-      <ScrollView
-        ref={ref}
-        showsVerticalScrollIndicator={false}
-        snapToInterval={DRUM_ITEM_H}
-        decelerationRate="fast"
-        contentContainerStyle={{ paddingVertical: DRUM_ITEM_H * 1 }}
-        onMomentumScrollEnd={e => handleScrollEnd(e.nativeEvent.contentOffset.y)}
-        onScrollEndDrag={e => handleScrollEnd(e.nativeEvent.contentOffset.y)}
-      >
-        {items.map(age => {
-          const isSelected = age === value;
-          return (
-            <Pressable
-              key={age}
-              onPress={() => {
-                ref.current?.scrollTo({ y: (age - min) * DRUM_ITEM_H, animated: true });
-                onChange(age);
-                Haptics.selectionAsync();
-              }}
-              style={{ height: DRUM_ITEM_H, alignItems: "center", justifyContent: "center" }}
-            >
-              <Text style={{
-                fontSize: isSelected ? 20 : 14,
-                fontWeight: isSelected ? "800" : "400",
-                color: isSelected ? colors.primary : colors.mutedForeground,
-                opacity: isSelected ? 1 : 0.6,
-              }}>
-                {age}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-    </View>
+    <>
+      <Pressable
+        onPress={handleOpen}
+        style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+          paddingHorizontal: 14, paddingVertical: 10,
+          backgroundColor: colors.card, borderRadius: 10,
+          borderWidth: 1, borderColor: colors.border, minWidth: 80 }}>
+        <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary, flex: 1, textAlign: "center" }}>
+          {value}
+        </Text>
+        <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+      </Pressable>
+
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", alignItems: "center" }}
+          onPress={() => setOpen(false)}>
+          <Pressable onPress={e => e.stopPropagation()}
+            style={{ width: 120, maxHeight: 300, backgroundColor: colors.background,
+              borderRadius: 14, overflow: "hidden",
+              shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 12, elevation: 8 }}>
+            <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
+              {items.map(age => {
+                const sel = age === value;
+                return (
+                  <Pressable key={age}
+                    onPress={() => { onChange(age); Haptics.selectionAsync(); setOpen(false); }}
+                    style={{ height: 44, alignItems: "center", justifyContent: "center",
+                      backgroundColor: sel ? `${colors.primary}18` : "transparent" }}>
+                    <Text style={{ fontSize: sel ? 18 : 15, fontWeight: sel ? "800" : "400",
+                      color: sel ? colors.primary : colors.foreground }}>
+                      {age}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -1616,7 +1607,7 @@ export default function ActivityScreen() {
                   <View style={{ flex: 1, alignItems: "center", paddingVertical: 8 }}>
                     <Text style={{ fontSize: 10, color: colors.mutedForeground, fontWeight: "700",
                       textTransform: "uppercase", marginBottom: 4 }}>From</Text>
-                    <AgeScrollPicker
+                    <AgePicker
                       value={draft.ageMin}
                       min={1}
                       max={draft.ageMax - 1}
@@ -1630,7 +1621,7 @@ export default function ActivityScreen() {
                   <View style={{ flex: 1, alignItems: "center", paddingVertical: 8 }}>
                     <Text style={{ fontSize: 10, color: colors.mutedForeground, fontWeight: "700",
                       textTransform: "uppercase", marginBottom: 4 }}>To</Text>
-                    <AgeScrollPicker
+                    <AgePicker
                       value={draft.ageMax}
                       min={draft.ageMin + 1}
                       max={99}
