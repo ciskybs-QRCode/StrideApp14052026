@@ -150,6 +150,10 @@ interface AdminScheduleItem {
   invitePaid?: boolean;         // only for "operators_only"
   invitePayAmount?: string;     // optional pay amount for paid operator meetings
   invitesSentAt?: string;       // ISO timestamp of when invites were dispatched
+  // ── Secretary Hours schedule ──
+  secretaryDays?: string[];        // e.g. ["Mon","Tue","Wed"]
+  secretaryActiveWeeks?: string[]; // ISO week-start Mondays that are ON
+  secretaryOffWeeks?: string[];    // ISO week-start Mondays that are OFF
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -528,6 +532,14 @@ export default function ActivityScreen() {
   const [adminInviteScope,    setAdminInviteScope]    = useState<InviteScope | undefined>(undefined);
   const [adminInvitePaid,     setAdminInvitePaid]     = useState(false);
   const [adminInvitePayAmt,   setAdminInvitePayAmt]   = useState("");
+
+  // ── Secretary Hours schedule ──
+  const [showSecHoursCalendar, setShowSecHoursCalendar] = useState(false);
+  const [secHoursCalYear,      setSecHoursCalYear]      = useState(new Date().getFullYear());
+  const [secHoursCalMonth,     setSecHoursCalMonth]     = useState(new Date().getMonth());
+  const [secHoursActiveDays,   setSecHoursActiveDays]   = useState<string[]>([]);
+  const [secHoursActiveWeeks,  setSecHoursActiveWeeks]  = useState<Set<string>>(new Set());
+  const [secHoursOffWeeks,     setSecHoursOffWeeks]     = useState<Set<string>>(new Set());
 
   // ── Smart Alerts state ──
   const [showAlertDetail, setShowAlertDetail] = useState(false);
@@ -916,6 +928,11 @@ export default function ActivityScreen() {
     setAdminInviteScope(undefined);
     setAdminInvitePaid(false);
     setAdminInvitePayAmt("");
+    setSecHoursActiveDays([]);
+    setSecHoursActiveWeeks(new Set());
+    setSecHoursOffWeeks(new Set());
+    setSecHoursCalYear(new Date().getFullYear());
+    setSecHoursCalMonth(new Date().getMonth());
     setShowAdminModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
@@ -952,6 +969,12 @@ export default function ActivityScreen() {
     setAdminInviteScope(item.inviteScope);
     setAdminInvitePaid(item.invitePaid ?? false);
     setAdminInvitePayAmt(item.invitePayAmount ?? "");
+    // Restore secretary hours state
+    setSecHoursActiveDays(item.secretaryDays ?? []);
+    setSecHoursActiveWeeks(new Set(item.secretaryActiveWeeks ?? []));
+    setSecHoursOffWeeks(new Set(item.secretaryOffWeeks ?? []));
+    setSecHoursCalYear(new Date().getFullYear());
+    setSecHoursCalMonth(new Date().getMonth());
     setShowAdminModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -995,6 +1018,7 @@ export default function ActivityScreen() {
     const primaryDate = datesArr.length > 0 ? isoToDisplay(datesArr[0]) : adminDraft.date;
     const now = new Date().toISOString();
     const inviteScopeToSave = adminInviteScope;
+    const isSecHours = adminDraft.type === "secretary_hours";
     const finalDraft: Omit<AdminScheduleItem, "id"> = {
       ...adminDraft,
       dates: datesArr, date: primaryDate, startTime: timeStr,
@@ -1002,6 +1026,9 @@ export default function ActivityScreen() {
       invitePaid: adminInvitePaid,
       invitePayAmount: adminInvitePayAmt,
       invitesSentAt: inviteScopeToSave ? now : undefined,
+      secretaryDays:        isSecHours ? secHoursActiveDays : undefined,
+      secretaryActiveWeeks: isSecHours ? Array.from(secHoursActiveWeeks).sort() : undefined,
+      secretaryOffWeeks:    isSecHours ? Array.from(secHoursOffWeeks).sort()   : undefined,
     };
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     let savedId: string;
@@ -2672,6 +2699,103 @@ export default function ActivityScreen() {
               />
             )}
 
+            {/* ── SECRETARY SCHEDULE — only for Secretary Hours type ── */}
+            {adminDraft.type === "secretary_hours" && (
+              <>
+                {renderSectionHeader("SECRETARY SCHEDULE")}
+
+                {/* Active Days */}
+                <Text style={[styles.formLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>
+                  Active Days
+                </Text>
+                <View style={[styles.pickerWrap, { marginBottom: 16 }]}>
+                  {DAYS_SHORT.map(day => {
+                    const active = secHoursActiveDays.includes(day);
+                    return (
+                      <Pressable
+                        key={day}
+                        onPress={() => {
+                          setSecHoursActiveDays(prev =>
+                            active ? prev.filter(d => d !== day) : [...prev, day]
+                          );
+                          Haptics.selectionAsync();
+                        }}
+                        style={[
+                          styles.pickerChip,
+                          active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 },
+                        ]}
+                      >
+                        <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                          {day}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {/* Weekly calendar button */}
+                <Text style={[styles.formLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>
+                  Weekly Schedule
+                </Text>
+                <Pressable
+                  onPress={() => { setShowSecHoursCalendar(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+                  style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5,
+                    borderColor: (secHoursActiveWeeks.size > 0 || secHoursOffWeeks.size > 0) ? colors.primary : colors.border,
+                    padding: 14, flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}
+                >
+                  <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>
+                      Select Active &amp; Off Weeks
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+                      {secHoursActiveWeeks.size === 0 && secHoursOffWeeks.size === 0
+                        ? "Tap to open the monthly calendar"
+                        : `${secHoursActiveWeeks.size} active · ${secHoursOffWeeks.size} off`}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                </Pressable>
+
+                {/* Summary chips */}
+                {(secHoursActiveWeeks.size > 0 || secHoursOffWeeks.size > 0) && (
+                  <View style={{ gap: 8, marginBottom: 8 }}>
+                    <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                      {secHoursActiveWeeks.size > 0 && (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6,
+                          backgroundColor: `${colors.primary}12`, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                          <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>
+                            {secHoursActiveWeeks.size} active week{secHoursActiveWeeks.size > 1 ? "s" : ""}
+                          </Text>
+                        </View>
+                      )}
+                      {secHoursOffWeeks.size > 0 && (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6,
+                          backgroundColor: "rgba(239,68,68,0.1)", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                          <Ionicons name="close-circle" size={14} color="#EF4444" />
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: "#EF4444" }}>
+                            {secHoursOffWeeks.size} off week{secHoursOffWeeks.size > 1 ? "s" : ""}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    {secHoursActiveDays.length > 0 && secHoursActiveWeeks.size > 0 && (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8,
+                        backgroundColor: "#D1FAE5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                        <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: "#059669", flex: 1 }}>
+                          {secHoursActiveDays.length * secHoursActiveWeeks.size} session{secHoursActiveDays.length * secHoursActiveWeeks.size !== 1 ? "s" : ""} planned
+                          {"  ·  "}{secHoursActiveDays.length} day{secHoursActiveDays.length !== 1 ? "s" : ""}/week
+                          {"  ·  "}{secHoursActiveWeeks.size} week{secHoursActiveWeeks.size !== 1 ? "s" : ""}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </>
+            )}
+
             {/* ── INVITEES ── */}
             {renderSectionHeader("INVITEES")}
             <View style={{ marginBottom: 12, gap: 8 }}>
@@ -3037,6 +3161,168 @@ export default function ActivityScreen() {
                 >
                   <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>Confirm</Text>
                 </Pressable>
+              </Pressable>
+            </Pressable>
+          </Modal>
+
+          {/* ── Secretary Hours Calendar Modal (nested) ──────────────────────── */}
+          <Modal
+            visible={showSecHoursCalendar}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowSecHoursCalendar(false)}
+          >
+            <Pressable
+              style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
+              onPress={() => setShowSecHoursCalendar(false)}
+            >
+              <Pressable
+                onPress={e => e.stopPropagation()}
+                style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+                  paddingBottom: insets.bottom + 16 }}
+              >
+                {/* Header */}
+                <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 }}>
+                  <Text style={{ flex: 1, fontSize: 16, fontWeight: "800", color: colors.primary }}>
+                    Secretary Weekly Schedule
+                  </Text>
+                  <Pressable
+                    onPress={() => { setSecHoursActiveWeeks(new Set()); setSecHoursOffWeeks(new Set()); }}
+                    style={{ marginRight: 12 }}
+                  >
+                    <Text style={{ fontSize: 13, color: "#EF4444", fontWeight: "600" }}>Clear</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setShowSecHoursCalendar(false)} style={{ padding: 4 }}>
+                    <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+
+                {/* Legend */}
+                <View style={{ flexDirection: "row", gap: 16, paddingHorizontal: 20, marginBottom: 12 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: colors.primary }} />
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Active</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: "#EF4444" }} />
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Off / Closed</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ width: 12, height: 12, borderRadius: 3, borderWidth: 1, borderColor: colors.border, backgroundColor: "transparent" }} />
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Tap to set</Text>
+                  </View>
+                </View>
+
+                {/* Month navigation */}
+                <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, marginBottom: 10 }}>
+                  <Pressable
+                    onPress={() => {
+                      if (secHoursCalMonth === 0) { setSecHoursCalMonth(11); setSecHoursCalYear(y => y - 1); }
+                      else setSecHoursCalMonth(m => m - 1);
+                    }}
+                    style={{ padding: 8 }}
+                  >
+                    <Ionicons name="chevron-back" size={22} color={colors.primary} />
+                  </Pressable>
+                  <Text style={{ flex: 1, textAlign: "center", fontSize: 16, fontWeight: "800", color: colors.foreground }}>
+                    {new Date(secHoursCalYear, secHoursCalMonth).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      if (secHoursCalMonth === 11) { setSecHoursCalMonth(0); setSecHoursCalYear(y => y + 1); }
+                      else setSecHoursCalMonth(m => m + 1);
+                    }}
+                    style={{ padding: 8 }}
+                  >
+                    <Ionicons name="chevron-forward" size={22} color={colors.primary} />
+                  </Pressable>
+                </View>
+
+                {/* Day-of-week labels */}
+                <View style={{ flexDirection: "row", paddingHorizontal: 16, marginBottom: 6 }}>
+                  {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d => (
+                    <Text key={d} style={{ flex: 1, textAlign: "center", fontSize: 11, fontWeight: "700",
+                      color: colors.mutedForeground }}>
+                      {d}
+                    </Text>
+                  ))}
+                </View>
+
+                {/* Calendar grid — week rows, tri-state toggle */}
+                <View style={{ paddingHorizontal: 12 }}>
+                  {(() => {
+                    const firstDay = new Date(secHoursCalYear, secHoursCalMonth, 1);
+                    const lastDay  = new Date(secHoursCalYear, secHoursCalMonth + 1, 0);
+                    const weeks: { weekStart: Date; days: (Date | null)[] }[] = [];
+                    let current = getMonday(firstDay);
+                    while (current <= lastDay) {
+                      const days: (Date | null)[] = [];
+                      for (let dd = 0; dd < 7; dd++) {
+                        const day = new Date(current);
+                        day.setDate(current.getDate() + dd);
+                        days.push(day.getMonth() === secHoursCalMonth ? day : null);
+                      }
+                      weeks.push({ weekStart: new Date(current), days });
+                      current.setDate(current.getDate() + 7);
+                    }
+                    return weeks.map((week, wi) => {
+                      const key = isoDate(week.weekStart);
+                      const isActive = secHoursActiveWeeks.has(key);
+                      const isOff    = secHoursOffWeeks.has(key);
+                      return (
+                        <Pressable
+                          key={wi}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (!isActive && !isOff) {
+                              setSecHoursActiveWeeks(prev => new Set([...prev, key]));
+                            } else if (isActive) {
+                              setSecHoursActiveWeeks(prev => { const n = new Set(prev); n.delete(key); return n; });
+                              setSecHoursOffWeeks(prev => new Set([...prev, key]));
+                            } else {
+                              setSecHoursOffWeeks(prev => { const n = new Set(prev); n.delete(key); return n; });
+                            }
+                          }}
+                          style={{ flexDirection: "row", marginBottom: 4, borderRadius: 10,
+                            borderWidth: (isActive || isOff) ? 1.5 : 0,
+                            borderColor: isActive ? colors.primary : isOff ? "#EF4444" : "transparent",
+                            backgroundColor: isActive ? `${colors.primary}15` : isOff ? "rgba(239,68,68,0.1)" : "transparent" }}
+                        >
+                          {week.days.map((day, di) => (
+                            <View key={di} style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center" }}>
+                              {day ? (
+                                <Text style={{ fontSize: 14,
+                                  fontWeight: (isActive || isOff) ? "800" : "500",
+                                  color: isActive ? colors.primary : isOff ? "#EF4444" : colors.foreground }}>
+                                  {day.getDate()}
+                                </Text>
+                              ) : null}
+                            </View>
+                          ))}
+                        </Pressable>
+                      );
+                    });
+                  })()}
+                </View>
+
+                {/* Footer */}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                  paddingHorizontal: 20, paddingTop: 16 }}>
+                  <View style={{ gap: 2 }}>
+                    <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "700" }}>
+                      {secHoursActiveWeeks.size} active week{secHoursActiveWeeks.size !== 1 ? "s" : ""}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#EF4444", fontWeight: "700" }}>
+                      {secHoursOffWeeks.size} off week{secHoursOffWeeks.size !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setShowSecHoursCalendar(false)}
+                    style={{ backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}
+                  >
+                    <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Confirm</Text>
+                  </Pressable>
+                </View>
               </Pressable>
             </Pressable>
           </Modal>
