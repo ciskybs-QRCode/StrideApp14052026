@@ -31,6 +31,8 @@ type ActivityStatus = "active" | "draft" | "inactive";
 type AdminItemType  = "secretary_hours" | "staff_meeting" | "parent_teacher";
 type AdminItemStatus = "scheduled" | "completed" | "cancelled";
 
+const ADMIN_SCHEDULE_TYPES_KEY = "stride_admin_schedule_types";
+
 // Extra-tag storage key (persisted so they survive sessions)
 const EXTRA_TAGS_KEY       = "stride_activity_extra_tags";
 const DISCIPLINES_KEY      = "stride_activity_disciplines";
@@ -111,8 +113,9 @@ const PROPOSALS_KEY = "stride_workshop_proposals";
 interface AdminScheduleItem {
   id: string;
   title: string;
-  type: AdminItemType;
-  date: string;
+  type: string;          // predefined AdminItemType or custom string
+  date: string;          // primary date DD/MM/YYYY
+  dates?: string[];      // multi-date ISO YYYY-MM-DD (for series like secretary hours)
   startTime: string;
   duration: number;
   participants: string;
@@ -122,7 +125,36 @@ interface AdminScheduleItem {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const DAYS_SHORT = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAYS_SHORT  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAY_HEADS_SHORT = ["M","T","W","T","F","S","S"];
+
+// ── Calendar helpers ───────────────────────────────────────────────────────────
+
+function getAdminCalMatrix(year: number, month: number): (Date | null)[][] {
+  const firstDay    = new Date(year, month, 1);
+  const startDow    = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const matrix: (Date | null)[][] = [];
+  let week: (Date | null)[] = [];
+  for (let i = 0; i < startDow; i++) week.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    week.push(new Date(year, month, d));
+    if (week.length === 7) { matrix.push(week); week = []; }
+  }
+  while (week.length > 0 && week.length < 7) week.push(null);
+  if (week.some(Boolean)) matrix.push(week);
+  return matrix;
+}
+
+function toIso(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function isoToDisplay(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
 
 const TYPE_CONFIG: Record<ActivityType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
   lesson:   { label: "Lesson",   icon: "musical-notes",   color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
@@ -224,7 +256,7 @@ const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
 });
 
 const BLANK_ADMIN_ITEM = (): Omit<AdminScheduleItem, "id"> => ({
-  title: "", type: "staff_meeting", date: "", startTime: "", duration: 60,
+  title: "", type: "staff_meeting", date: "", dates: [], startTime: "", duration: 60,
   participants: "", notes: "", status: "scheduled",
 });
 
@@ -398,6 +430,10 @@ export default function ActivityScreen() {
     AsyncStorage.getItem(CUSTOM_TYPES_KEY).then(raw => {
       if (raw) setSavedCustomTypes(JSON.parse(raw));
     });
+    // Load persisted admin schedule types
+    AsyncStorage.getItem(ADMIN_SCHEDULE_TYPES_KEY).then(raw => {
+      if (raw) setSavedAdminTypes(JSON.parse(raw));
+    });
     // Load persisted venues and merge with existing campuses
     AsyncStorage.getItem(VENUES_KEY).then(raw => {
       if (raw) {
@@ -434,6 +470,22 @@ export default function ActivityScreen() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [editingAdminItem, setEditingAdminItem] = useState<AdminScheduleItem | null>(null);
   const [adminDraft, setAdminDraft] = useState(BLANK_ADMIN_ITEM());
+
+  // ── Admin custom types ──
+  const [savedAdminTypes,    setSavedAdminTypes]    = useState<string[]>([]);
+  const [showAdminTypeInput, setShowAdminTypeInput] = useState(false);
+  const [newAdminTypeInput,  setNewAdminTypeInput]  = useState("");
+
+  // ── Admin date picker ──
+  const [showAdminDatePicker,  setShowAdminDatePicker]  = useState(false);
+  const [adminDateCalYear,     setAdminDateCalYear]     = useState(new Date().getFullYear());
+  const [adminDateCalMonth,    setAdminDateCalMonth]    = useState(new Date().getMonth());
+  const [selectedAdminDates,   setSelectedAdminDates]  = useState<Set<string>>(new Set());
+
+  // ── Admin time picker ──
+  const [showAdminTimePicker, setShowAdminTimePicker] = useState(false);
+  const [adminTimeHour,       setAdminTimeHour]       = useState(9);
+  const [adminTimeMinute,     setAdminTimeMinute]     = useState(0);
 
   // ── Smart Alerts state ──
   const [showAlertDetail, setShowAlertDetail] = useState(false);
@@ -814,6 +866,11 @@ export default function ActivityScreen() {
   const openAdminCreate = () => {
     setEditingAdminItem(null);
     setAdminDraft(BLANK_ADMIN_ITEM());
+    setSelectedAdminDates(new Set());
+    setAdminTimeHour(9);
+    setAdminTimeMinute(0);
+    setShowAdminTypeInput(false);
+    setNewAdminTypeInput("");
     setShowAdminModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
@@ -822,17 +879,45 @@ export default function ActivityScreen() {
     setEditingAdminItem(item);
     const { id, ...rest } = item;
     setAdminDraft({ ...rest });
+    // Restore selected dates
+    if (item.dates && item.dates.length > 0) {
+      setSelectedAdminDates(new Set(item.dates));
+    } else if (item.date) {
+      const parts = item.date.split("/");
+      if (parts.length === 3) {
+        setSelectedAdminDates(new Set([`${parts[2]}-${parts[1].padStart(2,"0")}-${parts[0].padStart(2,"0")}`]));
+      } else {
+        setSelectedAdminDates(new Set());
+      }
+    } else {
+      setSelectedAdminDates(new Set());
+    }
+    // Restore time
+    if (item.startTime) {
+      const [h, m] = item.startTime.split(":").map(Number);
+      setAdminTimeHour(isNaN(h) ? 9 : h);
+      setAdminTimeMinute(isNaN(m) ? 0 : m);
+    } else {
+      setAdminTimeHour(9);
+      setAdminTimeMinute(0);
+    }
+    setShowAdminTypeInput(false);
+    setNewAdminTypeInput("");
     setShowAdminModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const saveAdminItem = () => {
     if (!adminDraft.title.trim()) { Alert.alert("Required", "Please enter a title."); return; }
+    const datesArr = Array.from(selectedAdminDates).sort();
+    const timeStr  = `${String(adminTimeHour).padStart(2, "0")}:${String(adminTimeMinute).padStart(2, "0")}`;
+    const primaryDate = datesArr.length > 0 ? isoToDisplay(datesArr[0]) : adminDraft.date;
+    const finalDraft = { ...adminDraft, dates: datesArr, date: primaryDate, startTime: timeStr };
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (editingAdminItem) {
-      setAdminItems(prev => prev.map(i => i.id === editingAdminItem.id ? { ...editingAdminItem, ...adminDraft } : i));
+      setAdminItems(prev => prev.map(i => i.id === editingAdminItem.id ? { ...editingAdminItem, ...finalDraft } : i));
     } else {
-      setAdminItems(prev => [...prev, { ...adminDraft, id: Date.now().toString() }]);
+      setAdminItems(prev => [...prev, { ...finalDraft, id: Date.now().toString() }]);
     }
     setShowAdminModal(false);
   };
@@ -950,9 +1035,15 @@ export default function ActivityScreen() {
 
   // ── Admin Item Card ───────────────────────────────────────────────────────────
 
+  const getAdminTypeConfig = (type: string) =>
+    ADMIN_TYPE_CONFIG[type as AdminItemType] ?? { label: type, icon: "star-outline" as const, color: "#6B7280", bg: "rgba(107,114,128,0.1)" };
+
   const AdminItemCard = ({ item }: { item: AdminScheduleItem }) => {
-    const tc = ADMIN_TYPE_CONFIG[item.type];
+    const tc = getAdminTypeConfig(item.type);
     const sc = adminStatusConfig[item.status];
+    const dateDisplay = item.dates && item.dates.length > 1
+      ? `${item.dates.length} dates`
+      : item.date;
     return (
       <Pressable style={[styles.adminCard, { backgroundColor: colors.card }]} onPress={() => openAdminEdit(item)}>
         <View style={[styles.adminIconWrap, { backgroundColor: tc.bg }]}>
@@ -961,11 +1052,11 @@ export default function ActivityScreen() {
         <View style={{ flex: 1, gap: 3 }}>
           <Text style={[styles.adminCardTitle, { color: colors.foreground }]}>{item.title}</Text>
           <Text style={[styles.adminCardMeta, { color: colors.mutedForeground }]}>
-            {tc.label}  ·  {item.date}  ·  {item.startTime}  ·  {fmtDuration(item.duration)}
+            {tc.label}  ·  {dateDisplay}  ·  {item.startTime}  ·  {fmtDuration(item.duration)}
           </Text>
           {item.participants ? (
             <Text style={[styles.adminCardMeta, { color: colors.mutedForeground }]} numberOfLines={1}>
-              👥 {item.participants}
+              {item.participants}
             </Text>
           ) : null}
         </View>
@@ -1126,23 +1217,28 @@ export default function ActivityScreen() {
             </View>
           </View>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {(["secretary_hours","staff_meeting","parent_teacher"] as AdminItemType[]).map(type => {
-            const items = adminItems.filter(i => i.type === type);
-            if (items.length === 0) return null;
-            const tc = ADMIN_TYPE_CONFIG[type];
-            return (
-              <View key={type}>
-                <View style={styles.adminSectionHeader}>
-                  <View style={[styles.adminSectionIcon, { backgroundColor: tc.bg }]}>
-                    <Ionicons name={tc.icon} size={16} color={tc.color} />
+          {(() => {
+            const predefined: string[] = ["secretary_hours","staff_meeting","parent_teacher"];
+            const usedCustom = savedAdminTypes.filter(t => adminItems.some(i => i.type === t));
+            const allTypes = [...predefined, ...usedCustom];
+            return allTypes.map(type => {
+              const items = adminItems.filter(i => i.type === type);
+              if (items.length === 0) return null;
+              const tc = getAdminTypeConfig(type);
+              return (
+                <View key={type}>
+                  <View style={styles.adminSectionHeader}>
+                    <View style={[styles.adminSectionIcon, { backgroundColor: tc.bg }]}>
+                      <Ionicons name={tc.icon} size={16} color={tc.color} />
+                    </View>
+                    <Text style={[styles.adminSectionTitle, { color: tc.color }]}>{tc.label}</Text>
+                    <Text style={[styles.adminSectionCount, { color: colors.mutedForeground }]}>{items.length}</Text>
                   </View>
-                  <Text style={[styles.adminSectionTitle, { color: tc.color }]}>{tc.label}</Text>
-                  <Text style={[styles.adminSectionCount, { color: colors.mutedForeground }]}>{items.length}</Text>
+                  {items.map(item => <AdminItemCard key={item.id} item={item} />)}
                 </View>
-                {items.map(item => <AdminItemCard key={item.id} item={item} />)}
-              </View>
-            );
-          })}
+              );
+            });
+          })()}
           <View style={{ height: 120 }} />
         </ScrollView>
         </>
@@ -2309,36 +2405,130 @@ export default function ActivityScreen() {
               onChangeText={v => setAdminDraft(d => ({ ...d, title: v }))}
             />
 
+            {/* ── TYPE ── */}
             {renderRow("Type",
-              <PickerRow
-                options={[
-                  { value: "secretary_hours" as const, label: "Secretary",    color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-                  { value: "staff_meeting" as const, label: "Staff Meeting", color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-                  { value: "parent_teacher" as const, label: "Member Consultation", color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-                ]}
-                value={adminDraft.type}
-                onSelect={v => setAdminDraft(d => ({ ...d, type: v }))}
-              />
+              <View style={styles.pickerWrap}>
+                {(["secretary_hours","staff_meeting","parent_teacher"] as AdminItemType[]).map(t => {
+                  const active = adminDraft.type === t;
+                  const cfg = ADMIN_TYPE_CONFIG[t];
+                  return (
+                    <Pressable key={t} onPress={() => setAdminDraft(d => ({ ...d, type: t }))}
+                      style={[styles.pickerChip, active && { backgroundColor: cfg.bg, borderColor: cfg.color, borderWidth: 1.5 }]}>
+                      <Text style={[styles.pickerChipText, { color: active ? cfg.color : colors.mutedForeground }]}>{cfg.label}</Text>
+                    </Pressable>
+                  );
+                })}
+                {savedAdminTypes.map(t => {
+                  const active = adminDraft.type === t;
+                  return (
+                    <Pressable key={t} onPress={() => setAdminDraft(d => ({ ...d, type: t }))}
+                      style={[styles.pickerChip, active && { backgroundColor: "rgba(107,114,128,0.12)", borderColor: "#6B7280", borderWidth: 1.5 }]}>
+                      <Text style={[styles.pickerChipText, { color: active ? "#6B7280" : colors.mutedForeground }]}>{t}</Text>
+                    </Pressable>
+                  );
+                })}
+                {showAdminTypeInput ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                    <TextInput
+                      style={[styles.smallInput, { flex: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                      placeholder="Custom type name…"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={newAdminTypeInput}
+                      onChangeText={setNewAdminTypeInput}
+                      autoFocus
+                      returnKeyType="done"
+                      onSubmitEditing={() => {
+                        const t = newAdminTypeInput.trim();
+                        if (t && !savedAdminTypes.includes(t)) {
+                          const next = [...savedAdminTypes, t];
+                          setSavedAdminTypes(next);
+                          AsyncStorage.setItem(ADMIN_SCHEDULE_TYPES_KEY, JSON.stringify(next)).catch(() => {});
+                        }
+                        if (t) setAdminDraft(d => ({ ...d, type: t }));
+                        setNewAdminTypeInput("");
+                        setShowAdminTypeInput(false);
+                      }}
+                    />
+                    <Pressable
+                      onPress={() => {
+                        const t = newAdminTypeInput.trim();
+                        if (t && !savedAdminTypes.includes(t)) {
+                          const next = [...savedAdminTypes, t];
+                          setSavedAdminTypes(next);
+                          AsyncStorage.setItem(ADMIN_SCHEDULE_TYPES_KEY, JSON.stringify(next)).catch(() => {});
+                        }
+                        if (t) setAdminDraft(d => ({ ...d, type: t }));
+                        setNewAdminTypeInput("");
+                        setShowAdminTypeInput(false);
+                        Haptics.selectionAsync();
+                      }}
+                      style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
+                      <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Add</Text>
+                    </Pressable>
+                    <Pressable onPress={() => { setShowAdminTypeInput(false); setNewAdminTypeInput(""); }}>
+                      <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={() => setShowAdminTypeInput(true)}
+                    style={[styles.pickerChip, { borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 4 }]}>
+                    <Ionicons name="add" size={13} color={colors.mutedForeground} />
+                    <Text style={[styles.pickerChipText, { color: colors.mutedForeground }]}>Other</Text>
+                  </Pressable>
+                )}
+              </View>
             )}
 
+            {/* ── WHEN ── */}
             {renderSectionHeader("WHEN")}
-            {renderRow("Date",
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
-                placeholder="DD/MM/YYYY"
-                placeholderTextColor={colors.mutedForeground}
-                value={adminDraft.date}
-                onChangeText={v => setAdminDraft(d => ({ ...d, date: v }))}
-              />
-            )}
+
+            {/* Date — monthly calendar picker */}
+            <View style={{ marginBottom: 12 }}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Date</Text>
+              <Pressable
+                onPress={() => setShowAdminDatePicker(true)}
+                style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, padding: 14, flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  {selectedAdminDates.size === 0 ? (
+                    <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>Tap to pick date(s)</Text>
+                  ) : selectedAdminDates.size === 1 ? (
+                    <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 14 }}>
+                      {isoToDisplay(Array.from(selectedAdminDates)[0])}
+                    </Text>
+                  ) : (
+                    <View style={{ gap: 2 }}>
+                      <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 14 }}>
+                        {selectedAdminDates.size} dates selected
+                      </Text>
+                      <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                        {Array.from(selectedAdminDates).sort().slice(0, 3).map(isoToDisplay).join(", ")}
+                        {selectedAdminDates.size > 3 ? ` +${selectedAdminDates.size - 3} more` : ""}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {selectedAdminDates.size > 0 && (
+                  <Pressable onPress={() => setSelectedAdminDates(new Set())} hitSlop={8}>
+                    <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
+                  </Pressable>
+                )}
+                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            {/* Start Time — drum scroll picker */}
             {renderRow("Start Time",
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
-                placeholder="HH:MM"
-                placeholderTextColor={colors.mutedForeground}
-                value={adminDraft.startTime}
-                onChangeText={v => setAdminDraft(d => ({ ...d, startTime: v }))}
-              />
+              <Pressable
+                onPress={() => setShowAdminTimePicker(true)}
+                style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 10 }}>
+                <Ionicons name="time-outline" size={16} color={colors.primary} />
+                <Text style={{ fontWeight: "800", color: colors.foreground, fontSize: 17, letterSpacing: 1 }}>
+                  {`${String(adminTimeHour).padStart(2,"0")}:${String(adminTimeMinute).padStart(2,"0")}`}
+                </Text>
+                <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+              </Pressable>
             )}
             {renderRow("Duration",
               <PickerRow
@@ -2383,6 +2573,225 @@ export default function ActivityScreen() {
 
             <View style={{ height: 40 }} />
           </ScrollView>
+
+          {/* ── Date Picker Modal (nested) ─────────────────────────────────── */}
+          <Modal
+            visible={showAdminDatePicker}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowAdminDatePicker(false)}
+          >
+            <Pressable
+              style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+              onPress={() => setShowAdminDatePicker(false)}
+            >
+              <Pressable
+                onPress={e => e.stopPropagation()}
+                style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32 }}
+              >
+                {/* Header */}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary }}>
+                    Select Date{selectedAdminDates.size > 1 ? "s" : ""}
+                  </Text>
+                  {selectedAdminDates.size > 0 && (
+                    <Pressable onPress={() => setSelectedAdminDates(new Set())}>
+                      <Text style={{ fontSize: 13, color: "#EF4444", fontWeight: "600" }}>Clear all</Text>
+                    </Pressable>
+                  )}
+                </View>
+
+                {/* Month navigation */}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <Pressable
+                    onPress={() => {
+                      if (adminDateCalMonth === 0) { setAdminDateCalMonth(11); setAdminDateCalYear(y => y - 1); }
+                      else setAdminDateCalMonth(m => m - 1);
+                    }}
+                    style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}
+                  >
+                    <Ionicons name="chevron-back" size={20} color={colors.primary} />
+                  </Pressable>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primary }}>
+                    {MONTH_NAMES[adminDateCalMonth]} {adminDateCalYear}
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      if (adminDateCalMonth === 11) { setAdminDateCalMonth(0); setAdminDateCalYear(y => y + 1); }
+                      else setAdminDateCalMonth(m => m + 1);
+                    }}
+                    style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}
+                  >
+                    <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                  </Pressable>
+                </View>
+
+                {/* Day-of-week headers */}
+                <View style={{ flexDirection: "row", marginBottom: 6 }}>
+                  {DAY_HEADS_SHORT.map((h, i) => (
+                    <View key={i} style={{ flex: 1, alignItems: "center" }}>
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>{h}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Calendar grid */}
+                <View style={{ borderRadius: 14, overflow: "hidden", backgroundColor: colors.card, padding: 4 }}>
+                  {getAdminCalMatrix(adminDateCalYear, adminDateCalMonth).map((week, wi) => (
+                    <View key={wi} style={{ flexDirection: "row" }}>
+                      {week.map((date, di) => {
+                        if (!date) return <View key={di} style={{ flex: 1, aspectRatio: 1 }} />;
+                        const iso = toIso(date);
+                        const selected = selectedAdminDates.has(iso);
+                        const now = new Date();
+                        const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                        return (
+                          <Pressable
+                            key={di}
+                            style={{
+                              flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center",
+                              borderRadius: 10, margin: 1,
+                              backgroundColor: selected ? colors.primary : isToday ? `${colors.primary}18` : "transparent",
+                            }}
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              setSelectedAdminDates(prev => {
+                                const next = new Set(prev);
+                                if (next.has(iso)) next.delete(iso);
+                                else next.add(iso);
+                                return next;
+                              });
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 14, fontWeight: selected || isToday ? "700" : "400",
+                              color: selected ? "#FFF" : isToday ? colors.primary : colors.foreground,
+                            }}>
+                              {date.getDate()}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
+
+                {/* Summary + Done */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 }}>
+                  <Text style={{ flex: 1, color: colors.mutedForeground, fontSize: 13 }}>
+                    {selectedAdminDates.size === 0
+                      ? "No dates selected"
+                      : `${selectedAdminDates.size} date${selectedAdminDates.size !== 1 ? "s" : ""} selected`}
+                  </Text>
+                  <Pressable
+                    onPress={() => { setShowAdminDatePicker(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                    style={{ backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13 }}
+                  >
+                    <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Done</Text>
+                  </Pressable>
+                </View>
+              </Pressable>
+            </Pressable>
+          </Modal>
+
+          {/* ── Time Picker Modal (nested) ─────────────────────────────────── */}
+          <Modal
+            visible={showAdminTimePicker}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowAdminTimePicker(false)}
+          >
+            <Pressable
+              style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+              onPress={() => setShowAdminTimePicker(false)}
+            >
+              <Pressable
+                onPress={e => e.stopPropagation()}
+                style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36 }}
+              >
+                <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary, textAlign: "center", marginBottom: 20 }}>
+                  Select Time
+                </Text>
+
+                {/* Current selection display */}
+                <View style={{ alignItems: "center", marginBottom: 16 }}>
+                  <Text style={{ fontSize: 36, fontWeight: "900", color: colors.primary, letterSpacing: 4 }}>
+                    {`${String(adminTimeHour).padStart(2,"0")}:${String(adminTimeMinute).padStart(2,"0")}`}
+                  </Text>
+                </View>
+
+                {/* Drum scrollers */}
+                <View style={{ flexDirection: "row", justifyContent: "center", gap: 16, marginBottom: 20 }}>
+                  {/* Hour column */}
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Hour</Text>
+                    <View style={{ width: 76, height: 220, borderRadius: 14, backgroundColor: colors.card, overflow: "hidden" }}>
+                      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 8 }}>
+                        {Array.from({ length: 24 }, (_, h) => h).map(h => (
+                          <Pressable
+                            key={h}
+                            onPress={() => { setAdminTimeHour(h); Haptics.selectionAsync(); }}
+                            style={{
+                              height: 44, alignItems: "center", justifyContent: "center",
+                              marginHorizontal: 4, borderRadius: 10,
+                              backgroundColor: adminTimeHour === h ? `${colors.primary}20` : "transparent",
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: adminTimeHour === h ? 20 : 16,
+                              fontWeight: adminTimeHour === h ? "800" : "400",
+                              color: adminTimeHour === h ? colors.primary : colors.foreground,
+                            }}>
+                              {String(h).padStart(2, "0")}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </View>
+
+                  {/* Divider */}
+                  <Text style={{ fontSize: 32, fontWeight: "800", color: colors.primary, alignSelf: "center" }}>:</Text>
+
+                  {/* Minute column */}
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Min</Text>
+                    <View style={{ width: 76, height: 220, borderRadius: 14, backgroundColor: colors.card, overflow: "hidden" }}>
+                      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 8 }}>
+                        {[0,5,10,15,20,25,30,35,40,45,50,55].map(m => (
+                          <Pressable
+                            key={m}
+                            onPress={() => { setAdminTimeMinute(m); Haptics.selectionAsync(); }}
+                            style={{
+                              height: 44, alignItems: "center", justifyContent: "center",
+                              marginHorizontal: 4, borderRadius: 10,
+                              backgroundColor: adminTimeMinute === m ? `${colors.primary}20` : "transparent",
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: adminTimeMinute === m ? 20 : 16,
+                              fontWeight: adminTimeMinute === m ? "800" : "400",
+                              color: adminTimeMinute === m ? colors.primary : colors.foreground,
+                            }}>
+                              {String(m).padStart(2, "0")}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </View>
+                </View>
+
+                <Pressable
+                  onPress={() => { setShowAdminTimePicker(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  style={{ backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 15, alignItems: "center" }}
+                >
+                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>Confirm</Text>
+                </Pressable>
+              </Pressable>
+            </Pressable>
+          </Modal>
+
         </View>
       </Modal>
     </View>
