@@ -35,6 +35,7 @@ type AdminItemStatus = "scheduled" | "completed" | "cancelled";
 const EXTRA_TAGS_KEY       = "stride_activity_extra_tags";
 const DISCIPLINES_KEY      = "stride_activity_disciplines";
 const CUSTOM_TYPES_KEY     = "stride_activity_custom_types";
+const VENUES_KEY           = "stride_activity_venues";
 
 interface ScheduleSlot { day: string; startTime: string; }
 
@@ -242,8 +243,8 @@ const adminStatusConfig: Record<AdminItemStatus, { color: string; bg: string; la
 
 // ── Drum Scroll Picker ────────────────────────────────────────────────────────
 
-const DRUM_ITEM_H = 46;
-const DRUM_VISIBLE = 5;
+const DRUM_ITEM_H = 36;
+const DRUM_VISIBLE = 3;
 
 function AgeScrollPicker({
   value, min, max, onChange, colors,
@@ -274,7 +275,7 @@ function AgeScrollPicker({
     <View style={{ height: DRUM_ITEM_H * DRUM_VISIBLE, overflow: "hidden" }}>
       {/* centre-line highlight */}
       <View pointerEvents="none" style={{
-        position: "absolute", top: DRUM_ITEM_H * 2, left: 0, right: 0,
+        position: "absolute", top: DRUM_ITEM_H * 1, left: 0, right: 0,
         height: DRUM_ITEM_H, backgroundColor: `${colors.primary}18`,
         borderRadius: 10, zIndex: 1,
       }} />
@@ -283,7 +284,7 @@ function AgeScrollPicker({
         showsVerticalScrollIndicator={false}
         snapToInterval={DRUM_ITEM_H}
         decelerationRate="fast"
-        contentContainerStyle={{ paddingVertical: DRUM_ITEM_H * 2 }}
+        contentContainerStyle={{ paddingVertical: DRUM_ITEM_H * 1 }}
         onMomentumScrollEnd={e => handleScrollEnd(e.nativeEvent.contentOffset.y)}
         onScrollEndDrag={e => handleScrollEnd(e.nativeEvent.contentOffset.y)}
       >
@@ -300,7 +301,7 @@ function AgeScrollPicker({
               style={{ height: DRUM_ITEM_H, alignItems: "center", justifyContent: "center" }}
             >
               <Text style={{
-                fontSize: isSelected ? 26 : 17,
+                fontSize: isSelected ? 20 : 14,
                 fontWeight: isSelected ? "800" : "400",
                 color: isSelected ? colors.primary : colors.mutedForeground,
                 opacity: isSelected ? 1 : 0.6,
@@ -342,6 +343,9 @@ export default function ActivityScreen() {
   const [savedCustomTypes,  setSavedCustomTypes]  = useState<string[]>([]);
   const [newCustomTypeInput, setNewCustomTypeInput] = useState("");
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
+  // ── Venue input ──
+  const [newVenueInput,    setNewVenueInput]    = useState("");
+  const [showVenueInput,   setShowVenueInput]   = useState(false);
 
   // ── Calendar (weekly-tap) ──
   const [showCalendar, setShowCalendar]         = useState(false);
@@ -385,6 +389,16 @@ export default function ActivityScreen() {
     // Load persisted custom types
     AsyncStorage.getItem(CUSTOM_TYPES_KEY).then(raw => {
       if (raw) setSavedCustomTypes(JSON.parse(raw));
+    });
+    // Load persisted venues and merge with existing campuses
+    AsyncStorage.getItem(VENUES_KEY).then(raw => {
+      if (raw) {
+        const stored: CampusOption[] = JSON.parse(raw);
+        setCampuses(prev => {
+          const ids = new Set(prev.map(c => c.id));
+          return [...prev, ...stored.filter(v => !ids.has(v.id))];
+        });
+      }
     });
     // Try to load campuses/studios from admin_settings via API
     request<{ studios?: { name: string; capacity: number }[] }>("GET", "/org/info")
@@ -596,6 +610,22 @@ export default function ActivityScreen() {
     setDraft(d => ({ ...d, type: "custom", customTypeName: trimmed }));
     setNewCustomTypeInput("");
     setShowCustomTypeInput(false);
+  };
+
+  // ── Venue helpers ─────────────────────────────────────────────────────────────
+
+  const addVenue = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const newVenue: CampusOption = { id: `custom_${Date.now()}`, name: trimmed };
+    const updated = [...campuses, newVenue];
+    setCampuses(updated);
+    const persisted = updated.filter(c => c.id.startsWith("custom_"));
+    await AsyncStorage.setItem(VENUES_KEY, JSON.stringify(persisted));
+    setDraft(d => ({ ...d, campusId: newVenue.id, campusName: newVenue.name }));
+    setNewVenueInput("");
+    setShowVenueInput(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   // ── Extra tag helpers ─────────────────────────────────────────────────────────
@@ -1391,7 +1421,7 @@ export default function ActivityScreen() {
               {showCustomTypeInput ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
                   <TextInput
-                    style={{ flex: 1, borderWidth: 1, borderColor: "#6B7280", borderRadius: 20,
+                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
                       paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
                       backgroundColor: colors.card }}
                     placeholder="e.g. Practise, Session..."
@@ -1402,7 +1432,7 @@ export default function ActivityScreen() {
                     onSubmitEditing={() => void addCustomType(newCustomTypeInput)}
                   />
                   <Pressable onPress={() => void addCustomType(newCustomTypeInput)} style={{ padding: 4 }}>
-                    <Ionicons name="checkmark-circle" size={24} color="#6B7280" />
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                   </Pressable>
                   <Pressable onPress={() => { setShowCustomTypeInput(false); setNewCustomTypeInput(""); }} style={{ padding: 4 }}>
                     <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
@@ -1411,10 +1441,10 @@ export default function ActivityScreen() {
               ) : (
                 <Pressable onPress={() => setShowCustomTypeInput(true)}
                   style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
-                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: "#6B7280",
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
                     flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="add" size={14} color="#6B7280" />
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#6B7280" }}>Other...</Text>
+                  <Ionicons name="add" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Other...</Text>
                 </Pressable>
               )}
             </View>
@@ -1597,20 +1627,47 @@ export default function ActivityScreen() {
 
             {/* ─── SECTION: LOCATION ─── */}
             {renderSectionHeader("VENUE")}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-              <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
-                {campuses.map(c => {
-                  const active = draft.campusId === c.id;
-                  return (
-                    <Pressable key={c.id} onPress={() => { setDraft(d => ({ ...d, campusId: c.id, campusName: c.name })); Haptics.selectionAsync(); }}
-                      style={[styles.pickerChip, { minWidth: 100 }, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
-                      <Ionicons name="business-outline" size={13} color={active ? colors.primary : colors.mutedForeground} />
-                      <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{c.name}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </ScrollView>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {campuses.map(c => {
+                const active = draft.campusId === c.id;
+                return (
+                  <Pressable key={c.id} onPress={() => { setDraft(d => ({ ...d, campusId: c.id, campusName: c.name })); Haptics.selectionAsync(); }}
+                    style={[styles.pickerChip, { minWidth: 80 }, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
+                    <Ionicons name="business-outline" size={13} color={active ? colors.primary : colors.mutedForeground} />
+                    <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{c.name}</Text>
+                  </Pressable>
+                );
+              })}
+              {showVenueInput ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
+                  <TextInput
+                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                      paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
+                      backgroundColor: colors.card }}
+                    placeholder="New venue..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={newVenueInput}
+                    onChangeText={setNewVenueInput}
+                    autoFocus
+                    onSubmitEditing={() => void addVenue(newVenueInput)}
+                  />
+                  <Pressable onPress={() => void addVenue(newVenueInput)} style={{ padding: 4 }}>
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  </Pressable>
+                  <Pressable onPress={() => { setShowVenueInput(false); setNewVenueInput(""); }} style={{ padding: 4 }}>
+                    <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable onPress={() => setShowVenueInput(true)}
+                  style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="add" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>+ Venue</Text>
+                </Pressable>
+              )}
+            </View>
             {renderRow("Room / Studio",
               <TextInput
                 style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
