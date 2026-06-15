@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -20,15 +20,19 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useSubstitution, type RescheduleAction, MOCK_SUBS } from "@/context/SubstitutionContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { request } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type ActivityType  = "lesson" | "seminar" | "meeting" | "workshop";
+type ActivityType  = "lesson" | "seminar" | "meeting" | "workshop" | "custom";
 type Level         = "beginner" | "intermediate" | "advanced" | "all";
-type AgeGroup      = "kids" | "youth" | "adult" | "all";
+type AgeGroup      = "range" | "18plus" | "all";
 type ActivityStatus = "active" | "draft" | "inactive";
 type AdminItemType  = "secretary_hours" | "staff_meeting" | "parent_teacher";
 type AdminItemStatus = "scheduled" | "completed" | "cancelled";
+
+// Extra-tag storage key (persisted so they survive sessions)
+const EXTRA_TAGS_KEY = "stride_activity_extra_tags";
 
 interface ScheduleSlot { day: string; startTime: string; }
 
@@ -44,10 +48,12 @@ interface Activity {
   id: string;
   title: string;
   type: ActivityType;
+  customTypeName?: string;       // used when type === "custom"
   level: Level;
+  extraTags: string[];           // extra level tags (persisted)
   ageGroup: AgeGroup;
-  ageMin?: number;
-  ageMax?: number;
+  ageMin: number;
+  ageMax: number;
   schedule: ScheduleSlot[];
   campusId: string;
   campusName: string;
@@ -55,6 +61,8 @@ interface Activity {
   teacherId: string;
   teacherName: string;
   duration: number;
+  customDurationH?: number;      // hours part of free-form duration
+  customDurationM?: number;      // minutes part of free-form duration
   capacity: number;
   enrolled: number;
   status: ActivityStatus;
@@ -65,6 +73,10 @@ interface Activity {
   doorPin?: string;
   devicePin?: string;
 }
+
+// Campus / staff loaded from API (fallback to mocks)
+interface CampusOption { id: string; name: string; }
+interface StaffOption  { id: string; name: string; }
 
 type WorkshopApprovalStatus = "pending" | "approved" | "rejected";
 
@@ -108,10 +120,11 @@ interface AdminScheduleItem {
 const DAYS_SHORT = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
 const TYPE_CONFIG: Record<ActivityType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  lesson:   { label: "Lesson",   icon: "musical-notes",   color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-  seminar:  { label: "Seminar",  icon: "school",          color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-  meeting:  { label: "Meeting",  icon: "people",          color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-  workshop: { label: "Workshop", icon: "construct",       color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+  lesson:   { label: "Lezione",   icon: "musical-notes",   color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+  seminar:  { label: "Seminario", icon: "school",          color: "#7C3AED", bg: "rgba(124,58,237,0.1)" },
+  meeting:  { label: "Riunione",  icon: "people",          color: "#0D9488", bg: "rgba(13,148,136,0.1)" },
+  workshop: { label: "Workshop",  icon: "construct",       color: "#D97706", bg: "rgba(217,119,6,0.1)" },
+  custom:   { label: "Altro",     icon: "star-outline",    color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
 };
 
 const ADMIN_TYPE_CONFIG: Record<AdminItemType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
@@ -142,8 +155,8 @@ const MOCK_CAMPUSES = [
 
 const INITIAL_ACTIVITIES: Activity[] = [
   {
-    id: "a1", title: "Classical Ballet", type: "lesson",
-    level: "beginner", ageGroup: "kids",
+    id: "a1", title: "Danza Classica Principianti", type: "lesson",
+    level: "beginner", extraTags: [], ageGroup: "range", ageMin: 4, ageMax: 12,
     schedule: [{ day: "Mon", startTime: "16:00" }, { day: "Wed", startTime: "16:00" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t1", teacherName: "Emma Wilson",
@@ -152,8 +165,8 @@ const INITIAL_ACTIVITIES: Activity[] = [
     color: "#1E3A8A",
   },
   {
-    id: "a2", title: "Contemporary Dance Workshop", type: "workshop",
-    level: "intermediate", ageGroup: "adult",
+    id: "a2", title: "Workshop Danza Contemporanea", type: "workshop",
+    level: "intermediate", extraTags: [], ageGroup: "18plus", ageMin: 18, ageMax: 99,
     schedule: [{ day: "Sat", startTime: "10:00" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio B",
     teacherId: "t2", teacherName: "Louis Ford",
@@ -162,18 +175,18 @@ const INITIAL_ACTIVITIES: Activity[] = [
     color: "#D97706",
   },
   {
-    id: "a3", title: "Year-End Recital Planning", type: "meeting",
-    level: "all", ageGroup: "all",
+    id: "a3", title: "Pianificazione Saggio Fine Anno", type: "meeting",
+    level: "all", extraTags: [], ageGroup: "all", ageMin: 1, ageMax: 99,
     schedule: [{ day: "Thu", startTime: "18:00" }],
-    campusId: "c2", campusName: "East Wing Studio", room: "Conference",
+    campusId: "c2", campusName: "East Wing Studio", room: "Sala riunioni",
     teacherId: "t3", teacherName: "Anna Parker",
     duration: 60, capacity: 10, enrolled: 6, status: "active",
     enrollment: { dropIn: false, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 0, fixedBlockPrice: 0 },
     color: "#0D9488",
   },
   {
-    id: "a4", title: "Jazz Fundamentals Seminar", type: "seminar",
-    level: "all", ageGroup: "youth",
+    id: "a4", title: "Seminario Jazz Fondamentali", type: "seminar",
+    level: "all", extraTags: [], ageGroup: "range", ageMin: 13, ageMax: 25,
     schedule: [{ day: "Fri", startTime: "17:30" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t4", teacherName: "Mark Parker",
@@ -192,12 +205,14 @@ const INITIAL_ADMIN_ITEMS: AdminScheduleItem[] = [
 // ── Blank drafts ───────────────────────────────────────────────────────────────
 
 const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
-  title: "", type: "lesson", level: "all", ageGroup: "all",
-  ageMin: 0, ageMax: 99,
+  title: "", type: "lesson", customTypeName: "",
+  level: "all", extraTags: [],
+  ageGroup: "all", ageMin: 3, ageMax: 99,
   schedule: [{ day: "Mon", startTime: "09:00" }],
   campusId: "c1", campusName: "Main Studio", room: "",
-  teacherId: "t1", teacherName: "Emma Wilson",
-  duration: 60, capacity: 15, status: "active",
+  teacherId: "t1", teacherName: "",
+  duration: 60, customDurationH: 0, customDurationM: 0,
+  capacity: 15, status: "active",
   enrollment: { dropIn: true, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0 },
   keyInstructions: "", alarmCode: "", doorPin: "", devicePin: "",
 });
@@ -234,10 +249,62 @@ export default function ActivityScreen() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [adminItems, setAdminItems] = useState<AdminScheduleItem[]>([]);
 
+  // ── API-loaded campus / staff ──
+  const [campuses,  setCampuses]  = useState<CampusOption[]>(MOCK_CAMPUSES);
+  const [staffList, setStaffList] = useState<StaffOption[]>(MOCK_TEACHERS);
+
+  // ── Persistent extra tags ──
+  const [savedExtraTags, setSavedExtraTags] = useState<string[]>([]);
+
+  // ── Calendar (weekly-tap) ──
+  const [showCalendar, setShowCalendar]         = useState(false);
+  const [calYear,  setCalYear]                  = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth]                 = useState(new Date().getMonth());
+  // Set of "YYYY-MM-DD" week-start strings that are toggled ON
+  const [activeWeeks, setActiveWeeks]           = useState<Set<string>>(new Set());
+
+  // ── Multi-studio clone popup ──
+  const [showCloneStudio, setShowCloneStudio]   = useState(false);
+  const [cloneSourceActivity, setCloneSourceActivity] = useState<Activity | null>(null);
+
+  // ── Year-over-year duplicate ──
+  const [showYoY, setShowYoY]                   = useState(false);
+
+  // ── New tag input ──
+  const [newTagInput, setNewTagInput]           = useState("");
+  const [showTagInput, setShowTagInput]         = useState(false);
+
+  // ── Duration: custom free input ──
+  const [durationMode, setDurationMode]         = useState<"preset" | "custom">("preset");
+
   // ── Activity modal state ──
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [draft, setDraft] = useState(BLANK_ACTIVITY());
+
+  // ── Load campuses, staff, extra-tags on mount ──
+  useEffect(() => {
+    // Load persisted extra tags
+    AsyncStorage.getItem(EXTRA_TAGS_KEY).then(raw => {
+      if (raw) setSavedExtraTags(JSON.parse(raw));
+    });
+    // Try to load campuses/studios from admin_settings via API
+    request<{ studios?: { name: string; capacity: number }[] }>("GET", "/org/info")
+      .then(data => {
+        if (data?.studios && data.studios.length > 0) {
+          setCampuses(data.studios.map((s, i) => ({ id: `studio-${i}`, name: s.name })));
+        }
+      })
+      .catch(() => { /* keep mocks */ });
+    // Try to load operators from API
+    request<{ id: number; name: string }[]>("GET", "/disciplines/operators")
+      .then(ops => {
+        if (ops && ops.length > 0) {
+          setStaffList(ops.map(o => ({ id: String(o.id), name: o.name })));
+        }
+      })
+      .catch(() => { /* keep mocks */ });
+  }, []);
 
   // ── Admin schedule modal state ──
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -275,6 +342,7 @@ export default function ActivityScreen() {
       title: p.title,
       type: "workshop",
       level: p.level,
+      extraTags: [],
       ageGroup: "all",
       ageMin: p.ageMin,
       ageMax: p.ageMax,
@@ -350,9 +418,137 @@ export default function ActivityScreen() {
 
   // ── Activity CRUD ─────────────────────────────────────────────────────────────
 
+  // ── Calendar helpers ──────────────────────────────────────────────────────────
+
+  /** Returns Monday (ISO week start) for any date */
+  const getMonday = (d: Date): Date => {
+    const day = d.getDay();
+    const diff = (day === 0 ? -6 : 1 - day);
+    const m = new Date(d);
+    m.setDate(d.getDate() + diff);
+    m.setHours(0, 0, 0, 0);
+    return m;
+  };
+
+  const isoDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const toggleWeek = (weekStart: Date) => {
+    const key = isoDate(weekStart);
+    setActiveWeeks(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  /** Build calendar grid for calYear/calMonth — returns array of {weekStart, days} */
+  const buildCalendarGrid = () => {
+    const firstDay = new Date(calYear, calMonth, 1);
+    const lastDay  = new Date(calYear, calMonth + 1, 0);
+    const weeks: { weekStart: Date; days: (Date | null)[] }[] = [];
+    let current = getMonday(firstDay);
+    while (current <= lastDay) {
+      const days: (Date | null)[] = [];
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(current);
+        day.setDate(current.getDate() + d);
+        days.push(day.getMonth() === calMonth ? day : null);
+      }
+      weeks.push({ weekStart: new Date(current), days });
+      current.setDate(current.getDate() + 7);
+    }
+    return weeks;
+  };
+
+  // ── Extra tag helpers ─────────────────────────────────────────────────────────
+
+  const addExtraTag = async (tag: string) => {
+    const trimmed = tag.trim();
+    if (!trimmed) return;
+    const updated = Array.from(new Set([...savedExtraTags, trimmed]));
+    setSavedExtraTags(updated);
+    await AsyncStorage.setItem(EXTRA_TAGS_KEY, JSON.stringify(updated));
+    setDraft(d => ({ ...d, extraTags: Array.from(new Set([...d.extraTags, trimmed])) }));
+    setNewTagInput("");
+    setShowTagInput(false);
+  };
+
+  const toggleDraftTag = (tag: string) => {
+    setDraft(d => ({
+      ...d,
+      extraTags: d.extraTags.includes(tag)
+        ? d.extraTags.filter(t => t !== tag)
+        : [...d.extraTags, tag],
+    }));
+    Haptics.selectionAsync();
+  };
+
+  // ── YoY duplicate ─────────────────────────────────────────────────────────────
+
+  const openYoYDuplicate = (source: Activity) => {
+    setEditingActivity(null);
+    const { id, enrolled, color, ...rest } = source;
+    setDraft({ ...rest, title: `${source.title} (${new Date().getFullYear()})`, status: "draft" });
+    setActiveWeeks(new Set());
+    setDurationMode("preset");
+    setShowActivityModal(true);
+    setShowYoY(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  // ── Multi-studio clone ────────────────────────────────────────────────────────
+
+  const openCloneToStudio = (source: Activity) => {
+    setCloneSourceActivity(source);
+    setShowCloneStudio(true);
+  };
+
+  const cloneIdentical = () => {
+    if (!cloneSourceActivity) return;
+    const otherCampus = campuses.find(c => c.id !== cloneSourceActivity.campusId);
+    if (!otherCampus) { Alert.alert("Nessun'altra sede disponibile"); return; }
+    const newA: Activity = {
+      ...cloneSourceActivity,
+      extraTags: cloneSourceActivity.extraTags ?? [],
+      id: Date.now().toString(),
+      campusId: otherCampus.id,
+      campusName: otherCampus.name,
+      enrolled: 0,
+      status: "draft",
+    };
+    setActivities(prev => [...prev, newA]);
+    setShowCloneStudio(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const cloneModified = () => {
+    if (!cloneSourceActivity) return;
+    const otherCampus = campuses.find(c => c.id !== cloneSourceActivity.campusId);
+    const { id, enrolled, color, ...rest } = cloneSourceActivity;
+    setEditingActivity(null);
+    setDraft({
+      ...rest,
+      campusId: otherCampus?.id ?? rest.campusId,
+      campusName: otherCampus?.name ?? rest.campusName,
+      status: "draft",
+    });
+    setActiveWeeks(new Set());
+    setDurationMode("preset");
+    setShowCloneStudio(false);
+    setShowActivityModal(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
   const openCreate = () => {
     setEditingActivity(null);
     setDraft(BLANK_ACTIVITY());
+    setActiveWeeks(new Set());
+    setDurationMode("preset");
+    setShowTagInput(false);
+    setNewTagInput("");
     setShowActivityModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
@@ -360,7 +556,11 @@ export default function ActivityScreen() {
   const openEdit = (a: Activity) => {
     setEditingActivity(a);
     const { id, enrolled, color, ...rest } = a;
-    setDraft({ ...rest });
+    setDraft({ ...rest, extraTags: rest.extraTags ?? [] });
+    setActiveWeeks(new Set());
+    setDurationMode(DURATION_OPTIONS.includes(a.duration) ? "preset" : "custom");
+    setShowTagInput(false);
+    setNewTagInput("");
     setShowActivityModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -964,9 +1164,13 @@ export default function ActivityScreen() {
         </View>
       </Modal>
 
-      {/* ── CREATE / EDIT ACTIVITY MODAL ── */}
+      {/* ══════════════════════════════════════════════════
+          NEW / EDIT ACTIVITY MODAL — full spec form
+      ══════════════════════════════════════════════════ */}
       <Modal visible={showActivityModal} animationType="slide" onRequestClose={() => setShowActivityModal(false)}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+
+          {/* ── Header ── */}
           <View style={[styles.modalHeader, { paddingTop: insets.top, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable onPress={() => setShowActivityModal(false)} style={styles.backBtn}>
               <Ionicons name="close" size={24} color={colors.mutedForeground} />
@@ -988,93 +1192,337 @@ export default function ActivityScreen() {
 
           <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
 
-            {/* Title */}
-            {renderSectionHeader("BASIC INFORMATION")}
+            {/* ─── YoY duplicate banner ─── */}
+            {activities.length > 0 && !editingActivity && (
+              <Pressable
+                style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: `${colors.primary}12`,
+                  borderRadius: 14, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: `${colors.primary}30` }}
+                onPress={() => setShowYoY(true)}
+              >
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary,
+                  alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="copy-outline" size={18} color="#FFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary }}>
+                    Duplica attivita' dell'anno scorso
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>
+                    Clona un'attivita' esistente come punto di partenza
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+              </Pressable>
+            )}
+
+            {/* ─── SECTION: TITLE ─── */}
+            {renderSectionHeader("NOME ATTIVITA'")}
             <TextInput
               style={[styles.titleInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="Activity title…"
+              placeholder="es. Danza Classica Avanzata..."
               placeholderTextColor={colors.mutedForeground}
               value={draft.title}
               onChangeText={v => setDraft(d => ({ ...d, title: v }))}
             />
 
-            {/* Type */}
-            {renderRow("Type",
-              <PickerRow
-                options={[
-                  { value: "lesson" as const, label: "Lesson",   color: "#1E3A8A", bg: "#DBEAFE" },
-                  { value: "seminar" as const, label: "Seminar",  color: "#7C3AED", bg: "#EDE9FE" },
-                  { value: "meeting" as const, label: "Meeting",  color: "#0D9488", bg: "#CCFBF1" },
-                  { value: "workshop" as const, label: "Workshop", color: "#D97706", bg: "#FEF3C7" },
-                ]}
-                value={draft.type}
-                onSelect={v => setDraft(d => ({ ...d, type: v }))}
+            {/* ─── SECTION: TYPE ─── */}
+            {renderSectionHeader("TIPOLOGIA")}
+            <View style={styles.pickerWrap}>
+              {([
+                { value: "lesson"   as const, label: "Lezione",   color: "#1E3A8A", bg: "#DBEAFE" },
+                { value: "seminar"  as const, label: "Seminario",  color: "#7C3AED", bg: "#EDE9FE" },
+                { value: "workshop" as const, label: "Workshop",   color: "#D97706", bg: "#FEF3C7" },
+                { value: "meeting"  as const, label: "Riunione",   color: "#0D9488", bg: "#CCFBF1" },
+                { value: "custom"   as const, label: "Altro...",   color: "#6B7280", bg: "#F3F4F6" },
+              ]).map(o => {
+                const active = draft.type === o.value;
+                return (
+                  <Pressable key={o.value} onPress={() => { setDraft(d => ({ ...d, type: o.value })); Haptics.selectionAsync(); }}
+                    style={[styles.pickerChip, active && { backgroundColor: o.bg, borderColor: o.color, borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? o.color : colors.mutedForeground }]}>{o.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {draft.type === "custom" && (
+              <TextInput
+                style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, marginTop: 8 }]}
+                placeholder="Inserisci tipologia personalizzata (es. Session, Pratica...)"
+                placeholderTextColor={colors.mutedForeground}
+                value={draft.customTypeName ?? ""}
+                onChangeText={v => setDraft(d => ({ ...d, customTypeName: v }))}
               />
             )}
 
-            {/* Level */}
-            {renderRow("Level",
-              <PickerRow
-                options={[
-                  { value: "beginner" as const, label: "Beginner" },
-                  { value: "intermediate" as const, label: "Intermediate" },
-                  { value: "advanced" as const, label: "Advanced" },
-                  { value: "all" as const, label: "All" },
-                ]}
-                value={draft.level}
-                onSelect={v => setDraft(d => ({ ...d, level: v }))}
-              />
-            )}
+            {/* ─── SECTION: LEVEL + EXTRA TAGS ─── */}
+            {renderSectionHeader("LIVELLO")}
+            <View style={styles.pickerWrap}>
+              {([
+                { value: "beginner"     as const, label: "Principiante" },
+                { value: "intermediate" as const, label: "Intermedio"   },
+                { value: "advanced"     as const, label: "Avanzato"     },
+                { value: "all"          as const, label: "Open / Tutti" },
+              ]).map(o => {
+                const active = draft.level === o.value;
+                return (
+                  <Pressable key={o.value} onPress={() => { setDraft(d => ({ ...d, level: o.value })); Haptics.selectionAsync(); }}
+                    style={[styles.pickerChip, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{o.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-            {/* Age Group */}
-            {renderRow("Age Group",
-              <PickerRow
-                options={[
-                  { value: "kids" as const, label: "Juniors (4–12)" },
-                  { value: "youth" as const, label: "Youth (13–17)" },
-                  { value: "adult" as const, label: "Adult (18+)" },
-                  { value: "all" as const, label: "All Ages" },
-                ]}
-                value={draft.ageGroup}
-                onSelect={v => setDraft(d => ({ ...d, ageGroup: v }))}
-              />
-            )}
+            {/* Extra tags */}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+              {savedExtraTags.map(tag => {
+                const active = draft.extraTags.includes(tag);
+                return (
+                  <Pressable key={tag} onPress={() => toggleDraftTag(tag)}
+                    style={{ borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
+                      backgroundColor: active ? "#FBBF24" : colors.muted,
+                      borderWidth: active ? 0 : 1, borderColor: colors.border }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#1E3A8A" : colors.mutedForeground }}>
+                      {tag}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              {showTagInput ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1 }}>
+                  <TextInput
+                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                      paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
+                      backgroundColor: colors.card }}
+                    placeholder="Nuovo tag..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={newTagInput}
+                    onChangeText={setNewTagInput}
+                    autoFocus
+                    onSubmitEditing={() => void addExtraTag(newTagInput)}
+                  />
+                  <Pressable onPress={() => void addExtraTag(newTagInput)} style={{ padding: 4 }}>
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  </Pressable>
+                  <Pressable onPress={() => setShowTagInput(false)} style={{ padding: 4 }}>
+                    <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable onPress={() => setShowTagInput(true)}
+                  style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="add" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Tag extra</Text>
+                </Pressable>
+              )}
+            </View>
 
-            {/* Age Range (precise, for workshop matching) */}
-            {draft.type === "workshop" && renderRow("Precise Age Range",
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <TextInput
-                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, width: 70 }]}
-                  placeholder="Min"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="numeric"
-                  value={(draft.ageMin ?? 0) > 0 ? String(draft.ageMin) : ""}
-                  onChangeText={v => setDraft(d => ({ ...d, ageMin: Number(v) || 0 }))}
-                />
-                <Text style={{ color: colors.mutedForeground, fontSize: 16, fontWeight: "600" }}>–</Text>
-                <TextInput
-                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, width: 70 }]}
-                  placeholder="Max"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="numeric"
-                  value={(draft.ageMax ?? 99) < 99 ? String(draft.ageMax) : ""}
-                  onChangeText={v => setDraft(d => ({ ...d, ageMax: Number(v) || 99 }))}
-                />
-                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>years</Text>
+            {/* ─── SECTION: AGE GROUP ─── */}
+            {renderSectionHeader("FASCIA D'ETA'")}
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+              {([
+                { value: "range"  as const, label: "Range personalizzato" },
+                { value: "18plus" as const, label: "18+"                  },
+                { value: "all"    as const, label: "Tutte le eta'"        },
+              ]).map(o => {
+                const active = draft.ageGroup === o.value;
+                return (
+                  <Pressable key={o.value} onPress={() => { setDraft(d => ({ ...d, ageGroup: o.value })); Haptics.selectionAsync(); }}
+                    style={[styles.pickerChip, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{o.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {draft.ageGroup === "range" && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.card,
+                borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, width: 30 }}>Da</Text>
+                {/* Min age picker — scrollable 1..99 */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", gap: 4 }}>
+                    {Array.from({ length: 99 }, (_, i) => i + 1).map(age => (
+                      <Pressable key={age} onPress={() => setDraft(d => ({ ...d, ageMin: age }))}
+                        style={{ width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center",
+                          backgroundColor: draft.ageMin === age ? colors.primary : colors.muted }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: draft.ageMin === age ? "#FFF" : colors.mutedForeground }}>
+                          {age}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, width: 20 }}>a</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", gap: 4 }}>
+                    {Array.from({ length: 99 }, (_, i) => i + 1).map(age => (
+                      <Pressable key={age} onPress={() => setDraft(d => ({ ...d, ageMax: age }))}
+                        style={{ width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center",
+                          backgroundColor: draft.ageMax === age ? colors.primary : colors.muted }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: draft.ageMax === age ? "#FFF" : colors.mutedForeground }}>
+                          {age}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>anni</Text>
+              </View>
+            )}
+            {draft.ageGroup === "18plus" && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#DBEAFE",
+                borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.primary }}>
+                <Ionicons name="person-outline" size={18} color={colors.primary} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>Solo adulti — 18 anni e oltre</Text>
               </View>
             )}
 
-            {/* Schedule */}
-            {renderSectionHeader("SCHEDULE")}
+            {/* ─── SECTION: LOCATION ─── */}
+            {renderSectionHeader("SEDE")}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+              <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
+                {campuses.map(c => {
+                  const active = draft.campusId === c.id;
+                  return (
+                    <Pressable key={c.id} onPress={() => { setDraft(d => ({ ...d, campusId: c.id, campusName: c.name })); Haptics.selectionAsync(); }}
+                      style={[styles.pickerChip, { minWidth: 100 }, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
+                      <Ionicons name="business-outline" size={13} color={active ? colors.primary : colors.mutedForeground} />
+                      <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{c.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+            {renderRow("Sala / Stanza",
+              <TextInput
+                style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
+                placeholder="es. Studio A, Sala Principale..."
+                placeholderTextColor={colors.mutedForeground}
+                value={draft.room}
+                onChangeText={v => setDraft(d => ({ ...d, room: v }))}
+              />
+            )}
+            {/* Multi-studio clone button — show only when editing */}
+            {editingActivity && campuses.length > 1 && (
+              <Pressable
+                onPress={() => openCloneToStudio(editingActivity)}
+                style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF3C7",
+                  borderRadius: 12, padding: 12, marginTop: 4, marginBottom: 8, borderWidth: 1, borderColor: "#FBBF24" }}
+              >
+                <Ionicons name="duplicate-outline" size={16} color="#D97706" />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#D97706", flex: 1 }}>
+                  Replica in un'altra sede
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color="#D97706" />
+              </Pressable>
+            )}
+
+            {/* ─── SECTION: STAFF ─── */}
+            {renderSectionHeader("STAFF")}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+              <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
+                {staffList.map(t => {
+                  const active = draft.teacherId === t.id;
+                  const initials = t.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+                  return (
+                    <Pressable key={t.id} onPress={() => { setDraft(d => ({ ...d, teacherId: t.id, teacherName: t.name })); Haptics.selectionAsync(); }}
+                      style={{ alignItems: "center", gap: 4, padding: 8, borderRadius: 12,
+                        backgroundColor: active ? `${colors.primary}15` : colors.card,
+                        borderWidth: active ? 1.5 : 1, borderColor: active ? colors.primary : colors.border,
+                        minWidth: 80 }}>
+                      <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: active ? colors.primary : colors.muted,
+                        alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ fontSize: 13, fontWeight: "800", color: active ? "#FFF" : colors.mutedForeground }}>{initials}</Text>
+                      </View>
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: active ? colors.primary : colors.foreground, textAlign: "center" }}
+                        numberOfLines={2}>{t.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* ─── SECTION: DURATION ─── */}
+            {renderSectionHeader("DURATA")}
+            {/* Toggle preset / custom */}
+            <View style={{ flexDirection: "row", backgroundColor: colors.muted, borderRadius: 10, padding: 3, marginBottom: 12, gap: 3 }}>
+              {(["preset", "custom"] as const).map(mode => (
+                <Pressable key={mode} onPress={() => { setDurationMode(mode); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  style={[{ flex: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center" },
+                    durationMode === mode && { backgroundColor: colors.card }]}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: durationMode === mode ? colors.primary : colors.mutedForeground }}>
+                    {mode === "preset" ? "Preset standard" : "Durata libera"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            {durationMode === "preset" ? (
+              <View style={styles.pickerWrap}>
+                {[30, 45, 60, 75, 90, 120, 150, 180].map(m => {
+                  const active = draft.duration === m && durationMode === "preset";
+                  return (
+                    <Pressable key={m} onPress={() => { setDraft(d => ({ ...d, duration: m })); Haptics.selectionAsync(); }}
+                      style={[styles.pickerChip, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
+                      <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{fmtDuration(m)}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.card,
+                borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ flex: 1, alignItems: "center" }}>
+                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase" }}>Ore</Text>
+                  <TextInput
+                    style={{ fontSize: 28, fontWeight: "800", color: colors.foreground, textAlign: "center", minWidth: 48 }}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={draft.customDurationH ? String(draft.customDurationH) : ""}
+                    onChangeText={v => {
+                      const h = Math.min(23, parseInt(v) || 0);
+                      setDraft(d => ({ ...d, customDurationH: h, duration: h * 60 + (d.customDurationM ?? 0) }));
+                    }}
+                  />
+                </View>
+                <Text style={{ fontSize: 28, fontWeight: "300", color: colors.mutedForeground }}>:</Text>
+                <View style={{ flex: 1, alignItems: "center" }}>
+                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase" }}>Minuti</Text>
+                  <TextInput
+                    style={{ fontSize: 28, fontWeight: "800", color: colors.foreground, textAlign: "center", minWidth: 48 }}
+                    keyboardType="numeric"
+                    placeholder="00"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={draft.customDurationM ? String(draft.customDurationM) : ""}
+                    onChangeText={v => {
+                      const m = Math.min(59, parseInt(v) || 0);
+                      setDraft(d => ({ ...d, customDurationM: m, duration: (d.customDurationH ?? 0) * 60 + m }));
+                    }}
+                  />
+                </View>
+                <View style={{ flex: 1, alignItems: "center" }}>
+                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase" }}>Totale</Text>
+                  <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary }}>{fmtDuration(draft.duration)}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* ─── SECTION: SCHEDULE SLOTS ─── */}
+            {renderSectionHeader("ORARI SETTIMANALI")}
             {draft.schedule.map((slot, i) => (
               <View key={i} style={[styles.slotRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.slotDays}>
-                  {DAYS_SHORT.map(d => (
-                    <Pressable key={d} onPress={() => updateSlot(i, "day", d)}
-                      style={[styles.dayPill, slot.day === d && { backgroundColor: colors.primary }]}>
-                      <Text style={[styles.dayPillText, { color: slot.day === d ? "#FFF" : colors.mutedForeground }]}>{d}</Text>
-                    </Pressable>
-                  ))}
+                  {["Lun","Mar","Mer","Gio","Ven","Sab","Dom"].map((lbl, di) => {
+                    const dayKeys = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+                    return (
+                      <Pressable key={lbl} onPress={() => updateSlot(i, "day", dayKeys[di])}
+                        style={[styles.dayPill, slot.day === dayKeys[di] && { backgroundColor: colors.primary }]}>
+                        <Text style={[styles.dayPillText, { color: slot.day === dayKeys[di] ? "#FFF" : colors.mutedForeground }]}>{lbl}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
                 <View style={styles.slotBottom}>
                   <View style={[styles.timeInput, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -1085,6 +1533,7 @@ export default function ActivityScreen() {
                       onChangeText={v => updateSlot(i, "startTime", v)}
                       placeholder="HH:MM"
                       placeholderTextColor={colors.mutedForeground}
+                      keyboardType="numbers-and-punctuation"
                     />
                   </View>
                   <Pressable onPress={() => removeSlot(i)} style={styles.slotRemoveBtn}>
@@ -1093,50 +1542,28 @@ export default function ActivityScreen() {
                 </View>
               </View>
             ))}
-            <Pressable style={[styles.addSlotBtn, { borderColor: colors.primary }]} onPress={addSlot}>
-              <Ionicons name="add" size={16} color={colors.primary} />
-              <Text style={[styles.addSlotText, { color: colors.primary }]}>Add Time Slot</Text>
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
+              <Pressable style={[styles.addSlotBtn, { borderColor: colors.primary, flex: 1 }]} onPress={addSlot}>
+                <Ionicons name="add" size={16} color={colors.primary} />
+                <Text style={[styles.addSlotText, { color: colors.primary }]}>Aggiungi orario</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.addSlotBtn, { borderColor: "#10B981", flex: 1 }]}
+                onPress={() => { setShowCalendar(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+              >
+                <Ionicons name="calendar-outline" size={16} color="#10B981" />
+                <Text style={[styles.addSlotText, { color: "#10B981" }]}>
+                  Calendario {activeWeeks.size > 0 ? `(${activeWeeks.size} sett.)` : ""}
+                </Text>
+              </Pressable>
+            </View>
 
-            {/* Location */}
-            {renderSectionHeader("LOCATION")}
-            {renderRow("Campus",
-              <PickerRow
-                options={MOCK_CAMPUSES.map(c => ({ value: c.id as string, label: c.name }))}
-                value={draft.campusId}
-                onSelect={v => setDraft(d => ({ ...d, campusId: v, campusName: MOCK_CAMPUSES.find(c => c.id === v)?.name ?? v }))}
-              />
-            )}
-            {renderRow("Room",
+            {/* ─── SECTION: CAPACITY ─── */}
+            {renderSectionHeader("CAPIENZA")}
+            {renderRow("Posti massimi",
               <TextInput
                 style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
-                placeholder="e.g. Studio A"
-                placeholderTextColor={colors.mutedForeground}
-                value={draft.room}
-                onChangeText={v => setDraft(d => ({ ...d, room: v }))}
-              />
-            )}
-
-            {/* Staff */}
-            {renderSectionHeader("STAFF & DURATION")}
-            {renderRow("Teacher",
-              <PickerRow
-                options={MOCK_TEACHERS.map(t => ({ value: t.id, label: t.name }))}
-                value={draft.teacherId}
-                onSelect={v => setDraft(d => ({ ...d, teacherId: v, teacherName: MOCK_TEACHERS.find(t => t.id === v)?.name ?? v }))}
-              />
-            )}
-            {renderRow("Duration",
-              <PickerRow
-                options={DURATION_OPTIONS.map(m => ({ value: String(m), label: fmtDuration(m) }))}
-                value={String(draft.duration)}
-                onSelect={v => setDraft(d => ({ ...d, duration: Number(v) }))}
-              />
-            )}
-            {renderRow("Capacity",
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
-                placeholder="e.g. 15"
+                placeholder="es. 15"
                 placeholderTextColor={colors.mutedForeground}
                 keyboardType="numeric"
                 value={String(draft.capacity)}
@@ -1144,14 +1571,13 @@ export default function ActivityScreen() {
               />
             )}
 
-            {/* Enrollment */}
-            {renderSectionHeader("ENROLLMENT PRICING")}
+            {/* ─── SECTION: ENROLLMENT PRICING ─── */}
+            {renderSectionHeader("ISCRIZIONI E PREZZI")}
             <View style={[styles.enrollCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {/* Drop-in */}
               <View style={styles.enrollRow}>
                 <View style={styles.enrollLeft}>
-                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Single Drop-in</Text>
-                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Pay per session</Text>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Lezione singola (drop-in)</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Pagamento per sessione</Text>
                 </View>
                 <Switch
                   value={draft.enrollment.dropIn}
@@ -1162,25 +1588,20 @@ export default function ActivityScreen() {
               </View>
               {draft.enrollment.dropIn && (
                 <View style={styles.enrollPriceRow}>
-                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Price per session (€)</Text>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Prezzo per sessione (€)</Text>
                   <TextInput
                     style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
                     value={draft.enrollment.dropInPrice > 0 ? String(draft.enrollment.dropInPrice) : ""}
                     onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, dropInPrice: Number(v) || 0 } }))}
                   />
                 </View>
               )}
-
               <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
-
-              {/* Fixed Block */}
               <View style={styles.enrollRow}>
                 <View style={styles.enrollLeft}>
-                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Fixed Block</Text>
-                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Lesson package deal</Text>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Pacchetto lezioni</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Abbonamento a blocchi</Text>
                 </View>
                 <Switch
                   value={draft.enrollment.fixedBlock}
@@ -1191,21 +1612,17 @@ export default function ActivityScreen() {
               </View>
               {draft.enrollment.fixedBlock && (
                 <View style={styles.enrollPriceRow}>
-                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Lessons in block</Text>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Lezioni nel pacchetto</Text>
                   <TextInput
                     style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
-                    keyboardType="numeric"
-                    placeholder="10"
-                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numeric" placeholder="10" placeholderTextColor={colors.mutedForeground}
                     value={draft.enrollment.fixedBlockLessons > 0 ? String(draft.enrollment.fixedBlockLessons) : ""}
                     onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, fixedBlockLessons: Number(v) || 0 } }))}
                   />
-                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Block price (€)</Text>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Prezzo pacchetto (€)</Text>
                   <TextInput
                     style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
                     value={draft.enrollment.fixedBlockPrice > 0 ? String(draft.enrollment.fixedBlockPrice) : ""}
                     onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, fixedBlockPrice: Number(v) || 0 } }))}
                   />
@@ -1213,76 +1630,229 @@ export default function ActivityScreen() {
               )}
             </View>
 
-            {/* Status */}
-            {renderSectionHeader("STATUS")}
-            {renderRow("Status",
-              <PickerRow
-                options={[
-                  { value: "active" as const, label: "Active",   color: "#10B981", bg: "#D1FAE5" },
-                  { value: "draft" as const, label: "Draft",    color: "#6B7280", bg: "#F3F4F6" },
-                  { value: "inactive" as const, label: "Inactive", color: "#EF4444", bg: "#FEE2E2" },
-                ]}
-                value={draft.status}
-                onSelect={v => setDraft(d => ({ ...d, status: v }))}
-              />
-            )}
+            {/* ─── SECTION: STATUS ─── */}
+            {renderSectionHeader("STATO")}
+            <View style={styles.pickerWrap}>
+              {[
+                { value: "active" as const, label: "Attivo", color: "#10B981", bg: "#D1FAE5" },
+                { value: "draft"  as const, label: "Bozza",  color: "#6B7280", bg: "#F3F4F6" },
+                { value: "inactive" as const, label: "Inattivo", color: "#EF4444", bg: "#FEE2E2" },
+              ].map(o => {
+                const active = draft.status === o.value;
+                return (
+                  <Pressable key={o.value} onPress={() => { setDraft(d => ({ ...d, status: o.value })); Haptics.selectionAsync(); }}
+                    style={[styles.pickerChip, active && { backgroundColor: o.bg, borderColor: o.color, borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? o.color : colors.mutedForeground }]}>{o.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-            {/* Secure Operations Notes — admin/operator only */}
+            {/* ─── SECTION: SECURE OPERATIONS ─── */}
             {isPrivileged && (
               <>
-                {renderSectionHeader("SECURE OPERATIONS")}
-                <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#FEF3C7", borderRadius: 12, padding: 12, marginBottom: 12 }}>
+                {renderSectionHeader("OPERAZIONI SICURE")}
+                <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#FEF3C7",
+                  borderRadius: 12, padding: 12, marginBottom: 12 }}>
                   <Ionicons name="lock-closed" size={14} color="#D97706" style={{ marginTop: 1 }} />
                   <Text style={{ fontSize: 12, color: "#92400E", flex: 1, lineHeight: 17 }}>
-                    These details are only visible to Admins and Operators. Members cannot see or access this section.
+                    Visibile solo ad Admin e Operatori. I Membri non possono accedere a questa sezione.
                   </Text>
                 </View>
-                {renderRow("Key Retrieval Instructions",
-                  <TextInput
-                    style={[styles.notesInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24" }]}
-                    placeholder="e.g. Key in lock box at front desk, code 1234"
-                    placeholderTextColor={colors.mutedForeground}
-                    multiline
-                    value={draft.keyInstructions ?? ""}
-                    onChangeText={v => setDraft(d => ({ ...d, keyInstructions: v }))}
-                  />
+                {renderRow("Istruzioni chiavi",
+                  <TextInput style={[styles.notesInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24" }]}
+                    placeholder="es. Chiave nella cassetta al piano terra, codice 1234"
+                    placeholderTextColor={colors.mutedForeground} multiline
+                    value={draft.keyInstructions ?? ""} onChangeText={v => setDraft(d => ({ ...d, keyInstructions: v }))} />
                 )}
-                {renderRow("Alarm Code",
-                  <TextInput
-                    style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24", fontFamily: "monospace" }]}
-                    placeholder="e.g. 5678#"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numeric"
-                    secureTextEntry={false}
-                    value={draft.alarmCode ?? ""}
-                    onChangeText={v => setDraft(d => ({ ...d, alarmCode: v }))}
-                  />
+                {renderRow("Codice allarme",
+                  <TextInput style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24" }]}
+                    placeholder="es. 5678#" placeholderTextColor={colors.mutedForeground} keyboardType="numeric"
+                    value={draft.alarmCode ?? ""} onChangeText={v => setDraft(d => ({ ...d, alarmCode: v }))} />
                 )}
-                {renderRow("Door PIN",
-                  <TextInput
-                    style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24", fontFamily: "monospace" }]}
-                    placeholder="e.g. 9021"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numeric"
-                    value={draft.doorPin ?? ""}
-                    onChangeText={v => setDraft(d => ({ ...d, doorPin: v }))}
-                  />
+                {renderRow("PIN porta",
+                  <TextInput style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24" }]}
+                    placeholder="es. 9021" placeholderTextColor={colors.mutedForeground} keyboardType="numeric"
+                    value={draft.doorPin ?? ""} onChangeText={v => setDraft(d => ({ ...d, doorPin: v }))} />
                 )}
-                {renderRow("Device Unlock PIN",
-                  <TextInput
-                    style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24", fontFamily: "monospace" }]}
-                    placeholder="e.g. 0000"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numeric"
-                    value={draft.devicePin ?? ""}
-                    onChangeText={v => setDraft(d => ({ ...d, devicePin: v }))}
-                  />
+                {renderRow("PIN dispositivo",
+                  <TextInput style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#FBBF24" }]}
+                    placeholder="es. 0000" placeholderTextColor={colors.mutedForeground} keyboardType="numeric"
+                    value={draft.devicePin ?? ""} onChangeText={v => setDraft(d => ({ ...d, devicePin: v }))} />
                 )}
               </>
             )}
 
             <View style={{ height: 40 }} />
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* ══════════════════════════════════════════════════
+          CALENDAR MODAL — weekly tap selection
+      ══════════════════════════════════════════════════ */}
+      <Modal visible={showCalendar} animationType="slide" transparent onRequestClose={() => setShowCalendar(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+            paddingBottom: insets.bottom + 16 }}>
+            {/* Header */}
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
+              <Pressable onPress={() => {
+                if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
+                else setCalMonth(m => m - 1);
+              }} style={{ padding: 8 }}>
+                <Ionicons name="chevron-back" size={22} color={colors.primary} />
+              </Pressable>
+              <Text style={{ flex: 1, textAlign: "center", fontSize: 16, fontWeight: "800", color: colors.foreground }}>
+                {new Date(calYear, calMonth).toLocaleDateString("it-IT", { month: "long", year: "numeric" })}
+              </Text>
+              <Pressable onPress={() => {
+                if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
+                else setCalMonth(m => m + 1);
+              }} style={{ padding: 8 }}>
+                <Ionicons name="chevron-forward" size={22} color={colors.primary} />
+              </Pressable>
+              <Pressable onPress={() => setShowCalendar(false)} style={{ padding: 8 }}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            {/* Weekday labels */}
+            <View style={{ flexDirection: "row", paddingHorizontal: 16, marginBottom: 6 }}>
+              {["Lu","Ma","Me","Gi","Ve","Sa","Do"].map(d => (
+                <Text key={d} style={{ flex: 1, textAlign: "center", fontSize: 11, fontWeight: "700",
+                  color: colors.mutedForeground }}>
+                  {d}
+                </Text>
+              ))}
+            </View>
+
+            {/* Calendar grid */}
+            <View style={{ paddingHorizontal: 12 }}>
+              {buildCalendarGrid().map((week, wi) => {
+                const key = isoDate(week.weekStart);
+                const isActive = activeWeeks.has(key);
+                return (
+                  <Pressable key={wi} onPress={() => toggleWeek(week.weekStart)}
+                    style={{ flexDirection: "row", marginBottom: 4,
+                      backgroundColor: isActive ? `${colors.primary}15` : "transparent",
+                      borderRadius: 10, borderWidth: isActive ? 1.5 : 0, borderColor: colors.primary }}>
+                    {week.days.map((day, di) => (
+                      <View key={di} style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center" }}>
+                        {day ? (
+                          <Text style={{ fontSize: 14, fontWeight: isActive ? "800" : "500",
+                            color: isActive ? colors.primary : colors.foreground }}>
+                            {day.getDate()}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Footer */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+              paddingHorizontal: 20, paddingTop: 16 }}>
+              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                {activeWeeks.size === 0
+                  ? "Tocca una riga per selezionare la settimana"
+                  : `${activeWeeks.size} settiman${activeWeeks.size === 1 ? "a" : "e"} selezionat${activeWeeks.size === 1 ? "a" : "e"}`}
+              </Text>
+              <Pressable
+                onPress={() => setShowCalendar(false)}
+                style={{ backgroundColor: colors.primary, borderRadius: 12,
+                  paddingHorizontal: 20, paddingVertical: 10 }}
+              >
+                <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Conferma</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ══════════════════════════════════════════════════
+          YEAR-OVER-YEAR DUPLICATE PICKER
+      ══════════════════════════════════════════════════ */}
+      <Modal visible={showYoY} animationType="slide" transparent onRequestClose={() => setShowYoY(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+            paddingHorizontal: 20, paddingTop: 20, paddingBottom: insets.bottom + 20 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+              <Ionicons name="copy-outline" size={20} color={colors.primary} />
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: "800", color: colors.foreground, marginLeft: 10 }}>
+                Duplica attivita' precedente
+              </Text>
+              <Pressable onPress={() => setShowYoY(false)}><Ionicons name="close" size={22} color={colors.mutedForeground} /></Pressable>
+            </View>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 16 }}>
+              Scegli un'attivita' esistente come base. Il form verra' pre-compilato — potrai modificare i campi che cambiano (es. giorni, orari).
+            </Text>
+            <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+              {activities.map(a => (
+                <Pressable key={a.id} onPress={() => openYoYDuplicate(a)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14,
+                    backgroundColor: colors.card, borderRadius: 14, marginBottom: 8,
+                    borderWidth: 1, borderColor: colors.border }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: a.color + "20",
+                    alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name={TYPE_CONFIG[a.type as Exclude<ActivityType,"custom">]?.icon ?? "calendar-outline"} size={18} color={a.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{a.title}</Text>
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                      {a.schedule.map(s => `${s.day} ${s.startTime}`).join(" · ")}
+                      {"  "}{fmtDuration(a.duration)}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ══════════════════════════════════════════════════
+          MULTI-STUDIO CLONE POPUP
+      ══════════════════════════════════════════════════ */}
+      <Modal visible={showCloneStudio} animationType="slide" transparent onRequestClose={() => setShowCloneStudio(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center", paddingHorizontal: 24 }}>
+          <View style={{ backgroundColor: colors.background, borderRadius: 24, padding: 24 }}>
+            <Text style={{ fontSize: 17, fontWeight: "800", color: colors.foreground, marginBottom: 8 }}>
+              Replica in un'altra sede
+            </Text>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 20 }}>
+              I dati (giorni, orari, insegnanti, eta', livello) sono identici o richiedono modifiche?
+            </Text>
+            <Pressable onPress={cloneIdentical}
+              style={{ backgroundColor: "#D1FAE5", borderRadius: 14, padding: 16, marginBottom: 10,
+                flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Ionicons name="checkmark-circle-outline" size={22} color="#059669" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#059669" }}>Identici — clona subito</Text>
+                <Text style={{ fontSize: 12, color: "#065F46", marginTop: 2 }}>
+                  Copia l'attivita' esattamente nella prossima sede disponibile
+                </Text>
+              </View>
+            </Pressable>
+            <Pressable onPress={cloneModified}
+              style={{ backgroundColor: "#FEF3C7", borderRadius: 14, padding: 16, marginBottom: 16,
+                flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Ionicons name="create-outline" size={22} color="#D97706" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#D97706" }}>Richiedono modifiche</Text>
+                <Text style={{ fontSize: 12, color: "#92400E", marginTop: 2 }}>
+                  Apri il form pre-compilato per modificare i dettagli
+                </Text>
+              </View>
+            </Pressable>
+            <Pressable onPress={() => setShowCloneStudio(false)}
+              style={{ alignItems: "center", paddingVertical: 10 }}>
+              <Text style={{ fontSize: 14, color: colors.mutedForeground }}>Annulla</Text>
+            </Pressable>
+          </View>
         </View>
       </Modal>
 
@@ -1476,7 +2046,7 @@ const styles = StyleSheet.create({
   formControl: {},
 
   pickerWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  pickerChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1, borderColor: "rgba(0,0,0,0.08)", backgroundColor: "rgba(0,0,0,0.03)" },
+  pickerChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1, borderColor: "rgba(0,0,0,0.08)", backgroundColor: "rgba(0,0,0,0.03)" },
   pickerChipText: { fontSize: 12, fontWeight: "600" },
 
   smallInput: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1 },
