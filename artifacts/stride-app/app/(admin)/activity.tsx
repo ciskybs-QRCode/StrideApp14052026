@@ -260,7 +260,7 @@ export default function ActivityScreen() {
   // ── Persistent extra tags ──
   const [savedExtraTags,    setSavedExtraTags]    = useState<string[]>([]);
   // ── Persistent disciplines ──
-  const [savedDisciplines,  setSavedDisciplines]  = useState<string[]>(["Ballet","Jazz","Hip-Hop","Contemporary","Salsa","Tango","Ballroom","Tap"]);
+  const [savedDisciplines,  setSavedDisciplines]  = useState<string[]>([]);
   const [newDisciplineInput, setNewDisciplineInput] = useState("");
   const [showDisciplineInput, setShowDisciplineInput] = useState(false);
   // ── Persistent custom types ──
