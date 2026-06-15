@@ -5,6 +5,7 @@ import * as Linking from "expo-linking";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { useFocusEffect, useRouter } from "expo-router";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -783,11 +784,11 @@ export default function OperatorInvoicing() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Payroll" onBack={() => router.navigate("/(operator)/workspace" as never)} />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.primary }]}>Payroll</Text>
 
         {/* ── Payment received banner ── */}
         {paymentBanner && (

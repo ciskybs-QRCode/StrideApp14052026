@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import {
   Linking,
   Modal,
@@ -127,6 +128,7 @@ const FAQS = [
 export default function OperatorSupport() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [org, setOrg] = useState<ApiOrg | null>(null);
   const [wizardProtocol, setWizardProtocol] = useState<Protocol | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -180,7 +182,7 @@ export default function OperatorSupport() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Protocols & Support" />
+      <ScreenHeader title="Protocols & Directives" onBack={() => router.navigate("/(operator)/workspace" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
