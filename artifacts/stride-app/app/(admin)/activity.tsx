@@ -20,7 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useSubstitution, type RescheduleAction, MOCK_SUBS } from "@/context/SubstitutionContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { request } from "@/lib/api";
+import { api, request, type ApiDiscipline } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -36,6 +36,7 @@ const EXTRA_TAGS_KEY       = "stride_activity_extra_tags";
 const DISCIPLINES_KEY      = "stride_activity_disciplines";
 const CUSTOM_TYPES_KEY     = "stride_activity_custom_types";
 const VENUES_KEY           = "stride_activity_venues";
+const ROOMS_KEY            = "stride_association_rooms";
 
 interface ScheduleSlot { day: string; startTime: string; }
 
@@ -346,6 +347,10 @@ export default function ActivityScreen() {
   // ── Venue input ──
   const [newVenueInput,    setNewVenueInput]    = useState("");
   const [showVenueInput,   setShowVenueInput]   = useState(false);
+  // ── Rooms (per-association, selectable chips) ──
+  const [rooms,            setRooms]            = useState<string[]>([]);
+  const [newRoomInput,     setNewRoomInput]      = useState("");
+  const [showRoomInput,    setShowRoomInput]     = useState(false);
 
   // ── Calendar (weekly-tap) ──
   const [showCalendar, setShowCalendar]         = useState(false);
@@ -374,18 +379,29 @@ export default function ActivityScreen() {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [draft, setDraft] = useState(BLANK_ACTIVITY());
 
-  // ── Load campuses, staff, extra-tags, disciplines, custom-types on mount ──
+  // ── Load disciplines from API (live) ──────────────────────────────────────────
+  const loadDisciplines = useCallback(async () => {
+    try {
+      const data: ApiDiscipline[] = await api.getDisciplines();
+      const active = data.filter(d => d.active).map(d => d.name);
+      setSavedDisciplines(active);
+      // Mirror to AsyncStorage as offline cache
+      await AsyncStorage.setItem(DISCIPLINES_KEY, JSON.stringify(active));
+    } catch {
+      // Offline fallback: use whatever is cached
+      const raw = await AsyncStorage.getItem(DISCIPLINES_KEY);
+      if (raw) setSavedDisciplines(JSON.parse(raw));
+    }
+  }, []);
+
+  // Reload disciplines every time this screen gains focus (admin may have just added one)
+  useFocusEffect(useCallback(() => { void loadDisciplines(); }, [loadDisciplines]));
+
+  // ── Load everything else on mount ─────────────────────────────────────────────
   useEffect(() => {
     // Load persisted extra tags
     AsyncStorage.getItem(EXTRA_TAGS_KEY).then(raw => {
       if (raw) setSavedExtraTags(JSON.parse(raw));
-    });
-    // Load persisted disciplines (merge with defaults)
-    AsyncStorage.getItem(DISCIPLINES_KEY).then(raw => {
-      if (raw) {
-        const stored: string[] = JSON.parse(raw);
-        setSavedDisciplines(prev => Array.from(new Set([...prev, ...stored])));
-      }
     });
     // Load persisted custom types
     AsyncStorage.getItem(CUSTOM_TYPES_KEY).then(raw => {
@@ -400,6 +416,10 @@ export default function ActivityScreen() {
           return [...prev, ...stored.filter(v => !ids.has(v.id))];
         });
       }
+    });
+    // Load persisted rooms
+    AsyncStorage.getItem(ROOMS_KEY).then(raw => {
+      if (raw) setRooms(JSON.parse(raw));
     });
     // Try to load campuses/studios from admin_settings via API
     request<{ studios?: { name: string; capacity: number }[] }>("GET", "/org/info")
@@ -582,9 +602,15 @@ export default function ActivityScreen() {
   const addDiscipline = async (disc: string) => {
     const trimmed = disc.trim();
     if (!trimmed) return;
-    const updated = Array.from(new Set([...savedDisciplines, trimmed]));
-    setSavedDisciplines(updated);
-    await AsyncStorage.setItem(DISCIPLINES_KEY, JSON.stringify(updated));
+    try {
+      await api.createDiscipline({ name: trimmed });
+      await loadDisciplines();         // refresh from real DB
+    } catch {
+      // Offline: add locally only
+      const updated = Array.from(new Set([...savedDisciplines, trimmed]));
+      setSavedDisciplines(updated);
+      await AsyncStorage.setItem(DISCIPLINES_KEY, JSON.stringify(updated));
+    }
     setDraft(d => ({ ...d, disciplines: Array.from(new Set([...(d.disciplines ?? []), trimmed])) }));
     setNewDisciplineInput("");
     setShowDisciplineInput(false);
@@ -611,6 +637,20 @@ export default function ActivityScreen() {
     setDraft(d => ({ ...d, type: "custom", customTypeName: trimmed }));
     setNewCustomTypeInput("");
     setShowCustomTypeInput(false);
+  };
+
+  // ── Room helpers ──────────────────────────────────────────────────────────────
+
+  const addRoom = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const updated = Array.from(new Set([...rooms, trimmed]));
+    setRooms(updated);
+    await AsyncStorage.setItem(ROOMS_KEY, JSON.stringify(updated));
+    setDraft(d => ({ ...d, room: trimmed }));
+    setNewRoomInput("");
+    setShowRoomInput(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   // ── Venue helpers ─────────────────────────────────────────────────────────────
@@ -1658,15 +1698,51 @@ export default function ActivityScreen() {
                 </Pressable>
               )}
             </View>
-            {renderRow("Room / Studio",
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
-                placeholder="e.g. Studio A, Main Hall..."
-                placeholderTextColor={colors.mutedForeground}
-                value={draft.room}
-                onChangeText={v => setDraft(d => ({ ...d, room: v }))}
-              />
-            )}
+            {/* ── Room / Studio chips ── */}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+              {rooms.map(r => {
+                const active = draft.room === r;
+                return (
+                  <Pressable key={r}
+                    onPress={() => { setDraft(d => ({ ...d, room: active ? "" : r })); Haptics.selectionAsync(); }}
+                    style={{ borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
+                      backgroundColor: active ? `${colors.primary}15` : colors.muted,
+                      borderWidth: active ? 1.5 : 1, borderColor: active ? colors.primary : colors.border }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700",
+                      color: active ? colors.primary : colors.mutedForeground }}>{r}</Text>
+                  </Pressable>
+                );
+              })}
+              {showRoomInput ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
+                  <TextInput
+                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                      paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
+                      backgroundColor: colors.card }}
+                    placeholder="e.g. Studio A, Main Hall..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={newRoomInput}
+                    onChangeText={setNewRoomInput}
+                    autoFocus
+                    onSubmitEditing={() => void addRoom(newRoomInput)}
+                  />
+                  <Pressable onPress={() => void addRoom(newRoomInput)} style={{ padding: 4 }}>
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  </Pressable>
+                  <Pressable onPress={() => { setShowRoomInput(false); setNewRoomInput(""); }} style={{ padding: 4 }}>
+                    <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable onPress={() => setShowRoomInput(true)}
+                  style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="add" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>+ Room/Studio</Text>
+                </Pressable>
+              )}
+            </View>
             {/* Multi-studio clone button — show only when editing */}
             {editingActivity && campuses.length > 1 && (
               <Pressable
