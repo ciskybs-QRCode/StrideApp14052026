@@ -1,0 +1,118 @@
+Documento di Specifica Funzionale: Activity Planner & AI Roster System
+1. Linee Guida UI/UX Generali
+Coerenza Estetica: Interfaccia grafica lineare, pulita e minimale. Mantenimento rigoroso di font, palette colori e stili già implementati nell'applicazione per garantire continuità visiva.
+
+Riduzione del Carico Cognitivo: Layout non caotico, ottimizzato per flussi di lavoro rapidi sia lato Admin che lato Operator. Allineamento rigoroso degli elementi all'interno dei confini dello schermo del dispositivo.
+
+2. Lato Admin: Pannello "New Activity"
+Il modulo di creazione delle attività deve consentire la massima flessibilità attraverso campi predefiniti (preset) e input personalizzati.
+
+Specifiche dei Campi:
+TYPE (Tipologia): Menu a tendina con preset integrato da un campo di testo libero (custom input). L'utente deve poter digitare una voce personalizzata (es. "Session").
+
+LEVEL (Livello): Menu a tendina per la selezione del livello, con l'aggiunta di un campo per "Tag Extra" personalizzati. I tag inseriti devono essere salvati in modo persistente nel database per essere riutilizzati nelle sessioni successive.
+
+AGE GROUP (Fascia d'età): Selettore dinamico che include:
+
+Range numerico personalizzabile tramite due menu a tendina (valori da 1 a 99, es. 12-14 anni).
+
+Preset rapidi: "18+" e "All Ages".
+
+LOCATION (Sede): Lettura automatica e popolamento dinamico delle opzioni dal database, in base ai Campus/Studi precedentemente configurati dall'Admin.
+
+STAFF (Personale): Menu di selezione collegato direttamente all'anagrafica operatori presente nel database dell'associazione.
+
+DURATION (Durata): Elenco di preset temporali standard, con l'aggiunta di un selettore orario libero per inserimenti personalizzati (es. workshop di 6 ore e 30 minuti).
+
+Funzionalità Avanzate del Modulo:
+Duplicazione Ricorrente (Year-over-Year): Possibilità di clonare un corso dell'anno precedente. Il sistema deve mostrare la medesima schermata pre-compilata, consentendo all'Admin di scegliere se confermare tutti i dati in blocco o modificare singoli campi (es. i giorni della settimana).
+
+Gestione Calendario e Multi-Settimana:
+
+Presenza di un bottone di attivazione calendario che apre una visualizzazione mensile.
+
+Logica di Selezione: Effettuando un singolo tap sul lunedì (inizio settimana), il sistema occupa automaticamente tutti i giorni e gli orari definiti nella scheda dell'attività per quella specifica settimana. Un secondo tap deseleziona la settimana.
+
+Nota di flessibilità: Questo sistema permette di gestire agilmente sia i calendari continui (es. Italia) sia quelli frammentati da pause (es. le school holidays australiane di 2 settimane ogni 10).
+
+Gestione Multi-Studio (Fino a 10+ sedi):
+
+In caso di replica dell'attività su un secondo studio, il sistema mostra un pop-up: "I dati (giorni, orari, insegnanti, età, livello) sono identici o richiedono modifiche?".
+
+Se si sceglie di modificare, si apre la schermata pre-popolata con i dati dello studio precedente, pronti per essere editati e adattati alle esigenze della nuova sede.
+
+3. Lato Operator: Gestione Disponibilità e Preferenze
+Il lato operatore deve specchiare la stessa logica visiva e strutturale del pannello Admin, ma configurato per l'inserimento delle preferenze lavorative personali.
+
+Flusso di Inserimento dell'Operatore:
+Filtro Competenze: Selezione dei corsi che l'operatore è abilitato a insegnare in base alla propria esperienza (es. solo Beginner o solo Advanced).
+
+Preferenze d'Età: Selezione dei target di età preferiti.
+
+Disponibilità Temporale e Calendario: Stessa logica di selezione a tap settimanale del pannello Admin. L'operatore può escludere preventivamente le settimane in cui sa già di essere in vacanza, lasciando lo slot vuoto anche se l'associazione è aperta.
+
+Sedi (Locations): Selezione dei Campus/Studi in cui l'operatore è disponibile a trasferirsi per insegnare.
+
+Salvataggio e Invio: Al momento del salvataggio, l'app propone due opzioni tramite pop-up: "Rivedi Disponibilità" (per modifiche successive in locale) o "Invia all'Admin".
+
+4. Algoritmo IA: Ottimizzazione Roster e Risoluzione Conflitti
+Una volta raccolte tutte le disponibilità degli operatori, l'Admin può avviare l'elaborazione dell'Intelligenza Artificiale per la generazione automatica del roster ottimale.
+
+Logica di Elaborazione dell'IA:
+Generazione Roster: L'IA incrocia i requisiti delle attività create dall'Admin con le preferenze e le disponibilità inviate dagli Operator.
+
+Rilevamento Conflitti: In caso di sovrapposizioni di orari, giorni o ruoli scoperti, l'IA non blocca il sistema, ma notifica l'Admin e attiva un workflow automatizzato di richiesta modifiche verso gli operatori.
+
+Assegnazione delle Priorità (Seniority & Rating): L'IA analizza i dati storici nel database. L'operatore con maggiore anzianità di servizio o con il rating più alto riceve la priorità (la sua preferenza viene mantenuta).
+
+Negoziazione Automatizzata:
+
+L'IA invia una notifica push/richiesta di modifica all'Operator B (es. "Puoi spostare la tua disponibilità dal giovedì al mercoledì?").
+
+Se l'Operator B rifiuta, l'IA scala automaticamente la richiesta verso l'Operator C, e così via, fino a trovare la combinazione migliore.
+
+Gestione Sostituzioni Programmate: L'IA identifica preventivamente i "buchi" di calendario lasciati dagli operatori in ferie e propone automaticamente la copertura di quelle specifiche settimane agli altri operatori compatibili, basandosi sui dati inseriti.
+
+Risoluzione Guidata dei Conflitti (Fallback): Qualora l'IA non riesca a trovare una risoluzione automatica ottimale (es. a causa di stringenti vincoli di indisponibilità), genera un pannello di suggerimenti predittivi per l'Admin, proponendo modifiche strutturali ai corsi (es. "Spostando l'attività 'X' dal lunedì al martedì alle 16:00, si risolvono il 100% dei conflitti di personale"). L'Admin può accettare il suggerimento con un singolo tap, modificando l'orario o il giorno del corso in base alla raccomandazione dell'IA.
+
+5. Flusso di Approvazione e Sincronizzazione Real-Time
+Autorizzazione del Timetable: Una volta completato il roster e risolti tutti i conflitti, l'Admin esegue l'azione di "Autorizza e Pubblica Orario".
+
+Sincronizzazione Istantanea (Data Streams): All'istante del clic, il database centrale propaga i dati in tempo reale a tutti i dispositivi connessi. L'interfaccia grafica di Admin, Operatori e Membri si aggiorna istantaneamente in background, senza richiedere il riavvio dell'applicazione o il refresh manuale della pagina.
+
+Notifica di Rilascio: Contemporaneamente all'aggiornamento dei dati, il sistema invia una notifica push transazionale a tutti gli utenti interessati (Admin incluso) per confermare che i turni e gli orari sono stati ufficialmente pianificati e sono pronti per la consultazione.
+
+6. Centro Notifiche e Gestione Preferenze Avanzata
+Per evitare il sovraccarico di notifiche, viene implementato un sistema di gestione granulare delle preferenze.
+
+Architettura dell'Interfaccia:
+Posizionamento: All'interno della sezione Settings di ciascun ruolo (Admin, Operator, Member), viene inserita una nuova voce di menu identificata dall'icona "Notification Settings".
+
+Matrice delle Preferenze: La pagina presenta una lista di canali di notifica suddivisi per tipologia (es. Aggiornamenti Roster, Promemoria Turni, Comunicazioni di Servizio). Per ciascun canale, l'utente può configurare in autonomia tramite interruttori (toggle):
+
+Abilitazione Canale: Ricevere o meno la notifica push.
+
+Feedback Sonoro: Attivare o disattivare il suono per quella specifica categoria.
+
+💡 Soluzione Professionale per il Bypass del Silenzioso / "Non Disturbare" (DND)
+Per garantire che i reminder critici non vadano persi, viene adottato lo standard nativo delle Notifiche Critiche (Critical Alerts).
+
+[ Impostazioni Notifiche ]
+────────────────────────────────────────────────────────
+🔔 Promemoria Turni (Reminder)
+   [o] Attiva Notifiche
+   [o] Suono Abilitato
+   [ ] Urgente: Bypassa "Non Disturbare" (Suona Sempre) ⚠️
+────────────────────────────────────────────────────────
+Logica di Funzionamento del Sistema:
+Classificazione "High-Priority": Nel codice dell'applicazione (sfruttando i Notification Channels ad alta priorità su Android e i Critical Alerts su iOS), l'opzione di bypass viene riservata esclusivamente a eventi con un alto impatto operativo (es. un reminder 2 ore prima di un turno o una modifica dell'ultimo minuto).
+
+Consenso Esplicito (UI/UX): Accanto ai canali critici, viene inserito il toggle dedicato: "Bypassa Modalità Silenzioso / Non Disturbare". Un piccolo badge di avviso (⚠️) informa l'utente che l'attivazione consentirà all'app di emettere un segnale acustico anche con il telefono in modalità DND.
+
+Autorizzazione di Sistema: Al primo switch del toggle, l'app intercetta il permesso nativo dello smartphone:
+
+Su iOS: Richiede l'autorizzazione formale per i Critical Alerts tramite pop-up di sistema.
+
+Su Android: Reindirizza l'utente alla pagina di configurazione del canale di notifica dell'app, per spuntare l'opzione "Ignora Non Disturbare".
+
+Trigger dei Reminder: Se l'utente ha attivato la funzione nelle impostazioni, i promemoria dei turni partiranno in automatico secondo i timer impostati (es. 24 ore prima e 2 ore prima del corso), eseguendo il bypass

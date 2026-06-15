@@ -1,0 +1,74 @@
+Documento di Specifica Funzionale: Activity Planner & AI Roster System
+1. Linee Guida UI/UX Generali
+Coerenza Estetica: Interfaccia grafica lineare, pulita e minimale. Mantenimento rigoroso di font, palette colori e stili già implementati nell'applicazione per garantire continuità visiva.
+
+Riduzione del Carico Cognitivo: Layout non caotico, ottimizzato per flussi di lavoro rapidi sia lato Admin che lato Operator.
+
+2. Lato Admin: Pannello "New Activity"
+Il modulo di creazione delle attività deve consentire la massima flessibilità attraverso campi predefiniti (preset) e input personalizzati.
+
+Specifiche dei Campi:
+TYPE (Tipologia): Menu a tendina con preset integrato da un campo di testo libero (custom input). L'utente deve poter digitare una voce personalizzata (es. "Session").
+
+LEVEL (Livello): Menu a tendina per la selezione del livello, con l'aggiunta di un campo per "Tag Extra" personalizzati. I tag inseriti devono essere salvati in modo persistente nel database per essere riutilizzati.
+
+AGE GROUP (Fascia d'età): Selettore dinamico che include:
+
+Range numerico personalizzabile tramite due menu a tendina (valori da 1 a 99, es. 12-14 anni).
+
+Preset rapidi: "18+" e "All Ages".
+
+LOCATION (Sede): Lettura automatica e popolamento dinamico delle opzioni dal database, in base ai Campus/Studi precedentemente configurati dall'Admin.
+
+STAFF (Personale): Menu di selezione collegato direttamente all'anagrafica operatori presente nel database dell'associazione.
+
+DURATION (Durata): Elenco di preset temporali standard, con l'aggiunta di un selettore orario libero per inserimenti personalizzati (es. workshop di 6 ore e 30 minuti).
+
+Funzionalità Avanzate del Modulo:
+Duplicazione Ricorrente (Year-over-Year): Possibilità di clonare un corso dell'anno precedente. Il sistema deve mostrare la medesima schermata pre-compilata, consentendo all'Admin di scegliere se confermare tutti i dati in blocco o modificare singoli campi (es. i giorni della settimana).
+
+Gestione Calendario e Multi-Settimana:
+
+Presenza di un bottone di attivazione calendario che apre una visualizzazione mensile.
+
+Logica di Selezione: Effettuando un singolo tap sul lunedì (inizio settimana), il sistema occupa automaticamente tutti i giorni e gli orari definiti nella scheda dell'attività per quella specifica settimana. Un secondo tap deseleziona la settimana.
+
+Nota di flessibilità: Questo sistema permette di gestire agilmente sia i calendari continui (es. Italia) sia quelli frammentati da pause (es. le school holidays australiane ogni 10 settimane).
+
+Gestione Multi-Studio (Fino a 10+ sedi):
+
+In caso di replica dell'attività su un secondo studio, il sistema mostra un pop-up: "I dati (giorni, orari, insegnanti, età, livello) sono identici o richiedono modifiche?".
+
+Se si sceglie di modificare, si apre la schermata pre-popolata con i dati dello studio precedente, pronti per essere editati e adattati alle esigenze della nuova sede.
+
+3. Lato Operator: Gestione Disponibilità e Preferenze
+Il lato operatore deve specchiare la stessa logica visiva e strutturale del pannello Admin, ma configurato per l'inserimento delle preferenze lavorative.
+
+Flusso di Inserimento dell'Operatore:
+Filtro Competenze: Selezione dei corsi che l'operatore è abilitato a insegnare in base alla propria esperienza (es. solo Beginner o solo Advanced).
+
+Preferenze d'Età: Selezione dei target di età preferiti.
+
+Disponibilità Temporale e Calendario: Stessa logica di selezione a tap settimanale del pannello Admin. L'operatore può escludere preventivamente le settimane in cui sa già di essere in vacanza, anche se l'associazione è aperta.
+
+Sedi (Locations): Selezione dei Campus in cui l'operatore è disponibile a lavorare.
+
+Salvataggio e Invio: Al momento del salvataggio, l'app propone due opzioni tramite pop-up: "Rivedi Disponibilità" (per modifiche successive) o "Invia all'Admin".
+
+4. Algoritmo IA: Ottimizzazione Roster e Risoluzione Conflitti
+Una volta raccolte tutte le disponibilità degli operatori, l'Admin può avviare l'elaborazione dell'Intelligenza Artificiale per la generazione automatica del roster ottimale.
+
+Logica di Elaborazione dell'IA:
+Generazione Roster: L'IA incrocia i requisiti delle attività create dall'Admin con le preferenze e le disponibilità inviate dagli Operator.
+
+Rilevamento Conflitti: In caso di sovrapposizioni di orari, giorni o ruoli scoperti, l'IA non blocca il sistema, ma notifica l'Admin e attiva un workflow automatizzato di richiesta modifiche verso gli operatori.
+
+Assegnazione delle Priorità (Seniority & Rating): L'IA analizza i dati storici nel database. L'operatore con maggiore anzianità di servizio o con il rating più alto riceve la priorità (la sua preferenza viene mantenuta).
+
+Negoziazione Automatizzata:
+
+L'IA invia una notifica push/richiesta di modifica all'Operator B (es. "Puoi spostare la tua disponibilità dal giovedì al mercoledì?").
+
+Se l'Operator B rifiuta, l'IA scala automaticamente la richiesta verso l'Operator C, e così via, fino a trovare la combinazione migliore.
+
+Gestione Sostituzioni Programmate: L'IA identifica preventivamente i "buchi" di calendario lasciati dagli operatori in ferie e propone automaticamente agli altri operatori compatibili di coprire quelle specifiche settimane, basandosi sui dati inseriti.
