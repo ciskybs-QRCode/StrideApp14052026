@@ -1474,38 +1474,54 @@ export default function ActivityScreen() {
               })}
             </View>
             {draft.ageGroup === "range" && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.card,
-                borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground, width: 36 }}>From</Text>
-                {/* Min age picker — scrollable 1..99 */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", gap: 4 }}>
-                    {Array.from({ length: 99 }, (_, i) => i + 1).map(age => (
-                      <Pressable key={age} onPress={() => setDraft(d => ({ ...d, ageMin: age }))}
-                        style={{ width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center",
-                          backgroundColor: draft.ageMin === age ? colors.primary : colors.muted }}>
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: draft.ageMin === age ? "#FFF" : colors.mutedForeground }}>
-                          {age}
-                        </Text>
+              <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14,
+                borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  {/* From stepper */}
+                  <View style={{ flex: 1, alignItems: "center" }}>
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", fontWeight: "700" }}>From</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <Pressable
+                        onPress={() => { setDraft(d => ({ ...d, ageMin: Math.max(1, d.ageMin - 1) })); Haptics.selectionAsync(); }}
+                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="remove" size={18} color={colors.foreground} />
                       </Pressable>
-                    ))}
-                  </View>
-                </ScrollView>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground, width: 20 }}>to</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", gap: 4 }}>
-                    {Array.from({ length: 99 }, (_, i) => i + 1).map(age => (
-                      <Pressable key={age} onPress={() => setDraft(d => ({ ...d, ageMax: age }))}
-                        style={{ width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center",
-                          backgroundColor: draft.ageMax === age ? colors.primary : colors.muted }}>
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: draft.ageMax === age ? "#FFF" : colors.mutedForeground }}>
-                          {age}
-                        </Text>
+                      <Text style={{ fontSize: 30, fontWeight: "800", color: colors.foreground, minWidth: 38, textAlign: "center" }}>
+                        {draft.ageMin}
+                      </Text>
+                      <Pressable
+                        onPress={() => { setDraft(d => ({ ...d, ageMin: Math.min(d.ageMax, d.ageMin + 1) })); Haptics.selectionAsync(); }}
+                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="add" size={18} color={colors.foreground} />
                       </Pressable>
-                    ))}
+                    </View>
                   </View>
-                </ScrollView>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>yrs</Text>
+                  <Text style={{ fontSize: 22, fontWeight: "300", color: colors.mutedForeground, marginTop: 20 }}>–</Text>
+                  {/* To stepper */}
+                  <View style={{ flex: 1, alignItems: "center" }}>
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", fontWeight: "700" }}>To</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <Pressable
+                        onPress={() => { setDraft(d => ({ ...d, ageMax: Math.max(d.ageMin, d.ageMax - 1) })); Haptics.selectionAsync(); }}
+                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="remove" size={18} color={colors.foreground} />
+                      </Pressable>
+                      <Text style={{ fontSize: 30, fontWeight: "800", color: colors.foreground, minWidth: 38, textAlign: "center" }}>
+                        {draft.ageMax}
+                      </Text>
+                      <Pressable
+                        onPress={() => { setDraft(d => ({ ...d, ageMax: Math.min(99, d.ageMax + 1) })); Haptics.selectionAsync(); }}
+                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="add" size={18} color={colors.foreground} />
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+                <View style={{ alignItems: "center", marginTop: 10 }}>
+                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                    {draft.ageMin === draft.ageMax ? `Exactly ${draft.ageMin} yrs` : `${draft.ageMin} – ${draft.ageMax} yrs`}
+                  </Text>
+                </View>
               </View>
             )}
             {draft.ageGroup === "18plus" && (
