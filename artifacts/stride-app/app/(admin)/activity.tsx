@@ -28,10 +28,31 @@ type ActivityType  = "lesson" | "seminar" | "meeting" | "workshop" | "custom";
 type Level         = "beginner" | "intermediate" | "advanced" | "all";
 type AgeGroup      = "range" | "18plus" | "all";
 type ActivityStatus = "active" | "draft" | "inactive";
-type AdminItemType  = "secretary_hours" | "staff_meeting" | "parent_teacher";
+type AdminItemType   = "secretary_hours" | "staff_meeting" | "parent_teacher";
 type AdminItemStatus = "scheduled" | "completed" | "cancelled";
+type InviteScope     = "manual" | "by_course" | "by_venue" | "all" | "members_only" | "operators_only";
+type InviteStatus    = "pending" | "read" | "accepted" | "declined";
 
 const ADMIN_SCHEDULE_TYPES_KEY = "stride_admin_schedule_types";
+const MEETING_INVITES_KEY      = "stride_meeting_invites";
+
+interface MeetingInviteRecord {
+  id: string;
+  meetingId: string;
+  meetingTitle: string;
+  meetingDate: string;
+  meetingTime: string;
+  meetingLocation?: string;
+  recipientName: string;
+  recipientType: "member" | "operator";
+  recipientContact?: string;
+  status: InviteStatus;
+  sentAt: string;
+  readAt?: string;
+  respondedAt?: string;
+  isPaid?: boolean;
+  payAmount?: string;
+}
 
 // Extra-tag storage key (persisted so they survive sessions)
 const EXTRA_TAGS_KEY       = "stride_activity_extra_tags";
@@ -121,6 +142,14 @@ interface AdminScheduleItem {
   participants: string;
   notes: string;
   status: AdminItemStatus;
+  // ── Invite fields ──
+  inviteScope?: InviteScope;
+  inviteManualNames?: string;   // comma-separated names for "manual"
+  inviteCourseName?: string;    // selected course name for "by_course"
+  inviteVenueName?: string;     // selected venue name for "by_venue"
+  invitePaid?: boolean;         // only for "operators_only"
+  invitePayAmount?: string;     // optional pay amount for paid operator meetings
+  invitesSentAt?: string;       // ISO timestamp of when invites were dispatched
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -258,6 +287,8 @@ const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
 const BLANK_ADMIN_ITEM = (): Omit<AdminScheduleItem, "id"> => ({
   title: "", type: "staff_meeting", date: "", dates: [], startTime: "", duration: 60,
   participants: "", notes: "", status: "scheduled",
+  inviteScope: undefined, inviteManualNames: "", inviteCourseName: "",
+  inviteVenueName: "", invitePaid: false, invitePayAmount: "", invitesSentAt: undefined,
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -434,6 +465,10 @@ export default function ActivityScreen() {
     AsyncStorage.getItem(ADMIN_SCHEDULE_TYPES_KEY).then(raw => {
       if (raw) setSavedAdminTypes(JSON.parse(raw));
     });
+    // Load meeting invite records
+    AsyncStorage.getItem(MEETING_INVITES_KEY).then(raw => {
+      if (raw) setMeetingInvites(JSON.parse(raw));
+    });
     // Load persisted venues and merge with existing campuses
     AsyncStorage.getItem(VENUES_KEY).then(raw => {
       if (raw) {
@@ -486,6 +521,13 @@ export default function ActivityScreen() {
   const [showAdminTimePicker, setShowAdminTimePicker] = useState(false);
   const [adminTimeHour,       setAdminTimeHour]       = useState(9);
   const [adminTimeMinute,     setAdminTimeMinute]     = useState(0);
+
+  // ── Meeting invites ──
+  const [meetingInvites,      setMeetingInvites]      = useState<MeetingInviteRecord[]>([]);
+  const [showInviteTracker,   setShowInviteTracker]   = useState<string | null>(null); // meetingId
+  const [adminInviteScope,    setAdminInviteScope]    = useState<InviteScope | undefined>(undefined);
+  const [adminInvitePaid,     setAdminInvitePaid]     = useState(false);
+  const [adminInvitePayAmt,   setAdminInvitePayAmt]   = useState("");
 
   // ── Smart Alerts state ──
   const [showAlertDetail, setShowAlertDetail] = useState(false);
@@ -871,6 +913,9 @@ export default function ActivityScreen() {
     setAdminTimeMinute(0);
     setShowAdminTypeInput(false);
     setNewAdminTypeInput("");
+    setAdminInviteScope(undefined);
+    setAdminInvitePaid(false);
+    setAdminInvitePayAmt("");
     setShowAdminModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
@@ -903,8 +948,44 @@ export default function ActivityScreen() {
     }
     setShowAdminTypeInput(false);
     setNewAdminTypeInput("");
+    // Restore invite state
+    setAdminInviteScope(item.inviteScope);
+    setAdminInvitePaid(item.invitePaid ?? false);
+    setAdminInvitePayAmt(item.invitePayAmount ?? "");
     setShowAdminModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  // ── Mock recipient pools ──────────────────────────────────────────────────────
+  const MOCK_MEMBERS   = ["Maria Rossi","Giulia Bianchi","Anna Conti","Francesca Mori","Sofia Romano"];
+  const MOCK_OPERATORS = ["Marco Ferrari","Luigi Esposito","Giorgio Russo","Antonio De Luca"];
+
+  const buildInviteRecords = (
+    meetingId: string, meetingTitle: string, meetingDate: string, meetingTime: string,
+    scope: InviteScope, draft: Partial<AdminScheduleItem>
+  ): MeetingInviteRecord[] => {
+    const now = new Date().toISOString();
+    const makeRecord = (name: string, type: "member" | "operator"): MeetingInviteRecord => ({
+      id: `${meetingId}_${name.replace(/\s+/g,"_")}_${Date.now()}`,
+      meetingId, meetingTitle, meetingDate, meetingTime,
+      recipientName: name, recipientType: type,
+      status: "pending", sentAt: now,
+      isPaid: type === "operator" ? (draft.invitePaid ?? false) : undefined,
+      payAmount: type === "operator" ? (draft.invitePayAmount ?? undefined) : undefined,
+    });
+    if (scope === "operators_only") return MOCK_OPERATORS.map(n => makeRecord(n, "operator"));
+    if (scope === "members_only")   return MOCK_MEMBERS.map(n => makeRecord(n, "member"));
+    if (scope === "all")            return [
+      ...MOCK_MEMBERS.map(n => makeRecord(n, "member")),
+      ...MOCK_OPERATORS.map(n => makeRecord(n, "operator")),
+    ];
+    if (scope === "manual" && draft.inviteManualNames) {
+      return draft.inviteManualNames.split(",").map(s => s.trim()).filter(Boolean)
+        .map(n => makeRecord(n, "member"));
+    }
+    if (scope === "by_course") return MOCK_MEMBERS.slice(0, 3).map(n => makeRecord(n, "member"));
+    if (scope === "by_venue")  return MOCK_MEMBERS.slice(0, 4).map(n => makeRecord(n, "member"));
+    return [];
   };
 
   const saveAdminItem = () => {
@@ -912,12 +993,44 @@ export default function ActivityScreen() {
     const datesArr = Array.from(selectedAdminDates).sort();
     const timeStr  = `${String(adminTimeHour).padStart(2, "0")}:${String(adminTimeMinute).padStart(2, "0")}`;
     const primaryDate = datesArr.length > 0 ? isoToDisplay(datesArr[0]) : adminDraft.date;
-    const finalDraft = { ...adminDraft, dates: datesArr, date: primaryDate, startTime: timeStr };
+    const now = new Date().toISOString();
+    const inviteScopeToSave = adminInviteScope;
+    const finalDraft: Omit<AdminScheduleItem, "id"> = {
+      ...adminDraft,
+      dates: datesArr, date: primaryDate, startTime: timeStr,
+      inviteScope: inviteScopeToSave,
+      invitePaid: adminInvitePaid,
+      invitePayAmount: adminInvitePayAmt,
+      invitesSentAt: inviteScopeToSave ? now : undefined,
+    };
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    let savedId: string;
     if (editingAdminItem) {
-      setAdminItems(prev => prev.map(i => i.id === editingAdminItem.id ? { ...editingAdminItem, ...finalDraft } : i));
+      savedId = editingAdminItem.id;
+      setAdminItems(prev => prev.map(i => i.id === savedId ? { ...editingAdminItem, ...finalDraft } : i));
+      // Remove old invites for this item and re-generate if scope changed
+      if (inviteScopeToSave) {
+        const freshRecords = buildInviteRecords(savedId, finalDraft.title, primaryDate, timeStr,
+          inviteScopeToSave, finalDraft);
+        setMeetingInvites(prev => {
+          const kept = prev.filter(r => r.meetingId !== savedId);
+          const next = [...kept, ...freshRecords];
+          AsyncStorage.setItem(MEETING_INVITES_KEY, JSON.stringify(next)).catch(() => {});
+          return next;
+        });
+      }
     } else {
-      setAdminItems(prev => [...prev, { ...finalDraft, id: Date.now().toString() }]);
+      savedId = Date.now().toString();
+      setAdminItems(prev => [...prev, { ...finalDraft, id: savedId }]);
+      if (inviteScopeToSave) {
+        const freshRecords = buildInviteRecords(savedId, finalDraft.title, primaryDate, timeStr,
+          inviteScopeToSave, finalDraft);
+        setMeetingInvites(prev => {
+          const next = [...prev, ...freshRecords];
+          AsyncStorage.setItem(MEETING_INVITES_KEY, JSON.stringify(next)).catch(() => {});
+          return next;
+        });
+      }
     }
     setShowAdminModal(false);
   };
@@ -1044,6 +1157,12 @@ export default function ActivityScreen() {
     const dateDisplay = item.dates && item.dates.length > 1
       ? `${item.dates.length} dates`
       : item.date;
+    const itemInvites = meetingInvites.filter(r => r.meetingId === item.id);
+    const accepted  = itemInvites.filter(r => r.status === "accepted").length;
+    const declined  = itemInvites.filter(r => r.status === "declined").length;
+    const read      = itemInvites.filter(r => r.status === "read").length;
+    const pending   = itemInvites.filter(r => r.status === "pending").length;
+    const total     = itemInvites.length;
     return (
       <Pressable style={[styles.adminCard, { backgroundColor: colors.card }]} onPress={() => openAdminEdit(item)}>
         <View style={[styles.adminIconWrap, { backgroundColor: tc.bg }]}>
@@ -1059,6 +1178,21 @@ export default function ActivityScreen() {
               {item.participants}
             </Text>
           ) : null}
+          {total > 0 && (
+            <Pressable
+              onPress={e => { e.stopPropagation(); setShowInviteTracker(item.id); Haptics.selectionAsync(); }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}
+            >
+              <Ionicons name="mail-outline" size={13} color={colors.primary} />
+              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "700" }}>
+                {total} invited
+              </Text>
+              {accepted > 0 && <Text style={{ fontSize: 11, color: "#10B981", fontWeight: "600" }}>✓ {accepted}</Text>}
+              {declined > 0 && <Text style={{ fontSize: 11, color: "#EF4444", fontWeight: "600" }}>✗ {declined}</Text>}
+              {read > 0     && <Text style={{ fontSize: 11, color: "#F59E0B", fontWeight: "600" }}>👁 {read}</Text>}
+              {pending > 0  && <Text style={{ fontSize: 11, color: colors.mutedForeground }}>· {pending} pending</Text>}
+            </Pressable>
+          )}
         </View>
         <View style={[styles.badge, { backgroundColor: sc.bg }]}>
           <Text style={[styles.badgeText, { color: sc.color }]}>{sc.label}</Text>
@@ -2538,6 +2672,121 @@ export default function ActivityScreen() {
               />
             )}
 
+            {/* ── INVITEES ── */}
+            {renderSectionHeader("INVITEES")}
+            <View style={{ marginBottom: 12, gap: 8 }}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground, marginBottom: 2 }]}>Who to invite</Text>
+              {/* Scope chips */}
+              <View style={styles.pickerWrap}>
+                {([
+                  { v: "manual"         as InviteScope, label: "By Name" },
+                  { v: "by_course"      as InviteScope, label: "By Course" },
+                  { v: "by_venue"       as InviteScope, label: "By Venue" },
+                  { v: "all"            as InviteScope, label: "All Association" },
+                  { v: "members_only"   as InviteScope, label: "Members only" },
+                  { v: "operators_only" as InviteScope, label: "Operators only" },
+                ] as { v: InviteScope; label: string }[]).map(({ v, label }) => {
+                  const active = adminInviteScope === v;
+                  return (
+                    <Pressable
+                      key={v}
+                      onPress={() => { setAdminInviteScope(active ? undefined : v); Haptics.selectionAsync(); }}
+                      style={[
+                        styles.pickerChip,
+                        active && { backgroundColor: `${colors.primary}18`, borderColor: colors.primary, borderWidth: 1.5 },
+                      ]}>
+                      <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Manual names */}
+              {adminInviteScope === "manual" && (
+                <TextInput
+                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                  placeholder="Names or contacts, comma-separated…"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={adminDraft.inviteManualNames ?? ""}
+                  onChangeText={v => setAdminDraft(d => ({ ...d, inviteManualNames: v }))}
+                />
+              )}
+
+              {/* By course */}
+              {adminInviteScope === "by_course" && (
+                <TextInput
+                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                  placeholder="Course name…"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={adminDraft.inviteCourseName ?? ""}
+                  onChangeText={v => setAdminDraft(d => ({ ...d, inviteCourseName: v }))}
+                />
+              )}
+
+              {/* By venue */}
+              {adminInviteScope === "by_venue" && (
+                <TextInput
+                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                  placeholder="Venue / studio name…"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={adminDraft.inviteVenueName ?? ""}
+                  onChangeText={v => setAdminDraft(d => ({ ...d, inviteVenueName: v }))}
+                />
+              )}
+
+              {/* Operators paid toggle */}
+              {adminInviteScope === "operators_only" && (
+                <View style={{ gap: 8 }}>
+                  <Pressable
+                    onPress={() => { setAdminInvitePaid(p => !p); Haptics.selectionAsync(); }}
+                    style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                      backgroundColor: colors.card, borderRadius: 12, borderWidth: 1,
+                      borderColor: adminInvitePaid ? "#10B981" : colors.border, padding: 14 }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <Ionicons name="cash-outline" size={18} color={adminInvitePaid ? "#10B981" : colors.mutedForeground} />
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Paid meeting for operators</Text>
+                    </View>
+                    <View style={{
+                      width: 44, height: 26, borderRadius: 13,
+                      backgroundColor: adminInvitePaid ? "#10B981" : colors.border,
+                      justifyContent: "center", paddingHorizontal: 2,
+                    }}>
+                      <View style={{
+                        width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFF",
+                        alignSelf: adminInvitePaid ? "flex-end" : "flex-start",
+                      }} />
+                    </View>
+                  </Pressable>
+                  {adminInvitePaid && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Pay amount (€)</Text>
+                      <TextInput
+                        style={[styles.smallInput, { flex: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: "#10B981" }]}
+                        placeholder="e.g. 25"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="decimal-pad"
+                        value={adminInvitePayAmt}
+                        onChangeText={setAdminInvitePayAmt}
+                      />
+                      <Text style={{ fontSize: 13, color: colors.mutedForeground }}>per person</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Info chip when scope selected */}
+              {adminInviteScope && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: `${colors.primary}10`,
+                  borderRadius: 10, padding: 10 }}>
+                  <Ionicons name="send-outline" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 12, color: colors.primary, flex: 1 }}>
+                    Invites will be sent when you save. Recipients can Accept or Decline, and you will see the tracking here.
+                  </Text>
+                </View>
+              )}
+            </View>
+
             {renderSectionHeader("PARTICIPANTS & NOTES")}
             {renderRow("Participants",
               <TextInput
@@ -2794,6 +3043,187 @@ export default function ActivityScreen() {
 
         </View>
       </Modal>
+
+      {/* ── Invite Tracker Modal (Outlook-style) ─────────────────────────── */}
+      {(() => {
+        const trackerId = showInviteTracker;
+        if (!trackerId) return null;
+        const trackerItem = adminItems.find(i => i.id === trackerId);
+        const records = meetingInvites.filter(r => r.meetingId === trackerId);
+        const accepted = records.filter(r => r.status === "accepted");
+        const declined = records.filter(r => r.status === "declined");
+        const read     = records.filter(r => r.status === "read");
+        const pending  = records.filter(r => r.status === "pending");
+        const statusIcon = (s: InviteStatus) =>
+          s === "accepted" ? "checkmark-circle" :
+          s === "declined" ? "close-circle" :
+          s === "read"     ? "eye" : "time-outline";
+        const statusColor = (s: InviteStatus) =>
+          s === "accepted" ? "#10B981" :
+          s === "declined" ? "#EF4444" :
+          s === "read"     ? "#F59E0B" : colors.mutedForeground;
+        const statusLabel = (s: InviteStatus) =>
+          s === "accepted" ? "Accepted" :
+          s === "declined" ? "Declined" :
+          s === "read"     ? "Read, no reply" : "Pending";
+
+        // Demo: simulate some response changes on long-press for dev purposes
+        const simulateResponse = (record: MeetingInviteRecord, newStatus: InviteStatus) => {
+          const now = new Date().toISOString();
+          setMeetingInvites(prev => {
+            const next = prev.map(r => r.id === record.id
+              ? { ...r, status: newStatus, respondedAt: now, readAt: r.readAt ?? now }
+              : r
+            );
+            AsyncStorage.setItem(MEETING_INVITES_KEY, JSON.stringify(next)).catch(() => {});
+            return next;
+          });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        };
+
+        return (
+          <Modal
+            visible={true}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowInviteTracker(null)}
+          >
+            <Pressable
+              style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
+              onPress={() => setShowInviteTracker(null)}
+            >
+              <Pressable
+                onPress={e => e.stopPropagation()}
+                style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "85%", paddingBottom: 32 }}
+              >
+                {/* Header */}
+                <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  <Ionicons name="mail-outline" size={20} color={colors.primary} />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={{ fontSize: 16, fontWeight: "800", color: colors.foreground }}>
+                      {trackerItem?.title ?? "Meeting"}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                      {trackerItem?.date}  ·  {trackerItem?.startTime}  ·  {records.length} invited
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => setShowInviteTracker(null)} hitSlop={10}>
+                    <Ionicons name="close" size={22} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+
+                {/* Summary bar */}
+                <View style={{ flexDirection: "row", padding: 16, gap: 8 }}>
+                  {[
+                    { count: accepted.length, label: "Accepted",     color: "#10B981", bg: "#D1FAE5" },
+                    { count: declined.length, label: "Declined",     color: "#EF4444", bg: "#FEE2E2" },
+                    { count: read.length,     label: "Read",         color: "#F59E0B", bg: "#FEF3C7" },
+                    { count: pending.length,  label: "Pending",      color: colors.mutedForeground, bg: colors.muted },
+                  ].map(({ count, label, color, bg }) => (
+                    <View key={label} style={{ flex: 1, alignItems: "center", backgroundColor: bg, borderRadius: 12, padding: 10 }}>
+                      <Text style={{ fontSize: 20, fontWeight: "900", color }}>{count}</Text>
+                      <Text style={{ fontSize: 10, fontWeight: "600", color, marginTop: 2 }}>{label}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Progress bar */}
+                {records.length > 0 && (
+                  <View style={{ marginHorizontal: 16, marginBottom: 12, height: 6, borderRadius: 3, backgroundColor: colors.border, flexDirection: "row", overflow: "hidden" }}>
+                    {accepted.length > 0 && <View style={{ flex: accepted.length, backgroundColor: "#10B981" }} />}
+                    {declined.length > 0 && <View style={{ flex: declined.length, backgroundColor: "#EF4444" }} />}
+                    {read.length > 0     && <View style={{ flex: read.length,     backgroundColor: "#F59E0B" }} />}
+                    {pending.length > 0  && <View style={{ flex: pending.length,  backgroundColor: colors.border }} />}
+                  </View>
+                )}
+
+                {/* Recipient list */}
+                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
+                  {records.length === 0 ? (
+                    <Text style={{ color: colors.mutedForeground, fontSize: 14, textAlign: "center", marginTop: 20 }}>No invites sent yet</Text>
+                  ) : records.map(record => (
+                    <View
+                      key={record.id}
+                      style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12,
+                        borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}
+                    >
+                      {/* Avatar */}
+                      <View style={{ width: 38, height: 38, borderRadius: 19,
+                        backgroundColor: record.recipientType === "operator" ? "#1E3A8A22" : "#FBBF2422",
+                        alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ fontSize: 14, fontWeight: "700",
+                          color: record.recipientType === "operator" ? "#1E3A8A" : "#D97706" }}>
+                          {record.recipientName.split(" ").map(w => w[0]).join("").slice(0,2)}
+                        </Text>
+                      </View>
+
+                      {/* Name + type */}
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>
+                          {record.recipientName}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                          {record.recipientType === "operator" ? "Operator" : "Member"}
+                          {record.isPaid && record.payAmount ? `  ·  €${record.payAmount}` : record.isPaid ? "  ·  Paid" : ""}
+                        </Text>
+                        {record.respondedAt && (
+                          <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
+                            {statusLabel(record.status)} {new Date(record.respondedAt).toLocaleDateString("en-GB")}
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Status + quick simulate buttons */}
+                      <View style={{ alignItems: "flex-end", gap: 4 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Ionicons name={statusIcon(record.status)} size={16} color={statusColor(record.status)} />
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: statusColor(record.status) }}>
+                            {statusLabel(record.status)}
+                          </Text>
+                        </View>
+                        {/* Quick-simulate buttons (dev helper) */}
+                        {record.status !== "accepted" && record.status !== "declined" && (
+                          <View style={{ flexDirection: "row", gap: 4 }}>
+                            <Pressable
+                              onPress={() => simulateResponse(record, "accepted")}
+                              style={{ backgroundColor: "#D1FAE5", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                              <Text style={{ fontSize: 10, color: "#10B981", fontWeight: "700" }}>✓ Accept</Text>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => simulateResponse(record, "declined")}
+                              style={{ backgroundColor: "#FEE2E2", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                              <Text style={{ fontSize: 10, color: "#EF4444", fontWeight: "700" }}>✗ Decline</Text>
+                            </Pressable>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+
+                {/* Resend / Close */}
+                <View style={{ flexDirection: "row", gap: 10, padding: 16, paddingBottom: 0 }}>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      Alert.alert("Reminder sent", "A reminder notification has been sent to all pending recipients.");
+                    }}
+                    style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, paddingVertical: 13, alignItems: "center", borderWidth: 1, borderColor: colors.border }}>
+                    <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 14 }}>Send Reminder</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setShowInviteTracker(null)}
+                    style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 13, alignItems: "center" }}>
+                    <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Close</Text>
+                  </Pressable>
+                </View>
+
+              </Pressable>
+            </Pressable>
+          </Modal>
+        );
+      })()}
+
     </View>
   );
 }

@@ -71,6 +71,25 @@ const SAVED_INSTRUCTORS_KEY = "stride_saved_instructors";
 const SAVED_VENUES_KEY      = "stride_saved_venues";
 const EVENTS_STORAGE_KEY    = "stride_calendar_events";
 const ATTENDANCE_STORAGE_KEY= "stride_event_attendance";
+const MEETING_INVITES_KEY   = "stride_meeting_invites";
+
+type InviteStatus = "pending" | "read" | "accepted" | "declined";
+interface MeetingInviteRecord {
+  id: string;
+  meetingId: string;
+  meetingTitle: string;
+  meetingDate: string;
+  meetingTime: string;
+  meetingLocation?: string;
+  recipientName: string;
+  recipientType: "member" | "operator";
+  status: InviteStatus;
+  sentAt: string;
+  readAt?: string;
+  respondedAt?: string;
+  isPaid?: boolean;
+  payAmount?: string;
+}
 
 type Workshop = {
   id: string;
@@ -206,6 +225,9 @@ export default function OperatorCalendar() {
   const [dayDetail, setDayDetail]       = useState<{ date: Date; lessons: LessonItem[] } | null>(null);
   const [campusAddress, setCampusAddress] = useState("1 Main Street, Sydney NSW 2000");
 
+  // ── Meeting invites (sent by admin) ──────────────────────────────────────
+  const [meetingInvites, setMeetingInvites] = useState<MeetingInviteRecord[]>([]);
+
   // ── Events & attendance ───────────────────────────────────────────────────
   const [calEvents,     setCalEvents]     = useState<CalendarEvent[]>(INITIAL_EVENTS);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -265,6 +287,25 @@ export default function OperatorCalendar() {
     AsyncStorage.getItem(ATTENDANCE_STORAGE_KEY)
       .then(val => { if (val) setEventAttendance(JSON.parse(val) as Record<string, "attended" | "missed">); })
       .catch(() => {});
+    AsyncStorage.getItem(MEETING_INVITES_KEY)
+      .then(val => {
+        if (val) {
+          const all: MeetingInviteRecord[] = JSON.parse(val);
+          // Show only invites for operators (this user's role)
+          const mine = all.filter(r => r.recipientType === "operator" && (r.status === "pending" || r.status === "read"));
+          // Mark any "pending" ones as "read" now that we have opened the screen
+          const updated = all.map(r =>
+            mine.some(m => m.id === r.id) && r.status === "pending"
+              ? { ...r, status: "read" as InviteStatus, readAt: new Date().toISOString() }
+              : r
+          );
+          setMeetingInvites(all);
+          if (updated.some((r, i) => r.status !== all[i].status)) {
+            AsyncStorage.setItem(MEETING_INVITES_KEY, JSON.stringify(updated)).catch(() => {});
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const toggleAttendance = (eventId: string, status: "attended" | "missed") => {
@@ -272,6 +313,23 @@ export default function OperatorCalendar() {
     setEventAttendance(next);
     AsyncStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(next)).catch(() => {});
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const respondToInvite = (record: MeetingInviteRecord, newStatus: "accepted" | "declined") => {
+    const now = new Date().toISOString();
+    setMeetingInvites(prev => {
+      const next = prev.map(r => r.id === record.id
+        ? { ...r, status: newStatus, respondedAt: now, readAt: r.readAt ?? now }
+        : r
+      );
+      AsyncStorage.setItem(MEETING_INVITES_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+    Haptics.notificationAsync(
+      newStatus === "accepted"
+        ? Haptics.NotificationFeedbackType.Success
+        : Haptics.NotificationFeedbackType.Warning
+    );
   };
 
   const openGps = (address: string) => {
@@ -711,6 +769,86 @@ export default function OperatorCalendar() {
           ))}
         </View>
 
+
+        {/* ── Meeting Invites (from admin) ── */}
+        {(() => {
+          const pending = meetingInvites.filter(r =>
+            r.recipientType === "operator" && (r.status === "pending" || r.status === "read")
+          );
+          if (pending.length === 0) return null;
+          return (
+            <>
+              <Text style={[styles.sectionTitle, { color: "#D97706", marginTop: 4 }]}>
+                Meeting Invites  ({pending.length})
+              </Text>
+              {pending.map(invite => (
+                <View
+                  key={invite.id}
+                  style={{ backgroundColor: "#FFFBEB", borderRadius: 16, borderWidth: 1.5,
+                    borderColor: "#FDE68A", marginBottom: 12, overflow: "hidden" }}
+                >
+                  {/* Header bar */}
+                  <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 14, paddingVertical: 10,
+                    flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Ionicons name="mail-unread-outline" size={16} color="#D97706" />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#D97706", flex: 1 }}>
+                      {invite.status === "read" ? "Opened — awaiting response" : "New invite"}
+                    </Text>
+                    <View style={{ backgroundColor: "#D97706", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                      <Text style={{ fontSize: 10, color: "#FFF", fontWeight: "700" }}>ACTION NEEDED</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ padding: 14, gap: 6 }}>
+                    <Text style={{ fontSize: 16, fontWeight: "800", color: "#1C1C1E" }}>
+                      {invite.meetingTitle}
+                    </Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 2 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Ionicons name="calendar-outline" size={13} color="#D97706" />
+                        <Text style={{ fontSize: 13, color: "#92400E", fontWeight: "600" }}>
+                          {invite.meetingDate}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Ionicons name="time-outline" size={13} color="#D97706" />
+                        <Text style={{ fontSize: 13, color: "#92400E", fontWeight: "600" }}>
+                          {invite.meetingTime}
+                        </Text>
+                      </View>
+                      {invite.isPaid && (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Ionicons name="cash-outline" size={13} color="#10B981" />
+                          <Text style={{ fontSize: 13, color: "#065F46", fontWeight: "600" }}>
+                            {invite.payAmount ? `€${invite.payAmount} paid` : "Paid meeting"}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Accept / Decline buttons */}
+                    <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+                      <Pressable
+                        onPress={() => respondToInvite(invite, "accepted")}
+                        style={{ flex: 1, backgroundColor: "#10B981", borderRadius: 12, paddingVertical: 11, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 }}
+                      >
+                        <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
+                        <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Accept</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => respondToInvite(invite, "declined")}
+                        style={{ flex: 1, backgroundColor: "#FFF", borderRadius: 12, paddingVertical: 11, alignItems: "center", borderWidth: 1.5, borderColor: "#EF4444", flexDirection: "row", justifyContent: "center", gap: 6 }}
+                      >
+                        <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+                        <Text style={{ color: "#EF4444", fontWeight: "700", fontSize: 14 }}>Decline</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </>
+          );
+        })()}
 
         {/* ── Events & Meetings ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 4 }]}>Events & Meetings</Text>
