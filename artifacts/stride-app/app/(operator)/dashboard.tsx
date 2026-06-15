@@ -1440,27 +1440,6 @@ export default function OperatorDashboard() {
           </Pressable>
         </View>
 
-        {/* ── My Availability shortcut ── */}
-        <Pressable
-          style={({ pressed }) => [{
-            flexDirection: "row", alignItems: "center", gap: 14,
-            backgroundColor: "#EEF2FF", borderRadius: 16, padding: 16, marginBottom: 14,
-            borderWidth: 1.5, borderColor: colors.primary,
-            opacity: pressed ? 0.88 : 1,
-            transform: pressed ? [{ scale: 0.98 }] : [],
-          }]}
-          onPress={() => router.push({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as Parameters<typeof router.push>[0])}
-        >
-          <View style={{ width: 46, height: 46, borderRadius: 13, backgroundColor: `${colors.primary}15`, alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name="time-outline" size={24} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: "800", color: colors.primary }}>La Mia Disponibilita'</Text>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>Submit & manage your availability slots</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-        </Pressable>
-
         {/* ── Security Alerts Quick Access ── */}
         {secAlerts.length > 0 && (
           <Pressable
