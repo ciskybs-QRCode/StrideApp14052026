@@ -22,15 +22,17 @@ export const EMERGENCY_CATEGORIES = ["MEDICAL", "FIRE", "POLICE", "DEPENDANT_MIS
 export type EmergencyCategory = (typeof EMERGENCY_CATEGORIES)[number];
 
 export interface EmergencyParams {
-  orgId:           number;
-  category:        EmergencyCategory;
-  title:           string;
-  body:            string;
-  data?:           Record<string, unknown>;
-  childId?:        string;
-  scanTime?:       string;
-  classStartTime?: string;
-  triggeredBy?:    string;
+  orgId:            number;
+  category:         EmergencyCategory;
+  title:            string;
+  body:             string;
+  data?:            Record<string, unknown>;
+  childId?:         string;
+  scanTime?:        string;
+  classStartTime?:  string;
+  triggeredBy?:     string;
+  /** When set, only notify these specific parent user IDs (MEDICAL targeted alerts). */
+  targetParentIds?: string[];
 }
 
 export interface SendResult {
@@ -107,6 +109,7 @@ export class EmergencyPushService {
     const {
       orgId, category, title, body, data,
       childId, scanTime, classStartTime, triggeredBy,
+      targetParentIds,
     } = params;
 
     // ── Social buffer suppression (DEPENDANT_MISSING only) ──────────────────
@@ -150,9 +153,17 @@ export class EmergencyPushService {
     }
 
     // ── Fetch device tokens ────────────────────────────────────────────────────
-    const { rows: tokenRows } = await pool.query<{ token: string }>(
-      `SELECT token FROM device_push_tokens WHERE org_id = $1`,
-      [orgId],
+    // For MEDICAL targeted alerts, only notify specific parents; otherwise all org tokens.
+    const { rows: tokenRows } = await (
+      targetParentIds && targetParentIds.length > 0
+        ? pool.query<{ token: string }>(
+            `SELECT token FROM device_push_tokens WHERE org_id = $1 AND user_id = ANY($2)`,
+            [orgId, targetParentIds],
+          )
+        : pool.query<{ token: string }>(
+            `SELECT token FROM device_push_tokens WHERE org_id = $1`,
+            [orgId],
+          )
     );
     const tokens = tokenRows.map(r => r.token).filter(t => Expo.isExpoPushToken(t));
 

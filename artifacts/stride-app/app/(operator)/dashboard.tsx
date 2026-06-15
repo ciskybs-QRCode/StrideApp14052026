@@ -100,7 +100,9 @@ function nowTime(): string {
 // ── SOS Emergency Procedures ───────────────────────────────────────────────────
 
 type SosType = "fire" | "medical" | "police";
-type SosPhase = "type" | "call" | "procedure";
+type SosPhase = "type" | "picker" | "call" | "procedure";
+
+interface SosMember { id: string; name: string; role: string; }
 
 interface SosProcStep {
   text: string;
@@ -289,6 +291,10 @@ export default function OperatorDashboard() {
   const [sosProcStep, setSosProcStep]     = useState(0);
   const [sosProcDone, setSosProcDone]     = useState(false);
   const [sosProcLogging, setSosProcLogging] = useState(false);
+  const [sosMedicalMembers, setSosMedicalMembers] = useState<SosMember[]>([]);
+  const [sosSelectedIds, setSosSelectedIds]       = useState<string[]>([]);
+  const [sosMembersLoading, setSosMembersLoading] = useState(false);
+  const [sosPulseId, setSosPulseId]               = useState<string | null>(null);
   const [campusAddress, setCampusAddress] = useState("1 Main Street, Sydney NSW 2000");
   const [scanned, setScanned]             = useState(false);
   const [orgLogoUri, setOrgLogoUri]       = useState<string | null>(null);
@@ -872,6 +878,76 @@ export default function OperatorDashboard() {
     setSosType(null);
     setSosProcStep(0);
     setSosProcDone(false);
+    setSosMedicalMembers([]);
+    setSosSelectedIds([]);
+    setSosPulseId(null);
+  };
+
+  // ── SOS type selected — trigger push + navigate to correct phase ───────────
+  const handleSosTypeSelect = async (t: SosType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSosType(t);
+    const proc = SOS_PROCEDURES[t];
+    pushLog({ time: nowTime(), action: `🚨 SOS: ${proc.label}`, type: "error" });
+
+    if (t === "medical") {
+      // Load member list first so the operator can pick who is affected
+      setSosMembersLoading(true);
+      setSosPhase("picker");
+      try {
+        const data = await api.getMembersPresent();
+        setSosMedicalMembers(data.members);
+      } catch {
+        // Fallback demo members so the picker is never empty
+        setSosMedicalMembers([
+          { id: "demo-1", name: "Marco Rossi",    role: "member" },
+          { id: "demo-2", name: "Giulia Ferrari",  role: "member" },
+          { id: "demo-3", name: "Luca Bianchi",    role: "member" },
+          { id: "demo-4", name: "Sofia Romano",    role: "member" },
+        ]);
+      } finally {
+        setSosMembersLoading(false);
+      }
+    } else {
+      // FIRE / POLICE — broadcast to ALL parents immediately
+      setSosPhase("call");
+      api.triggerEmergencyPulse({
+        org_id:         1,
+        location_label: campusAddress || "Main Campus",
+        category:       t === "fire" ? "FIRE" : "POLICE",
+      }).then(result => {
+        setSosPulseId(result.pulse_id);
+        pushLog({
+          time:   nowTime(),
+          action: `🚨 Push critico inviato a tutti i genitori — ${result.checked_in_count} presenze stimate`,
+          type:   "error",
+        });
+      }).catch(() => {});
+    }
+  };
+
+  // ── Medical picker confirmed — send targeted push then proceed to call ─────
+  const handleMedicalPickerConfirm = async () => {
+    setSosPhase("call");
+    try {
+      const result = await api.triggerEmergencyPulse({
+        org_id:            1,
+        location_label:    campusAddress || "Main Campus",
+        category:          "MEDICAL",
+        target_member_ids: sosSelectedIds.length > 0 ? sosSelectedIds : undefined,
+      });
+      setSosPulseId(result.pulse_id);
+      const targetLabel = result.targeted_parents != null
+        ? `${result.targeted_parents} genitori notificati`
+        : "tutti i genitori notificati";
+      pushLog({
+        time:   nowTime(),
+        action: `🏥 Push medico inviato — ${targetLabel}`,
+        type:   "error",
+      });
+    } catch {
+      pushLog({ time: nowTime(), action: "⚠️ Invio push fallito — riprova", type: "error" });
+    }
   };
 
   // ── Emergency Pulse handlers ───────────────────────────────────────────────
@@ -2278,12 +2354,7 @@ export default function OperatorDashboard() {
                       <Pressable
                         key={t}
                         style={({ pressed }) => [styles.sosTypeBtn, { borderLeftColor: p.color, opacity: pressed ? 0.88 : 1 }]}
-                        onPress={() => {
-                          setSosType(t);
-                          setSosPhase("call");
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                          pushLog({ time: nowTime(), action: `🚨 SOS: ${p.label}`, type: "error" });
-                        }}
+                        onPress={() => void handleSosTypeSelect(t)}
                       >
                         <View style={[styles.sosTypeIconBox, { backgroundColor: `${p.color}33` }]}>
                           <Text style={styles.sosTypeEmoji}>{p.emoji}</Text>
@@ -2299,6 +2370,71 @@ export default function OperatorDashboard() {
                 <Pressable style={styles.sosResolveBtn} onPress={closeSOS}>
                   <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                   <Text style={styles.sosResolveBtnText}>Situation Resolved — Close</Text>
+                </Pressable>
+              </>
+            )}
+
+            {/* ══ PHASE 1.5 — Medical Member Picker ══ */}
+            {sosPhase === "picker" && (
+              <>
+                <Text style={styles.sosPhaseLabel}>🏥  Emergenza Medica</Text>
+                <Text style={[styles.sosModalDesc, { marginBottom: 14 }]}>
+                  Seleziona chi è coinvolto — verrà notificato solo il genitore del membro scelto.
+                </Text>
+
+                {sosMembersLoading ? (
+                  <View style={{ alignItems: "center", paddingVertical: 24 }}>
+                    <ActivityIndicator size="large" color="#F59E0B" />
+                    <Text style={[styles.sosModalDesc, { marginTop: 10, color: "#9CA3AF" }]}>Caricamento membri…</Text>
+                  </View>
+                ) : (
+                  <ScrollView style={styles.sosPickerScroll} showsVerticalScrollIndicator={false}>
+                    {sosMedicalMembers.map(m => {
+                      const selected = sosSelectedIds.includes(m.id);
+                      return (
+                        <Pressable
+                          key={m.id}
+                          style={[
+                            styles.sosPickerRow,
+                            selected && { backgroundColor: "#F59E0B20", borderColor: "#F59E0B80" },
+                          ]}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setSosSelectedIds(prev =>
+                              selected ? prev.filter(id => id !== m.id) : [...prev, m.id],
+                            );
+                          }}
+                        >
+                          <View style={[styles.sosPickerCheck, selected && { backgroundColor: "#F59E0B", borderColor: "#F59E0B" }]}>
+                            {selected && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.sosPickerName, selected && { color: "#F59E0B" }]}>{m.name}</Text>
+                            <Text style={styles.sosPickerRole}>{m.role}</Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+
+                <View style={styles.sosDivider} />
+
+                <Pressable
+                  style={[styles.sosProceedBtn, { backgroundColor: "#F59E0B" }]}
+                  onPress={() => void handleMedicalPickerConfirm()}
+                >
+                  <Ionicons name="arrow-forward-circle" size={20} color="#FFF" />
+                  <Text style={styles.sosProceedBtnText}>
+                    {sosSelectedIds.length > 0
+                      ? `Notifica ${sosSelectedIds.length} genitore${sosSelectedIds.length > 1 ? "i" : ""}`
+                      : "Notifica tutti i genitori"}
+                  </Text>
+                </Pressable>
+
+                <Pressable style={[styles.sosResolveBtn, { marginTop: 8 }]} onPress={() => setSosPhase("type")}>
+                  <Ionicons name="arrow-back" size={16} color="rgba(255,255,255,0.6)" />
+                  <Text style={[styles.sosResolveBtnText, { color: "rgba(255,255,255,0.6)" }]}>Indietro</Text>
                 </Pressable>
               </>
             )}
@@ -2356,12 +2492,24 @@ export default function OperatorDashboard() {
                       <Text style={styles.sosProcCompleteSub}>
                         All {total} steps for "{proc.label}" have been logged with your operator ID and timestamp.
                       </Text>
-                      <Pressable style={[styles.sosProceedBtn, { backgroundColor: "#10B981", marginTop: 16 }]} onPress={closeSOS}>
+                      {sosPulseId && (
+                        <Pressable
+                          style={[styles.sosProceedBtn, { backgroundColor: "#DC2626", marginTop: 16 }]}
+                          onPress={() => {
+                            closeSOS();
+                            router.push(`/(operator)/emergency-pulse?id=${sosPulseId}` as Parameters<typeof router.push>[0]);
+                          }}
+                        >
+                          <Ionicons name="radio" size={18} color="#FFF" />
+                          <Text style={styles.sosProceedBtnText}>Vai al Dashboard Emergenza</Text>
+                        </Pressable>
+                      )}
+                      <Pressable style={[styles.sosProceedBtn, { backgroundColor: "#10B981", marginTop: sosPulseId ? 8 : 16 }]} onPress={closeSOS}>
                         <Ionicons name="checkmark-circle" size={18} color="#FFF" />
-                        <Text style={styles.sosProceedBtnText}>Situation Resolved — Close</Text>
+                        <Text style={styles.sosProceedBtnText}>Situazione Risolta — Chiudi</Text>
                       </Pressable>
                       <Pressable style={[styles.sosResolveBtn, { marginTop: 8 }]} onPress={() => { setSosProcStep(0); setSosProcDone(false); }}>
-                        <Text style={[styles.sosResolveBtnText, { color: "rgba(255,255,255,0.55)" }]}>Run Through Again</Text>
+                        <Text style={[styles.sosResolveBtnText, { color: "rgba(255,255,255,0.55)" }]}>Ripeti Procedura</Text>
                       </Pressable>
                     </View>
                   ) : (
@@ -2683,6 +2831,13 @@ const styles = StyleSheet.create({
   sosProcStepRight: { flex: 1, padding: 14 },
   sosProcStepText: { color: "#FFF", fontSize: 14, lineHeight: 21, fontWeight: "500" },
   sosLogNote: { color: "rgba(255,255,255,0.45)", fontSize: 11, textAlign: "center", marginBottom: 10 },
+
+  // Medical member picker
+  sosPickerScroll: { maxHeight: 220, marginBottom: 8 },
+  sosPickerRow: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8, backgroundColor: "rgba(255,255,255,0.04)" },
+  sosPickerCheck: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "rgba(255,255,255,0.3)", alignItems: "center", justifyContent: "center" },
+  sosPickerName: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+  sosPickerRole: { color: "rgba(255,255,255,0.45)", fontSize: 11, marginTop: 2, textTransform: "capitalize" },
 
   // Completion screen
   sosProcComplete: { width: "100%", alignItems: "center", gap: 10 },

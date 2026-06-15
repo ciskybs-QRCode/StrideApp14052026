@@ -3,17 +3,24 @@
  *
  * Flow:
  *   1. Operator/Admin triggers POST /emergency/pulse
- *      → stores in emergency_pulses, returns pulse_id + checked-in count
+ *      → stores in emergency_pulses, fires critical push via EmergencyPushService, returns pulse_id
  *   2. Parents poll GET /emergency/pulse/active
  *      → receive alert if status = "active"
  *   3. Parent taps "Safe" or "Need Help" → POST /emergency/pulse/:id/acknowledge
  *   4. Operator watches GET /emergency/pulse/:id/status for live counts
  *   5. Operator resolves → PATCH /emergency/pulse/:id/resolve
+ *
+ * Extra:
+ *   GET /emergency/members-present — returns org members for Medical picker
  */
 
 import { Router } from "express";
 import { pool } from "../lib/pg.js";
 import { requireAuth } from "../lib/auth.js";
+import {
+  EmergencyPushService,
+  type EmergencyCategory,
+} from "../lib/EmergencyPushService.js";
 import type { Request, Response } from "express";
 import type { TokenPayload } from "../lib/auth.js";
 
@@ -21,17 +28,50 @@ type AuthedReq = Request & { user: TokenPayload };
 
 const router = Router();
 
+// ── Category helpers ──────────────────────────────────────────────────────────
+
+function categoryTitle(cat: string): string {
+  switch (cat) {
+    case "FIRE":    return "🔥 Emergenza Incendio";
+    case "MEDICAL": return "🏥 Emergenza Medica";
+    case "POLICE":  return "🚔 Emergenza Polizia";
+    default:        return "🚨 Allerta Emergenza";
+  }
+}
+
+function categoryBody(cat: string, location: string): string {
+  switch (cat) {
+    case "FIRE":    return `Incendio segnalato presso ${location}. Evacuate immediatamente e aspettate istruzioni.`;
+    case "MEDICAL": return `Emergenza medica presso ${location}. Contattate la scuola per aggiornamenti.`;
+    case "POLICE":  return `Allerta sicurezza presso ${location}. Seguite le istruzioni della scuola.`;
+    default:        return `Emergenza segnalata presso ${location}. Controllate l'app Stride.`;
+  }
+}
+
 // ── POST /emergency/pulse ─────────────────────────────────────────────────────
 // Operator/Admin triggers an emergency broadcast.
-// Returns the pulse_id and the number of children currently estimated as checked-in.
+// Fires critical push notifications via EmergencyPushService before returning.
 router.post("/emergency/pulse", requireAuth, async (req: Request, res: Response) => {
   const user = (req as AuthedReq).user;
-  const { org_id, location_label } = req.body as {
-    org_id?: number | null;
-    location_label?: string;
+  const {
+    org_id,
+    location_label,
+    category = "FIRE",
+    target_member_ids,
+  } = req.body as {
+    org_id?:            number | null;
+    location_label?:    string;
+    category?:          string;
+    target_member_ids?: string[];
   };
 
-  // Estimate currently checked-in children: CHECK_IN events in last 8 h with no subsequent PICKED_UP
+  const resolvedOrgId   = org_id ?? (user as { org_id?: number }).org_id ?? 1;
+  const locationLabel   = (location_label ?? "Main Campus").trim();
+  const safeCategory    = (["FIRE", "MEDICAL", "POLICE", "DEPENDANT_MISSING"].includes(category ?? "")
+    ? category
+    : "FIRE") as EmergencyCategory;
+
+  // Estimate currently checked-in children
   let checkedInCount = 0;
   try {
     const { rows: ciRows } = await pool.query<{ count: string }>(
@@ -52,19 +92,117 @@ router.post("/emergency/pulse", requireAuth, async (req: Request, res: Response)
     `INSERT INTO emergency_pulses (org_id, triggered_by, location_label)
      VALUES ($1, $2, $3)
      RETURNING id, triggered_at`,
-    [org_id ?? null, user.id, (location_label ?? "Main Campus").trim()],
+    [resolvedOrgId, user.id, locationLabel],
   );
+  const pulseId      = rows[0]!.id;
+  const triggeredAt  = rows[0]!.triggered_at;
+
+  // ── Resolve targetParentIds for MEDICAL targeted alerts ───────────────────
+  let targetParentIds: string[] | undefined;
+  if (safeCategory === "MEDICAL" && Array.isArray(target_member_ids) && target_member_ids.length > 0) {
+    try {
+      // Look up parents via member_dependents table (dependent_id → parent_user_id)
+      const { rows: depRows } = await pool.query<{ id: string }>(
+        `SELECT DISTINCT parent_user_id AS id
+         FROM member_dependents
+         WHERE dependent_id = ANY($1)`,
+        [target_member_ids],
+      );
+      // Also treat any selected IDs that are themselves registered users as direct targets
+      const { rows: directRows } = await pool.query<{ id: string }>(
+        `SELECT id FROM users WHERE id = ANY($1)`,
+        [target_member_ids],
+      );
+      const allIds = [
+        ...depRows.map(r => r.id),
+        ...directRows.map(r => r.id),
+      ];
+      const unique = [...new Set(allIds)];
+      if (unique.length > 0) targetParentIds = unique;
+    } catch { /* tables may not exist — fall back to broadcast */ }
+  }
+
+  // ── Fire critical push (non-blocking — pulse already saved) ──────────────
+  EmergencyPushService.sendEmergencyPush({
+    orgId:          resolvedOrgId,
+    category:       safeCategory,
+    title:          categoryTitle(safeCategory),
+    body:           categoryBody(safeCategory, locationLabel),
+    triggeredBy:    user.id,
+    targetParentIds,
+    data:           { pulse_id: pulseId, location_label: locationLabel },
+  }).catch(err => {
+    // Log but don't fail the request — the pulse DB record is already created
+    console.error("EmergencyPushService.sendEmergencyPush failed:", err);
+  });
 
   res.status(201).json({
-    pulse_id:       rows[0].id,
-    triggered_at:   rows[0].triggered_at,
-    checked_in_count: checkedInCount,
+    pulse_id:          pulseId,
+    triggered_at:      triggeredAt,
+    checked_in_count:  checkedInCount,
+    category:          safeCategory,
+    targeted_parents:  targetParentIds?.length ?? null,
   });
 });
 
+// ── GET /emergency/members-present ───────────────────────────────────────────
+// Returns members in the operator's org for the Medical emergency picker.
+// Includes org members + their dependants where available.
+router.get("/emergency/members-present", requireAuth, async (req: Request, res: Response) => {
+  const user = (req as AuthedReq).user;
+  const orgId = (user as { org_id?: number }).org_id ?? 1;
+
+  const members: Array<{ id: string; name: string; role: string }> = [];
+
+  try {
+    // Org members (parents / members with accounts)
+    const { rows: memberRows } = await pool.query<{ id: string; name: string; role: string }>(
+      `SELECT u.id, u.name, om.role
+       FROM users u
+       JOIN organization_members om ON om.user_id = u.id
+       WHERE om.organization_id = $1
+         AND om.role IN ('member', 'parent', 'operator')
+       ORDER BY u.name
+       LIMIT 100`,
+      [orgId],
+    );
+    members.push(...memberRows);
+  } catch { /* table schema may differ */ }
+
+  try {
+    // Dependants registered under org members
+    const { rows: depRows } = await pool.query<{ id: string; name: string }>(
+      `SELECT md.dependent_id AS id,
+              COALESCE(md.dependent_name, md.dependent_id) AS name
+       FROM member_dependents md
+       JOIN organization_members om ON om.user_id = md.parent_user_id
+       WHERE om.organization_id = $1
+       ORDER BY name
+       LIMIT 100`,
+      [orgId],
+    );
+    for (const d of depRows) {
+      if (!members.find(m => m.id === d.id)) {
+        members.push({ id: d.id, name: d.name, role: "dependant" });
+      }
+    }
+  } catch { /* member_dependents may not exist */ }
+
+  // Fallback: if no members found (fresh system), return demo entries
+  if (members.length === 0) {
+    members.push(
+      { id: "demo-1", name: "Marco Rossi",   role: "member" },
+      { id: "demo-2", name: "Giulia Ferrari", role: "member" },
+      { id: "demo-3", name: "Luca Bianchi",   role: "member" },
+      { id: "demo-4", name: "Sofia Romano",   role: "member" },
+      { id: "demo-5", name: "Matteo Conti",   role: "member" },
+    );
+  }
+
+  res.json({ members });
+});
+
 // ── GET /emergency/pulse/active ───────────────────────────────────────────────
-// Returns the most recent active pulse (any authenticated user).
-// Returns null if no active pulse exists.
 router.get("/emergency/pulse/active", requireAuth, async (_req: Request, res: Response) => {
   const { rows } = await pool.query<{
     id:             string;
@@ -85,7 +223,6 @@ router.get("/emergency/pulse/active", requireAuth, async (_req: Request, res: Re
 });
 
 // ── GET /emergency/pulse/:id/status ──────────────────────────────────────────
-// Live dashboard — Safe/Missing counts + all acknowledgements.
 router.get("/emergency/pulse/:id/status", requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
 
@@ -118,7 +255,6 @@ router.get("/emergency/pulse/:id/status", requireAuth, async (req: Request, res:
 });
 
 // ── POST /emergency/pulse/:id/acknowledge ────────────────────────────────────
-// Parent confirms their child's status. Upsert — parent can change status while pulse is active.
 router.post("/emergency/pulse/:id/acknowledge", requireAuth, async (req: Request, res: Response) => {
   const user   = (req as AuthedReq).user;
   const { id } = req.params;
@@ -129,7 +265,6 @@ router.post("/emergency/pulse/:id/acknowledge", requireAuth, async (req: Request
     return;
   }
 
-  // Verify pulse is still active
   const { rows: pulseRows } = await pool.query<{ status: string }>(
     `SELECT status FROM emergency_pulses WHERE id = $1`,
     [id],
@@ -152,7 +287,6 @@ router.post("/emergency/pulse/:id/acknowledge", requireAuth, async (req: Request
 });
 
 // ── PATCH /emergency/pulse/:id/resolve ───────────────────────────────────────
-// Operator marks the incident as resolved — clears active state for all parents.
 router.patch("/emergency/pulse/:id/resolve", requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
 

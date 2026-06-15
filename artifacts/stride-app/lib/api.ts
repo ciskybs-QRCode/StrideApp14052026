@@ -874,9 +874,27 @@ export const api = {
     request<{ reviews: OrgReview[] }>("GET", `/reviews/org/${orgId}`),
 
   // ── Emergency Pulse ────────────────────────────────────────────────────────
-  triggerEmergencyPulse: (data: { org_id?: number | null; location_label?: string }) =>
-    request<{ pulse_id: string; triggered_at: string; checked_in_count: number }>(
+  triggerEmergencyPulse: (data: {
+    org_id?:            number | null;
+    location_label?:    string;
+    /** "FIRE" | "MEDICAL" | "POLICE" | "DEPENDANT_MISSING" */
+    category?:          string;
+    /** For MEDICAL: user/dependant IDs whose parents to notify */
+    target_member_ids?: string[];
+  }) =>
+    request<{
+      pulse_id:          string;
+      triggered_at:      string;
+      checked_in_count:  number;
+      category:          string;
+      targeted_parents:  number | null;
+    }>(
       "POST", "/emergency/pulse", data,
+    ),
+
+  getMembersPresent: () =>
+    request<{ members: Array<{ id: string; name: string; role: string }> }>(
+      "GET", "/emergency/members-present",
     ),
 
   getActivePulse: () =>
