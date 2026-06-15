@@ -151,6 +151,18 @@ export default function AdminCommunications() {
   // ── Tab ──────────────────────────────────────────────────────────────────────
   const [commTab, setCommTab] = useState<"messages" | "receipts">("messages");
 
+  // ── Automated Messages ───────────────────────────────────────────────────────
+  const [birthdayEnabled,  setBirthdayEnabled]  = useState(false);
+  const [birthdayMsg,      setBirthdayMsg]      = useState("Dear {name}, wishing you a wonderful birthday from all of us at the studio! 🎂");
+  const [editBirthday,     setEditBirthday]     = useState(false);
+  const [onboardingEnabled, setOnboardingEnabled] = useState(false);
+  const [welcomeMsg,       setWelcomeMsg]       = useState("Welcome on board! We're thrilled to have you with us. See you soon on the dance floor! 🎉");
+  const [editWelcome,      setEditWelcome]      = useState(false);
+  const [pendingOps, setPendingOps] = useState([
+    { id: "1", name: "Marco Bianchi", venue: "Studio A", slots: ["Mon 09:00–11:00", "Thu 17:00–19:00"] },
+    { id: "2", name: "Elena Russo",   venue: "Studio B", slots: ["Tue 14:00–16:00"] },
+  ]);
+
   // ── Read Receipts ─────────────────────────────────────────────────────────────
   const [receipts, setReceipts] = useState<NotifReceipt[]>([]);
   const [receiptFilter, setReceiptFilter] = useState<"all" | "read" | "unread">("all");
@@ -480,6 +492,179 @@ export default function AdminCommunications() {
                 </View>
               </Pressable>
             ))}
+
+            {/* ── AUTOMATED MESSAGES ──────────────────────────────────────── */}
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>Automated Messages</Text>
+
+            {/* Birthday Messages Card */}
+            <View style={[autoStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={autoStyles.cardHeader}>
+                <View style={[autoStyles.iconWrap, { backgroundColor: "#EF444415" }]}>
+                  <Ionicons name="gift-outline" size={18} color="#EF4444" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[autoStyles.cardTitle, { color: colors.foreground }]}>Birthday Messages</Text>
+                  <Text style={[autoStyles.cardSub, { color: colors.mutedForeground }]}>
+                    Automatically send a birthday greeting to members on their special day
+                  </Text>
+                </View>
+                <Switch
+                  value={birthdayEnabled}
+                  onValueChange={v => { setBirthdayEnabled(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  trackColor={{ false: colors.border, true: colors.primary + "88" }}
+                  thumbColor={birthdayEnabled ? colors.primary : "#D1D5DB"}
+                  ios_backgroundColor={colors.border}
+                />
+              </View>
+
+              {birthdayEnabled && (
+                <>
+                  <View style={[autoStyles.msgBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <Text style={[autoStyles.msgLabel, { color: colors.mutedForeground }]}>MESSAGE TEMPLATE</Text>
+                    {editBirthday ? (
+                      <TextInput
+                        style={[autoStyles.msgInput, { color: colors.foreground, borderColor: colors.border }]}
+                        value={birthdayMsg}
+                        onChangeText={setBirthdayMsg}
+                        multiline
+                        autoFocus
+                        placeholderTextColor={colors.mutedForeground}
+                      />
+                    ) : (
+                      <Text style={[autoStyles.msgText, { color: colors.foreground }]}>{birthdayMsg}</Text>
+                    )}
+                  </View>
+                  <Pressable
+                    style={({ pressed }) => [autoStyles.editBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+                    onPress={() => setEditBirthday(v => !v)}
+                  >
+                    <Ionicons name={editBirthday ? "checkmark-outline" : "create-outline"} size={14} color={colors.primary} />
+                    <Text style={[autoStyles.editBtnText, { color: colors.primary }]}>
+                      {editBirthday ? "Save Template" : "Edit Template"}
+                    </Text>
+                  </Pressable>
+                  <View style={[autoStyles.infoBanner, { backgroundColor: "#FEF9C3", borderColor: "#FDE047" }]}>
+                    <Ionicons name="information-circle-outline" size={14} color="#854D0E" />
+                    <Text style={[autoStyles.infoText, { color: "#854D0E" }]}>
+                      Use {"{"}<Text style={{ fontWeight: "800" }}>{"name"}</Text>{"}"} to personalise the message with the member's first name.
+                    </Text>
+                  </View>
+                </>
+              )}
+            </View>
+
+            {/* New Operator Onboarding Card */}
+            <View style={[autoStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={autoStyles.cardHeader}>
+                <View style={[autoStyles.iconWrap, { backgroundColor: "#FBBF2418" }]}>
+                  <Ionicons name="people-circle-outline" size={18} color="#FBBF24" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[autoStyles.cardTitle, { color: colors.foreground }]}>New Operator Welcome</Text>
+                  <Text style={[autoStyles.cardSub, { color: colors.mutedForeground }]}>
+                    Auto-assign available slots based on venue when a new operator joins mid-year
+                  </Text>
+                </View>
+                <Switch
+                  value={onboardingEnabled}
+                  onValueChange={v => { setOnboardingEnabled(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  trackColor={{ false: colors.border, true: colors.primary + "88" }}
+                  thumbColor={onboardingEnabled ? colors.primary : "#D1D5DB"}
+                  ios_backgroundColor={colors.border}
+                />
+              </View>
+
+              {onboardingEnabled && (
+                <>
+                  {/* How it works */}
+                  <View style={[autoStyles.stepsBox, { backgroundColor: colors.muted }]}>
+                    <Text style={[autoStyles.stepsTitle, { color: colors.primary }]}>HOW IT WORKS</Text>
+                    {[
+                      { n: "1", text: "Operator selects their venue when they first log in" },
+                      { n: "2", text: "App shows available time slots for that venue" },
+                      { n: "3", text: "Operator picks the slots they can cover" },
+                      { n: "4", text: "Admin receives a notification to review and approve" },
+                      { n: "5", text: "Welcome message sent automatically on approval" },
+                    ].map(step => (
+                      <View key={step.n} style={autoStyles.stepRow}>
+                        <View style={[autoStyles.stepBadge, { backgroundColor: colors.primary }]}>
+                          <Text style={autoStyles.stepNum}>{step.n}</Text>
+                        </View>
+                        <Text style={[autoStyles.stepText, { color: colors.foreground }]}>{step.text}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Welcome message template */}
+                  <Text style={[autoStyles.msgLabel, { color: colors.mutedForeground, marginTop: 4 }]}>WELCOME MESSAGE TEMPLATE</Text>
+                  <View style={[autoStyles.msgBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    {editWelcome ? (
+                      <TextInput
+                        style={[autoStyles.msgInput, { color: colors.foreground, borderColor: colors.border }]}
+                        value={welcomeMsg}
+                        onChangeText={setWelcomeMsg}
+                        multiline
+                        autoFocus
+                        placeholderTextColor={colors.mutedForeground}
+                      />
+                    ) : (
+                      <Text style={[autoStyles.msgText, { color: colors.foreground }]}>{welcomeMsg}</Text>
+                    )}
+                  </View>
+                  <Pressable
+                    style={({ pressed }) => [autoStyles.editBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+                    onPress={() => setEditWelcome(v => !v)}
+                  >
+                    <Ionicons name={editWelcome ? "checkmark-outline" : "create-outline"} size={14} color={colors.primary} />
+                    <Text style={[autoStyles.editBtnText, { color: colors.primary }]}>
+                      {editWelcome ? "Save Message" : "Customize Welcome Message"}
+                    </Text>
+                  </Pressable>
+
+                  {/* Pending approvals */}
+                  {pendingOps.length > 0 && (
+                    <>
+                      <View style={[autoStyles.pendingHeader, { borderColor: colors.border }]}>
+                        <Ionicons name="time-outline" size={15} color="#F59E0B" />
+                        <Text style={[autoStyles.pendingTitle, { color: colors.foreground }]}>
+                          Pending Approvals ({pendingOps.length})
+                        </Text>
+                      </View>
+                      {pendingOps.map(op => (
+                        <View key={op.id} style={[autoStyles.pendingCard, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                          <View style={autoStyles.pendingInfo}>
+                            <Text style={[autoStyles.pendingName, { color: colors.foreground }]}>{op.name}</Text>
+                            <Text style={[autoStyles.pendingVenue, { color: colors.mutedForeground }]}>
+                              {op.venue} · {op.slots.join(", ")}
+                            </Text>
+                          </View>
+                          <Pressable
+                            style={({ pressed }) => [autoStyles.approveBtn, { backgroundColor: "#10B981", opacity: pressed ? 0.8 : 1 }]}
+                            onPress={() => {
+                              setPendingOps(prev => prev.filter(x => x.id !== op.id));
+                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                              Alert.alert("Approved", `Welcome message sent to ${op.name}.`);
+                            }}
+                          >
+                            <Ionicons name="checkmark" size={14} color="#FFF" />
+                            <Text style={autoStyles.approveBtnText}>Approve</Text>
+                          </Pressable>
+                        </View>
+                      ))}
+                    </>
+                  )}
+
+                  {pendingOps.length === 0 && (
+                    <View style={[autoStyles.noPending, { backgroundColor: "#ECFDF5", borderColor: "#10B98130" }]}>
+                      <Ionicons name="checkmark-circle-outline" size={16} color="#10B981" />
+                      <Text style={[autoStyles.noPendingText, { color: "#065F46" }]}>
+                        All operator approvals are up to date
+                      </Text>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
           </>
         )}
 
@@ -1055,4 +1240,64 @@ const styles = StyleSheet.create({
   receiptFilterChip: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1.5 },
   receiptCard: { borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   receiptRoleBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+});
+
+// ── Automated Messages styles ──────────────────────────────────────────────────
+const autoStyles = StyleSheet.create({
+  card: {
+    borderRadius: 16, padding: 16, borderWidth: 1, gap: 10, marginBottom: 12,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
+  },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  iconWrap:   { width: 40, height: 40, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  cardTitle:  { fontSize: 14, fontWeight: "800", marginBottom: 2 },
+  cardSub:    { fontSize: 11.5, lineHeight: 16 },
+
+  msgBox:   { borderRadius: 12, padding: 12, borderWidth: 1, gap: 6 },
+  msgLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 1.2 },
+  msgText:  { fontSize: 13, lineHeight: 20 },
+  msgInput: { fontSize: 13, lineHeight: 20, borderWidth: 1, borderRadius: 8, padding: 8, minHeight: 70 },
+
+  editBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14,
+    alignSelf: "flex-start",
+  },
+  editBtnText: { fontSize: 12, fontWeight: "700" },
+
+  infoBanner: {
+    flexDirection: "row", alignItems: "flex-start", gap: 8,
+    borderRadius: 10, borderWidth: 1, padding: 10,
+  },
+  infoText: { fontSize: 11.5, lineHeight: 17, flex: 1 },
+
+  stepsBox:  { borderRadius: 12, padding: 14, gap: 10 },
+  stepsTitle: { fontSize: 9, fontWeight: "800", letterSpacing: 1.2, marginBottom: 2 },
+  stepRow:   { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  stepBadge: { width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 },
+  stepNum:   { fontSize: 10, fontWeight: "900", color: "#FFF" },
+  stepText:  { fontSize: 12.5, lineHeight: 18, flex: 1 },
+
+  pendingHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 8, borderBottomWidth: 1 },
+  pendingTitle:  { fontSize: 13, fontWeight: "700" },
+
+  pendingCard: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    borderRadius: 12, borderWidth: 1, padding: 12,
+  },
+  pendingInfo:  { flex: 1 },
+  pendingName:  { fontSize: 13, fontWeight: "700" },
+  pendingVenue: { fontSize: 11, marginTop: 2, lineHeight: 16 },
+
+  approveBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+  },
+  approveBtnText: { color: "#FFF", fontSize: 12, fontWeight: "800" },
+
+  noPending: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    borderRadius: 10, borderWidth: 1, padding: 12,
+  },
+  noPendingText: { fontSize: 12, fontWeight: "600" },
 });

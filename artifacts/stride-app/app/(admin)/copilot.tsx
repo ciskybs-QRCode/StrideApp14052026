@@ -314,7 +314,7 @@ const ub = StyleSheet.create({
     paddingHorizontal: 15, paddingVertical: 11,
     maxWidth: "78%",
   },
-  text: { color: CLR.text, fontSize: 14, lineHeight: 20 },
+  text: { color: "#FFFFFF", fontSize: 14, lineHeight: 20 },
   ts:   { color: CLR.textDim, fontSize: 10, marginTop: 3, marginHorizontal: 3 },
 });
 

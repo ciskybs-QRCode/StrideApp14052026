@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -24,18 +25,9 @@ import {
   type RescueCascade,
 } from "@/lib/api";
 import { request } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const NAVY   = "#0A1128";
-const NAVY_L = "#0F1E3C";
-const NAVY_D = "#070C1A";
-const GOLD   = "#D4AF37";
-const GOLD_D = "rgba(212,175,55,0.25)";
-const GOLD_F = "rgba(212,175,55,0.10)";
-const WHITE  = "#FFFFFF";
-const MUTED  = "rgba(255,255,255,0.5)";
-const DIM    = "rgba(255,255,255,0.22)";
-const BORDER = "rgba(255,255,255,0.10)";
+const AUTO_TRIGGER_KEY = "stride_auto_trigger";
 
 // ── Demo data ─────────────────────────────────────────────────────────────────
 const DEMO_OPERATORS = [
@@ -51,6 +43,15 @@ const DEMO_COURSES = [
   { disciplineId: "4", name: "Hip-Hop" },
 ];
 
+// Simulated available slots (post-roster generation)
+const AVAILABLE_SLOTS = [
+  { day: "Mon", time: "09:00–11:00", venue: "Studio A" },
+  { day: "Tue", time: "14:00–16:00", venue: "Studio B" },
+  { day: "Wed", time: "10:00–12:00", venue: "Studio A" },
+  { day: "Thu", time: "17:00–19:00", venue: "Studio C" },
+  { day: "Sat", time: "08:00–10:00", venue: "Studio A" },
+];
+
 function nextISODateTime(daysAhead: number, hour = 14): string {
   const d = new Date();
   d.setDate(d.getDate() + daysAhead);
@@ -58,11 +59,10 @@ function nextISODateTime(daysAhead: number, hour = 14): string {
   return d.toISOString();
 }
 
-// ── Status helpers ─────────────────────────────────────────────────────────────
 function statusColor(s: string) {
   if (s === "resolved")  return "#10B981";
   if (s === "cancelled") return "#6B7280";
-  return "#F59E0B"; // pending
+  return "#F59E0B";
 }
 function statusLabel(s: string) {
   if (s === "resolved")  return "Resolved";
@@ -73,6 +73,7 @@ function statusLabel(s: string) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function SmartRosterScreen() {
   const router  = useRouter();
+  const colors  = useColors();
   const insets  = useSafeAreaInsets();
   const params  = useLocalSearchParams<{
     missing_operator_id?:   string;
@@ -92,24 +93,29 @@ export default function SmartRosterScreen() {
   const [datetimeError, setDatetimeError] = useState<string | null>(null);
 
   // ── Cascade Orchestrator state ─────────────────────────────────────────────
-  const [autoTrigger,    setAutoTrigger]    = useState(false);
-  const [settingsLoading, setSettingsLoading] = useState(true);
-  const [cascades,       setCascades]       = useState<RescueCascade[]>([]);
+  const [autoTrigger,     setAutoTrigger]     = useState(false);
+  const [cascades,        setCascades]        = useState<RescueCascade[]>([]);
   const [cascadesLoading, setCascadesLoading] = useState(true);
-  const [triggering,     setTriggering]     = useState(false);
-  const [cancellingId,   setCancellingId]   = useState<number | null>(null);
-  const [expanded,       setExpanded]       = useState<number | null>(null);
+  const [triggering,      setTriggering]      = useState(false);
+  const [cancellingId,    setCancellingId]    = useState<number | null>(null);
+  const [expanded,        setExpanded]        = useState<number | null>(null);
 
-  // ── Load admin settings ────────────────────────────────────────────────────
-  const loadSettings = useCallback(async () => {
-    try {
-      const data = await request<{ cascade_auto_trigger?: boolean }>("GET", "/admin-settings");
-      setAutoTrigger(data.cascade_auto_trigger === true);
-    } catch {
-      // ignore — defaults to false
-    } finally {
-      setSettingsLoading(false);
-    }
+  // ── Annual Roster state ────────────────────────────────────────────────────
+  const [rosterPhase,    setRosterPhase]    = useState<"idle" | "generating" | "done">("idle");
+  const [notifSent,      setNotifSent]      = useState(false);
+
+  // ── Load auto-trigger (AsyncStorage first, then API) ──────────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(AUTO_TRIGGER_KEY).then(v => {
+      if (v !== null) setAutoTrigger(v === "true");
+    });
+    request<{ cascade_auto_trigger?: boolean }>("GET", "/admin-settings")
+      .then(data => {
+        const val = data.cascade_auto_trigger === true;
+        setAutoTrigger(val);
+        AsyncStorage.setItem(AUTO_TRIGGER_KEY, String(val));
+      })
+      .catch(() => {}); // keep AsyncStorage value on API failure
   }, []);
 
   // ── Load cascades ──────────────────────────────────────────────────────────
@@ -125,19 +131,17 @@ export default function SmartRosterScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadSettings();
-    loadCascades();
-  }, [loadSettings, loadCascades]);
+  useEffect(() => { loadCascades(); }, [loadCascades]);
 
-  // ── Toggle auto-trigger ────────────────────────────────────────────────────
+  // ── Toggle auto-trigger — optimistic, persisted locally ───────────────────
   const handleToggleAutoTrigger = async (value: boolean) => {
     setAutoTrigger(value);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await AsyncStorage.setItem(AUTO_TRIGGER_KEY, String(value));
     try {
       await request<unknown>("PUT", "/admin-settings", { cascade_auto_trigger: value });
     } catch {
-      setAutoTrigger(!value); // revert
+      // keep local value — API sync is best-effort
     }
   };
 
@@ -152,9 +156,7 @@ export default function SmartRosterScreen() {
     setCommitted(true);
   };
 
-  const handleAssign = (sub: SmartSubstitute) => {
-    console.log("Substitute dispatched:", sub.id, sub.name);
-  };
+  const handleAssign = (_sub: SmartSubstitute) => {};
 
   // ── Manual cascade trigger ─────────────────────────────────────────────────
   const handleManualCascade = async () => {
@@ -202,162 +204,270 @@ export default function SmartRosterScreen() {
     ]);
   };
 
+  // ── Generate Annual Roster ─────────────────────────────────────────────────
+  const handleGenerateRoster = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setRosterPhase("generating");
+    setNotifSent(false);
+    setTimeout(() => {
+      setRosterPhase("done");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }, 3200);
+  };
+
+  const handleNotifyTeam = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNotifSent(true);
+    Alert.alert(
+      "Team Notified",
+      "Admin and all operators have received a message listing the available time slots for private lessons and other activities.",
+      [{ text: "OK" }]
+    );
+  };
+
   const TAB_H = Platform.OS === "web" ? 84 : 49;
 
   return (
-    <View style={s.root}>
-      <ScreenHeader title="Smart Roster" subtitle="AI Roster Orchestrator" />
+    <View style={[s.root, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="AI Roster Orchestrator" subtitle="Smart scheduling & cascade" />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + TAB_H + 20 }]}
         showsVerticalScrollIndicator={false}
       >
 
-        {/* ── CASCADE ORCHESTRATOR CONTROL ─────────────────────────────────── */}
-        <View style={s.orchestratorCard}>
-          <View style={s.orchHeader}>
-            <View style={s.orchIconWrap}>
-              <Ionicons name="git-network-outline" size={18} color={GOLD} />
+        {/* ── ANNUAL ROSTER PLANNING ───────────────────────────────────────── */}
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={s.cardHeader}>
+            <View style={[s.iconWrap, { backgroundColor: "#FBBF2418" }]}>
+              <Ionicons name="calendar-outline" size={20} color="#FBBF24" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.orchTitle}>Cascade Orchestrator</Text>
-              <Text style={s.orchSub}>Autonomous contact cascade when an operator is absent</Text>
+              <Text style={[s.cardTitle, { color: colors.foreground }]}>Annual Roster Planning</Text>
+              <Text style={[s.cardSub, { color: colors.mutedForeground }]}>
+                Organize the full-year schedule based on operator availability submissions
+              </Text>
+            </View>
+          </View>
+
+          {rosterPhase === "idle" && (
+            <Pressable
+              style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              onPress={handleGenerateRoster}
+            >
+              <Ionicons name="sparkles" size={16} color="#FFF" />
+              <Text style={s.primaryBtnText}>Organize Annual Rosters</Text>
+            </Pressable>
+          )}
+
+          {rosterPhase === "generating" && (
+            <View style={[s.generatingBox, { backgroundColor: colors.muted }]}>
+              <ActivityIndicator color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={[s.genTitle, { color: colors.foreground }]}>AI is building rosters…</Text>
+                <Text style={[s.genSub, { color: colors.mutedForeground }]}>
+                  Analysing operator availability, venue capacity and course requirements
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {rosterPhase === "done" && (
+            <>
+              <View style={[s.successBox, { backgroundColor: "#ECFDF5", borderColor: "#10B98130" }]}>
+                <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.genTitle, { color: "#065F46" }]}>Rosters Generated</Text>
+                  <Text style={[s.genSub, { color: "#059669" }]}>
+                    Annual schedule organised across all venues and disciplines
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={[s.subsectionLabel, { color: colors.mutedForeground }]}>
+                AVAILABLE SLOTS FOR PRIVATE LESSONS
+              </Text>
+              <View style={s.slotGrid}>
+                {AVAILABLE_SLOTS.map((sl, i) => (
+                  <View key={i} style={[s.slotChip, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <Text style={[s.slotDay, { color: colors.primary }]}>{sl.day}</Text>
+                    <Text style={[s.slotTime, { color: colors.foreground }]}>{sl.time}</Text>
+                    <Text style={[s.slotVenue, { color: colors.mutedForeground }]}>{sl.venue}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {notifSent ? (
+                <View style={[s.notifSentBox, { borderColor: colors.border }]}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color="#10B981" />
+                  <Text style={[s.notifSentText, { color: "#10B981" }]}>
+                    Notification sent to admin and all operators
+                  </Text>
+                </View>
+              ) : (
+                <Pressable
+                  style={({ pressed }) => [s.notifyBtn, { borderColor: colors.primary, opacity: pressed ? 0.75 : 1 }]}
+                  onPress={handleNotifyTeam}
+                >
+                  <Ionicons name="send-outline" size={15} color={colors.primary} />
+                  <Text style={[s.notifyBtnText, { color: colors.primary }]}>
+                    Notify Admin & Operators of Available Slots
+                  </Text>
+                </Pressable>
+              )}
+
+              <Pressable
+                style={({ pressed }) => [s.resetBtn, { opacity: pressed ? 0.7 : 1 }]}
+                onPress={() => { setRosterPhase("idle"); setNotifSent(false); }}
+              >
+                <Text style={[s.resetBtnText, { color: colors.mutedForeground }]}>Reset</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+
+        {/* ── CASCADE ORCHESTRATOR CONTROL ─────────────────────────────────── */}
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={s.cardHeader}>
+            <View style={[s.iconWrap, { backgroundColor: colors.primary + "15" }]}>
+              <Ionicons name="git-network-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.cardTitle, { color: colors.foreground }]}>Cascade Orchestrator</Text>
+              <Text style={[s.cardSub, { color: colors.mutedForeground }]}>
+                Autonomous contact cascade when an operator is absent
+              </Text>
             </View>
           </View>
 
           {/* Auto-trigger toggle */}
-          <View style={s.toggleRow}>
+          <View style={[s.toggleRow, { backgroundColor: colors.muted, borderColor: colors.border }]}>
             <View style={{ flex: 1 }}>
-              <Text style={s.toggleLabel}>Auto-Trigger Mode</Text>
-              <Text style={s.toggleDesc}>
+              <Text style={[s.toggleLabel, { color: colors.foreground }]}>Auto-Trigger Mode</Text>
+              <Text style={[s.toggleDesc, { color: colors.mutedForeground }]}>
                 Automatically launch a rescue cascade whenever an operator reports an absence
               </Text>
             </View>
-            {settingsLoading ? (
-              <ActivityIndicator size="small" color={GOLD} />
-            ) : (
-              <Switch
-                value={autoTrigger}
-                onValueChange={handleToggleAutoTrigger}
-                trackColor={{ false: "rgba(255,255,255,0.1)", true: "rgba(212,175,55,0.4)" }}
-                thumbColor={autoTrigger ? GOLD : "rgba(255,255,255,0.5)"}
-                ios_backgroundColor="rgba(255,255,255,0.1)"
-              />
-            )}
+            <Switch
+              value={autoTrigger}
+              onValueChange={handleToggleAutoTrigger}
+              trackColor={{ false: colors.border, true: colors.primary + "88" }}
+              thumbColor={autoTrigger ? colors.primary : "#D1D5DB"}
+              ios_backgroundColor={colors.border}
+            />
           </View>
 
           {autoTrigger && (
-            <View style={s.autoActiveBadge}>
-              <View style={s.autoActiveDot} />
-              <Text style={s.autoActiveText}>
+            <View style={[s.activeBadge, { backgroundColor: "#ECFDF5", borderColor: "#10B98130" }]}>
+              <View style={s.activeDot} />
+              <Text style={[s.activeText, { color: "#065F46" }]}>
                 AUTO-TRIGGER ON — cascade fires on every operator absence report
               </Text>
             </View>
           )}
 
-          {/* Score formula reminder */}
-          <View style={s.formulaBox}>
-            <Text style={s.formulaLabel}>RANKING FORMULA</Text>
-            <Text style={s.formulaText}>
+          {/* Score formula */}
+          <View style={[s.formulaBox, { backgroundColor: colors.muted }]}>
+            <Text style={[s.formulaLabel, { color: colors.primary }]}>RANKING FORMULA</Text>
+            <Text style={[s.formulaText, { color: colors.foreground }]}>
               (Skill Match × 0.6) + (Reliability Score × 0.4)
             </Text>
             <View style={s.formulaRow}>
-              <View style={s.formulaChip}>
-                <Ionicons name="school-outline" size={10} color="#A78BFA" />
-                <Text style={[s.formulaChipTxt, { color: "#A78BFA" }]}>Skill Match</Text>
-                <Text style={[s.formulaChipPct, { color: "#A78BFA" }]}>60%</Text>
+              <View style={[s.formulaChip, { borderColor: colors.border }]}>
+                <Ionicons name="school-outline" size={11} color="#7C3AED" />
+                <Text style={[s.formulaChipTxt, { color: "#7C3AED" }]}>Skill Match</Text>
+                <Text style={[s.formulaChipPct, { color: "#7C3AED" }]}>60%</Text>
               </View>
-              <View style={s.formulaChip}>
-                <Ionicons name="shield-checkmark-outline" size={10} color="#34D399" />
-                <Text style={[s.formulaChipTxt, { color: "#34D399" }]}>Reliability</Text>
-                <Text style={[s.formulaChipPct, { color: "#34D399" }]}>40%</Text>
+              <View style={[s.formulaChip, { borderColor: colors.border }]}>
+                <Ionicons name="shield-checkmark-outline" size={11} color="#10B981" />
+                <Text style={[s.formulaChipTxt, { color: "#10B981" }]}>Reliability</Text>
+                <Text style={[s.formulaChipPct, { color: "#10B981" }]}>40%</Text>
               </View>
             </View>
           </View>
         </View>
 
         {/* ── ACTIVE CASCADES ──────────────────────────────────────────────── */}
-        <View style={s.cascadesCard}>
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={s.cascadesHeader}>
-            <View style={s.cascadesIconWrap}>
-              <Ionicons name="pulse-outline" size={16} color={GOLD} />
+            <View style={[s.iconWrap, { backgroundColor: colors.primary + "15", width: 32, height: 32, borderRadius: 9 }]}>
+              <Ionicons name="pulse-outline" size={16} color={colors.primary} />
             </View>
-            <Text style={s.cascadesTitle}>Active Cascades</Text>
+            <Text style={[s.cardTitle, { color: colors.foreground, flex: 1 }]}>Active Cascades</Text>
             <Pressable
-              style={({ pressed }) => [s.refreshBtn, { opacity: pressed ? 0.6 : 1 }]}
+              style={({ pressed }) => [{ padding: 4, opacity: pressed ? 0.6 : 1 }]}
               onPress={loadCascades}
               hitSlop={8}
             >
-              <Ionicons name="refresh-outline" size={16} color={MUTED} />
+              <Ionicons name="refresh-outline" size={18} color={colors.mutedForeground} />
             </Pressable>
           </View>
 
           {cascadesLoading ? (
-            <ActivityIndicator color={GOLD} style={{ marginVertical: 16 }} />
+            <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
           ) : cascades.length === 0 ? (
             <View style={s.emptyState}>
-              <Ionicons name="checkmark-circle-outline" size={28} color={DIM} />
-              <Text style={s.emptyText}>No cascades yet</Text>
-              <Text style={s.emptyDesc}>Cascades appear here when operators report absences or you trigger one manually.</Text>
+              <Ionicons name="checkmark-circle-outline" size={32} color={colors.muted} />
+              <Text style={[s.emptyText, { color: colors.mutedForeground }]}>No cascades yet</Text>
+              <Text style={[s.emptyDesc, { color: colors.mutedForeground }]}>
+                Cascades appear here when operators report absences or you trigger one manually.
+              </Text>
             </View>
           ) : (
             cascades.slice(0, 10).map(c => (
-              <View key={c.id} style={s.cascadeItem}>
-                <Pressable style={s.cascadeRow} onPress={() => setExpanded(expanded === c.id ? null : c.id)}>
+              <View key={c.id} style={[s.cascadeItem, { borderColor: colors.border }]}>
+                <Pressable
+                  style={[s.cascadeRow, { backgroundColor: colors.muted }]}
+                  onPress={() => setExpanded(expanded === c.id ? null : c.id)}
+                >
                   <View style={[s.statusDot, { backgroundColor: statusColor(c.status) }]} />
                   <View style={{ flex: 1 }}>
                     <View style={s.cascadeTopRow}>
-                      <Text style={s.cascadeName} numberOfLines={1}>
+                      <Text style={[s.cascadeName, { color: colors.foreground }]} numberOfLines={1}>
                         {c.absent_operator_name ?? `Operator #${c.absent_operator_id}`}
                       </Text>
                       {c.auto_triggered && (
-                        <View style={s.autoBadge}>
-                          <Text style={s.autoBadgeText}>AUTO</Text>
+                        <View style={[s.autoBadge, { backgroundColor: colors.primary + "15" }]}>
+                          <Text style={[s.autoBadgeText, { color: colors.primary }]}>AUTO</Text>
                         </View>
                       )}
                     </View>
-                    <Text style={s.cascadeMeta} numberOfLines={1}>
+                    <Text style={[s.cascadeMeta, { color: colors.mutedForeground }]} numberOfLines={1}>
                       {c.course_name ?? "No course"}{c.class_datetime ? ` · ${new Date(c.class_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}` : ""}
                     </Text>
                   </View>
-                  <View style={[s.statusBadge, { backgroundColor: `${statusColor(c.status)}22` }]}>
+                  <View style={[s.statusBadge, { backgroundColor: `${statusColor(c.status)}18` }]}>
                     <Text style={[s.statusBadgeText, { color: statusColor(c.status) }]}>
                       {statusLabel(c.status)}
                     </Text>
                   </View>
                   <Ionicons
                     name={expanded === c.id ? "chevron-up" : "chevron-down"}
-                    size={14} color={MUTED} style={{ marginLeft: 6 }}
+                    size={14} color={colors.mutedForeground} style={{ marginLeft: 6 }}
                   />
                 </Pressable>
 
-                {/* Expanded contacts summary */}
                 {expanded === c.id && (
-                  <View style={s.expandedBox}>
+                  <View style={[s.expandedBox, { backgroundColor: colors.background }]}>
                     <View style={s.statsRow}>
-                      <View style={s.statCell}>
-                        <Text style={[s.statNum, { color: "#F59E0B" }]}>{c.pending_count ?? 0}</Text>
-                        <Text style={s.statLbl}>Pending</Text>
-                      </View>
-                      <View style={s.statCell}>
-                        <Text style={[s.statNum, { color: "#10B981" }]}>{c.accepted_count ?? 0}</Text>
-                        <Text style={s.statLbl}>Accepted</Text>
-                      </View>
-                      <View style={s.statCell}>
-                        <Text style={[s.statNum, { color: "#EF4444" }]}>{c.declined_count ?? 0}</Text>
-                        <Text style={s.statLbl}>Declined</Text>
-                      </View>
-                      <View style={s.statCell}>
-                        <Text style={[s.statNum, { color: MUTED }]}>{c.total_contacts ?? 0}</Text>
-                        <Text style={s.statLbl}>Total</Text>
-                      </View>
+                      {[
+                        { n: c.pending_count  ?? 0, lbl: "Pending",  color: "#F59E0B" },
+                        { n: c.accepted_count ?? 0, lbl: "Accepted", color: "#10B981" },
+                        { n: c.declined_count ?? 0, lbl: "Declined", color: "#EF4444" },
+                        { n: c.total_contacts ?? 0, lbl: "Total",    color: colors.mutedForeground },
+                      ].map(({ n, lbl, color }) => (
+                        <View key={lbl} style={s.statCell}>
+                          <Text style={[s.statNum, { color }]}>{n}</Text>
+                          <Text style={[s.statLbl, { color: colors.mutedForeground }]}>{lbl}</Text>
+                        </View>
+                      ))}
                     </View>
-                    <Text style={s.cascadeTime}>
+                    <Text style={[s.cascadeTime, { color: colors.mutedForeground }]}>
                       Launched {new Date(c.created_at).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     </Text>
                     {c.status === "pending" && (
                       <Pressable
-                        style={({ pressed }) => [s.cancelCascadeBtn, { opacity: pressed ? 0.7 : 1 }]}
+                        style={({ pressed }) => [s.cancelCascadeBtn, { borderColor: "#EF444440", opacity: pressed ? 0.7 : 1 }]}
                         onPress={() => handleCancel(c.id)}
                         disabled={cancellingId === c.id}
                       >
@@ -374,32 +484,38 @@ export default function SmartRosterScreen() {
           )}
         </View>
 
-        {/* ── CONFIG FORM (pre-commit) ─────────────────────────────────────── */}
+        {/* ── QUERY OPTIMIZER FORM ─────────────────────────────────────────── */}
         {!committed ? (
-          <View style={s.formCard}>
-            <View style={s.formHeaderRow}>
-              <View style={s.formIconWrap}>
-                <Ionicons name="settings-outline" size={18} color={GOLD} />
+          <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={s.cardHeader}>
+              <View style={[s.iconWrap, { backgroundColor: "#FBBF2418" }]}>
+                <Ionicons name="sparkles" size={20} color="#FBBF24" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.formTitle}>Query Optimizer</Text>
-                <Text style={s.formSub}>Select absent operator, course, and class time to get AI-ranked substitutes.</Text>
+                <Text style={[s.cardTitle, { color: colors.foreground }]}>AI Query Optimizer</Text>
+                <Text style={[s.cardSub, { color: colors.mutedForeground }]}>
+                  Select absent operator, course and class time for AI-ranked substitutes.
+                </Text>
               </View>
             </View>
 
             {/* Absent Operator */}
-            <Text style={s.label}>ABSENT OPERATOR</Text>
+            <Text style={[s.fieldLabel, { color: colors.primary }]}>ABSENT OPERATOR</Text>
             <View style={s.chipWrap}>
               {DEMO_OPERATORS.map(o => (
                 <Pressable
                   key={o.id}
-                  style={[s.chip, missingOpId === o.id && s.chipSel]}
+                  style={[
+                    s.chip,
+                    { borderColor: colors.border, backgroundColor: colors.muted },
+                    missingOpId === o.id && { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0E" },
+                  ]}
                   onPress={() => { setMissingOpId(o.id); setMissingOpName(o.name); }}
                 >
                   {missingOpId === o.id && (
-                    <Ionicons name="person-circle" size={13} color={GOLD} />
+                    <Ionicons name="person-circle" size={13} color={colors.primary} />
                   )}
-                  <Text style={[s.chipText, missingOpId === o.id && s.chipTextSel]}>
+                  <Text style={[s.chipText, { color: colors.mutedForeground }, missingOpId === o.id && { color: colors.primary }]}>
                     {o.name}
                   </Text>
                 </Pressable>
@@ -407,18 +523,22 @@ export default function SmartRosterScreen() {
             </View>
 
             {/* Course */}
-            <Text style={s.label}>COURSE / DISCIPLINE</Text>
+            <Text style={[s.fieldLabel, { color: colors.primary }]}>COURSE / DISCIPLINE</Text>
             <View style={s.chipWrap}>
               {DEMO_COURSES.map(c => (
                 <Pressable
                   key={c.disciplineId}
-                  style={[s.chip, disciplineId === c.disciplineId && s.chipSel]}
+                  style={[
+                    s.chip,
+                    { borderColor: colors.border, backgroundColor: colors.muted },
+                    disciplineId === c.disciplineId && { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0E" },
+                  ]}
                   onPress={() => { setDisciplineId(c.disciplineId); setCourseName(c.name); }}
                 >
                   {disciplineId === c.disciplineId && (
-                    <Ionicons name="musical-notes" size={13} color={GOLD} />
+                    <Ionicons name="musical-notes" size={13} color={colors.primary} />
                   )}
-                  <Text style={[s.chipText, disciplineId === c.disciplineId && s.chipTextSel]}>
+                  <Text style={[s.chipText, { color: colors.mutedForeground }, disciplineId === c.disciplineId && { color: colors.primary }]}>
                     {c.name}
                   </Text>
                 </Pressable>
@@ -426,13 +546,13 @@ export default function SmartRosterScreen() {
             </View>
 
             {/* Date + Time */}
-            <Text style={s.label}>CLASS DATE & TIME (ISO 8601)</Text>
+            <Text style={[s.fieldLabel, { color: colors.primary }]}>CLASS DATE & TIME (ISO 8601)</Text>
             <TextInput
-              style={[s.input, datetimeError ? s.inputError : null]}
+              style={[s.input, { backgroundColor: colors.muted, borderColor: datetimeError ? "#EF4444" : colors.border, color: colors.foreground }]}
               value={classDatetime}
               onChangeText={v => { setClassDatetime(v); setDatetimeError(null); }}
               placeholder="2026-06-10T14:00:00"
-              placeholderTextColor={DIM}
+              placeholderTextColor={colors.mutedForeground}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -443,11 +563,11 @@ export default function SmartRosterScreen() {
             {/* Buttons */}
             <View style={s.btnRow}>
               <Pressable
-                style={({ pressed }) => [s.runBtn, { opacity: pressed ? 0.85 : 1, flex: 1 }]}
+                style={({ pressed }) => [s.aiBtn, { backgroundColor: "#FBBF24", opacity: pressed ? 0.85 : 1, flex: 1 }]}
                 onPress={handleRun}
               >
-                <Ionicons name="sparkles" size={16} color={NAVY} />
-                <Text style={s.runBtnText}>AI Analysis</Text>
+                <Ionicons name="sparkles" size={16} color="#1E3A8A" />
+                <Text style={[s.aiBtnText, { color: "#1E3A8A" }]}>AI Analysis</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [s.cascadeBtn, { opacity: pressed ? 0.85 : 1 }]}
@@ -455,9 +575,9 @@ export default function SmartRosterScreen() {
                 disabled={triggering}
               >
                 {triggering
-                  ? <ActivityIndicator size="small" color={WHITE} />
+                  ? <ActivityIndicator size="small" color="#FFF" />
                   : <>
-                      <Ionicons name="git-network-outline" size={16} color={WHITE} />
+                      <Ionicons name="git-network-outline" size={16} color="#FFF" />
                       <Text style={s.cascadeBtnText}>Launch Cascade</Text>
                     </>
                 }
@@ -465,13 +585,15 @@ export default function SmartRosterScreen() {
             </View>
           </View>
         ) : (
-          /* ── Collapsed summary bar ── */
-          <Pressable style={s.editBar} onPress={() => setCommitted(false)}>
-            <Ionicons name="create-outline" size={14} color={MUTED} />
-            <Text style={s.editBarText} numberOfLines={1}>
+          <Pressable
+            style={[s.editBar, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => setCommitted(false)}
+          >
+            <Ionicons name="create-outline" size={14} color={colors.mutedForeground} />
+            <Text style={[s.editBarText, { color: colors.mutedForeground }]} numberOfLines={1}>
               {missingOpName} · {courseName} · {new Date(classDatetime).toLocaleDateString("en-AU", { weekday: "short", month: "short", day: "numeric" })}
             </Text>
-            <Text style={s.editBarChange}>Change</Text>
+            <Text style={[s.editBarChange, { color: colors.primary }]}>Change</Text>
           </Pressable>
         )}
 
@@ -489,21 +611,21 @@ export default function SmartRosterScreen() {
 
         {/* ── HOW SCORES ARE CALCULATED ───────────────────────────────────── */}
         {committed && (
-          <View style={s.infoCard}>
-            <View style={s.infoHeader}>
-              <Ionicons name="analytics-outline" size={16} color={GOLD} />
-              <Text style={s.infoTitle}>How Scores Are Calculated</Text>
+          <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={s.cardHeader}>
+              <Ionicons name="analytics-outline" size={18} color={colors.primary} />
+              <Text style={[s.cardTitle, { color: colors.foreground }]}>How Scores Are Calculated</Text>
             </View>
             {[
-              { pct: "60%", icon: "school-outline"         as const, color: "#A78BFA", label: "Skill Match — discipline qualifications + completed sessions for this course" },
-              { pct: "40%", icon: "shield-checkmark-outline" as const, color: "#34D399", label: "Reliability Score — attendance rate (60%) + cascade acceptance rate (40%)" },
+              { pct: "60%", icon: "school-outline"           as const, color: "#7C3AED", label: "Skill Match — discipline qualifications + completed sessions for this course" },
+              { pct: "40%", icon: "shield-checkmark-outline" as const, color: "#10B981", label: "Reliability Score — attendance rate (60%) + cascade acceptance rate (40%)" },
             ].map(item => (
               <View key={item.pct} style={s.infoRow}>
-                <View style={s.infoPctBox}>
+                <View style={[s.infoPctBox, { backgroundColor: item.color + "12" }]}>
                   <Ionicons name={item.icon} size={13} color={item.color} />
                   <Text style={[s.infoPct, { color: item.color }]}>{item.pct}</Text>
                 </View>
-                <Text style={s.infoDesc}>{item.label}</Text>
+                <Text style={[s.infoDesc, { color: colors.mutedForeground }]}>{item.label}</Text>
               </View>
             ))}
           </View>
@@ -515,176 +637,167 @@ export default function SmartRosterScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: NAVY },
-
-  // Navbar
-  navbar: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    paddingHorizontal: 18, paddingVertical: 13,
-    borderBottomWidth: 1, borderBottomColor: "rgba(212,175,55,0.13)",
-  },
-  backBtn: { padding: 2 },
-  navRow:  { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 },
-  navIcon: {
-    width: 24, height: 24, borderRadius: 7,
-    backgroundColor: GOLD_F,
-    alignItems: "center", justifyContent: "center",
-  },
-  navTitle:   { fontSize: 16, fontWeight: "800", color: WHITE, letterSpacing: -0.2 },
-  navSub:     { fontSize: 10.5, color: MUTED },
-  aiPill:     { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(16,185,129,0.13)", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2.5 },
-  aiDot:      { width: 5, height: 5, borderRadius: 3, backgroundColor: "#10B981" },
-  aiPillText: { color: "#10B981", fontSize: 8, fontWeight: "800", letterSpacing: 0.8 },
-
+  root:  { flex: 1 },
   scroll: { paddingHorizontal: 16, paddingTop: 16, gap: 14 },
 
-  // ── Orchestrator card ──────────────────────────────────────────────────────
-  orchestratorCard: {
-    backgroundColor: NAVY_L, borderRadius: 22, padding: 18,
-    borderWidth: 1, borderColor: "rgba(212,175,55,0.18)", gap: 14,
+  // Cards
+  card: {
+    borderRadius: 18, padding: 18,
+    borderWidth: 1, gap: 12,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
   },
-  orchHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
-  orchIconWrap: {
-    width: 44, height: 44, borderRadius: 13, backgroundColor: GOLD_F,
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  cardTitle:  { fontSize: 15, fontWeight: "800", marginBottom: 2 },
+  cardSub:    { fontSize: 12, lineHeight: 17 },
+
+  iconWrap: {
+    width: 44, height: 44, borderRadius: 13,
     alignItems: "center", justifyContent: "center",
   },
-  orchTitle: { color: WHITE, fontSize: 15, fontWeight: "800", marginBottom: 2 },
-  orchSub:   { color: MUTED, fontSize: 11.5, lineHeight: 17 },
 
+  // Annual Roster
+  primaryBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, borderRadius: 14, paddingVertical: 14,
+  },
+  primaryBtnText: { color: "#FFF", fontWeight: "900", fontSize: 14 },
+
+  generatingBox: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    borderRadius: 12, padding: 14,
+  },
+  successBox: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    borderRadius: 12, padding: 14, borderWidth: 1,
+  },
+  genTitle: { fontSize: 13, fontWeight: "700", marginBottom: 2 },
+  genSub:   { fontSize: 11, lineHeight: 16 },
+
+  subsectionLabel: {
+    fontSize: 9, fontWeight: "800", letterSpacing: 1.2, marginTop: 4,
+  },
+  slotGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  slotChip: {
+    borderRadius: 10, borderWidth: 1, padding: 10, minWidth: 90,
+  },
+  slotDay:   { fontSize: 11, fontWeight: "800", marginBottom: 2 },
+  slotTime:  { fontSize: 12, fontWeight: "700" },
+  slotVenue: { fontSize: 10, marginTop: 2 },
+
+  notifyBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, borderWidth: 1.5, borderRadius: 12, paddingVertical: 12,
+  },
+  notifyBtnText: { fontSize: 13, fontWeight: "700" },
+  notifSentBox: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    paddingVertical: 10, paddingHorizontal: 14,
+    borderRadius: 10, borderWidth: 1,
+  },
+  notifSentText: { fontSize: 12, fontWeight: "600" },
+  resetBtn: { alignSelf: "center", paddingVertical: 6, paddingHorizontal: 16 },
+  resetBtnText: { fontSize: 12 },
+
+  // Cascade Orchestrator
   toggleRow: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 14, padding: 14,
+    borderRadius: 14, padding: 14, borderWidth: 1,
   },
-  toggleLabel: { color: WHITE, fontWeight: "700", fontSize: 13, marginBottom: 3 },
-  toggleDesc:  { color: MUTED, fontSize: 11, lineHeight: 16 },
+  toggleLabel: { fontWeight: "700", fontSize: 13, marginBottom: 3 },
+  toggleDesc:  { fontSize: 11, lineHeight: 16 },
 
-  autoActiveBadge: {
+  activeBadge: {
     flexDirection: "row", alignItems: "center", gap: 7,
-    backgroundColor: "rgba(212,175,55,0.08)", borderRadius: 10,
-    borderWidth: 1, borderColor: "rgba(212,175,55,0.25)",
+    borderRadius: 10, borderWidth: 1,
     paddingHorizontal: 12, paddingVertical: 8,
   },
-  autoActiveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD },
-  autoActiveText: { color: GOLD, fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
+  activeDot:   { width: 6, height: 6, borderRadius: 3, backgroundColor: "#10B981" },
+  activeText:  { fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
 
-  formulaBox: {
-    backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 12, padding: 14, gap: 8,
-  },
-  formulaLabel: { color: GOLD, fontSize: 9, fontWeight: "800", letterSpacing: 1.2 },
-  formulaText:  { color: WHITE, fontSize: 13, fontWeight: "700", letterSpacing: -0.2 },
+  formulaBox: { borderRadius: 12, padding: 14, gap: 8 },
+  formulaLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 1.2 },
+  formulaText:  { fontSize: 13, fontWeight: "700", letterSpacing: -0.2 },
   formulaRow:   { flexDirection: "row", gap: 8 },
   formulaChip: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8,
+    borderRadius: 8, borderWidth: 1,
     paddingHorizontal: 9, paddingVertical: 6,
   },
   formulaChipTxt: { fontSize: 10, fontWeight: "600" },
   formulaChipPct: { fontSize: 11, fontWeight: "800" },
 
-  // ── Cascades card ──────────────────────────────────────────────────────────
-  cascadesCard: {
-    backgroundColor: NAVY_L, borderRadius: 22, padding: 18,
-    borderWidth: 1, borderColor: BORDER, gap: 10,
-  },
+  // Cascades
   cascadesHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  cascadesIconWrap: {
-    width: 32, height: 32, borderRadius: 9, backgroundColor: GOLD_F,
-    alignItems: "center", justifyContent: "center",
-  },
-  cascadesTitle: { color: WHITE, fontWeight: "800", fontSize: 14, flex: 1 },
-  refreshBtn: { padding: 4 },
+  emptyState: { alignItems: "center", paddingVertical: 24, gap: 6 },
+  emptyText:  { fontWeight: "700", fontSize: 13 },
+  emptyDesc:  { fontSize: 11, textAlign: "center", lineHeight: 17, maxWidth: 260 },
 
-  emptyState: { alignItems: "center", paddingVertical: 20, gap: 6 },
-  emptyText:  { color: MUTED, fontWeight: "700", fontSize: 13 },
-  emptyDesc:  { color: DIM, fontSize: 11, textAlign: "center", lineHeight: 17, maxWidth: 260 },
-
-  cascadeItem:   { borderRadius: 14, borderWidth: 1, borderColor: BORDER, overflow: "hidden" },
+  cascadeItem:   { borderRadius: 14, borderWidth: 1, overflow: "hidden", marginTop: 4 },
   cascadeRow:    { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
   statusDot:     { width: 8, height: 8, borderRadius: 4 },
   cascadeTopRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  cascadeName:   { color: WHITE, fontWeight: "700", fontSize: 13, flex: 1 },
-  cascadeMeta:   { color: MUTED, fontSize: 10.5, marginTop: 2 },
-  autoBadge:     { backgroundColor: "rgba(212,175,55,0.18)", borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
-  autoBadgeText: { color: GOLD, fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
+  cascadeName:   { fontWeight: "700", fontSize: 13, flex: 1 },
+  cascadeMeta:   { fontSize: 10.5, marginTop: 2 },
+  autoBadge:     { borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
+  autoBadgeText: { fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
   statusBadge:   { borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
   statusBadgeText: { fontSize: 10, fontWeight: "800" },
 
-  expandedBox: { backgroundColor: NAVY_D, padding: 14, gap: 10 },
+  expandedBox: { padding: 14, gap: 10 },
   statsRow:    { flexDirection: "row", gap: 8 },
   statCell:    { flex: 1, alignItems: "center", gap: 2 },
   statNum:     { fontSize: 18, fontWeight: "800" },
-  statLbl:     { fontSize: 9, color: MUTED, fontWeight: "600", letterSpacing: 0.3 },
-  cascadeTime: { color: DIM, fontSize: 10.5, textAlign: "center" },
+  statLbl:     { fontSize: 9, fontWeight: "600", letterSpacing: 0.3 },
+  cascadeTime: { fontSize: 10.5, textAlign: "center" },
   cancelCascadeBtn: {
-    alignSelf: "center", borderWidth: 1, borderColor: "rgba(239,68,68,0.4)",
+    alignSelf: "center", borderWidth: 1,
     borderRadius: 9, paddingHorizontal: 16, paddingVertical: 8,
   },
   cancelCascadeTxt: { color: "#EF4444", fontSize: 12, fontWeight: "700" },
 
-  // Config form
-  formCard: {
-    backgroundColor: NAVY_L, borderRadius: 22, padding: 18,
-    borderWidth: 1, borderColor: BORDER, gap: 12,
-  },
-  formHeaderRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  formIconWrap:  { width: 42, height: 42, borderRadius: 12, backgroundColor: GOLD_F, alignItems: "center", justifyContent: "center" },
-  formTitle: { color: WHITE, fontSize: 15, fontWeight: "800", marginBottom: 2 },
-  formSub:   { color: MUTED, fontSize: 12, lineHeight: 17 },
-
-  label:    { color: GOLD, fontSize: 9, fontWeight: "800", letterSpacing: 1.2, marginTop: 2 },
-  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  // Form
+  fieldLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 1.2, marginTop: 2 },
+  chipWrap:   { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   chip: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    borderRadius: 10, borderWidth: 1, borderColor: BORDER,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 10, borderWidth: 1,
     paddingHorizontal: 11, paddingVertical: 8,
   },
-  chipSel:     { borderColor: GOLD_D, backgroundColor: GOLD_F },
-  chipText:    { color: MUTED, fontSize: 12, fontWeight: "600" },
-  chipTextSel: { color: GOLD },
+  chipText: { fontSize: 12, fontWeight: "600" },
 
   input: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 12, borderWidth: 1, borderColor: BORDER,
+    borderRadius: 12, borderWidth: 1,
     paddingHorizontal: 14, paddingVertical: 11,
-    color: WHITE, fontSize: 13,
+    fontSize: 13,
   },
-  inputError: { borderColor: "rgba(239,68,68,0.55)" },
-  errorText:  { color: "#F87171", fontSize: 11, marginTop: -6 },
+  errorText: { color: "#EF4444", fontSize: 11, marginTop: -4 },
 
   btnRow: { flexDirection: "row", gap: 10, marginTop: 4 },
-  runBtn: {
+  aiBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, backgroundColor: GOLD, borderRadius: 14, paddingVertical: 14,
-    shadowColor: GOLD, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
+    gap: 8, borderRadius: 14, paddingVertical: 14,
   },
-  runBtnText: { color: NAVY, fontWeight: "900", fontSize: 14 },
+  aiBtnText: { fontWeight: "900", fontSize: 14 },
   cascadeBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     gap: 7, backgroundColor: "#7C3AED", borderRadius: 14,
     paddingHorizontal: 16, paddingVertical: 14,
-    shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 6,
   },
-  cascadeBtnText: { color: WHITE, fontWeight: "800", fontSize: 14 },
+  cascadeBtnText: { color: "#FFF", fontWeight: "800", fontSize: 14 },
 
   // Edit bar
   editBar: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: NAVY_L, borderRadius: 14, borderWidth: 1, borderColor: BORDER,
+    borderRadius: 14, borderWidth: 1,
     paddingHorizontal: 14, paddingVertical: 11,
   },
-  editBarText:   { flex: 1, fontSize: 12, color: MUTED },
-  editBarChange: { fontSize: 12, fontWeight: "700", color: GOLD },
+  editBarText:   { flex: 1, fontSize: 12 },
+  editBarChange: { fontSize: 12, fontWeight: "700" },
 
-  // Score info card
-  infoCard: {
-    backgroundColor: NAVY_L, borderRadius: 20, padding: 18,
-    borderWidth: 1, borderColor: BORDER, gap: 12,
-  },
-  infoHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  infoTitle:  { color: WHITE, fontSize: 13, fontWeight: "800" },
+  // Score info
   infoRow:    { flexDirection: "row", alignItems: "center", gap: 12 },
-  infoPctBox: { width: 48, height: 40, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center", gap: 2, flexShrink: 0 },
+  infoPctBox: { width: 48, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", gap: 2, flexShrink: 0 },
   infoPct:    { fontSize: 11, fontWeight: "800" },
-  infoDesc:   { flex: 1, color: MUTED, fontSize: 11, lineHeight: 17 },
+  infoDesc:   { flex: 1, fontSize: 11, lineHeight: 17 },
 });
