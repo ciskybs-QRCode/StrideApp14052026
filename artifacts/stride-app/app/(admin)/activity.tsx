@@ -32,7 +32,9 @@ type AdminItemType  = "secretary_hours" | "staff_meeting" | "parent_teacher";
 type AdminItemStatus = "scheduled" | "completed" | "cancelled";
 
 // Extra-tag storage key (persisted so they survive sessions)
-const EXTRA_TAGS_KEY = "stride_activity_extra_tags";
+const EXTRA_TAGS_KEY       = "stride_activity_extra_tags";
+const DISCIPLINES_KEY      = "stride_activity_disciplines";
+const CUSTOM_TYPES_KEY     = "stride_activity_custom_types";
 
 interface ScheduleSlot { day: string; startTime: string; }
 
@@ -49,6 +51,7 @@ interface Activity {
   title: string;
   type: ActivityType;
   customTypeName?: string;       // used when type === "custom"
+  disciplines: string[];         // discipline tags (persisted)
   level: Level;
   extraTags: string[];           // extra level tags (persisted)
   ageGroup: AgeGroup;
@@ -156,7 +159,7 @@ const MOCK_CAMPUSES = [
 const INITIAL_ACTIVITIES: Activity[] = [
   {
     id: "a1", title: "Classical Dance – Beginners", type: "lesson",
-    level: "beginner", extraTags: [], ageGroup: "range", ageMin: 4, ageMax: 12,
+    disciplines: ["Ballet"], level: "beginner", extraTags: [], ageGroup: "range", ageMin: 4, ageMax: 12,
     schedule: [{ day: "Mon", startTime: "16:00" }, { day: "Wed", startTime: "16:00" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t1", teacherName: "Emma Wilson",
@@ -166,7 +169,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
   },
   {
     id: "a2", title: "Contemporary Dance Workshop", type: "workshop",
-    level: "intermediate", extraTags: [], ageGroup: "18plus", ageMin: 18, ageMax: 99,
+    disciplines: ["Contemporary"], level: "intermediate", extraTags: [], ageGroup: "18plus", ageMin: 18, ageMax: 99,
     schedule: [{ day: "Sat", startTime: "10:00" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio B",
     teacherId: "t2", teacherName: "Louis Ford",
@@ -176,7 +179,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
   },
   {
     id: "a3", title: "End-of-Year Recital Planning", type: "meeting",
-    level: "all", extraTags: [], ageGroup: "all", ageMin: 1, ageMax: 99,
+    disciplines: [], level: "all", extraTags: [], ageGroup: "all", ageMin: 1, ageMax: 99,
     schedule: [{ day: "Thu", startTime: "18:00" }],
     campusId: "c2", campusName: "East Wing Studio", room: "Meeting Room",
     teacherId: "t3", teacherName: "Anna Parker",
@@ -186,7 +189,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
   },
   {
     id: "a4", title: "Jazz Fundamentals Seminar", type: "seminar",
-    level: "all", extraTags: [], ageGroup: "range", ageMin: 13, ageMax: 25,
+    disciplines: ["Jazz"], level: "all", extraTags: [], ageGroup: "range", ageMin: 13, ageMax: 25,
     schedule: [{ day: "Fri", startTime: "17:30" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t4", teacherName: "Mark Parker",
@@ -206,6 +209,7 @@ const INITIAL_ADMIN_ITEMS: AdminScheduleItem[] = [
 
 const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
   title: "", type: "lesson", customTypeName: "",
+  disciplines: [],
   level: "all", extraTags: [],
   ageGroup: "all", ageMin: 3, ageMax: 99,
   schedule: [{ day: "Mon", startTime: "09:00" }],
@@ -254,7 +258,15 @@ export default function ActivityScreen() {
   const [staffList, setStaffList] = useState<StaffOption[]>(MOCK_TEACHERS);
 
   // ── Persistent extra tags ──
-  const [savedExtraTags, setSavedExtraTags] = useState<string[]>([]);
+  const [savedExtraTags,    setSavedExtraTags]    = useState<string[]>([]);
+  // ── Persistent disciplines ──
+  const [savedDisciplines,  setSavedDisciplines]  = useState<string[]>(["Ballet","Jazz","Hip-Hop","Contemporary","Salsa","Tango","Ballroom","Tap"]);
+  const [newDisciplineInput, setNewDisciplineInput] = useState("");
+  const [showDisciplineInput, setShowDisciplineInput] = useState(false);
+  // ── Persistent custom types ──
+  const [savedCustomTypes,  setSavedCustomTypes]  = useState<string[]>([]);
+  const [newCustomTypeInput, setNewCustomTypeInput] = useState("");
+  const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
 
   // ── Calendar (weekly-tap) ──
   const [showCalendar, setShowCalendar]         = useState(false);
@@ -282,11 +294,22 @@ export default function ActivityScreen() {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [draft, setDraft] = useState(BLANK_ACTIVITY());
 
-  // ── Load campuses, staff, extra-tags on mount ──
+  // ── Load campuses, staff, extra-tags, disciplines, custom-types on mount ──
   useEffect(() => {
     // Load persisted extra tags
     AsyncStorage.getItem(EXTRA_TAGS_KEY).then(raw => {
       if (raw) setSavedExtraTags(JSON.parse(raw));
+    });
+    // Load persisted disciplines (merge with defaults)
+    AsyncStorage.getItem(DISCIPLINES_KEY).then(raw => {
+      if (raw) {
+        const stored: string[] = JSON.parse(raw);
+        setSavedDisciplines(prev => Array.from(new Set([...prev, ...stored])));
+      }
+    });
+    // Load persisted custom types
+    AsyncStorage.getItem(CUSTOM_TYPES_KEY).then(raw => {
+      if (raw) setSavedCustomTypes(JSON.parse(raw));
     });
     // Try to load campuses/studios from admin_settings via API
     request<{ studios?: { name: string; capacity: number }[] }>("GET", "/org/info")
@@ -341,6 +364,7 @@ export default function ActivityScreen() {
       id: `approved-${p.id}`,
       title: p.title,
       type: "workshop",
+      disciplines: p.discipline ? [p.discipline] : [],
       level: p.level,
       extraTags: [],
       ageGroup: "all",
@@ -461,6 +485,42 @@ export default function ActivityScreen() {
       current.setDate(current.getDate() + 7);
     }
     return weeks;
+  };
+
+  // ── Discipline helpers ────────────────────────────────────────────────────────
+
+  const addDiscipline = async (disc: string) => {
+    const trimmed = disc.trim();
+    if (!trimmed) return;
+    const updated = Array.from(new Set([...savedDisciplines, trimmed]));
+    setSavedDisciplines(updated);
+    await AsyncStorage.setItem(DISCIPLINES_KEY, JSON.stringify(updated));
+    setDraft(d => ({ ...d, disciplines: Array.from(new Set([...(d.disciplines ?? []), trimmed])) }));
+    setNewDisciplineInput("");
+    setShowDisciplineInput(false);
+  };
+
+  const toggleDraftDiscipline = (disc: string) => {
+    setDraft(d => ({
+      ...d,
+      disciplines: (d.disciplines ?? []).includes(disc)
+        ? (d.disciplines ?? []).filter(x => x !== disc)
+        : [...(d.disciplines ?? []), disc],
+    }));
+    Haptics.selectionAsync();
+  };
+
+  // ── Custom-type helpers ───────────────────────────────────────────────────────
+
+  const addCustomType = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const updated = Array.from(new Set([...savedCustomTypes, trimmed]));
+    setSavedCustomTypes(updated);
+    await AsyncStorage.setItem(CUSTOM_TYPES_KEY, JSON.stringify(updated));
+    setDraft(d => ({ ...d, type: "custom", customTypeName: trimmed }));
+    setNewCustomTypeInput("");
+    setShowCustomTypeInput(false);
   };
 
   // ── Extra tag helpers ─────────────────────────────────────────────────────────
@@ -1229,30 +1289,107 @@ export default function ActivityScreen() {
             {renderSectionHeader("TYPE")}
             <View style={styles.pickerWrap}>
               {([
-                { value: "lesson"   as const, label: "Lesson",    color: "#1E3A8A", bg: "#DBEAFE" },
-                { value: "seminar"  as const, label: "Seminar",   color: "#7C3AED", bg: "#EDE9FE" },
-                { value: "workshop" as const, label: "Workshop",  color: "#D97706", bg: "#FEF3C7" },
-                { value: "meeting"  as const, label: "Meeting",   color: "#0D9488", bg: "#CCFBF1" },
-                { value: "custom"   as const, label: "Other...",  color: "#6B7280", bg: "#F3F4F6" },
+                { value: "lesson"   as const, label: "Lesson",   color: "#1E3A8A", bg: "#DBEAFE" },
+                { value: "seminar"  as const, label: "Seminar",  color: "#7C3AED", bg: "#EDE9FE" },
+                { value: "workshop" as const, label: "Workshop", color: "#D97706", bg: "#FEF3C7" },
+                { value: "meeting"  as const, label: "Meeting",  color: "#0D9488", bg: "#CCFBF1" },
               ]).map(o => {
                 const active = draft.type === o.value;
                 return (
-                  <Pressable key={o.value} onPress={() => { setDraft(d => ({ ...d, type: o.value })); Haptics.selectionAsync(); }}
+                  <Pressable key={o.value} onPress={() => { setDraft(d => ({ ...d, type: o.value, customTypeName: "" })); Haptics.selectionAsync(); }}
                     style={[styles.pickerChip, active && { backgroundColor: o.bg, borderColor: o.color, borderWidth: 1.5 }]}>
                     <Text style={[styles.pickerChipText, { color: active ? o.color : colors.mutedForeground }]}>{o.label}</Text>
                   </Pressable>
                 );
               })}
+              {/* Saved custom types */}
+              {savedCustomTypes.map(ct => {
+                const active = draft.type === "custom" && draft.customTypeName === ct;
+                return (
+                  <Pressable key={ct} onPress={() => { setDraft(d => ({ ...d, type: "custom", customTypeName: ct })); Haptics.selectionAsync(); }}
+                    style={[styles.pickerChip, active && { backgroundColor: "#F3F4F6", borderColor: "#6B7280", borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? "#6B7280" : colors.mutedForeground }]}>{ct}</Text>
+                  </Pressable>
+                );
+              })}
+              {/* Add new custom type */}
+              {showCustomTypeInput ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
+                  <TextInput
+                    style={{ flex: 1, borderWidth: 1, borderColor: "#6B7280", borderRadius: 20,
+                      paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
+                      backgroundColor: colors.card }}
+                    placeholder="e.g. Practise, Session..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={newCustomTypeInput}
+                    onChangeText={setNewCustomTypeInput}
+                    autoFocus
+                    onSubmitEditing={() => void addCustomType(newCustomTypeInput)}
+                  />
+                  <Pressable onPress={() => void addCustomType(newCustomTypeInput)} style={{ padding: 4 }}>
+                    <Ionicons name="checkmark-circle" size={24} color="#6B7280" />
+                  </Pressable>
+                  <Pressable onPress={() => { setShowCustomTypeInput(false); setNewCustomTypeInput(""); }} style={{ padding: 4 }}>
+                    <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable onPress={() => setShowCustomTypeInput(true)}
+                  style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: "#6B7280",
+                    flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="add" size={14} color="#6B7280" />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#6B7280" }}>Other...</Text>
+                </Pressable>
+              )}
             </View>
-            {draft.type === "custom" && (
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, marginTop: 8 }]}
-                placeholder="Enter custom type (e.g. Session, Practice...)"
-                placeholderTextColor={colors.mutedForeground}
-                value={draft.customTypeName ?? ""}
-                onChangeText={v => setDraft(d => ({ ...d, customTypeName: v }))}
-              />
-            )}
+
+            {/* ─── SECTION: DISCIPLINE ─── */}
+            {renderSectionHeader("DISCIPLINE")}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+              {savedDisciplines.map(disc => {
+                const active = (draft.disciplines ?? []).includes(disc);
+                return (
+                  <Pressable key={disc} onPress={() => toggleDraftDiscipline(disc)}
+                    style={{ borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
+                      backgroundColor: active ? `${colors.primary}15` : colors.muted,
+                      borderWidth: active ? 1.5 : 1, borderColor: active ? colors.primary : colors.border }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: active ? colors.primary : colors.mutedForeground }}>
+                      {disc}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              {showDisciplineInput ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
+                  <TextInput
+                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                      paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
+                      backgroundColor: colors.card }}
+                    placeholder="New discipline..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={newDisciplineInput}
+                    onChangeText={setNewDisciplineInput}
+                    autoFocus
+                    onSubmitEditing={() => void addDiscipline(newDisciplineInput)}
+                  />
+                  <Pressable onPress={() => void addDiscipline(newDisciplineInput)} style={{ padding: 4 }}>
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  </Pressable>
+                  <Pressable onPress={() => { setShowDisciplineInput(false); setNewDisciplineInput(""); }} style={{ padding: 4 }}>
+                    <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable onPress={() => setShowDisciplineInput(true)}
+                  style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="add" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Add discipline</Text>
+                </Pressable>
+              )}
+            </View>
 
             {/* ─── SECTION: LEVEL + EXTRA TAGS ─── */}
             {renderSectionHeader("LEVEL")}
@@ -1471,40 +1608,55 @@ export default function ActivityScreen() {
                 })}
               </View>
             ) : (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.card,
-                borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border }}>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase" }}>Hours</Text>
-                  <TextInput
-                    style={{ fontSize: 28, fontWeight: "800", color: colors.foreground, textAlign: "center", minWidth: 48 }}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={draft.customDurationH ? String(draft.customDurationH) : ""}
-                    onChangeText={v => {
-                      const h = Math.min(23, parseInt(v) || 0);
-                      setDraft(d => ({ ...d, customDurationH: h, duration: h * 60 + (d.customDurationM ?? 0) }));
-                    }}
-                  />
+              <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14,
+                borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  {/* Hours stepper */}
+                  <View style={{ flex: 1, alignItems: "center" }}>
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", fontWeight: "700" }}>Hours</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <Pressable
+                        onPress={() => { const h = Math.max(0, (draft.customDurationH ?? 0) - 1); setDraft(d => ({ ...d, customDurationH: h, duration: h * 60 + (d.customDurationM ?? 0) })); Haptics.selectionAsync(); }}
+                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="remove" size={18} color={colors.foreground} />
+                      </Pressable>
+                      <Text style={{ fontSize: 30, fontWeight: "800", color: colors.foreground, minWidth: 38, textAlign: "center" }}>
+                        {draft.customDurationH ?? 0}
+                      </Text>
+                      <Pressable
+                        onPress={() => { const h = Math.min(23, (draft.customDurationH ?? 0) + 1); setDraft(d => ({ ...d, customDurationH: h, duration: h * 60 + (d.customDurationM ?? 0) })); Haptics.selectionAsync(); }}
+                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="add" size={18} color={colors.foreground} />
+                      </Pressable>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 30, fontWeight: "300", color: colors.mutedForeground, marginTop: 20 }}>:</Text>
+                  {/* Minutes stepper — 5-min steps */}
+                  <View style={{ flex: 1, alignItems: "center" }}>
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", fontWeight: "700" }}>Mins</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <Pressable
+                        onPress={() => { const m = (draft.customDurationM ?? 0) === 0 ? 55 : (draft.customDurationM ?? 0) - 5; setDraft(d => ({ ...d, customDurationM: m, duration: (d.customDurationH ?? 0) * 60 + m })); Haptics.selectionAsync(); }}
+                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="remove" size={18} color={colors.foreground} />
+                      </Pressable>
+                      <Text style={{ fontSize: 30, fontWeight: "800", color: colors.foreground, minWidth: 38, textAlign: "center" }}>
+                        {String(draft.customDurationM ?? 0).padStart(2, "0")}
+                      </Text>
+                      <Pressable
+                        onPress={() => { const m = (draft.customDurationM ?? 0) >= 55 ? 0 : (draft.customDurationM ?? 0) + 5; setDraft(d => ({ ...d, customDurationM: m, duration: (d.customDurationH ?? 0) * 60 + m })); Haptics.selectionAsync(); }}
+                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }}>
+                        <Ionicons name="add" size={18} color={colors.foreground} />
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
-                <Text style={{ fontSize: 28, fontWeight: "300", color: colors.mutedForeground }}>:</Text>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase" }}>Mins</Text>
-                  <TextInput
-                    style={{ fontSize: 28, fontWeight: "800", color: colors.foreground, textAlign: "center", minWidth: 48 }}
-                    keyboardType="numeric"
-                    placeholder="00"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={draft.customDurationM ? String(draft.customDurationM) : ""}
-                    onChangeText={v => {
-                      const m = Math.min(59, parseInt(v) || 0);
-                      setDraft(d => ({ ...d, customDurationM: m, duration: (d.customDurationH ?? 0) * 60 + m }));
-                    }}
-                  />
-                </View>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginBottom: 4, textTransform: "uppercase" }}>Total</Text>
-                  <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary }}>{fmtDuration(draft.duration)}</Text>
+                {/* Total */}
+                <View style={{ alignItems: "center", marginTop: 14 }}>
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground, textTransform: "uppercase", fontWeight: "700", marginBottom: 2 }}>Total</Text>
+                  <Text style={{ fontSize: 22, fontWeight: "800", color: colors.primary }}>
+                    {(draft.customDurationH ?? 0) === 0 && (draft.customDurationM ?? 0) === 0 ? "--" : fmtDuration((draft.customDurationH ?? 0) * 60 + (draft.customDurationM ?? 0))}
+                  </Text>
                 </View>
               </View>
             )}
