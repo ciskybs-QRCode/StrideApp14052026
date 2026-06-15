@@ -537,7 +537,7 @@ export default function OperatorPrivateLessonsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="La Mia Disponibilita'"
-        subtitle="Orari e attivita' per l'admin"
+        subtitle="My schedule & availability"
         onBack={() => router.navigate("/(operator)/dashboard")}
         right={
           <Pressable

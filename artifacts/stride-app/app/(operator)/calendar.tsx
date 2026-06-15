@@ -656,7 +656,7 @@ export default function OperatorCalendar() {
         style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 100 }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.navigate("/(operator)/private-lessons" as never);
+          router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
         }}
       >
         <Ionicons name="calendar-outline" size={28} color={colors.secondary} />
