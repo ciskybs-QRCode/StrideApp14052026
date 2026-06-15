@@ -843,7 +843,7 @@ export default function OperatorPrivateLessonsScreen() {
                       })}
                     </View>
 
-                    {recurringDays.slice().sort((a, b) => a - b).map(dow => {
+                    {recurringDays.slice().sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b)).map(dow => {
                       const DAYS_EN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
                       const ts = dayTimeSlots[dow] ?? { start: "", end: "" };
                       const parseHH = (t: string) => t ? t.split(":")[0] ?? "" : "";
