@@ -69,6 +69,8 @@ type StyleId = typeof DANCE_STYLES[number]["id"];
 const STORAGE_KEY           = "stride_workshops";
 const SAVED_INSTRUCTORS_KEY = "stride_saved_instructors";
 const SAVED_VENUES_KEY      = "stride_saved_venues";
+const EVENTS_STORAGE_KEY    = "stride_calendar_events";
+const ATTENDANCE_STORAGE_KEY= "stride_event_attendance";
 
 type Workshop = {
   id: string;
@@ -84,6 +86,18 @@ type Workshop = {
   price: number;
   description: string;
   status: "upcoming" | "cancelled";
+};
+
+type CalendarEvent = {
+  id: string;
+  title: string;
+  date: string;       // ISO "YYYY-MM-DD"
+  time: string;       // "HH:MM"
+  endTime: string;    // "HH:MM"
+  location: string;
+  description: string;
+  type: "event" | "meeting" | "class";
+  notes?: string;
 };
 
 type LessonItem = {
@@ -127,6 +141,39 @@ function todayIso(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+// Helper — is an event's datetime already in the past?
+function isEventPast(date: string, endTime: string): boolean {
+  try {
+    const dt = new Date(`${date}T${endTime}:00`);
+    return dt.getTime() < Date.now();
+  } catch { return false; }
+}
+
+const INITIAL_EVENTS: CalendarEvent[] = [
+  {
+    id: "ev-001",
+    title: "End-of-Year Recital",
+    date: "2026-06-15",
+    time: "18:00",
+    endTime: "21:00",
+    location: "Main Hall, 1 Theatre Lane",
+    description: "Annual end-of-year showcase. All students perform. Dress rehearsal at 16:00. Operators must be on site by 17:00 for setup.",
+    type: "event",
+    notes: "Black uniform required. Bring your ID badge.",
+  },
+  {
+    id: "ev-002",
+    title: "Staff Meeting",
+    date: "2026-04-20",
+    time: "09:00",
+    endTime: "10:30",
+    location: "Studio B — Admin Conference Room",
+    description: "Monthly staff meeting. Topics: summer schedule, enrollment targets, payroll review.",
+    type: "meeting",
+    notes: "Attendance mandatory. Remote join via link in your email if travelling.",
+  },
+];
+
 const INITIAL_SCHEDULE: LessonItem[][] = [
   [{ course: "Classical Dance",    start: "15:30", end: "17:00", room: "Room A", students: 12 }],
   [{ course: "Hip Hop Junior",     start: "16:00", end: "17:30", room: "Room B", students: 10 }],
@@ -158,6 +205,11 @@ export default function OperatorCalendar() {
   const [viewDate, setViewDate]         = useState(new Date());
   const [dayDetail, setDayDetail]       = useState<{ date: Date; lessons: LessonItem[] } | null>(null);
   const [campusAddress, setCampusAddress] = useState("1 Main Street, Sydney NSW 2000");
+
+  // ── Events & attendance ───────────────────────────────────────────────────
+  const [calEvents,     setCalEvents]     = useState<CalendarEvent[]>(INITIAL_EVENTS);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [eventAttendance, setEventAttendance] = useState<Record<string, "attended" | "missed">>({});
 
   // ── form state ──────────────────────────────────────────────────────────────
   const [wTitle,            setWTitle]           = useState("");
@@ -207,7 +259,25 @@ export default function OperatorCalendar() {
     AsyncStorage.getItem("stride_campus_address")
       .then(val => { if (val) setCampusAddress(val); })
       .catch(() => {});
+    AsyncStorage.getItem(EVENTS_STORAGE_KEY)
+      .then(val => { if (val) setCalEvents(JSON.parse(val) as CalendarEvent[]); })
+      .catch(() => {});
+    AsyncStorage.getItem(ATTENDANCE_STORAGE_KEY)
+      .then(val => { if (val) setEventAttendance(JSON.parse(val) as Record<string, "attended" | "missed">); })
+      .catch(() => {});
   }, []);
+
+  const toggleAttendance = (eventId: string, status: "attended" | "missed") => {
+    const next = { ...eventAttendance, [eventId]: status };
+    setEventAttendance(next);
+    AsyncStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const openGps = (address: string) => {
+    const q = encodeURIComponent(address);
+    Linking.openURL(`https://maps.google.com/maps?q=${q}`);
+  };
 
   const persistWorkshops = useCallback(async (next: Workshop[]) => {
     setWorkshops(next);
@@ -555,15 +625,17 @@ export default function OperatorCalendar() {
                         if (!date) {
                           return <View key={di} style={styles.monthCell} />;
                         }
-                        const dow      = (date.getDay() + 6) % 7;
+                        const dow        = (date.getDay() + 6) % 7;
                         const dayLessons = (schedule[dow] ?? []).filter(l => !l.cancelled);
-                        const isToday  = date.getDate() === todayD.getDate() && date.getMonth() === todayD.getMonth() && date.getFullYear() === todayD.getFullYear();
+                        const iso        = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                        const dayEvents  = calEvents.filter(ev => ev.date === iso);
+                        const isToday    = date.getDate() === todayD.getDate() && date.getMonth() === todayD.getMonth() && date.getFullYear() === todayD.getFullYear();
                         return (
                           <Pressable
                             key={di}
                             style={[styles.monthCell, isToday && { backgroundColor: `${colors.primary}12`, borderRadius: 10 }]}
                             onPress={() => {
-                              if (dayLessons.length > 0) {
+                              if (dayLessons.length > 0 || dayEvents.length > 0) {
                                 setDayDetail({ date, lessons: dayLessons });
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                               }
@@ -576,12 +648,21 @@ export default function OperatorCalendar() {
                             ]}>
                               {date.getDate()}
                             </Text>
-                            {/* Colored discipline dots */}
+                            {/* Colored discipline dots + event markers */}
                             <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 2, marginTop: 3 }}>
-                              {dayLessons.slice(0, 3).map((l, li) => (
+                              {dayLessons.slice(0, 2).map((l, li) => (
                                 <View
-                                  key={li}
+                                  key={`l${li}`}
                                   style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: lessonColor(l.course) }}
+                                />
+                              ))}
+                              {dayEvents.map(ev => (
+                                <View
+                                  key={ev.id}
+                                  style={{
+                                    width: 6, height: 6, borderRadius: 1.5,
+                                    backgroundColor: ev.type === "event" ? "#F59E0B" : "#7C3AED",
+                                  }}
                                 />
                               ))}
                             </View>
@@ -595,16 +676,18 @@ export default function OperatorCalendar() {
                 {/* Legend */}
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
                   {[
-                    { label: "Ballet / Classical", color: "#1E3A8A" },
-                    { label: "Hip Hop",   color: "#7C3AED" },
-                    { label: "Contemporary", color: "#FBBF24" },
-                    { label: "Yoga",      color: "#10B981" },
-                    { label: "Latin",     color: "#EF4444" },
-                    { label: "Jazz",      color: "#F59E0B" },
-                    { label: "Other",     color: "#6B7BA4" },
-                  ].map(({ label, color }) => (
+                    { label: "Ballet / Classical", color: "#1E3A8A", round: true },
+                    { label: "Hip Hop",            color: "#7C3AED", round: true },
+                    { label: "Contemporary",       color: "#FBBF24", round: true },
+                    { label: "Yoga",               color: "#10B981", round: true },
+                    { label: "Latin",              color: "#EF4444", round: true },
+                    { label: "Jazz",               color: "#F59E0B", round: true },
+                    { label: "Other",              color: "#6B7BA4", round: true },
+                    { label: "Event",              color: "#F59E0B", round: false },
+                    { label: "Meeting",            color: "#7C3AED", round: false },
+                  ].map(({ label, color, round }) => (
                     <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+                      <View style={{ width: 8, height: 8, borderRadius: round ? 4 : 2, backgroundColor: color }} />
                       <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{label}</Text>
                     </View>
                   ))}
@@ -629,26 +712,53 @@ export default function OperatorCalendar() {
         </View>
 
 
-        {/* ── Events & meetings (static) ── */}
+        {/* ── Events & Meetings ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 4 }]}>Events & Meetings</Text>
-        {[
-          { title: "End-of-Year Recital", date: "15/06/2026", type: "event"   },
-          { title: "Staff Meeting",       date: "20/04/2026", type: "meeting" },
-        ].map((ev, i) => (
-          <View key={i} style={[styles.eventCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.eventIcon, { backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EDE9FE" }]}>
-              <Ionicons
-                name={ev.type === "event" ? "star-outline" : "people-outline"}
-                size={20}
-                color={ev.type === "event" ? "#F59E0B" : "#7C3AED"}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.eventTitle, { color: colors.primary }]}>{ev.title}</Text>
-              <Text style={[styles.eventDate,  { color: colors.mutedForeground }]}>{ev.date}</Text>
-            </View>
-          </View>
-        ))}
+        {calEvents.map((ev) => {
+          const past       = isEventPast(ev.date, ev.endTime);
+          const attendance = eventAttendance[ev.id];
+          const [evY, evM, evD] = ev.date.split("-");
+          const displayDate = `${evD}/${evM}/${evY}`;
+          return (
+            <Pressable
+              key={ev.id}
+              style={[styles.eventCard, { backgroundColor: colors.card }]}
+              onPress={() => {
+                setSelectedEvent(ev);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+            >
+              <View style={[styles.eventIcon, { backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EDE9FE" }]}>
+                <Ionicons
+                  name={ev.type === "event" ? "star-outline" : ev.type === "meeting" ? "people-outline" : "musical-notes-outline"}
+                  size={20}
+                  color={ev.type === "event" ? "#F59E0B" : "#7C3AED"}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.eventTitle, { color: colors.primary }]}>{ev.title}</Text>
+                <Text style={[styles.eventDate,  { color: colors.mutedForeground }]}>
+                  {displayDate} · {ev.time}–{ev.endTime}
+                </Text>
+              </View>
+              {/* Past attendance status */}
+              {past && (
+                <View style={{
+                  paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+                  backgroundColor: attendance === "attended" ? "#D1FAE5" : attendance === "missed" ? "#FEE2E2" : "#F3F4F6",
+                }}>
+                  <Text style={{
+                    fontSize: 11, fontWeight: "700",
+                    color: attendance === "attended" ? "#065F46" : attendance === "missed" ? "#991B1B" : "#6B7280",
+                  }}>
+                    {attendance === "attended" ? "Attended" : attendance === "missed" ? "Missed" : "Past"}
+                  </Text>
+                </View>
+              )}
+              <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} style={{ marginLeft: 4 }} />
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       {/* ── FAB ── */}
@@ -988,59 +1098,248 @@ export default function OperatorCalendar() {
         onRequestClose={() => setDayDetail(null)}
       >
         <Pressable style={styles.overlay} onPress={() => setDayDetail(null)}>
-          <View style={[styles.optionsCard, { maxHeight: "75%" as unknown as number }]}>
-            {dayDetail && (
-              <>
-                <Text style={[styles.optionsTitle, { color: colors.primary }]}>
-                  {dayDetail.date.getDate()} {MONTH_NAMES[dayDetail.date.getMonth()]} {dayDetail.date.getFullYear()}
-                </Text>
-                <Text style={[styles.optionsSubtitle, { color: colors.mutedForeground }]}>
-                  {dayDetail.lessons.length} lesson{dayDetail.lessons.length !== 1 ? "s" : ""} scheduled
-                </Text>
+          <View style={[styles.optionsCard, { maxHeight: "80%" as unknown as number }]}>
+            {dayDetail && (() => {
+              const iso = `${dayDetail.date.getFullYear()}-${String(dayDetail.date.getMonth() + 1).padStart(2, "0")}-${String(dayDetail.date.getDate()).padStart(2, "0")}`;
+              const dayEvs = calEvents.filter(ev => ev.date === iso);
+              // Unique locations across all events on this day (for multi-venue picker)
+              const uniqueLocs = Array.from(new Set([
+                ...dayEvs.map(ev => ev.location),
+                campusAddress,
+              ])).filter(Boolean);
+              const multiVenue = uniqueLocs.length > 1;
 
-                <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
-                  {dayDetail.lessons.map((lesson, i) => (
-                    <View key={i} style={{ marginTop: 12, borderRadius: 12, borderWidth: 1.5, borderColor: lessonColor(lesson.course), overflow: "hidden" }}>
-                      <View style={{ height: 4, backgroundColor: lessonColor(lesson.course) }} />
-                      <View style={{ padding: 12, gap: 6 }}>
-                        <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>{lesson.course}</Text>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          <Ionicons name="time-outline" size={13} color={colors.mutedForeground} />
-                          <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{lesson.start} – {lesson.end}</Text>
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
-                          <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{lesson.room}</Text>
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          <Ionicons name="people-outline" size={13} color={colors.mutedForeground} />
-                          <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{lesson.students} students enrolled</Text>
+              return (
+                <>
+                  <Text style={[styles.optionsTitle, { color: colors.primary }]}>
+                    {dayDetail.date.getDate()} {MONTH_NAMES[dayDetail.date.getMonth()]} {dayDetail.date.getFullYear()}
+                  </Text>
+                  <Text style={[styles.optionsSubtitle, { color: colors.mutedForeground }]}>
+                    {dayDetail.lessons.length} lesson{dayDetail.lessons.length !== 1 ? "s" : ""}
+                    {dayEvs.length > 0 ? ` · ${dayEvs.length} event${dayEvs.length !== 1 ? "s" : ""}` : ""}
+                  </Text>
+
+                  <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+                    {/* Lessons */}
+                    {dayDetail.lessons.map((lesson, i) => (
+                      <View key={i} style={{ marginTop: 12, borderRadius: 12, borderWidth: 1.5, borderColor: lessonColor(lesson.course), overflow: "hidden" }}>
+                        <View style={{ height: 4, backgroundColor: lessonColor(lesson.course) }} />
+                        <View style={{ padding: 12, gap: 6 }}>
+                          <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>{lesson.course}</Text>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <Ionicons name="time-outline" size={13} color={colors.mutedForeground} />
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{lesson.start} – {lesson.end}</Text>
+                          </View>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{lesson.room}</Text>
+                          </View>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <Ionicons name="people-outline" size={13} color={colors.mutedForeground} />
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{lesson.students} students enrolled</Text>
+                          </View>
+                          <Pressable
+                            style={{ marginTop: 4, backgroundColor: "#10B981", borderRadius: 10, paddingVertical: 9, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}
+                            onPress={() => openGps(campusAddress)}
+                          >
+                            <Ionicons name="navigate" size={14} color="#FFF" />
+                            <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Navigate to Studio</Text>
+                          </Pressable>
                         </View>
                       </View>
+                    ))}
+
+                    {/* Events on this day */}
+                    {dayEvs.map(ev => (
+                      <View key={ev.id} style={{ marginTop: 12, borderRadius: 12, borderWidth: 1.5, borderColor: ev.type === "event" ? "#F59E0B" : "#7C3AED", overflow: "hidden" }}>
+                        <View style={{ height: 4, backgroundColor: ev.type === "event" ? "#F59E0B" : "#7C3AED" }} />
+                        <View style={{ padding: 12, gap: 6 }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <Ionicons
+                              name={ev.type === "event" ? "star-outline" : "people-outline"}
+                              size={15}
+                              color={ev.type === "event" ? "#F59E0B" : "#7C3AED"}
+                            />
+                            <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground, flex: 1 }}>{ev.title}</Text>
+                          </View>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <Ionicons name="time-outline" size={13} color={colors.mutedForeground} />
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{ev.time} – {ev.endTime}</Text>
+                          </View>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <Ionicons name="location-outline" size={13} color={colors.mutedForeground} />
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{ev.location}</Text>
+                          </View>
+                          {/* Per-event navigate button */}
+                          <Pressable
+                            style={{ marginTop: 4, backgroundColor: "#10B981", borderRadius: 10, paddingVertical: 9, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}
+                            onPress={() => openGps(ev.location || campusAddress)}
+                          >
+                            <Ionicons name="navigate" size={14} color="#FFF" />
+                            <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Navigate / GPS</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    ))}
+
+                    {/* Multi-venue picker — if day has multiple distinct locations */}
+                    {multiVenue && (
+                      <View style={{ marginTop: 14, padding: 12, borderRadius: 12, backgroundColor: `${colors.primary}08`, borderWidth: 1, borderColor: `${colors.primary}20` }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary, marginBottom: 8 }}>Choose destination:</Text>
+                        {uniqueLocs.map((loc, li) => (
+                          <Pressable
+                            key={li}
+                            style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 9, borderBottomWidth: li < uniqueLocs.length - 1 ? 1 : 0, borderColor: `${colors.primary}15` }}
+                            onPress={() => openGps(loc)}
+                          >
+                            <Ionicons name="navigate-outline" size={16} color="#10B981" />
+                            <Text style={{ flex: 1, fontSize: 13, color: colors.foreground }}>{loc}</Text>
+                            <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                          </Pressable>
+                        ))}
+                      </View>
+                    )}
+                  </ScrollView>
+
+                  <Pressable
+                    style={{ marginTop: 14, borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1.5, borderColor: colors.border }}
+                    onPress={() => setDayDetail(null)}
+                  >
+                    <Text style={{ color: colors.mutedForeground, fontWeight: "600", fontSize: 14 }}>Close</Text>
+                  </Pressable>
+                </>
+              );
+            })()}
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* ══ Event Detail Modal ══════════════════════════════════════════════════ */}
+      <Modal
+        visible={!!selectedEvent}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedEvent(null)}
+      >
+        <Pressable style={styles.overlay} onPress={() => setSelectedEvent(null)}>
+          <View style={[styles.optionsCard, { maxHeight: "85%" as unknown as number }]}>
+            {selectedEvent && (() => {
+              const ev          = selectedEvent;
+              const past        = isEventPast(ev.date, ev.endTime);
+              const attendance  = eventAttendance[ev.id];
+              const [evY, evM, evD] = ev.date.split("-");
+              const displayDate = `${evD}/${evM}/${evY}`;
+              const accentColor = ev.type === "event" ? "#F59E0B" : "#7C3AED";
+
+              return (
+                <>
+                  {/* Header bar */}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 6 }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EDE9FE", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons
+                        name={ev.type === "event" ? "star-outline" : ev.type === "meeting" ? "people-outline" : "musical-notes-outline"}
+                        size={22}
+                        color={accentColor}
+                      />
                     </View>
-                  ))}
-                </ScrollView>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 18, fontWeight: "800", color: colors.primary }}>{ev.title}</Text>
+                      <Text style={{ fontSize: 12, color: accentColor, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 }}>{ev.type}</Text>
+                    </View>
+                    {/* Attendance badge (past events) */}
+                    {past && (
+                      <View style={{
+                        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10,
+                        backgroundColor: attendance === "attended" ? "#D1FAE5" : attendance === "missed" ? "#FEE2E2" : "#F3F4F6",
+                      }}>
+                        <Text style={{
+                          fontSize: 12, fontWeight: "800",
+                          color: attendance === "attended" ? "#065F46" : attendance === "missed" ? "#991B1B" : "#6B7280",
+                        }}>
+                          {attendance === "attended" ? "Attended" : attendance === "missed" ? "Missed" : "Past"}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
-                {/* GPS / Navigate button */}
-                <Pressable
-                  style={{ marginTop: 16, backgroundColor: "#10B981", borderRadius: 14, paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
-                  onPress={() => {
-                    const query = encodeURIComponent(campusAddress);
-                    Linking.openURL(`https://maps.google.com/maps?q=${query}`);
-                  }}
-                >
-                  <Ionicons name="navigate" size={18} color="#FFF" />
-                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Navigate / GPS</Text>
-                </Pressable>
+                  <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+                    {/* Info rows */}
+                    <View style={{ gap: 10, marginTop: 8, padding: 14, borderRadius: 14, backgroundColor: `${colors.primary}06`, borderWidth: 1, borderColor: `${colors.primary}15` }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                        <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: "600" }}>{displayDate}</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <Ionicons name="time-outline" size={16} color={colors.primary} />
+                        <Text style={{ fontSize: 14, color: colors.foreground }}>{ev.time} – {ev.endTime}</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+                        <Ionicons name="location-outline" size={16} color={colors.primary} style={{ marginTop: 2 }} />
+                        <Text style={{ fontSize: 14, color: colors.foreground, flex: 1 }}>{ev.location}</Text>
+                      </View>
+                    </View>
 
-                <Pressable
-                  style={{ marginTop: 10, borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1.5, borderColor: colors.border }}
-                  onPress={() => setDayDetail(null)}
-                >
-                  <Text style={{ color: colors.mutedForeground, fontWeight: "600", fontSize: 14 }}>Close</Text>
-                </Pressable>
-              </>
-            )}
+                    {/* Description */}
+                    {!!ev.description && (
+                      <View style={{ marginTop: 12 }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Description</Text>
+                        <Text style={{ fontSize: 14, color: colors.foreground, lineHeight: 20 }}>{ev.description}</Text>
+                      </View>
+                    )}
+
+                    {/* Notes */}
+                    {!!ev.notes && (
+                      <View style={{ marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: "#FFFBEB", borderWidth: 1, borderColor: "#FDE68A" }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                          <Ionicons name="information-circle-outline" size={15} color="#92400E" />
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: "#92400E", textTransform: "uppercase" }}>Notes</Text>
+                        </View>
+                        <Text style={{ fontSize: 13, color: "#78350F", lineHeight: 18 }}>{ev.notes}</Text>
+                      </View>
+                    )}
+
+                    {/* Attendance toggle (past events only) */}
+                    {past && (
+                      <View style={{ marginTop: 14 }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Attendance</Text>
+                        <View style={{ flexDirection: "row", gap: 10 }}>
+                          <Pressable
+                            style={{ flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 6, backgroundColor: attendance === "attended" ? "#10B981" : colors.muted, borderWidth: 1.5, borderColor: attendance === "attended" ? "#10B981" : colors.border }}
+                            onPress={() => toggleAttendance(ev.id, "attended")}
+                          >
+                            <Ionicons name="checkmark-circle-outline" size={18} color={attendance === "attended" ? "#FFF" : colors.mutedForeground} />
+                            <Text style={{ fontWeight: "700", fontSize: 14, color: attendance === "attended" ? "#FFF" : colors.mutedForeground }}>I Attended</Text>
+                          </Pressable>
+                          <Pressable
+                            style={{ flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 6, backgroundColor: attendance === "missed" ? "#EF4444" : colors.muted, borderWidth: 1.5, borderColor: attendance === "missed" ? "#EF4444" : colors.border }}
+                            onPress={() => toggleAttendance(ev.id, "missed")}
+                          >
+                            <Ionicons name="close-circle-outline" size={18} color={attendance === "missed" ? "#FFF" : colors.mutedForeground} />
+                            <Text style={{ fontWeight: "700", fontSize: 14, color: attendance === "missed" ? "#FFF" : colors.mutedForeground }}>I Missed It</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    )}
+                  </ScrollView>
+
+                  {/* Navigate button */}
+                  <Pressable
+                    style={{ marginTop: 16, backgroundColor: "#10B981", borderRadius: 14, paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+                    onPress={() => openGps(ev.location || campusAddress)}
+                  >
+                    <Ionicons name="navigate" size={18} color="#FFF" />
+                    <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Navigate / GPS</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={{ marginTop: 10, borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1.5, borderColor: colors.border }}
+                    onPress={() => setSelectedEvent(null)}
+                  >
+                    <Text style={{ color: colors.mutedForeground, fontWeight: "600", fontSize: 14 }}>Close</Text>
+                  </Pressable>
+                </>
+              );
+            })()}
           </View>
         </Pressable>
       </Modal>
