@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Pressable,
@@ -46,6 +47,7 @@ export default function OperatorProfileEditScreen() {
   const { user, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [form, setForm] = useState<ProfileExtra>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -90,9 +92,9 @@ export default function OperatorProfileEditScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Information Settings" />
+      <ScreenHeader title="Information Settings" onBack={() => router.navigate("/(operator)/settings" as never)} />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

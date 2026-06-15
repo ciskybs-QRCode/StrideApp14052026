@@ -128,9 +128,9 @@ export default function OperatorAccountScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Account" />
+      <ScreenHeader title="Account" onBack={() => router.navigate("/(operator)/settings" as never)} />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         {ROWS.map(row => (
