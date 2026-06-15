@@ -145,6 +145,9 @@ export default function OperatorTabLayout() {
         <Tabs.Screen name="pdf-badges"      options={{ href: null }} />
         <Tabs.Screen name="alerts"          options={{ href: null }} />
         <Tabs.Screen name="promo-codes"     options={{ href: null }} />
+        <Tabs.Screen name="account"         options={{ href: null }} />
+        <Tabs.Screen name="workspace"       options={{ href: null }} />
+        <Tabs.Screen name="profile-edit"    options={{ href: null }} />
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
