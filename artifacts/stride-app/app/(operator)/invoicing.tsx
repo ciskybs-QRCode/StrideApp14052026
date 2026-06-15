@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { useAuth } from "@/context/AuthContext";
 import { useSubstitution } from "@/context/SubstitutionContext";
 import { useColors } from "@/hooks/useColors";
@@ -39,6 +40,58 @@ import {
   frequencyLabel,
 } from "@/lib/strideChannel";
 import { ReimbursementRequestForm, type ClaimantRole } from "@/app/(admin)/reimbursements";
+
+// ── Bank field types & locale config ─────────────────────────────────────────
+
+interface BankField {
+  key: string;
+  label: string;
+  placeholder: string;
+  autoCapitalize: "none" | "characters" | "words" | "sentences";
+  keyboardType: "default" | "number-pad";
+  apiField: "accountName" | "iban" | "swift";
+}
+
+const IBAN_FIELDS: BankField[] = [
+  { key: "accountName", label: "Account Name", placeholder: "Full legal name or trading name", autoCapitalize: "words",      keyboardType: "default",    apiField: "accountName" },
+  { key: "iban",        label: "IBAN",         placeholder: "e.g. IT60 X054 2811 1010 0000 0123 456",                        autoCapitalize: "characters", keyboardType: "default",    apiField: "iban"        },
+  { key: "swift",       label: "SWIFT / BIC",  placeholder: "e.g. INTBITM1",                                                 autoCapitalize: "characters", keyboardType: "default",    apiField: "swift"       },
+];
+
+const LOCALE_BANK_FIELDS: Record<string, BankField[]> = {
+  AU: [
+    { key: "accountName",  label: "Account Name",    placeholder: "Full legal name",            autoCapitalize: "words", keyboardType: "default",    apiField: "accountName" },
+    { key: "bsb",          label: "BSB",             placeholder: "000-000 (6 digits)",          autoCapitalize: "none",  keyboardType: "number-pad", apiField: "iban"        },
+    { key: "accountNumber",label: "Account Number",  placeholder: "Account number",             autoCapitalize: "none",  keyboardType: "number-pad", apiField: "swift"       },
+  ],
+  NZ: [
+    { key: "accountName",  label: "Account Name",    placeholder: "Full legal name",            autoCapitalize: "words", keyboardType: "default",    apiField: "accountName" },
+    { key: "accountNumber",label: "Account Number",  placeholder: "00-0000-0000000-000",        autoCapitalize: "none",  keyboardType: "number-pad", apiField: "iban"        },
+    { key: "bankName",     label: "Bank Name",       placeholder: "e.g. ANZ, Westpac, BNZ",    autoCapitalize: "words", keyboardType: "default",    apiField: "swift"       },
+  ],
+  US: [
+    { key: "accountName",   label: "Account Name",         placeholder: "Full legal name",           autoCapitalize: "words", keyboardType: "default",    apiField: "accountName" },
+    { key: "routingNumber", label: "Routing Number (ABA)", placeholder: "9-digit routing number",    autoCapitalize: "none",  keyboardType: "number-pad", apiField: "iban"        },
+    { key: "accountNumber", label: "Account Number",        placeholder: "Account number",            autoCapitalize: "none",  keyboardType: "number-pad", apiField: "swift"       },
+  ],
+  GB: [
+    { key: "accountName",  label: "Account Name",    placeholder: "Full legal name",            autoCapitalize: "words", keyboardType: "default",    apiField: "accountName" },
+    { key: "sortCode",     label: "Sort Code",       placeholder: "xx-xx-xx",                   autoCapitalize: "none",  keyboardType: "number-pad", apiField: "iban"        },
+    { key: "accountNumber",label: "Account Number",  placeholder: "8-digit account number",    autoCapitalize: "none",  keyboardType: "number-pad", apiField: "swift"       },
+  ],
+  CA: [
+    { key: "accountName",  label: "Account Name",           placeholder: "Full legal name",          autoCapitalize: "words", keyboardType: "default",    apiField: "accountName" },
+    { key: "transitNumber",label: "Transit + Institution",  placeholder: "TTTTT-III",                autoCapitalize: "none",  keyboardType: "number-pad", apiField: "iban"        },
+    { key: "accountNumber",label: "Account Number",         placeholder: "Account number",           autoCapitalize: "none",  keyboardType: "number-pad", apiField: "swift"       },
+  ],
+};
+
+function getBankFieldsForLocale(): BankField[] {
+  const { countryCode } = getDeviceLocale();
+  return LOCALE_BANK_FIELDS[countryCode] ?? IBAN_FIELDS;
+}
+
+const BANK_STORAGE_KEY = "stride_operator_bank_v2";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -389,11 +442,44 @@ export default function OperatorInvoicing() {
   const [reminderDismissed, setReminderDismissed] = useState(false);
 
   // UI modals
-  const [showReimbursement, setShowReimbursement] = useState(false);
-  const [showSuccessModal, setShowSuccessModal]   = useState(false);
+  const [showReimbursement, setShowReimbursement]   = useState(false);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [showSuccessModal, setShowSuccessModal]     = useState(false);
   const [submittedId, setSubmittedId]             = useState("");
   const [submitError, setSubmitError]             = useState<string | null>(null);
   const [generateError, setGenerateError]         = useState<string | null>(null);
+
+  // ── Payment Details (bank fields, locale-aware) ───────────────────────────
+  const bankFields = getBankFieldsForLocale();
+  const [bankValues, setBankValues]   = useState<Record<string, string>>({});
+  const [bankSaving, setBankSaving]   = useState(false);
+  const [bankSaved, setBankSaved]     = useState(false);
+
+  const handleSaveBank = async () => {
+    setBankSaving(true);
+    const apiPayload: { accountName?: string; iban?: string; swift?: string } = {};
+    for (const f of bankFields) {
+      const val = bankValues[f.key] ?? "";
+      if (f.apiField === "accountName") apiPayload.accountName = val;
+      else if (f.apiField === "iban")   apiPayload.iban = val;
+      else if (f.apiField === "swift")  apiPayload.swift = val;
+    }
+    try {
+      await Promise.all([
+        api.saveBankDetails(apiPayload),
+        AsyncStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(bankValues)),
+      ]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setBankSaved(true);
+      setTimeout(() => setBankSaved(false), 2500);
+    } catch {
+      try { await AsyncStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(bankValues)); } catch { /* ignore */ }
+      setBankSaved(true);
+      setTimeout(() => setBankSaved(false), 2500);
+    } finally {
+      setBankSaving(false);
+    }
+  };
 
   // ── Stripe Connect payout settings ──────────────────────────────────────
   const [stripeConfigured, setStripeConfigured]   = useState<boolean | null>(null); // null = loading
@@ -401,6 +487,29 @@ export default function OperatorInvoicing() {
 
   // ── Load persisted settings ──────────────────────────────────────────────
   useEffect(() => {
+    // Load bank details (API first, then local cache)
+    api.getBankDetails().then(d => {
+      if (d && (d.accountName || d.iban || d.swift)) {
+        const fields = getBankFieldsForLocale();
+        const vals: Record<string, string> = {};
+        for (const f of fields) {
+          if (f.apiField === "accountName") vals[f.key] = d.accountName ?? "";
+          else if (f.apiField === "iban")   vals[f.key] = d.iban ?? "";
+          else if (f.apiField === "swift")  vals[f.key] = d.swift ?? "";
+        }
+        setBankValues(vals);
+        AsyncStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(vals)).catch(() => {});
+      } else {
+        AsyncStorage.getItem(BANK_STORAGE_KEY).then(raw => {
+          if (raw) { try { setBankValues(JSON.parse(raw) as Record<string, string>); } catch { /* ignore */ } }
+        }).catch(() => {});
+      }
+    }).catch(() => {
+      AsyncStorage.getItem(BANK_STORAGE_KEY).then(raw => {
+        if (raw) { try { setBankValues(JSON.parse(raw) as Record<string, string>); } catch { /* ignore */ } }
+      }).catch(() => {});
+    });
+
     AsyncStorage.getItem(HEADER_STORAGE_KEY).then(raw => {
       if (raw) { try { setInvoiceHeader(JSON.parse(raw) as InvoiceHeader); } catch { /* ignore */ } }
     });
@@ -781,6 +890,25 @@ export default function OperatorInvoicing() {
           <Ionicons name="settings-outline" size={18} color={colors.mutedForeground} />
         </Pressable>
 
+        {/* ── Payment Details entry ── */}
+        <Pressable
+          style={[styles.headerSettingsBtn, { backgroundColor: bankFields.some(f => (bankValues[f.key] ?? "").trim().length > 0) ? "#F0FDF4" : colors.card, borderColor: bankFields.some(f => (bankValues[f.key] ?? "").trim().length > 0) ? "#10B981" : colors.border }]}
+          onPress={() => setShowPaymentDetails(true)}
+        >
+          <View style={[styles.headerSettingsIcon, { backgroundColor: bankFields.some(f => (bankValues[f.key] ?? "").trim().length > 0) ? "#DCFCE7" : colors.muted }]}>
+            <Ionicons name="card-outline" size={22} color={bankFields.some(f => (bankValues[f.key] ?? "").trim().length > 0) ? "#059669" : colors.mutedForeground} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.headerSettingsTitle, { color: bankFields.some(f => (bankValues[f.key] ?? "").trim().length > 0) ? "#059669" : colors.foreground }]}>
+              {bankFields.some(f => (bankValues[f.key] ?? "").trim().length > 0) ? (bankValues[bankFields[0]?.key ?? ""] || "Payment Details saved") : "Add Payment Details"}
+            </Text>
+            <Text style={[styles.headerSettingsSub, { color: colors.mutedForeground }]}>
+              {bankFields.some(f => (bankValues[f.key] ?? "").trim().length > 0) ? bankFields.map(f => f.label).join(" · ") : "Bank account for payroll deposits — region auto-detected"}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={bankFields.some(f => (bankValues[f.key] ?? "").trim().length > 0) ? "#059669" : colors.mutedForeground} />
+        </Pressable>
+
         {/* ── Daily Work Log ── */}
         <View style={styles.logSectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Log</Text>
@@ -1087,6 +1215,54 @@ export default function OperatorInvoicing() {
       </Modal>
 
       <HeaderSettingsModal visible={showHeaderModal} onClose={() => setShowHeaderModal(false)} header={invoiceHeader} onSave={saveHeader} />
+
+      {/* ── Payment Details modal ─────────────────────────────────────────── */}
+      <Modal visible={showPaymentDetails} transparent animationType="slide" onRequestClose={() => setShowPaymentDetails(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: colors.primary }}>Payment Details</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 3 }}>
+                  For payroll deposits — fields adapt to your region
+                </Text>
+              </View>
+              <Pressable onPress={() => setShowPaymentDetails(false)} hitSlop={12}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            {bankFields.map(field => (
+              <View key={field.key} style={{ marginBottom: 14 }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, color: colors.mutedForeground, marginBottom: 6 }}>
+                  {field.label}
+                </Text>
+                <TextInput
+                  style={{ borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.muted, color: colors.foreground }}
+                  placeholder={field.placeholder}
+                  placeholderTextColor={colors.mutedForeground}
+                  value={bankValues[field.key] ?? ""}
+                  onChangeText={v => setBankValues(prev => ({ ...prev, [field.key]: field.autoCapitalize === "characters" ? v.toUpperCase() : v }))}
+                  autoCapitalize={field.autoCapitalize}
+                  keyboardType={field.keyboardType}
+                  autoCorrect={false}
+                />
+              </View>
+            ))}
+
+            <Pressable
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 16, marginTop: 8, backgroundColor: bankSaved ? "#10B981" : colors.primary, opacity: bankSaving ? 0.7 : 1 }}
+              onPress={handleSaveBank}
+              disabled={bankSaving}
+            >
+              <Ionicons name={bankSaved ? "checkmark-circle" : "save-outline"} size={18} color="#FBBF24" />
+              <Text style={{ color: "#FBBF24", fontWeight: "800", fontSize: 14, letterSpacing: 0.5 }}>
+                {bankSaving ? "SAVING…" : bankSaved ? "SAVED!" : "SAVE BANK DETAILS"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <ReimbursementRequestForm
         visible={showReimbursement}

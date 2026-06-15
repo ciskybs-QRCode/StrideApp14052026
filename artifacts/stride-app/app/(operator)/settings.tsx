@@ -258,11 +258,6 @@ const ds = StyleSheet.create({
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 
-const BANK_KEY = "stride_operator_bank_details";
-
-interface BankDetails { iban: string; swift: string; accountName: string; }
-const EMPTY_BANK: BankDetails = { iban: "", swift: "", accountName: "" };
-
 export default function OperatorSettingsScreen() {
   const { user, updateUser } = useAuth();
   const colors = useColors();
@@ -271,49 +266,6 @@ export default function OperatorSettingsScreen() {
 
   const meta = ROLE_META[user?.role ?? "operator"] ?? ROLE_META.operator;
   const [showProposalModal, setShowProposalModal] = useState(false);
-
-  // ── Bank Details ──────────────────────────────────────────────────────────
-  const [bank, setBank] = useState<BankDetails>(EMPTY_BANK);
-  const [bankSaving, setBankSaving] = useState(false);
-  const [bankSaved, setBankSaved] = useState(false);
-
-  React.useEffect(() => {
-    // Load from API first (authoritative), fallback to AsyncStorage
-    api.getBankDetails().then(d => {
-      if (d && (d.accountName || d.iban || d.swift)) {
-        setBank({ accountName: d.accountName ?? "", iban: d.iban ?? "", swift: d.swift ?? "" });
-        AsyncStorage.setItem(BANK_KEY, JSON.stringify({ accountName: d.accountName ?? "", iban: d.iban ?? "", swift: d.swift ?? "" })).catch(() => {});
-      } else {
-        AsyncStorage.getItem(BANK_KEY).then(raw => {
-          if (raw) { try { setBank(JSON.parse(raw) as BankDetails); } catch { /* ignore */ } }
-        }).catch(() => {});
-      }
-    }).catch(() => {
-      AsyncStorage.getItem(BANK_KEY).then(raw => {
-        if (raw) { try { setBank(JSON.parse(raw) as BankDetails); } catch { /* ignore */ } }
-      }).catch(() => {});
-    });
-  }, []);
-
-  const handleSaveBank = async () => {
-    setBankSaving(true);
-    try {
-      // Persist to API (Supabase) and AsyncStorage
-      await Promise.all([
-        api.saveBankDetails({ accountName: bank.accountName, iban: bank.iban, swift: bank.swift }),
-        AsyncStorage.setItem(BANK_KEY, JSON.stringify(bank)),
-      ]);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setBankSaved(true);
-      setTimeout(() => setBankSaved(false), 2500);
-    } catch {
-      // Fallback: at least save locally
-      try { await AsyncStorage.setItem(BANK_KEY, JSON.stringify(bank)); } catch { /* ignore */ }
-      Alert.alert("Saved Locally", "Bank details saved locally. Sync will retry when online.");
-    } finally {
-      setBankSaving(false);
-    }
-  };
 
   const handlePickPhoto = async () => {
     if (Platform.OS !== "web") {
@@ -429,65 +381,6 @@ export default function OperatorSettingsScreen() {
           </View>
           <Ionicons name="chevron-forward" size={18} color="#D4AF37" />
         </Pressable>
-
-        {/* ── Payment / Bank Details ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Payment Details</Text>
-        <View style={[styles.bankCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.bankHeader}>
-            <View style={[styles.bankIconBox, { backgroundColor: "#1E3A8A12" }]}>
-              <Ionicons name="card-outline" size={22} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.bankTitle, { color: colors.foreground }]}>Bank Account</Text>
-              <Text style={[styles.bankSub, { color: colors.mutedForeground }]}>
-                For payroll deposits and reimbursements
-              </Text>
-            </View>
-          </View>
-
-          <Text style={[styles.bankLabel, { color: colors.mutedForeground }]}>Account Name</Text>
-          <TextInput
-            style={[styles.bankInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
-            placeholder="Full legal name or trading name"
-            placeholderTextColor={colors.mutedForeground}
-            value={bank.accountName}
-            onChangeText={v => setBank(p => ({ ...p, accountName: v }))}
-            autoCapitalize="words"
-          />
-
-          <Text style={[styles.bankLabel, { color: colors.mutedForeground }]}>IBAN</Text>
-          <TextInput
-            style={[styles.bankInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
-            placeholder="e.g. GB29 NWBK 6016 1331 9268 19"
-            placeholderTextColor={colors.mutedForeground}
-            value={bank.iban}
-            onChangeText={v => setBank(p => ({ ...p, iban: v.toUpperCase() }))}
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-
-          <Text style={[styles.bankLabel, { color: colors.mutedForeground }]}>Swift / BIC</Text>
-          <TextInput
-            style={[styles.bankInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
-            placeholder="e.g. NWBKGB2L"
-            placeholderTextColor={colors.mutedForeground}
-            value={bank.swift}
-            onChangeText={v => setBank(p => ({ ...p, swift: v.toUpperCase() }))}
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-
-          <Pressable
-            style={[styles.bankSaveBtn, { backgroundColor: bankSaved ? "#10B981" : colors.primary, opacity: bankSaving ? 0.7 : 1 }]}
-            onPress={handleSaveBank}
-            disabled={bankSaving}
-          >
-            <Ionicons name={bankSaved ? "checkmark-circle" : "save-outline"} size={16} color="#FBBF24" />
-            <Text style={styles.bankSaveBtnText}>
-              {bankSaving ? "SAVING…" : bankSaved ? "SAVED!" : "SAVE BANK DETAILS"}
-            </Text>
-          </Pressable>
-        </View>
 
         {/* ── Account ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
