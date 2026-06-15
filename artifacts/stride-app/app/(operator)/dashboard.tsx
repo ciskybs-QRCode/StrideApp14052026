@@ -1115,60 +1115,27 @@ export default function OperatorDashboard() {
           </View>
         )}
 
-        {/* ── Private Lessons Box ── */}
-        <View style={[styles.privateLessonCard, { backgroundColor: colors.primary }]}>
-          {/* Header row — tappable to go to full management screen */}
-          <Pressable
-            style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-            onPress={() => router.push("/(operator)/private-lessons")}
-          >
-            <View style={[styles.privateLessonIcon, { backgroundColor: colors.secondary }]}>
-              <Ionicons name="school-outline" size={24} color={colors.primary} />
+        {/* ── Operator QR Code Panel ── */}
+        <Pressable
+          style={[styles.qrPanel, { backgroundColor: colors.card }]}
+          onPress={() => setShowQRPanel(true)}
+        >
+          <View style={[styles.qrMiniBox, { backgroundColor: "#F0F4FF" }]}>
+            <QRCode value={operatorQrValue} size={72} color={colors.primary} backgroundColor="transparent" />
+          </View>
+          <View style={styles.qrPanelRight}>
+            <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>OPERATOR PASS</Text>
+            <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Operator"}</Text>
+            <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>
+              {user?.role === "super_admin" ? "Super Admin" : "Operator"} · {user?.orgId ? `Org ${user.orgId}` : ""}
+            </Text>
+            <View style={[styles.qrActiveBadge, { backgroundColor: "#D1FAE5" }]}>
+              <Ionicons name="shield-checkmark" size={12} color="#10B981" />
+              <Text style={[styles.qrActiveBadgeText, { color: "#10B981" }]}>Active Credential</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.privateLessonTitle}>Availability</Text>
-              <Text style={styles.privateLessonSub}>
-                {myBookings.filter(b => b.status === "confirmed" || b.status === "pending").length} active booking{myBookings.filter(b => b.status === "confirmed" || b.status === "pending").length !== 1 ? "s" : ""}
-              </Text>
-            </View>
-            {unreadCount > 0 && (
-              <View style={styles.privateLessonBadge}>
-                <Text style={styles.privateLessonBadgeText}>{unreadCount}</Text>
-              </View>
-            )}
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
-          </Pressable>
-
-          {/* Active bookings list */}
-          {myBookings.filter(b => b.status === "confirmed" || b.status === "pending").slice(0, 3).map((bk) => (
-            <Pressable
-              key={bk.id}
-              style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 12, padding: 12 }}
-              onPress={() => setSelectedBooking(bk)}
-            >
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.secondary, alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="person-outline" size={18} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }} numberOfLines={1}>
-                  {bk.discipline?.name ?? "Private Lesson"} — {bk.child?.name ?? "Student"}
-                </Text>
-                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
-                  {bk.slot_date} · {bk.start_time} – {bk.end_time}
-                </Text>
-              </View>
-              <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: bk.status === "confirmed" ? "#10B981" : "#F59E0B" }}>
-                <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "700" }}>{bk.status.toUpperCase()}</Text>
-              </View>
-            </Pressable>
-          ))}
-
-          {myBookings.filter(b => b.status === "confirmed" || b.status === "pending").length === 0 && (
-            <View style={{ marginTop: 12, alignItems: "center", paddingVertical: 8 }}>
-              <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>No active bookings</Text>
-            </View>
-          )}
-        </View>
+          </View>
+          <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
+        </Pressable>
 
         {/* ── Private Lesson Notifications ── */}
         {unreadCount > 0 && (
@@ -1439,27 +1406,6 @@ export default function OperatorDashboard() {
             <Text style={styles.pulseBtnHint}>Broadcast crisis alert to all checked-in members</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
-        </Pressable>
-
-        {/* ── Operator QR Code Panel ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>My Operator QR</Text>
-        <Pressable
-          style={[styles.qrPanel, { backgroundColor: colors.card }]}
-          onPress={() => setShowQRPanel(true)}
-        >
-          <View style={[styles.qrMiniBox, { backgroundColor: "#F0F4FF" }]}>
-            <QRCode value={operatorQrValue} size={72} color={colors.primary} backgroundColor="transparent" />
-          </View>
-          <View style={styles.qrPanelRight}>
-            <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>OPERATOR PASS</Text>
-            <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Operator"}</Text>
-            <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>ID: {user?.id} · Org: {user?.orgId}</Text>
-            <View style={[styles.qrActiveBadge, { backgroundColor: "#D1FAE5" }]}>
-              <Ionicons name="shield-checkmark" size={12} color="#10B981" />
-              <Text style={[styles.qrActiveBadgeText, { color: "#10B981" }]}>Active Credential</Text>
-            </View>
-          </View>
-          <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
         </Pressable>
 
         {/* ── Clock Out / QR Logout ── */}

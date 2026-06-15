@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import {
   Alert,
   Linking,
@@ -140,11 +142,15 @@ const INITIAL_SCHEDULE: LessonItem[][] = [
 
 export default function OperatorCalendar() {
   const { courses } = useAppData();
+  const { user } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const [selectedDay, setSelectedDay]   = useState(0);
-  const [view, setView]                 = useState<"week" | "list" | "month">("list");
+  const [view, setView]                 = useState<"week" | "list" | "month">("month");
   const [schedule, setSchedule]         = useState<LessonItem[][]>(INITIAL_SCHEDULE);
   const [showOptions, setShowOptions]   = useState<{ dayIdx: number; lessonIdx: number } | null>(null);
   const [showModal, setShowModal]       = useState(false);
@@ -725,10 +731,17 @@ export default function OperatorCalendar() {
 
       {/* ── FAB ── */}
       <Pressable
-        style={[styles.fab, { backgroundColor: colors.secondary, bottom: insets.bottom + 100 }]}
-        onPress={openModal}
+        style={[styles.fab, { backgroundColor: isAdmin ? colors.secondary : colors.primary, bottom: insets.bottom + 100 }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (isAdmin) {
+            openModal();
+          } else {
+            router.navigate("/(operator)/private-lessons" as never);
+          }
+        }}
       >
-        <Ionicons name="add" size={28} color={colors.primary} />
+        <Ionicons name={isAdmin ? "add" : "calendar-outline"} size={28} color={isAdmin ? colors.primary : colors.secondary} />
       </Pressable>
 
       {/* ══ Workshop Creation Sheet ══════════════════════════════════════════════ */}

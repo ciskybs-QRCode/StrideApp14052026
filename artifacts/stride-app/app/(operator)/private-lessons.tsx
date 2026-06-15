@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator, Alert, Modal, Platform, Pressable, RefreshControl,
@@ -63,8 +63,9 @@ export default function OperatorPrivateLessonsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { openTab } = useLocalSearchParams<{ openTab?: string }>();
 
-  const [tab, setTab] = useState<Tab>("bookings");
+  const [tab, setTab] = useState<Tab>((openTab as Tab) ?? "bookings");
   const [refreshing, setRefreshing] = useState(false);
 
   const [disciplines, setDisciplines] = useState<ApiDiscipline[]>([]);
