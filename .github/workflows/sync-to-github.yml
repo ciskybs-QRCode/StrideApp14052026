@@ -18,6 +18,20 @@ jobs:
         id: push
         run: |
           git remote add target https://x-access-token:${{ secrets.GITHUB_PAT }}@github.com/ciskybs-QRCode/StrideApp14052026.git
+
+          # Strategy: create a dated backup branch on the target before force-pushing.
+          # This preserves any commits that exist only on the target (e.g. hotfixes
+          # pushed directly there) so they can always be recovered, even though
+          # --force will overwrite target/main.
+          BACKUP_BRANCH="backup/main-$(date -u +%Y%m%d-%H%M%S)"
+          git fetch target main --depth=1 || true
+          if git rev-parse FETCH_HEAD &>/dev/null; then
+            git push target "FETCH_HEAD:refs/heads/${BACKUP_BRANCH}"
+            echo "Created backup branch ${BACKUP_BRANCH} on target"
+          else
+            echo "Target main does not exist yet — skipping backup branch creation"
+          fi
+
           git push target main --force
 
       - name: Notify on failure
