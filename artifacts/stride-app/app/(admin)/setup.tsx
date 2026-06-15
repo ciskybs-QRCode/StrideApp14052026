@@ -21,6 +21,7 @@ import {
 import { api } from "@/lib/api";
 import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { useColors } from "@/hooks/useColors";
@@ -426,8 +427,9 @@ export default function AdminSetup() {
 
   return (
     <View style={[styles.container, { backgroundColor: "#F0F4FF" }]}>
+      <ScreenHeader title="School Setup" />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>

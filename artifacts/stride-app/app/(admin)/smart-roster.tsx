@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import SmartRosterPanel, { type SmartSubstitute } from "@/components/SmartRosterPanel";
 import {
   cancelRescueCascade,
@@ -204,32 +205,8 @@ export default function SmartRosterScreen() {
   const TAB_H = Platform.OS === "web" ? 84 : 49;
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
-
-      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
-      <View style={s.navbar}>
-        <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-          hitSlop={10}
-          style={s.backBtn}
-        >
-          <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.55)" />
-        </Pressable>
-
-        <View style={{ flex: 1 }}>
-          <View style={s.navRow}>
-            <View style={s.navIcon}>
-              <Ionicons name="sparkles" size={12} color={GOLD} />
-            </View>
-            <Text style={s.navTitle}>AI Roster Orchestrator</Text>
-            <View style={s.aiPill}>
-              <View style={s.aiDot} />
-              <Text style={s.aiPillText}>AI LIVE</Text>
-            </View>
-          </View>
-          <Text style={s.navSub}>Smart Rostering + Rescue Cascade Engine</Text>
-        </View>
-      </View>
+    <View style={s.root}>
+      <ScreenHeader title="Smart Roster" subtitle="AI Roster Orchestrator" />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + TAB_H + 20 }]}

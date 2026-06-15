@@ -25,6 +25,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { api, type MarketplaceProduct } from "@/lib/api";
@@ -113,17 +114,7 @@ export default function MarketplaceScreen() {
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[S.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={S.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </Pressable>
-        <View style={S.headerCenter}>
-          <Ionicons name="storefront" size={20} color="#D4AF37" />
-          <Text style={S.headerTitle}>Stride Marketplace</Text>
-        </View>
-        <View style={{ width: 32 }} />
-      </View>
+      <ScreenHeader title="Stride Marketplace" />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}

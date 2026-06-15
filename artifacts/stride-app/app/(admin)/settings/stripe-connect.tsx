@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { request as apiRequest } from "@/lib/api";
 
@@ -133,14 +134,7 @@ export default function StripeConnectScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={26} color={colors.primary} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Payment Processing</Text>
-        <View style={{ width: 26 }} />
-      </View>
+      <ScreenHeader title="Payment Processing" light />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}

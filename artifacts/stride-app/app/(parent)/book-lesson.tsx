@@ -8,6 +8,7 @@ import {
   ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useCart } from "@/context/CartContext";
@@ -373,25 +374,17 @@ export default function BookLessonScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary, paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12) }]}>
-        <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={goBack}>
-            <Ionicons name="arrow-back" size={20} color="#FFF" />
-          </Pressable>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.headerTitle}>Book a Private Lesson</Text>
-            <Text style={styles.headerSub}>
-              {step === "operator" ? "Choose your instructor" :
-               step === "style" ? "Choose a dance style" :
-               step === "location" ? "Choose a location" :
-               step === "time" ? "Choose a time slot" : "Choose participants"}
-            </Text>
-          </View>
-        </View>
-        <View style={{ paddingBottom: 16 }}>
-          <StepIndicator current={step} />
-        </View>
+      <ScreenHeader
+        title="Book a Private Lesson"
+        subtitle={
+          step === "operator" ? "Choose your instructor" :
+          step === "style" ? "Choose a dance style" :
+          step === "location" ? "Choose a location" :
+          step === "time" ? "Choose a time slot" : "Choose participants"
+        }
+      />
+      <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 }}>
+        <StepIndicator current={step} />
       </View>
 
       <ScrollView

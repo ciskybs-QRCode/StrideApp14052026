@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { SignaturePad } from "@/components/SignaturePad";
@@ -69,13 +70,7 @@ export default function DocSignScreen() {
   if (!doc) {
     return (
       <View style={[s.container, { backgroundColor: colors.background }]}>
-        <View style={[s.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
-            <Ionicons name="arrow-back" size={24} color={colors.primary} />
-          </Pressable>
-          <Text style={[s.headerTitle, { color: colors.primary }]}>Document</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ScreenHeader title="Document" light />
         <View style={s.center}>
           <Text style={{ color: colors.mutedForeground }}>Document not found.</Text>
         </View>
@@ -85,19 +80,14 @@ export default function DocSignScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <View style={[s.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[s.headerTitle, { color: colors.primary }]} numberOfLines={1}>{doc.title}</Text>
-          <Text style={[s.headerSub, { color: colors.mutedForeground }]}>Firma obbligatoria</Text>
-        </View>
-        <View style={s.mandatoryBadge}>
-          <Ionicons name="lock-closed" size={12} color="#EF4444" />
-          <Text style={s.mandatoryBadgeText}>Mandatory</Text>
-        </View>
-      </View>
+      <ScreenHeader title={doc.title} subtitle="Firma obbligatoria" light
+        right={
+          <View style={s.mandatoryBadge}>
+            <Ionicons name="lock-closed" size={12} color="#EF4444" />
+            <Text style={s.mandatoryBadgeText}>Mandatory</Text>
+          </View>
+        }
+      />
 
       <ScrollView
         style={{ flex: 1 }}

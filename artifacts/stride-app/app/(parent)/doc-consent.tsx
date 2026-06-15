@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { SignaturePad } from "@/components/SignaturePad";
@@ -133,15 +134,7 @@ export default function DocConsentScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <View style={[s.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[s.headerTitle, { color: colors.primary }]}>Consenso Foto e Video</Text>
-          <Text style={[s.headerSub, { color: colors.mutedForeground }]}>Photo & Video Consent · Associazione</Text>
-        </View>
-      </View>
+      <ScreenHeader title="Photo & Video Consent" subtitle="Consenso Foto e Video" light />
 
       <ScrollView
         style={{ flex: 1 }}

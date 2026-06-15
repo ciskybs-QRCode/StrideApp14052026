@@ -26,6 +26,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { api, type MarketplaceProduct } from "@/lib/api";
@@ -160,19 +161,15 @@ export default function AdminMarketplaceScreen() {
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[S.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={S.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={S.headerTitle}>Stride Marketplace</Text>
-          <Text style={S.headerSub}>Manage products & commission</Text>
-        </View>
-        <Pressable onPress={() => void load()} hitSlop={12}>
-          <Ionicons name="refresh" size={20} color="rgba(255,255,255,0.6)" />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="Marketplace"
+        subtitle="Manage products & commission"
+        right={
+          <Pressable onPress={() => void load()} hitSlop={12} style={{ padding: 6 }}>
+            <Ionicons name="refresh" size={20} color="#FFF" />
+          </Pressable>
+        }
+      />
 
       {loading ? (
         <View style={S.loader}>

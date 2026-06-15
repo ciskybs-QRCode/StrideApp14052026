@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   ActivityIndicator,
   Alert,
@@ -176,6 +177,7 @@ export default function GuardianCircle() {
 
   return (
     <View style={styles.root}>
+      <ScreenHeader title="Guardian Circle" />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}

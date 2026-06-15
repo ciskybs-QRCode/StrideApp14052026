@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -48,13 +49,7 @@ export default function DocViewScreen() {
   if (!doc) {
     return (
       <View style={[s.container, { backgroundColor: colors.background }]}>
-        <View style={[s.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
-            <Ionicons name="arrow-back" size={24} color={colors.primary} />
-          </Pressable>
-          <Text style={[s.headerTitle, { color: colors.primary }]}>Document</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ScreenHeader title="Document" light />
         <View style={s.center}>
           <Text style={{ color: colors.mutedForeground }}>Document not found.</Text>
         </View>
@@ -64,18 +59,13 @@ export default function DocViewScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <View style={[s.header, { paddingTop: insets.top + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[s.headerTitle, { color: colors.primary }]} numberOfLines={1}>{doc.title}</Text>
-          <Text style={[s.headerSub, { color: colors.mutedForeground }]}>Signed Document — Read Only</Text>
-        </View>
-        <Pressable style={[s.dlBtn, { backgroundColor: colors.primary + "18" }]} onPress={handleDownload} hitSlop={8}>
-          <Ionicons name="download-outline" size={20} color={colors.primary} />
-        </Pressable>
-      </View>
+      <ScreenHeader title={doc.title} subtitle="Signed Document — Read Only" light
+        right={
+          <Pressable style={[s.dlBtn, { backgroundColor: colors.primary + "18" }]} onPress={handleDownload} hitSlop={8}>
+            <Ionicons name="download-outline" size={20} color={colors.primary} />
+          </Pressable>
+        }
+      />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
 

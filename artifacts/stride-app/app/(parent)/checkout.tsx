@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAppData } from "@/context/AppDataContext";
 import { useCart, type CartItem } from "@/context/CartContext";
 import { usePaidLessons } from "@/context/PaidLessonsContext";
@@ -489,13 +490,7 @@ export default function CheckoutScreen() {
   if (payableItems.length === 0 && !success) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <Pressable style={styles.backBtn} onPress={() => router.navigate("/(parent)/cart" as never)}>
-            <Ionicons name="arrow-back" size={22} color={colors.primary} />
-          </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Checkout</Text>
-          <View style={{ width: 38 }} />
-        </View>
+        <ScreenHeader title="Checkout" light />
         <View style={styles.emptyCenter}>
           <Ionicons name="cart-outline" size={56} color={colors.mutedForeground} />
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No items ready for checkout.</Text>
@@ -640,15 +635,7 @@ export default function CheckoutScreen() {
   // ── Main Checkout Screen ──────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 20, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.navigate("/(parent)/cart" as never)}>
-          <Ionicons name="arrow-back" size={22} color={colors.primary} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>
-          {batchQuote ? `Checkout · ${batchCurrentPos}/${batchQuote.totalSessions}` : "Checkout"}
-        </Text>
-        <View style={{ width: 38 }} />
-      </View>
+      <ScreenHeader title={batchQuote ? `Checkout · ${batchCurrentPos}/${batchQuote.totalSessions}` : "Checkout"} light />
 
       {/* Batch progress bar */}
       {batchQuote && (

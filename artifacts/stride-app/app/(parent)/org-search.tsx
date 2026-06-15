@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   ActivityIndicator,
   Image,
@@ -130,8 +131,8 @@ export default function OrgSearch() {
 
   return (
     <View style={styles.root}>
-
-      {/* ── Header ── */}
+      <ScreenHeader title="Find Your School" />
+      {/* ── Search ── */}
       <View style={[styles.searchRow, { paddingBottom: 12 }]}>
         <View style={{ flex: 1, width: "100%" }}>
           <Text

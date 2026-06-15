@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   ActivityIndicator,
   Linking,
@@ -73,10 +74,12 @@ export default function PickupAudit() {
     void Linking.openURL(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=18`);
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
+    <View style={{ flex: 1 }}>
+      <ScreenHeader title="Pick-up Audit" />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => loadRecords(selectedChild, true)}
@@ -199,6 +202,7 @@ export default function PickupAudit() {
 
       <View style={{ height: 40 }} />
     </ScrollView>
+    </View>
   );
 }
 

@@ -23,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
@@ -148,17 +149,17 @@ export default function ParentReimbursementsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Reimbursements" />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
           {
-            paddingTop:    insets.top + (Platform.OS === "web" ? 67 : 20),
+            paddingTop:    16,
             paddingBottom: insets.bottom + 100,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── HEADER ── */}
         <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={12}>
           <Ionicons name="arrow-back" size={22} color={colors.primary} />
           <Text style={[styles.backLabel, { color: colors.primary }]}>Portafoglio</Text>

@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { listKiosks, createKiosk, revokeKiosk, getAdminKioskPin, setAdminKioskPin, type KioskAccount } from "@/lib/api";
 
@@ -243,26 +244,11 @@ export default function TerminalsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
-      {/* ── HEADER ── */}
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: colors.primary,
-            paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12),
-          },
-        ]}
-      >
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Terminal Kiosks</Text>
-          <Text style={styles.headerSub}>Provisioning &amp; Access Control</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <View style={styles.kioskCountBadge}>
-            <Text style={styles.kioskCountText}>{kiosks.length}</Text>
-          </View>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Terminal Kiosks"
+        subtitle="Provisioning & Access Control"
+        right={<View style={styles.kioskCountBadge}><Text style={styles.kioskCountText}>{kiosks.length}</Text></View>}
+      />
 
       {/* ── BODY ── */}
       <ScrollView

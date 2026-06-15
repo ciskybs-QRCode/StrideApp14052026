@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
@@ -70,7 +71,8 @@ export default function SubscriptionBillingScreen() {
   }, [refresh]);
 
   return (
-    <View style={[s.container, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20) }]}>
+    <View style={s.container}>
+      <ScreenHeader title="Subscription & Billing" />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}

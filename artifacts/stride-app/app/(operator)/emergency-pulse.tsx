@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
@@ -134,20 +135,16 @@ export default function EmergencyPulseDashboard() {
 
   return (
     <View style={[S.root, { backgroundColor: "#0A0A0F" }]}>
-      {/* Header */}
-      <View style={[S.header, { paddingTop: insets.top }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={S.backArrow}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={S.headerTitle}>Emergency Pulse</Text>
-          <Text style={S.headerSub}>{pulse.location_label}</Text>
-        </View>
-        <View style={[S.statusBadge, { backgroundColor: isActive ? "#DC2626" : "#059669" }]}>
-          {isActive && <View style={S.activeDot} />}
-          <Text style={S.statusBadgeText}>{isActive ? "ACTIVE" : "RESOLVED"}</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Emergency Pulse"
+        subtitle={pulse.location_label}
+        right={
+          <View style={[S.statusBadge, { backgroundColor: isActive ? "#DC2626" : "#059669" }]}>
+            {isActive && <View style={S.activeDot} />}
+            <Text style={S.statusBadgeText}>{isActive ? "ACTIVE" : "RESOLVED"}</Text>
+          </View>
+        }
+      />
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
 
