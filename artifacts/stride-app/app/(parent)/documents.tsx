@@ -25,7 +25,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useUnread } from "@/context/UnreadContext";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
-import { AccountSettingsCard } from "@/components/AccountSettingsCard";
+import { HubCard } from "@/components/HubCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { api } from "@/lib/api";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
@@ -316,7 +316,15 @@ export default function DocumentsScreen() {
         {/* ── Account Controls ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
         <RoleSwitcherRow />
-        <AccountSettingsCard />
+        <HubCard
+          icon="person-circle-outline"
+          title="Account"
+          description="Profile, email, password and account management"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(parent)/account" as never);
+          }}
+        />
 
         {/* ── Document & Legal Centre ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>Document & Legal Centre</Text>

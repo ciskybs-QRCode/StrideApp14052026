@@ -6,7 +6,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { ProfileEditContent } from "@/components/ProfileEditContent";
 import { useColors } from "@/hooks/useColors";
 
-export default function OperatorProfileEditScreen() {
+export default function ParentProfileEditScreen() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -14,7 +14,7 @@ export default function OperatorProfileEditScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScreenHeader
         title="Information Settings"
-        onBack={() => router.navigate("/(operator)/account" as never)}
+        onBack={() => router.navigate("/(parent)/account" as never)}
       />
       <ScrollView
         contentContainerStyle={{

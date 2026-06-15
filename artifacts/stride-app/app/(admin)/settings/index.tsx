@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { HubCard } from "@/components/HubCard";
 
@@ -152,7 +151,15 @@ export default function SettingsIndex() {
         </View>
 
         {/* ── ACCOUNT ── */}
-        <AccountSettingsCard />
+        <HubCard
+          icon="person-circle-outline"
+          title="Account"
+          description="Profile, email, password and account management"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(admin)/account" as never);
+          }}
+        />
 
         {/* ── SWITCH ROLE ── */}
         <RoleSwitcherRow />

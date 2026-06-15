@@ -191,6 +191,8 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="doc-sign"        options={{ href: null }} />
         <Tabs.Screen name="doc-view"        options={{ href: null }} />
         <Tabs.Screen name="doc-consent"     options={{ href: null }} />
+        <Tabs.Screen name="account"          options={{ href: null }} />
+        <Tabs.Screen name="profile-edit"     options={{ href: null }} />
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
