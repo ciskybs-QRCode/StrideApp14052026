@@ -628,84 +628,6 @@ export default function OperatorCalendar() {
           ))}
         </View>
 
-        {/* ── Upcoming Workshops ── */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Workshops</Text>
-          {upcomingWorkshops.length > 0 && (
-            <View style={[styles.countPill, { backgroundColor: colors.secondary }]}>
-              <Text style={[styles.countPillText, { color: colors.primary }]}>{upcomingWorkshops.length}</Text>
-            </View>
-          )}
-        </View>
-
-        {upcomingWorkshops.length === 0 ? (
-          <View style={[styles.emptyBox, { backgroundColor: colors.card, marginBottom: 20 }]}>
-            <Ionicons name="school-outline" size={38} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No workshops planned</Text>
-            <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>Tap + to create one</Text>
-          </View>
-        ) : (
-          upcomingWorkshops.map(w => {
-            const styleInfo = DANCE_STYLES.find(s => s.id === w.style) ?? DANCE_STYLES[DANCE_STYLES.length - 1];
-            const duration  = daysBetween(w.startDate, w.endDate);
-            return (
-              <View key={w.id} style={[styles.workshopCard, { backgroundColor: colors.card }]}>
-                {/* left accent + icon */}
-                <View style={[styles.workshopAccent, { backgroundColor: colors.secondary }]}>
-                  <Ionicons name={styleInfo.icon} size={22} color={colors.primary} />
-                </View>
-                {/* content */}
-                <View style={styles.workshopBody}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <Text style={[styles.workshopTitle, { color: colors.primary }]}>{w.title}</Text>
-                    <View style={[styles.wStyleBadge, { backgroundColor: `${colors.primary}18` }]}>
-                      <Text style={[styles.wStyleBadgeText, { color: colors.primary }]}>{styleInfo.label}</Text>
-                    </View>
-                    {w.price > 0 && (
-                      <View style={[styles.wPriceBadge, { backgroundColor: "#D1FAE5" }]}>
-                        <Text style={[styles.wStyleBadgeText, { color: "#059669" }]}>€{w.price}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.workshopMetaRow}>
-                    <Ionicons name="calendar-outline" size={12} color={colors.mutedForeground} />
-                    <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>
-                      {formatDateDisplay(w.startDate)}
-                      {duration > 0 ? ` → ${formatDateDisplay(w.endDate)}` : ""}
-                      {duration > 0 ? ` (${duration + 1}d)` : ""}
-                    </Text>
-                  </View>
-                  <View style={styles.workshopMetaRow}>
-                    <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
-                    <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>
-                      {w.startTime} – {w.endTime}
-                    </Text>
-                    <Ionicons name="person-outline" size={12} color={colors.mutedForeground} style={{ marginLeft: 10 }} />
-                    <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>{w.instructor}</Text>
-                  </View>
-                  <View style={styles.workshopMetaRow}>
-                    <Ionicons name="location-outline" size={12} color={colors.mutedForeground} />
-                    <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>{w.location}</Text>
-                    <Ionicons name="people-outline" size={12} color={colors.mutedForeground} style={{ marginLeft: 10 }} />
-                    <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>Max {w.capacity}</Text>
-                  </View>
-                  {!!w.description && (
-                    <Text
-                      style={[styles.workshopDesc, { color: colors.mutedForeground }]}
-                      numberOfLines={2}
-                    >
-                      {w.description}
-                    </Text>
-                  )}
-                </View>
-                {/* cancel btn */}
-                <Pressable onPress={() => cancelWorkshop(w.id)} style={styles.workshopCancelBtn}>
-                  <Ionicons name="close-circle-outline" size={22} color="#EF4444" />
-                </Pressable>
-              </View>
-            );
-          })
-        )}
 
         {/* ── Events & meetings (static) ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 4 }]}>Events & Meetings</Text>
@@ -731,17 +653,13 @@ export default function OperatorCalendar() {
 
       {/* ── FAB ── */}
       <Pressable
-        style={[styles.fab, { backgroundColor: isAdmin ? colors.secondary : colors.primary, bottom: insets.bottom + 100 }]}
+        style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 100 }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          if (isAdmin) {
-            openModal();
-          } else {
-            router.navigate("/(operator)/private-lessons" as never);
-          }
+          router.navigate("/(operator)/private-lessons" as never);
         }}
       >
-        <Ionicons name={isAdmin ? "add" : "calendar-outline"} size={28} color={isAdmin ? colors.primary : colors.secondary} />
+        <Ionicons name="calendar-outline" size={28} color={colors.secondary} />
       </Pressable>
 
       {/* ══ Workshop Creation Sheet ══════════════════════════════════════════════ */}
