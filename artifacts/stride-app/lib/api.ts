@@ -713,6 +713,10 @@ export const api = {
   updateOperatorInvoice: (id: number, data: { status?: string; adminNote?: string }) =>
     request<ApiOperatorInvoice>("PATCH", `/operator-invoices/${id}`, data),
 
+  // Admin payroll summary (all operators, one month)
+  getPayrollSummary: (month?: string) =>
+    request<ApiPayrollSummary>("GET", month ? `/finance/payroll-summary?month=${month}` : "/finance/payroll-summary"),
+
   // Blacklist
   getBlacklist: async (): Promise<ApiBlacklistEntry[]> =>
     (await isDemoSession()) ? [...DEMO_BLACKLIST] : request<ApiBlacklistEntry[]>("GET", "/blacklist"),
@@ -1439,6 +1443,26 @@ export interface ApiOperatorEarnings {
   total_lessons: number;
   total_hours: number;
   total_earnings_cents: number;
+}
+
+export interface ApiPayrollSummary {
+  month: string;
+  operators: Array<{
+    profile_id: number;
+    user_id: number;
+    name: string;
+    email: string;
+    profile_type: "paid" | "volunteer";
+    disciplines: Array<{ discipline_id: number; discipline_name: string; hourly_rate_cents: number }>;
+    invoiced_cents: number;
+    paid_cents: number;
+    pending_cents: number;
+    invoice_count: number;
+    last_status: string | null;
+  }>;
+  total_invoiced_cents: number;
+  total_paid_cents: number;
+  total_pending_cents: number;
 }
 
 export interface ApiOperatorInvoice {

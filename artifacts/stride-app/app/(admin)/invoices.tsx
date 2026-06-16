@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
-import { getToken } from "@/lib/api";
+import { api, getToken, type ApiPayrollSummary } from "@/lib/api";
 import { useUnread } from "@/context/UnreadContext";
 import { supabase } from "@/lib/supabase";
 import {
@@ -59,19 +59,8 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// ── Demo data ─────────────────────────────────────────────────────────────────
-
-const SUBSTITUTION_LEDGER_DEMO: Array<{ date: string; className: string; status: string; hoursTransferred: string }> = [
-  { date: "02 Jun", className: "Ballet Intermediate", status: "Covered",    hoursTransferred: "+1.0h" },
-  { date: "01 Jun", className: "Latin Dances",        status: "Covered",    hoursTransferred: "+1.0h" },
-  { date: "28 May", className: "Contemporary",        status: "Cancelled",  hoursTransferred: "0.0h"  },
-  { date: "26 May", className: "Hip Hop Juniors",     status: "Rescheduled",hoursTransferred: "+1.0h" },
-];
-
-const DEMO_INVOICES: SubmittedInvoice[] = [
-  { id: "INV-202604-1001", operatorName: "Maria Chen",    period: "2026-04", totalCents: 112000, status: "pending", submittedAt: new Date(Date.now() - 86400000).toISOString(),     schoolName: "Dance Village" },
-  { id: "INV-202603-2045", operatorName: "Tom Davis",     period: "2026-03", totalCents: 87500,  status: "paid",    submittedAt: new Date(Date.now() - 7 * 86400000).toISOString(), schoolName: "Dance Village" },
-];
+// ── Demo fallback invoices ─────────────────────────────────────────────────────
+const DEMO_INVOICES: SubmittedInvoice[] = [];
 
 // ── In-app banner ─────────────────────────────────────────────────────────────
 
@@ -100,11 +89,21 @@ export default function AdminInvoicesScreen() {
 
   const { markInvoicesRead, notifyNewInvoice } = useUnread();
 
+  // ── Tab ──
+  const [activeTab, setActiveTab] = useState<"invoices" | "payroll">("invoices");
+
+  // ── Invoices tab state ──
   const [invoices, setInvoices]       = useState<SubmittedInvoice[]>([]);
   const [confirmPay, setConfirmPay]   = useState<string | null>(null);
-  const [payingId, setPayingId]       = useState<string | null>(null); // per-invoice loading
+  const [payingId, setPayingId]       = useState<string | null>(null);
   const [newInvoiceBanner, setNewInvoiceBanner] = useState<InvoiceSubmittedPayload | null>(null);
-  const [paidBanner, setPaidBanner]   = useState<string | null>(null); // operatorName
+  const [paidBanner, setPaidBanner]   = useState<string | null>(null);
+
+  // ── Payroll Report tab state ──
+  const [payrollMonth, setPayrollMonth]     = useState(new Date().toISOString().slice(0, 7));
+  const [payrollData, setPayrollData]       = useState<ApiPayrollSummary | null>(null);
+  const [payrollLoading, setPayrollLoading] = useState(false);
+  const [payrollFilter, setPayrollFilter]   = useState<number | null>(null); // profile_id filter
 
   // Animated values for card-removal (keyed by invoice id)
   const fadeAnims = useRef<Record<string, Animated.Value>>({});
@@ -112,15 +111,48 @@ export default function AdminInvoicesScreen() {
   // ── Load invoices ──────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     try {
+      // Try real API first (admin sees all org invoices)
+      const apiInvoices = await api.getOperatorInvoices().catch(() => null);
+      if (apiInvoices && apiInvoices.length > 0) {
+        const mapped: SubmittedInvoice[] = apiInvoices.map(inv => ({
+          id:           String(inv.id),
+          operatorName: (inv as unknown as { operator_name?: string }).operator_name ?? "Operator",
+          period:       (inv as unknown as { period_month?: string }).period_month ?? inv.period_label,
+          totalCents:   (inv as unknown as { total_cents?: number }).total_cents ?? inv.total_cents,
+          status:       inv.status as SubmittedInvoice["status"],
+          submittedAt:  (inv as unknown as { submitted_at?: string }).submitted_at ?? new Date().toISOString(),
+          schoolName,
+        }));
+        setInvoices(mapped);
+        return;
+      }
+    } catch { /* fallback to AsyncStorage */ }
+    try {
       const raw = await AsyncStorage.getItem("submitted_invoices");
       const submitted: SubmittedInvoice[] = raw ? JSON.parse(raw) : [];
       setInvoices([...submitted, ...DEMO_INVOICES]);
     } catch {
       setInvoices(DEMO_INVOICES);
     }
+  }, [schoolName]);
+
+  const loadPayroll = useCallback(async (month: string) => {
+    setPayrollLoading(true);
+    try {
+      const data = await api.getPayrollSummary(month);
+      setPayrollData(data);
+    } catch {
+      setPayrollData(null);
+    } finally {
+      setPayrollLoading(false);
+    }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); markInvoicesRead(); }, [load, markInvoicesRead]));
+  useFocusEffect(useCallback(() => {
+    load();
+    markInvoicesRead();
+    loadPayroll(payrollMonth);
+  }, [load, markInvoicesRead, loadPayroll, payrollMonth]));
 
   // ── Supabase Realtime: listen for new invoice submissions ─────────────────
   useEffect(() => {
@@ -243,13 +275,63 @@ export default function AdminInvoicesScreen() {
   const pending = invoices.filter(i => i.status === "pending" || i.status === "approved");
   const history = invoices.filter(i => i.status === "paid"    || i.status === "rejected");
 
+  // Month navigation helpers for payroll
+  const prevMonth = () => {
+    const [y, m] = payrollMonth.split("-").map(Number);
+    const d = new Date(y, m - 2, 1);
+    const nm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    setPayrollMonth(nm);
+    void loadPayroll(nm);
+  };
+  const nextMonth = () => {
+    const [y, m] = payrollMonth.split("-").map(Number);
+    const d = new Date(y, m, 1);
+    const nm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    setPayrollMonth(nm);
+    void loadPayroll(nm);
+  };
+  const fmtPayrollMonth = (m: string) => {
+    const [y, mo] = m.split("-").map(Number);
+    return new Date(y, mo - 1, 1).toLocaleDateString("en-AU", { month: "long", year: "numeric" });
+  };
+
+  // AI ask helper: navigate to copilot with pre-built query
+  const askAI = () => {
+    const q = payrollData
+      ? `Payroll summary for ${fmtPayrollMonth(payrollMonth)}: ${payrollData.operators.length} operators, total invoiced €${(payrollData.total_invoiced_cents / 100).toFixed(2)}, paid €${(payrollData.total_paid_cents / 100).toFixed(2)}, pending €${(payrollData.total_pending_cents / 100).toFixed(2)}. Breakdown: ${payrollData.operators.map(o => `${o.name} (${o.disciplines.map(d => `${d.discipline_name} €${(d.hourly_rate_cents / 100).toFixed(0)}/h`).join(", ")})`).join("; ")}. Analyse this data and give recommendations.`
+      : "Give me a payroll overview and cost analysis for this dance school.";
+    router.push({ pathname: "/(admin)/copilot", params: { prefill: q } } as never);
+  };
+
+  const filteredOperators = payrollData
+    ? (payrollFilter !== null ? payrollData.operators.filter(o => o.profile_id === payrollFilter) : payrollData.operators)
+    : [];
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title="Invoices" />
+
+      {/* ── Tab bar ── */}
+      <View style={{ flexDirection: "row", backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        {(["invoices", "payroll"] as const).map(tab => (
+          <Pressable key={tab}
+            onPress={() => { setActiveTab(tab); Haptics.selectionAsync(); }}
+            style={{ flex: 1, paddingVertical: 12, alignItems: "center", borderBottomWidth: 2.5,
+              borderBottomColor: activeTab === tab ? colors.primary : "transparent" }}>
+            <Text style={{ fontSize: 13, fontWeight: "700",
+              color: activeTab === tab ? colors.primary : colors.mutedForeground }}>
+              {tab === "invoices" ? "Invoices" : "Payroll Report"}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ══════════════════════════════ INVOICES TAB ══════════════════════════ */}
+        {activeTab === "invoices" && (<>
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Invoices</Text>
         <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
           Operator payment requests for {schoolName}
@@ -339,28 +421,6 @@ export default function AdminInvoicesScreen() {
           })
         )}
 
-        {/* ── Payroll / Substitution Ledger ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 16 }]}>Substitution Ledger</Text>
-        <View style={[{ borderRadius: 16, overflow: "hidden", borderWidth: 1, marginBottom: 20 }, { borderColor: "#E5E7EB" }]}>
-          <View style={{ flexDirection: "row", backgroundColor: "#1E3A8A", paddingHorizontal: 12, paddingVertical: 8 }}>
-            <Text style={{ flex: 1.5, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Date</Text>
-            <Text style={{ flex: 2, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Class</Text>
-            <Text style={{ flex: 1.5, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Status</Text>
-            <Text style={{ flex: 1, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase", textAlign: "right" }}>Hrs Xfer</Text>
-          </View>
-          {SUBSTITUTION_LEDGER_DEMO.map((row, idx) => (
-            <View key={idx} style={{ flexDirection: "row", alignItems: "center", backgroundColor: idx % 2 === 0 ? "#FFF" : "#F8FAFF", paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: "#E5E7EB" }}>
-              <Text style={{ flex: 1.5, fontSize: 12, color: "#374151" }}>{row.date}</Text>
-              <Text style={{ flex: 2, fontSize: 12, color: "#374151" }} numberOfLines={1}>{row.className}</Text>
-              <View style={{ flex: 1.5, flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: row.status === "Covered" ? "#059669" : row.status === "Cancelled" ? "#6B7280" : "#EF4444" }} />
-                <Text style={{ fontSize: 11, fontWeight: "700", color: row.status === "Covered" ? "#059669" : row.status === "Cancelled" ? "#6B7280" : "#EF4444" }}>{row.status}</Text>
-              </View>
-              <Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: row.status === "Covered" ? "#059669" : "#6B7280", textAlign: "right" }}>{row.hoursTransferred}</Text>
-            </View>
-          ))}
-        </View>
-
         {/* ── Payment History ── */}
         {history.length > 0 && (
           <>
@@ -388,6 +448,164 @@ export default function AdminInvoicesScreen() {
             })}
           </>
         )}
+        </>)}
+
+        {/* ══════════════════════════════ PAYROLL REPORT TAB ══════════════════════ */}
+        {activeTab === "payroll" && (<>
+          <Text style={[styles.pageTitle, { color: colors.primary }]}>Payroll Report</Text>
+          <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
+            Per-operator earnings breakdown · real DB data
+          </Text>
+
+          {/* Month navigator */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+            backgroundColor: colors.card, borderRadius: 14, padding: 12, marginBottom: 16,
+            borderWidth: 1, borderColor: colors.border }}>
+            <Pressable onPress={prevMonth} style={{ padding: 6 }}>
+              <Ionicons name="chevron-back" size={20} color={colors.primary} />
+            </Pressable>
+            <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>
+              {fmtPayrollMonth(payrollMonth)}
+            </Text>
+            <Pressable onPress={nextMonth} style={{ padding: 6 }}>
+              <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+            </Pressable>
+          </View>
+
+          {/* Summary tiles */}
+          {payrollData && (
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+              {[
+                { label: "Invoiced", cents: payrollData.total_invoiced_cents, color: colors.primary },
+                { label: "Paid",     cents: payrollData.total_paid_cents,     color: "#059669" },
+                { label: "Pending",  cents: payrollData.total_pending_cents,  color: "#D97706" },
+              ].map(tile => (
+                <View key={tile.label} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12,
+                  padding: 12, borderWidth: 1, borderColor: colors.border, alignItems: "center", gap: 2 }}>
+                  <Text style={{ fontSize: 9, fontWeight: "800", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                    {tile.label}
+                  </Text>
+                  <Text style={{ fontSize: 16, fontWeight: "800", color: tile.color }}>
+                    €{(tile.cents / 100).toFixed(0)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* AI Ask button */}
+          <Pressable onPress={() => { askAI(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+            style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF",
+              borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16,
+              borderWidth: 1, borderColor: "#C7D2FE" }}>
+            <Ionicons name="sparkles" size={18} color="#6366F1" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "#4338CA" }}>Ask AI about payroll</Text>
+              <Text style={{ fontSize: 11, color: "#6366F1" }}>Analyse costs and get recommendations →</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={15} color="#6366F1" />
+          </Pressable>
+
+          {/* Operator filter pills */}
+          {payrollData && payrollData.operators.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                <Pressable onPress={() => { setPayrollFilter(null); Haptics.selectionAsync(); }}
+                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+                    backgroundColor: payrollFilter === null ? colors.primary : colors.muted,
+                    borderWidth: 1, borderColor: payrollFilter === null ? colors.primary : colors.border }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700",
+                    color: payrollFilter === null ? "#FFF" : colors.mutedForeground }}>All</Text>
+                </Pressable>
+                {payrollData.operators.map(o => (
+                  <Pressable key={o.profile_id}
+                    onPress={() => { setPayrollFilter(o.profile_id === payrollFilter ? null : o.profile_id); Haptics.selectionAsync(); }}
+                    style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+                      backgroundColor: payrollFilter === o.profile_id ? colors.primary : colors.muted,
+                      borderWidth: 1, borderColor: payrollFilter === o.profile_id ? colors.primary : colors.border }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700",
+                      color: payrollFilter === o.profile_id ? "#FFF" : colors.mutedForeground }}>{o.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+
+          {/* Loading state */}
+          {payrollLoading && (
+            <View style={{ alignItems: "center", paddingVertical: 40, gap: 10 }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Loading payroll data…</Text>
+            </View>
+          )}
+
+          {/* Empty state */}
+          {!payrollLoading && (!payrollData || payrollData.operators.length === 0) && (
+            <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name="receipt-outline" size={32} color={colors.mutedForeground} />
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                No payroll data for {fmtPayrollMonth(payrollMonth)}.{"\n"}
+                Operators must submit invoices for this period.
+              </Text>
+            </View>
+          )}
+
+          {/* Per-operator cards */}
+          {!payrollLoading && filteredOperators.map(op => {
+            const invoicedEur = (op.invoiced_cents / 100).toFixed(2);
+            const paidEur     = (op.paid_cents / 100).toFixed(2);
+            const pendingEur  = (op.pending_cents / 100).toFixed(2);
+            const initials    = op.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+            return (
+              <View key={op.profile_id}
+                style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12,
+                  borderWidth: 1, borderColor: colors.border }}>
+                {/* Header row */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary,
+                    alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFF" }}>{initials}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>{op.name}</Text>
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                      {op.disciplines.length} discipline{op.disciplines.length !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={{ fontSize: 18, fontWeight: "800", color: colors.primary }}>€{invoicedEur}</Text>
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground }}>total invoiced</Text>
+                  </View>
+                </View>
+
+                {/* Discipline rate rows */}
+                {op.disciplines.map((d: { discipline_name: string; hourly_rate_cents: number }, di: number) => (
+                  <View key={di} style={{ flexDirection: "row", alignItems: "center",
+                    backgroundColor: colors.background, borderRadius: 8, padding: 8, marginBottom: 5 }}>
+                    <Ionicons name="musical-notes-outline" size={13} color={colors.mutedForeground} style={{ marginRight: 6 }} />
+                    <Text style={{ flex: 1, fontSize: 12, fontWeight: "600", color: colors.foreground }}>{d.discipline_name}</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>
+                      €{(d.hourly_rate_cents / 100).toFixed(0)}/h
+                    </Text>
+                  </View>
+                ))}
+
+                {/* Status breakdown */}
+                <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+                  {[
+                    { label: "Paid",    value: `€${paidEur}`,    color: "#059669", bg: "#DCFCE7" },
+                    { label: "Pending", value: `€${pendingEur}`, color: "#D97706", bg: "#FEF3C7" },
+                  ].map(s => (
+                    <View key={s.label} style={{ flex: 1, borderRadius: 8, padding: 8, backgroundColor: s.bg, alignItems: "center", gap: 2 }}>
+                      <Text style={{ fontSize: 9, fontWeight: "800", color: s.color, textTransform: "uppercase" }}>{s.label}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: "800", color: s.color }}>{s.value}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            );
+          })}
+        </>)}
       </ScrollView>
     </View>
   );

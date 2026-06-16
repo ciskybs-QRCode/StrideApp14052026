@@ -76,6 +76,14 @@ export default function AdminLessonsScreen() {
   const [scDayOfWeek,          setScDayOfWeek]          = useState<number>(1);
   const [scStartTime,          setScStartTime]          = useState("09:00");
   const [scEndTime,            setScEndTime]            = useState("10:00");
+  const [showStartPicker,      setShowStartPicker]      = useState(false);
+  const [showEndPicker,        setShowEndPicker]        = useState(false);
+
+  // Preset time slots 07:00–22:00 every 30 min
+  const SC_TIME_SLOTS: string[] = Array.from({ length: 31 }, (_, i) => {
+    const total = 7 * 60 + i * 30;
+    return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+  });
   const [scAgeMin,             setScAgeMin]             = useState("5");
   const [scAgeMax,             setScAgeMax]             = useState("18");
   const [scSkillLevel,         setScSkillLevel]         = useState<"beginner"|"intermediate"|"advanced"|"open">("open");
@@ -728,25 +736,75 @@ export default function AdminLessonsScreen() {
                   ))}
                 </View>
               </View>
-              {/* Start / End time */}
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <View style={{ flex: 1 }}>
+              {/* Start / End time — tap-to-select chip pickers */}
+              <View style={{ gap: 10 }}>
+                {/* Start time */}
+                <View>
                   <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Start *</Text>
-                  <TextInput
-                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
-                    value={scStartTime} onChangeText={setScStartTime}
-                    placeholder="09:00" placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numbers-and-punctuation"
-                  />
+                  <Pressable
+                    onPress={() => { setShowStartPicker(v => !v); setShowEndPicker(false); }}
+                    style={{ borderWidth: 1, borderColor: showStartPicker ? colors.primary : colors.border,
+                      borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+                      backgroundColor: colors.background, flexDirection: "row", alignItems: "center", gap: 8 }}
+                  >
+                    <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
+                    <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: scStartTime ? colors.foreground : colors.mutedForeground }}>
+                      {scStartTime || "Select start time"}
+                    </Text>
+                    <Ionicons name={showStartPicker ? "chevron-up" : "chevron-down"} size={14} color={colors.mutedForeground} />
+                  </Pressable>
+                  {showStartPicker && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+                      <View style={{ flexDirection: "row", gap: 6, paddingBottom: 2 }}>
+                        {SC_TIME_SLOTS.map(t => {
+                          const active = scStartTime === t;
+                          return (
+                            <Pressable key={t}
+                              onPress={() => { setScStartTime(t); setShowStartPicker(false); }}
+                              style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 9,
+                                backgroundColor: active ? colors.primary : colors.muted,
+                                borderWidth: active ? 0 : 1, borderColor: colors.border }}>
+                              <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </ScrollView>
+                  )}
                 </View>
-                <View style={{ flex: 1 }}>
+                {/* End time */}
+                <View>
                   <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>End *</Text>
-                  <TextInput
-                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
-                    value={scEndTime} onChangeText={setScEndTime}
-                    placeholder="10:00" placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numbers-and-punctuation"
-                  />
+                  <Pressable
+                    onPress={() => { setShowEndPicker(v => !v); setShowStartPicker(false); }}
+                    style={{ borderWidth: 1, borderColor: showEndPicker ? colors.primary : colors.border,
+                      borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+                      backgroundColor: colors.background, flexDirection: "row", alignItems: "center", gap: 8 }}
+                  >
+                    <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
+                    <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: scEndTime ? colors.foreground : colors.mutedForeground }}>
+                      {scEndTime || "Select end time"}
+                    </Text>
+                    <Ionicons name={showEndPicker ? "chevron-up" : "chevron-down"} size={14} color={colors.mutedForeground} />
+                  </Pressable>
+                  {showEndPicker && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+                      <View style={{ flexDirection: "row", gap: 6, paddingBottom: 2 }}>
+                        {SC_TIME_SLOTS.map(t => {
+                          const active = scEndTime === t;
+                          return (
+                            <Pressable key={t}
+                              onPress={() => { setScEndTime(t); setShowEndPicker(false); }}
+                              style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 9,
+                                backgroundColor: active ? "#10B981" : colors.muted,
+                                borderWidth: active ? 0 : 1, borderColor: colors.border }}>
+                              <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </ScrollView>
+                  )}
                 </View>
               </View>
               {/* Age range */}

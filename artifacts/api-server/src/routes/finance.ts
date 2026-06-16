@@ -1,5 +1,6 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
 const router = Router();
@@ -192,6 +193,103 @@ router.post("/finance/execute-payout", requireAuth, requireRole("admin"), async 
   // Invoice (no invoice table yet — log + return success)
   req.log.info({ resolvedRefId, resolvedCents, recipientName, stripeTransferId, ibanPlaceholder }, "execute-payout: invoice paid");
   res.json({ success: true, paymentType: "invoice", referenceId: resolvedRefId, amountCents: resolvedCents, paidAt, stripeTransferId, record: null });
+});
+
+// ── GET /api/finance/payroll-summary?month=YYYY-MM ───────────────────────────
+// Admin: per-operator payroll breakdown with rates + invoice totals for a month.
+router.get("/finance/payroll-summary", requireAuth, requireRole("admin"), async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
+
+  try {
+    // Per-operator profiles with aggregated discipline rates
+    const { rows: profiles } = await pool.query<{
+      profile_id: number;
+      user_id: number;
+      profile_type: string;
+      operator_name: string;
+      operator_email: string;
+      rates: Array<{ discipline_id: number; discipline_name: string; hourly_rate_cents: number }>;
+    }>(`
+      SELECT
+        op.id               AS profile_id,
+        op.user_id,
+        op.profile_type,
+        u.name              AS operator_name,
+        u.email             AS operator_email,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'discipline_id',    d.id,
+              'discipline_name',  d.name,
+              'hourly_rate_cents', opr.hourly_rate_cents
+            )
+          ) FILTER (WHERE d.id IS NOT NULL),
+          '[]'::json
+        ) AS rates
+      FROM operator_profiles op
+      JOIN users u ON u.id = op.user_id
+      LEFT JOIN operator_profile_rates opr ON opr.operator_profile_id = op.id
+      LEFT JOIN disciplines d ON d.id = opr.discipline_id
+      WHERE op.organization_id = $1 AND op.active = true
+      GROUP BY op.id, op.user_id, op.profile_type, u.name, u.email
+      ORDER BY u.name
+    `, [orgId]);
+
+    // Invoice totals per operator for the given month
+    type InvRow = {
+      operator_user_id: number;
+      total_cents: number;
+      paid_cents: number;
+      pending_cents: number;
+      invoice_count: number;
+      last_status: string | null;
+    };
+    const { rows: invRows } = await pool.query<InvRow>(`
+      SELECT
+        operator_user_id,
+        SUM(total_cents)::integer                                          AS total_cents,
+        SUM(CASE WHEN status = 'paid'    THEN total_cents ELSE 0 END)::integer AS paid_cents,
+        SUM(CASE WHEN status = 'pending' THEN total_cents ELSE 0 END)::integer AS pending_cents,
+        COUNT(*)::integer                                                  AS invoice_count,
+        (array_agg(status ORDER BY submitted_at DESC))[1]                 AS last_status
+      FROM operator_invoice_submissions
+      WHERE organization_id = $1 AND period_month = $2
+      GROUP BY operator_user_id
+    `, [orgId, month]).catch(() => ({ rows: [] as InvRow[] }));
+
+    const invMap: Record<number, InvRow> = {};
+    for (const row of invRows) invMap[row.operator_user_id] = row;
+
+    const operators = profiles.map(p => {
+      const inv = invMap[p.user_id];
+      return {
+        profile_id:      p.profile_id,
+        user_id:         p.user_id,
+        name:            p.operator_name,
+        email:           p.operator_email,
+        profile_type:    p.profile_type,
+        disciplines:     p.rates,
+        invoiced_cents:  inv?.total_cents   ?? 0,
+        paid_cents:      inv?.paid_cents    ?? 0,
+        pending_cents:   inv?.pending_cents ?? 0,
+        invoice_count:   inv?.invoice_count ?? 0,
+        last_status:     inv?.last_status   ?? null,
+      };
+    });
+
+    res.json({
+      month,
+      operators,
+      total_invoiced_cents: operators.reduce((s, o) => s + o.invoiced_cents, 0),
+      total_paid_cents:     operators.reduce((s, o) => s + o.paid_cents,     0),
+      total_pending_cents:  operators.reduce((s, o) => s + o.pending_cents,  0),
+    });
+  } catch (err) {
+    req.log.error(err, "payroll-summary error");
+    res.status(500).json({ error: "Could not fetch payroll summary" });
+  }
 });
 
 export default router;

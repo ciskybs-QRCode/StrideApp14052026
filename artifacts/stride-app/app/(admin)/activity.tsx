@@ -20,7 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useSubstitution, type RescheduleAction, MOCK_SUBS } from "@/context/SubstitutionContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { api, request, type ApiDiscipline } from "@/lib/api";
+import { api, type ApiDiscipline, type ApiOperatorProfile, request } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -102,9 +102,13 @@ interface Activity {
   devicePin?: string;
 }
 
-// Campus / staff loaded from API (fallback to mocks)
+// Campus / staff loaded from API
 interface CampusOption { id: string; name: string; }
-interface StaffOption  { id: string; name: string; }
+interface StaffOption  {
+  id: string;
+  name: string;
+  disciplines?: Array<{ name: string; rateCents: number; rateType: "hourly" | "volunteer" }>;
+}
 
 type WorkshopApprovalStatus = "pending" | "approved" | "rejected";
 
@@ -211,12 +215,11 @@ const STATUS_CONFIG: Record<ActivityStatus, { label: string; color: string; bg: 
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 
-const MOCK_TEACHERS = [
-  { id: "t1", name: "Emma Wilson" },
-  { id: "t2", name: "Louis Ford" },
-  { id: "t3", name: "Anna Parker" },
-  { id: "t4", name: "Mark Parker" },
-];
+// ── Preset time slots every 30 min from 07:00 to 22:00 ──────────────────────
+const TIME_SLOTS: string[] = Array.from({ length: 31 }, (_, i) => {
+  const total = 7 * 60 + i * 30;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+});
 
 const MOCK_CAMPUSES = [
   { id: "c1", name: "Main Studio" },
@@ -390,7 +393,10 @@ export default function ActivityScreen() {
 
   // ── API-loaded campus / staff ──
   const [campuses,  setCampuses]  = useState<CampusOption[]>(MOCK_CAMPUSES);
-  const [staffList, setStaffList] = useState<StaffOption[]>(MOCK_TEACHERS);
+  const [staffList, setStaffList] = useState<StaffOption[]>([]);
+
+  // ── Weekly Schedule time picker: tracks which slot is open ──
+  const [activeTimePickerSlot, setActiveTimePickerSlot] = useState<number | null>(null);
 
   // ── Persistent extra tags ──
   const [savedExtraTags,    setSavedExtraTags]    = useState<string[]>([]);
@@ -495,14 +501,24 @@ export default function ActivityScreen() {
         }
       })
       .catch(() => { /* keep mocks */ });
-    // Try to load operators from API
-    request<{ id: number; name: string }[]>("GET", "/disciplines/operators")
-      .then(ops => {
-        if (ops && ops.length > 0) {
-          setStaffList(ops.map(o => ({ id: String(o.id), name: o.name })));
+    // Load real operators from DB (profiles include discipline rates)
+    api.getOperatorProfiles()
+      .then((profs: ApiOperatorProfile[]) => {
+        if (profs && profs.length > 0) {
+          setStaffList(profs.map(p => ({
+            id:   String(p.id),
+            name: p.user?.name ?? `Operator #${p.id}`,
+            disciplines: (p.rates ?? [])
+              .filter(r => r.discipline?.name)
+              .map(r => ({
+                name:     r.discipline!.name,
+                rateCents: r.hourly_rate_cents,
+                rateType: p.profile_type === "volunteer" ? "volunteer" as const : "hourly" as const,
+              })),
+          })));
         }
       })
-      .catch(() => { /* keep mocks */ });
+      .catch(() => { /* keep empty */ });
   }, []);
 
   // ── Admin schedule modal state ──
@@ -979,9 +995,11 @@ export default function ActivityScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  // ── Mock recipient pools ──────────────────────────────────────────────────────
+  // ── Recipient pools for meeting invites (operators = live from DB) ────────────
   const MOCK_MEMBERS   = ["Maria Rossi","Giulia Bianchi","Anna Conti","Francesca Mori","Sofia Romano"];
-  const MOCK_OPERATORS = ["Marco Ferrari","Luigi Esposito","Giorgio Russo","Antonio De Luca"];
+  const LIVE_OPERATORS = staffList.length > 0
+    ? staffList.map(o => o.name)
+    : ["Operator A","Operator B"];
 
   const buildInviteRecords = (
     meetingId: string, meetingTitle: string, meetingDate: string, meetingTime: string,
@@ -996,11 +1014,11 @@ export default function ActivityScreen() {
       isPaid: type === "operator" ? (draft.invitePaid ?? false) : undefined,
       payAmount: type === "operator" ? (draft.invitePayAmount ?? undefined) : undefined,
     });
-    if (scope === "operators_only") return MOCK_OPERATORS.map(n => makeRecord(n, "operator"));
+    if (scope === "operators_only") return LIVE_OPERATORS.map(n => makeRecord(n, "operator"));
     if (scope === "members_only")   return MOCK_MEMBERS.map(n => makeRecord(n, "member"));
     if (scope === "all")            return [
       ...MOCK_MEMBERS.map(n => makeRecord(n, "member")),
-      ...MOCK_OPERATORS.map(n => makeRecord(n, "operator")),
+      ...LIVE_OPERATORS.map(n => makeRecord(n, "operator")),
     ];
     if (scope === "manual" && draft.inviteManualNames) {
       return draft.inviteManualNames.split(",").map(s => s.trim()).filter(Boolean)
@@ -2008,28 +2026,58 @@ export default function ActivityScreen() {
 
             {/* ─── SECTION: STAFF ─── */}
             {renderSectionHeader("STAFF")}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-              <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
-                {staffList.map(t => {
-                  const active = draft.teacherId === t.id;
-                  const initials = t.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-                  return (
-                    <Pressable key={t.id} onPress={() => { setDraft(d => ({ ...d, teacherId: t.id, teacherName: t.name })); Haptics.selectionAsync(); }}
-                      style={{ alignItems: "center", gap: 4, padding: 8, borderRadius: 12,
-                        backgroundColor: active ? `${colors.primary}15` : colors.card,
-                        borderWidth: active ? 1.5 : 1, borderColor: active ? colors.primary : colors.border,
-                        minWidth: 80 }}>
-                      <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: active ? colors.primary : colors.muted,
-                        alignItems: "center", justifyContent: "center" }}>
-                        <Text style={{ fontSize: 13, fontWeight: "800", color: active ? "#FFF" : colors.mutedForeground }}>{initials}</Text>
-                      </View>
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: active ? colors.primary : colors.foreground, textAlign: "center" }}
-                        numberOfLines={2}>{t.name}</Text>
-                    </Pressable>
-                  );
-                })}
+            {staffList.length === 0 ? (
+              <View style={{ borderRadius: 12, padding: 14, backgroundColor: colors.muted, marginBottom: 8, alignItems: "center", gap: 6 }}>
+                <Ionicons name="person-outline" size={22} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center" }}>
+                  No operators configured yet.{"\n"}Add them in Activity Planner → Operators.
+                </Text>
               </View>
-            </ScrollView>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
+                  {staffList.map(t => {
+                    const active = draft.teacherId === t.id;
+                    const initials = t.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+                    return (
+                      <Pressable key={t.id}
+                        onPress={() => { setDraft(d => ({ ...d, teacherId: t.id, teacherName: t.name })); Haptics.selectionAsync(); }}
+                        style={{ alignItems: "center", gap: 4, padding: 8, borderRadius: 12,
+                          backgroundColor: active ? `${colors.primary}15` : colors.card,
+                          borderWidth: active ? 1.5 : 1, borderColor: active ? colors.primary : colors.border,
+                          minWidth: 85, maxWidth: 110 }}>
+                        <View style={{ width: 38, height: 38, borderRadius: 19,
+                          backgroundColor: active ? colors.primary : colors.muted,
+                          alignItems: "center", justifyContent: "center" }}>
+                          <Text style={{ fontSize: 13, fontWeight: "800", color: active ? "#FFF" : colors.mutedForeground }}>{initials}</Text>
+                        </View>
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: active ? colors.primary : colors.foreground, textAlign: "center" }}
+                          numberOfLines={2}>{t.name}</Text>
+                        {t.disciplines && t.disciplines.length > 0 && (
+                          <View style={{ gap: 2, width: "100%" }}>
+                            {t.disciplines.slice(0, 2).map((d, di) => (
+                              <View key={di} style={{ backgroundColor: active ? `${colors.primary}22` : colors.background,
+                                borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
+                                <Text style={{ fontSize: 9, fontWeight: "700",
+                                  color: active ? colors.primary : colors.mutedForeground, textAlign: "center" }}
+                                  numberOfLines={1}>
+                                  {d.name}{d.rateType === "hourly" ? ` €${(d.rateCents / 100).toFixed(0)}/h` : " (vol.)"}
+                                </Text>
+                              </View>
+                            ))}
+                            {t.disciplines.length > 2 && (
+                              <Text style={{ fontSize: 9, color: colors.mutedForeground, textAlign: "center" }}>
+                                +{t.disciplines.length - 2} more
+                              </Text>
+                            )}
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
 
             {/* ─── SECTION: DURATION ─── */}
             {renderSectionHeader("DURATION")}
@@ -2115,6 +2163,7 @@ export default function ActivityScreen() {
             {renderSectionHeader("WEEKLY SCHEDULE")}
             {draft.schedule.map((slot, i) => (
               <View key={i} style={[styles.slotRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {/* Day selector */}
                 <View style={styles.slotDays}>
                   {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((lbl, di) => {
                     const dayKeys = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -2126,22 +2175,43 @@ export default function ActivityScreen() {
                     );
                   })}
                 </View>
+                {/* Time picker row */}
                 <View style={styles.slotBottom}>
-                  <View style={[styles.timeInput, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Pressable
+                    onPress={() => { setActiveTimePickerSlot(activeTimePickerSlot === i ? null : i); Haptics.selectionAsync(); }}
+                    style={[styles.timeInput, { backgroundColor: colors.background,
+                      borderColor: activeTimePickerSlot === i ? colors.primary : colors.border }]}
+                  >
                     <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
-                    <TextInput
-                      style={[styles.timeText, { color: colors.foreground }]}
-                      value={slot.startTime}
-                      onChangeText={v => updateSlot(i, "startTime", v)}
-                      placeholder="HH:MM"
-                      placeholderTextColor={colors.mutedForeground}
-                      keyboardType="numbers-and-punctuation"
-                    />
-                  </View>
-                  <Pressable onPress={() => removeSlot(i)} style={styles.slotRemoveBtn}>
+                    <Text style={[styles.timeText, { color: slot.startTime ? colors.foreground : colors.mutedForeground }]}>
+                      {slot.startTime || "Select time"}
+                    </Text>
+                    <Ionicons name={activeTimePickerSlot === i ? "chevron-up" : "chevron-down"} size={12} color={colors.mutedForeground} />
+                  </Pressable>
+                  <Pressable onPress={() => { removeSlot(i); if (activeTimePickerSlot === i) setActiveTimePickerSlot(null); }} style={styles.slotRemoveBtn}>
                     <Ionicons name="close-circle" size={20} color="#EF4444" />
                   </Pressable>
                 </View>
+                {/* Expandable time chip grid */}
+                {activeTimePickerSlot === i && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
+                    <View style={{ flexDirection: "row", gap: 6, paddingBottom: 2 }}>
+                      {TIME_SLOTS.map(t => {
+                        const active = slot.startTime === t;
+                        return (
+                          <Pressable key={t}
+                            onPress={() => { updateSlot(i, "startTime", t); setActiveTimePickerSlot(null); Haptics.selectionAsync(); }}
+                            style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9,
+                              backgroundColor: active ? colors.primary : colors.muted,
+                              borderWidth: active ? 0 : 1, borderColor: colors.border }}>
+                            <Text style={{ fontSize: 12, fontWeight: "700",
+                              color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                )}
               </View>
             ))}
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
