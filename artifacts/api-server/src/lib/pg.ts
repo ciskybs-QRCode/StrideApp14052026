@@ -184,10 +184,15 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS tenant_type TEXT DEFAULT 'commercial';`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS stripe_connect_account_id TEXT;`).catch(() => {});
 
-  // Discretionary trial engine: 6-month default; pioneer resets to 30 days at first login
+  // Discretionary trial engine — starts from first member join, not org creation
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMPTZ DEFAULT NOW();`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '6 months');`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS is_trial_extended BOOLEAN DEFAULT FALSE;`).catch(() => {});
+  // trial_duration_days: how long the trial lasts after first member joins (set by super-admin)
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_duration_days INTEGER DEFAULT 30;`).catch(() => {});
+  // Remove auto-NOW() defaults so new orgs start with null until first member joins
+  await pool.query(`ALTER TABLE IF EXISTS organizations ALTER COLUMN trial_started_at DROP DEFAULT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS organizations ALTER COLUMN trial_ends_at DROP DEFAULT;`).catch(() => {});
 
   // Subscription billing state machine
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'trialing';`).catch(() => {});

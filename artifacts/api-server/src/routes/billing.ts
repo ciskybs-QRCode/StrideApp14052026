@@ -310,6 +310,23 @@ router.post("/billing/webhook", async (req, res) => {
         break;
       }
 
+      case "invoice.payment_failed":
+      case "invoice.payment_action_required": {
+        const inv = event.data.object as import("stripe").Stripe.Invoice;
+        const invAny = inv as unknown as { subscription_details?: { metadata?: Record<string, string> } };
+        const orgId =
+          getOrgId(invAny.subscription_details?.metadata) ??
+          getOrgId(inv.metadata as Record<string, string>);
+        if (orgId) {
+          await supabase
+            .from("organizations")
+            .update({ subscription_status: "past_due" })
+            .eq("id", orgId);
+          invalidateTrialCache(orgId);
+        }
+        break;
+      }
+
       case "checkout.session.completed": {
         const session = event.data.object as import("stripe").Stripe.Checkout.Session;
         const meta = session.metadata as Record<string, string> | null;

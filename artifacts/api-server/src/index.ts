@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { startReminderScheduler } from "./lib/reminder-scheduler.js";
 import { startTrialBillingScheduler } from "./lib/trial-billing-scheduler.js";
+import { startSeatSyncScheduler } from "./lib/seat-sync-scheduler.js";
 import { RescueCascadeService } from "./lib/RescueCascadeService.js";
 import { EmergencyPushService } from "./lib/EmergencyPushService.js";
 
@@ -28,6 +29,7 @@ app.listen(port, (err) => {
   logger.info({ port }, "Server listening");
   startReminderScheduler();
   startTrialBillingScheduler();
+  startSeatSyncScheduler();
   RescueCascadeService.ensureMigration().catch(err =>
     logger.error(err, "RescueCascadeService: migration failed"),
   );

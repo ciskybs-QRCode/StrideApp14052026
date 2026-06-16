@@ -216,8 +216,10 @@ router.post("/super-admin/tenants", requireAuth, requireOwnerOrSuperAdmin, async
   const orgPayload: Record<string, unknown> = {
     name: name.trim(),
     subscription_status: "trialing",
-    trial_started_at: new Date().toISOString(),
-    trial_ends_at: trialEnd,
+    // trial_started_at stays NULL — the clock starts when the first member joins
+    trial_started_at: null,
+    trial_ends_at: null,
+    trial_duration_days: value,    // super-admin configures duration; applied on first-member join
     cost_per_seat_cents: plan === "starter" ? 500 : plan === "pro" ? 900 : 1200,
     qr_base_price_cents: Math.max(0, Number(qrBasePriceCents) || 0),
   };

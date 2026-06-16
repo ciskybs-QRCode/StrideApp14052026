@@ -126,6 +126,29 @@ router.post("/public/join/:slug", authLimiter, async (req: Request, res) => {
       }).select();
     }
 
+    // ── Activate trial on first member join ───────────────────────────────────
+    // Trial clock starts from first real member, not org creation.
+    // authorized_pickups (pickup-only contacts) never appear in `members`,
+    // so they never trigger this — pickup authorisations are always free.
+    {
+      const { data: trialRow } = await supabase
+        .from("organizations")
+        .select("trial_started_at, trial_duration_days")
+        .eq("id", orgId)
+        .maybeSingle();
+      const tRow = trialRow as { trial_started_at?: string | null; trial_duration_days?: number | null } | null;
+      if (!tRow?.trial_started_at) {
+        const durationDays = tRow?.trial_duration_days ?? 30;
+        const now = new Date();
+        const trialEndsAt = new Date(now.getTime() + durationDays * 86_400_000).toISOString();
+        await supabase.from("organizations").update({
+          trial_started_at: now.toISOString(),
+          trial_ends_at:    trialEndsAt,
+        }).eq("id", orgId);
+        req.log.info({ orgId, durationDays, trialEndsAt }, "public-join: trial activated on first member");
+      }
+    }
+
     res.json({ success: true });
   } catch (err) {
     req.log.error(err, "public/join POST error");
