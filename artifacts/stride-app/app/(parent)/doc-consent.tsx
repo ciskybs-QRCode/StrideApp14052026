@@ -76,6 +76,7 @@ export default function DocConsentScreen() {
     mediaConsent === "full" || mediaConsent === "internal" ? (mediaConsent as ConsentOption) : null;
 
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [agreedToRead, setAgreedToRead] = useState(false);
   const [selectedOption, setSelectedOption] = useState<ConsentOption | null>(initialOption);
   const [hasSignature, setHasSignature] = useState(false);
   const [signatureConfirmed, setSignatureConfirmed] = useState(false);
@@ -125,12 +126,12 @@ export default function DocConsentScreen() {
     }
   };
 
-  const padUnlocked = hasScrolled && selectedOption !== null;
+  const padUnlocked = agreedToRead && selectedOption !== null;
   const submitUnlocked = signatureConfirmed && selectedOption !== null;
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Photo & Video Consent" subtitle="Consenso Foto e Video" light />
+      <ScreenHeader title="Photo & Video Consent" light />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -153,17 +154,25 @@ export default function DocConsentScreen() {
         </View>
 
         {hasScrolled && (
-          <View style={[s.stepBanner, { backgroundColor: "#ECFDF5", borderColor: "#6EE7B7" }]}>
-            <Ionicons name="checkmark-circle" size={18} color="#059669" />
-            <Text style={[s.stepBannerText, { color: "#065F46" }]}>
-              Consent form read. Select your consent level below.
+          <Pressable
+            style={[s.checkboxRow, agreedToRead && { borderColor: "#059669", backgroundColor: "#ECFDF520" }]}
+            onPress={() => {
+              setAgreedToRead(v => !v);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+          >
+            <View style={[s.checkbox, agreedToRead && { backgroundColor: "#059669", borderColor: "#059669" }]}>
+              {agreedToRead && <Ionicons name="checkmark" size={14} color="#FFF" />}
+            </View>
+            <Text style={[s.checkboxLabel, { color: agreedToRead ? "#065F46" : "#92400E" }]}>
+              I confirm I have read and understood the full consent form. I am ready to make my selection.
             </Text>
-          </View>
+          </Pressable>
         )}
 
         {/* Consent option matrix */}
-        <View style={[s.matrixSection, { opacity: hasScrolled ? 1 : 0.3 }]} pointerEvents={hasScrolled ? "auto" : "none"}>
-          <Text style={[s.matrixLabel, { color: colors.primary }]}>SELEZIONA IL TUO CONSENSO</Text>
+        <View style={[s.matrixSection, { opacity: agreedToRead ? 1 : 0.3 }]} pointerEvents={agreedToRead ? "auto" : "none"}>
+          <Text style={[s.matrixLabel, { color: colors.primary }]}>SELECT YOUR CONSENT LEVEL</Text>
           {OPTIONS.map(opt => {
             const selected = selectedOption === opt.key;
             return (
@@ -194,10 +203,10 @@ export default function DocConsentScreen() {
 
         {/* Signature section */}
         <View style={[s.padSection, { opacity: padUnlocked ? 1 : 0.3 }]} pointerEvents={padUnlocked ? "auto" : "none"}>
-          <Text style={[s.padSectionTitle, { color: colors.primary }]}>FIRMA / SIGNATURE</Text>
+          <Text style={[s.padSectionTitle, { color: colors.primary }]}>SIGNATURE</Text>
           {!padUnlocked && (
             <Text style={[s.padHint, { color: colors.mutedForeground }]}>
-              {!hasScrolled ? "Scroll to the bottom first." : "Select a consent option above to unlock."}
+              {!agreedToRead ? "Confirm you have read the form above." : "Select a consent option above to unlock."}
             </Text>
           )}
 
@@ -215,7 +224,7 @@ export default function DocConsentScreen() {
               disabled={!hasSignature && !signatureConfirmed}
             >
               <Ionicons name="refresh-outline" size={16} color={colors.primary} />
-              <Text style={[s.sigBtnText, { color: colors.primary }]}>Pulisci / Resetta</Text>
+              <Text style={[s.sigBtnText, { color: colors.primary }]}>Reset Signature</Text>
             </Pressable>
 
             <Pressable
@@ -231,7 +240,7 @@ export default function DocConsentScreen() {
                 color={signatureConfirmed ? "#059669" : "#FFF"}
               />
               <Text style={[s.sigBtnText, { color: signatureConfirmed ? "#059669" : "#FFF" }]}>
-                {signatureConfirmed ? "Firma Confermata" : "Conferma Firma"}
+                {signatureConfirmed ? "Signature Confirmed" : "Confirm Signature"}
               </Text>
             </Pressable>
           </View>
@@ -244,18 +253,20 @@ export default function DocConsentScreen() {
           disabled={!submitUnlocked || submitting}
         >
           <Ionicons name={submitting ? "hourglass-outline" : "send"} size={18} color="#FFF" />
-          <Text style={s.submitBtnText}>{submitting ? "Invio in corso…" : "Invia Consenso"}</Text>
+          <Text style={s.submitBtnText}>{submitting ? "Submitting..." : "Submit Consent"}</Text>
         </Pressable>
 
         {!submitUnlocked && (
           <Text style={[s.lockHint, { color: colors.mutedForeground }]}>
             {!hasScrolled
               ? "Scroll to the bottom of the document first."
+              : !agreedToRead
+              ? "Tick the checkbox to confirm you have read the form."
               : !selectedOption
               ? "Select a consent option above to continue."
               : !hasSignature
               ? "Draw your signature in the field above."
-              : "Tap 'Conferma Firma' to confirm your signature."}
+              : "Tap 'Confirm Signature' to confirm your signature."}
           </Text>
         )}
       </ScrollView>
@@ -292,4 +303,7 @@ const s = StyleSheet.create({
   submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 16, paddingVertical: 16, marginHorizontal: 16, marginTop: 12 },
   submitBtnText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
   lockHint: { fontSize: 12, textAlign: "center", marginHorizontal: 24, marginTop: 8, marginBottom: 8 },
+  checkboxRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 12, borderWidth: 1.5, borderColor: "#FCD34D", backgroundColor: "#FEF3C710", padding: 14, marginHorizontal: 16, marginBottom: 12 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#D97706", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 },
+  checkboxLabel: { flex: 1, fontSize: 13, lineHeight: 19, fontWeight: "600" },
 });

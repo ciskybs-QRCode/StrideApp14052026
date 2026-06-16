@@ -508,6 +508,17 @@ export default function DocumentsScreen() {
           </View>
         </View>
 
+        {/* Reimbursements */}
+        <HubCard
+          icon="receipt-outline"
+          title="Reimbursements"
+          description="Submit and track expense reimbursement requests"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(parent)/reimbursements" as never);
+          }}
+        />
+
         {/* Photo/Video Consent — navigates to dedicated signature flow */}
         <Pressable
           style={[styles.docTile, { backgroundColor: colors.card }]}
@@ -518,7 +529,7 @@ export default function DocumentsScreen() {
               <Ionicons name="camera-outline" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Consenso Foto e Video</Text>
+              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Photo & Video Consent</Text>
               <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>
                 {mediaConsent === "full" ? "Full consent granted" : mediaConsent === "internal" ? "Internal use only" : "No consent recorded — tap to sign"}
               </Text>

@@ -213,11 +213,11 @@ export default function ChildrenScreen() {
     // Task 5: under-18 dependent requires explicit guardian authorization before write
     if (age < 18) {
       Alert.alert(
-        "Autorizzazione Tutore",
+        "Guardian Authorisation",
         "This dependent is a minor (under 18). By proceeding you confirm you are the legal parent or guardian and accept full responsibility for their enrolment.",
         [
-          { text: "Annulla", style: "cancel" },
-          { text: "Conferma", onPress: () => { commitAddChild(dobStr, age).catch(() => {}); } },
+          { text: "Cancel", style: "cancel" },
+          { text: "Confirm", onPress: () => { commitAddChild(dobStr, age).catch(() => {}); } },
         ]
       );
       return;

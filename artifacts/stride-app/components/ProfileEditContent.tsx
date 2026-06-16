@@ -251,7 +251,7 @@ const fieldStyles = StyleSheet.create({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function ProfileEditContent() {
+export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean }) {
   const { user, updateUser } = useAuth();
   const colors = useColors();
   const { countryCode } = getDeviceLocale();
@@ -582,68 +582,70 @@ export function ProfileEditContent() {
         )}
       </View>
 
-      {/* ── BUSINESS & FISCAL ── */}
-      <SectionHeader icon="briefcase-outline" title="Business & Fiscal" colors={colors} />
+      {showFiscal && (
+        <>
+          {/* ── BUSINESS & FISCAL ── */}
+          <SectionHeader icon="briefcase-outline" title="Business & Fiscal" colors={colors} />
 
-      {/* Info banner */}
-      <View style={[styles.infoBanner, { backgroundColor: `${colors.primary}10`, borderLeftColor: colors.primary }]}>
-        <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-        <Text style={[styles.infoText, { color: colors.primary }]}>
-          {countryCode === "IT"
-            ? "Partita IVA o Codice Fiscale sono obbligatori. Gli altri numeri sono facoltativi."
-            : "Business numbers are optional. Only fill in what applies to your organisation."}
-        </Text>
-      </View>
+          {/* Info banner */}
+          <View style={[styles.infoBanner, { backgroundColor: `${colors.primary}10`, borderLeftColor: colors.primary }]}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.primary }]}>
+              {"Business numbers are optional. Only fill in what applies to your organisation."}
+            </Text>
+          </View>
 
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
-        {/* Primary — ABN for AU, Tax ID for others */}
-        <View style={styles.fieldBlock}>
-          <FieldLabel
-            label={bizLabels.primary.label}
-            required={bizLabels.primary.required}
-            colors={colors}
-          />
-          <Text style={[styles.sublabel, { color: colors.mutedForeground }]}>
-            {bizLabels.primary.sublabel}
-            {!bizLabels.primary.required && "  —  optional"}
-          </Text>
-          <TextInput
-            style={[styles.textInput, {
-              borderColor: errors.taxId ? "#EF4444" : colors.border,
-              backgroundColor: colors.background, color: colors.foreground,
-            }]}
-            value={form.taxId}
-            onChangeText={set("taxId")}
-            placeholder={bizLabels.primary.placeholder}
-            placeholderTextColor={colors.mutedForeground}
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-          {errors.taxId ? <Text style={styles.errMsg}>{errors.taxId}</Text> : null}
-        </View>
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
+            {/* Primary — ABN for AU, Tax ID for others */}
+            <View style={styles.fieldBlock}>
+              <FieldLabel
+                label={bizLabels.primary.label}
+                required={bizLabels.primary.required}
+                colors={colors}
+              />
+              <Text style={[styles.sublabel, { color: colors.mutedForeground }]}>
+                {bizLabels.primary.sublabel}
+                {!bizLabels.primary.required && "  —  optional"}
+              </Text>
+              <TextInput
+                style={[styles.textInput, {
+                  borderColor: errors.taxId ? "#EF4444" : colors.border,
+                  backgroundColor: colors.background, color: colors.foreground,
+                }]}
+                value={form.taxId}
+                onChangeText={set("taxId")}
+                placeholder={bizLabels.primary.placeholder}
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              {errors.taxId ? <Text style={styles.errMsg}>{errors.taxId}</Text> : null}
+            </View>
 
-        <View style={[styles.divider, { borderTopColor: colors.border, marginTop: 2 }]} />
+            <View style={[styles.divider, { borderTopColor: colors.border, marginTop: 2 }]} />
 
-        {/* Secondary — ACN / NFP */}
-        <View style={styles.fieldBlock}>
-          <FieldLabel label={bizLabels.secondary.label} colors={colors} />
-          <Text style={[styles.sublabel, { color: colors.mutedForeground }]}>
-            {bizLabels.secondary.sublabel}  —  optional
-          </Text>
-          <TextInput
-            style={[styles.textInput, {
-              borderColor: colors.border,
-              backgroundColor: colors.background, color: colors.foreground,
-            }]}
-            value={form.acn}
-            onChangeText={set("acn")}
-            placeholder={bizLabels.secondary.placeholder}
-            placeholderTextColor={colors.mutedForeground}
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-        </View>
-      </View>
+            {/* Secondary — ACN / NFP */}
+            <View style={styles.fieldBlock}>
+              <FieldLabel label={bizLabels.secondary.label} colors={colors} />
+              <Text style={[styles.sublabel, { color: colors.mutedForeground }]}>
+                {bizLabels.secondary.sublabel}  —  optional
+              </Text>
+              <TextInput
+                style={[styles.textInput, {
+                  borderColor: colors.border,
+                  backgroundColor: colors.background, color: colors.foreground,
+                }]}
+                value={form.acn}
+                onChangeText={set("acn")}
+                placeholder={bizLabels.secondary.placeholder}
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+            </View>
+          </View>
+        </>
+      )}
 
       {/* ── Required legend ── */}
       <View style={styles.legendRow}>

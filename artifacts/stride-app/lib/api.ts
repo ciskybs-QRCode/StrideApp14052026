@@ -1275,6 +1275,7 @@ export interface ApiStudent {
   gold_stars: number;
   allergies?: string;
   ambulance_consent?: boolean;
+  media_consent?: string;
   parent?: { id: number; name: string; phone?: string } | null;
   enrollments?: Array<{ course_id: number; status: string; course: { id: number; name: string } | null }>;
 }

@@ -25,7 +25,7 @@ export default function ParentProfileEditScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <ProfileEditContent />
+        <ProfileEditContent showFiscal={false} />
       </ScrollView>
     </View>
   );

@@ -481,7 +481,7 @@ export default function ParentHome() {
             onPress={() => setShowAbsence(true)}
           >
             <Ionicons name="alert-circle-outline" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>REPORT{"\n"}ABSENCE/DELAY</Text>
+            <Text style={[styles.quickBtnText, { color: colors.primary }]} adjustsFontSizeToFit numberOfLines={2}>{"REPORT\nABSENCE"}</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.quickBtn, { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
@@ -516,19 +516,10 @@ export default function ParentHome() {
 
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>
-        {[
-          { id: "1", icon: "star-outline"     as const, text: "Jane: ★ Gold stars for choreography!", time: "Today",  accent: "#FBBF24" },
-          { id: "2", icon: "document-outline" as const, text: "New document: Privacy Policy to sign", time: "Yesterday", accent: colors.primary },
-          { id: "3", icon: "time-outline"     as const, text: "Tomorrow's lesson: moved to 15:30",    time: "2h ago",  accent: "#7C3AED" },
-        ].map(item => (
-          <Pressable key={item.id} style={[styles.notifCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.notifIcon, { backgroundColor: `${item.accent}20` }]}>
-              <Ionicons name={item.icon} size={18} color={item.accent} />
-            </View>
-            <Text style={[styles.notifText, { color: colors.foreground }]}>{item.text}</Text>
-            <Text style={[styles.notifTime, { color: colors.mutedForeground }]}>{item.time}</Text>
-          </Pressable>
-        ))}
+        <View style={[styles.notifCard, { backgroundColor: colors.card, alignItems: "center", justifyContent: "center", paddingVertical: 24 }]}>
+          <Ionicons name="notifications-off-outline" size={28} color={colors.mutedForeground} />
+          <Text style={[styles.notifText, { color: colors.mutedForeground, textAlign: "center", marginTop: 8 }]}>No new notifications</Text>
+        </View>
 
         {/* Contact */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact the Office</Text>

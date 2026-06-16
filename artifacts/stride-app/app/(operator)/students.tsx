@@ -352,14 +352,20 @@ export default function OperatorStudents() {
                     <Ionicons name="star" size={12} color="#FBBF24" />
                   </View>
                   <Text style={[styles.studentStars, { color: colors.mutedForeground }]}>{s.stars}</Text>
-                  {s.allergies !== "None" && s.allergies !== "Nessuna" && (
+                  {s.allergies !== "None" && s.allergies !== "Nessuna" && s.allergies !== "" && (
                     <>
-                      <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
+                      <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
                         <Ionicons name="medkit" size={12} color="#EF4444" />
                       </View>
                       <Text style={{ fontSize: 11, color: "#EF4444" }}>Allergies</Text>
                     </>
                   )}
+                  <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: s.medicalWaiver === "ambulance" ? "#D1FAE5" : "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name={s.medicalWaiver === "ambulance" ? "car-sport" : "call"} size={12} color={s.medicalWaiver === "ambulance" ? "#059669" : "#EF4444"} />
+                  </View>
+                  <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: s.mediaConsent === "full" ? "#D1FAE5" : s.mediaConsent === "internal" ? "#FEF3C7" : "#F3F4F6", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="camera" size={12} color={s.mediaConsent === "full" ? "#059669" : s.mediaConsent === "internal" ? "#D97706" : "#9CA3AF"} />
+                  </View>
                 </View>
               </View>
               <View style={styles.studentActions}>

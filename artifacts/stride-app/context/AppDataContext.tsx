@@ -120,6 +120,7 @@ export interface Student {
   courses: string[];
   allergies: string;
   medicalWaiver: "ambulance" | "call_parent";
+  mediaConsent: "full" | "internal" | "none";
   stars: number;
   present?: boolean;
   checkedIn?: boolean;
@@ -264,6 +265,7 @@ function mapStudent(s: ApiStudent): Student {
     courses: coursesArr,
     allergies: s.allergies ?? "None",
     medicalWaiver: s.ambulance_consent ? "ambulance" : "call_parent",
+    mediaConsent: (s.media_consent as "full" | "internal" | "none") ?? "none",
     stars: s.gold_stars ?? 0,
     present: false,
     checkedIn: false,

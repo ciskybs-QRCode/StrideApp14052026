@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -22,7 +21,6 @@ import { useColors } from "@/hooks/useColors";
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DELAY_OPTIONS = [5, 10, 15, 20, 30] as const;
-const OPERATOR_PHONE = "+39 02 1234 5678";
 
 // ── Phase labels ──────────────────────────────────────────────────────────────
 
@@ -63,11 +61,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
 
   const handleCall = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const tel = `tel:${OPERATOR_PHONE.replace(/\s/g, "")}`;
-    Linking.canOpenURL(tel).then(ok => {
-      if (ok) Linking.openURL(tel);
-      else Alert.alert("Call Operator", OPERATOR_PHONE);
-    });
+    Alert.alert("Contact Operator", "Please contact your school operator directly to report any urgent matter.");
   };
 
   return (
