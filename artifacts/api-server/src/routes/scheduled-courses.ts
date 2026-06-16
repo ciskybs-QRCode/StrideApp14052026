@@ -93,11 +93,12 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
   const user = (req as AuthReq).user;
   const {
     disciplineId, operatorProfileId, dayOfWeek,
-    startTime, endTime, ageMin, ageMax, skillLevel, notes,
+    startTime, endTime, ageMin, ageMax, skillLevel, notes, weekInterval, evenWeekStart,
   } = req.body as {
     disciplineId: number; operatorProfileId?: number; dayOfWeek: number;
     startTime: string; endTime: string; ageMin?: number; ageMax?: number;
     skillLevel?: string; notes?: string;
+    weekInterval?: number; evenWeekStart?: boolean;
   };
 
   if (!disciplineId || dayOfWeek == null || !startTime || !endTime) {
@@ -119,6 +120,8 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
       skill_level:         skillLevel ?? "open",
       status:              "pending_confirmation",
       notes:               notes ?? null,
+      week_interval:       weekInterval ?? 1,
+      even_week_start:     evenWeekStart ?? true,
       created_by_admin_id: user.id,
     })
     .select()

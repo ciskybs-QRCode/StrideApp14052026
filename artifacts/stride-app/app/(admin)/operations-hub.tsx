@@ -53,6 +53,14 @@ export default function OperationsHub() {
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>OPERATIONS</Text>
         <HubCard
+          icon="calendar-number-outline"
+          title="Lesson Calendar"
+          description="Events, workshops, AI roster, reminders and bi-weekly scheduling"
+          iconBg="#1E3A8A"
+          iconColor="#FBBF24"
+          onPress={() => router.push("/(admin)/calendar-management" as never)}
+        />
+        <HubCard
           icon="sparkles"
           title="Smart Rostering"
           description="AI substitute matching, auto-notify, conflict detection"

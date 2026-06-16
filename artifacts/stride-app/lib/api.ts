@@ -767,6 +767,8 @@ export const api = {
     ageMax?: number;
     skillLevel?: string;
     notes?: string;
+    weekInterval?: number;
+    evenWeekStart?: boolean;
   }) => request<ApiScheduledCourse>("POST", "/scheduled-courses", data),
   confirmScheduledCourse: (id: number) =>
     request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/confirm`, {}),
@@ -2182,5 +2184,64 @@ export async function acknowledgeEmergencyPush(logId: number): Promise<{ acknowl
 
 export async function getEmergencyPushLog(): Promise<EmergencyPushLog[]> {
   return request<EmergencyPushLog[]>("GET", "/notifications/push-log");
+}
+
+// ── Calendar Events ───────────────────────────────────────────────────────────
+
+export interface ApiCalendarEvent {
+  id: number;
+  organization_id: number;
+  title: string;
+  description?: string | null;
+  event_type: "event" | "workshop" | "deadline" | "holiday" | "competition" | string;
+  event_date: string;   // ISO date YYYY-MM-DD
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  all_day: boolean;
+  target_audience: "all" | "operators" | "members";
+  reminder_days_before: number[];
+  reminders_sent: boolean;
+  created_by?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiRosterSuggestion {
+  discipline: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  skillLevel: "beginner" | "intermediate" | "advanced" | "open";
+  weekInterval: 1 | 2 | 4;
+  notes?: string;
+}
+
+export async function getCalendarEvents(params?: { from?: string; to?: string }): Promise<ApiCalendarEvent[]> {
+  const qs = params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v != null) as [string, string][])).toString()}` : "";
+  return request<ApiCalendarEvent[]>("GET", `/calendar-events${qs}`);
+}
+
+export async function createCalendarEvent(data: Omit<ApiCalendarEvent, "id" | "organization_id" | "reminders_sent" | "created_by" | "created_at" | "updated_at">): Promise<ApiCalendarEvent> {
+  return request<ApiCalendarEvent>("POST", "/calendar-events", data);
+}
+
+export async function updateCalendarEvent(id: number, data: Partial<Omit<ApiCalendarEvent, "id" | "organization_id" | "created_by" | "created_at">>): Promise<ApiCalendarEvent> {
+  return request<ApiCalendarEvent>("PUT", `/calendar-events/${id}`, data);
+}
+
+export async function deleteCalendarEvent(id: number): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("DELETE", `/calendar-events/${id}`);
+}
+
+export async function sendCalendarEventReminders(id: number): Promise<{ ok: boolean; sent: number }> {
+  return request<{ ok: boolean; sent: number }>("POST", `/calendar-events/${id}/remind`);
+}
+
+export async function generateAIRoster(params: {
+  frequency?: "weekly" | "biweekly";
+  preferences?: string;
+}): Promise<{ suggestions: ApiRosterSuggestion[]; frequency: string }> {
+  return request<{ suggestions: ApiRosterSuggestion[]; frequency: string }>("POST", "/admin/generate-roster", params);
 }
 

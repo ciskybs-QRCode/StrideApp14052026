@@ -43,10 +43,27 @@ async function isLessonReminderEnabledForUser(userId: number): Promise<boolean> 
 //   inserts below with Expo Push API calls in addition to (not instead of) the
 //   in-app notification inserts.
 
+// ── ISO week number helper ────────────────────────────────────────────────────
+// Returns the number of full weeks since 2024-01-01 (Monday).
+function weeksSinceEpoch(): number {
+  const EPOCH = new Date("2024-01-01T00:00:00Z").getTime();
+  return Math.floor((Date.now() - EPOCH) / (7 * 24 * 60 * 60 * 1000));
+}
+
+// Returns true if this week is a firing week for the given interval + parity.
+function shouldFireThisWeek(weekInterval: number, evenWeekStart: boolean): boolean {
+  if (weekInterval <= 1) return true;
+  const w = weeksSinceEpoch();
+  return evenWeekStart ? (w % weekInterval === 0) : (w % weekInterval !== 0);
+}
+
 export function startReminderScheduler(): void {
   setTimeout(() => {
     void checkReminders();
     setInterval(() => { void checkReminders(); }, 60_000);
+    // Calendar event reminders run once per hour
+    setInterval(() => { void checkCalendarEventReminders(); }, 60 * 60_000);
+    void checkCalendarEventReminders();
   }, 15_000);
   logger.info("Lesson reminder scheduler started (checks every 60 s)");
 }
@@ -59,6 +76,59 @@ async function checkReminders(): Promise<void> {
     sendScheduledCourseReminders(60,      "1h"),
     checkNoShowAlerts(),
   ]);
+}
+
+// ── Calendar event reminders ──────────────────────────────────────────────────
+// Fires once per hour; sends in-app notifications to target audience when
+// event_date − reminder_days_before = today.
+async function checkCalendarEventReminders(): Promise<void> {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { rows: events } = await pool.query(`
+      SELECT id, organization_id, title, description, event_type,
+             event_date, start_time, location, target_audience,
+             reminder_days_before
+      FROM calendar_events
+      WHERE reminders_sent = FALSE
+        AND event_date >= $1
+    `, [today]);
+
+    for (const evt of events as Array<Record<string, unknown>>) {
+      const eventDate = new Date(evt.event_date + "T00:00:00Z");
+      const remDays   = (evt.reminder_days_before as number[]) ?? [1, 7];
+      const todayDate = new Date(today + "T00:00:00Z");
+      const daysUntil = Math.round((eventDate.getTime() - todayDate.getTime()) / 86_400_000);
+
+      if (!remDays.includes(daysUntil)) continue;
+
+      // Import and dispatch reminders
+      const { dispatchEventReminders } = await import("../routes/calendar-events.js");
+      const sent = await dispatchEventReminders(evt.organization_id as number, {
+        title:           evt.title as string,
+        event_date:      evt.event_date as string,
+        start_time:      evt.start_time as string | null,
+        target_audience: evt.target_audience as string,
+        event_type:      evt.event_type as string,
+        location:        evt.location as string | null,
+      });
+
+      logger.info(
+        { eventId: evt.id, daysUntil, sent },
+        "calendar event reminders dispatched",
+      );
+
+      // Mark as sent only when daysUntil === smallest reminder day
+      if (daysUntil === Math.min(...remDays)) {
+        await pool.query(
+          `UPDATE calendar_events SET reminders_sent = TRUE WHERE id = $1`,
+          [evt.id],
+        );
+      }
+    }
+  } catch (err) {
+    logger.warn({ err }, "calendar event reminders: check failed");
+  }
 }
 
 // ── Part A: Private-lesson booking reminders ──────────────────────────────────
@@ -156,6 +226,7 @@ async function sendScheduledCourseReminders(
     .from("scheduled_courses")
     .select(`
       id, organization_id, operator_profile_id, day_of_week, start_time, age_min, age_max,
+      week_interval, even_week_start,
       discipline:disciplines!discipline_id(name)
     `)
     .eq("status", "active");
@@ -181,6 +252,11 @@ async function sendScheduledCourseReminders(
     const classTime = new Date(`${slotDate}T${timeStr}:00`);
 
     if (classTime < lo || classTime > hi) continue;
+
+    // Bi-weekly / monthly check: skip weeks that are not firing weeks
+    const courseInterval   = (course.week_interval   as number  | undefined) ?? 1;
+    const courseEvenStart  = (course.even_week_start  as boolean | undefined) ?? true;
+    if (!shouldFireThisWeek(courseInterval, courseEvenStart)) continue;
 
     const discName = (course.discipline as { name?: string } | null)?.name ?? "class";
     const dayName  = DAY_NAMES[course.day_of_week as number] ?? "class day";

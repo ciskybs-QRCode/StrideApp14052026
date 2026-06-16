@@ -89,6 +89,7 @@ export default function AdminLessonsScreen() {
   const [scSkillLevel,         setScSkillLevel]         = useState<"beginner"|"intermediate"|"advanced"|"open">("open");
   const [scNotes,              setScNotes]              = useState("");
   const [scSaving,             setScSaving]             = useState(false);
+  const [scWeekInterval,       setScWeekInterval]       = useState<1|2|4>(1);
   const [scFilterDay,          setScFilterDay]          = useState<number | null>(null);
   const [showAvailSection,     setShowAvailSection]     = useState(false);
 
@@ -845,6 +846,29 @@ export default function AdminLessonsScreen() {
                   ))}
                 </View>
               </View>
+              {/* Frequency */}
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Frequency</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {([
+                    { label: "Weekly",     value: 1 },
+                    { label: "Bi-weekly",  value: 2 },
+                    { label: "Monthly",    value: 4 },
+                  ] as { label: string; value: 1|2|4 }[]).map(opt => (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => setScWeekInterval(opt.value)}
+                      style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center",
+                        backgroundColor: scWeekInterval === opt.value ? "#1E3A8A" : colors.muted }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: "700",
+                        color: scWeekInterval === opt.value ? "#FFF" : colors.mutedForeground }}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
               {/* Notes */}
               <View>
                 <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Notes (optional)</Text>
@@ -875,11 +899,13 @@ export default function AdminLessonsScreen() {
                       ageMax:            parseInt(scAgeMax, 10) || 18,
                       skillLevel:        scSkillLevel,
                       notes:             scNotes || undefined,
+                      weekInterval:      scWeekInterval,
                     });
                     await load();
                     setScDisciplineId(null); setScOperatorId(null); setScDayOfWeek(1);
                     setScStartTime("09:00"); setScEndTime("10:00");
                     setScAgeMin("5"); setScAgeMax("18"); setScSkillLevel("open"); setScNotes("");
+                    setScWeekInterval(1);
                     Alert.alert("✓ Sent", "Course request sent to the operator for confirmation.");
                   } catch (e: unknown) {
                     Alert.alert("Error", e instanceof Error ? e.message : "Failed to create course");
