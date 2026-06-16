@@ -2,6 +2,7 @@ import { Router, Route, Switch } from "wouter";
 import Landing              from "./pages/Landing";
 import Register             from "./pages/Register";
 import Activate             from "./pages/Activate";
+import Join                 from "./pages/Join";
 import PaymentSuccessPage   from "./pages/PaymentSuccess";
 import PaymentCancelledPage from "./pages/PaymentCancelled";
 import PaymentBatchPage     from "./pages/PaymentBatch";
@@ -21,6 +22,7 @@ export default function App() {
     <Router base={base}>
       <Switch>
         <Route path="/register"          component={Register} />
+        <Route path="/join/:slug"        component={Join} />
         <Route path="/activate"          component={Activate} />
         <Route path="/payment-success"   component={PaymentSuccessPage} />
         <Route path="/payment-cancelled" component={PaymentCancelledPage} />

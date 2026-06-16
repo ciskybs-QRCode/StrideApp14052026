@@ -285,7 +285,7 @@ export default function AdminSetup() {
 
   const orgSlug = slugify(schoolName || "school");
   const appDomain = process.env.EXPO_PUBLIC_DOMAIN || "strideapp.io";
-  const registrationUrl = `https://${appDomain}/?org=${orgSlug}&school=${encodeURIComponent(schoolName || "School")}&primary=${encodeURIComponent(PRESET_COLORS[selectedColors].primary)}&secondary=${encodeURIComponent(PRESET_COLORS[selectedColors].secondary)}`;
+  const registrationUrl = `https://${appDomain}/join/${orgSlug}`;
 
   const handlePickLogo = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();

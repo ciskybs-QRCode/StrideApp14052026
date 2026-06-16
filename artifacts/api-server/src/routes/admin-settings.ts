@@ -115,4 +115,46 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
   }
 });
 
+// ── GET /registration-config ──────────────────────────────────────────────────
+router.get("/registration-config", requireAuth, requireRole("admin"), async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  try {
+    await pool.query(
+      `ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS registration_config JSONB DEFAULT '{}'::jsonb`
+    ).catch(() => {});
+    const { rows } = await pool.query(
+      `SELECT registration_config FROM admin_settings WHERE organization_id = $1`,
+      [orgId],
+    );
+    res.json(rows[0]?.registration_config ?? {});
+  } catch (err) {
+    req.log.error(err, "registration-config GET error");
+    res.status(500).json({ error: "Failed to load registration config" });
+  }
+});
+
+// ── PUT /registration-config ──────────────────────────────────────────────────
+router.put("/registration-config", requireAuth, requireRole("admin"), async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const orgId  = user.orgId ?? 1;
+  const config = req.body as Record<string, unknown>;
+  try {
+    await pool.query(
+      `ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS registration_config JSONB DEFAULT '{}'::jsonb`
+    ).catch(() => {});
+    await pool.query(
+      `INSERT INTO admin_settings (organization_id, registration_config)
+       VALUES ($1, $2::jsonb)
+       ON CONFLICT (organization_id) DO UPDATE
+         SET registration_config = $2::jsonb, updated_at = NOW()`,
+      [orgId, JSON.stringify(config)],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err, "registration-config PUT error");
+    res.status(500).json({ error: "Failed to save registration config" });
+  }
+});
+
 export default router;

@@ -663,6 +663,12 @@ export const api = {
   updateAdminSettings: (data: Partial<ApiAdminSettings>) =>
     request<ApiAdminSettings>("PUT", "/admin-settings", data),
 
+  // Member Registration Config
+  getRegistrationConfig: () =>
+    request<Record<string, unknown>>("GET", "/registration-config"),
+  updateRegistrationConfig: (config: Record<string, unknown>) =>
+    request<{ ok: boolean }>("PUT", "/registration-config", config),
+
   // Operator bank details
   getBankDetails: () =>
     request<{ accountName: string | null; iban: string | null; swift: string | null; notes: string | null }>("GET", "/operator-bank-details"),
