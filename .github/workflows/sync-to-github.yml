@@ -9,7 +9,9 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
-      BACKUP_RETENTION_COUNT: 7
+      # To change retention without editing this file, set the BACKUP_RETENTION_COUNT
+      # repository variable under Settings → Secrets and variables → Actions → Variables.
+      BACKUP_RETENTION_COUNT: ${{ vars.BACKUP_RETENTION_COUNT || 7 }}
     steps:
       - name: Checkout full history
         uses: actions/checkout@v4
