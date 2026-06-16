@@ -8,6 +8,8 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      BACKUP_RETENTION_COUNT: 7
     steps:
       - name: Checkout full history
         uses: actions/checkout@v4
@@ -33,6 +35,28 @@ jobs:
           fi
 
           git push target main --force
+
+      - name: Prune old backup branches on target
+        if: success()
+        run: |
+          git fetch target 'refs/heads/backup/main-*:refs/remotes/target/backup/main-*' --prune 2>/dev/null || true
+
+          # List backup branches sorted newest-first (branch names are dated so lexicographic = chronological)
+          BACKUPS=$(git branch -r --list 'target/backup/main-*' | sed 's|target/||' | sort -r)
+
+          TOTAL=$(echo "$BACKUPS" | grep -c . || true)
+          echo "Found ${TOTAL} backup branch(es); keeping ${BACKUP_RETENTION_COUNT}"
+
+          if [ "$TOTAL" -le "$BACKUP_RETENTION_COUNT" ]; then
+            echo "Nothing to prune."
+            exit 0
+          fi
+
+          TO_DELETE=$(echo "$BACKUPS" | tail -n +"$((BACKUP_RETENTION_COUNT + 1))")
+          for BRANCH in $TO_DELETE; do
+            echo "Deleting ${BRANCH}"
+            git push target --delete "$BRANCH"
+          done
 
       - name: Close sync-failure issues on success
         if: success()
