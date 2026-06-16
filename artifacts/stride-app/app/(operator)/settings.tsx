@@ -131,6 +131,23 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
+        {/* ── Notification Preferences ── */}
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { tap(); router.navigate("/(operator)/notification-settings" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#EF444415" }]}>
+            <Ionicons name="notifications-outline" size={26} color="#EF4444" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>Notification Preferences</Text>
+            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
+              Lesson reminders and emergency alert settings
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
+
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` · ${user.schoolName}` : ""}
         </Text>

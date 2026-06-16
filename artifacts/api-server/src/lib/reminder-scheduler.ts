@@ -1,7 +1,33 @@
 import { supabase } from "./supabase.js";
-import { logger } from "./logger.js";
+import { pool }     from "./pg.js";
+import { logger }   from "./logger.js";
 
 const WINDOW_MINUTES = 5;
+
+// ── Org-level lesson reminder check ──────────────────────────────────────────
+async function isLessonRemindersEnabledForOrg(orgId: number): Promise<boolean> {
+  try {
+    const { rows } = await pool.query(
+      `SELECT lesson_reminders_enabled FROM admin_settings WHERE organization_id = $1`,
+      [orgId],
+    );
+    const row = rows[0] as { lesson_reminders_enabled?: boolean } | undefined;
+    // Default true when column doesn't exist yet (soft launch)
+    return row?.lesson_reminders_enabled !== false;
+  } catch { return true; }
+}
+
+// ── Per-user lesson reminder preference check ─────────────────────────────────
+async function isLessonReminderEnabledForUser(userId: number): Promise<boolean> {
+  try {
+    const { rows } = await pool.query(
+      `SELECT lesson_reminders_enabled FROM notification_preferences WHERE user_id = $1`,
+      [userId],
+    );
+    const row = rows[0] as { lesson_reminders_enabled?: boolean } | undefined;
+    return row?.lesson_reminders_enabled !== false;
+  } catch { return true; }
+}
 
 // ── Reminder Scheduler ────────────────────────────────────────────────────────
 // Handles two categories of reminders:
@@ -80,6 +106,10 @@ async function sendRemindersForWindow(
     const disciplineName = discipline?.name ?? "lesson";
     const timeStr = String(b.start_time).slice(0, 5);
     const label = tag === "24h" ? "24 hours" : "1 hour";
+
+    // Skip if org or user has lesson reminders disabled
+    if (!await isLessonRemindersEnabledForOrg(b.organization_id as number)) continue;
+    if (!await isLessonReminderEnabledForUser(b.parent_id as number)) continue;
 
     const { error: insertErr } = await supabase.from("notifications").insert({
       organization_id: b.organization_id,
@@ -173,6 +203,10 @@ async function sendScheduledCourseReminders(
           .limit(1);
 
         if (!existingOp?.length) {
+          // Skip if org or operator has lesson reminders disabled
+          if (!await isLessonRemindersEnabledForOrg(course.organization_id as number)) continue;
+          if (!await isLessonReminderEnabledForUser(opProfile.user_id as number)) continue;
+
           const { error: err } = await supabase.from("private_notifications").insert({
             organization_id: course.organization_id,
             recipient_id:    opProfile.user_id,

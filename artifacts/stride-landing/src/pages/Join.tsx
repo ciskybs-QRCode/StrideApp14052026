@@ -326,6 +326,26 @@ export default function Join() {
               </div>
             </div>
 
+            {/* Emergency Alert Disclosure */}
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-left">
+              <div className="flex items-start gap-2">
+                <svg className="shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div>
+                  <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Emergency Notifications</p>
+                  <p className="text-xs text-red-600 leading-relaxed">
+                    Your account has <strong>emergency alerts enabled by default</strong>. These are urgent
+                    safety broadcasts from your association (e.g. evacuation notices, SOS alerts). You can
+                    manage this — along with lesson reminders — in the{" "}
+                    <strong>Notification Preferences</strong> section of the Stride app after logging in.
+                    Disabling emergency alerts requires double confirmation and is permanently logged.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Download the App</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <AppStoreBadge store="ios"     primary={primary} />

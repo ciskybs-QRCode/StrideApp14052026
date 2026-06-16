@@ -88,12 +88,17 @@ export default function AppConfigurationPage() {
   const [loadingGrace, setLoadingGrace] = useState(true);
   const [savingGrace, setSavingGrace]   = useState(false);
 
+  // Lesson Reminders (server-backed)
+  const [remindersEnabled, setRemindersEnabled] = useState(true);
+  const [savingReminders,  setSavingReminders]  = useState(false);
+
   const loadSettings = useCallback(async () => {
     try {
       const data = await api.getAdminSettings();
       const serverValue = data.allow_one_time_grace_access ?? false;
       setGraceEnabled(serverValue);
       await AsyncStorage.setItem(GRACE_KEY, JSON.stringify(serverValue));
+      setRemindersEnabled(data.lesson_reminders_enabled ?? true);
     } catch {
       try {
         const stored = await AsyncStorage.getItem(GRACE_KEY);
@@ -126,6 +131,16 @@ export default function AppConfigurationPage() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch { /* keep local value */ }
     setSavingGrace(false);
+  }, []);
+
+  const handleRemindersToggle = useCallback(async (value: boolean) => {
+    setSavingReminders(true);
+    setRemindersEnabled(value);
+    try {
+      await api.updateAdminSettings({ lesson_reminders_enabled: value, organization_id: 1 });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { setRemindersEnabled(!value); }
+    setSavingReminders(false);
   }, []);
 
   const DEFAULT_BIRTHDAY_MSG = "Happy Birthday to {member_name}! Wishing you a wonderful day from all of us at {association_name}.";
@@ -193,6 +208,35 @@ export default function AppConfigurationPage() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Lesson Calendar Reminders (server-backed) ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>LESSON CALENDAR</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 20 }]}>
+          <View style={styles.row}>
+            <View style={[styles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+              <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.rowText}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Lesson Calendar Reminders</Text>
+              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+                Send automatic 24h and 1h reminders to members and operators before their lessons.
+                When OFF, no reminders are sent organisation-wide regardless of individual preferences.
+              </Text>
+            </View>
+            {savingReminders ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={remindersEnabled}
+                onValueChange={handleRemindersToggle}
+                trackColor={{ false: colors.muted, true: colors.secondary }}
+                thumbColor={remindersEnabled ? colors.primary : "#9CA3AF"}
+              />
+            )}
+          </View>
+        </View>
+
+        {/* ── Feature Toggles (local) ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>FEATURE TOGGLES</Text>
         {/* Settings list */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           {CONFIG_ITEMS.map((item, i) => (
@@ -390,6 +434,10 @@ const styles = StyleSheet.create({
   rowText: { flex: 1 },
   rowLabel: { fontSize: 15, fontWeight: "500" },
   rowDesc: { fontSize: 12, marginTop: 2, lineHeight: 16 },
+  sectionLabel: {
+    fontSize: 11, fontWeight: "800", letterSpacing: 1,
+    marginBottom: 8, paddingHorizontal: 4,
+  },
   infoBox: {
     flexDirection: "row",
     alignItems: "flex-start",

@@ -54,6 +54,7 @@ import livePulseRouter from "./live-pulse.js";
 import devToolsRouter from "./dev-tools.js";
 import publicJoinRouter      from "./public-join.js";
 import privateLessonsRouter   from "./private-lessons.js";
+import notificationPrefsRouter from "./notification-prefs.js";
 
 const router: IRouter = Router();
 
@@ -112,5 +113,6 @@ router.use(livePulseRouter);
 router.use(devToolsRouter);
 router.use(publicJoinRouter);
 router.use(privateLessonsRouter);
+router.use(notificationPrefsRouter);
 
 export default router;

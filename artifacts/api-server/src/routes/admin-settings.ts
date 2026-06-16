@@ -51,7 +51,8 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
     if (!("social_buffer_minutes"   in row)) row.social_buffer_minutes   = 30;
     if (!("payout_frequency"        in row)) row.payout_frequency        = "monthly";
     if (!("reimbursement_receipt_threshold_cents" in row)) row.reimbursement_receipt_threshold_cents = 5000;
-    if (!("payout_next_date"        in row)) row.payout_next_date        = null;
+    if (!("payout_next_date"           in row)) row.payout_next_date           = null;
+    if (!("lesson_reminders_enabled"   in row)) row.lesson_reminders_enabled   = true;
     res.json(row);
   } catch (err) {
     req.log.error(err, "admin-settings GET: error");
@@ -81,6 +82,7 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "reimbursement_receipt_threshold_cents",
     "payout_next_date",
     "private_lessons_enabled",
+    "lesson_reminders_enabled",
   ];
 
   const setClauses: string[] = ["updated_at = NOW()"];

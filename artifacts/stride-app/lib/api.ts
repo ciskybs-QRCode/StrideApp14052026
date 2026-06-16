@@ -663,6 +663,12 @@ export const api = {
   updateAdminSettings: (data: Partial<ApiAdminSettings>) =>
     request<ApiAdminSettings>("PUT", "/admin-settings", data),
 
+  // Notification Preferences
+  getNotificationPrefs: () =>
+    request<ApiNotificationPrefs>("GET", "/notification-prefs"),
+  updateNotificationPrefs: (data: Partial<ApiNotificationPrefs> & { latitude?: number | null; longitude?: number | null; device_info?: string }) =>
+    request<ApiNotificationPrefs>("PUT", "/notification-prefs", data),
+
   // Member Registration Config
   getRegistrationConfig: () =>
     request<Record<string, unknown>>("GET", "/registration-config"),
@@ -1574,7 +1580,13 @@ export interface ApiAdminSettings {
   payout_frequency?: "weekly" | "biweekly" | "monthly";
   reimbursement_receipt_threshold_cents?: number;
   payout_next_date?: string | null;
+  lesson_reminders_enabled?: boolean;
   updated_at?: string;
+}
+
+export interface ApiNotificationPrefs {
+  lesson_reminders_enabled: boolean;
+  emergency_alerts_enabled: boolean;
 }
 
 export interface ApiBlacklistEntry {

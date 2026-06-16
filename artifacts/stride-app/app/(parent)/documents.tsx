@@ -519,6 +519,17 @@ export default function DocumentsScreen() {
           }}
         />
 
+        {/* Notification Preferences */}
+        <HubCard
+          icon="notifications-outline"
+          title="Notification Preferences"
+          description="Manage lesson reminders and emergency alert settings"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(parent)/notification-settings" as never);
+          }}
+        />
+
         {/* Photo/Video Consent — navigates to dedicated signature flow */}
         <Pressable
           style={[styles.docTile, { backgroundColor: colors.card }]}
