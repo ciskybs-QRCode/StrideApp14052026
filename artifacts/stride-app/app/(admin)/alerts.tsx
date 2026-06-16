@@ -165,7 +165,7 @@ export default function AdminAlerts() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Security Alerts" />
+      <ScreenHeader title="Security Alerts" onBack={() => router.push("/(admin)/members-hub")} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,

@@ -498,7 +498,7 @@ export default function OperatorDashboard() {
 
     // Fallback mock schedule if nothing persisted
     if (todayLessons.length === 0) {
-      todayLessons.push({ course: "Ballet", end: "19:00" });
+      todayLessons.push({ course: "Activity", end: "19:00" });
     }
 
     // Find the latest-ending class today
@@ -609,9 +609,9 @@ export default function OperatorDashboard() {
   };
 
   const DEMO_ABSENT_STUDENTS = [
-    { id: "sa1", name: "Jane Smith",   courseId: "c1", courseName: "Ballet" },
-    { id: "sa2", name: "Tom Davis",    courseId: "c2", courseName: "Hip-Hop" },
-    { id: "sa3", name: "Julia Parker", courseId: "c3", courseName: "Latin Dance" },
+    { id: "sa1", name: "Jane Smith",   courseId: "c1", courseName: "Activity A" },
+    { id: "sa2", name: "Tom Davis",    courseId: "c2", courseName: "Activity B" },
+    { id: "sa3", name: "Julia Parker", courseId: "c3", courseName: "Activity C" },
   ];
 
   const simulateAbsenceAlert = () => {
@@ -655,10 +655,10 @@ export default function OperatorDashboard() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const r = await api.scanPrivateLesson("DEMO-" + Date.now());
-      setLessonScanResult({ discipline: "Ballet", student: "Jane Smith", earnings_cents: r.earnings_cents, invoice_number: r.invoice_number, attended_at: r.attended_at });
+      setLessonScanResult({ discipline: "Activity", student: "Jane Smith", earnings_cents: r.earnings_cents, invoice_number: r.invoice_number, attended_at: r.attended_at });
     } catch {
       setLessonScanResult({
-        discipline: "Ballet",
+        discipline: "Activity",
         student: "Jane Smith",
         earnings_cents: 3500,
         invoice_number: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-DEMO`,
@@ -667,7 +667,7 @@ export default function OperatorDashboard() {
     }
     setLessonScanning(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    pushLog({ time: nowTime(), action: "✓ Private lesson: Jane Smith — Ballet — €35.00 earned", type: "success" });
+    pushLog({ time: nowTime(), action: "✓ Private lesson: Jane Smith — Activity — €35.00 earned", type: "success" });
     setTimeout(() => { setLessonScanResult(null); setScanned(false); setShowScanner(false); }, 5000);
   };
 
@@ -2294,9 +2294,9 @@ export default function OperatorDashboard() {
             {/* ══ PHASE 1.5 — Medical Member Picker ══ */}
             {sosPhase === "picker" && (
               <>
-                <Text style={styles.sosPhaseLabel}>🏥  Emergenza Medica</Text>
+                <Text style={styles.sosPhaseLabel}>🏥  Medical Emergency</Text>
                 <Text style={[styles.sosModalDesc, { marginBottom: 14 }]}>
-                  Seleziona chi è coinvolto — verrà notificato solo il genitore del membro scelto.
+                  Select who is involved — only the guardian of the selected member will be notified.
                 </Text>
 
                 {sosMembersLoading ? (
@@ -2344,8 +2344,8 @@ export default function OperatorDashboard() {
                   <Ionicons name="arrow-forward-circle" size={20} color="#FFF" />
                   <Text style={styles.sosProceedBtnText}>
                     {sosSelectedIds.length > 0
-                      ? `Notifica ${sosSelectedIds.length} genitore${sosSelectedIds.length > 1 ? "i" : ""}`
-                      : "Notifica tutti i genitori"}
+                      ? `Notify ${sosSelectedIds.length} guardian${sosSelectedIds.length > 1 ? "s" : ""}`
+                      : "Notify all guardians"}
                   </Text>
                 </Pressable>
 

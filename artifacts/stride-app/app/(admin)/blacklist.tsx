@@ -136,7 +136,7 @@ export default function BlacklistScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Blacklist" onBack={() => router.push("/(admin)/governance")} />
+      <ScreenHeader title="Blacklist" onBack={() => router.push("/(admin)/members-hub")} />
       <ScrollView
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100,

@@ -299,7 +299,7 @@ export default function AdminInvoicesScreen() {
   const askAI = () => {
     const q = payrollData
       ? `Payroll summary for ${fmtPayrollMonth(payrollMonth)}: ${payrollData.operators.length} operators, total invoiced €${(payrollData.total_invoiced_cents / 100).toFixed(2)}, paid €${(payrollData.total_paid_cents / 100).toFixed(2)}, pending €${(payrollData.total_pending_cents / 100).toFixed(2)}. Breakdown: ${payrollData.operators.map(o => `${o.name} (${o.disciplines.map(d => `${d.discipline_name} €${(d.hourly_rate_cents / 100).toFixed(0)}/h`).join(", ")})`).join("; ")}. Analyse this data and give recommendations.`
-      : "Give me a payroll overview and cost analysis for this dance school.";
+      : "Give me a payroll overview and cost analysis for this association.";
     router.push({ pathname: "/(admin)/copilot", params: { prefill: q } } as never);
   };
 

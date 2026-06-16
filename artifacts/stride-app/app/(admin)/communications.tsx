@@ -87,8 +87,8 @@ interface CommUser {
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const QUICK_TEMPLATES = [
-  { label: "Monthly Newsletter", icon: "newspaper-outline" as const, title: "May 2026 Newsletter", body: "Dear families,\n\nHere's our monthly update. This month we have exciting events coming up, including our end-of-term showcase.\n\nThank you for your continued support.", urgent: false, signatureRequired: false },
-  { label: "Lesson Reminder",    icon: "alarm-outline" as const,     title: "Upcoming Lesson Reminder", body: "This is a friendly reminder about your upcoming lesson. Please arrive 5 minutes early and bring appropriate footwear.\n\nSee you on the dance floor!", urgent: false, signatureRequired: false },
+  { label: "Monthly Newsletter", icon: "newspaper-outline" as const, title: "Monthly Newsletter", body: "Dear members,\n\nHere's our monthly update. This month we have exciting events coming up.\n\nThank you for your continued support.", urgent: false, signatureRequired: false },
+  { label: "Lesson Reminder",    icon: "alarm-outline" as const,     title: "Upcoming Lesson Reminder", body: "This is a friendly reminder about your upcoming session. Please arrive 5 minutes early and bring appropriate attire.\n\nSee you soon!", urgent: false, signatureRequired: false },
   { label: "Urgent Notice",      icon: "warning-outline" as const,   title: "URGENT: Studio Update", body: "Please read this message immediately.\n\n[Describe your urgent notice here]\n\nFor any questions, contact us immediately.", urgent: true, signatureRequired: false },
   { label: "Holiday Closure",    icon: "calendar-outline" as const,  title: "Holiday Closure Notice", body: "Please be advised that the studio will be closed during the upcoming holiday period.\n\nWe will reopen on [date]. Regular classes resume from that date.", urgent: false, signatureRequired: false },
   { label: "Payment Due",        icon: "card-outline" as const,      title: "Payment Reminder", body: "This is a friendly reminder that your monthly payment is now due.\n\nPlease ensure your payment is processed by the end of this week to avoid any interruption to your enrolment.", urgent: false, signatureRequired: false },
@@ -114,7 +114,7 @@ function getRecipientLabel(r: RecipientSelection, counts: UserCounts): string {
     case "group":
       if (r.groupRole === "parents")   return `All Members (${counts.parents})`;
       if (r.groupRole === "operators") return `All Operators (${counts.operators})`;
-      return `All Students (${counts.students})`;
+      return `All Dependent Members (${counts.students})`;
     case "course":      return `Members: ${r.courseName} (${r.courseCount})`;
     case "individuals": return `${r.individualIds?.length || 0} specific recipient${r.individualIds?.length !== 1 ? "s" : ""}`;
     default:            return "Select recipients";
@@ -156,12 +156,9 @@ export default function AdminCommunications() {
   const [birthdayMsg,      setBirthdayMsg]      = useState("Dear {name}, wishing you a wonderful birthday from all of us at the studio! 🎂");
   const [editBirthday,     setEditBirthday]     = useState(false);
   const [onboardingEnabled, setOnboardingEnabled] = useState(false);
-  const [welcomeMsg,       setWelcomeMsg]       = useState("Welcome on board! We're thrilled to have you with us. See you soon on the dance floor! 🎉");
+  const [welcomeMsg,       setWelcomeMsg]       = useState("Welcome on board! We're thrilled to have you with us. See you soon! 🎉");
   const [editWelcome,      setEditWelcome]      = useState(false);
-  const [pendingOps, setPendingOps] = useState([
-    { id: "1", name: "Marco Bianchi", venue: "Studio A", slots: ["Mon 09:00–11:00", "Thu 17:00–19:00"] },
-    { id: "2", name: "Elena Russo",   venue: "Studio B", slots: ["Tue 14:00–16:00"] },
-  ]);
+  const [pendingOps, setPendingOps] = useState<{ id: string; name: string; venue: string; slots: string[] }[]>([]);
 
   // ── Read Receipts ─────────────────────────────────────────────────────────────
   const [receipts, setReceipts] = useState<NotifReceipt[]>([]);
@@ -208,7 +205,7 @@ export default function AdminCommunications() {
     }).catch(() => {});
   }, []);
 
-  const memberCount   = commUsers.filter(u => u.role === "parent").length;
+  const memberCount   = commUsers.filter(u => u.role === "parent" || u.role === "member" as never).length;
   const operatorCount = commUsers.filter(u => u.role === "operator").length;
   const studentCount  = commUsers.filter(u => u.role === "student").length;
   const userCounts: UserCounts = { total: commUsers.length, parents: memberCount, operators: operatorCount, students: studentCount };
@@ -380,7 +377,7 @@ export default function AdminCommunications() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Communications" onBack={() => router.push("/(admin)/operations-hub")} />
+      <ScreenHeader title="Communications" onBack={() => router.push("/(admin)/members-hub")} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
@@ -929,10 +926,10 @@ export default function AdminCommunications() {
               {recipientTab === "quick" && (
                 <>
                   {[
-                    { sel: { mode: "all" as const },                                        label: "All Users",      sub: userCounts.total ? `${userCounts.total} users registered` : "All members, operators and students", icon: "people" as const,       bg: "#DBEAFE", color: colors.primary },
+                    { sel: { mode: "all" as const },                                        label: "All Users",      sub: userCounts.total ? `${userCounts.total} users registered` : "All members, operators and dependent members", icon: "people" as const, bg: "#DBEAFE", color: colors.primary },
                     { sel: { mode: "group" as const, groupRole: "parents" as const },       label: "All Members",    sub: `${userCounts.parents} members registered`,    icon: "person" as const,       bg: "#D1FAE5", color: "#10B981" },
                     { sel: { mode: "group" as const, groupRole: "operators" as const },     label: "All Operators",  sub: `${userCounts.operators} operators registered`, icon: "briefcase" as const,    bg: "#EDE9FE", color: "#7C3AED" },
-                    { sel: { mode: "group" as const, groupRole: "students" as const },      label: "All Students",   sub: `${userCounts.students} students registered`,   icon: "school" as const,       bg: "#FEF3C7", color: "#F59E0B" },
+                    { sel: { mode: "group" as const, groupRole: "students" as const },      label: "All Dependent Members", sub: `${userCounts.students} dependent members registered`, icon: "people" as const, bg: "#FEF3C7", color: "#F59E0B" },
                   ].map(({ sel, label, sub, icon, bg, color }) => (
                     <Pressable
                       key={label}

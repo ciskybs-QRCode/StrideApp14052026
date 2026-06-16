@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import type { Course, Student } from "@/context/AppDataContext";
 import { api } from "@/lib/api";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -41,30 +42,6 @@ interface BadgeOpts {
   showAmbulanceConsent:boolean;
   courseName?:         string;
 }
-
-// ── Demo fallback data ────────────────────────────────────────────────────────
-
-const DEMO_STUDENTS: EnrichedStudent[] = [
-  { id: "d1",  name: "Sofia Rossi",     age: 8,  parentName: "Marco Rossi",    parentPhone: "", courses: ["Classical Dance"], allergies: "None",    medicalWaiver: "call_parent", stars: 12, mediaCons: "full"     },
-  { id: "d2",  name: "Luca Ferrari",    age: 10, parentName: "Luigi Ferrari",  parentPhone: "", courses: ["Hip Hop"],         allergies: "None",    medicalWaiver: "call_parent", stars: 8,  mediaCons: "internal" },
-  { id: "d3",  name: "Giulia Mancini",  age: 7,  parentName: "Anna Mancini",   parentPhone: "", courses: ["Classical Dance"], allergies: "None",    medicalWaiver: "call_parent", stars: 5,  mediaCons: "full"     },
-  { id: "d4",  name: "Marco Bianchi",   age: 12, parentName: "Carlo Bianchi",  parentPhone: "", courses: ["Ballet"],          allergies: "Nuts",    medicalWaiver: "ambulance",   stars: 25, mediaCons: "none"     },
-  { id: "d5",  name: "Emma Conti",      age: 9,  parentName: "Sara Conti",     parentPhone: "", courses: ["Contemporary"],    allergies: "None",    medicalWaiver: "call_parent", stars: 18, mediaCons: "full"     },
-  { id: "d6",  name: "Pietro Russo",    age: 11, parentName: "Giulia Russo",   parentPhone: "", courses: ["Hip Hop"],         allergies: "None",    medicalWaiver: "call_parent", stars: 31, mediaCons: "full"     },
-  { id: "d7",  name: "Anna Verde",      age: 8,  parentName: "Laura Verde",    parentPhone: "", courses: ["Ballet"],          allergies: "None",    medicalWaiver: "call_parent", stars: 9,  mediaCons: "internal" },
-  { id: "d8",  name: "Matteo Esposito", age: 13, parentName: "Franco Esposito",parentPhone: "", courses: ["Contemporary"],    allergies: "Lactose", medicalWaiver: "ambulance",   stars: 37, mediaCons: "none"     },
-  { id: "d9",  name: "Chiara Bruno",    age: 6,  parentName: "Giorgio Bruno",  parentPhone: "", courses: ["Classical Dance"], allergies: "None",    medicalWaiver: "call_parent", stars: 3,  mediaCons: "full"     },
-  { id: "d10", name: "Lorenzo Greco",   age: 14, parentName: "Marta Greco",    parentPhone: "", courses: ["Hip Hop"],         allergies: "None",    medicalWaiver: "call_parent", stars: 44, mediaCons: "full"     },
-  { id: "d11", name: "Valentina Ricci", age: 9,  parentName: "Roberto Ricci",  parentPhone: "", courses: ["Ballet"],          allergies: "None",    medicalWaiver: "call_parent", stars: 21, mediaCons: "full"     },
-  { id: "d12", name: "Davide Fontana",  age: 11, parentName: "Elena Fontana",  parentPhone: "", courses: ["Contemporary"],    allergies: "None",    medicalWaiver: "call_parent", stars: 16, mediaCons: "internal" },
-];
-
-const DEMO_COURSES: Course[] = [
-  { id: "dc1", name: "Classical Dance", instructor: "Maria Rossi",   schedule: "Mon, Wed", location: "Studio A", capacity: 15, enrolled: 12, ageMin: 5, ageMax: 12, level: "Beginner",     price: 120, description: "", hasPrivate: true,  dropInEnabled: true,  dropInPrice: 20, fixedBlockEnabled: true, fixedBlockPrice: 800, fixedBlockLessons: 8 },
-  { id: "dc2", name: "Hip Hop",         instructor: "Luigi Ferrari",  schedule: "Tue, Thu", location: "Studio B", capacity: 12, enrolled: 8,  ageMin: 8, ageMax: 16, level: "All",          price: 100, description: "", hasPrivate: false, dropInEnabled: true,  dropInPrice: 18, fixedBlockEnabled: true, fixedBlockPrice: 700, fixedBlockLessons: 8 },
-  { id: "dc3", name: "Ballet",          instructor: "Anna Bianchi",   schedule: "Wed, Fri", location: "Studio A", capacity: 10, enrolled: 6,  ageMin: 5, ageMax: 14, level: "All",          price: 130, description: "", hasPrivate: true,  dropInEnabled: false, dropInPrice: 0,  fixedBlockEnabled: true, fixedBlockPrice: 900, fixedBlockLessons: 8 },
-  { id: "dc4", name: "Contemporary",    instructor: "Marco Conti",    schedule: "Mon, Fri", location: "Studio C", capacity: 10, enrolled: 4,  ageMin: 10,ageMax: 18, level: "Intermediate", price: 110, description: "", hasPrivate: true,  dropInEnabled: true,  dropInPrice: 20, fixedBlockEnabled: true, fixedBlockPrice: 750, fixedBlockLessons: 8 },
-];
 
 // ── QR helper ─────────────────────────────────────────────────────────────────
 
@@ -152,7 +129,7 @@ async function buildFullPageHtml(students: EnrichedStudent[], opts: BadgeOpts): 
         <div style="width:210px;height:210px;">${qr}</div>
         ${opts.showSecondary ? `<div style="font-size:18px;color:#6B7280;text-align:center;margin-top:20px;">${course} · Age: ${s.age}</div>` : ""}
         ${safety}
-        <div style="position:absolute;bottom:14mm;font-size:11px;color:#9CA3AF;text-align:center;">Stride Dance School · stride.app</div>
+        <div style="position:absolute;bottom:14mm;font-size:11px;color:#9CA3AF;text-align:center;">Stride · stride.app</div>
         <div style="position:absolute;bottom:0;left:0;right:0;height:10px;background:#1E3A8A;"></div>
       </div>`;
   }));
@@ -195,8 +172,8 @@ async function buildGridHtml(students: EnrichedStudent[], gridSize: GridSize, op
     return `
       <div style="display:grid;grid-template-columns:repeat(${cols},1fr);grid-auto-flow:row;gap:${gap};padding:${pad};page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;background:white;align-content:start;min-height:297mm;box-sizing:border-box;">
         <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-bottom:4mm;">
-          <div style="font-size:13px;font-weight:800;color:#1E3A8A;border-left:4px solid #FBBF24;padding-left:8px;">${opts.courseName ?? "All Students"} · ${gridSize} per page</div>
-          <div style="font-size:10px;color:#9CA3AF;">Stride Dance School</div>
+          <div style="font-size:13px;font-weight:800;color:#1E3A8A;border-left:4px solid #FBBF24;padding-left:8px;">${opts.courseName ?? "All Members"} · ${gridSize} per page</div>
+          <div style="font-size:10px;color:#9CA3AF;">Stride</div>
         </div>
         ${cards}
       </div>`;
@@ -264,9 +241,8 @@ export default function PdfBadgeGenerator() {
     }).catch(() => {});
   }, []);
 
-  // Merge real students with mediaConsent from children map
-  const MIN_STUDENTS_FOR_GRID = 12;
-  const rawStudents: EnrichedStudent[] = ctxStudents.map(s => ({
+  // Enrich real students with mediaConsent
+  const students: EnrichedStudent[] = ctxStudents.map(s => ({
     ...s,
     mediaCons: (() => {
       const raw = childMediaMap.get(parseInt(s.id, 10)) ?? undefined;
@@ -275,11 +251,7 @@ export default function PdfBadgeGenerator() {
       return "none" as const;
     })(),
   }));
-  const demoExtras = DEMO_STUDENTS.filter(d => !rawStudents.find(s => s.name === d.name));
-  const students: EnrichedStudent[] = rawStudents.length >= MIN_STUDENTS_FOR_GRID
-    ? rawStudents
-    : [...rawStudents, ...demoExtras].slice(0, Math.max(MIN_STUDENTS_FOR_GRID, rawStudents.length));
-  const courses = ctxCourses.length > 0 ? ctxCourses : DEMO_COURSES;
+  const courses = ctxCourses;
 
   // ── State ────────────────────────────────────────────────────────────────────
 
@@ -302,7 +274,7 @@ export default function PdfBadgeGenerator() {
   const filteredStudents = selectedCourseId
     ? students.filter(s => s.courses.some(cn => cn === selectedCourse?.name || cn === selectedCourseId))
     : students;
-  const displayStudents: EnrichedStudent[] = filteredStudents.length > 0 ? filteredStudents : DEMO_STUDENTS.slice(0, 6);
+  const displayStudents: EnrichedStudent[] = filteredStudents;
 
   // ── Build HTML ──────────────────────────────────────────────────────────────
 
@@ -496,14 +468,7 @@ export default function PdfBadgeGenerator() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color="#1E3A8A" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Badge Generator</Text>
-        <View style={styles.headerRight} />
-      </View>
+      <ScreenHeader title="Badge Generator" onBack={() => router.push("/(admin)/users" as never)} />
 
       <ScrollView
         style={styles.scroll}
@@ -522,7 +487,7 @@ export default function PdfBadgeGenerator() {
             </Pressable>
           ))}
         </ScrollView>
-        <Text style={styles.studentCount}>{displayStudents.length} student{displayStudents.length !== 1 ? "s" : ""} selected</Text>
+        <Text style={styles.studentCount}>{displayStudents.length} member{displayStudents.length !== 1 ? "s" : ""} selected</Text>
 
         {/* Layout */}
         <Text style={styles.sectionLabel}>LAYOUT</Text>

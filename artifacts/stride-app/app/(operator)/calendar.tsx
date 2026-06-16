@@ -43,24 +43,24 @@ function getMonthMatrix(year: number, month: number): (Date | null)[][] {
 
 function lessonColor(courseName: string): string {
   const n = courseName.toLowerCase();
-  if (n.includes("ballet") || n.includes("classical")) return "#1E3A8A";
-  if (n.includes("hip hop") || n.includes("hiphop"))   return "#7C3AED";
-  if (n.includes("contemporary"))                      return "#FBBF24";
-  if (n.includes("yoga"))                              return "#10B981";
-  if (n.includes("latin"))                             return "#EF4444";
-  if (n.includes("jazz"))                              return "#F59E0B";
+  if (n.includes("yoga") || n.includes("wellness"))    return "#10B981";
+  if (n.includes("martial") || n.includes("karate"))   return "#EF4444";
+  if (n.includes("swimming") || n.includes("aqua"))    return "#0EA5E9";
+  if (n.includes("music") || n.includes("choir"))      return "#F59E0B";
+  if (n.includes("art") || n.includes("painting"))     return "#FBBF24";
+  if (n.includes("sport") || n.includes("football"))   return "#7C3AED";
   return "#6B7BA4";
 }
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 const DANCE_STYLES = [
-  { id: "ballet",       label: "Ballet",       icon: "star-outline"         },
-  { id: "hiphop",       label: "Hip Hop",      icon: "musical-notes-outline"},
-  { id: "contemporary", label: "Contemporary", icon: "body-outline"         },
   { id: "yoga",         label: "Yoga",         icon: "fitness-outline"      },
-  { id: "latin",        label: "Latin",        icon: "flame-outline"        },
-  { id: "jazz",         label: "Jazz",         icon: "radio-outline"        },
+  { id: "sport",        label: "Sport",        icon: "football-outline"     },
+  { id: "music",        label: "Music",        icon: "musical-notes-outline"},
+  { id: "art",          label: "Art",          icon: "color-palette-outline"},
+  { id: "martial",      label: "Martial Arts", icon: "shield-outline"       },
+  { id: "swimming",     label: "Swimming",     icon: "water-outline"        },
   { id: "general",      label: "General",      icon: "apps-outline"         },
 ] as const;
 

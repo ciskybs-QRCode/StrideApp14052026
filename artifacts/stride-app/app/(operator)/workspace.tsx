@@ -102,7 +102,7 @@ function ProposeDiscountModal({
             <>
               {([
                 { key: "memberName" as const, label: "Member Name",       placeholder: "e.g. Maria Rossi",      keyboard: "default" as const },
-                { key: "courseName" as const, label: "Course Name",       placeholder: "e.g. Ballet Junior",    keyboard: "default" as const },
+                { key: "courseName" as const, label: "Course Name",       placeholder: "e.g. Yoga Beginners",   keyboard: "default" as const },
                 { key: "discountPct" as const, label: "Discount (%)",     placeholder: "e.g. 20",               keyboard: "decimal-pad" as const },
               ]).map(f => (
                 <View key={f.key} style={{ marginBottom: 14 }}>

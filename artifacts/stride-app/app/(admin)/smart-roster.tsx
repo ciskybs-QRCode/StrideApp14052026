@@ -37,10 +37,10 @@ const DEMO_OPERATORS = [
 ];
 
 const DEMO_COURSES = [
-  { disciplineId: "1", name: "Ballet Beginners" },
-  { disciplineId: "2", name: "Contemporary Dance" },
-  { disciplineId: "3", name: "Theater Workshop" },
-  { disciplineId: "4", name: "Hip-Hop" },
+  { disciplineId: "1", name: "Beginners Course" },
+  { disciplineId: "2", name: "Intermediate Course" },
+  { disciplineId: "3", name: "Workshop" },
+  { disciplineId: "4", name: "Advanced Course" },
 ];
 
 // Simulated available slots (post-roster generation)

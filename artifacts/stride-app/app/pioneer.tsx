@@ -55,7 +55,7 @@ const REGION_CFG: Record<Region, RegionCfg> = {
       "TP","TN","TV","TS","UD","VA","VE","VB","VC","VR","VV","VI","VT"],
     taxLabel1: "Partita IVA", taxLabel2: "Codice Fiscale",
     taxPlaceholder1: "IT12345678901", taxPlaceholder2: "RSSMRA80A01H501T",
-    schoolNamePlaceholder: "es. Accademia di Danza Roma",
+    schoolNamePlaceholder: "es. Associazione Sportiva Roma",
   },
   AU: {
     flag: "🇦🇺", label: "Australia", localeName: "AU localisation",
@@ -86,7 +86,7 @@ Last updated: January 2025
 By completing setup and activating your Stride account ("Account"), you ("Administrator") agree to be bound by these Terms. If you do not agree, do not proceed.
 
 2. PLATFORM DESCRIPTION
-Stride is a dance-school management platform providing tools for enrollment management, attendance tracking, payment processing, parent communication, and operational scheduling. It is licensed on a subscription basis to dance schools, performing arts academies, and similar organisations.
+Stride is an association management platform providing tools for enrollment management, attendance tracking, payment processing, member communication, and operational scheduling. It is licensed on a subscription basis to associations and member organisations.
 
 3. ADMINISTRATOR RESPONSIBILITIES
 As designated Administrator you are responsible for: (a) accuracy of all organisational data entered into the platform; (b) maintaining the confidentiality of all credentials; (c) obtaining necessary consents from parents and guardians before enrolling minors; (d) complying with all applicable data protection laws in your jurisdiction; and (e) ensuring all platform users within your Organisation adhere to these Terms.

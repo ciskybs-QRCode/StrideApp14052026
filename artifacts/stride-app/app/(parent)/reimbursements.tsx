@@ -162,10 +162,10 @@ export default function ParentReimbursementsScreen() {
       >
         <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={12}>
           <Ionicons name="chevron-back" size={24} color="#FBBF24" />
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Portafoglio</Text>
+          <Text style={[styles.backLabel, { color: colors.primary }]}>Wallet</Text>
         </Pressable>
 
-        <Text style={[styles.pageTitle, { color: colors.foreground }]}>Rimborsi</Text>
+        <Text style={[styles.pageTitle, { color: colors.foreground }]}>Reimbursements</Text>
         <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>
           {user?.name ?? ""}
         </Text>

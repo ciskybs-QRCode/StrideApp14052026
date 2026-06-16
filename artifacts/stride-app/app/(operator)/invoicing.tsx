@@ -170,13 +170,8 @@ function generateDailyLog(month: string, disciplines: ApiOperatorEarnings["disci
 
 const DEMO: ApiOperatorEarnings = {
   month: new Date().toISOString().slice(0, 7),
-  disciplines: [
-    { discipline_id: 1, discipline_name: "Ballet",        lesson_count: 8,  total_minutes: 480, total_hours: 8,  earnings_cents: 28000, hourly_rate_cents: 3500 },
-    { discipline_id: 2, discipline_name: "Latin Dances",  lesson_count: 5,  total_minutes: 300, total_hours: 5,  earnings_cents: 17500, hourly_rate_cents: 3500 },
-    { discipline_id: 3, discipline_name: "Contemporary",  lesson_count: 9,  total_minutes: 540, total_hours: 9,  earnings_cents: 31500, hourly_rate_cents: 3500 },
-    { discipline_id: 4, discipline_name: "Private (1:1)", lesson_count: 10, total_minutes: 600, total_hours: 10, earnings_cents: 35000, hourly_rate_cents: 3500 },
-  ],
-  total_lessons: 32, total_hours: 32, total_earnings_cents: 112000,
+  disciplines: [],
+  total_lessons: 0, total_hours: 0, total_earnings_cents: 0,
 };
 
 // ── PDF builder ──────────────────────────────────────────────────────────────

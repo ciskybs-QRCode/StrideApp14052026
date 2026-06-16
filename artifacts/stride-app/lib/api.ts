@@ -77,8 +77,8 @@ const DEMO_PRIVATE_NOTIFICATIONS: ApiPrivateNotification[] = [
     organization_id: 1,
     recipient_id: 2,
     type: "payment_received",
-    title: "Payment Received — Ballet",
-    body: "Jane Smith has paid €35 for the private Ballet lesson (Mon 10 Feb 16:00). Earnings credited.",
+    title: "Payment Received",
+    body: "A member has paid €35 for a private session (Mon 10 Feb 16:00). Earnings credited.",
     booking_id: 201,
     read: false,
     created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
@@ -88,8 +88,8 @@ const DEMO_PRIVATE_NOTIFICATIONS: ApiPrivateNotification[] = [
     organization_id: 1,
     recipient_id: 2,
     type: "booking_confirmed",
-    title: "Booking Confirmed — Hip Hop",
-    body: "Tom Davis has confirmed the private Hip Hop lesson for Tue 11 Feb at 17:30.",
+    title: "Booking Confirmed",
+    body: "A member has confirmed a private session for Tue 11 Feb at 17:30.",
     booking_id: 202,
     read: false,
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
@@ -99,8 +99,8 @@ const DEMO_PRIVATE_NOTIFICATIONS: ApiPrivateNotification[] = [
     organization_id: 1,
     recipient_id: 2,
     type: "booking_request",
-    title: "New Request — Ballet",
-    body: "Chris Carter would like to book a private Ballet lesson for Wed 12 Feb at 15:00.",
+    title: "New Booking Request",
+    body: "A member would like to book a private session for Wed 12 Feb at 15:00.",
     booking_id: 203,
     read: true,
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
@@ -125,7 +125,7 @@ const DEMO_PRIVATE_BOOKINGS: ApiPrivateBooking[] = [
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     child: { id: 11, name: "Jane Smith" },
     operator: { id: 2, name: "Emma Wilson" },
-    discipline: { id: 1, name: "Ballet" },
+    discipline: { id: 1, name: "Activity A" },
   },
   {
     id: 202,
@@ -144,7 +144,7 @@ const DEMO_PRIVATE_BOOKINGS: ApiPrivateBooking[] = [
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
     child: { id: 12, name: "Tom Davis" },
     operator: { id: 2, name: "Emma Wilson" },
-    discipline: { id: 2, name: "Hip Hop" },
+    discipline: { id: 2, name: "Activity B" },
   },
 ];
 
@@ -188,45 +188,9 @@ const DEMO_DELEGATES: ApiDelegate[] = [
   },
 ];
 
-const DEMO_DOCUMENTS: ApiDocument[] = [
-  {
-    id: 31,
-    organization_id: 1,
-    title: "Liberatoria fotografica",
-    type: "liberatoria",
-    signed: true,
-    mandatory: false,
-    created_at: "2026-01-10T10:00:00Z",
-  },
-  {
-    id: 32,
-    organization_id: 1,
-    title: "Autorizzazione emergenza medica",
-    type: "medica",
-    signed: false,
-    mandatory: true,
-    created_at: "2026-01-10T10:00:00Z",
-  },
-];
+const DEMO_DOCUMENTS: ApiDocument[] = [];
 
-const DEMO_PAYMENTS: ApiPayment[] = [
-  {
-    id: 201,
-    organization_id: 1,
-    amount: 120,
-    description: "Quota mensile – Ballet Junior",
-    status: "paid",
-    created_at: "2026-04-01T09:00:00Z",
-  },
-  {
-    id: 202,
-    organization_id: 1,
-    amount: 80,
-    description: "Quota mensile – Hip Hop",
-    status: "pending",
-    created_at: "2026-05-01T09:00:00Z",
-  },
-];
+const DEMO_PAYMENTS: ApiPayment[] = [];
 
 const DEMO_ENROLLMENTS: ApiEnrollment[] = [
   { id: 301, child_id: 11, course_id: 1, status: "active", enrolled_at: "2026-01-15T08:00:00Z" },

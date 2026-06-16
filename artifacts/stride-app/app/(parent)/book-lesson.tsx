@@ -31,28 +31,9 @@ function futureDate(daysFromNow: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-const MOCK_DISCIPLINES: ApiDiscipline[] = [
-  { id: 1, name: "Ballet", description: "Classical ballet technique", organization_id: 1, active: true, created_at: "" },
-  { id: 2, name: "Contemporary", description: "Modern dance expression", organization_id: 1, active: true, created_at: "" },
-  { id: 3, name: "Hip Hop", description: "Urban street dance styles", organization_id: 1, active: true, created_at: "" },
-  { id: 4, name: "Jazz", description: "Syncopated rhythm & style", organization_id: 1, active: true, created_at: "" },
-];
+const MOCK_DISCIPLINES: ApiDiscipline[] = [];
 
-const MOCK_AVAILABILITY: ApiAvailabilitySlot[] = [
-  // Emma — Ballet
-  { id: 1, operator_profile_id: 1, organization_id: 1, discipline_id: 1, location: "Studio A – 123 Collins St, Melbourne", slot_date: futureDate(4), start_time: "09:00:00", end_time: "10:00:00", status: "approved", parent_price_cents: 9000, operator_pay_cents: 5500, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Emma Wilson" } }, discipline: { id: 1, name: "Ballet" } },
-  { id: 2, operator_profile_id: 1, organization_id: 1, discipline_id: 1, location: "Studio A – 123 Collins St, Melbourne", slot_date: futureDate(6), start_time: "10:30:00", end_time: "11:30:00", status: "approved", parent_price_cents: 9000, operator_pay_cents: 5500, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Emma Wilson" } }, discipline: { id: 1, name: "Ballet" } },
-  { id: 3, operator_profile_id: 1, organization_id: 1, discipline_id: 1, location: "Studio B – 45 Swanston St, Melbourne", slot_date: futureDate(9), start_time: "14:00:00", end_time: "15:00:00", status: "approved", parent_price_cents: 9000, operator_pay_cents: 5500, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Emma Wilson" } }, discipline: { id: 1, name: "Ballet" } },
-  // Emma — Contemporary
-  { id: 4, operator_profile_id: 1, organization_id: 1, discipline_id: 2, location: "Studio A – 123 Collins St, Melbourne", slot_date: futureDate(5), start_time: "11:00:00", end_time: "12:00:00", status: "approved", parent_price_cents: 8500, operator_pay_cents: 5000, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Emma Wilson" } }, discipline: { id: 2, name: "Contemporary" } },
-  { id: 5, operator_profile_id: 1, organization_id: 1, discipline_id: 2, location: "Studio A – 123 Collins St, Melbourne", slot_date: futureDate(12), start_time: "15:30:00", end_time: "16:30:00", status: "approved", parent_price_cents: 8500, operator_pay_cents: 5000, created_at: "", operator_profile: { id: 1, profile_type: "paid", user: { id: 10, name: "Emma Wilson" } }, discipline: { id: 2, name: "Contemporary" } },
-  // Mark — Hip Hop
-  { id: 6, operator_profile_id: 2, organization_id: 1, discipline_id: 3, location: "Studio C – 88 Bourke St, Melbourne", slot_date: futureDate(3), start_time: "16:00:00", end_time: "17:00:00", status: "approved", parent_price_cents: 7500, operator_pay_cents: 0, created_at: "", operator_profile: { id: 2, profile_type: "volunteer", user: { id: 11, name: "Mark Parker" } }, discipline: { id: 3, name: "Hip Hop" } },
-  { id: 7, operator_profile_id: 2, organization_id: 1, discipline_id: 3, location: "Studio C – 88 Bourke St, Melbourne", slot_date: futureDate(7), start_time: "17:00:00", end_time: "18:00:00", status: "approved", parent_price_cents: 7500, operator_pay_cents: 0, created_at: "", operator_profile: { id: 2, profile_type: "volunteer", user: { id: 11, name: "Mark Parker" } }, discipline: { id: 3, name: "Hip Hop" } },
-  // Mark — Jazz
-  { id: 8, operator_profile_id: 2, organization_id: 1, discipline_id: 4, location: "Studio B – 45 Swanston St, Melbourne", slot_date: futureDate(5), start_time: "09:30:00", end_time: "10:30:00", status: "approved", parent_price_cents: 8000, operator_pay_cents: 0, created_at: "", operator_profile: { id: 2, profile_type: "volunteer", user: { id: 11, name: "Mark Parker" } }, discipline: { id: 4, name: "Jazz" } },
-  { id: 9, operator_profile_id: 2, organization_id: 1, discipline_id: 4, location: "Studio B – 45 Swanston St, Melbourne", slot_date: futureDate(10), start_time: "13:00:00", end_time: "14:00:00", status: "approved", parent_price_cents: 8000, operator_pay_cents: 0, created_at: "", operator_profile: { id: 2, profile_type: "volunteer", user: { id: 11, name: "Mark Parker" } }, discipline: { id: 4, name: "Jazz" } },
-];
+const MOCK_AVAILABILITY: ApiAvailabilitySlot[] = [];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

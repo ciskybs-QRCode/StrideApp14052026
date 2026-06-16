@@ -283,6 +283,7 @@ export default function AdminUsers() {
       <ScreenHeader
         title="Members"
         subtitle="User management"
+        onBack={() => router.push("/(admin)/members-hub")}
         right={
           <Pressable
             style={[styles.badgePdfBtn, { backgroundColor: colors.primary }]}

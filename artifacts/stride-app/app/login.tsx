@@ -60,9 +60,9 @@ export default function LoginScreen() {
     const demo = params.get("demo");
     if (!demo) return;
     const DEMO_CREDS: Record<string, { email: string; password: string }> = {
-      parent:   { email: "genitore@test.com",   password: "stride123" },
-      operator: { email: "operatore@test.com",  password: "stride123" },
-      admin:    { email: "admin@test.com",       password: "stride123" },
+      parent:   { email: "ciskybs@gmail.com",   password: "stride123" },
+      operator: { email: "ciskybs@gmail.com",   password: "stride123" },
+      admin:    { email: "ciskybs@gmail.com",   password: "stride123" },
     };
     const creds = DEMO_CREDS[demo];
     if (!creds) return;

@@ -228,8 +228,8 @@ const MOCK_CAMPUSES = [
 
 const INITIAL_ACTIVITIES: Activity[] = [
   {
-    id: "a1", title: "Classical Dance – Beginners", type: "lesson",
-    disciplines: ["Ballet"], level: "beginner", extraTags: [], ageGroup: "range", ageMin: 4, ageMax: 12,
+    id: "a1", title: "Beginners Course", type: "lesson",
+    disciplines: [], level: "beginner", extraTags: [], ageGroup: "range", ageMin: 4, ageMax: 12,
     schedule: [{ day: "Mon", startTime: "16:00" }, { day: "Wed", startTime: "16:00" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t1", teacherName: "Emma Wilson",
@@ -238,8 +238,8 @@ const INITIAL_ACTIVITIES: Activity[] = [
     color: "#1E3A8A",
   },
   {
-    id: "a2", title: "Contemporary Dance Workshop", type: "workshop",
-    disciplines: ["Contemporary"], level: "intermediate", extraTags: [], ageGroup: "18plus", ageMin: 18, ageMax: 99,
+    id: "a2", title: "Workshop — Advanced", type: "workshop",
+    disciplines: [], level: "intermediate", extraTags: [], ageGroup: "18plus", ageMin: 18, ageMax: 99,
     schedule: [{ day: "Sat", startTime: "10:00" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio B",
     teacherId: "t2", teacherName: "Louis Ford",
@@ -258,8 +258,8 @@ const INITIAL_ACTIVITIES: Activity[] = [
     color: "#0D9488",
   },
   {
-    id: "a4", title: "Jazz Fundamentals Seminar", type: "seminar",
-    disciplines: ["Jazz"], level: "all", extraTags: [], ageGroup: "range", ageMin: 13, ageMax: 25,
+    id: "a4", title: "Fundamentals Seminar", type: "seminar",
+    disciplines: [], level: "all", extraTags: [], ageGroup: "range", ageMin: 13, ageMax: 25,
     schedule: [{ day: "Fri", startTime: "17:30" }],
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t4", teacherName: "Mark Parker",
@@ -1680,7 +1680,7 @@ export default function ActivityScreen() {
             {renderSectionHeader("ACTIVITY TITLE")}
             <TextInput
               style={[styles.titleInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="e.g. Advanced Ballet..."
+              placeholder="e.g. Advanced Yoga..."
               placeholderTextColor={colors.mutedForeground}
               value={draft.title}
               onChangeText={v => setDraft(d => ({ ...d, title: v }))}

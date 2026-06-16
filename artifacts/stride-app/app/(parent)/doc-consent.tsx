@@ -17,57 +17,53 @@ import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { SignaturePad } from "@/components/SignaturePad";
 
-const MEDIA_RELEASE_TEXT = `CONSENSO FOTO E VIDEO
-Media Release Consent
+const MEDIA_RELEASE_TEXT = `MEDIA RELEASE CONSENT
 
 Issued by: Associazione — Administration
 Effective: Duration of enrolment
 
 ─────────────────────────────────
 
-DICHIARAZIONE DI CONSENSO
+CONSENT DECLARATION
 
-Il presente modulo riguarda la fotografia e la registrazione video degli studenti iscritti a questa scuola di danza.
+This form relates to the photography and video recording of members enrolled with this association.
 
-During classes, performances, showcases, and other school events, we may capture photographs and video footage for promotional, educational, and documentary purposes.
+During classes, events, showcases, and other association activities, we may capture photographs and video footage for promotional, educational, and documentary purposes.
 
 You are required to select one of the three consent levels below. Selection is mandatory before the signature step is unlocked.
 
 ─────────────────────────────────
 
-OPZIONE A — Uso Pubblico e Promozionale
-(Full Public & Promotional Consent)
+OPTION A — Full Public & Promotional Consent
 
-You consent to photographs and videos of your child being used for all school purposes, including: the school website, social media channels, printed promotional materials, and internal records. The Associazione may publish this media without further notification.
-
-─────────────────────────────────
-
-OPZIONE B — Solo Uso Interno/Didattico
-(Internal & Educational Use Only)
-
-You consent to photographs and videos being used exclusively for internal purposes such as school newsletters, private parent communications, and internal training documentation. Media will not be published publicly or shared outside the organisation.
+You consent to photographs and videos of your dependent member being used for all association purposes, including: the association website, social media channels, printed promotional materials, and internal records. The Associazione may publish this media without further notification.
 
 ─────────────────────────────────
 
-OPZIONE C — Nessun Consenso
-(No Consent — Full Opt-Out)
+OPTION B — Internal & Educational Use Only
 
-You do not consent to your child being photographed or filmed under any circumstances. The school will make reasonable efforts to ensure your child is excluded from all media capture. Please note this may affect participation in certain group activities and performances.
+You consent to photographs and videos being used exclusively for internal purposes such as newsletters, private member communications, and internal training documentation. Media will not be published publicly or shared outside the organisation.
 
 ─────────────────────────────────
 
-DIRITTI E REVOCA
+OPTION C — No Consent — Full Opt-Out
 
-This consent applies for the duration of your child's enrolment. It may be updated or withdrawn in writing at any time by contacting the Associazione administration directly. Changes take effect from the date of receipt.
+You do not consent to your dependent member being photographed or filmed under any circumstances. The association will make reasonable efforts to ensure your dependent member is excluded from all media capture. Please note this may affect participation in certain group activities and events.
+
+─────────────────────────────────
+
+RIGHTS & WITHDRAWAL
+
+This consent applies for the duration of your dependent member's enrolment. It may be updated or withdrawn in writing at any time by contacting the Associazione administration directly. Changes take effect from the date of receipt.
 
 By signing this form, you confirm that you have read and understood all three options and that your selection accurately reflects your wishes.`;
 
 type ConsentOption = "full" | "internal" | "none";
 
 const OPTIONS: { key: ConsentOption; label: string; labelEn: string; icon: "camera" | "school" | "eye-off"; color: string; bg: string }[] = [
-  { key: "full",     label: "Uso Pubblico e Promozionale", labelEn: "Full public & promotional use",    icon: "camera",  color: "#1E3A8A", bg: "rgba(30,58,138,0.08)" },
-  { key: "internal", label: "Solo Uso Interno/Didattico",  labelEn: "Internal & educational use only",  icon: "school",  color: "#7C3AED", bg: "rgba(124,58,237,0.08)" },
-  { key: "none",     label: "Nessun Consenso",             labelEn: "No consent — full opt-out",        icon: "eye-off", color: "#DC2626", bg: "rgba(220,38,38,0.08)" },
+  { key: "full",     label: "Full Public & Promotional",  labelEn: "Full public & promotional use",    icon: "camera",  color: "#1E3A8A", bg: "rgba(30,58,138,0.08)" },
+  { key: "internal", label: "Internal & Educational Only", labelEn: "Internal & educational use only",  icon: "school",  color: "#7C3AED", bg: "rgba(124,58,237,0.08)" },
+  { key: "none",     label: "No Consent — Opt-Out",       labelEn: "No consent — full opt-out",        icon: "eye-off", color: "#DC2626", bg: "rgba(220,38,38,0.08)" },
 ];
 
 export default function DocConsentScreen() {

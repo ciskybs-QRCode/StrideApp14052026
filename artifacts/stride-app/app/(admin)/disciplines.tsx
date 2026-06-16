@@ -270,7 +270,7 @@ export default function DisciplinesScreen() {
                 style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
                 value={name}
                 onChangeText={setName}
-                placeholder="e.g. Ballet, Zumba, Archery"
+                placeholder="e.g. Yoga, Swimming, Archery"
                 placeholderTextColor={colors.mutedForeground}
                 autoFocus
                 maxLength={120}

@@ -273,8 +273,8 @@ export default function WalletScreen() {
             <Ionicons name="receipt-outline" size={22} color="#F59E0B" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.reimbTitle, { color: colors.foreground }]}>Rimborsi</Text>
-            <Text style={[styles.reimbSub, { color: colors.mutedForeground }]}>Invia e monitora le tue richieste di rimborso</Text>
+            <Text style={[styles.reimbTitle, { color: colors.foreground }]}>Reimbursements</Text>
+            <Text style={[styles.reimbSub, { color: colors.mutedForeground }]}>Submit and track your reimbursement requests</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>

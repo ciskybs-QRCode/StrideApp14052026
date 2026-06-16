@@ -774,7 +774,7 @@ export default function CoursesScreen() {
                     ))}
                   </View>
 
-                  {/* Materiale Didattico — visibile ai genitori iscritti */}
+                  {/* Course Materials — visible to enrolled members */}
                   {isEnrolled(course.id) && (
                     <View style={{ marginTop: 16, gap: 10 }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
