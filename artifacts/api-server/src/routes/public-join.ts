@@ -156,4 +156,92 @@ router.post("/public/join/:slug", authLimiter, async (req: Request, res) => {
   }
 });
 
+// ── POST /api/public/join/:slug/link-account ──────────────────────────────────
+// Public. Sign in an existing user and add them to this association.
+router.post("/public/join/:slug/link-account", authLimiter, async (req: Request, res) => {
+  const { slug } = req.params;
+  const { email, password } = req.body as { email?: string; password?: string };
+
+  if (!email?.trim() || !password) {
+    res.status(400).json({ error: "Email and password are required" });
+    return;
+  }
+
+  try {
+    const { data: orgs } = await supabase.from("organizations").select("id, name");
+    const org = orgs?.find(o => toSlug((o as { name?: string }).name ?? "") === slug);
+    if (!org) {
+      res.status(404).json({ error: "Association not found" });
+      return;
+    }
+    const orgId   = (org as { id: number }).id;
+    const orgName = (org as { name: string }).name;
+
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, name, email, password_hash, activation_status")
+      .ilike("email", email.trim())
+      .limit(1);
+
+    const u = (users?.[0] ?? null) as {
+      id: number; name: string; email: string;
+      password_hash: string; activation_status: string;
+    } | null;
+
+    if (!u) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    const valid = await bcrypt.compare(password, u.password_hash ?? "");
+    if (!valid) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    if (u.activation_status === "blocked") {
+      res.status(403).json({ error: "This account has been blocked" });
+      return;
+    }
+
+    const { data: existing } = await supabase
+      .from("organization_members")
+      .select("id")
+      .eq("user_id", u.id)
+      .eq("organization_id", orgId)
+      .limit(1);
+
+    const alreadyMember = !!(existing?.length);
+
+    if (!alreadyMember) {
+      await supabase.from("organization_members").upsert({
+        user_id:         u.id,
+        organization_id: orgId,
+        role:            "parent",
+        joined_at:       new Date().toISOString(),
+      });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT brand_primary_color, brand_secondary_color, brand_logo_url, brand_app_name
+       FROM admin_settings WHERE organization_id = $1`,
+      [orgId],
+    );
+    const s = rows[0] ?? {};
+
+    res.json({
+      success:       true,
+      alreadyMember,
+      orgId,
+      orgName:        (s.brand_app_name       as string | null) || orgName,
+      primaryColor:   (s.brand_primary_color   as string | null) || "#1E3A8A",
+      secondaryColor: (s.brand_secondary_color as string | null) || "#FBBF24",
+      logoUrl:        (s.brand_logo_url        as string | null) || null,
+    });
+  } catch (err) {
+    req.log.error(err, "public/join link-account error");
+    res.status(500).json({ error: "Failed to link account. Please try again." });
+  }
+});
+
 export default router;

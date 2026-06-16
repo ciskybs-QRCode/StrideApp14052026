@@ -118,6 +118,18 @@ export default function Join() {
   const [error,       setError]       = useState("");
   const [success,     setSuccess]     = useState(false);
 
+  // ── Sign-in mode (existing account) ────────────────────────────────────────
+  const [mode,           setMode]           = useState<"register" | "signin">("register");
+  const [signinEmail,    setSigninEmail]    = useState("");
+  const [signinPassword, setSigninPassword] = useState("");
+  const [signinShowPwd,  setSigninShowPwd]  = useState(false);
+  const [signinLoading,  setSigninLoading]  = useState(false);
+  const [signinError,    setSigninError]    = useState("");
+  const [linkResult,     setLinkResult]     = useState<{
+    orgName: string; primaryColor: string; secondaryColor: string;
+    logoUrl: string | null; alreadyMember: boolean;
+  } | null>(null);
+
   const primary   = org?.primaryColor   ?? "#1E3A8A";
   const secondary = org?.secondaryColor ?? "#FBBF24";
 
@@ -210,6 +222,37 @@ export default function Join() {
     }
   };
 
+  const handleSignIn = async () => {
+    setSigninError("");
+    if (!signinEmail.trim()) { setSigninError("Email is required."); return; }
+    if (!signinPassword)     { setSigninError("Password is required."); return; }
+    setSigninLoading(true);
+    try {
+      const res  = await fetch(`/api/public/join/${slug}/link-account`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ email: signinEmail.trim().toLowerCase(), password: signinPassword }),
+      });
+      const data = await res.json() as {
+        success?: boolean; error?: string;
+        orgName?: string; primaryColor?: string; secondaryColor?: string;
+        logoUrl?: string | null; alreadyMember?: boolean;
+      };
+      if (!res.ok) { setSigninError(data.error ?? "Sign-in failed. Please check your credentials."); return; }
+      setLinkResult({
+        orgName:       data.orgName       ?? org?.orgName ?? "",
+        primaryColor:  data.primaryColor  ?? primary,
+        secondaryColor:data.secondaryColor ?? secondary,
+        logoUrl:       data.logoUrl       ?? null,
+        alreadyMember: data.alreadyMember ?? false,
+      });
+    } catch {
+      setSigninError("Connection error. Please check your network and try again.");
+    } finally {
+      setSigninLoading(false);
+    }
+  };
+
   // ── Loading ───────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -299,6 +342,68 @@ export default function Join() {
     );
   }
 
+  // ── Link-account success screen ────────────────────────────────────────────
+
+  if (linkResult) {
+    const lp = linkResult.primaryColor;
+    const ls = linkResult.secondaryColor;
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-12">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 mb-4">
+              {linkResult.logoUrl ? (
+                <img src={linkResult.logoUrl} alt={linkResult.orgName} className="h-8 w-8 rounded-lg object-cover" />
+              ) : <Logo size={32} />}
+              <span className="font-bold text-slate-700 text-base">{linkResult.orgName}</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+              style={{ backgroundColor: `${lp}15`, border: `2px solid ${lp}40` }}>
+              {linkResult.alreadyMember ? (
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={lp} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={lp} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </div>
+
+            {linkResult.alreadyMember ? (
+              <>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">Already a Member</h2>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  Your account is already linked to{" "}
+                  <strong style={{ color: lp }}>{linkResult.orgName}</strong>.
+                  Open the Stride app and log in to continue.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">Association Added! 🎉</h2>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  <strong style={{ color: lp }}>{linkResult.orgName}</strong> has been added to your
+                  account. Open the Stride app, log in, and switch to the new association from
+                  the <strong>Select Association</strong> screen.
+                </p>
+              </>
+            )}
+
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Open the App</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <AppStoreBadge store="ios"     primary={ls} />
+              <AppStoreBadge store="android" primary={ls} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Progress bar ───────────────────────────────────────────────────────────
 
   const stepLabels: string[] = hasCustomStep
@@ -367,8 +472,107 @@ export default function Join() {
         )}
       </div>
 
+      {/* ── Mode toggle ── */}
+      <div className="w-full max-w-md mb-4">
+        <div className="flex rounded-xl overflow-hidden border border-slate-200 bg-white">
+          <button
+            type="button"
+            onClick={() => { setMode("register"); setSigninError(""); }}
+            className="flex-1 py-3 text-sm font-bold transition-colors"
+            style={mode === "register"
+              ? { backgroundColor: primary, color: "#fff" }
+              : { backgroundColor: "transparent", color: "#64748b" }}
+          >
+            New Member
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode("signin"); setError(""); }}
+            className="flex-1 py-3 text-sm font-bold transition-colors"
+            style={mode === "signin"
+              ? { backgroundColor: primary, color: "#fff" }
+              : { backgroundColor: "transparent", color: "#64748b" }}
+          >
+            Already have an account?
+          </button>
+        </div>
+      </div>
+
+      {/* ── Sign-in card ── */}
+      {mode === "signin" && (
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
+          <p className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: primary }}>
+            Sign In to Your Account
+          </p>
+          <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+            Sign in with your existing Stride credentials to add{" "}
+            <strong style={{ color: primary }}>{org?.orgName}</strong> to your account.
+          </p>
+
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email Address</label>
+              <input
+                type="email"
+                className="w-full bg-white border border-slate-200 text-slate-900 placeholder-slate-400 rounded-xl px-4 py-3 text-sm outline-none"
+                placeholder="your@email.com"
+                value={signinEmail}
+                onChange={e => { setSigninEmail(e.target.value); setSigninError(""); }}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+              <div className="relative">
+                <input
+                  type={signinShowPwd ? "text" : "password"}
+                  className="w-full bg-white border border-slate-200 text-slate-900 placeholder-slate-400 rounded-xl px-4 py-3 pr-10 text-sm outline-none"
+                  placeholder="Your password"
+                  value={signinPassword}
+                  onChange={e => { setSigninPassword(e.target.value); setSigninError(""); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setSigninShowPwd(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {signinShowPwd ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {signinError && (
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <p className="text-red-600 text-sm">{signinError}</p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => { void handleSignIn(); }}
+            disabled={signinLoading}
+            className="w-full mt-6 font-black py-3.5 rounded-xl text-sm transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+            style={{ backgroundColor: secondary, color: "#0A192F" }}
+          >
+            {signinLoading ? (
+              <>
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+                Signing in…
+              </>
+            ) : "Sign In & Add Association"}
+          </button>
+        </div>
+      )}
+
       {/* Form card */}
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
+      {mode === "register" && <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
         <ProgressBar />
 
         {/* ── Step 1: Account ───────────────────────────────────────── */}
@@ -616,11 +820,7 @@ export default function Join() {
           )}
         </div>
 
-        <p className="text-center text-slate-400 text-xs mt-5">
-          Already have an account?{" "}
-          <span className="font-semibold" style={{ color: primary }}>Open the Stride app and log in.</span>
-        </p>
-      </div>
+      </div>}
 
       {/* Powered by */}
       <div className="mt-6 flex items-center gap-2 text-slate-400 text-xs">

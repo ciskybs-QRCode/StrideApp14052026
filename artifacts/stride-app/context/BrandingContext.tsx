@@ -31,9 +31,10 @@ export interface BrandingState {
 }
 
 interface BrandingContextType {
-  branding:     BrandingState;
-  isLoaded:     boolean;
-  saveBranding: (updates: Partial<BrandingState>) => Promise<void>;
+  branding:            BrandingState;
+  isLoaded:            boolean;
+  saveBranding:        (updates: Partial<BrandingState>) => Promise<void>;
+  loadBrandingForOrg:  (orgId: number) => Promise<void>;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -78,9 +79,10 @@ async function fetchPublicBranding(orgId = 1): Promise<Partial<BrandingState>> {
 // ── Context ──────────────────────────────────────────────────────────────────
 
 export const BrandingContext = createContext<BrandingContextType>({
-  branding:     DEFAULT_STATE,
-  isLoaded:     false,
-  saveBranding: async () => {},
+  branding:           DEFAULT_STATE,
+  isLoaded:           false,
+  saveBranding:       async () => {},
+  loadBrandingForOrg: async () => {},
 });
 
 // ── Provider ─────────────────────────────────────────────────────────────────
@@ -150,6 +152,21 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     };
   }, [applyAndPersist]);
 
+  // ── loadBrandingForOrg — called when switching active association ────────
+
+  const loadBrandingForOrg = useCallback(async (orgId: number) => {
+    const remote = await fetchPublicBranding(orgId);
+    if (Object.keys(remote).length > 0) {
+      const next: BrandingState = {
+        logoUrl:        remote.logoUrl        ?? null,
+        primaryColor:   remote.primaryColor   ?? null,
+        secondaryColor: remote.secondaryColor ?? null,
+        appName:        remote.appName        ?? null,
+      };
+      await applyAndPersist(next);
+    }
+  }, [applyAndPersist]);
+
   // ── saveBranding — called by Admin setup screen ───────────────────────────
 
   const saveBranding = useCallback(async (updates: Partial<BrandingState>) => {
@@ -169,7 +186,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   }, [branding, applyAndPersist]);
 
   return (
-    <BrandingContext.Provider value={{ branding, isLoaded, saveBranding }}>
+    <BrandingContext.Provider value={{ branding, isLoaded, saveBranding, loadBrandingForOrg }}>
       {children}
     </BrandingContext.Provider>
   );

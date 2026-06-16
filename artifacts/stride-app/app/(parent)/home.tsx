@@ -488,7 +488,7 @@ export default function ParentHome() {
             onPress={() => router.push("/(parent)/org-search" as Parameters<typeof router.push>[0])}
           >
             <Ionicons name="shield-checkmark" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>FIND{"\n"}SCHOOLS</Text>
+            <Text style={[styles.quickBtnText, { color: colors.primary }]} adjustsFontSizeToFit numberOfLines={2}>SELECT{"\n"}ASSOCIATION</Text>
           </Pressable>
         </View>
 

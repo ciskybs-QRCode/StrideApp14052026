@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { useBranding } from "@/context/BrandingContext";
 import { api } from "@/lib/api";
 import type { OrgSearchResult } from "@/lib/api";
 import colors from "@/constants/colors";
@@ -54,7 +55,7 @@ function AssociationRow({
         {isActive && (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
             <Ionicons name="checkmark-circle" size={13} color="#059669" />
-            <Text style={{ fontSize: 11, color: "#059669", fontWeight: "700" }}>Associazione Attiva</Text>
+            <Text style={{ fontSize: 11, color: "#059669", fontWeight: "700" }}>Active Association</Text>
           </View>
         )}
       </View>
@@ -69,18 +70,14 @@ function AssociationRow({
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function OrgSearch() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser }         = useAuth();
+  const { loadBrandingForOrg }       = useBranding();
 
   const [associations, setAssociations] = useState<OrgSearchResult[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
   const [switching,    setSwitching]    = useState<number | null>(null);
 
-  /**
-   * Fetch the associations this authenticated user is enrolled in.
-   * The server returns all orgs; we filter to the IDs linked to this user.
-   * When a dedicated /user/memberships endpoint is available, swap this call.
-   */
   const load = useCallback(async (isRefresh = false) => {
     isRefresh ? setRefreshing(true) : setLoading(true);
     try {
@@ -106,9 +103,8 @@ export default function OrgSearch() {
   /**
    * Context-switch to the selected association:
    * 1. Persist the new active tenant on the user context.
-   * 2. Clear layout variables tied to the previous association.
-   * 3. Force-route to Home, which reloads branding, courses, and schedules
-   *    for the newly selected association.
+   * 2. Load the new org's branding (colours, logo, app name).
+   * 3. Force-route to Home, which reloads courses and schedules.
    */
   const handleSwitch = async (org: OrgSearchResult) => {
     if (Number(org.id) === user?.orgId) return;
@@ -121,6 +117,7 @@ export default function OrgSearch() {
         secondaryColor: undefined,
         logoUri:        org.logo_url ?? undefined,
       });
+      await loadBrandingForOrg(Number(org.id));
       router.replace("/(parent)/home");
     } catch {
       setSwitching(null);
@@ -131,18 +128,19 @@ export default function OrgSearch() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Find Your School" />
-      {/* ── Search ── */}
+      <ScreenHeader title="Select Association" />
+
+      {/* ── Header row ── */}
       <View style={[styles.searchRow, { paddingBottom: 12 }]}>
         <View style={{ flex: 1, width: "100%" }}>
           <Text
             style={{ fontSize: 16, fontWeight: "900", color: C.text, width: "100%" }}
             numberOfLines={0}
           >
-            Le Mie Associazioni
+            My Associations
           </Text>
           <Text style={[styles.cardLocation, { marginTop: 2, width: "100%" }]}>
-            Le Mie Associazioni {"\u2022"} tocca per cambiare associazione
+            Tap an association to switch your active context
           </Text>
         </View>
         <Ionicons name="business-outline" size={22} color={C.primary} />
@@ -157,7 +155,7 @@ export default function OrgSearch() {
       ) : associations.length === 0 ? (
         <View style={styles.centred}>
           <Ionicons name="business-outline" size={44} color={C.mutedForeground} />
-          <Text style={styles.emptyText}>Nessuna associazione collegata</Text>
+          <Text style={styles.emptyText}>No associations linked</Text>
           <Text style={[styles.emptyText, { fontSize: 12, marginTop: 4 }]}>
             No linked associations found for your account.
           </Text>
@@ -183,8 +181,8 @@ export default function OrgSearch() {
             />
             <Text style={styles.legendText}>
               {associations.length === 1
-                ? "Il tuo account \u00e8 registrato in una sola associazione."
-                : "Seleziona un'associazione per cambiare contesto attivo."}
+                ? "Your account is registered in one association."
+                : "Select an association to switch your active context."}
             </Text>
           </View>
 
