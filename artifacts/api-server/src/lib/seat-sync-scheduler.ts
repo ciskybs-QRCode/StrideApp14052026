@@ -12,6 +12,7 @@
 
 import { supabase } from "./supabase.js";
 import { logger } from "./logger.js";
+import { calcQrBillCents } from "./qr-pricing.js";
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const INITIAL_DELAY_MS  = 90_000;               // 90 s after boot (after warm-up)
@@ -51,16 +52,33 @@ async function syncAllSeats(): Promise<void> {
         supabase.from("children").select("*", { count: "exact", head: true }).eq("organization_id", org.id),
       ]);
 
-      const memberCount = Math.max(1, (mCount ?? 0) + (cCount ?? 0));
+      const qrCount = Math.max(1, (mCount ?? 0) + (cCount ?? 0));
+
+      // Get org currency to compute the correct tiered monthly amount
+      const { data: orgCurrData } = await supabase
+        .from("organizations").select("currency").eq("id", org.id).maybeSingle();
+      const currency = ((orgCurrData as { currency?: string } | null)?.currency ?? "EUR").toUpperCase();
+      const newMonthlyCents = calcQrBillCents(qrCount, currency);
 
       const sub  = await stripe.subscriptions.retrieve(org.stripe_subscription_id);
       const item = sub.items.data[0];
 
-      if (item && item.quantity !== memberCount) {
-        await stripe.subscriptionItems.update(item.id, { quantity: memberCount });
+      if (item && item.price.unit_amount !== newMonthlyCents) {
+        // Stripe SDK types lag behind the API: product_data IS valid on
+        // subscriptionItems.update price_data but the TS types don't include it.
+        await stripe.subscriptionItems.update(item.id, {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          price_data: {
+            currency:     currency.toLowerCase(),
+            product_data: { name: `Stride Platform — ${qrCount} QR codes` },
+            unit_amount:  newMonthlyCents,
+            recurring:    { interval: "month" },
+          } as any,
+          quantity: 1,
+        });
         logger.info(
-          { orgId: org.id, prevQty: item.quantity, newQty: memberCount },
-          "seat-sync: Stripe quantity updated",
+          { orgId: org.id, prevAmount: item.price.unit_amount, newAmount: newMonthlyCents, qrCount },
+          "seat-sync: Stripe monthly amount updated (tiered pricing)",
         );
       }
     } catch (err) {

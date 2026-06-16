@@ -102,12 +102,18 @@ export default function TrialExpiredScreen() {
               <ActivityIndicator color="#FBBF24" style={{ marginBottom: 24 }} />
             ) : billing ? (
               <View style={styles.planBox}>
+                {/* QR code count */}
                 <View style={styles.planRow}>
-                  <Text style={styles.planNum}>{billing.memberCount}</Text>
-                  <Text style={styles.planUnit}>
-                    {" "}members × {fmt(billing.costPerSeatCents, billing.currency)}
-                  </Text>
+                  <Text style={styles.planNum}>{billing.qrCodeCount ?? billing.memberCount}</Text>
+                  <Text style={styles.planUnit}> active QR codes</Text>
                 </View>
+                {/* Tier breakdown if available */}
+                {billing.tiers?.map(t => (
+                  <View key={t.label} style={styles.tierRow}>
+                    <Text style={styles.tierLabel}>{t.label}</Text>
+                    <Text style={styles.tierPrice}>{fmt(t.unitCents, billing.currency)}/ea</Text>
+                  </View>
+                ))}
                 <View style={styles.planDivider} />
                 <View style={styles.planTotal}>
                   <Text style={styles.planTotalLabel}>Total / month</Text>
@@ -116,7 +122,7 @@ export default function TrialExpiredScreen() {
                   </Text>
                 </View>
                 <Text style={styles.planNote}>
-                  Adjusts automatically as membership grows or shrinks
+                  Volume discounts apply · adjusts automatically
                 </Text>
               </View>
             ) : null}
@@ -258,6 +264,9 @@ const styles = StyleSheet.create({
   planTotalLabel: { fontSize: 13, color: "rgba(255,255,255,0.55)" },
   planTotalAmount: { fontSize: 22, fontWeight: "700", color: "#FFFFFF" },
   planNote: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 8, textAlign: "center" },
+  tierRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
+  tierLabel: { fontSize: 11, color: "rgba(255,255,255,0.55)" },
+  tierPrice: { fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: "600" },
   subscribeBtn: {
     flexDirection: "row",
     alignItems: "center",

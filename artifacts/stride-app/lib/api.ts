@@ -1770,8 +1770,9 @@ export type FinancialOrgRecord = {
   orgId: number;
   name: string;
   status: string;
-  memberCount: number;
-  costPerSeatCents: number;
+  qrCount: number;
+  memberCount: number;        // alias for qrCount (backward compat)
+  costPerSeatCents: number;   // 0 with tiered pricing
   mrrCents: number;
   currency: string;
 };
@@ -1779,7 +1780,8 @@ export type FinancialOrgRecord = {
 export type FinancialSummary = {
   totalMrrCents: number;
   trialMrrCents: number;
-  totalMemberCount: number;
+  totalQrCount: number;
+  totalMemberCount: number;   // alias for totalQrCount (backward compat)
   orgs: FinancialOrgRecord[];
 };
 
@@ -1877,13 +1879,15 @@ export type BillingStatus = {
   subscriptionStatus: string;
   trialEndsAt: string | null;
   trialExpired: boolean;
-  memberCount: number;
-  costPerSeatCents: number;
+  qrCodeCount: number;
+  memberCount: number;        // alias for qrCodeCount (backward compat)
+  costPerSeatCents: number;   // 0 with tiered pricing
   currency: string;
   totalMonthlyCents: number;
   hasActiveSubscription: boolean;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
+  tiers?: Array<{ label: string; unitCents: number }>;
 };
 
 export async function getBillingStatus(): Promise<BillingStatus> {

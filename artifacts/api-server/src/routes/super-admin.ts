@@ -6,6 +6,7 @@ import { invalidateTrialCache } from "../middleware/trial-guard.js";
 import { ensureTables } from "../lib/pg.js";
 import { getOwnerEmail, setOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
 import { canDelete, canUpdateRole, type UserRole } from "../services/securityGuard.js";
+import { calcQrBillCents } from "../lib/qr-pricing.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -136,48 +137,62 @@ router.patch("/super-admin/associations/:id", requireAuth, requireOwnerOrSuperAd
 });
 
 // ── GET /super-admin/financial ────────────────────────────────────────────────
-// Per-org revenue analytics: member_count × cost_per_seat_cents
+// Per-org QR-code count + monthly revenue using landing-page tiered pricing.
+// Billing unit = QR code:
+//   each member account + each dependant (child) = 1 QR = 1 billable unit.
+//   authorized_pickups (pickup contacts) have no QR → never counted.
 router.get("/super-admin/financial", requireAuth, requireOwnerOrSuperAdmin, async (_req, res) => {
-  const [orgsResult, membersResult] = await Promise.all([
-    sa.from("organizations").select("id, name, subscription_status, cost_per_seat_cents, currency").order("id"),
+  const [orgsResult, membersResult, childrenResult] = await Promise.all([
+    sa.from("organizations").select("id, name, subscription_status, currency").order("id"),
     sa.from("members").select("organization_id"),
+    sa.from("children").select("organization_id"),
   ]);
   if (orgsResult.error) { res.status(500).json({ error: orgsResult.error.message }); return; }
 
-  // Count members per org in JS (avoids complex PostgREST GROUP BY)
+  // Count QR codes per org: member accounts + dependants
   const countMap: Record<number, number> = {};
   for (const m of (membersResult.data ?? []) as Array<{ organization_id: number }>) {
     countMap[m.organization_id] = (countMap[m.organization_id] ?? 0) + 1;
   }
+  for (const c of (childrenResult.data ?? []) as Array<{ organization_id: number }>) {
+    countMap[c.organization_id] = (countMap[c.organization_id] ?? 0) + 1;
+  }
 
   const orgs = (orgsResult.data ?? []) as Array<{
-    id: number; name: string; subscription_status?: string;
-    cost_per_seat_cents?: number; currency?: string;
+    id: number; name: string; subscription_status?: string; currency?: string;
   }>;
 
-  let totalMrrCents  = 0;
-  let trialMrrCents  = 0;
-  let totalMemberCount = 0;
+  let totalMrrCents   = 0;
+  let trialMrrCents   = 0;
+  let totalQrCount    = 0;
 
   const orgFinancials = orgs.map(org => {
-    const memberCount      = countMap[org.id] ?? 0;
-    const seatCents        = org.cost_per_seat_cents ?? 0;
-    const mrrCents         = memberCount * seatCents;
-    totalMemberCount      += memberCount;
-    if (org.subscription_status === "active")   totalMrrCents += mrrCents;
+    const qrCount  = countMap[org.id] ?? 0;
+    const currency = org.currency ?? "EUR";
+    // Monthly amount this org owes the platform, using the landing-page formula
+    const mrrCents = calcQrBillCents(qrCount, currency);
+    totalQrCount  += qrCount;
+    if (org.subscription_status === "active")                                      totalMrrCents += mrrCents;
     if (org.subscription_status !== "active" && org.subscription_status !== "expired") trialMrrCents += mrrCents;
     return {
       orgId:           org.id,
       name:            org.name,
       status:          org.subscription_status ?? "trialing",
-      memberCount,
-      costPerSeatCents: seatCents,
+      qrCount,
+      memberCount:     qrCount,   // backward compat alias
+      costPerSeatCents: 0,        // N/A with tiered pricing
       mrrCents,
-      currency:        org.currency ?? "EUR",
+      currency,
     };
   });
 
-  res.json({ totalMrrCents, trialMrrCents, totalMemberCount, orgs: orgFinancials });
+  res.json({
+    totalMrrCents,
+    trialMrrCents,
+    totalQrCount,
+    totalMemberCount: totalQrCount,   // backward compat alias
+    orgs: orgFinancials,
+  });
 });
 
 // ── POST /super-admin/tenants ─────────────────────────────────────────────────

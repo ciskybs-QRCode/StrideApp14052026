@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
-import { getPricingForOrg } from "../lib/pricing-service.js";
+import { calcQrBillCents, qrPricingTiers } from "../lib/qr-pricing.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -49,9 +49,10 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
 
     // memberCount here = total QR codes (member seats + dependant seats)
     const memberCount = (memberResult.count ?? 0) + (childResult.count ?? 0);
-    const { currency: regionalCurrency, pricePerSeatCents: regionalPrice } = await getPricingForOrg(orgId);
-    const costPerSeatCents = org?.cost_per_seat_cents ?? regionalPrice;
-    const currency = org?.currency ?? regionalCurrency.toUpperCase();
+    // Use landing-page tiered pricing; flat per-seat rate is no longer used.
+    const currency = (org?.currency ?? "EUR").toUpperCase();
+    const qrCodeCount = memberCount;  // memberCount already = members + children
+    const totalMonthlyCents = calcQrBillCents(qrCodeCount, currency);
     const subscriptionStatus = org?.subscription_status ?? "trialing";
     const trialEndsAt = org?.trial_ends_at ?? null;
     const trialExpired = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
@@ -60,13 +61,15 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
       subscriptionStatus,
       trialEndsAt,
       trialExpired,
-      memberCount,
-      costPerSeatCents,
+      qrCodeCount,
+      memberCount: qrCodeCount,    // backward compat alias
+      costPerSeatCents: 0,         // N/A with tiered pricing
       currency,
-      totalMonthlyCents: memberCount * costPerSeatCents,
+      totalMonthlyCents,
       hasActiveSubscription: subscriptionStatus === "active",
       stripeCustomerId: org?.stripe_customer_id ?? null,
       stripeSubscriptionId: org?.stripe_subscription_id ?? null,
+      tiers: qrPricingTiers(currency),
     });
   } catch (err) {
     req.log.error(err);
@@ -107,17 +110,11 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
       currency?: string;
     } | null;
 
-    const priceId = org?.stripe_price_id_per_seat ?? process.env["STRIPE_PRICE_ID_PER_SEAT"];
-    if (!priceId) {
-      res.status(400).json({
-        error: "no_price_configured",
-        message: "No Stripe price ID is configured. Contact platform administration.",
-      });
-      return;
-    }
-
     // Total QR codes = member accounts + their dependants
-    const memberCount = Math.max(1, (memberResult.count ?? 0) + (childResult.count ?? 0));
+    const qrCount = Math.max(1, (memberResult.count ?? 0) + (childResult.count ?? 0));
+    const orgCurrency = (org?.currency ?? "EUR").toUpperCase();
+    // Monthly amount = tiered pricing, matching the landing-page calculator exactly
+    const monthlyTotalCents = calcQrBillCents(qrCount, orgCurrency);
 
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeKey);
@@ -174,10 +171,18 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: priceId, quantity: memberCount }],
+      line_items: [{
+        price_data: {
+          currency:     orgCurrency.toLowerCase(),
+          product_data: { name: `Stride Platform — ${qrCount} QR codes` },
+          unit_amount:  monthlyTotalCents,
+          recurring:    { interval: "month" },
+        },
+        quantity: 1,
+      }],
       ...(welcomeCouponId ? { discounts: [{ coupon: welcomeCouponId }] } : {}),
       subscription_data: {
-        metadata: { orgId: String(orgId), memberCount: String(memberCount) },
+        metadata: { orgId: String(orgId), qrCount: String(qrCount) },
       },
       success_url: `${baseUrl}/billing-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${baseUrl}/billing-cancel`,
@@ -209,22 +214,35 @@ router.post("/billing/sync-seats", requireAuth, requireRole("admin"), async (req
     const subId = (org as { stripe_subscription_id?: string } | null)?.stripe_subscription_id;
     if (!subId) { res.status(400).json({ error: "No active subscription found" }); return; }
 
-    const [{ count: mCount }, { count: cCount }] = await Promise.all([
+    const [{ count: mCount }, { count: cCount }, orgCurrResult] = await Promise.all([
       supabase.from("members").select("*", { count: "exact", head: true }).eq("organization_id", orgId),
       supabase.from("children").select("*", { count: "exact", head: true }).eq("organization_id", orgId),
+      supabase.from("organizations").select("currency").eq("id", orgId).maybeSingle(),
     ]);
-    // Total QR codes = member accounts + dependants
-    const memberCount = Math.max(1, (mCount ?? 0) + (cCount ?? 0));
+    const qrCount = Math.max(1, (mCount ?? 0) + (cCount ?? 0));
+    const currency = ((orgCurrResult.data as { currency?: string } | null)?.currency ?? "EUR").toUpperCase();
+    const monthlyTotalCents = calcQrBillCents(qrCount, currency);
 
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeKey);
     const sub = await stripe.subscriptions.retrieve(subId);
     const item = sub.items.data[0];
     if (item) {
-      await stripe.subscriptionItems.update(item.id, { quantity: memberCount });
+      // Stripe SDK types lag behind the API: product_data IS valid on
+      // subscriptionItems.update price_data but the TS types don't include it.
+      await stripe.subscriptionItems.update(item.id, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        price_data: {
+          currency:     currency.toLowerCase(),
+          product_data: { name: `Stride Platform — ${qrCount} QR codes` },
+          unit_amount:  monthlyTotalCents,
+          recurring:    { interval: "month" },
+        } as any,
+        quantity: 1,
+      });
     }
 
-    res.json({ success: true, memberCount });
+    res.json({ success: true, qrCount, monthlyTotalCents });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: (err as Error).message });
@@ -485,9 +503,13 @@ export async function generateBillingStatement(orgId: number): Promise<BillingSt
   ]);
 
   const org = orgResult.data as { currency?: string; cost_per_seat_cents?: number } | null;
-  const memberCount = (memberResult.count ?? 0) + (childResult.count ?? 0);
-  const costPerSeatCents = org?.cost_per_seat_cents ?? 150;
-  const currency        = org?.currency ?? "EUR";
+  const qrCodeCount      = (memberResult.count ?? 0) + (childResult.count ?? 0);
+  const currency         = org?.currency ?? "EUR";
+  // Tiered pricing — matches landing-page calculator exactly
+  const totalMonthlyCents = calcQrBillCents(qrCodeCount, currency);
+  const memberFeeCents    = totalMonthlyCents;
+  const costPerSeatCents  = qrCodeCount > 0 ? Math.round(totalMonthlyCents / qrCodeCount) : 0;
+  const memberCount       = qrCodeCount;  // alias for output shape compat
 
   type DbCourse = { id: number; name: string; price: number; sessions_per_week?: number };
   const courses = (coursesResult.data ?? []) as DbCourse[];
@@ -498,9 +520,6 @@ export async function generateBillingStatement(orgId: number): Promise<BillingSt
     monthlyPriceCents: Math.round(c.price * 100),
     sessionsPerWeek:  c.sessions_per_week ?? 1,
   }));
-
-  const memberFeeCents   = memberCount * costPerSeatCents;
-  const totalMonthlyCents = memberFeeCents;
 
   return {
     orgId,

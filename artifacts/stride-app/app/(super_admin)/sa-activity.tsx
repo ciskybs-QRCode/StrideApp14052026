@@ -6,7 +6,7 @@ import {
 } from "react-native";
 import {
   getPlatformMetrics, getFinancialAnalytics,
-  type PlatformMetrics, type PlatformEvent, type FinancialSummary,
+  type PlatformMetrics, type PlatformEvent, type FinancialSummary, type FinancialOrgRecord,
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -76,13 +76,13 @@ const ev = StyleSheet.create({
 
 // ── Financial Row ─────────────────────────────────────────────────────────────
 
-function FinancialRow({ rec }: { rec: { name: string; status: string; memberCount: number; mrrCents: number; currency: string } }) {
+function FinancialRow({ rec }: { rec: FinancialOrgRecord }) {
   const chip = subscriptionChip(rec.status);
   return (
     <View style={fr.row}>
       <View style={[fr.dot, { backgroundColor: chip.color }]} />
       <Text style={fr.name} numberOfLines={1}>{rec.name}</Text>
-      <Text style={fr.members}>{rec.memberCount} mbr</Text>
+      <Text style={fr.members}>{rec.qrCount ?? rec.memberCount} QR</Text>
       <Text style={fr.mrr}>{formatMoney(rec.mrrCents, rec.currency)}</Text>
     </View>
   );
@@ -146,8 +146,8 @@ export default function SAActivityScreen() {
                 </View>
                 <View style={styles.finDivider} />
                 <View style={styles.finCell}>
-                  <Text style={styles.finAmount}>{financial.totalMemberCount}</Text>
-                  <Text style={styles.finLabel}>Total Members</Text>
+                  <Text style={styles.finAmount}>{financial.totalQrCount ?? financial.totalMemberCount}</Text>
+                  <Text style={styles.finLabel}>Total QR Codes</Text>
                 </View>
               </View>
               <Pressable
