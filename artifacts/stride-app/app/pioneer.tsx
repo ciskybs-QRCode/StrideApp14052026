@@ -94,25 +94,40 @@ As designated Administrator you are responsible for: (a) accuracy of all organis
 4. SUBSCRIPTION AND PAYMENT
 Platform access is subject to the plan selected during onboarding. Trial periods are non-renewable. Continued access after expiry requires an active paid subscription. All fees are non-refundable except as required by law. Stride reserves the right to suspend access for non-payment with 7 days notice.
 
-5. DATA OWNERSHIP
+5. MEMBER ACCOUNT MANAGEMENT AND BILLING RESPONSIBILITY
+⚠ IMPORTANT — READ CAREFULLY. This section governs how active member accounts are counted and billed.
+
+(a) Billing is based on the total number of active member accounts and QR codes registered within your Organisation at the time each invoice is generated. "Active" means any account that has not been explicitly deleted from the platform, regardless of whether that account is in regular use.
+
+(b) It is the sole and exclusive responsibility of the Administrator and the Organisation to delete member accounts and associated QR codes that are no longer required. This includes, without limitation, accounts of members who have left the Organisation, whose membership has lapsed, or who are otherwise no longer active.
+
+(c) Members may delete their own account at any time via the platform. Administrators may delete any member account within their Organisation at any time via the Admin panel. Stride does not automatically deactivate or remove accounts under any circumstances.
+
+(d) FAILURE TO DELETE ACCOUNTS. If an account is not deleted, it will continue to be counted as active and will be included in the billing calculation for each subsequent invoice period. Stride bears no responsibility whatsoever for charges arising from accounts that the Organisation failed to delete. No credit, refund, or adjustment will be issued for accounts that were active at the time of billing, even if those accounts were not in use.
+
+(e) EXAMPLE FOR CLARITY. If your Organisation has 10 member accounts that are no longer active but were never deleted by the Administrator or the relevant members, those 10 accounts will be counted in your invoice and you will be charged accordingly. This is entirely the responsibility of the Organisation. Stride will not adjust, waive, or refund those charges under any circumstances.
+
+(f) The Administrator is strongly advised to conduct regular audits of active accounts and QR codes, and to promptly delete any that are no longer required, in order to avoid unnecessary charges.
+
+6. DATA OWNERSHIP
 All data you input into Stride remains your property. Stride processes this data solely to provide platform services and does not sell it to third parties. See the Privacy Policy for full details.
 
-6. INTELLECTUAL PROPERTY
+7. INTELLECTUAL PROPERTY
 The Stride platform — including all software, design, trademarks, and documentation — is owned by Stride Technologies and protected by intellectual property laws. You are granted a limited, non-exclusive, non-transferable licence to use the platform for its intended purpose.
 
-7. ACCEPTABLE USE
+8. ACCEPTABLE USE
 You agree not to: (a) use the platform for any unlawful purpose; (b) upload malicious code or harmful content; (c) attempt to gain unauthorised access to other accounts or systems; (d) reverse-engineer or resell the platform.
 
-8. LIMITATION OF LIABILITY
+9. LIMITATION OF LIABILITY
 To the maximum extent permitted by law, Stride shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform, including loss of data, revenue, or business opportunity. Our total aggregate liability shall not exceed the fees paid in the 12 months preceding the claim.
 
-9. TERMINATION
+10. TERMINATION
 Either party may terminate with 30 days written notice. You may export your data within a 14-day grace period; after that, data will be permanently deleted in accordance with our retention schedules.
 
-10. GOVERNING LAW
+11. GOVERNING LAW
 These Terms are governed by the laws of the jurisdiction in which your Organisation primarily operates, without regard to conflict-of-law principles. Any disputes shall be resolved by the courts of that jurisdiction.
 
-11. AMENDMENTS
+12. AMENDMENTS
 Stride may modify these Terms at any time with reasonable notice. Continued use of the platform after notification constitutes acceptance of the revised Terms.`;
 
 const PRIVACY_TEXT = `STRIDE PLATFORM — PRIVACY POLICY
