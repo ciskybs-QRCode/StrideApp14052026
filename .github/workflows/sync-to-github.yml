@@ -37,6 +37,7 @@ jobs:
           git push target main --force
 
       - name: Prune old backup branches on target
+        id: prune
         if: success()
         run: |
           git fetch target 'refs/heads/backup/main-*:refs/remotes/target/backup/main-*' --prune 2>/dev/null || true
@@ -49,14 +50,71 @@ jobs:
 
           if [ "$TOTAL" -le "$BACKUP_RETENTION_COUNT" ]; then
             echo "Nothing to prune."
+            echo "deleted_branches=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           TO_DELETE=$(echo "$BACKUPS" | tail -n +"$((BACKUP_RETENTION_COUNT + 1))")
+          DELETED_LIST=""
           for BRANCH in $TO_DELETE; do
             echo "Deleting ${BRANCH}"
             git push target --delete "$BRANCH"
+            DELETED_LIST="${DELETED_LIST}${BRANCH},"
           done
+
+          # Strip trailing comma and write to step output
+          echo "deleted_branches=${DELETED_LIST%,}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack on branch pruning
+        if: success() && steps.prune.outputs.deleted_branches != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_ALERT_CHANNEL: ${{ vars.SLACK_ALERT_CHANNEL }}
+          DELETED_BRANCHES: ${{ steps.prune.outputs.deleted_branches }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+            if (!webhookUrl) {
+              core.warning('SLACK_WEBHOOK_URL is not set — skipping branch-pruning Slack notification');
+              return;
+            }
+
+            const deleted = process.env.DELETED_BRANCHES.split(',').filter(Boolean);
+            const retention = process.env.BACKUP_RETENTION_COUNT;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const branchLines = deleted.map(b => `• \`${b}\``).join('\n');
+            const text = `:wastebasket: *${deleted.length} backup branch(es) pruned* (retention: ${retention})`;
+            const mrkdwn =
+              `:wastebasket: *${deleted.length} old backup branch(es) pruned* — run #${context.runNumber}\n` +
+              `*Retention count:* ${retention}\n` +
+              `*Deleted:*\n${branchLines}\n` +
+              `<${runUrl}|View run>`;
+
+            const channel = process.env.SLACK_ALERT_CHANNEL;
+            const payload = {
+              text,
+              ...(channel ? { channel } : {}),
+              blocks: [
+                {
+                  type: 'section',
+                  text: { type: 'mrkdwn', text: mrkdwn },
+                },
+              ],
+            };
+
+            const response = await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              core.warning(`Slack webhook returned ${response.status}: ${await response.text()}`);
+            } else {
+              console.log(`Slack pruning notice sent for ${deleted.length} deleted branch(es)`);
+            }
 
       - name: Close sync-failure issues on success
         id: close_issues
