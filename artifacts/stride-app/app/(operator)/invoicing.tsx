@@ -23,7 +23,7 @@ import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { useAuth } from "@/context/AuthContext";
 import { useSubstitution } from "@/context/SubstitutionContext";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiOperatorEarnings } from "@/lib/api";
+import { api, type ApiOperatorEarnings, type ApiPrivateLessonBooking } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import {
   type PayoutFrequency,
@@ -443,6 +443,9 @@ export default function OperatorInvoicing() {
   const [showSuccessModal, setShowSuccessModal]     = useState(false);
   const [submittedId, setSubmittedId]             = useState("");
   const [submitError, setSubmitError]             = useState<string | null>(null);
+  const [privateLessonBookings, setPrivateLessonBookings] = useState<ApiPrivateLessonBooking[]>([]);
+  const [loadingPLB, setLoadingPLB]               = useState(false);
+  const [updatingPLB, setUpdatingPLB]             = useState<number | null>(null);
   const [generateError, setGenerateError]         = useState<string | null>(null);
 
   // ── Payment Details (bank fields, locale-aware) ───────────────────────────
@@ -632,6 +635,28 @@ export default function OperatorInvoicing() {
   const isAbsent = useCallback((e: DailyEntry) =>
     operatorAbsences.some(a => a.date === e.date && a.discipline === e.discipline),
   [operatorAbsences]);
+
+  // ── Private lesson bookings ──────────────────────────────────────────────
+  useFocusEffect(useCallback(() => {
+    setLoadingPLB(true);
+    api.getPrivateLessonBookings()
+      .then(data => setPrivateLessonBookings(data.filter(b => b.status !== "pending_payment")))
+      .catch(() => setPrivateLessonBookings([]))
+      .finally(() => setLoadingPLB(false));
+  }, []));
+
+  const handlePLBStatus = async (id: number, status: "confirmed" | "completed" | "cancelled") => {
+    setUpdatingPLB(id);
+    try {
+      const updated = await api.updatePrivateLessonBooking(id, status);
+      setPrivateLessonBookings(prev => prev.map(b => b.id === id ? { ...b, status: updated.status } : b));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { /* ignore */ }
+    finally { setUpdatingPLB(null); }
+  };
+
+  const activePLB = privateLessonBookings.filter(b => b.status === "booked" || b.status === "confirmed");
+  const pastPLB   = privateLessonBookings.filter(b => b.status === "completed" || b.status === "cancelled");
 
   // Group filtered log by date for UI rendering
   const dailyGroups = useMemo(() => {
@@ -840,6 +865,104 @@ export default function OperatorInvoicing() {
             </View>
           </View>
         </View>
+
+        {/* ── Private Lesson Bookings ── */}
+        {(loadingPLB || activePLB.length > 0 || pastPLB.length > 0) && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Private Lesson Bookings</Text>
+            {loadingPLB ? (
+              <View style={{ alignItems: "center", paddingVertical: 20 }}>
+                <ActivityIndicator color={colors.primary} />
+              </View>
+            ) : (
+              <>
+                {activePLB.map(b => (
+                  <View key={b.id} style={[styles.plbCard, { backgroundColor: colors.card, borderColor: b.status === "booked" ? colors.secondary : "#10B981" }]}>
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                      <View style={[styles.plbIcon, { backgroundColor: b.status === "booked" ? "#FEF9C3" : "#D1FAE5" }]}>
+                        <Ionicons name={b.status === "booked" ? "time-outline" : "checkmark-circle-outline"} size={20} color={b.status === "booked" ? "#92400E" : "#059669"} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.plbTitle, { color: colors.foreground }]}>{b.discipline_name}</Text>
+                        <Text style={[styles.plbSub, { color: colors.mutedForeground }]}>
+                          {b.parent_name ?? "Member"}{b.preferred_date ? ` · ${b.preferred_date}` : ""}
+                          {b.preferred_time ? ` ${b.preferred_time}` : ""}
+                        </Text>
+                        <Text style={[styles.plbSub, { color: colors.mutedForeground }]}>{b.duration_minutes} min</Text>
+                        <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                          {b.status === "booked" && (
+                            <>
+                              <Pressable
+                                style={[styles.plbBtn, { backgroundColor: colors.primary }]}
+                                onPress={() => handlePLBStatus(b.id, "confirmed")}
+                                disabled={updatingPLB === b.id}
+                              >
+                                {updatingPLB === b.id
+                                  ? <ActivityIndicator size="small" color="#FFF" />
+                                  : <Text style={[styles.plbBtnText, { color: "#FFF" }]}>Confirm</Text>
+                                }
+                              </Pressable>
+                              <Pressable
+                                style={[styles.plbBtn, { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" }]}
+                                onPress={() => handlePLBStatus(b.id, "cancelled")}
+                                disabled={updatingPLB === b.id}
+                              >
+                                <Text style={[styles.plbBtnText, { color: "#DC2626" }]}>Decline</Text>
+                              </Pressable>
+                            </>
+                          )}
+                          {b.status === "confirmed" && (
+                            <Pressable
+                              style={[styles.plbBtn, { backgroundColor: "#D1FAE5" }]}
+                              onPress={() => handlePLBStatus(b.id, "completed")}
+                              disabled={updatingPLB === b.id}
+                            >
+                              {updatingPLB === b.id
+                                ? <ActivityIndicator size="small" color="#059669" />
+                                : <Text style={[styles.plbBtnText, { color: "#059669" }]}>Mark Completed</Text>
+                              }
+                            </Pressable>
+                          )}
+                        </View>
+                      </View>
+                      <View style={{ alignItems: "flex-end" }}>
+                        <Text style={[styles.plbPayout, { color: "#059669" }]}>
+                          €{(b.operator_payout_cents / 100).toFixed(2)}
+                        </Text>
+                        <Text style={[styles.plbSub, { color: colors.mutedForeground }]}>payout</Text>
+                        {b.payroll_credited && (
+                          <View style={[styles.plbCredited, { backgroundColor: "#D1FAE5" }]}>
+                            <Ionicons name="checkmark-circle" size={10} color="#059669" />
+                            <Text style={{ fontSize: 9, color: "#059669", fontWeight: "700" }}>Credited</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                ))}
+
+                {pastPLB.slice(0, 5).map(b => (
+                  <View key={b.id} style={[styles.plbCard, { backgroundColor: colors.card, borderColor: colors.border, opacity: 0.65 }]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                      <View style={[styles.plbIcon, { backgroundColor: colors.muted }]}>
+                        <Ionicons name={b.status === "completed" ? "checkmark-done-outline" : "close-circle-outline"} size={18} color={colors.mutedForeground} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.plbTitle, { color: colors.foreground }]}>{b.discipline_name}</Text>
+                        <Text style={[styles.plbSub, { color: colors.mutedForeground }]}>
+                          {b.parent_name ?? "Member"}{b.preferred_date ? ` · ${b.preferred_date}` : ""} · {b.status}
+                        </Text>
+                      </View>
+                      <Text style={[styles.plbPayout, { color: b.status === "completed" ? "#059669" : colors.mutedForeground, fontSize: 13 }]}>
+                        €{(b.operator_payout_cents / 100).toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
+          </>
+        )}
 
         {/* ── Billing period selector ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Billing Period</Text>
@@ -1360,5 +1483,15 @@ const styles = StyleSheet.create({
   fileRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, borderTopWidth: 1 },
   fileName: { flex: 1, fontSize: 13 },
   fileDate: { fontSize: 12 },
+
+  // Private lesson bookings
+  plbCard:      { borderRadius: 14, borderWidth: 1.5, padding: 14, marginBottom: 10 },
+  plbIcon:      { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  plbTitle:     { fontSize: 14, fontWeight: "800", marginBottom: 3 },
+  plbSub:       { fontSize: 11, lineHeight: 16 },
+  plbPayout:    { fontSize: 16, fontWeight: "900" },
+  plbBtn:       { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
+  plbBtnText:   { fontSize: 12, fontWeight: "700" },
+  plbCredited:  { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, marginTop: 4 },
 
 });

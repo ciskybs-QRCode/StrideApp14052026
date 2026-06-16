@@ -717,7 +717,7 @@ export default function CoursesScreen() {
               </Text>
               <Pressable
                 style={[styles.bookPrivateBtn, { backgroundColor: colors.primary }]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/book-lesson"); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/private-lesson-book"); }}
               >
                 <Ionicons name="calendar" size={18} color="#FFF" />
                 <Text style={styles.bookPrivateBtnText}>BOOK PRIVATE LESSON</Text>

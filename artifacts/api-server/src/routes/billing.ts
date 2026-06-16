@@ -1,5 +1,6 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
 import { getPricingForOrg } from "../lib/pricing-service.js";
@@ -335,6 +336,52 @@ router.post("/billing/webhook", async (req, res) => {
               items:       items as Parameters<typeof processMemberCheckout>[0]["items"],
               amountCents: amtCents,
             });
+          }
+        } else if (meta?.["type"] === "private_lesson") {
+          const bookingId          = meta["bookingId"]          ? parseInt(meta["bookingId"])          : null;
+          const operatorUserId     = meta["operatorUserId"]     ? parseInt(meta["operatorUserId"])     : null;
+          const operatorPayoutCents = meta["operatorPayoutCents"] ? parseInt(meta["operatorPayoutCents"]) : 0;
+          const orgId              = meta["orgId"]              ? parseInt(meta["orgId"])              : null;
+
+          if (bookingId && orgId) {
+            // Mark booking as paid/booked
+            await pool.query(
+              `UPDATE private_lesson_bookings SET status='booked', updated_at=NOW() WHERE id=$1`,
+              [bookingId],
+            ).catch(e => { (req as Request & { log?: { error: (e: unknown, msg: string) => void } }).log?.error(e, "pl booking update"); });
+
+            // Auto-credit operator payroll if payout > 0
+            if (operatorUserId && operatorPayoutCents > 0) {
+              const { rows: bkRows } = await pool.query(
+                `SELECT discipline_name, preferred_date FROM private_lesson_bookings WHERE id=$1`, [bookingId],
+              );
+              const bk           = (bkRows[0] ?? {}) as { discipline_name?: string; preferred_date?: string };
+              const now          = new Date();
+              const periodMonth  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+              const periodLabel  = now.toLocaleString("default", { month: "long", year: "numeric" });
+
+              const { rows: opRows } = await pool.query(`SELECT name FROM users WHERE id=$1`, [operatorUserId]);
+              const operatorName = (opRows[0] as { name?: string })?.name ?? "Operator";
+
+              await pool.query(
+                `INSERT INTO operator_invoice_submissions
+                   (organization_id, operator_user_id, operator_name, period_label, period_month, total_cents, line_items)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+                [
+                  orgId, operatorUserId, operatorName, periodLabel, periodMonth, operatorPayoutCents,
+                  JSON.stringify([{
+                    description: `Private ${bk.discipline_name ?? "lesson"} lesson${bk.preferred_date ? " · " + bk.preferred_date : ""}`,
+                    amountCents: operatorPayoutCents,
+                    bookingId,
+                  }]),
+                ],
+              ).catch(() => {});
+
+              // Mark payroll as credited on the booking
+              await pool.query(
+                `UPDATE private_lesson_bookings SET payroll_credited=true WHERE id=$1`, [bookingId],
+              ).catch(() => {});
+            }
           }
         } else {
           const orgId = getOrgId(meta);

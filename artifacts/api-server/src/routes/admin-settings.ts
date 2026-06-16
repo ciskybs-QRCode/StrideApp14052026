@@ -80,6 +80,7 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "payout_frequency",
     "reimbursement_receipt_threshold_cents",
     "payout_next_date",
+    "private_lessons_enabled",
   ];
 
   const setClauses: string[] = ["updated_at = NOW()"];

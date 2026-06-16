@@ -198,6 +198,14 @@ export default function SettingsIndex() {
           onPress={() => navigate("member-registration")}
         />
 
+        {/* ── PRIVATE LESSONS ── */}
+        <HubCard
+          icon="school-outline"
+          title="Private Lessons"
+          description="Enable booking, set prices per discipline and operator payouts"
+          onPress={() => navigate("private-lessons")}
+        />
+
         {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
 

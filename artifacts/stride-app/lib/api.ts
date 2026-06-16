@@ -669,6 +669,26 @@ export const api = {
   updateRegistrationConfig: (config: Record<string, unknown>) =>
     request<{ ok: boolean }>("PUT", "/registration-config", config),
 
+  // Private Lessons
+  getPrivateLessonSettings: () =>
+    request<{ enabled: boolean; configs: ApiPrivateLessonConfig[] }>("GET", "/private-lessons/settings"),
+  updatePrivateLessonEnabled: (enabled: boolean) =>
+    request<{ ok: boolean }>("PUT", "/private-lessons/settings", { enabled }),
+  savePrivateLessonConfig: (config: Partial<ApiPrivateLessonConfig> & { discipline_name: string; member_price_cents: number; operator_payout_cents: number }) =>
+    request<ApiPrivateLessonConfig>("POST", "/private-lessons/configs", config),
+  deletePrivateLessonConfig: (id: number) =>
+    request<{ ok: boolean }>("DELETE", `/private-lessons/configs/${id}`),
+  getPrivateLessonsPublic: () =>
+    request<{ enabled: boolean; configs: ApiPrivateLessonConfig[] }>("GET", "/private-lessons/public"),
+  getPrivateLessonOperators: (configId: number) =>
+    request<ApiPrivateLessonOperator[]>("GET", `/private-lessons/operators/${configId}`),
+  createPrivateLessonCheckout: (data: { config_id: number; operator_user_id: number; preferred_date?: string; preferred_time?: string; notes?: string }) =>
+    request<{ checkoutUrl: string; bookingId: number; sessionId: string }>("POST", "/private-lessons/checkout", data),
+  getPrivateLessonBookings: () =>
+    request<ApiPrivateLessonBooking[]>("GET", "/private-lessons/bookings"),
+  updatePrivateLessonBooking: (id: number, status: string) =>
+    request<ApiPrivateLessonBooking>("PATCH", `/private-lessons/bookings/${id}`, { status }),
+
   // Operator bank details
   getBankDetails: () =>
     request<{ accountName: string | null; iban: string | null; swift: string | null; notes: string | null }>("GET", "/operator-bank-details"),
@@ -1447,6 +1467,48 @@ export interface ApiOperatorInvoice {
   admin_note: string | null;
   submitted_at: string;
   reviewed_at: string | null;
+}
+
+export interface ApiPrivateLessonConfig {
+  id: number;
+  organization_id: number;
+  discipline_id: number | null;
+  discipline_name: string;
+  member_price_cents: number;
+  operator_payout_cents: number;
+  duration_minutes: number;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiPrivateLessonOperator {
+  id: number;
+  name: string;
+  profile_id: number;
+  profile_type: "paid" | "volunteer";
+}
+
+export interface ApiPrivateLessonBooking {
+  id: number;
+  organization_id: number;
+  parent_user_id: number;
+  operator_user_id: number;
+  config_id: number;
+  discipline_name: string;
+  preferred_date: string | null;
+  preferred_time: string | null;
+  duration_minutes: number;
+  status: "pending_payment" | "booked" | "confirmed" | "completed" | "cancelled";
+  member_price_cents: number;
+  operator_payout_cents: number;
+  checkout_session_id: string | null;
+  payroll_credited: boolean;
+  notes: string | null;
+  parent_name?: string;
+  operator_name?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ApiPrivateNotification {
