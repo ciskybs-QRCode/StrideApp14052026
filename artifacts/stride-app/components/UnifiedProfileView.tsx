@@ -174,7 +174,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
       console.error("activateParent failed:", err);
       Alert.alert(
         "Activation Failed",
-        err instanceof Error ? err.message : "Unable to activate the Parent profile. Please try again.",
+        err instanceof Error ? err.message : "Unable to activate the Member profile. Please try again.",
       );
     } finally {
       setProvisioningPa(false);
@@ -397,12 +397,12 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.provisionTitle, { color: hasRole("parent") ? "#047857" : colors.foreground }]}>
-                  {hasRole("parent") ? "Parent Profile Active" : "Activate Parent Profile"}
+                  {hasRole("parent") ? "Member Profile Active" : "Activate Member Profile"}
                 </Text>
                 <Text style={[s.provisionDesc, { color: colors.mutedForeground }]}>
                   {hasRole("parent")
-                    ? "You can now switch to the Parent/Member role"
-                    : "Provisions a parent_profiles row for your account"}
+                    ? "You can now switch to the Member role"
+                    : "Provisions a member profile for your account"}
                 </Text>
               </View>
               {hasRole("parent")

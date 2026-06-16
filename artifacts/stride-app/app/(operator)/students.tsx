@@ -89,7 +89,7 @@ export default function OperatorStudents() {
               },
             },
             {
-              text: "🚨 Alert Parent Now",
+              text: "🚨 Alert Member Now",
               style: "destructive",
               onPress: async () => {
                 await updateStudentPresence(id, false);

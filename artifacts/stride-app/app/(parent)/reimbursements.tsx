@@ -123,7 +123,7 @@ export default function ParentReimbursementsScreen() {
     setSubmitting(true);
     try {
       const created = await api.createReimbursement({
-        claimantName: user?.name ?? "Parent",
+        claimantName: user?.name ?? "Member",
         claimantRole: "parent",
         description:  desc.trim(),
         amountCents,

@@ -79,7 +79,7 @@ type ManageStep = "view" | "confirm_role" | "confirm_delete";
 const ROLE_OPTIONS = [
   { key: "admin",    label: "Admin",    icon: "person" as const,         color: "#7C3AED", bg: "#F5F3FF" },
   { key: "operator", label: "Operator", icon: "people" as const,         color: "#D97706", bg: "#FFFBEB" },
-  { key: "parent",   label: "Parent",   icon: "people-outline" as const, color: "#059669", bg: "#ECFDF5" },
+  { key: "parent",   label: "Member",   icon: "people-outline" as const, color: "#059669", bg: "#ECFDF5" },
 ];
 
 function ManageUserModal({ visible, target, currentUser, ownerEmail, onClose, onSuccess }: {

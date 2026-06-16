@@ -15,7 +15,7 @@ const PHASE_CONFIG: Record<Exclude<EscalationPhase, 0>, {
   sub: string;
 }> = {
   1: { bg: "#F59E0B", icon: "alert-circle",      label: "CHECK-IN NOT DETECTED",    sub: "No scan recorded at lesson start" },
-  2: { bg: "#EF4444", icon: "warning",            label: "CRITICAL ABSENCE · 5 MIN",  sub: "Second alert — contact parent and administrator immediately" },
+  2: { bg: "#EF4444", icon: "warning",            label: "CRITICAL ABSENCE · 5 MIN",  sub: "Second alert — contact member and administrator immediately" },
   3: { bg: "#7F1D1D", icon: "nuclear",            label: "⚠ SECURITY ALARM · 10 MIN", sub: "Alarm triggered — immediate action required" },
 };
 

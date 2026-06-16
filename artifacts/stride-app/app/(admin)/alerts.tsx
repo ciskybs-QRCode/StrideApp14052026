@@ -126,7 +126,7 @@ function AlertItem({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =
 function EscalationTimeline() {
   const colors = useColors();
   const steps = [
-    { phase: 1, label: "T+0",  title: "Immediate notification",     sub: "Alert sent to operator, administrator and parent", color: "#F59E0B" },
+    { phase: 1, label: "T+0",  title: "Immediate notification",     sub: "Alert sent to operator, administrator and member", color: "#F59E0B" },
     { phase: 2, label: "T+5",  title: "High priority",              sub: "Second urgent alert to all parties",               color: "#EF4444" },
     { phase: 3, label: "T+10", title: "Continuous audio alarm",     sub: "Siren active on all devices",                      color: "#7F1D1D" },
   ];

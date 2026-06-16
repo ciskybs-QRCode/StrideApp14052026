@@ -37,7 +37,7 @@ const ROLE_META: Record<UserRole, {
   super_admin: { label: "Platform", icon: "globe-outline",    color: "#FBBF24" },
   admin:       { label: "Admin",    icon: "shield-checkmark", color: "#6D28D9" },
   operator:    { label: "Operator", icon: "school",           color: "#0369A1" },
-  parent:      { label: "Parent",   icon: "person",           color: "#047857" },
+  parent:      { label: "Member",   icon: "person",           color: "#047857" },
   kiosk:       { label: "Kiosk",    icon: "tv-outline",       color: "#1E3A8A" },
 };
 

@@ -634,7 +634,7 @@ export default function AdminSetup() {
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, fontWeight: "800", color: "#065F46" }}>Branding is live for all users</Text>
               <Text style={{ fontSize: 11, color: "#059669", marginTop: 2 }}>
-                Colors and logo are applied instantly across Admin, Operator, and Parent views.
+                Colors and logo are applied instantly across Admin, Operator, and Member views.
               </Text>
             </View>
           </View>
