@@ -59,6 +59,7 @@ jobs:
           done
 
       - name: Close sync-failure issues on success
+        id: close_issues
         if: success()
         uses: actions/github-script@v7
         with:
@@ -69,6 +70,8 @@ jobs:
               labels: 'sync-failure',
               state: 'open',
             });
+
+            const closed = [];
 
             for (const issue of issues) {
               await github.rest.issues.createComment({
@@ -95,10 +98,67 @@ jobs:
               });
 
               console.log(`Closed issue #${issue.number}`);
+              closed.push({ number: issue.number, url: issue.html_url });
             }
 
             if (issues.length === 0) {
               console.log('No open sync-failure issues to close.');
+            }
+
+            core.setOutput('closed_count', closed.length);
+            core.setOutput('closed_json', JSON.stringify(closed));
+
+      - name: Slack summary when multiple issues resolved
+        if: success() && fromJSON(steps.close_issues.outputs.closed_count) > 1
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_ALERT_CHANNEL: ${{ vars.SLACK_ALERT_CHANNEL }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+            if (!webhookUrl) {
+              core.warning('SLACK_WEBHOOK_URL is not set — skipping bulk-resolve Slack summary');
+              return;
+            }
+
+            const closed = JSON.parse('${{ steps.close_issues.outputs.closed_json }}');
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const shortSha = context.sha.slice(0, 7);
+
+            const issueLines = closed
+              .map(i => `• <${i.url}|#${i.number}>`)
+              .join('\n');
+
+            const text = `:white_check_mark: *${closed.length} sync-failure issues resolved* (run #${context.runNumber})`;
+            const mrkdwn =
+              `:white_check_mark: *${closed.length} sync-failure issues auto-resolved* — run #${context.runNumber}\n` +
+              `*Commit:* \`${shortSha}\` · *Actor:* @${context.actor}\n` +
+              `*Closed issues:*\n${issueLines}\n` +
+              `<${runUrl}|View run>`;
+
+            const channel = process.env.SLACK_ALERT_CHANNEL;
+            const payload = {
+              text,
+              ...(channel ? { channel } : {}),
+              blocks: [
+                {
+                  type: 'section',
+                  text: { type: 'mrkdwn', text: mrkdwn },
+                },
+              ],
+            };
+
+            const response = await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              core.warning(`Slack webhook returned ${response.status}: ${await response.text()}`);
+            } else {
+              console.log(`Slack bulk-resolve summary sent for ${closed.length} issues`);
             }
 
       - name: Notify on failure
