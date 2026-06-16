@@ -34,6 +34,26 @@ jobs:
 
           git push target main --force
 
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":red_circle: *Sync to GitHub failed* — run #${{ github.run_number }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":red_circle: *Sync to GitHub failed* — run #${{ github.run_number }}\n*Commit:* `${{ github.sha }}`\n*Actor:* @${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View failed run>"
+                  }
+                }
+              ]
+            }
+
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v7
