@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { HubCard } from "@/components/HubCard";
 
 // ── Nav rows shown under CONFIGURATION ───────────────────────────────────────
@@ -160,9 +159,6 @@ export default function SettingsIndex() {
             router.push("/(admin)/account" as never);
           }}
         />
-
-        {/* ── SWITCH ROLE ── */}
-        <RoleSwitcherRow />
 
         {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>SCHOOL</Text>

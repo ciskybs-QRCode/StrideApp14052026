@@ -330,36 +330,6 @@ export default function AdminHome() {
           <SOSButton onConfirm={openSOS} />
         </View>
 
-        {/* ── TOOLS & NAVIGATION ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 10 }]}>Tools</Text>
-
-        <HubCard
-          icon="bar-chart"
-          title="Analytics"
-          description="Trends, payments, occupancy and export"
-          onPress={() => { router.push("/(admin)/analytics"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        />
-        <HubCard
-          icon="terminal-outline"
-          title="Admin Copilot"
-          description="Ask data questions in plain English"
-          badge="NL"
-          onPress={() => { router.push("/(admin)/copilot"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        />
-        <HubCard
-          icon="sparkles"
-          title="Smart Rostering"
-          description="Find best substitute, match score and auto-notify"
-          badge="AI"
-          onPress={() => { router.push("/(admin)/smart-roster"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        />
-        <HubCard
-          icon="bluetooth"
-          title="BLE Proximity Check-in"
-          description="Wearable beacons, auto check-in and live proximity log"
-          badge="BLE"
-          onPress={() => { router.push("/(admin)/beacons" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        />
         {marketplaceEnabled && (
           <HubCard
             icon="storefront"
