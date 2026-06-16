@@ -18,7 +18,7 @@ function SuspensionScreen() {
   const { refresh } = useBillingStatus();
 
   return (
-    <View style={[ss.container, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}>
+    <View style={[ss.container, { paddingTop: insets.top > 0 ? insets.top + 16 : (Platform.OS === "ios" ? 64 : 44), paddingBottom: insets.bottom + 24 }]}>
       <ScrollView contentContainerStyle={ss.scroll} showsVerticalScrollIndicator={false}>
         {/* Lock icon */}
         <View style={ss.iconRing}>

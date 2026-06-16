@@ -309,7 +309,7 @@ export default function BookLessonScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.primary }]}>
         <ScrollView
-          contentContainerStyle={[styles.confirmedScroll, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40 }]}
+          contentContainerStyle={[styles.confirmedScroll, { paddingTop: insets.top > 0 ? insets.top + 40 : (Platform.OS === "ios" ? 88 : 68), paddingBottom: insets.bottom + 40 }]}
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.confirmedIcon, { backgroundColor: colors.secondary }]}>

@@ -9,6 +9,7 @@ import {
   Animated,
   Dimensions,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -321,7 +322,7 @@ export default function KioskScreen() {
       <View style={styles.bottomGradient} pointerEvents="none" />
 
       {/* Top HUD */}
-      <View style={[styles.hud, { paddingTop: insets.top + 20 }]}>
+      <View style={[styles.hud, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28) }]}>
         <Image source={LOGO} style={styles.logo} contentFit="contain" />
         <Text style={styles.hudTitle}>Digital Receptionist</Text>
         <View style={styles.statusPill}>

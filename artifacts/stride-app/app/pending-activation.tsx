@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -62,7 +63,7 @@ export default function PendingActivation() {
       style={{ flex: 1, backgroundColor: NAVY }}
       contentContainerStyle={[
         styles.scroll,
-        { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 40 },
+        { paddingTop: insets.top > 0 ? insets.top + 32 : (Platform.OS === "ios" ? 80 : 60), paddingBottom: insets.bottom + 40 },
       ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}

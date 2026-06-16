@@ -515,7 +515,7 @@ export default function OperatorCoursesScreen() {
       {/* ── Workshop Proposal Modal ── */}
       <Modal visible={showProposeModal} animationType="slide" onRequestClose={() => setShowProposeModal(false)}>
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: insets.top + (Platform.OS === "web" ? 80 : 20), paddingBottom: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), paddingBottom: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
             <Pressable onPress={() => setShowProposeModal(false)} hitSlop={10}>
               <Ionicons name="close" size={24} color={colors.mutedForeground} />
             </Pressable>

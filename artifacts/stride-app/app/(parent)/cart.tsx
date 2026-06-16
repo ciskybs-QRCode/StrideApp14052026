@@ -236,9 +236,9 @@ export default function CartScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 20 : 12), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable style={styles.backBtn} onPress={() => router.navigate("/(parent)/courses" as never)}>
-          <Ionicons name="arrow-back" size={22} color={colors.primary} />
+          <Ionicons name="chevron-back" size={24} color="#FBBF24" />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.primary }]}>Shopping Cart</Text>
         {count > 0 ? (

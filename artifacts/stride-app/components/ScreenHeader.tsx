@@ -2,12 +2,13 @@
  * ScreenHeader — Standardised in-flow header for all non-dashboard screens.
  *
  * Rules:
- * - Back chevron appears on the left whenever router.canGoBack() is true,
- *   or when `onBack` is explicitly provided.
+ * - Back chevron (gold/secondary) appears on the left whenever `onBack` is
+ *   explicitly provided, OR when router.canGoBack() is true and hideBack=false.
+ * - `onBack` ALWAYS takes priority — it defines the "mother page" for that screen.
  * - Title centred between back button and optional right slot.
  * - Colors pulled from useColors() so BrandingContext overrides work.
- * - NOT a floating absolute element — lives in the normal document flow,
- *   sitting below the safe-area inset.
+ * - paddingTop = insets.top + 6 (minimum 50 on iOS, 28 on Android) so content
+ *   never hides behind camera cut-outs or Dynamic Island.
  */
 
 import { Ionicons } from "@expo/vector-icons";
@@ -46,18 +47,28 @@ export function ScreenHeader({
   const colors = useColors();
 
   const canGoBack = router.canGoBack();
-  const showBack  = !hideBack && (canGoBack || !!onBack);
+  const showBack  = !hideBack && (!!onBack || canGoBack);
 
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onBack) { onBack(); return; }
+    if (onBack) {
+      onBack();
+      return;
+    }
     router.back();
   };
 
-  const bg    = light ? "#FFFFFF" : colors.primary;
-  const fg    = light ? colors.primary : "#FFFFFF";
-  const subFg = light ? colors.mutedForeground : "rgba(255,255,255,0.65)";
-  const iconFg = light ? colors.primary : colors.secondary;
+  const bg     = light ? "#FFFFFF" : colors.primary;
+  const fg     = light ? colors.primary : "#FFFFFF";
+  const subFg  = light ? colors.mutedForeground : "rgba(255,255,255,0.65)";
+  // Back icon: always gold (#FBBF24) on dark bg, primary on light bg
+  const iconFg = light ? colors.primary : "#FBBF24";
+
+  // Safe paddingTop: respect the real inset + breathing room.
+  // Minimum 50 on iOS (covers Dynamic Island & notch), 28 on Android.
+  const safeTop = insets.top > 0
+    ? insets.top + 6
+    : Platform.OS === "ios" ? 50 : 28;
 
   return (
     <View
@@ -65,7 +76,7 @@ export function ScreenHeader({
         styles.outer,
         {
           backgroundColor: bg,
-          paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 44 : 0),
+          paddingTop: safeTop,
           borderBottomColor: light ? colors.border : "transparent",
           borderBottomWidth: light ? 1 : 0,
         },
@@ -77,12 +88,12 @@ export function ScreenHeader({
           {showBack && (
             <Pressable
               onPress={handleBack}
-              hitSlop={12}
+              hitSlop={14}
               style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
               accessibilityRole="button"
               accessibilityLabel="Go back"
             >
-              <Ionicons name="chevron-back" size={22} color={iconFg} />
+              <Ionicons name="chevron-back" size={24} color={iconFg} />
             </Pressable>
           )}
         </View>
@@ -123,7 +134,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 4,
     paddingVertical: 12,
-    minHeight: 52,
+    minHeight: 56,
   },
   side: {
     width: 52,
@@ -146,9 +157,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
   },

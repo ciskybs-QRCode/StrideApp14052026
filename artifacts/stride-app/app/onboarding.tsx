@@ -269,10 +269,10 @@ export default function OnboardingScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#F8FAFF" }}>
       {/* Top bar */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.topBar, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28) }]}>
         {step > 1 ? (
           <Pressable onPress={back} style={styles.backBtn} hitSlop={10}>
-            <Ionicons name="arrow-back" size={22} color={NAVY} />
+            <Ionicons name="chevron-back" size={24} color={NAVY} />
           </Pressable>
         ) : (
           <View style={{ width: 40 }} />

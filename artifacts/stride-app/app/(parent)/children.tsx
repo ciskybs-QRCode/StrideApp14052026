@@ -271,7 +271,7 @@ export default function ChildrenScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.scroll, {
-          paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
+          paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28),
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
@@ -410,7 +410,7 @@ export default function ChildrenScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={[styles.scroll, {
-          paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
+          paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28),
           paddingBottom: insets.bottom + 100,
         }]}
         showsVerticalScrollIndicator={false}

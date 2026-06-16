@@ -165,7 +165,7 @@ export default function PaywallScreen() {
       style={[
         styles.container,
         {
-          paddingTop:    insets.top + (Platform.OS === "web" ? 20 : 0),
+          paddingTop:    insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28),
           paddingBottom: insets.bottom,
         },
       ]}

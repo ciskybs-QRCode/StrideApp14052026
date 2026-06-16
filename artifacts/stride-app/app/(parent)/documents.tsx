@@ -278,7 +278,7 @@ export default function DocumentsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Settings</Text>
@@ -531,9 +531,9 @@ export default function DocumentsScreen() {
       {/* ── Edit Profile — Fullscreen Modal ── */}
       <Modal visible={showProfile} transparent={false} animationType="slide" onRequestClose={() => setShowProfile(false)}>
         <View style={[styles.fullScreenModal, { backgroundColor: colors.background }]}>
-          <View style={[styles.fullScreenHeader, { paddingTop: insets.top + 16, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.fullScreenHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable onPress={() => setShowProfile(false)} style={styles.headerBack} hitSlop={12}>
-              <Ionicons name="arrow-back" size={24} color={colors.primary} />
+              <Ionicons name="chevron-back" size={24} color="#FBBF24" />
             </Pressable>
             <Text style={[styles.headerTitle, { color: colors.primary }]}>Edit Profile</Text>
             <Pressable onPress={handleSaveProfile} style={[styles.headerSave, { backgroundColor: colors.primary }]}>

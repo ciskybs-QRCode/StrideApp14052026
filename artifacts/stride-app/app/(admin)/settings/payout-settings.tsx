@@ -169,7 +169,7 @@ export default function PayoutSettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={12}>
-          <Ionicons name="arrow-back" size={22} color={colors.primary} />
+          <Ionicons name="chevron-back" size={24} color="#FBBF24" />
           <Text style={[styles.backLabel, { color: colors.primary }]}>Impostazioni</Text>
         </Pressable>
 

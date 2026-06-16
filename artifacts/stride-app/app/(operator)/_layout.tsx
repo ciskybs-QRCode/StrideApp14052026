@@ -43,7 +43,7 @@ function BookingBanner({ notif, onView, onDismiss }: {
     <Animated.View
       style={[
         styles.banner,
-        { paddingTop: insets.top + 10, transform: [{ translateY: slideY }] },
+        { paddingTop: insets.top > 0 ? insets.top + 10 : (Platform.OS === "ios" ? 58 : 38), transform: [{ translateY: slideY }] },
       ]}
     >
       <View style={styles.bannerInner}>

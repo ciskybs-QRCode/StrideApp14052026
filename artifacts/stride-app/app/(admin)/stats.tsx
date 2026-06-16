@@ -276,7 +276,7 @@ export default function AdminHome() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={[styles.scroll, {
-          paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
+          paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28),
           paddingBottom: insets.bottom + 100,
         }]}
         showsVerticalScrollIndicator={false}
@@ -447,7 +447,7 @@ export default function AdminHome() {
       ══════════════════════════════════════════════════ */}
       <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
         <View style={styles.scannerModal}>
-          <View style={[styles.scannerHeader, { paddingTop: insets.top + 20 }]}>
+          <View style={[styles.scannerHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28) }]}>
             <Pressable onPress={() => setShowScanner(false)}>
               <Ionicons name="close" size={28} color="#FFF" />
             </Pressable>

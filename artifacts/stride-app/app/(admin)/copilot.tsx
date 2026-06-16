@@ -429,7 +429,7 @@ export default function CopilotScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: CLR.bg }]}>
-      <ScreenHeader title="Copilot" onBack={() => router.push("/(admin)/copilot")} />
+      <ScreenHeader title="Copilot" onBack={() => router.push("/(admin)/operations-hub")} />
 
       {/* ── Quick chips ───────────────────────────────────────── */}
       <View style={s.chipsWrap}>

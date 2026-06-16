@@ -18,6 +18,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -105,7 +106,7 @@ export default function MarketplaceScreen() {
 
   if (loading) {
     return (
-      <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28) }]}>
         <ActivityIndicator size="large" color="#D4AF37" />
         <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading marketplace…</Text>
       </View>

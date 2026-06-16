@@ -96,7 +96,7 @@ export default function SettingsIndex() {
         contentContainerStyle={[
           styles.scroll,
           {
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20),
+            paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28),
             paddingBottom: insets.bottom + 100,
           },
         ]}

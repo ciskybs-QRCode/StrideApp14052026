@@ -377,7 +377,7 @@ export default function Pioneer() {
     >
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[st.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 48 }]}
+        contentContainerStyle={[st.scroll, { paddingTop: insets.top > 0 ? insets.top + 24 : (Platform.OS === "ios" ? 72 : 52), paddingBottom: insets.bottom + 48 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

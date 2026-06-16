@@ -1654,7 +1654,7 @@ export default function ActivityScreen() {
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
 
           {/* ── Header ── */}
-          <View style={[styles.modalHeader, { paddingTop: insets.top, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable onPress={() => setShowActivityModal(false)} style={styles.backBtn}>
               <Ionicons name="close" size={24} color={colors.mutedForeground} />
             </Pressable>
@@ -2606,7 +2606,7 @@ export default function ActivityScreen() {
       {/* ── ADMIN SCHEDULE MODAL ── */}
       <Modal visible={showAdminModal} animationType="slide" onRequestClose={() => setShowAdminModal(false)}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { paddingTop: insets.top, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable onPress={() => setShowAdminModal(false)} style={styles.backBtn}>
               <Ionicons name="close" size={24} color={colors.mutedForeground} />
             </Pressable>
