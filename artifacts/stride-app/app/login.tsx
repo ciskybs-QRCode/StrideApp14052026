@@ -178,6 +178,13 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable
+              onPress={() => router.push("/forgot-password" as never)}
+              style={styles.forgotLink}
+            >
+              <Text style={styles.forgotLinkText}>Forgot Password?</Text>
+            </Pressable>
+
+            <Pressable
               onPress={() => Linking.openURL(`https://${process.env["EXPO_PUBLIC_DOMAIN"] ?? "stride-platform.com"}/landing/register`)}
               style={styles.registerLink}
             >
@@ -253,7 +260,9 @@ const styles = StyleSheet.create({
   },
   loginBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15, letterSpacing: 1.5 },
   footer: { color: "rgba(30,58,138,0.35)", fontSize: 12, textAlign: "center", marginTop: 16 },
-  registerLink: { marginTop: 18, alignItems: "center", paddingVertical: 4 },
+  forgotLink:      { alignItems: "center", paddingVertical: 8, marginTop: 6 },
+  forgotLinkText:  { fontSize: 13, color: "#6B7BA4", fontWeight: "600" },
+  registerLink: { marginTop: 10, alignItems: "center", paddingVertical: 4 },
   registerLinkText: { fontSize: 13, color: "#6B7BA4", textAlign: "center" },
   registerLinkHighlight: { color: "#FBBF24", fontWeight: "700" },
 });

@@ -2245,3 +2245,11 @@ export async function generateAIRoster(params: {
   return request<{ suggestions: ApiRosterSuggestion[]; frequency: string }>("POST", "/admin/generate-roster", params);
 }
 
+export async function forgotPassword(email: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("POST", "/auth/forgot-password", { email });
+}
+
+export async function resetPassword(email: string, token: string, newPassword: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("POST", "/auth/reset-password", { email, token, newPassword });
+}
+

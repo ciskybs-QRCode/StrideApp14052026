@@ -149,7 +149,7 @@ export default function ParentReimbursementsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Reimbursements" />
+      <ScreenHeader title="Reimbursements" onBack={() => router.navigate("/(parent)/wallet")} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -160,7 +160,7 @@ export default function ParentReimbursementsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={12}>
+        <Pressable onPress={() => router.navigate("/(parent)/wallet")} style={styles.backRow} hitSlop={12}>
           <Ionicons name="chevron-back" size={24} color="#FBBF24" />
           <Text style={[styles.backLabel, { color: colors.primary }]}>Wallet</Text>
         </Pressable>

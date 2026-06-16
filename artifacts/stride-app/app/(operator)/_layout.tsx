@@ -141,7 +141,8 @@ export default function OperatorTabLayout() {
         <Tabs.Screen name="support"         options={{ href: null }} />
         <Tabs.Screen name="profile"         options={{ href: null }} />
         <Tabs.Screen name="student-detail"  options={{ href: null }} />
-        <Tabs.Screen name="private-lessons" options={{ href: null }} />
+        <Tabs.Screen name="private-lessons"  options={{ href: null }} />
+        <Tabs.Screen name="communications"   options={{ href: null }} />
         <Tabs.Screen name="pdf-badges"      options={{ href: null }} />
         <Tabs.Screen name="alerts"          options={{ href: null }} />
         <Tabs.Screen name="promo-codes"     options={{ href: null }} />

@@ -115,7 +115,7 @@ export default function MarketplaceScreen() {
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Stride Marketplace" />
+      <ScreenHeader title="Stride Marketplace" onBack={() => router.navigate("/(parent)/home")} />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}

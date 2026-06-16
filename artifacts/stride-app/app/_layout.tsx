@@ -96,6 +96,8 @@ function RootLayoutNav() {
         <Stack.Screen name="login" />
         <Stack.Screen name="join" />
         <Stack.Screen name="onboarding" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="reset-password" />
         <Stack.Screen name="(member)" />
         <Stack.Screen name="(parent)" />
         <Stack.Screen name="(operator)" />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   ActivityIndicator,
@@ -38,6 +39,7 @@ function formatDate(iso: string): string {
 }
 
 export default function PickupAudit() {
+  const router = useRouter();
   const { children } = useAppData();
   const [selectedChild, setSelectedChild] = useState("");
   const [records,       setRecords]       = useState<PickupRecord[]>([]);
@@ -75,7 +77,7 @@ export default function PickupAudit() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScreenHeader title="Pick-up Audit" />
+      <ScreenHeader title="Pick-up Audit" onBack={() => router.navigate("/(parent)/home")} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}

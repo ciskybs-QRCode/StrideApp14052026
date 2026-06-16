@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   ActivityIndicator,
@@ -61,6 +62,7 @@ function StatusBadge({ entry }: { entry: GuardianEntry }) {
 }
 
 export default function GuardianCircle() {
+  const router = useRouter();
   const { children } = useAppData();
 
   const [selectedChild, setSelectedChild] = useState("");
@@ -177,7 +179,7 @@ export default function GuardianCircle() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Guardian Circle" />
+      <ScreenHeader title="Guardian Circle" onBack={() => router.navigate("/(parent)/home")} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}

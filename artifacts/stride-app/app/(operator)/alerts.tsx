@@ -129,7 +129,7 @@ export default function OperatorAlerts() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Safety Alerts" />
+      <ScreenHeader title="Safety Alerts" onBack={() => router.navigate("/(operator)/dashboard")} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,

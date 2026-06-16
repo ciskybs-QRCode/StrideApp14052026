@@ -184,7 +184,7 @@ export default function ParentAlerts() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Security Alerts" />
+      <ScreenHeader title="Security Alerts" onBack={() => router.navigate("/(parent)/home")} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,

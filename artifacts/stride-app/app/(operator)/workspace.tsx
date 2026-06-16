@@ -168,6 +168,14 @@ export default function OperatorWorkspaceScreen() {
     onPress: () => void;
   }> = [
     {
+      icon: "chatbubble-ellipses-outline",
+      label: "Send Message",
+      desc: "Broadcast announcements and files to members or courses",
+      iconBg: "#FBBF2415",
+      iconColor: "#1E3A8A",
+      onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/communications" as never); },
+    },
+    {
       icon: "briefcase-outline",
       label: "Payroll",
       desc: "View earnings, export payslips and manage billing",

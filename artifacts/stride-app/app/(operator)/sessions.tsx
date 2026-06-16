@@ -319,7 +319,7 @@ export default function SessionsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Roll Call" subtitle={new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })} />
+      <ScreenHeader title="Roll Call" subtitle={new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })} onBack={() => router.navigate("/(operator)/dashboard")} />
       {sessions.length === 0 ? (
         <View style={[styles.centred, { flex: 1 }]}>
           <Ionicons name="calendar-outline" size={48} color={colors.mutedForeground} />

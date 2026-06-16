@@ -83,7 +83,7 @@ export default function StudentDetail() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title={student.name} />
+      <ScreenHeader title={student.name} onBack={() => router.navigate("/(operator)/students")} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,

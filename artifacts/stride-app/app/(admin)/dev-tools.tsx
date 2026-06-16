@@ -456,7 +456,7 @@ export default function DevToolsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Dev Tools"
-        onBack={() => router.back()}
+        onBack={() => router.push("/(admin)/operations-hub")}
         right={
           <View style={styles.devBadge}>
             <Text style={styles.devBadgeText}>DEV</Text>

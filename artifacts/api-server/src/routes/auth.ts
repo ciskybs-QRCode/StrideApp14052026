@@ -719,4 +719,122 @@ router.post("/user/activate-parent", requireAuth, async (req, res) => {
   }
 });
 
+// ── POST /auth/forgot-password ────────────────────────────────────────────────
+// Public. Generates a 6-char reset code, stores it with 30 min expiry.
+// Always responds { ok: true } to prevent email enumeration.
+router.post("/auth/forgot-password", authLimiter, async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (!email?.trim()) {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+
+  // Respond immediately — do the rest async
+  res.json({ ok: true });
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id         SERIAL PRIMARY KEY,
+        email      TEXT NOT NULL,
+        token      TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used       BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS prt_email_idx ON password_reset_tokens (email);
+    `);
+
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, name, email")
+      .ilike("email", email.trim())
+      .limit(1);
+
+    if (!users?.length) return;
+    const user = users[0];
+    const normalised = (user.email as string).toLowerCase();
+
+    await pool.query(`DELETE FROM password_reset_tokens WHERE email = $1`, [normalised]);
+
+    const token     = crypto.randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    await pool.query(
+      `INSERT INTO password_reset_tokens (email, token, expires_at) VALUES ($1, $2, $3)`,
+      [normalised, token, expiresAt],
+    );
+
+    const smtpHost = process.env["SMTP_HOST"];
+    if (smtpHost) {
+      try {
+        const nodemailer = await import("nodemailer");
+        const transporter = nodemailer.default.createTransport({
+          host:   smtpHost,
+          port:   Number(process.env["SMTP_PORT"] ?? 587),
+          secure: process.env["SMTP_PORT"] === "465",
+          auth:   { user: process.env["SMTP_USER"], pass: process.env["SMTP_PASS"] },
+        });
+        await transporter.sendMail({
+          from:    process.env["SMTP_FROM"] ?? `Stride <no-reply@stride.app>`,
+          to:      user.email,
+          subject: "Your Stride Password Reset Code",
+          text:    `Hi ${user.name ?? ""},\n\nYour password reset code is: ${token}\n\nThis code expires in 30 minutes. If you did not request a reset, ignore this email.\n\n— Stride`,
+          html:    `<div style="font-family:sans-serif;max-width:480px;margin:auto"><h2 style="color:#1E3A8A">Password Reset</h2><p>Hi ${user.name ?? ""},</p><p>Your 6-character reset code is:</p><div style="background:#EEF2FF;border-radius:12px;padding:20px;text-align:center;margin:20px 0"><span style="font-size:32px;letter-spacing:10px;font-weight:800;color:#1E3A8A">${token}</span></div><p style="color:#6B7280">This code expires in 30 minutes. If you did not request a password reset, you can safely ignore this email.</p><hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0"/><p style="color:#9CA3AF;font-size:12px">Stride — Association Management</p></div>`,
+        });
+      } catch (emailErr) {
+        console.error("[forgot-password] Email send failed:", emailErr);
+      }
+    } else {
+      console.info(`[forgot-password] *** Reset token for ${normalised}: ${token} (expires ${expiresAt.toISOString()}) ***`);
+    }
+  } catch (err) {
+    console.error("[forgot-password] Error:", err);
+  }
+});
+
+// ── POST /auth/reset-password ─────────────────────────────────────────────────
+// Public. Verifies reset code, updates password_hash, marks token as used.
+router.post("/auth/reset-password", authLimiter, async (req, res) => {
+  const { email, token, newPassword } = req.body as { email?: string; token?: string; newPassword?: string };
+  if (!email?.trim() || !token?.trim() || !newPassword) {
+    res.status(400).json({ error: "Email, code and new password are required" });
+    return;
+  }
+  if (newPassword.length < 8) {
+    res.status(400).json({ error: "Password must be at least 8 characters" });
+    return;
+  }
+
+  try {
+    const { rows } = await pool.query<{ id: number; expires_at: string; used: boolean }>(
+      `SELECT id, expires_at, used FROM password_reset_tokens WHERE email = $1 AND token = $2 LIMIT 1`,
+      [email.trim().toLowerCase(), token.trim().toUpperCase()],
+    );
+
+    if (!rows.length || rows[0].used) {
+      res.status(400).json({ error: "Invalid or already-used reset code" });
+      return;
+    }
+    if (new Date() > new Date(rows[0].expires_at)) {
+      res.status(400).json({ error: "Reset code has expired. Please request a new one." });
+      return;
+    }
+
+    await pool.query(`UPDATE password_reset_tokens SET used = TRUE WHERE id = $1`, [rows[0].id]);
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    const { error } = await supabase
+      .from("users")
+      .update({ password_hash: hash })
+      .ilike("email", email.trim());
+
+    if (error) throw new Error(error.message);
+
+    res.json({ ok: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Server error";
+    res.status(500).json({ error: msg });
+  }
+});
+
 export default router;

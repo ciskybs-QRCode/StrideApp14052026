@@ -168,9 +168,9 @@ export default function PayoutSettingsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={12}>
+        <Pressable onPress={() => router.push("/(admin)/settings" as never)} style={styles.backRow} hitSlop={12}>
           <Ionicons name="chevron-back" size={24} color="#FBBF24" />
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Impostazioni</Text>
+          <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
         </Pressable>
 
         <Text style={[styles.pageTitle, { color: colors.foreground }]}>Payout &amp; Fatture</Text>

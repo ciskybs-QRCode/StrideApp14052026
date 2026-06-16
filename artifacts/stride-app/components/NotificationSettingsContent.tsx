@@ -48,7 +48,7 @@ async function getGpsCoords(): Promise<{ latitude: number | null; longitude: num
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function NotificationSettingsContent() {
+export default function NotificationSettingsContent({ onBack }: { onBack?: () => void } = {}) {
   const colors = useColors();
 
   const [prefs,   setPrefs]   = useState<NotifPrefs | null>(null);
@@ -161,7 +161,7 @@ export default function NotificationSettingsContent() {
   if (loading) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Notification Preferences" />
+        <ScreenHeader title="Notification Preferences" onBack={onBack} />
         <View style={styles.centred}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -174,7 +174,7 @@ export default function NotificationSettingsContent() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Notification Preferences" />
+      <ScreenHeader title="Notification Preferences" onBack={onBack} />
 
       <ScrollView
         contentContainerStyle={styles.scroll}

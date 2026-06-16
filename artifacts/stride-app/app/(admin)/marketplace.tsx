@@ -164,6 +164,7 @@ export default function AdminMarketplaceScreen() {
       <ScreenHeader
         title="Marketplace"
         subtitle="Manage products & commission"
+        onBack={() => router.push("/(admin)/members-hub")}
         right={
           <Pressable onPress={() => void load()} hitSlop={12} style={{ padding: 6 }}>
             <Ionicons name="refresh" size={20} color="#FFF" />

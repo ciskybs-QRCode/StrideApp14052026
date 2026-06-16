@@ -1,0 +1,411 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
+import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
+
+type RecipientMode = "all" | "members" | "operators" | "course";
+
+interface SentEntry {
+  id:         string;
+  title:      string;
+  date:       string;
+  recipients: string;
+  urgent:     boolean;
+  attachments: string[];
+}
+
+function attachmentIcon(a: string): { icon: keyof typeof Ionicons.glyphMap; color: string } {
+  if (/\.(jpg|jpeg|png|gif|webp)/i.test(a)) return { icon: "image-outline",        color: "#3B82F6" };
+  if (/\.(mp4|mov|avi|mkv)/i.test(a))       return { icon: "videocam-outline",     color: "#8B5CF6" };
+  if (/\.(mp3|wav|ogg|aac|m4a)/i.test(a))   return { icon: "musical-note-outline", color: "#F59E0B" };
+  if (/\.(pdf)/i.test(a))                   return { icon: "document-text-outline", color: "#EF4444" };
+  if (/\.(doc|docx)/i.test(a))              return { icon: "document-text-outline", color: "#2563EB" };
+  return { icon: "document-attach-outline", color: "#6B7BA4" };
+}
+
+const RECIPIENT_LABELS: Record<RecipientMode, string> = {
+  all:       "Everyone",
+  members:   "Members Only",
+  operators: "Staff / Operators",
+  course:    "Specific Course",
+};
+
+export default function OperatorCommunications() {
+  const router  = useRouter();
+  const colors  = useColors();
+  const insets  = useSafeAreaInsets();
+
+  const [showCompose,   setShowCompose]   = useState(false);
+  const [title,         setTitle]         = useState("");
+  const [body,          setBody]          = useState("");
+  const [recipientMode, setRecipientMode] = useState<RecipientMode>("all");
+  const [courseName,    setCourseName]    = useState("");
+  const [attachments,   setAttachments]   = useState<string[]>([]);
+  const [isUrgent,      setIsUrgent]      = useState(false);
+  const [sending,       setSending]       = useState(false);
+  const [sent,          setSent]          = useState<SentEntry[]>([]);
+
+  const recipientLabel = (mode: RecipientMode, course: string) => {
+    if (mode === "course") return course ? `Course: ${course}` : "Select a course below";
+    return RECIPIENT_LABELS[mode];
+  };
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Allow access to your photo library in Settings."); return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      quality:    0.85,
+    });
+    if (!res.canceled && res.assets[0]) {
+      setAttachments(prev => [...prev, res.assets[0].fileName || `media_${Date.now()}.jpg`]);
+    }
+  };
+
+  const pickDocument = async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: false });
+      if (!res.canceled && res.assets?.[0]) {
+        setAttachments(prev => [...prev, res.assets[0].name]);
+      }
+    } catch { /* silently ignored */ }
+  };
+
+  const resetForm = () => {
+    setTitle(""); setBody(""); setRecipientMode("all"); setCourseName("");
+    setAttachments([]); setIsUrgent(false);
+  };
+
+  const handleSend = async () => {
+    if (!title.trim())      { Alert.alert("Missing subject", "Please enter a message subject."); return; }
+    if (!body.trim())       { Alert.alert("Missing message", "Please write a message body."); return; }
+    if (recipientMode === "course" && !courseName.trim()) {
+      Alert.alert("Missing course", "Please specify the course name."); return;
+    }
+    setSending(true);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await new Promise(r => setTimeout(r, 500));
+    const label = recipientLabel(recipientMode, courseName);
+    setSent(prev => [{
+      id:          Date.now().toString(),
+      title:       isUrgent ? `URGENT: ${title}` : title,
+      date:        new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+      recipients:  label,
+      urgent:      isUrgent,
+      attachments: [...attachments],
+    }, ...prev]);
+    setSending(false);
+    setShowCompose(false);
+    resetForm();
+    Alert.alert("Sent!", `Your message has been delivered to: ${label}.`);
+  };
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <ScreenHeader
+        title="Communications"
+        onBack={() => router.navigate("/(operator)/workspace" as never)}
+        right={
+          <Pressable
+            style={[styles.composeBtn, { backgroundColor: colors.primary }]}
+            onPress={() => setShowCompose(true)}
+            hitSlop={8}
+          >
+            <Ionicons name="create-outline" size={16} color="#FFF" />
+            <Text style={styles.composeBtnText}>Compose</Text>
+          </Pressable>
+        }
+      />
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 80 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {sent.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: colors.card }]}>
+              <Ionicons name="chatbubbles-outline" size={52} color={colors.mutedForeground} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No messages sent yet</Text>
+            <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+              Use Compose to broadcast announcements, scripts, videos, or files to members and staff.
+            </Text>
+            <Pressable
+              style={[styles.emptyActionBtn, { backgroundColor: colors.primary }]}
+              onPress={() => setShowCompose(true)}
+            >
+              <Ionicons name="create-outline" size={18} color="#FFF" />
+              <Text style={styles.emptyActionText}>Compose First Message</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>SENT MESSAGES</Text>
+            {sent.map(s => (
+              <View key={s.id} style={[styles.msgCard, { backgroundColor: colors.card }]}>
+                <View style={[styles.msgIconWrap, {
+                  backgroundColor: s.urgent ? "#FEF2F2" : colors.primary + "18",
+                }]}>
+                  <Ionicons
+                    name={s.urgent ? "alert-circle-outline" : "megaphone-outline"}
+                    size={24}
+                    color={s.urgent ? "#EF4444" : colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.msgTitle, { color: colors.foreground }]} numberOfLines={1}>
+                    {s.title}
+                  </Text>
+                  <Text style={[styles.msgMeta, { color: colors.mutedForeground }]}>
+                    {s.date} · {s.recipients}
+                  </Text>
+                  {s.attachments.length > 0 && (
+                    <View style={styles.msgAttachRow}>
+                      {s.attachments.slice(0, 3).map((a, i) => {
+                        const { icon, color } = attachmentIcon(a);
+                        return (
+                          <View key={i} style={styles.msgAttachChip}>
+                            <Ionicons name={icon} size={12} color={color} />
+                            <Text style={[styles.msgAttachName, { color: colors.mutedForeground }]} numberOfLines={1}>
+                              {a.length > 14 ? `${a.slice(0, 12)}...` : a}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                      {s.attachments.length > 3 && (
+                        <Text style={[styles.msgAttachMore, { color: colors.mutedForeground }]}>
+                          +{s.attachments.length - 3} more
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+                <View style={[styles.sentBadge]}>
+                  <Ionicons name="checkmark-done-outline" size={14} color="#16A34A" />
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+      </ScrollView>
+
+      {/* ── Compose Modal ─────────────────────────────────────────────── */}
+      <Modal
+        visible={showCompose}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => { setShowCompose(false); resetForm(); }}
+      >
+        <View style={[styles.modalRoot, { paddingTop: insets.top + 4, backgroundColor: colors.background }]}>
+
+          {/* Modal header */}
+          <View style={[styles.modalHeader, { borderBottomColor: colors.card }]}>
+            <Pressable
+              onPress={() => { setShowCompose(false); resetForm(); }}
+              style={styles.modalCloseBtn}
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>New Message</Text>
+            <Pressable
+              style={[styles.modalSendBtn, { backgroundColor: isUrgent ? "#EF4444" : colors.primary, opacity: sending ? 0.7 : 1 }]}
+              onPress={handleSend}
+              disabled={sending}
+            >
+              <Ionicons name="send" size={14} color="#FFF" />
+              <Text style={styles.modalSendText}>{sending ? "..." : "Send"}</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={[styles.modalScroll, { paddingBottom: insets.bottom + 40 }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Recipients */}
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>SEND TO</Text>
+            <View style={styles.recipientGrid}>
+              {(["all", "members", "operators", "course"] as RecipientMode[]).map(mode => (
+                <Pressable
+                  key={mode}
+                  style={[
+                    styles.recipientChip,
+                    { borderColor: recipientMode === mode ? colors.primary : "#D1D9F0" },
+                    recipientMode === mode && { backgroundColor: colors.primary },
+                  ]}
+                  onPress={() => setRecipientMode(mode)}
+                >
+                  <Ionicons
+                    name={
+                      mode === "all"       ? "people-outline"   :
+                      mode === "members"   ? "person-outline"   :
+                      mode === "operators" ? "shield-outline"   :
+                                            "book-outline"
+                    }
+                    size={14}
+                    color={recipientMode === mode ? "#FFF" : colors.mutedForeground}
+                  />
+                  <Text style={[styles.recipientChipText, { color: recipientMode === mode ? "#FFF" : colors.foreground }]}>
+                    {RECIPIENT_LABELS[mode]}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {recipientMode === "course" && (
+              <TextInput
+                style={[styles.inputField, { color: colors.foreground, backgroundColor: colors.card, borderColor: "#D1D9F0", marginTop: 10 }]}
+                placeholder="Course name (e.g. Ballet, Contemporary)"
+                placeholderTextColor={colors.mutedForeground}
+                value={courseName}
+                onChangeText={setCourseName}
+              />
+            )}
+
+            {/* Urgent */}
+            <Pressable
+              style={[styles.urgentRow, { backgroundColor: isUrgent ? "#FEF2F2" : colors.card, borderColor: isUrgent ? "#FECACA" : "transparent" }]}
+              onPress={() => setIsUrgent(p => !p)}
+            >
+              <Ionicons
+                name={isUrgent ? "alert-circle" : "alert-circle-outline"}
+                size={20}
+                color={isUrgent ? "#EF4444" : colors.mutedForeground}
+              />
+              <Text style={[styles.urgentLabel, { color: isUrgent ? "#EF4444" : colors.foreground }]}>
+                Mark as Urgent
+              </Text>
+              <View style={[styles.urgentIndicator, { backgroundColor: isUrgent ? "#EF4444" : colors.mutedForeground + "44" }]} />
+            </Pressable>
+
+            {/* Subject */}
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>SUBJECT</Text>
+            <TextInput
+              style={[styles.inputField, { color: colors.foreground, backgroundColor: colors.card, borderColor: "#D1D9F0" }]}
+              placeholder="Message subject..."
+              placeholderTextColor={colors.mutedForeground}
+              value={title}
+              onChangeText={setTitle}
+              returnKeyType="next"
+            />
+
+            {/* Body */}
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>MESSAGE</Text>
+            <TextInput
+              style={[styles.inputField, styles.textarea, { color: colors.foreground, backgroundColor: colors.card, borderColor: "#D1D9F0" }]}
+              placeholder="Type your message, announcement or instructions..."
+              placeholderTextColor={colors.mutedForeground}
+              value={body}
+              onChangeText={setBody}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+
+            {/* Attachments */}
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>ATTACHMENTS</Text>
+            <Text style={[styles.attachHint, { color: colors.mutedForeground }]}>
+              Attach scripts, choreography notes, photos, videos, music files, or any document.
+            </Text>
+            <View style={styles.attachBtnRow}>
+              <Pressable style={[styles.attachPickerBtn, { backgroundColor: colors.card, borderColor: "#D1D9F0" }]} onPress={pickImage}>
+                <Ionicons name="image-outline" size={18} color="#3B82F6" />
+                <Text style={[styles.attachPickerText, { color: colors.foreground }]}>Photo / Video</Text>
+              </Pressable>
+              <Pressable style={[styles.attachPickerBtn, { backgroundColor: colors.card, borderColor: "#D1D9F0" }]} onPress={pickDocument}>
+                <Ionicons name="document-attach-outline" size={18} color="#FBBF24" />
+                <Text style={[styles.attachPickerText, { color: colors.foreground }]}>File / Script</Text>
+              </Pressable>
+            </View>
+
+            {attachments.length > 0 && (
+              <View style={styles.attachList}>
+                {attachments.map((a, i) => {
+                  const { icon, color } = attachmentIcon(a);
+                  return (
+                    <View key={i} style={[styles.attachRow, { backgroundColor: colors.card }]}>
+                      <View style={[styles.attachIconWrap, { backgroundColor: color + "18" }]}>
+                        <Ionicons name={icon} size={16} color={color} />
+                      </View>
+                      <Text style={[styles.attachName, { color: colors.foreground }]} numberOfLines={1}>{a}</Text>
+                      <Pressable onPress={() => setAttachments(prev => prev.filter((_, j) => j !== i))} hitSlop={8}>
+                        <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+                      </Pressable>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root:              { flex: 1 },
+  scroll:            { paddingHorizontal: 16, paddingTop: 16 },
+  composeBtn:        { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  composeBtnText:    { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  sectionHeader:     { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 12 },
+  msgCard:           { flexDirection: "row", alignItems: "flex-start", borderRadius: 16, padding: 14, marginBottom: 10, gap: 12 },
+  msgIconWrap:       { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center", marginTop: 2 },
+  msgTitle:          { fontSize: 15, fontWeight: "700", marginBottom: 3 },
+  msgMeta:           { fontSize: 12, marginBottom: 4 },
+  msgAttachRow:      { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
+  msgAttachChip:     { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#F3F4F6", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  msgAttachName:     { fontSize: 11 },
+  msgAttachMore:     { fontSize: 11, alignSelf: "center" },
+  sentBadge:         { marginTop: 4 },
+  emptyWrap:         { alignItems: "center", paddingTop: 60, paddingHorizontal: 28 },
+  emptyIconCircle:   { width: 96, height: 96, borderRadius: 48, alignItems: "center", justifyContent: "center", marginBottom: 20 },
+  emptyTitle:        { fontSize: 18, fontWeight: "700", textAlign: "center", marginBottom: 10 },
+  emptySub:          { fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 28 },
+  emptyActionBtn:    { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 14 },
+  emptyActionText:   { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  modalRoot:         { flex: 1 },
+  modalHeader:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
+  modalCloseBtn:     { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  modalTitle:        { fontSize: 16, fontWeight: "700" },
+  modalSendBtn:      { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  modalSendText:     { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  modalScroll:       { paddingHorizontal: 16, paddingTop: 20 },
+  fieldLabel:        { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, marginBottom: 10 },
+  recipientGrid:     { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
+  recipientChip:     { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
+  recipientChipText: { fontSize: 13, fontWeight: "600" },
+  urgentRow:         { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, padding: 12, marginTop: 14, borderWidth: 1.5 },
+  urgentLabel:       { flex: 1, fontSize: 14, fontWeight: "600" },
+  urgentIndicator:   { width: 16, height: 16, borderRadius: 8 },
+  inputField:        { borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, borderWidth: 1.5 },
+  textarea:          { height: 150, paddingTop: 12 },
+  attachHint:        { fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  attachBtnRow:      { flexDirection: "row", gap: 10, marginBottom: 10 },
+  attachPickerBtn:   { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 14, padding: 13, borderWidth: 1.5 },
+  attachPickerText:  { fontSize: 13, fontWeight: "600" },
+  attachList:        { gap: 6, marginTop: 4 },
+  attachRow:         { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, padding: 10 },
+  attachIconWrap:    { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  attachName:        { flex: 1, fontSize: 13 },
+});

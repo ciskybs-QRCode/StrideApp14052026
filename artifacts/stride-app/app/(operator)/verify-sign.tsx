@@ -103,7 +103,7 @@ export default function VerifySign() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.background }}>
-      <ScreenHeader title="Verify & Sign" />
+      <ScreenHeader title="Verify & Sign" onBack={() => router.navigate("/(operator)/dashboard")} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
