@@ -15,7 +15,10 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
   const orgId = user.orgId ?? 1;
 
   try {
-    const [orgResult, memberResult] = await Promise.all([
+    // Billing unit = QR code.  Every member account AND every dependant (child)
+    // carries a QR code and therefore counts as one seat.
+    // authorized_pickups are NOT in either table — pickup contacts are always free.
+    const [orgResult, memberResult, childResult] = await Promise.all([
       supabase
         .from("organizations")
         .select(
@@ -26,6 +29,10 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
         .maybeSingle(),
       supabase
         .from("members")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", orgId),
+      supabase
+        .from("children")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", orgId),
     ]);
@@ -40,7 +47,8 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
       currency?: string;
     } | null;
 
-    const memberCount = memberResult.count ?? 0;
+    // memberCount here = total QR codes (member seats + dependant seats)
+    const memberCount = (memberResult.count ?? 0) + (childResult.count ?? 0);
     const { currency: regionalCurrency, pricePerSeatCents: regionalPrice } = await getPricingForOrg(orgId);
     const costPerSeatCents = org?.cost_per_seat_cents ?? regionalPrice;
     const currency = org?.currency ?? regionalCurrency.toUpperCase();
@@ -75,7 +83,7 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
   if (!stripeKey) { res.status(503).json({ error: "stripe_not_configured" }); return; }
 
   try {
-    const [orgResult, memberResult] = await Promise.all([
+    const [orgResult, memberResult, childResult] = await Promise.all([
       supabase
         .from("organizations")
         .select("name, stripe_customer_id, stripe_price_id_per_seat, currency")
@@ -83,6 +91,11 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
         .maybeSingle(),
       supabase
         .from("members")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", orgId),
+      // Dependants (children) each have their own QR code → billed as a seat
+      supabase
+        .from("children")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", orgId),
     ]);
@@ -103,7 +116,8 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
       return;
     }
 
-    const memberCount = Math.max(1, memberResult.count ?? 1);
+    // Total QR codes = member accounts + their dependants
+    const memberCount = Math.max(1, (memberResult.count ?? 0) + (childResult.count ?? 0));
 
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeKey);
@@ -195,11 +209,12 @@ router.post("/billing/sync-seats", requireAuth, requireRole("admin"), async (req
     const subId = (org as { stripe_subscription_id?: string } | null)?.stripe_subscription_id;
     if (!subId) { res.status(400).json({ error: "No active subscription found" }); return; }
 
-    const { count } = await supabase
-      .from("members")
-      .select("*", { count: "exact", head: true })
-      .eq("organization_id", orgId);
-    const memberCount = Math.max(1, count ?? 1);
+    const [{ count: mCount }, { count: cCount }] = await Promise.all([
+      supabase.from("members").select("*", { count: "exact", head: true }).eq("organization_id", orgId),
+      supabase.from("children").select("*", { count: "exact", head: true }).eq("organization_id", orgId),
+    ]);
+    // Total QR codes = member accounts + dependants
+    const memberCount = Math.max(1, (mCount ?? 0) + (cCount ?? 0));
 
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeKey);
@@ -443,7 +458,12 @@ export type BillingStatement = {
 };
 
 export async function generateBillingStatement(orgId: number): Promise<BillingStatement> {
-  const [orgResult, memberResult, coursesResult] = await Promise.all([
+  // Billing unit = QR code.
+  //   • Each member account has a QR code → 1 seat
+  //   • Each dependant (child) has a QR code → 1 seat
+  //   • authorized_pickups (pickup-only contacts) have NO QR code → 0 seats
+  //   • Smart Pick-Up courses are logistics aids, never in the statement
+  const [orgResult, memberResult, childResult, coursesResult] = await Promise.all([
     supabase
       .from("organizations")
       .select("currency, cost_per_seat_cents")
@@ -453,8 +473,10 @@ export async function generateBillingStatement(orgId: number): Promise<BillingSt
       .from("members")
       .select("*", { count: "exact", head: true })
       .eq("organization_id", orgId),
-    // ↓ Smart Pick-Up courses are explicitly excluded — they are a logistics aid,
-    //   not a billable activity, and must never appear in the tenant statement.
+    supabase
+      .from("children")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", orgId),
     supabase
       .from("courses")
       .select("id, name, price, sessions_per_week, is_smart_pickup")
@@ -463,7 +485,7 @@ export async function generateBillingStatement(orgId: number): Promise<BillingSt
   ]);
 
   const org = orgResult.data as { currency?: string; cost_per_seat_cents?: number } | null;
-  const memberCount     = memberResult.count ?? 0;
+  const memberCount = (memberResult.count ?? 0) + (childResult.count ?? 0);
   const costPerSeatCents = org?.cost_per_seat_cents ?? 150;
   const currency        = org?.currency ?? "EUR";
 

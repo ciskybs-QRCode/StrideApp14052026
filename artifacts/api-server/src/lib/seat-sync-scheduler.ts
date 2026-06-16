@@ -42,14 +42,16 @@ async function syncAllSeats(): Promise<void> {
 
   for (const org of orgs as Array<{ id: number; stripe_subscription_id: string }>) {
     try {
-      // Count active members. authorized_pickups contacts are in a separate
-      // table and never appear here — so pickup QR codes are never billed.
-      const { count } = await supabase
-        .from("members")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", org.id);
+      // Billing unit = QR code.
+      // Each member account + each dependant (child) has a QR code → 1 seat.
+      // authorized_pickups are in a separate table and never have their own
+      // QR code → never billed.
+      const [{ count: mCount }, { count: cCount }] = await Promise.all([
+        supabase.from("members").select("*", { count: "exact", head: true }).eq("organization_id", org.id),
+        supabase.from("children").select("*", { count: "exact", head: true }).eq("organization_id", org.id),
+      ]);
 
-      const memberCount = Math.max(1, count ?? 1);
+      const memberCount = Math.max(1, (mCount ?? 0) + (cCount ?? 0));
 
       const sub  = await stripe.subscriptions.retrieve(org.stripe_subscription_id);
       const item = sub.items.data[0];
