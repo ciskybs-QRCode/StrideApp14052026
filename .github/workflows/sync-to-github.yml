@@ -64,6 +64,29 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            // Ensure the auto-resolved label exists; create it if not.
+            const AUTO_LABEL = 'auto-resolved';
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: AUTO_LABEL,
+              });
+            } catch (err) {
+              if (err.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: AUTO_LABEL,
+                  color: '0e8a16',
+                  description: 'Issue was closed automatically by a successful workflow run',
+                });
+                console.log(`Created label "${AUTO_LABEL}"`);
+              } else {
+                throw err;
+              }
+            }
+
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -74,6 +97,14 @@ jobs:
             const closed = [];
 
             for (const issue of issues) {
+              // Tag the issue before closing so the label is visible in history.
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: [AUTO_LABEL],
+              });
+
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
