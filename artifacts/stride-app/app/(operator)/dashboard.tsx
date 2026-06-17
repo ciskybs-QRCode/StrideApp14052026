@@ -682,7 +682,12 @@ export default function OperatorDashboard() {
       let studentId: string | undefined;
       let studentName: string | undefined;
 
-      if (data.startsWith("STRIDE:CHILD:")) {
+      if (data.startsWith("STRIDE:MEMBER:")) {
+        const parts = data.split(":");
+        scanType = "checkin";
+        studentId = parts[2] ?? undefined;
+        studentName = "Member";
+      } else if (data.startsWith("STRIDE:CHILD:")) {
         const parts = data.split(":");
         scanType = "checkin";
         studentId = parts[2] ?? undefined;
@@ -792,6 +797,46 @@ export default function OperatorDashboard() {
         // Graceful degradation — if API call fails, show as authorized (system availability)
         showGuardianResult({ guardianId, guardianName, relationship, childName, isAuthorized: !!guardianId, childId });
       }
+
+    } else if (data.startsWith("STRIDE:MEMBER:")) {
+      // Universal member QR — format: STRIDE:MEMBER:<userId>
+      const parts = data.split(":");
+      const memberId   = parts[2] ?? "";
+      const memberName = decodeURIComponent(parts[3] ?? "Member");
+      setScanned(true);
+      setGuardianResult(null);
+
+      try {
+        const check = await api.checkAccess(memberId);
+        if (check.verdict !== "allowed") {
+          const displayName = check.childName || memberName;
+          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          if (check.verdict === "suspended" || check.verdict === "overdue_denied") {
+            triggerAccessAlert(memberId, displayName,
+              check.verdict === "suspended" ? "Account suspended" : "Payment overdue");
+          }
+          const logMsg =
+            check.verdict === "suspended"    ? `✗ SUSPENDED: ${displayName}` :
+            check.verdict === "grace_allowed" ? `⚠ One-time access: ${displayName}` :
+            `✗ Payment overdue: ${displayName}`;
+          pushLog({ time: nowTime(), action: logMsg, type: check.verdict === "grace_allowed" ? "warning" : "error" });
+          setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
+          return;
+        }
+      } catch {
+        // Check failed — proceed with normal scan
+      }
+
+      const foundMember = students.find(s => s.id === memberId);
+      clearAlertByStudent(memberId);
+      showScanResult({
+        type: "success",
+        name: foundMember?.name ?? memberName,
+        subscription: "active",
+        medical: "valid",
+        payment: "paid",
+      });
 
     } else if (data.startsWith("STRIDE:CHILD:")) {
       // Direct child check-in QR — format: STRIDE:CHILD:<studentId>:<encodedName>

@@ -151,11 +151,11 @@ export default function ParentHome() {
   const childForLesson = children[0];
   const lessonLocation = nextLesson?.location || nextCourse?.location || "";
 
-  const parentQrValue = `STRIDE:PARENT:${user?.id ?? "0"}:${user?.orgId ?? "1"}`;
+  const parentQrValue = `STRIDE:MEMBER:${user?.id ?? "0"}`;
   const activeChild = children.find(c => c.id === qrTarget);
   const qrValue = qrTarget === "parent"
     ? parentQrValue
-    : (activeChild?.qrPayload || `STRIDE:CHILD:${qrTarget}`);
+    : (activeChild?.qrPayload || `STRIDE:MEMBER:${qrTarget}`);
   const qrLabel = qrTarget === "parent"
     ? (user?.name ?? "My QR")
     : (activeChild?.name ?? "");
@@ -700,6 +700,10 @@ export default function ParentHome() {
                   size={160}
                   color={colors.primary}
                   backgroundColor="transparent"
+                  logo={logoSource ? { uri: logoSource } : undefined}
+                  logoSize={logoSource ? 38 : undefined}
+                  logoBackgroundColor="#FFFFFF"
+                  logoBorderRadius={8}
                 />
                 <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrLabel}</Text>
                 <Text style={[styles.qrId, { color: colors.mutedForeground }]}>

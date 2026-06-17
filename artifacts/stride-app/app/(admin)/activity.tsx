@@ -421,7 +421,9 @@ export default function ActivityScreen() {
   const [calYear,  setCalYear]                  = useState(new Date().getFullYear());
   const [calMonth, setCalMonth]                 = useState(new Date().getMonth());
   // Set of "YYYY-MM-DD" week-start strings that are toggled ON
-  const [activeWeeks, setActiveWeeks]           = useState<Set<string>>(new Set());
+  const [activeWeeks,  setActiveWeeks]           = useState<Set<string>>(new Set());
+  const [offWeeks,     setOffWeeks]              = useState<Set<string>>(new Set());
+  const [dayOverrides, setDayOverrides]          = useState<Map<string, "active" | "off">>(new Map());
 
   // ── Multi-studio clone popup ──
   const [showCloneStudio, setShowCloneStudio]   = useState(false);
@@ -682,13 +684,30 @@ export default function ActivityScreen() {
 
   const toggleWeek = (weekStart: Date) => {
     const key = isoDate(weekStart);
-    setActiveWeeks(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const isAct = activeWeeks.has(key);
+    const isOff = offWeeks.has(key);
+    if (!isAct && !isOff) {
+      setActiveWeeks(prev => new Set([...prev, key]));
+    } else if (isAct) {
+      setActiveWeeks(prev => { const n = new Set(prev); n.delete(key); return n; });
+      setOffWeeks(prev => new Set([...prev, key]));
+    } else {
+      setOffWeeks(prev => { const n = new Set(prev); n.delete(key); return n; });
+    }
+  };
+
+  const toggleDayOverride = (day: Date) => {
+    const key = isoDate(day);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDayOverrides(prev => {
+      const next = new Map(prev);
+      const cur = next.get(key);
+      if (!cur) next.set(key, "active");
+      else if (cur === "active") next.set(key, "off");
+      else next.delete(key);
       return next;
     });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   /** Build calendar grid for calYear/calMonth — returns array of {weekStart, days} */
@@ -1654,21 +1673,21 @@ export default function ActivityScreen() {
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
 
           {/* ── Header ── */}
-          <View style={[styles.modalHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.primary, borderBottomColor: "rgba(255,255,255,0.15)" }]}>
             <Pressable onPress={() => setShowActivityModal(false)} style={styles.backBtn}>
-              <Ionicons name="close" size={24} color={colors.mutedForeground} />
+              <Ionicons name="close" size={24} color="#FFF" />
             </Pressable>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>
+            <Text style={[styles.modalTitle, { color: "#FFF" }]}>
               {editingActivity ? "Edit Activity" : "New Activity"}
             </Text>
             <View style={styles.modalHeaderRight}>
               {editingActivity && (
                 <Pressable onPress={() => deleteActivity(editingActivity.id)} style={styles.deleteBtn}>
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  <Ionicons name="trash-outline" size={20} color="#FBBF24" />
                 </Pressable>
               )}
-              <Pressable onPress={saveActivity} style={[styles.saveBtn, { backgroundColor: colors.primary }]}>
-                <Text style={styles.saveBtnText}>Save</Text>
+              <Pressable onPress={saveActivity} style={[styles.saveBtn, { backgroundColor: "#FBBF24" }]}>
+                <Text style={[styles.saveBtnText, { color: "#1E3A8A" }]}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -2225,7 +2244,9 @@ export default function ActivityScreen() {
               >
                 <Ionicons name="calendar-outline" size={16} color="#10B981" />
                 <Text style={[styles.addSlotText, { color: "#10B981" }]}>
-                  {activeWeeks.size > 0 ? `${activeWeeks.size} week${activeWeeks.size > 1 ? "s" : ""} selected` : "Select weeks"}
+                  {activeWeeks.size === 0 && offWeeks.size === 0
+                    ? "Select weeks"
+                    : `${activeWeeks.size > 0 ? `${activeWeeks.size} active` : ""}${activeWeeks.size > 0 && offWeeks.size > 0 ? " · " : ""}${offWeeks.size > 0 ? `${offWeeks.size} off` : ""}`}
                 </Text>
               </Pressable>
             </View>
@@ -2379,14 +2400,46 @@ export default function ActivityScreen() {
           <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24,
             paddingBottom: insets.bottom + 16 }}>
             {/* Header */}
-            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 }}>
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: "800", color: colors.primary }}>
+                Select Weeks
+              </Text>
+              <Pressable
+                onPress={() => { setActiveWeeks(new Set()); setOffWeeks(new Set()); setDayOverrides(new Map()); }}
+                style={{ marginRight: 12 }}
+              >
+                <Text style={{ fontSize: 13, color: "#EF4444", fontWeight: "600" }}>Clear</Text>
+              </Pressable>
+              <Pressable onPress={() => setShowCalendar(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            {/* Legend */}
+            <View style={{ flexDirection: "row", gap: 14, paddingHorizontal: 20, marginBottom: 10 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: colors.primary }} />
+                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Active (tap 1×)</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: "#EF4444" }} />
+                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Off (tap 2×)</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View style={{ width: 11, height: 11, borderRadius: 3, borderWidth: 1, borderColor: colors.border }} />
+                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Day tap</Text>
+              </View>
+            </View>
+
+            {/* Month navigation */}
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, marginBottom: 8 }}>
               <Pressable onPress={() => {
                 if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
                 else setCalMonth(m => m - 1);
               }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-back" size={22} color={colors.primary} />
               </Pressable>
-              <Text style={{ flex: 1, textAlign: "center", fontSize: 16, fontWeight: "800", color: colors.foreground }}>
+              <Text style={{ flex: 1, textAlign: "center", fontSize: 15, fontWeight: "800", color: colors.foreground }}>
                 {new Date(calYear, calMonth).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
               </Text>
               <Pressable onPress={() => {
@@ -2395,13 +2448,10 @@ export default function ActivityScreen() {
               }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-forward" size={22} color={colors.primary} />
               </Pressable>
-              <Pressable onPress={() => setShowCalendar(false)} style={{ padding: 8 }}>
-                <Ionicons name="close" size={22} color={colors.mutedForeground} />
-              </Pressable>
             </View>
 
             {/* Weekday labels */}
-            <View style={{ flexDirection: "row", paddingHorizontal: 16, marginBottom: 6 }}>
+            <View style={{ flexDirection: "row", paddingHorizontal: 16, marginBottom: 4 }}>
               {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d => (
                 <Text key={d} style={{ flex: 1, textAlign: "center", fontSize: 11, fontWeight: "700",
                   color: colors.mutedForeground }}>
@@ -2410,45 +2460,108 @@ export default function ActivityScreen() {
               ))}
             </View>
 
-            {/* Calendar grid */}
+            {/* Calendar grid — tri-state week rows + per-day tapping */}
             <View style={{ paddingHorizontal: 12 }}>
               {buildCalendarGrid().map((week, wi) => {
-                const key = isoDate(week.weekStart);
-                const isActive = activeWeeks.has(key);
+                const wKey = isoDate(week.weekStart);
+                const isWkActive = activeWeeks.has(wKey);
+                const isWkOff    = offWeeks.has(wKey);
                 return (
-                  <Pressable key={wi} onPress={() => toggleWeek(week.weekStart)}
-                    style={{ flexDirection: "row", marginBottom: 4,
-                      backgroundColor: isActive ? `${colors.primary}15` : "transparent",
-                      borderRadius: 10, borderWidth: isActive ? 1.5 : 0, borderColor: colors.primary }}>
-                    {week.days.map((day, di) => (
-                      <View key={di} style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center" }}>
-                        {day ? (
-                          <Text style={{ fontSize: 14, fontWeight: isActive ? "800" : "500",
-                            color: isActive ? colors.primary : colors.foreground }}>
+                  <View key={wi} style={{ flexDirection: "row", marginBottom: 3,
+                    borderRadius: 10, overflow: "hidden",
+                    borderWidth: (isWkActive || isWkOff) ? 1.5 : 0,
+                    borderColor: isWkActive ? colors.primary : isWkOff ? "#EF4444" : "transparent",
+                    backgroundColor: isWkActive ? `${colors.primary}12` : isWkOff ? "rgba(239,68,68,0.08)" : "transparent" }}>
+                    {/* Week-level tap zone — narrow left strip */}
+                    <Pressable
+                      onPress={() => toggleWeek(week.weekStart)}
+                      style={{ width: 22, alignItems: "center", justifyContent: "center" }}
+                    >
+                      <View style={{
+                        width: 14, height: 14, borderRadius: 4,
+                        backgroundColor: isWkActive ? colors.primary : isWkOff ? "#EF4444" : colors.muted,
+                        borderWidth: (!isWkActive && !isWkOff) ? 1 : 0,
+                        borderColor: colors.border,
+                      }} />
+                    </Pressable>
+                    {/* Individual day cells */}
+                    {week.days.map((day, di) => {
+                      if (!day) return <View key={di} style={{ flex: 1, height: 38 }} />;
+                      const dKey    = isoDate(day);
+                      const dayOver = dayOverrides.get(dKey);
+                      const isActiv = dayOver === "active" || (!dayOver && isWkActive);
+                      const isOffDay = dayOver === "off"    || (!dayOver && isWkOff);
+                      return (
+                        <Pressable
+                          key={di}
+                          onPress={() => toggleDayOverride(day)}
+                          style={{
+                            flex: 1, height: 38, alignItems: "center", justifyContent: "center",
+                            borderRadius: 8, margin: 1,
+                            backgroundColor: dayOver === "active" ? `${colors.primary}25`
+                              : dayOver === "off" ? "rgba(239,68,68,0.2)"
+                              : "transparent",
+                          }}
+                        >
+                          <Text style={{
+                            fontSize: 13,
+                            fontWeight: (isActiv || isOffDay || dayOver) ? "800" : "400",
+                            color: isActiv  ? colors.primary
+                              : isOffDay ? "#EF4444"
+                              : colors.foreground,
+                          }}>
                             {day.getDate()}
                           </Text>
-                        ) : null}
-                      </View>
-                    ))}
-                  </Pressable>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 );
               })}
             </View>
 
             {/* Footer */}
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-              paddingHorizontal: 20, paddingTop: 16 }}>
-              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
-                {activeWeeks.size === 0
-                  ? "Tap a row to select a week"
-                  : `${activeWeeks.size} week${activeWeeks.size === 1 ? "" : "s"} selected`}
-              </Text>
+            <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+                {activeWeeks.size > 0 && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6,
+                    backgroundColor: `${colors.primary}12`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                    <Ionicons name="checkmark-circle" size={13} color={colors.primary} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>
+                      {activeWeeks.size} active week{activeWeeks.size !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
+                )}
+                {offWeeks.size > 0 && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6,
+                    backgroundColor: "rgba(239,68,68,0.1)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                    <Ionicons name="close-circle" size={13} color="#EF4444" />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#EF4444" }}>
+                      {offWeeks.size} off week{offWeeks.size !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
+                )}
+                {dayOverrides.size > 0 && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6,
+                    backgroundColor: "rgba(107,114,128,0.1)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                    <Ionicons name="color-fill-outline" size={13} color={colors.mutedForeground} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground }}>
+                      {dayOverrides.size} day override{dayOverrides.size !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
+                )}
+                {activeWeeks.size === 0 && offWeeks.size === 0 && dayOverrides.size === 0 && (
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                    Tap the square to set a week · Tap a day for individual overrides
+                  </Text>
+                )}
+              </View>
               <Pressable
                 onPress={() => setShowCalendar(false)}
                 style={{ backgroundColor: colors.primary, borderRadius: 12,
-                  paddingHorizontal: 20, paddingVertical: 10 }}
+                  paddingVertical: 13, alignItems: "center" }}
               >
-                <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Confirm</Text>
+                <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Confirm</Text>
               </Pressable>
             </View>
           </View>
@@ -2606,21 +2719,21 @@ export default function ActivityScreen() {
       {/* ── ADMIN SCHEDULE MODAL ── */}
       <Modal visible={showAdminModal} animationType="slide" onRequestClose={() => setShowAdminModal(false)}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.primary, borderBottomColor: "rgba(255,255,255,0.15)" }]}>
             <Pressable onPress={() => setShowAdminModal(false)} style={styles.backBtn}>
-              <Ionicons name="close" size={24} color={colors.mutedForeground} />
+              <Ionicons name="close" size={24} color="#FFF" />
             </Pressable>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>
+            <Text style={[styles.modalTitle, { color: "#FFF" }]}>
               {editingAdminItem ? "Edit Schedule Item" : "New Schedule Item"}
             </Text>
             <View style={styles.modalHeaderRight}>
               {editingAdminItem && (
                 <Pressable onPress={() => deleteAdminItem(editingAdminItem.id)} style={styles.deleteBtn}>
-                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  <Ionicons name="trash-outline" size={20} color="#FBBF24" />
                 </Pressable>
               )}
-              <Pressable onPress={saveAdminItem} style={[styles.saveBtn, { backgroundColor: colors.primary }]}>
-                <Text style={styles.saveBtnText}>Save</Text>
+              <Pressable onPress={saveAdminItem} style={[styles.saveBtn, { backgroundColor: "#FBBF24" }]}>
+                <Text style={[styles.saveBtnText, { color: "#1E3A8A" }]}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -2637,86 +2750,113 @@ export default function ActivityScreen() {
             />
 
             {/* ── TYPE ── */}
-            {renderRow("Type",
-              <View style={styles.pickerWrap}>
+            {renderSectionHeader("TYPE")}
+            <View style={{ gap: 8, marginBottom: 4 }}>
+              {/* Predefined types — 3-column grid */}
+              <View style={{ flexDirection: "row", gap: 8 }}>
                 {(["secretary_hours","staff_meeting","parent_teacher"] as AdminItemType[]).map(t => {
                   const active = adminDraft.type === t;
                   const cfg = ADMIN_TYPE_CONFIG[t];
                   return (
                     <Pressable key={t} onPress={() => setAdminDraft(d => ({ ...d, type: t }))}
-                      style={[styles.pickerChip, active && { backgroundColor: cfg.bg, borderColor: cfg.color, borderWidth: 1.5 }]}>
-                      <Text style={[styles.pickerChipText, { color: active ? cfg.color : colors.mutedForeground }]}>{cfg.label}</Text>
+                      style={[{
+                        flex: 1, paddingVertical: 11, paddingHorizontal: 8, borderRadius: 12,
+                        alignItems: "center", justifyContent: "center",
+                        borderWidth: 1.5,
+                        borderColor: active ? cfg.color : colors.border,
+                        backgroundColor: active ? cfg.bg : colors.card,
+                      }]}>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: active ? cfg.color : colors.mutedForeground, textAlign: "center" }}>
+                        {cfg.label}
+                      </Text>
                     </Pressable>
                   );
                 })}
-                {savedAdminTypes.map(t => {
-                  const active = adminDraft.type === t;
-                  return (
-                    <Pressable key={t} onPress={() => setAdminDraft(d => ({ ...d, type: t }))}
-                      style={[styles.pickerChip, active && { backgroundColor: "rgba(107,114,128,0.12)", borderColor: "#6B7280", borderWidth: 1.5 }]}>
-                      <Text style={[styles.pickerChipText, { color: active ? "#6B7280" : colors.mutedForeground }]}>{t}</Text>
-                    </Pressable>
-                  );
-                })}
-                {showAdminTypeInput ? (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
-                    <TextInput
-                      style={[styles.smallInput, { flex: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
-                      placeholder="Custom type name…"
-                      placeholderTextColor={colors.mutedForeground}
-                      value={newAdminTypeInput}
-                      onChangeText={setNewAdminTypeInput}
-                      autoFocus
-                      returnKeyType="done"
-                      onSubmitEditing={() => {
-                        const t = newAdminTypeInput.trim();
-                        if (t && !savedAdminTypes.includes(t)) {
-                          const next = [...savedAdminTypes, t];
-                          setSavedAdminTypes(next);
-                          AsyncStorage.setItem(ADMIN_SCHEDULE_TYPES_KEY, JSON.stringify(next)).catch(() => {});
-                        }
-                        if (t) setAdminDraft(d => ({ ...d, type: t }));
-                        setNewAdminTypeInput("");
-                        setShowAdminTypeInput(false);
-                      }}
-                    />
-                    <Pressable
-                      onPress={() => {
-                        const t = newAdminTypeInput.trim();
-                        if (t && !savedAdminTypes.includes(t)) {
-                          const next = [...savedAdminTypes, t];
-                          setSavedAdminTypes(next);
-                          AsyncStorage.setItem(ADMIN_SCHEDULE_TYPES_KEY, JSON.stringify(next)).catch(() => {});
-                        }
-                        if (t) setAdminDraft(d => ({ ...d, type: t }));
-                        setNewAdminTypeInput("");
-                        setShowAdminTypeInput(false);
-                        Haptics.selectionAsync();
-                      }}
-                      style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
-                      <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Add</Text>
-                    </Pressable>
-                    <Pressable onPress={() => { setShowAdminTypeInput(false); setNewAdminTypeInput(""); }}>
-                      <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
-                    </Pressable>
-                  </View>
-                ) : (
-                  <Pressable
-                    onPress={() => setShowAdminTypeInput(true)}
-                    style={[styles.pickerChip, { borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 4 }]}>
-                    <Ionicons name="add" size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.pickerChipText, { color: colors.mutedForeground }]}>Other</Text>
-                  </Pressable>
-                )}
               </View>
-            )}
+              {/* Saved custom types + add new */}
+              {(savedAdminTypes.length > 0 || true) && (
+                <View style={styles.pickerWrap}>
+                  {savedAdminTypes.map(t => {
+                    const active = adminDraft.type === t;
+                    return (
+                      <Pressable key={t} onPress={() => setAdminDraft(d => ({ ...d, type: t }))}
+                        style={[styles.pickerChip, active && { backgroundColor: "rgba(107,114,128,0.12)", borderColor: "#6B7280", borderWidth: 1.5 }]}>
+                        <Text style={[styles.pickerChipText, { color: active ? "#6B7280" : colors.mutedForeground }]}>{t}</Text>
+                      </Pressable>
+                    );
+                  })}
+                  {showAdminTypeInput ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1, minWidth: 200 }}>
+                      <TextInput
+                        style={[styles.smallInput, { flex: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                        placeholder="Custom type name…"
+                        placeholderTextColor={colors.mutedForeground}
+                        value={newAdminTypeInput}
+                        onChangeText={setNewAdminTypeInput}
+                        autoFocus
+                        returnKeyType="done"
+                        onSubmitEditing={() => {
+                          const t = newAdminTypeInput.trim();
+                          if (t && !savedAdminTypes.includes(t)) {
+                            const next = [...savedAdminTypes, t];
+                            setSavedAdminTypes(next);
+                            AsyncStorage.setItem(ADMIN_SCHEDULE_TYPES_KEY, JSON.stringify(next)).catch(() => {});
+                          }
+                          if (t) setAdminDraft(d => ({ ...d, type: t }));
+                          setNewAdminTypeInput("");
+                          setShowAdminTypeInput(false);
+                        }}
+                      />
+                      <Pressable
+                        onPress={() => {
+                          const t = newAdminTypeInput.trim();
+                          if (t && !savedAdminTypes.includes(t)) {
+                            const next = [...savedAdminTypes, t];
+                            setSavedAdminTypes(next);
+                            AsyncStorage.setItem(ADMIN_SCHEDULE_TYPES_KEY, JSON.stringify(next)).catch(() => {});
+                          }
+                          if (t) setAdminDraft(d => ({ ...d, type: t }));
+                          setNewAdminTypeInput("");
+                          setShowAdminTypeInput(false);
+                          Haptics.selectionAsync();
+                        }}
+                        style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
+                        <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Add</Text>
+                      </Pressable>
+                      <Pressable onPress={() => { setShowAdminTypeInput(false); setNewAdminTypeInput(""); }}>
+                        <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <Pressable
+                      onPress={() => setShowAdminTypeInput(true)}
+                      style={[styles.pickerChip, { borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 4 }]}>
+                      <Ionicons name="add" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.pickerChipText, { color: colors.mutedForeground }]}>Custom</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* ── STATUS — right after type ── */}
+            {renderSectionHeader("STATUS")}
+            <PickerRow
+              options={[
+                { value: "scheduled" as const, label: "Scheduled", color: "#1E3A8A", bg: "#DBEAFE" },
+                { value: "completed" as const, label: "Completed", color: "#10B981", bg: "#D1FAE5" },
+                { value: "cancelled" as const, label: "Cancelled", color: "#EF4444", bg: "#FEE2E2" },
+              ]}
+              value={adminDraft.status}
+              onSelect={v => setAdminDraft(d => ({ ...d, status: v }))}
+            />
 
             {/* ── WHEN ── */}
             {renderSectionHeader("WHEN")}
 
             {/* Date — monthly calendar picker */}
-            <View style={{ marginBottom: 12 }}>
-              <Text style={[styles.formLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Date</Text>
+            <View style={{ marginBottom: 10 }}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Date(s)</Text>
               <Pressable
                 onPress={() => setShowAdminDatePicker(true)}
                 style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, padding: 14, flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -2749,25 +2889,32 @@ export default function ActivityScreen() {
               </Pressable>
             </View>
 
-            {/* Start Time — drum scroll picker */}
-            {renderRow("Start Time",
-              <Pressable
-                onPress={() => setShowAdminTimePicker(true)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 10 }}>
-                <Ionicons name="time-outline" size={16} color={colors.primary} />
-                <Text style={{ fontWeight: "800", color: colors.foreground, fontSize: 17, letterSpacing: 1 }}>
-                  {`${String(adminTimeHour).padStart(2,"0")}:${String(adminTimeMinute).padStart(2,"0")}`}
-                </Text>
-                <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
-              </Pressable>
-            )}
-            {renderRow("Duration",
-              <PickerRow
-                options={[...DURATION_OPTIONS, 240, 480].map(m => ({ value: String(m), label: fmtDuration(m) }))}
-                value={String(adminDraft.duration)}
-                onSelect={v => setAdminDraft(d => ({ ...d, duration: Number(v) }))}
-              />
-            )}
+            {/* Start Time + Duration — side-by-side */}
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 4 }}>
+              {/* Time */}
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Start Time</Text>
+                <Pressable
+                  onPress={() => setShowAdminTimePicker(true)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.card,
+                    borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 13 }}>
+                  <Ionicons name="time-outline" size={16} color={colors.primary} />
+                  <Text style={{ fontWeight: "800", color: colors.foreground, fontSize: 16, letterSpacing: 1, flex: 1 }}>
+                    {`${String(adminTimeHour).padStart(2,"0")}:${String(adminTimeMinute).padStart(2,"0")}`}
+                  </Text>
+                  <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+              {/* Duration */}
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.formLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Duration</Text>
+                <PickerRow
+                  options={[...DURATION_OPTIONS, 240, 480].map(m => ({ value: String(m), label: fmtDuration(m) }))}
+                  value={String(adminDraft.duration)}
+                  onSelect={v => setAdminDraft(d => ({ ...d, duration: Number(v) }))}
+                />
+              </View>
+            </View>
 
             {/* ── SECRETARY SCHEDULE — only for Secretary Hours type ── */}
             {adminDraft.type === "secretary_hours" && (
@@ -3000,19 +3147,6 @@ export default function ActivityScreen() {
               value={adminDraft.notes}
               onChangeText={v => setAdminDraft(d => ({ ...d, notes: v }))}
             />
-
-            {renderSectionHeader("STATUS")}
-            {renderRow("Status",
-              <PickerRow
-                options={[
-                  { value: "scheduled" as const, label: "Scheduled", color: "#1E3A8A", bg: "#DBEAFE" },
-                  { value: "completed" as const, label: "Completed", color: "#10B981", bg: "#D1FAE5" },
-                  { value: "cancelled" as const, label: "Cancelled", color: "#EF4444", bg: "#FEE2E2" },
-                ]}
-                value={adminDraft.status}
-                onSelect={v => setAdminDraft(d => ({ ...d, status: v }))}
-              />
-            )}
 
             <View style={{ height: 40 }} />
           </ScrollView>
