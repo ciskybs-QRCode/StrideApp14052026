@@ -23,6 +23,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -61,6 +62,7 @@ export default function BeaconsScreen() {
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
 
+  const [bleEnabled,  setBleEnabled]  = useState(false);
   const [beacons,     setBeacons]     = useState<ProximityBeacon[]>([]);
   const [assignments, setAssignments] = useState<ChildBeaconAssignment[]>([]);
   const [recent,      setRecent]      = useState<ProximityRecentEntry[]>([]);
@@ -198,6 +200,35 @@ export default function BeaconsScreen() {
       <ScreenHeader title="BLE Proximity" onBack={() => router.push("/(admin)/operations-hub")} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+
+        {/* ── Coming Soon Toggle ────────────────────────────────────────────── */}
+        <View style={[S.toggleCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[S.toggleIconWrap, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+            <Ionicons name="bluetooth" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[S.toggleTitle, { color: colors.foreground }]}>BLE Auto Check-in</Text>
+            <Text style={[S.toggleSub, { color: colors.mutedForeground }]}>
+              {bleEnabled ? "Feature enabled — connect scanners below" : "Coming soon — tap to learn more"}
+            </Text>
+          </View>
+          <Switch
+            value={bleEnabled}
+            onValueChange={v => {
+              if (v) {
+                Alert.alert(
+                  "Coming Soon",
+                  "BLE proximity check-in will be available in a future update. The content below is for preview only.",
+                  [{ text: "OK" }],
+                );
+              } else {
+                setBleEnabled(false);
+              }
+            }}
+            trackColor={{ false: "#E5E7EB", true: "#1E3A8A" }}
+            thumbColor={bleEnabled ? "#FBBF24" : "#9CA3AF"}
+          />
+        </View>
 
         {/* How It Works */}
         <View style={S.infoCard}>
@@ -524,6 +555,15 @@ const S = StyleSheet.create({
   headerTitle:  { color: "#FFF", fontWeight: "900", fontSize: 16 },
 
   // Info card
+  toggleCard:    {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+  },
+  toggleIconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  toggleTitle:    { fontSize: 14, fontWeight: "800", marginBottom: 2 },
+  toggleSub:      { fontSize: 11, lineHeight: 16 },
   infoCard:     { backgroundColor: "#0C4A6E15", borderWidth: 1, borderColor: "#0EA5E920", borderRadius: 16, padding: 14, marginBottom: 20 },
   infoRow:      { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   infoStep:     { flex: 1, alignItems: "center", gap: 6, borderRadius: 10, padding: 10 },

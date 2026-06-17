@@ -157,7 +157,7 @@ export default function AdminTabLayout() {
           ) : isWeb ? (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ) : null,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
+        tabBarLabelStyle: { fontSize: 9, fontWeight: "600" },
       }}
     >
       {/* ── 5 visible tabs ── */}

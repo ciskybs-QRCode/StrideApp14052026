@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -386,9 +387,10 @@ export default function CopilotScreen() {
   const insets    = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
 
-  const [input,    setInput]    = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [input,       setInput]       = useState("");
+  const [loading,     setLoading]     = useState(false);
+  const [messages,    setMessages]    = useState<Message[]>([]);
+  const [showPrompts, setShowPrompts] = useState(false);
 
   const showWelcome = messages.length === 0;
 
@@ -431,25 +433,31 @@ export default function CopilotScreen() {
     <View style={[s.root, { backgroundColor: CLR.bg }]}>
       <ScreenHeader title="Copilot" onBack={() => router.push("/(admin)/operations-hub")} />
 
-      {/* ── Quick chips ───────────────────────────────────────── */}
-      <View style={s.chipsWrap}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.chipsContent}
+      {/* ── Quick prompts dropdown ────────────────────────────── */}
+      <View style={s.promptsOuter}>
+        <Pressable
+          style={({ pressed }) => [s.promptsToggle, pressed && { opacity: 0.78 }]}
+          onPress={() => setShowPrompts(p => !p)}
         >
-          {QUICK_PROMPTS.map(p => (
-            <Pressable
-              key={p.label}
-              style={({ pressed }) => [s.chip, pressed && s.chipActive]}
-              onPress={() => sendMessage(p.query)}
-              disabled={loading}
-            >
-              <Text style={s.chipEmoji}>{p.emoji}</Text>
-              <Text style={s.chipLabel}>{p.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+          <Ionicons name="sparkles" size={13} color={CLR.gold} />
+          <Text style={s.promptsToggleText}>Quick prompts</Text>
+          <Ionicons name={showPrompts ? "chevron-up" : "chevron-down"} size={13} color={CLR.textMuted} />
+        </Pressable>
+        {showPrompts && (
+          <View style={s.promptsDropdown}>
+            {QUICK_PROMPTS.map(p => (
+              <Pressable
+                key={p.label}
+                style={({ pressed }) => [s.promptsItem, pressed && s.promptsItemPressed]}
+                onPress={() => { void sendMessage(p.query); setShowPrompts(false); }}
+                disabled={loading}
+              >
+                <Text style={s.promptsItemEmoji}>{p.emoji}</Text>
+                <Text style={s.promptsItemLabel}>{p.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* ── Message list ──────────────────────────────────────── */}
@@ -472,6 +480,12 @@ export default function CopilotScreen() {
         keyboardVerticalOffset={insets.bottom + 10}
       >
         <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 14), paddingTop: 10, borderTopWidth: 1, borderTopColor: CLR.border }]}>
+          <Pressable
+            style={s.micBtn}
+            onPress={() => Alert.alert("Coming Soon", "Voice input will be available in a future update.")}
+          >
+            <Ionicons name="mic-outline" size={22} color={CLR.textMuted} />
+          </Pressable>
           <TextInput
             style={s.input}
             value={input}
@@ -534,18 +548,39 @@ const s = StyleSheet.create({
   liveDot:   { width: 5, height: 5, borderRadius: 3, backgroundColor: CLR.green },
   liveText:  { color: CLR.green, fontSize: 8.5, fontWeight: "800", letterSpacing: 0.8 },
 
-  /* Chips */
-  chipsWrap:    { backgroundColor: CLR.surfaceAlt, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
-  chipsContent: { paddingHorizontal: 14, paddingVertical: 9, gap: 7, flexDirection: "row", alignItems: "center" },
-  chip:         {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    backgroundColor: CLR.goldFaint,
-    borderWidth: 1, borderColor: CLR.goldDim,
-    borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6,
+  /* Quick prompts dropdown */
+  promptsOuter: {
+    backgroundColor: CLR.surfaceAlt,
+    borderBottomWidth: 1, borderBottomColor: CLR.border,
+    zIndex: 10,
   },
-  chipActive:   { backgroundColor: "rgba(212,175,55,0.2)" },
-  chipEmoji:    { fontSize: 13 },
-  chipLabel:    { color: CLR.gold, fontSize: 11.5, fontWeight: "600" },
+  promptsToggle: {
+    flexDirection: "row", alignItems: "center", gap: 7,
+    paddingHorizontal: 16, paddingVertical: 10,
+  },
+  promptsToggleText: { flex: 1, color: CLR.gold, fontSize: 12.5, fontWeight: "700" },
+  promptsDropdown: {
+    backgroundColor: CLR.surface,
+    borderTopWidth: 1, borderTopColor: CLR.border,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08, shadowRadius: 8, elevation: 4,
+  },
+  promptsItem: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 18, paddingVertical: 13,
+    borderBottomWidth: 1, borderBottomColor: CLR.border,
+  },
+  promptsItemPressed: { backgroundColor: CLR.goldFaint },
+  promptsItemEmoji:   { fontSize: 17 },
+  promptsItemLabel:   { color: CLR.text, fontSize: 13, fontWeight: "600" },
+
+  /* Mic button */
+  micBtn: {
+    width: 40, height: 40, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(30,58,138,0.06)",
+    flexShrink: 0,
+  },
 
   /* List */
   list:      { flex: 1 },

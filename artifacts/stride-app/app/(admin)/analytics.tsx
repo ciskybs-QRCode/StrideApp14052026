@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Alert,
   Platform,
@@ -28,12 +28,6 @@ const MONTHLY = [
   { month: "Jun", revenue: 4100, students: 41 },
 ];
 
-const AGE_GROUPS = [
-  { label: "4–7 yrs",   count: 14, color: "#6366F1" },
-  { label: "8–12 yrs",  count: 22, color: "#10B981" },
-  { label: "13–17 yrs", count: 18, color: "#F59E0B" },
-  { label: "18+ yrs",   count: 9,  color: "#EF4444" },
-];
 
 const SECTIONS = [
   { key: "trends",       label: "Trends",           icon: "trending-up-outline"  as const, color: "#3B82F6", bg: "#DBEAFE" },
@@ -55,13 +49,36 @@ export default function AdminAnalytics() {
 
   const [chartMetric, setChartMetric] = useState<"revenue" | "students">("revenue");
 
+  // ── Dynamic age distribution from real member data ──────────────────────────
+  const ageGroups = useMemo(() => {
+    const PALETTE = [
+      "#4F46E5", "#0284C7", "#0891B2", "#059669", "#65A30D",
+      "#D97706", "#EA580C", "#DC2626", "#7C3AED", "#C026D3",
+      "#4338CA", "#0369A1",
+    ];
+    const bands: { label: string; min: number; max: number }[] = [];
+    for (let i = 0; i < 20; i += 2) bands.push({ label: `${i}–${i + 1}`, min: i, max: i + 1 });
+    for (let i = 20; i < 40; i += 5) bands.push({ label: `${i}–${i + 4}`, min: i, max: i + 4 });
+    bands.push({ label: "40+", min: 40, max: Infinity });
+    const counts: Record<string, number> = {};
+    for (const s of students) {
+      const age = (s as { age?: number }).age;
+      if (age == null) continue;
+      const band = bands.find(b => age >= b.min && age <= b.max);
+      if (band) counts[band.label] = (counts[band.label] ?? 0) + 1;
+    }
+    return bands
+      .filter(b => (counts[b.label] ?? 0) > 0)
+      .map((b, i) => ({ label: b.label, count: counts[b.label]!, color: PALETTE[i % PALETTE.length] }));
+  }, [students]);
+
   const totalRevenue   = payments.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const pendingRevenue = payments.filter(p => p.status === "pending").reduce((s, p) => s + p.amount, 0);
   const paidCount      = payments.filter(p => p.status === "paid").length;
   const pendingCount   = payments.filter(p => p.status === "pending").length;
   const totalPayments  = paidCount + pendingCount;
   const totalStudents  = students.length;
-  const totalAgeCount  = AGE_GROUPS.reduce((s, g) => s + g.count, 0);
+  const totalAgeCount  = ageGroups.reduce((s, g) => s + g.count, 0);
   const maxVal         = Math.max(...MONTHLY.map(d => chartMetric === "revenue" ? d.revenue : d.students));
 
   const recentActivity = payments
@@ -137,7 +154,7 @@ export default function AdminAnalytics() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Analytics" subtitle={user?.schoolName || "Stride"} />
+      <ScreenHeader title="Analytics" subtitle={user?.schoolName || "Stride"} onBack={() => router.push("/(admin)/operations-hub")} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
@@ -302,12 +319,14 @@ export default function AdminAnalytics() {
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.card }]}>
-            {AGE_GROUPS.map((g, i) => (
-              <View key={g.label} style={[styles.ageRow, i < AGE_GROUPS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+            {ageGroups.length === 0 ? (
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No age data available</Text>
+            ) : ageGroups.map((g, i) => (
+              <View key={g.label} style={[styles.ageRow, i < ageGroups.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
                 <View style={[styles.ageDot, { backgroundColor: g.color }]} />
                 <Text style={[styles.ageLabel, { color: colors.foreground }]}>{g.label}</Text>
                 <View style={[styles.ageBarBg, { backgroundColor: colors.muted }]}>
-                  <View style={[styles.ageBarFill, { width: `${(g.count / totalAgeCount) * 100}%` as `${number}%`, backgroundColor: g.color }]} />
+                  <View style={[styles.ageBarFill, { width: `${totalAgeCount > 0 ? (g.count / totalAgeCount) * 100 : 0}%` as `${number}%`, backgroundColor: g.color }]} />
                 </View>
                 <Text style={[styles.ageCount, { color: g.color }]}>{g.count}</Text>
               </View>

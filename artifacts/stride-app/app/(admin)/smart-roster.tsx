@@ -19,29 +19,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import SmartRosterPanel, { type SmartSubstitute } from "@/components/SmartRosterPanel";
 import {
+  api,
   cancelRescueCascade,
   getRescueCascades,
   triggerRescueCascade,
+  request,
   type RescueCascade,
+  type ApiOperatorProfile,
+  type ApiDiscipline,
 } from "@/lib/api";
-import { request } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
 
 const AUTO_TRIGGER_KEY = "stride_auto_trigger";
-
-// ── Demo data ─────────────────────────────────────────────────────────────────
-const DEMO_OPERATORS = [
-  { id: "100", name: "Demo Operator" },
-  { id: "200", name: "Sarah Chen" },
-  { id: "201", name: "Marco Rossi" },
-];
-
-const DEMO_COURSES = [
-  { disciplineId: "1", name: "Beginners Course" },
-  { disciplineId: "2", name: "Intermediate Course" },
-  { disciplineId: "3", name: "Workshop" },
-  { disciplineId: "4", name: "Advanced Course" },
-];
 
 // Simulated available slots (post-roster generation)
 const AVAILABLE_SLOTS = [
@@ -84,10 +73,14 @@ export default function SmartRosterScreen() {
   }>();
 
   // ── Config form state ──────────────────────────────────────────────────────
-  const [missingOpId,   setMissingOpId]   = useState(params.missing_operator_id   ?? DEMO_OPERATORS[0].id);
-  const [missingOpName, setMissingOpName] = useState(params.missing_operator_name ?? DEMO_OPERATORS[0].name);
-  const [disciplineId,  setDisciplineId]  = useState(params.discipline_id         ?? DEMO_COURSES[0].disciplineId);
-  const [courseName,    setCourseName]    = useState(params.course_name           ?? DEMO_COURSES[0].name);
+  const [missingOpId,   setMissingOpId]   = useState(params.missing_operator_id   ?? "");
+  const [missingOpName, setMissingOpName] = useState(params.missing_operator_name ?? "");
+  const [disciplineId,  setDisciplineId]  = useState(params.discipline_id         ?? "");
+  const [courseName,    setCourseName]    = useState(params.course_name           ?? "");
+
+  // ── Live operators + disciplines ───────────────────────────────────────────
+  const [liveOperators,   setLiveOperators]   = useState<ApiOperatorProfile[]>([]);
+  const [liveDisciplines, setLiveDisciplines] = useState<ApiDiscipline[]>([]);
   const [classDatetime, setClassDatetime] = useState(params.class_datetime        ?? nextISODateTime(2));
   const [committed,     setCommitted]     = useState(false);
   const [datetimeError, setDatetimeError] = useState<string | null>(null);
@@ -103,6 +96,25 @@ export default function SmartRosterScreen() {
   // ── Annual Roster state ────────────────────────────────────────────────────
   const [rosterPhase,    setRosterPhase]    = useState<"idle" | "generating" | "done">("idle");
   const [notifSent,      setNotifSent]      = useState(false);
+
+  // ── Load operators + disciplines from API ─────────────────────────────────
+  useEffect(() => {
+    void Promise.all([api.getOperatorProfiles(), api.getDisciplines()])
+      .then(([ops, discs]) => {
+        const active = ops.filter(o => o.active);
+        setLiveOperators(active);
+        setLiveDisciplines(discs);
+        if (!params.missing_operator_id && active.length > 0) {
+          setMissingOpId(String(active[0].user_id));
+          setMissingOpName(active[0].user?.name ?? "");
+        }
+        if (!params.discipline_id && discs.length > 0) {
+          setDisciplineId(String(discs[0].id));
+          setCourseName(discs[0].name);
+        }
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Load auto-trigger (AsyncStorage first, then API) ──────────────────────
   useEffect(() => {
@@ -229,7 +241,7 @@ export default function SmartRosterScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="AI Roster Orchestrator" subtitle="Smart scheduling & cascade" />
+      <ScreenHeader title="AI Roster Orchestrator" subtitle="Smart scheduling & cascade" onBack={() => router.push("/(admin)/operations-hub")} />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + TAB_H + 20 }]}
@@ -501,49 +513,64 @@ export default function SmartRosterScreen() {
 
             {/* Absent Operator */}
             <Text style={[s.fieldLabel, { color: colors.primary }]}>ABSENT OPERATOR</Text>
-            <View style={s.chipWrap}>
-              {DEMO_OPERATORS.map(o => (
-                <Pressable
-                  key={o.id}
-                  style={[
-                    s.chip,
-                    { borderColor: colors.border, backgroundColor: colors.muted },
-                    missingOpId === o.id && { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0E" },
-                  ]}
-                  onPress={() => { setMissingOpId(o.id); setMissingOpName(o.name); }}
-                >
-                  {missingOpId === o.id && (
-                    <Ionicons name="person-circle" size={13} color={colors.primary} />
-                  )}
-                  <Text style={[s.chipText, { color: colors.mutedForeground }, missingOpId === o.id && { color: colors.primary }]}>
-                    {o.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            {liveOperators.length === 0 ? (
+              <Text style={[s.emptyHint, { color: colors.mutedForeground }]}>No operator profiles found — add them in Lessons → Operators.</Text>
+            ) : (
+              <View style={s.chipWrap}>
+                {liveOperators.map(o => {
+                  const oid  = String(o.user_id);
+                  const name = o.user?.name ?? `Operator ${o.user_id}`;
+                  return (
+                    <Pressable
+                      key={oid}
+                      style={[
+                        s.chip,
+                        { borderColor: colors.border, backgroundColor: colors.muted },
+                        missingOpId === oid && { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0E" },
+                      ]}
+                      onPress={() => { setMissingOpId(oid); setMissingOpName(name); }}
+                    >
+                      {missingOpId === oid && (
+                        <Ionicons name="person-circle" size={13} color={colors.primary} />
+                      )}
+                      <Text style={[s.chipText, { color: colors.mutedForeground }, missingOpId === oid && { color: colors.primary }]}>
+                        {name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
             {/* Course */}
             <Text style={[s.fieldLabel, { color: colors.primary }]}>COURSE / DISCIPLINE</Text>
-            <View style={s.chipWrap}>
-              {DEMO_COURSES.map(c => (
-                <Pressable
-                  key={c.disciplineId}
-                  style={[
-                    s.chip,
-                    { borderColor: colors.border, backgroundColor: colors.muted },
-                    disciplineId === c.disciplineId && { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0E" },
-                  ]}
-                  onPress={() => { setDisciplineId(c.disciplineId); setCourseName(c.name); }}
-                >
-                  {disciplineId === c.disciplineId && (
-                    <Ionicons name="musical-notes" size={13} color={colors.primary} />
-                  )}
-                  <Text style={[s.chipText, { color: colors.mutedForeground }, disciplineId === c.disciplineId && { color: colors.primary }]}>
-                    {c.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            {liveDisciplines.length === 0 ? (
+              <Text style={[s.emptyHint, { color: colors.mutedForeground }]}>No disciplines found — add them in Lessons → Disciplines.</Text>
+            ) : (
+              <View style={s.chipWrap}>
+                {liveDisciplines.map(d => {
+                  const did = String(d.id);
+                  return (
+                    <Pressable
+                      key={did}
+                      style={[
+                        s.chip,
+                        { borderColor: colors.border, backgroundColor: colors.muted },
+                        disciplineId === did && { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0E" },
+                      ]}
+                      onPress={() => { setDisciplineId(did); setCourseName(d.name); }}
+                    >
+                      {disciplineId === did && (
+                        <Ionicons name="musical-notes" size={13} color={colors.primary} />
+                      )}
+                      <Text style={[s.chipText, { color: colors.mutedForeground }, disciplineId === did && { color: colors.primary }]}>
+                        {d.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
             {/* Date + Time */}
             <Text style={[s.fieldLabel, { color: colors.primary }]}>CLASS DATE & TIME (ISO 8601)</Text>
@@ -764,7 +791,8 @@ const s = StyleSheet.create({
     borderRadius: 10, borderWidth: 1,
     paddingHorizontal: 11, paddingVertical: 8,
   },
-  chipText: { fontSize: 12, fontWeight: "600" },
+  chipText:  { fontSize: 12, fontWeight: "600" },
+  emptyHint: { fontSize: 12, lineHeight: 17, fontStyle: "italic", paddingVertical: 4 },
 
   input: {
     borderRadius: 12, borderWidth: 1,
