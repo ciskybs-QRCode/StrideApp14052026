@@ -304,57 +304,47 @@ export default function AdminLessonsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title="Activity Management" onBack={() => router.push("/(admin)/operations-hub")} />
 
-      {/* ── Content ── */}
+      {/* ── Sticky tab bar — outside scroll ── */}
+      <View style={[styles.tabBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        {([
+          { key: "operators",    label: "Staff",      icon: "people-outline"          as const },
+          { key: "disciplines",  label: "Activities", icon: "barbell-outline"         as const },
+          { key: "availability", label: "Requests",   icon: "calendar-outline"        as const },
+          { key: "scheduler",    label: "Schedule",   icon: "calendar-number-outline" as const },
+        ]).map(t => {
+          const active = tab === t.key;
+          return (
+            <Pressable
+              key={t.key}
+              style={styles.tabBtn}
+              onPress={() => setTab(t.key as Tab)}
+            >
+              <View style={styles.tabBtnInner}>
+                <View style={{ position: "relative" }}>
+                  <Ionicons name={t.icon} size={20} color={active ? colors.primary : colors.mutedForeground} />
+                  {t.key === "availability" && pendingSlots.length > 0 && (
+                    <View style={styles.tabBadge}>
+                      <Text style={styles.tabBadgeText}>{pendingSlots.length}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.tabBtnText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                  {t.label}
+                </Text>
+              </View>
+              {active && <View style={[styles.tabUnderline, { backgroundColor: colors.primary }]} />}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* ── Scrollable content ── */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.scroll, { paddingTop: 20, paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 120 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Page header ── */}
-        <View style={styles.pageHeaderRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Activity</Text>
-            <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>Operators, disciplines & availability</Text>
-          </View>
-          <View style={[styles.headerBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-            <Ionicons name="people-outline" size={20} color={colors.primary} />
-          </View>
-        </View>
-
-        {/* ── Tab switcher — underline style ── */}
-        <View style={[styles.tabBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          {([
-            { key: "operators",    label: "Operators",    icon: "people-outline"          as const },
-            { key: "disciplines",  label: "Disciplines",  icon: "barbell-outline"         as const },
-            { key: "availability", label: "Availability", icon: "calendar-outline"        as const },
-            { key: "scheduler",    label: "Scheduler",    icon: "calendar-number-outline" as const },
-          ]).map(t => {
-            const active = tab === t.key;
-            return (
-              <Pressable
-                key={t.key}
-                style={styles.tabBtn}
-                onPress={() => setTab(t.key as Tab)}
-              >
-                <View style={styles.tabBtnInner}>
-                  <View style={{ position: "relative" }}>
-                    <Ionicons name={t.icon} size={22} color={active ? colors.primary : colors.mutedForeground} />
-                    {t.key === "availability" && pendingSlots.length > 0 && (
-                      <View style={styles.tabBadge}>
-                        <Text style={styles.tabBadgeText}>{pendingSlots.length}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={[styles.tabBtnText, { color: active ? colors.primary : colors.mutedForeground }]}>
-                    {t.label}
-                  </Text>
-                </View>
-                {active && <View style={[styles.tabUnderline, { backgroundColor: colors.primary }]} />}
-              </Pressable>
-            );
-          })}
-        </View>
 
         {/* ══ OPERATORS TAB ══ */}
         {tab === "operators" && (
@@ -372,74 +362,63 @@ export default function AdminLessonsScreen() {
             )}
 
             {profiles.map(p => (
-              <View key={p.id} style={[styles.card, { backgroundColor: colors.card }]}>
-                <View style={[styles.profileAvatar, {
-                  backgroundColor: "rgba(30,58,138,0.1)",
-                }]}>
-                  <Ionicons name="person" size={22} color={colors.primary} />
+              <View key={p.id} style={[styles.cleanCard, { backgroundColor: colors.card }]}>
+                {/* Row: avatar + name/email + type badge */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                  <View style={[styles.profileAvatar, { backgroundColor: "rgba(30,58,138,0.08)" }]}>
+                    <Ionicons name="person" size={20} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>{p.user?.name ?? `User #${p.user_id}`}</Text>
+                    <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{p.user?.email}</Text>
+                  </View>
+                  <View style={[styles.typeBadge, { backgroundColor: p.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE" }]}>
+                    <Text style={[styles.typeBadgeText, { color: p.profile_type === "paid" ? "#92400E" : "#6D28D9" }]}>
+                      {p.profile_type === "paid" ? "Paid" : "Volunteer"}
+                    </Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>{p.user?.name ?? `User #${p.user_id}`}</Text>
-                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{p.user?.email}</Text>
-                  <View style={styles.profileMeta}>
-                    <View style={[styles.typeBadge, { backgroundColor: p.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE" }]}>
-                      <Ionicons name={p.profile_type === "paid" ? "cash-outline" : "heart-outline"} size={11} color={p.profile_type === "paid" ? "#92400E" : "#6D28D9"} />
-                      <Text style={[styles.typeBadgeText, { color: p.profile_type === "paid" ? "#92400E" : "#6D28D9" }]}>
-                        {p.profile_type === "paid" ? "Paid" : "Volunteer"}
-                      </Text>
-                    </View>
+
+                {/* Bio */}
+                {p.bio ? <Text style={[styles.cardSub, { color: colors.mutedForeground, marginBottom: 8 }]} numberOfLines={2}>{p.bio}</Text> : null}
+
+                {/* Discipline rates chips */}
+                {p.rates && p.rates.filter(r => r.discipline?.name).length > 0 && (
+                  <View style={[styles.ratesRow, { marginBottom: 10 }]}>
+                    {p.rates.filter(r => r.discipline?.name).map(r => (
+                      <View key={r.id} style={[styles.rateChip, { backgroundColor: colors.muted }]}>
+                        <Text style={[styles.rateChipText, { color: colors.foreground }]}>
+                          {r.discipline?.name}: {fmt(r.hourly_rate_cents)}/hr
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Action row at bottom */}
+                {confirmDeleteProfileId === p.id ? (
+                  <View style={styles.cardActions}>
+                    <Text style={{ fontSize: 12, color: "#DC2626", fontWeight: "700", flex: 1 }}>Remove this operator?</Text>
+                    <Pressable style={[styles.actionChip, { backgroundColor: colors.muted }]} onPress={() => setConfirmDeleteProfileId(null)}>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Cancel</Text>
+                    </Pressable>
+                    <Pressable style={[styles.actionChip, { backgroundColor: "#EF4444" }]} onPress={() => deleteProfile(p)}>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>Delete</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.cardActions}>
                     {!p.active && (
                       <View style={[styles.typeBadge, { backgroundColor: "#FEE2E2" }]}>
                         <Text style={[styles.typeBadgeText, { color: "#991B1B" }]}>Inactive</Text>
                       </View>
                     )}
-                  </View>
-                  {p.bio ? <Text style={[styles.cardSub, { color: colors.mutedForeground, marginTop: 2 }]} numberOfLines={1}>{p.bio}</Text> : null}
-                  {p.rates && p.rates.filter(r => r.discipline?.name).length > 0 && (
-                    <View style={styles.ratesRow}>
-                      {p.rates.filter(r => r.discipline?.name).map(r => (
-                        <View key={r.id} style={[styles.rateChip, { backgroundColor: colors.muted }]}>
-                          <Text style={[styles.rateChipText, { color: colors.foreground }]}>
-                            {r.discipline?.name}: {fmt(r.hourly_rate_cents)}/hr
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                  {confirmDeleteProfileId === p.id && (
-                    <Text style={[styles.cardSub, { color: "#DC2626", fontWeight: "700", marginTop: 6 }]}>
-                      Remove this operator?
-                    </Text>
-                  )}
-                </View>
-                {confirmDeleteProfileId === p.id ? (
-                  <View style={{ flexDirection: "column", gap: 6 }}>
-                    <Pressable
-                      style={[styles.discActionBtn, { backgroundColor: colors.muted, paddingHorizontal: 10 }]}
-                      onPress={() => setConfirmDeleteProfileId(null)}
-                    >
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Cancel</Text>
+                    <View style={{ flex: 1 }} />
+                    <Pressable style={[styles.discActionBtn, { backgroundColor: `${colors.primary}12` }]} onPress={() => openEditProfile(p)}>
+                      <Ionicons name="pencil-outline" size={15} color={colors.primary} />
                     </Pressable>
-                    <Pressable
-                      style={[styles.discActionBtn, { backgroundColor: "#EF4444", paddingHorizontal: 10 }]}
-                      onPress={() => deleteProfile(p)}
-                    >
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#FFF" }}>Delete</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <View style={{ flexDirection: "column", gap: 6 }}>
-                    <Pressable
-                      style={[styles.discActionBtn, { backgroundColor: `${colors.primary}18` }]}
-                      onPress={() => openEditProfile(p)}
-                    >
-                      <Ionicons name="pencil-outline" size={16} color={colors.primary} />
-                    </Pressable>
-                    <Pressable
-                      style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]}
-                      onPress={() => setConfirmDeleteProfileId(p.id)}
-                    >
-                      <Ionicons name="trash-outline" size={16} color="#991B1B" />
+                    <Pressable style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => setConfirmDeleteProfileId(p.id)}>
+                      <Ionicons name="trash-outline" size={15} color="#991B1B" />
                     </Pressable>
                   </View>
                 )}
@@ -465,59 +444,46 @@ export default function AdminLessonsScreen() {
               </View>
             ) : (
               disciplines.map(d => (
-                <View key={d.id} style={[styles.card, { backgroundColor: colors.card, opacity: d.active ? 1 : 0.55 }]}>
-                  <View style={[styles.discDot, { backgroundColor: d.active ? "#10B981" : colors.border }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>{d.name}</Text>
-                    {d.description ? (
-                      <Text style={[styles.cardSub, { color: colors.mutedForeground }]} numberOfLines={2}>{d.description}</Text>
-                    ) : null}
-                    {confirmDeleteDiscId === d.id ? (
-                      <Text style={[styles.cardSub, { color: "#DC2626", fontWeight: "700" }]}>Remove this discipline?</Text>
-                    ) : (
-                      <Text style={[styles.cardSub, { color: d.active ? "#059669" : colors.mutedForeground }]}>
+                <View key={d.id} style={[styles.cleanCard, { backgroundColor: colors.card, opacity: d.active ? 1 : 0.6 }]}>
+                  {/* Row: dot + name + active badge */}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: d.description ? 6 : 10 }}>
+                    <View style={[styles.discDot, { backgroundColor: d.active ? "#10B981" : colors.border }]} />
+                    <Text style={[styles.cardTitle, { color: colors.foreground, flex: 1 }]}>{d.name}</Text>
+                    <View style={[styles.typeBadge, { backgroundColor: d.active ? "#D1FAE5" : colors.muted }]}>
+                      <Text style={[styles.typeBadgeText, { color: d.active ? "#065F46" : colors.mutedForeground }]}>
                         {d.active ? "Active" : "Inactive"}
                       </Text>
-                    )}
+                    </View>
                   </View>
+
+                  {d.description ? (
+                    <Text style={[styles.cardSub, { color: colors.mutedForeground, marginBottom: 10 }]} numberOfLines={2}>
+                      {d.description}
+                    </Text>
+                  ) : null}
+
+                  {/* Action row at bottom */}
                   {confirmDeleteDiscId === d.id ? (
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <Pressable
-                        style={[styles.discActionBtn, { backgroundColor: colors.muted, paddingHorizontal: 10 }]}
-                        onPress={() => setConfirmDeleteDiscId(null)}
-                      >
+                    <View style={styles.cardActions}>
+                      <Text style={{ fontSize: 12, color: "#DC2626", fontWeight: "700", flex: 1 }}>Remove this activity?</Text>
+                      <Pressable style={[styles.actionChip, { backgroundColor: colors.muted }]} onPress={() => setConfirmDeleteDiscId(null)}>
                         <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Cancel</Text>
                       </Pressable>
-                      <Pressable
-                        style={[styles.discActionBtn, { backgroundColor: "#EF4444", paddingHorizontal: 10 }]}
-                        onPress={() => confirmDeleteDisc(d)}
-                      >
+                      <Pressable style={[styles.actionChip, { backgroundColor: "#EF4444" }]} onPress={() => confirmDeleteDisc(d)}>
                         <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>Delete</Text>
                       </Pressable>
                     </View>
                   ) : (
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <Pressable
-                        style={[styles.discActionBtn, { backgroundColor: `${colors.primary}18` }]}
-                        onPress={() => openEditDisc(d)}
-                      >
-                        <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+                    <View style={styles.cardActions}>
+                      <View style={{ flex: 1 }} />
+                      <Pressable style={[styles.discActionBtn, { backgroundColor: `${colors.primary}12` }]} onPress={() => openEditDisc(d)}>
+                        <Ionicons name="pencil-outline" size={15} color={colors.primary} />
                       </Pressable>
-                      <Pressable
-                        style={[styles.discActionBtn, { backgroundColor: d.active ? "#FEF3C7" : "#D1FAE5" }]}
-                        onPress={() => toggleDiscActive(d)}
-                      >
-                        <Ionicons
-                          name={d.active ? "pause-circle-outline" : "play-circle-outline"}
-                          size={16}
-                          color={d.active ? "#92400E" : "#065F46"}
-                        />
+                      <Pressable style={[styles.discActionBtn, { backgroundColor: d.active ? "#FEF3C7" : "#D1FAE5" }]} onPress={() => toggleDiscActive(d)}>
+                        <Ionicons name={d.active ? "pause-circle-outline" : "play-circle-outline"} size={15} color={d.active ? "#92400E" : "#065F46"} />
                       </Pressable>
-                      <Pressable
-                        style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]}
-                        onPress={() => deleteDisc(d)}
-                      >
-                        <Ionicons name="trash-outline" size={16} color="#991B1B" />
+                      <Pressable style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => deleteDisc(d)}>
+                        <Ionicons name="trash-outline" size={15} color="#991B1B" />
                       </Pressable>
                     </View>
                   )}
@@ -609,24 +575,26 @@ export default function AdminLessonsScreen() {
         {/* ══ SCHEDULER TAB ══ */}
         {tab === "scheduler" && (
           <>
-            {/* ── Operator course availability aggregator (collapsible) ── */}
+            {/* ── Operator Availability collapsible ── */}
             <Pressable
               onPress={() => setShowAvailSection(v => !v)}
-              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: showAvailSection ? 10 : 16, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.muted }}
+              style={[styles.availToggleRow, { backgroundColor: colors.muted }]}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Ionicons name="people-outline" size={16} color={colors.mutedForeground} />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.mutedForeground }}>
-                  Operator Availability{courseAvailTemplates.length > 0 ? ` (${courseAvailTemplates.length})` : ""}
+                <View style={styles.availToggleIcon}>
+                  <Ionicons name="people-outline" size={15} color={colors.primary} />
+                </View>
+                <Text style={[styles.availToggleLabel, { color: colors.foreground }]}>
+                  Staff Availability{courseAvailTemplates.length > 0 ? ` · ${courseAvailTemplates.length} slots` : ""}
                 </Text>
               </View>
               <Ionicons name={showAvailSection ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
             </Pressable>
 
             {showAvailSection && (
-              <>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: "row", gap: 8, paddingBottom: 4 }}>
+              <View style={[styles.availSection, { backgroundColor: colors.card }]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: "row", gap: 6, paddingBottom: 10 }}>
                     {([null, 1, 2, 3, 4, 5, 6, 0] as (number | null)[]).map(d => {
                       const label = d === null ? "All" : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d];
                       const active = scFilterDay === d;
@@ -634,9 +602,9 @@ export default function AdminLessonsScreen() {
                         <Pressable
                           key={String(d)}
                           onPress={() => setScFilterDay(d)}
-                          style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: active ? colors.primary : colors.muted }}
+                          style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: active ? colors.primary : colors.muted }}
                         >
-                          <Text style={{ fontSize: 13, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{label}</Text>
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{label}</Text>
                         </Pressable>
                       );
                     })}
@@ -644,29 +612,29 @@ export default function AdminLessonsScreen() {
                 </ScrollView>
 
                 {courseAvailTemplates.filter(t => scFilterDay === null || t.day_of_week === scFilterDay).length === 0 ? (
-                  <View style={[styles.emptyCard, { marginBottom: 16 }]}>
-                    <Ionicons name="calendar-outline" size={40} color={colors.mutedForeground} />
-                    <Text style={[styles.emptyText, { color: colors.mutedForeground, textAlign: "center" }]}>
-                      No operator course availability yet.{"\n"}Operators can set their weekly schedule from their app.
+                  <View style={{ alignItems: "center", paddingVertical: 20, gap: 6 }}>
+                    <Ionicons name="calendar-outline" size={32} color={colors.mutedForeground} />
+                    <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center" }}>
+                      No availability set by operators yet.
                     </Text>
                   </View>
                 ) : (
                   courseAvailTemplates
                     .filter(t => scFilterDay === null || t.day_of_week === scFilterDay)
                     .map(t => {
-                      const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-                      const opName   = (t.operator as { name?: string } | null)?.name ?? "Unknown operator";
+                      const DOW      = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+                      const opName   = (t.operator as { name?: string } | null)?.name ?? "Unknown";
                       const discName = (t.discipline as { name?: string } | null)?.name ?? "Unknown";
                       return (
-                        <View key={t.id} style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
+                        <View key={t.id} style={styles.availSlotRow}>
                           <View style={{ flex: 1 }}>
-                            <Text style={[styles.cardTitle, { color: colors.foreground }]}>{opName}</Text>
+                            <Text style={[styles.cardTitle, { color: colors.foreground, fontSize: 13 }]}>{opName}</Text>
                             <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
                               {discName} · {DOW[t.day_of_week]} · {fmtTime(t.start_time)}–{fmtTime(t.end_time)}
                             </Text>
                           </View>
                           <Pressable
-                            style={{ backgroundColor: `${colors.primary}18`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
+                            style={styles.useSlotBtn}
                             onPress={() => {
                               setScDisciplineId(t.discipline_id);
                               setScOperatorId(t.operator_id);
@@ -676,275 +644,289 @@ export default function AdminLessonsScreen() {
                               setShowAvailSection(false);
                             }}
                           >
-                            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Use →</Text>
+                            <Text style={[styles.useSlotBtnText, { color: colors.primary }]}>Use</Text>
+                            <Ionicons name="arrow-forward" size={12} color={colors.primary} />
                           </Pressable>
                         </View>
                       );
                     })
                 )}
-              </>
+              </View>
             )}
 
-            {/* ── Schedule new course form ── */}
-            <Text style={[styles.sectionHeader, { color: colors.mutedForeground, marginTop: 8 }]}>Schedule New Course</Text>
-            <View style={[styles.card, { backgroundColor: colors.card, gap: 14 }]}>
-              {/* Discipline */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Discipline *</Text>
+            {/* ── New Course Form ── clean vertical sections ── */}
+            <Text style={[styles.sectionHeader, { color: colors.mutedForeground, marginTop: 8, marginBottom: 10 }]}>
+              New Course
+            </Text>
+
+            {/* DISCIPLINE */}
+            <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>ACTIVITY *</Text>
+              {activeDiscs.length === 0 ? (
+                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>No active activities. Add one in the Activities tab.</Text>
+              ) : (
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   {activeDiscs.map(d => (
                     <Pressable
                       key={d.id}
                       onPress={() => setScDisciplineId(d.id)}
-                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: scDisciplineId === d.id ? colors.primary : colors.muted }}
+                      style={[styles.formChip, { backgroundColor: scDisciplineId === d.id ? colors.primary : colors.muted }]}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: scDisciplineId === d.id ? "#FFF" : colors.mutedForeground }}>{d.name}</Text>
+                      <Text style={[styles.formChipText, { color: scDisciplineId === d.id ? "#FFF" : colors.mutedForeground }]}>
+                        {d.name}
+                      </Text>
                     </Pressable>
                   ))}
                 </View>
-              </View>
-              {/* Operator */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Operator (optional)</Text>
+              )}
+            </View>
+
+            {/* INSTRUCTOR */}
+            <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>INSTRUCTOR (optional)</Text>
+              {profiles.length === 0 ? (
+                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>No staff profiles yet.</Text>
+              ) : (
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   {profiles.map(p => {
                     const opUser = users.find(u => u.id === p.user_id);
-                    const label = opUser?.name ?? `Operator #${p.id}`;
+                    const label  = opUser?.name ?? `Staff #${p.id}`;
+                    const sel    = scOperatorId === p.id;
                     return (
                       <Pressable
                         key={p.id}
-                        onPress={() => setScOperatorId(scOperatorId === p.id ? null : p.id)}
-                        style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: scOperatorId === p.id ? "#10B981" : colors.muted }}
+                        onPress={() => setScOperatorId(sel ? null : p.id)}
+                        style={[styles.formChip, { backgroundColor: sel ? "#10B981" : colors.muted }]}
                       >
-                        <Text style={{ fontSize: 13, fontWeight: "600", color: scOperatorId === p.id ? "#FFF" : colors.mutedForeground }}>{label}</Text>
+                        <Ionicons name="person-outline" size={12} color={sel ? "#FFF" : colors.mutedForeground} />
+                        <Text style={[styles.formChipText, { color: sel ? "#FFF" : colors.mutedForeground }]}>{label}</Text>
                       </Pressable>
                     );
                   })}
                 </View>
-              </View>
+              )}
+            </View>
+
+            {/* DAY + TIME */}
+            <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>DAY & TIME *</Text>
+
               {/* Day of week */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Day *</Text>
-                <View style={{ flexDirection: "row", gap: 6 }}>
-                  {["Su","Mo","Tu","We","Th","Fr","Sa"].map((lbl, idx) => (
-                    <Pressable
-                      key={idx}
-                      onPress={() => setScDayOfWeek(idx)}
-                      style={{ flex: 1, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: scDayOfWeek === idx ? colors.primary : colors.muted }}
-                    >
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: scDayOfWeek === idx ? "#FFF" : colors.mutedForeground }}>{lbl}</Text>
-                    </Pressable>
-                  ))}
-                </View>
+              <View style={{ flexDirection: "row", gap: 5, marginBottom: 14 }}>
+                {["Su","Mo","Tu","We","Th","Fr","Sa"].map((lbl, idx) => (
+                  <Pressable
+                    key={idx}
+                    onPress={() => setScDayOfWeek(idx)}
+                    style={[styles.dayBtn, { backgroundColor: scDayOfWeek === idx ? colors.primary : colors.muted }]}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: scDayOfWeek === idx ? "#FFF" : colors.mutedForeground }}>{lbl}</Text>
+                  </Pressable>
+                ))}
               </View>
-              {/* Start / End time — tap-to-select chip pickers */}
-              <View style={{ gap: 10 }}>
-                {/* Start time */}
-                <View>
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Start *</Text>
+
+              {/* Start / End time row */}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.formSubLabel, { color: colors.mutedForeground }]}>Start</Text>
                   <Pressable
                     onPress={() => { setShowStartPicker(v => !v); setShowEndPicker(false); }}
-                    style={{ borderWidth: 1, borderColor: showStartPicker ? colors.primary : colors.border,
-                      borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
-                      backgroundColor: colors.background, flexDirection: "row", alignItems: "center", gap: 8 }}
+                    style={[styles.timePickerBtn, { borderColor: showStartPicker ? colors.primary : colors.border, backgroundColor: colors.background }]}
                   >
-                    <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
-                    <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: scStartTime ? colors.foreground : colors.mutedForeground }}>
-                      {scStartTime || "Select start time"}
-                    </Text>
-                    <Ionicons name={showStartPicker ? "chevron-up" : "chevron-down"} size={14} color={colors.mutedForeground} />
+                    <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
+                    <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: colors.foreground }}>{scStartTime}</Text>
+                    <Ionicons name={showStartPicker ? "chevron-up" : "chevron-down"} size={13} color={colors.mutedForeground} />
                   </Pressable>
-                  {showStartPicker && (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
-                      <View style={{ flexDirection: "row", gap: 6, paddingBottom: 2 }}>
-                        {SC_TIME_SLOTS.map(t => {
-                          const active = scStartTime === t;
-                          return (
-                            <Pressable key={t}
-                              onPress={() => { setScStartTime(t); setShowStartPicker(false); }}
-                              style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 9,
-                                backgroundColor: active ? colors.primary : colors.muted,
-                                borderWidth: active ? 0 : 1, borderColor: colors.border }}>
-                              <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                    </ScrollView>
-                  )}
                 </View>
-                {/* End time */}
-                <View>
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>End *</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.formSubLabel, { color: colors.mutedForeground }]}>End</Text>
                   <Pressable
                     onPress={() => { setShowEndPicker(v => !v); setShowStartPicker(false); }}
-                    style={{ borderWidth: 1, borderColor: showEndPicker ? colors.primary : colors.border,
-                      borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
-                      backgroundColor: colors.background, flexDirection: "row", alignItems: "center", gap: 8 }}
+                    style={[styles.timePickerBtn, { borderColor: showEndPicker ? "#10B981" : colors.border, backgroundColor: colors.background }]}
                   >
-                    <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
-                    <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: scEndTime ? colors.foreground : colors.mutedForeground }}>
-                      {scEndTime || "Select end time"}
-                    </Text>
-                    <Ionicons name={showEndPicker ? "chevron-up" : "chevron-down"} size={14} color={colors.mutedForeground} />
+                    <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
+                    <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: colors.foreground }}>{scEndTime}</Text>
+                    <Ionicons name={showEndPicker ? "chevron-up" : "chevron-down"} size={13} color={colors.mutedForeground} />
                   </Pressable>
-                  {showEndPicker && (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
-                      <View style={{ flexDirection: "row", gap: 6, paddingBottom: 2 }}>
-                        {SC_TIME_SLOTS.map(t => {
-                          const active = scEndTime === t;
-                          return (
-                            <Pressable key={t}
-                              onPress={() => { setScEndTime(t); setShowEndPicker(false); }}
-                              style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 9,
-                                backgroundColor: active ? "#10B981" : colors.muted,
-                                borderWidth: active ? 0 : 1, borderColor: colors.border }}>
-                              <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                    </ScrollView>
-                  )}
                 </View>
               </View>
-              {/* Age range */}
-              <View style={{ flexDirection: "row", gap: 12 }}>
+
+              {/* Start time chip picker */}
+              {showStartPicker && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                  <View style={{ flexDirection: "row", gap: 5, paddingBottom: 2 }}>
+                    {SC_TIME_SLOTS.map(t => {
+                      const active = scStartTime === t;
+                      return (
+                        <Pressable key={t}
+                          onPress={() => { setScStartTime(t); setShowStartPicker(false); }}
+                          style={[styles.timeChip, { backgroundColor: active ? colors.primary : colors.muted }]}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              )}
+
+              {/* End time chip picker */}
+              {showEndPicker && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                  <View style={{ flexDirection: "row", gap: 5, paddingBottom: 2 }}>
+                    {SC_TIME_SLOTS.map(t => {
+                      const active = scEndTime === t;
+                      return (
+                        <Pressable key={t}
+                          onPress={() => { setScEndTime(t); setShowEndPicker(false); }}
+                          style={[styles.timeChip, { backgroundColor: active ? "#10B981" : colors.muted }]}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              )}
+            </View>
+
+            {/* AGE + SKILL */}
+            <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>PARTICIPANTS</Text>
+              <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Min Age</Text>
+                  <Text style={[styles.formSubLabel, { color: colors.mutedForeground }]}>Min age</Text>
                   <TextInput
-                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
+                    style={[styles.ageInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                     value={scAgeMin} onChangeText={setScAgeMin}
                     placeholder="5" placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Max Age</Text>
+                  <Text style={[styles.formSubLabel, { color: colors.mutedForeground }]}>Max age</Text>
                   <TextInput
-                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, color: colors.foreground, backgroundColor: colors.background }}
+                    style={[styles.ageInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                     value={scAgeMax} onChangeText={setScAgeMax}
                     placeholder="18" placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
                   />
                 </View>
               </View>
-              {/* Skill level */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Skill Level</Text>
-                <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-                  {(["open","beginner","intermediate","advanced"] as const).map(lvl => (
-                    <Pressable
-                      key={lvl}
-                      onPress={() => setScSkillLevel(lvl)}
-                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: scSkillLevel === lvl ? "#FBBF24" : colors.muted }}
-                    >
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: scSkillLevel === lvl ? "#1E3A8A" : colors.mutedForeground }}>
-                        {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
+              <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Skill level</Text>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {(["open","beginner","intermediate","advanced"] as const).map(lvl => (
+                  <Pressable
+                    key={lvl}
+                    onPress={() => setScSkillLevel(lvl)}
+                    style={[styles.formChip, { flex: 1, justifyContent: "center", backgroundColor: scSkillLevel === lvl ? "#FBBF24" : colors.muted }]}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: scSkillLevel === lvl ? "#1E3A8A" : colors.mutedForeground, textAlign: "center" }}>
+                      {lvl === "intermediate" ? "Inter." : lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
-              {/* Frequency */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Frequency</Text>
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  {([
-                    { label: "Weekly",     value: 1 },
-                    { label: "Bi-weekly",  value: 2 },
-                    { label: "Monthly",    value: 4 },
-                  ] as { label: string; value: 1|2|4 }[]).map(opt => (
-                    <Pressable
-                      key={opt.value}
-                      onPress={() => setScWeekInterval(opt.value)}
-                      style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center",
-                        backgroundColor: scWeekInterval === opt.value ? "#1E3A8A" : colors.muted }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: "700",
-                        color: scWeekInterval === opt.value ? "#FFF" : colors.mutedForeground }}>
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-              {/* Notes */}
-              <View>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6 }}>Notes (optional)</Text>
-                <TextInput
-                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: colors.foreground, backgroundColor: colors.background, height: 72, textAlignVertical: "top" }}
-                  value={scNotes} onChangeText={setScNotes}
-                  placeholder="Additional notes for the operator..."
-                  placeholderTextColor={colors.mutedForeground}
-                  multiline
-                />
-              </View>
-              {/* Submit */}
-              <Pressable
-                style={[styles.addBtn, { backgroundColor: scSaving ? colors.mutedForeground : colors.primary }]}
-                disabled={scSaving}
-                onPress={async () => {
-                  if (!scDisciplineId) { Alert.alert("Missing", "Please select a discipline."); return; }
-                  if (!scStartTime || !scEndTime) { Alert.alert("Missing", "Please enter start and end times."); return; }
-                  setScSaving(true);
-                  try {
-                    await api.createScheduledCourse({
-                      disciplineId:      scDisciplineId,
-                      operatorProfileId: scOperatorId ?? undefined,
-                      dayOfWeek:         scDayOfWeek,
-                      startTime:         scStartTime,
-                      endTime:           scEndTime,
-                      ageMin:            parseInt(scAgeMin, 10) || 5,
-                      ageMax:            parseInt(scAgeMax, 10) || 18,
-                      skillLevel:        scSkillLevel,
-                      notes:             scNotes || undefined,
-                      weekInterval:      scWeekInterval,
-                    });
-                    await load();
-                    setScDisciplineId(null); setScOperatorId(null); setScDayOfWeek(1);
-                    setScStartTime("09:00"); setScEndTime("10:00");
-                    setScAgeMin("5"); setScAgeMax("18"); setScSkillLevel("open"); setScNotes("");
-                    setScWeekInterval(1);
-                    Alert.alert("✓ Sent", "Course request sent to the operator for confirmation.");
-                  } catch (e: unknown) {
-                    Alert.alert("Error", e instanceof Error ? e.message : "Failed to create course");
-                  } finally { setScSaving(false); }
-                }}
-              >
-                {scSaving
-                  ? <ActivityIndicator size="small" color="#FFF" />
-                  : <Ionicons name="calendar-number-outline" size={18} color="#FFF" />}
-                <Text style={styles.addBtnText}>Send to Operator</Text>
-              </Pressable>
             </View>
 
-            {/* ── Existing scheduled courses list ── */}
+            {/* FREQUENCY + NOTES */}
+            <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>FREQUENCY</Text>
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+                {([
+                  { label: "Weekly", value: 1 },
+                  { label: "Bi-weekly", value: 2 },
+                  { label: "Monthly", value: 4 },
+                ] as { label: string; value: 1|2|4 }[]).map(opt => (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => setScWeekInterval(opt.value)}
+                    style={[styles.formChip, { flex: 1, justifyContent: "center", backgroundColor: scWeekInterval === opt.value ? colors.primary : colors.muted }]}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: scWeekInterval === opt.value ? "#FFF" : colors.mutedForeground, textAlign: "center" }}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>NOTES (optional)</Text>
+              <TextInput
+                style={[styles.notesInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                value={scNotes} onChangeText={setScNotes}
+                placeholder="Additional notes for the instructor..."
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+              />
+            </View>
+
+            {/* SUBMIT */}
+            <Pressable
+              style={[styles.addBtn, { backgroundColor: scSaving ? colors.mutedForeground : colors.primary, marginTop: 4 }]}
+              disabled={scSaving}
+              onPress={async () => {
+                if (!scDisciplineId) { Alert.alert("Missing", "Please select an activity."); return; }
+                if (!scStartTime || !scEndTime) { Alert.alert("Missing", "Please select start and end times."); return; }
+                setScSaving(true);
+                try {
+                  await api.createScheduledCourse({
+                    disciplineId:      scDisciplineId,
+                    operatorProfileId: scOperatorId ?? undefined,
+                    dayOfWeek:         scDayOfWeek,
+                    startTime:         scStartTime,
+                    endTime:           scEndTime,
+                    ageMin:            parseInt(scAgeMin, 10) || 5,
+                    ageMax:            parseInt(scAgeMax, 10) || 18,
+                    skillLevel:        scSkillLevel,
+                    notes:             scNotes || undefined,
+                    weekInterval:      scWeekInterval,
+                  });
+                  await load();
+                  setScDisciplineId(null); setScOperatorId(null); setScDayOfWeek(1);
+                  setScStartTime("09:00"); setScEndTime("10:00");
+                  setScAgeMin("5"); setScAgeMax("18"); setScSkillLevel("open"); setScNotes("");
+                  setScWeekInterval(1);
+                  Alert.alert("Sent", "Course request sent to the instructor for confirmation.");
+                } catch (e: unknown) {
+                  Alert.alert("Error", e instanceof Error ? e.message : "Failed to create course");
+                } finally { setScSaving(false); }
+              }}
+            >
+              {scSaving
+                ? <ActivityIndicator size="small" color="#FFF" />
+                : <Ionicons name="paper-plane-outline" size={17} color="#FFF" />}
+              <Text style={styles.addBtnText}>Send to Instructor</Text>
+            </Pressable>
+
+            {/* ── Existing scheduled courses ── */}
             {scheduledCourses.length > 0 && (
               <>
-                <Text style={[styles.sectionHeader, { color: colors.mutedForeground, marginTop: 4 }]}>All Scheduled Courses</Text>
+                <Text style={[styles.sectionHeader, { color: colors.mutedForeground, marginTop: 16, marginBottom: 8 }]}>
+                  Scheduled Courses
+                </Text>
                 {scheduledCourses.map(sc => {
-                  const DOW  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+                  const DOW         = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
                   const statusColor = sc.status === "active" ? "#10B981" : sc.status === "declined" ? "#EF4444" : "#F59E0B";
                   const discName    = (sc.discipline as { name?: string } | null)?.name ?? "Course";
                   const opName      = (sc.operator as { user?: { name?: string } } | null)?.user?.name ?? "Unassigned";
                   return (
-                    <View key={sc.id} style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-                          {discName} — {DOW[sc.day_of_week]}
-                        </Text>
-                        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-                          {sc.start_time.slice(0, 5)}–{sc.end_time.slice(0, 5)} · Ages {sc.age_min}–{sc.age_max} · {sc.skill_level}
-                        </Text>
-                        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-                          👤 {opName}
-                        </Text>
-                      </View>
-                      <View style={{ backgroundColor: `${statusColor}18`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: statusColor }}>
-                          {sc.status.replace("_", " ")}
-                        </Text>
+                    <View key={sc.id} style={[styles.cleanCard, { backgroundColor: colors.card }]}>
+                      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                            {discName}
+                          </Text>
+                          <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                            {DOW[sc.day_of_week]} · {sc.start_time.slice(0, 5)}–{sc.end_time.slice(0, 5)}
+                          </Text>
+                          <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                            Ages {sc.age_min}–{sc.age_max} · {sc.skill_level}
+                          </Text>
+                          <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                            {opName}
+                          </Text>
+                        </View>
+                        <View style={{ backgroundColor: `${statusColor}18`, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 }}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: statusColor, textTransform: "capitalize" }}>
+                            {sc.status.replace("_", " ")}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   );
@@ -1449,24 +1431,25 @@ export default function AdminLessonsScreen() {
 
 const styles = StyleSheet.create({
   container:          { flex: 1 },
-  // Clean light header (no navy bleed)
-  pageHeaderRow:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingHorizontal: 20 },
-  pageTitle:          { fontSize: 28, fontWeight: "800" },
-  pageSub:            { fontSize: 13, marginTop: 2 },
-  headerBadge:        { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  // Underline-style tab bar
-  tabBar:             { flexDirection: "row", marginHorizontal: 20, marginBottom: 20, borderRadius: 18, borderBottomWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  tabBtn:             { flex: 1, alignItems: "center", paddingTop: 16, paddingBottom: 0 },
-  tabBtnInner:        { alignItems: "center", gap: 6, paddingBottom: 14 },
-  tabBtnActive:       { },
-  tabBtnText:         { fontSize: 12, fontWeight: "700", letterSpacing: 0.2 },
-  tabUnderline:       { height: 3, width: "60%", borderRadius: 2, marginTop: 0 },
-  tabBadge:           { position: "absolute", top: -4, right: -8, width: 16, height: 16, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
-  tabBadgeText:       { fontSize: 9, fontWeight: "800", color: "#FFF" },
+  // Sticky tab bar — sits outside ScrollView
+  tabBar:             { flexDirection: "row", borderBottomWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  tabBtn:             { flex: 1, alignItems: "center", paddingTop: 12, paddingBottom: 0 },
+  tabBtnInner:        { alignItems: "center", gap: 4, paddingBottom: 10 },
+  tabBtnText:         { fontSize: 10, fontWeight: "700", letterSpacing: 0.1 },
+  tabUnderline:       { height: 2.5, width: "60%", borderRadius: 2 },
+  tabBadge:           { position: "absolute", top: -4, right: -8, width: 15, height: 15, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
+  tabBadgeText:       { fontSize: 8, fontWeight: "800", color: "#FFF" },
   scroll:             { paddingHorizontal: 16, gap: 10 },
   addBtn:             { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 14, marginBottom: 4 },
   addBtnText:         { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  // Legacy row card (used by availability tab)
   card:               { borderRadius: 16, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  // Clean vertical card (operators, disciplines, scheduled courses)
+  cleanCard:          { borderRadius: 16, padding: 14, marginBottom: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  // Action row at bottom of cleanCard
+  cardActions:        { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#E5E7EB" },
+  // Small text-action chip (Cancel / Delete confirm)
+  actionChip:         { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
   profileAvatar:      { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   cardTitle:          { fontSize: 14, fontWeight: "700", marginBottom: 2 },
   cardSub:            { fontSize: 12, lineHeight: 16 },
@@ -1573,4 +1556,31 @@ const styles = StyleSheet.create({
   typePill:           { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   marginRow:          { flexDirection: "row", alignItems: "center", gap: 6, padding: 10, borderRadius: 10, marginTop: 8 },
   marginText:         { fontSize: 13, fontWeight: "700" },
+
+  // ── Scheduler tab ────────────────────────────────────────────────────────────
+  // Availability collapsible toggle row
+  availToggleRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, paddingHorizontal: 14, borderRadius: 14, marginBottom: 8 },
+  availToggleIcon:    { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(30,58,138,0.1)" },
+  availToggleLabel:   { fontSize: 13, fontWeight: "700" },
+  // Availability expanded section
+  availSection:       { borderRadius: 14, padding: 14, marginBottom: 12, gap: 0 },
+  availSlotRow:       { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#E5E7EB" },
+  useSlotBtn:         { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: "rgba(30,58,138,0.08)" },
+  useSlotBtnText:     { fontSize: 12, fontWeight: "700" },
+  // Form sections — each field group in its own card
+  formSection:        { borderRadius: 14, padding: 14, marginBottom: 8 },
+  formLabel:          { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 10 },
+  formSubLabel:       { fontSize: 11, fontWeight: "600", marginBottom: 4 },
+  formChip:           { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 13, paddingVertical: 7, borderRadius: 10 },
+  formChipText:       { fontSize: 13, fontWeight: "600" },
+  // Day buttons
+  dayBtn:             { flex: 1, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  // Time picker trigger button
+  timePickerBtn:      { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  // Time chip in horizontal scroll
+  timeChip:           { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9 },
+  // Age text inputs
+  ageInput:           { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 15, fontWeight: "700", textAlign: "center" },
+  // Notes textarea
+  notesInput:         { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, minHeight: 72, textAlignVertical: "top" },
 });
