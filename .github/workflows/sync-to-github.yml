@@ -12,6 +12,9 @@ jobs:
       # To change retention without editing this file, set the BACKUP_RETENTION_COUNT
       # repository variable under Settings → Secrets and variables → Actions → Variables.
       BACKUP_RETENTION_COUNT: ${{ vars.BACKUP_RETENTION_COUNT || 7 }}
+      # Maximum number of Slack retry notices sent per failure incident before going
+      # silent. Set SLACK_RETRY_NOTICE_CAP as a repository variable to override.
+      SLACK_RETRY_NOTICE_CAP: ${{ vars.SLACK_RETRY_NOTICE_CAP || 5 }}
     steps:
       - name: Checkout full history
         uses: actions/checkout@v4
@@ -275,6 +278,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_ALERT_CHANNEL: ${{ vars.SLACK_ALERT_CHANNEL }}
+          SLACK_RETRY_NOTICE_CAP: ${{ env.SLACK_RETRY_NOTICE_CAP }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -353,6 +357,24 @@ jobs:
               console.log(`Created issue #${issue.number}: ${issue.html_url}`);
             }
 
+            // ── Retry-notice cap ─────────────────────────────────────────────
+            // retryCount is 1-based: 1 = first retry notice, 2 = second, etc.
+            // The first-failure alert (isRetry === false) is never subject to the cap.
+            const retryCap = parseInt(process.env.SLACK_RETRY_NOTICE_CAP, 10) || 5;
+            const retryCount = isRetry ? (existingIssue.comments + 1) : null;
+
+            // retryCount > retryCap → already sent the cap-reached message; stay silent.
+            if (isRetry && retryCount > retryCap) {
+              console.log(
+                `Retry notice cap reached (${retryCap}). ` +
+                `This is retry #${retryCount} — Slack notification suppressed.`
+              );
+              return;
+            }
+
+            // retryCount === retryCap → send the final "going silent" notice.
+            const isFinalNotice = isRetry && retryCount === retryCap;
+
             // ── Slack notification (threaded when bot token is available) ────
             //
             // Threading strategy:
@@ -370,25 +392,31 @@ jobs:
               core.warning('Neither SLACK_BOT_TOKEN nor SLACK_WEBHOOK_URL is set — skipping Slack notification');
             } else if (botToken && channel) {
               // ── Web API path (supports threading) ───────────────────────────
-              const retryCount = isRetry ? (existingIssue.comments + 1) : null;
-
               let slackText;
               let slackMrkdwn;
 
-              if (isRetry) {
-                slackText = `:warning: *Sync still failing — retry #${retryCount}* (run #${context.runNumber})`;
-                slackMrkdwn =
-                  `:warning: *Sync still failing — retry #${retryCount}* — run #${context.runNumber}\n` +
-                  `*Commit:* \`${shortSha}\` · *Actor:* @${context.actor}\n` +
-                  `<${runUrl}|View run> · ` +
-                  `<${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues/${existingIssue.number}|Open issue #${existingIssue.number}>`;
-              } else {
+              if (!isRetry) {
                 slackText = `:red_circle: *Sync to GitHub failed* — run #${context.runNumber}`;
                 slackMrkdwn =
                   `:red_circle: *Sync to GitHub failed* — run #${context.runNumber}\n` +
                   `*Commit:* \`${shortSha}\`\n` +
                   `*Actor:* @${context.actor}\n` +
                   `<${runUrl}|View failed run>`;
+              } else if (isFinalNotice) {
+                slackText = `:warning: *Sync still failing — retry #${retryCount} (last notice)* (run #${context.runNumber})`;
+                slackMrkdwn =
+                  `:warning: *Sync still failing — retry #${retryCount}* — run #${context.runNumber}\n` +
+                  `*Commit:* \`${shortSha}\` · *Actor:* @${context.actor}\n` +
+                  `<${runUrl}|View run> · ` +
+                  `<${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues/${existingIssue.number}|Open issue #${existingIssue.number}>\n` +
+                  `:mute: *Retry notice cap reached (${retryCap}). Further retries will not produce Slack alerts until the sync recovers.*`;
+              } else {
+                slackText = `:warning: *Sync still failing — retry #${retryCount}* (run #${context.runNumber})`;
+                slackMrkdwn =
+                  `:warning: *Sync still failing — retry #${retryCount}* — run #${context.runNumber}\n` +
+                  `*Commit:* \`${shortSha}\` · *Actor:* @${context.actor}\n` +
+                  `<${runUrl}|View run> · ` +
+                  `<${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues/${existingIssue.number}|Open issue #${existingIssue.number}>`;
               }
 
               // Fetch the latest issue body to read the stored thread ts.
@@ -427,7 +455,8 @@ jobs:
               if (!apiResult.ok) {
                 core.warning(`Slack API error: ${apiResult.error}`);
               } else {
-                console.log(`Slack notified via Web API (${isRetry ? 'thread reply' : 'new message'}), ts=${apiResult.ts}`);
+                const label = !isRetry ? 'new message' : isFinalNotice ? 'final notice (cap reached)' : 'thread reply';
+                console.log(`Slack notified via Web API (${label}), ts=${apiResult.ts}`);
 
                 // On first failure, persist the message ts in the issue body so
                 // subsequent retries can post as thread replies.
@@ -447,24 +476,31 @@ jobs:
               if (!webhookUrl) {
                 core.warning('SLACK_BOT_TOKEN requires SLACK_ALERT_CHANNEL to be set — skipping Slack notification');
               } else {
-                const retryCount = isRetry ? (existingIssue.comments + 1) : null;
                 let slackText;
                 let slackMrkdwn;
 
-                if (isRetry) {
-                  slackText = `:warning: *Sync still failing — retry #${retryCount}* (run #${context.runNumber})`;
-                  slackMrkdwn =
-                    `:warning: *Sync still failing — retry #${retryCount}* — run #${context.runNumber}\n` +
-                    `*Commit:* \`${shortSha}\` · *Actor:* @${context.actor}\n` +
-                    `<${runUrl}|View run> · ` +
-                    `<${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues/${existingIssue.number}|Open issue #${existingIssue.number}>`;
-                } else {
+                if (!isRetry) {
                   slackText = `:red_circle: *Sync to GitHub failed* — run #${context.runNumber}`;
                   slackMrkdwn =
                     `:red_circle: *Sync to GitHub failed* — run #${context.runNumber}\n` +
                     `*Commit:* \`${shortSha}\`\n` +
                     `*Actor:* @${context.actor}\n` +
                     `<${runUrl}|View failed run>`;
+                } else if (isFinalNotice) {
+                  slackText = `:warning: *Sync still failing — retry #${retryCount} (last notice)* (run #${context.runNumber})`;
+                  slackMrkdwn =
+                    `:warning: *Sync still failing — retry #${retryCount}* — run #${context.runNumber}\n` +
+                    `*Commit:* \`${shortSha}\` · *Actor:* @${context.actor}\n` +
+                    `<${runUrl}|View run> · ` +
+                    `<${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues/${existingIssue.number}|Open issue #${existingIssue.number}>\n` +
+                    `:mute: *Retry notice cap reached (${retryCap}). Further retries will not produce Slack alerts until the sync recovers.*`;
+                } else {
+                  slackText = `:warning: *Sync still failing — retry #${retryCount}* (run #${context.runNumber})`;
+                  slackMrkdwn =
+                    `:warning: *Sync still failing — retry #${retryCount}* — run #${context.runNumber}\n` +
+                    `*Commit:* \`${shortSha}\` · *Actor:* @${context.actor}\n` +
+                    `<${runUrl}|View run> · ` +
+                    `<${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues/${existingIssue.number}|Open issue #${existingIssue.number}>`;
                 }
 
                 const payload = {
@@ -487,7 +523,8 @@ jobs:
                 if (!response.ok) {
                   core.warning(`Slack webhook returned ${response.status}: ${await response.text()}`);
                 } else {
-                  console.log(`Slack notified via webhook (${isRetry ? 'retry notice' : 'first-failure alert'}) — threading not available without SLACK_BOT_TOKEN`);
+                  const label = !isRetry ? 'first-failure alert' : isFinalNotice ? 'final notice (cap reached)' : 'retry notice';
+                  console.log(`Slack notified via webhook (${label}) — threading not available without SLACK_BOT_TOKEN`);
                 }
               }
             }
