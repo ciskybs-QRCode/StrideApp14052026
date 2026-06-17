@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -82,6 +82,8 @@ function linkBrand(url: string): { label: string; icon: keyof typeof Ionicons.gl
 
 export default function LegalPrivacyPage() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const backTo = from === "members" ? "/(admin)/members-hub" : "/(admin)/settings";
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { legalAdminDocs, addLegalDoc, updateLegalDoc, deleteLegalDoc } = useAppData();
@@ -365,7 +367,7 @@ export default function LegalPrivacyPage() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Legal & Waivers"
-        onBack={() => router.push("/(admin)/settings" as never)}
+        onBack={() => router.push(backTo as never)}
       />
       <ScrollView
         contentContainerStyle={[

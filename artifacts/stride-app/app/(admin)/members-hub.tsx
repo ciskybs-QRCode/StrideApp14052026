@@ -51,7 +51,7 @@ export default function MembersHub() {
           title="Legal & Waivers"
           description="Member-signed documents and consent records"
           badge={hasUnreadInvoices ? "!" : undefined}
-          onPress={() => router.push("/(admin)/settings/legal-privacy" as never)}
+          onPress={() => router.push("/(admin)/settings/legal-privacy?from=members" as never)}
         />
         <HubCard
           icon="id-card-outline"
