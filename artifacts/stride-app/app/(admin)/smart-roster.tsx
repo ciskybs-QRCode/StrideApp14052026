@@ -32,14 +32,6 @@ import { useColors } from "@/hooks/useColors";
 
 const AUTO_TRIGGER_KEY = "stride_auto_trigger";
 
-// Simulated available slots (post-roster generation)
-const AVAILABLE_SLOTS = [
-  { day: "Mon", time: "09:00–11:00", venue: "Studio A" },
-  { day: "Tue", time: "14:00–16:00", venue: "Studio B" },
-  { day: "Wed", time: "10:00–12:00", venue: "Studio A" },
-  { day: "Thu", time: "17:00–19:00", venue: "Studio C" },
-  { day: "Sat", time: "08:00–10:00", venue: "Studio A" },
-];
 
 function nextISODateTime(daysAhead: number, hour = 14): string {
   const d = new Date();
@@ -241,7 +233,7 @@ export default function SmartRosterScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="AI Roster Orchestrator" subtitle="Smart scheduling & cascade" onBack={() => router.push("/(admin)/operations-hub")} />
+      <ScreenHeader title="AI Roster Orchestrator" subtitle="Smart scheduling & cascade" onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + TAB_H + 20 }]}
@@ -296,17 +288,11 @@ export default function SmartRosterScreen() {
                 </View>
               </View>
 
-              <Text style={[s.subsectionLabel, { color: colors.mutedForeground }]}>
-                AVAILABLE SLOTS FOR PRIVATE LESSONS
-              </Text>
-              <View style={s.slotGrid}>
-                {AVAILABLE_SLOTS.map((sl, i) => (
-                  <View key={i} style={[s.slotChip, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                    <Text style={[s.slotDay, { color: colors.primary }]}>{sl.day}</Text>
-                    <Text style={[s.slotTime, { color: colors.foreground }]}>{sl.time}</Text>
-                    <Text style={[s.slotVenue, { color: colors.mutedForeground }]}>{sl.venue}</Text>
-                  </View>
-                ))}
+              <View style={[s.slotsPlaceholder, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                <Ionicons name="calendar-outline" size={20} color={colors.mutedForeground} />
+                <Text style={[s.slotsPlaceholderText, { color: colors.mutedForeground }]}>
+                  Available slots will be calculated from the live schedule once the annual roster is finalised.
+                </Text>
               </View>
 
               {notifSent ? (
@@ -381,19 +367,23 @@ export default function SmartRosterScreen() {
           {/* Score formula */}
           <View style={[s.formulaBox, { backgroundColor: colors.muted }]}>
             <Text style={[s.formulaLabel, { color: colors.primary }]}>RANKING FORMULA</Text>
-            <Text style={[s.formulaText, { color: colors.foreground }]}>
-              (Skill Match × 0.6) + (Reliability Score × 0.4)
+            <Text style={[s.formulaText, { color: colors.foreground }]} numberOfLines={2}>
+              (Skill Match × 0.6) + (Reliability × 0.4)
             </Text>
             <View style={s.formulaRow}>
-              <View style={[s.formulaChip, { borderColor: colors.border }]}>
-                <Ionicons name="school-outline" size={11} color="#7C3AED" />
-                <Text style={[s.formulaChipTxt, { color: "#7C3AED" }]}>Skill Match</Text>
-                <Text style={[s.formulaChipPct, { color: "#7C3AED" }]}>60%</Text>
+              <View style={[s.formulaChip, { borderColor: "#7C3AED33", backgroundColor: "#7C3AED0A", flex: 1 }]}>
+                <Ionicons name="school-outline" size={13} color="#7C3AED" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.formulaChipPct, { color: "#7C3AED" }]}>60%</Text>
+                  <Text style={[s.formulaChipTxt, { color: "#7C3AED" }]} numberOfLines={1}>Skill Match</Text>
+                </View>
               </View>
-              <View style={[s.formulaChip, { borderColor: colors.border }]}>
-                <Ionicons name="shield-checkmark-outline" size={11} color="#10B981" />
-                <Text style={[s.formulaChipTxt, { color: "#10B981" }]}>Reliability</Text>
-                <Text style={[s.formulaChipPct, { color: "#10B981" }]}>40%</Text>
+              <View style={[s.formulaChip, { borderColor: "#10B98133", backgroundColor: "#10B9810A", flex: 1 }]}>
+                <Ionicons name="shield-checkmark-outline" size={13} color="#10B981" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.formulaChipPct, { color: "#10B981" }]}>40%</Text>
+                  <Text style={[s.formulaChipTxt, { color: "#10B981" }]} numberOfLines={1}>Reliability</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -573,12 +563,15 @@ export default function SmartRosterScreen() {
             )}
 
             {/* Date + Time */}
-            <Text style={[s.fieldLabel, { color: colors.primary }]}>CLASS DATE & TIME (ISO 8601)</Text>
+            <Text style={[s.fieldLabel, { color: colors.primary }]}>SCHEDULED CLASS DATE & TIME</Text>
+            <Text style={[s.cardSub, { color: colors.mutedForeground, marginBottom: 4, marginTop: -4 }]}>
+              When is the lesson that needs a substitute?
+            </Text>
             <TextInput
               style={[s.input, { backgroundColor: colors.muted, borderColor: datetimeError ? "#EF4444" : colors.border, color: colors.foreground }]}
               value={classDatetime}
               onChangeText={v => { setClassDatetime(v); setDatetimeError(null); }}
-              placeholder="2026-06-10T14:00:00"
+              placeholder="e.g. 2026-06-20T14:00:00"
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="none"
               autoCorrect={false}
@@ -597,7 +590,7 @@ export default function SmartRosterScreen() {
                 <Text style={[s.aiBtnText, { color: "#1E3A8A" }]}>AI Analysis</Text>
               </Pressable>
               <Pressable
-                style={({ pressed }) => [s.cascadeBtn, { opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [s.cascadeBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 onPress={handleManualCascade}
                 disabled={triggering}
               >
@@ -605,7 +598,7 @@ export default function SmartRosterScreen() {
                   ? <ActivityIndicator size="small" color="#FFF" />
                   : <>
                       <Ionicons name="git-network-outline" size={16} color="#FFF" />
-                      <Text style={s.cascadeBtnText}>Launch Cascade</Text>
+                      <Text style={s.cascadeBtnText} numberOfLines={1}>Launch Cascade</Text>
                     </>
                 }
               </Pressable>
@@ -809,10 +802,10 @@ const s = StyleSheet.create({
   aiBtnText: { fontWeight: "900", fontSize: 14 },
   cascadeBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 7, backgroundColor: "#7C3AED", borderRadius: 14,
-    paddingHorizontal: 16, paddingVertical: 14,
+    gap: 7, borderRadius: 14, flex: 1,
+    paddingHorizontal: 12, paddingVertical: 14,
   },
-  cascadeBtnText: { color: "#FFF", fontWeight: "800", fontSize: 14 },
+  cascadeBtnText: { color: "#FFF", fontWeight: "800", fontSize: 13 },
 
   // Edit bar
   editBar: {
@@ -822,6 +815,13 @@ const s = StyleSheet.create({
   },
   editBarText:   { flex: 1, fontSize: 12 },
   editBarChange: { fontSize: 12, fontWeight: "700" },
+
+  // Slots placeholder
+  slotsPlaceholder: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    borderRadius: 12, borderWidth: 1, padding: 14,
+  },
+  slotsPlaceholderText: { flex: 1, fontSize: 12, lineHeight: 17 },
 
   // Score info
   infoRow:    { flexDirection: "row", alignItems: "center", gap: 12 },
