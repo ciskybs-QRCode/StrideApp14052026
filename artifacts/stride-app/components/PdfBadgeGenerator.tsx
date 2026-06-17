@@ -73,7 +73,7 @@ function safetyPillsHtml(s: EnrichedStudent, opts: BadgeOpts, compact = false): 
     const allergy = s.allergies && s.allergies !== "None" ? s.allergies : null;
     const bg  = allergy ? "#FEF2F2" : "#F0FDF4";
     const col = allergy ? "#DC2626" : "#16A34A";
-    const lbl = allergy ? "Allergy: " + allergy : "No Allergies";
+    const lbl = allergy ? `&#x1F489; ${allergy}` : "&#x1F489; No Allergies";
     parts.push(`<span style="background:${bg};color:${col};font-size:${fs};font-weight:700;padding:${pad};border-radius:${r};white-space:nowrap;">${lbl}</span>`);
   }
 
@@ -81,7 +81,7 @@ function safetyPillsHtml(s: EnrichedStudent, opts: BadgeOpts, compact = false): 
     const ok  = s.medicalWaiver === "ambulance";
     const bg  = ok ? "#F0FDF4" : "#FEF2F2";
     const col = ok ? "#16A34A" : "#DC2626";
-    const lbl = ok ? "Amb. Auth." : "No Amb.";
+    const lbl = ok ? "&#x271A; Amb. Auth." : "&#x271A; Call Guardian";
     parts.push(`<span style="background:${bg};color:${col};font-size:${fs};font-weight:700;padding:${pad};border-radius:${r};white-space:nowrap;">${lbl}</span>`);
   }
 
@@ -89,7 +89,7 @@ function safetyPillsHtml(s: EnrichedStudent, opts: BadgeOpts, compact = false): 
     const mc  = s.mediaCons ?? "none";
     const bg  = mc === "full" ? "#F0FDF4" : mc === "internal" ? "#FFFBEB" : "#FEF2F2";
     const col = mc === "full" ? "#16A34A" : mc === "internal" ? "#B45309" : "#DC2626";
-    const lbl = mc === "full" ? "Photo OK" : mc === "internal" ? "Internal" : "No Photo";
+    const lbl = mc === "full" ? "&#x1F4F7; Full Consent" : mc === "internal" ? "&#x1F4F7; Internal Only" : "&#x1F4F7; No Consent";
     parts.push(`<span style="background:${bg};color:${col};font-size:${fs};font-weight:700;padding:${pad};border-radius:${r};white-space:nowrap;">${lbl}</span>`);
   }
 
@@ -381,9 +381,9 @@ export default function PdfBadgeGenerator() {
   // ── Preview ──────────────────────────────────────────────────────────────────
 
   const sample        = displayStudents[0];
-  const previewFirst  = sample?.name.split(" ")[0]           ?? "Sofia";
-  const previewLast   = sample?.name.split(" ").slice(1).join(" ") ?? "Rossi";
-  const previewCourse = sample?.courses[0] ?? selectedCourse?.name ?? "Classical Dance";
+  const previewFirst  = sample?.name.split(" ")[0]           ?? "Alex";
+  const previewLast   = sample?.name.split(" ").slice(1).join(" ") ?? "Johnson";
+  const previewCourse = sample?.courses[0] ?? selectedCourse?.name ?? "Course / Discipline";
   const previewAge    = sample?.age ?? 8;
   const previewAllergy = (showAllergies && sample?.allergies && sample.allergies !== "None") ? sample.allergies : null;
   const previewAmbulance = showAmbulanceConsent ? (sample?.medicalWaiver === "ambulance") : null;
@@ -468,7 +468,7 @@ export default function PdfBadgeGenerator() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Badge Generator" onBack={() => router.push("/(admin)/users" as never)} />
+      <ScreenHeader title="Badge Generator" onBack={() => router.push("/(admin)/members-hub" as never)} />
 
       <ScrollView
         style={styles.scroll}
@@ -688,6 +688,13 @@ export default function PdfBadgeGenerator() {
 
 // ── SafetyPreviewRow ──────────────────────────────────────────────────────────
 
+type IconChip = {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  color: string;
+  bg: string;
+  tooltip: string;
+};
+
 function SafetyPreviewRow({
   allergy, ambulance, photo, compact = false,
 }: {
@@ -696,33 +703,38 @@ function SafetyPreviewRow({
   photo:     string | null;
   compact?:  boolean;
 }) {
-  const chips: { label: string; color: string; bg: string }[] = [];
+  const chips: IconChip[] = [];
 
   if (allergy !== null) {
-    if (allergy) chips.push({ label: allergy,       color: "#DC2626", bg: "#FEF2F2" });
-    else         chips.push({ label: "No Allergies", color: "#16A34A", bg: "#F0FDF4" });
+    if (allergy) {
+      chips.push({ icon: "medical",         color: "#DC2626", bg: "#FEF2F2", tooltip: allergy });
+    } else {
+      chips.push({ icon: "medical-outline", color: "#16A34A", bg: "#F0FDF4", tooltip: "No allergies" });
+    }
   }
   if (ambulance !== null) {
     chips.push(ambulance
-      ? { label: "Amb. Auth.",   color: "#16A34A", bg: "#F0FDF4" }
-      : { label: "No Amb.",      color: "#DC2626", bg: "#FEF2F2" }
+      ? { icon: "add-circle",         color: "#16A34A", bg: "#F0FDF4", tooltip: "Amb. authorised" }
+      : { icon: "add-circle-outline", color: "#DC2626", bg: "#FEF2F2", tooltip: "Call guardian first" }
     );
   }
   if (photo !== null) {
-    const map: Record<string, { label: string; color: string; bg: string }> = {
-      full:     { label: "Photo OK",  color: "#16A34A", bg: "#F0FDF4"  },
-      internal: { label: "Internal",  color: "#B45309", bg: "#FFFBEB"  },
-      none:     { label: "No Photo",  color: "#DC2626", bg: "#FEF2F2"  },
+    const photoMap: Record<string, IconChip> = {
+      full:     { icon: "camera",         color: "#16A34A", bg: "#F0FDF4", tooltip: "Full photo consent" },
+      internal: { icon: "camera-outline", color: "#B45309", bg: "#FFFBEB", tooltip: "Internal use only"  },
+      none:     { icon: "camera-outline", color: "#DC2626", bg: "#FEF2F2", tooltip: "No photo consent"   },
     };
-    chips.push(map[photo] ?? map["none"]);
+    chips.push(photoMap[photo] ?? photoMap["none"]);
   }
 
   if (chips.length === 0) return null;
+  const size = compact ? 11 : 14;
+  const pad  = compact ? 4  : 6;
   return (
     <View style={[sr.row, compact && { gap: 3, marginTop: 3 }]}>
       {chips.map((c, i) => (
-        <View key={i} style={[sr.chip, { backgroundColor: c.bg }, compact && { paddingHorizontal: 4, paddingVertical: 2 }]}>
-          <Text style={[sr.text, { color: c.color }, compact && { fontSize: 8 }]} numberOfLines={1}>{c.label}</Text>
+        <View key={i} style={[sr.chip, { backgroundColor: c.bg, padding: pad }]}>
+          <Ionicons name={c.icon} size={size} color={c.color} />
         </View>
       ))}
     </View>
@@ -730,7 +742,7 @@ function SafetyPreviewRow({
 }
 const sr = StyleSheet.create({
   row:  { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 6 },
-  chip: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  chip: { borderRadius: 5, alignItems: "center", justifyContent: "center" },
   text: { fontSize: 10, fontWeight: "700" },
 });
 

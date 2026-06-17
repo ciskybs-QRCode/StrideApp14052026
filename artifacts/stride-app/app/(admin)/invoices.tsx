@@ -309,7 +309,7 @@ export default function AdminInvoicesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Invoices" />
+      <ScreenHeader title="Invoices" onBack={() => router.push("/(admin)/finance-hub" as never)} />
 
       {/* ── Tab bar ── */}
       <View style={{ flexDirection: "row", backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>

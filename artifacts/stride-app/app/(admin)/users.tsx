@@ -289,8 +289,7 @@ export default function AdminUsers() {
             style={[styles.badgePdfBtn, { backgroundColor: colors.primary }]}
             onPress={() => router.push("/(admin)/pdf-badges" as Parameters<typeof router.push>[0])}
           >
-            <Ionicons name="print-outline" size={18} color="#FBBF24" />
-            <Text style={styles.badgePdfBtnText}>Badge PDF</Text>
+            <Ionicons name="print-outline" size={20} color="#FBBF24" />
           </Pressable>
         }
       />
@@ -839,8 +838,7 @@ const styles = StyleSheet.create({
   pageHeaderRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
   pageTitle:      { fontSize: 28, fontWeight: "800" },
   pageSub:        { fontSize: 13, marginTop: 2 },
-  badgePdfBtn:    { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
-  badgePdfBtnText:{ color: "#FBBF24", fontWeight: "700", fontSize: 13 },
+  badgePdfBtn:    { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
   statCard:  { borderRadius: 14, padding: 16, alignItems: "center", marginRight: 10, minWidth: 80 },
   statNum:   { fontSize: 26, fontWeight: "800", color: "#FFF" },

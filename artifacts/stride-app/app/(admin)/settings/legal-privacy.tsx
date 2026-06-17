@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData, type LegalAdminDoc } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { api } from "@/lib/api";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -127,8 +128,10 @@ export default function LegalPrivacyPage() {
   const [replaceFileSize,   setReplaceFileSize]    = useState<string | null>(null);
   const [replaceLinkUrl,    setReplaceLinkUrl]     = useState("");
 
-  const mandatoryCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
-  const priorityCount  = legalAdminDocs.filter(d => d.highPriority).length;
+  const assocDocs   = legalAdminDocs.filter(d => d.source !== "stride_platform");
+  const strideDocs  = legalAdminDocs.filter(d => d.source === "stride_platform");
+  const mandatoryCount = assocDocs.filter(d => d.mandatorySignature).length;
+  const priorityCount  = assocDocs.filter(d => d.highPriority).length;
 
   // ── File picker helpers ──────────────────────────────────────────────────────
 
@@ -361,8 +364,8 @@ export default function LegalPrivacyPage() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        title="Legal & Privacy"
-        onBack={() => router.push("/(admin)/settings")}
+        title="Legal & Waivers"
+        onBack={() => router.back()}
       />
       <ScrollView
         contentContainerStyle={[
@@ -371,12 +374,12 @@ export default function LegalPrivacyPage() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats */}
+        {/* Stats — based on association docs only */}
         <View style={styles.statsRow}>
           {[
-            { label: "Documents",    value: legalAdminDocs.length, color: colors.primary, bg: "rgba(30,58,138,0.1)" },
-            { label: "Mandatory",    value: mandatoryCount,        color: colors.primary, bg: "rgba(30,58,138,0.1)" },
-            { label: "High Priority",value: priorityCount,         color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "Documents",    value: assocDocs.length, color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "Mandatory",    value: mandatoryCount,   color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "High Priority",value: priorityCount,    color: colors.primary, bg: "rgba(30,58,138,0.1)" },
           ].map(s => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
               <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
@@ -385,25 +388,24 @@ export default function LegalPrivacyPage() {
           ))}
         </View>
 
-        {/* Section header */}
+        {/* ── ASSOCIATION DOCUMENTS ── */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Documents</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Association Documents</Text>
           <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={() => { resetAddForm(); setShowAdd(true); }}>
             <Ionicons name="add" size={16} color="#FFF" />
             <Text style={styles.addBtnText}>Add New</Text>
           </Pressable>
         </View>
 
-        {/* Document list */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          {legalAdminDocs.map((doc, i) => {
+          {assocDocs.map((doc, i) => {
             const info = legalTypeInfo(doc.type, colors);
             const hasFile = !!doc.fileUri || !!doc.fileName;
             const hasLink = !!doc.linkUrl;
             return (
               <Pressable
                 key={doc.id}
-                style={[styles.docRow, i < legalAdminDocs.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                style={[styles.docRow, i < assocDocs.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
                 onPress={() => setShowDetail(doc)}
               >
                 <View style={[styles.docIcon, { backgroundColor: info.bg }]}>
@@ -445,11 +447,11 @@ export default function LegalPrivacyPage() {
               </Pressable>
             );
           })}
-          {legalAdminDocs.length === 0 && (
+          {assocDocs.length === 0 && (
             <View style={{ padding: 32, alignItems: "center", gap: 8 }}>
               <Ionicons name="document-outline" size={36} color={colors.mutedForeground} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No documents yet</Text>
-              <Text style={[styles.emptySubText, { color: colors.mutedForeground }]}>Tap "Add New" to upload your first legal document</Text>
+              <Text style={[styles.emptySubText, { color: colors.mutedForeground }]}>Tap "Add New" to create your first association document</Text>
             </View>
           )}
         </View>
@@ -458,18 +460,67 @@ export default function LegalPrivacyPage() {
           <View style={[styles.callout, { backgroundColor: "#EDE9FE" }]}>
             <Ionicons name="lock-closed-outline" size={18} color="#7C3AED" />
             <Text style={[styles.calloutText, { color: "#5B21B6" }]}>
-              {mandatoryCount} mandatory document{mandatoryCount !== 1 ? "s" : ""} will block user access until signed.
+              {mandatoryCount} mandatory document{mandatoryCount !== 1 ? "s" : ""} will block member access until signed.
             </Text>
           </View>
         )}
 
+        {/* ── STRIDE PLATFORM AGREEMENTS ── */}
+        {strideDocs.length > 0 && (
+          <>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 24, marginBottom: 10, marginHorizontal: 4 }}>
+              <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="shield-checkmark" size={15} color="#92400E" />
+              </View>
+              <Text style={{ fontSize: 11, fontWeight: "800", letterSpacing: 1.2, color: "#92400E", flex: 1 }}>STRIDE PLATFORM AGREEMENTS</Text>
+              <View style={{ backgroundColor: "#FEF3C7", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 9, fontWeight: "800", color: "#92400E" }}>READ-ONLY</Text>
+              </View>
+            </View>
+            <View style={{ backgroundColor: "#FFFBEB", borderRadius: 16, borderWidth: 1.5, borderColor: "#FCD34D", marginBottom: 4 }}>
+              <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+                <Text style={{ fontSize: 12, color: "#92400E", lineHeight: 17 }}>
+                  These are the agreements you accepted when joining the Stride platform. They cannot be edited or deleted.
+                </Text>
+              </View>
+              {strideDocs.map((doc, i) => {
+                const info = legalTypeInfo(doc.type, colors);
+                return (
+                  <Pressable
+                    key={doc.id}
+                    style={[styles.docRow, i < strideDocs.length - 1 && { borderBottomWidth: 1, borderBottomColor: "#FCD34D" }]}
+                    onPress={() => setShowDetail(doc)}
+                  >
+                    <View style={[styles.docIcon, { backgroundColor: "#FEF3C7" }]}>
+                      <Ionicons name={info.icon} size={18} color="#92400E" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.docTitle, { color: "#78350F" }]}>{doc.title}</Text>
+                      <View style={styles.docBadges}>
+                        <View style={[styles.typeBadge, { backgroundColor: "#FEF3C7" }]}>
+                          <Text style={[styles.typeBadgeText, { color: "#92400E" }]}>{info.label}</Text>
+                        </View>
+                        <View style={[styles.flagBadge, { backgroundColor: "#FEF3C7" }]}>
+                          <Ionicons name="lock-closed" size={9} color="#92400E" />
+                          <Text style={[styles.flagText, { color: "#92400E" }]}>Platform</Text>
+                        </View>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#B45309" />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {/* ── CONSENT AUDIT LOG ── */}
         <Pressable
-          style={({ pressed }) => [styles.placeholderCard, { backgroundColor: colors.card, borderColor: "#1E3A8A", opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [styles.placeholderCard, { backgroundColor: colors.card, borderColor: "#1E3A8A", opacity: pressed ? 0.85 : 1, marginTop: 16 }]}
           onPress={async () => {
             setAuditLoading(true);
             setShowAuditLog(true);
             try {
-              const { api } = await import("@/lib/api");
               const rows = await api.legalAuditLog();
               setAuditLog(rows ?? []);
             } catch { setAuditLog([]); }
