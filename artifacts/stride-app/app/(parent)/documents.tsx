@@ -376,7 +376,7 @@ export default function DocumentsScreen() {
                     <View style={styles.docInfo}>
                       <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
                       <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>
-                        From {doc.sentBy === "admin" ? "Administration" : "Associazione"} · {doc.sentAt}
+                        From {doc.sentBy === "admin" ? "Administration" : "Association"} · {doc.sentAt}
                       </Text>
                     </View>
                     <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>

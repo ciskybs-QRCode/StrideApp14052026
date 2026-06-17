@@ -55,7 +55,7 @@ const REGION_CFG: Record<Region, RegionCfg> = {
       "TP","TN","TV","TS","UD","VA","VE","VB","VC","VR","VV","VI","VT"],
     taxLabel1: "Partita IVA", taxLabel2: "Codice Fiscale",
     taxPlaceholder1: "IT12345678901", taxPlaceholder2: "RSSMRA80A01H501T",
-    schoolNamePlaceholder: "es. Associazione Sportiva Roma",
+    schoolNamePlaceholder: "e.g. Sports Association Rome",
   },
   AU: {
     flag: "🇦🇺", label: "Australia", localeName: "AU localisation",
@@ -466,7 +466,7 @@ export default function Pioneer() {
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 }}>
               <Ionicons name="pencil-outline" size={10} color="rgba(255,255,255,0.5)" />
               <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>
-                Impostazione manuale (rilevato: {deviceLocale.flag} {deviceLocale.region})
+                Manual override (detected: {deviceLocale.flag} {deviceLocale.region})
               </Text>
             </View>
           )}

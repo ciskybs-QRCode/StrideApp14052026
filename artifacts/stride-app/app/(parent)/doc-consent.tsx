@@ -19,7 +19,7 @@ import { SignaturePad } from "@/components/SignaturePad";
 
 const MEDIA_RELEASE_TEXT = `MEDIA RELEASE CONSENT
 
-Issued by: Associazione — Administration
+Issued by: Association — Administration
 Effective: Duration of enrolment
 
 ─────────────────────────────────
@@ -36,7 +36,7 @@ You are required to select one of the three consent levels below. Selection is m
 
 OPTION A — Full Public & Promotional Consent
 
-You consent to photographs and videos of your dependent member being used for all association purposes, including: the association website, social media channels, printed promotional materials, and internal records. The Associazione may publish this media without further notification.
+You consent to photographs and videos of your dependent member being used for all association purposes, including: the association website, social media channels, printed promotional materials, and internal records. The Association may publish this media without further notification.
 
 ─────────────────────────────────
 
@@ -54,7 +54,7 @@ You do not consent to your dependent member being photographed or filmed under a
 
 RIGHTS & WITHDRAWAL
 
-This consent applies for the duration of your dependent member's enrolment. It may be updated or withdrawn in writing at any time by contacting the Associazione administration directly. Changes take effect from the date of receipt.
+This consent applies for the duration of your dependent member's enrolment. It may be updated or withdrawn in writing at any time by contacting the Association administration directly. Changes take effect from the date of receipt.
 
 By signing this form, you confirm that you have read and understood all three options and that your selection accurately reflects your wishes.`;
 

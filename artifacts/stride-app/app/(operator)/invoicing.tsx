@@ -267,7 +267,7 @@ tbody td{padding:9px 12px;border-bottom:1px solid #E5E7EB;vertical-align:middle}
   <div class="party">
     <div class="party-label">From (Operator)</div>
     <div class="party-name">${displayName}</div>
-    <div class="party-sub">Associazione · ${schoolName}</div>
+    <div class="party-sub">Association · ${schoolName}</div>
     ${headerAddr ? `<div class="party-sub" style="margin-top:4px">${headerAddr}</div>` : ""}
   </div>
   <div class="party">
@@ -845,7 +845,7 @@ export default function OperatorInvoicing() {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{user?.name}</Text>
-              <Text style={styles.profileRole}>Associazione · {schoolName}</Text>
+              <Text style={styles.profileRole}>Association · {schoolName}</Text>
             </View>
           </View>
           <View style={styles.profileStats}>

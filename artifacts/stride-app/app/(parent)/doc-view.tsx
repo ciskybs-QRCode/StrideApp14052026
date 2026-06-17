@@ -41,7 +41,7 @@ export default function DocViewScreen() {
       await WebBrowser.openBrowserAsync(doc.fileUrl);
     } else {
       await Share.share({
-        message: `Document: ${doc.title}\nSigned: ${doc.signedDate ?? "—"}\nIssued by: Associazione\nRef: ${doc.id}`,
+        message: `Document: ${doc.title}\nSigned: ${doc.signedDate ?? "—"}\nIssued by: Association\nRef: ${doc.id}`,
       });
     }
   };
@@ -77,7 +77,7 @@ export default function DocViewScreen() {
           <View style={{ flex: 1 }}>
             <Text style={s.signedTitle}>Document Signed</Text>
             {doc.signedDate
-              ? <Text style={s.signedDate}>Firma registrata il {doc.signedDate}</Text>
+              ? <Text style={s.signedDate}>Signed on {doc.signedDate}</Text>
               : <Text style={s.signedDate}>Signature on record</Text>
             }
           </View>
@@ -92,7 +92,7 @@ export default function DocViewScreen() {
           <MetaDivider color={colors.border} />
           <MetaRow
             label="Issued By"
-            value={doc.sentBy === "admin" ? "Administration" : "Associazione"}
+            value={doc.sentBy === "admin" ? "Administration" : "Association"}
             colors={colors}
           />
           {doc.sentAt && (
@@ -115,7 +115,7 @@ export default function DocViewScreen() {
         <View style={[s.notice, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
           <Text style={[s.noticeText, { color: colors.mutedForeground }]}>
-            This is a read-only view of a signed document. Your acceptance is recorded in the compliance system. Contact the Associazione administration to request a certified copy.
+            This is a read-only view of a signed document. Your acceptance is recorded in the compliance system. Contact the Association administration to request a certified copy.
           </Text>
         </View>
 
