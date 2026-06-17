@@ -741,8 +741,8 @@ function SafetyPreviewRow({
   }
   if (ambulance !== null) {
     chips.push(ambulance
-      ? { cross: true, color: "#DC2626", bg: "#FEF2F2", tooltip: "Amb. authorised" }
-      : { cross: true, color: "#9CA3AF", bg: "#F3F4F6", tooltip: "Call guardian first" }
+      ? { cross: true, color: "#16A34A", bg: "#F0FDF4", tooltip: "Amb. authorised" }
+      : { cross: true, color: "#DC2626", bg: "#FEF2F2", tooltip: "Call guardian first" }
     );
   }
   if (photo !== null) {
