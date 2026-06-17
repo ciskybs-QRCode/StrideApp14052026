@@ -367,6 +367,21 @@ jobs:
             let existingIssue = null;
             if (isRetry) {
               existingIssue = issues[0];
+
+              // Strip the auto-resolved label if present — the issue is no longer resolved.
+              const hasAutoResolved = existingIssue.labels.some(
+                l => (typeof l === 'string' ? l : l.name) === 'auto-resolved'
+              );
+              if (hasAutoResolved) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existingIssue.number,
+                  name: 'auto-resolved',
+                });
+                console.log(`Removed "auto-resolved" label from issue #${existingIssue.number}`);
+              }
+
               // Add a comment to the existing open issue instead of spamming new ones
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
