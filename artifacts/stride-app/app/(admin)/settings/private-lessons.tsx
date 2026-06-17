@@ -34,10 +34,11 @@ export default function PrivateLessonsSettings() {
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
 
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
-  const [enabled,  setEnabled]  = useState(false);
-  const [configs,  setConfigs]  = useState<LessonConfig[]>([]);
+  const [loading,          setLoading]          = useState(true);
+  const [saving,           setSaving]           = useState(false);
+  const [enabled,          setEnabled]          = useState(false);
+  const [togglingEnabled,  setTogglingEnabled]  = useState(false);
+  const [configs,          setConfigs]          = useState<LessonConfig[]>([]);
   const [editRow,  setEditRow]  = useState<Partial<LessonConfig> | null>(null);
   const [addMode,  setAddMode]  = useState(false);
 
@@ -61,10 +62,16 @@ export default function PrivateLessonsSettings() {
 
   const toggleEnabled = async (v: boolean) => {
     setEnabled(v);
+    setTogglingEnabled(true);
     try {
       await api.updatePrivateLessonEnabled(v);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch { setEnabled(!v); }
+    } catch {
+      setEnabled(!v);
+      Alert.alert("Error", "Could not update private lessons. Please check your connection and try again.");
+    } finally {
+      setTogglingEnabled(false);
+    }
   };
 
   const openAdd = () => {
@@ -188,6 +195,7 @@ export default function PrivateLessonsSettings() {
             <Switch
               value={enabled}
               onValueChange={toggleEnabled}
+              disabled={togglingEnabled}
               trackColor={{ true: colors.primary, false: colors.border }}
               thumbColor="#FFF"
             />
@@ -267,32 +275,32 @@ export default function PrivateLessonsSettings() {
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Member price (€) *</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Member price (€)</Text>
                   <TextInput
-                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+                    style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                     value={fMember} onChangeText={setFMember}
                     placeholder="50.00" keyboardType="decimal-pad"
                     placeholderTextColor={colors.mutedForeground}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: "#059669" }]}>Operator payout (€) *</Text>
+                  <Text style={[styles.fieldLabel, { color: "#059669" }]}>Operator payout (€)</Text>
                   <TextInput
-                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
+                    style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                     value={fOperator} onChangeText={setFOperator}
                     placeholder="30.00" keyboardType="decimal-pad"
                     placeholderTextColor={colors.mutedForeground}
                   />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Duration (min)</Text>
-                  <TextInput
-                    style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
-                    value={fDuration} onChangeText={setFDuration}
-                    placeholder="60" keyboardType="number-pad"
-                    placeholderTextColor={colors.mutedForeground}
-                  />
-                </View>
+              </View>
+              <View style={{ marginTop: 10 }}>
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Duration (minutes)</Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                  value={fDuration} onChangeText={setFDuration}
+                  placeholder="60" keyboardType="number-pad"
+                  placeholderTextColor={colors.mutedForeground}
+                />
               </View>
 
               {/* Margin preview */}

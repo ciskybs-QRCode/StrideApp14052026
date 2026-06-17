@@ -195,10 +195,17 @@ export default function SettingsIndex() {
           <HubCard
             key={item.key}
             icon={item.icon}
-            title={item.title}
-            description={item.description}
+            title={item.key === "app-customization" ? "Branding & Theme" : item.title}
+            description={item.key === "app-customization" ? "Colours, logo, fonts and button style" : item.description}
             badge={item.key === "legal-privacy" && unsignedCount > 0 ? unsignedCount : undefined}
-            onPress={() => navigate(item.key)}
+            onPress={() => {
+              if (item.key === "app-customization") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/(admin)/setup" as never);
+              } else {
+                navigate(item.key);
+              }
+            }}
           />
         ))}
 

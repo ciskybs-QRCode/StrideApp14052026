@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -31,6 +32,15 @@ import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 
 const LOGO = require("@/assets/images/stride-logo.png");
+
+const SOCIAL_ICONS: { key: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }[] = [
+  { key: "instagram", icon: "logo-instagram",       color: "#FFF", bg: "#E1306C" },
+  { key: "facebook",  icon: "logo-facebook",        color: "#FFF", bg: "#1877F2" },
+  { key: "tiktok",    icon: "musical-note-outline", color: "#FFF", bg: "#010101" },
+  { key: "youtube",   icon: "logo-youtube",         color: "#FFF", bg: "#FF0000" },
+  { key: "whatsapp",  icon: "logo-whatsapp",        color: "#FFF", bg: "#25D366" },
+  { key: "linkedin",  icon: "logo-linkedin",        color: "#FFF", bg: "#0077B5" },
+];
 
 type AbsenceType = "absent" | "late5" | "late10" | "late15" | "late30";
 
@@ -79,6 +89,7 @@ export default function ParentHome() {
   const [futureAbsNote, setFutureAbsNote] = useState("");
   const [futureAbsSuccess, setFutureAbsSuccess] = useState(false);
   const [orgLogoUri, setOrgLogoUri] = useState<string | null>(null);
+  const [social, setSocial] = useState<Record<string, string>>({});
 
   // ── Emergency Pulse ────────────────────────────────────────────────────────
   const [activePulse,    setActivePulse]    = useState<import("@/lib/api").EmergencyPulse | null>(null);
@@ -165,6 +176,12 @@ export default function ParentHome() {
   useEffect(() => {
     api.getOrg().then(org => {
       if (org.logo_url) setOrgLogoUri(org.logo_url);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.getItem("stride_social_links").then(raw => {
+      if (raw) setSocial(JSON.parse(raw) as Record<string, string>);
     }).catch(() => {});
   }, []);
 
@@ -325,6 +342,26 @@ export default function ParentHome() {
             )}
           </Pressable>
         </View>
+
+        {/* Social links row */}
+        {SOCIAL_ICONS.some(s => !!social[s.key]) && (
+          <View style={styles.socialRow}>
+            {SOCIAL_ICONS.filter(s => !!social[s.key]).map(s => (
+              <Pressable
+                key={s.key}
+                style={[styles.socialIconBtn, { backgroundColor: s.bg }]}
+                onPress={() => {
+                  const url = social[s.key];
+                  if (!url) return;
+                  const full = url.startsWith("http") ? url : `https://${url}`;
+                  Linking.openURL(full).catch(() => {});
+                }}
+              >
+                <Ionicons name={s.icon} size={17} color={s.color} />
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {/* Security Alert Banner */}
         {activeAlerts.filter(a => a.type !== "access_denied").length > 0 && (
@@ -1053,4 +1090,7 @@ const styles = StyleSheet.create({
   marketplaceBannerSub:    { color: "rgba(255,255,255,0.6)", fontSize: 12 },
   marketplaceVerifiedBadge:{ alignItems: "center", gap: 2, backgroundColor: "rgba(212,175,55,0.15)", borderRadius: 10, padding: 8 },
   marketplaceVerifiedText: { color: "#D4AF37", fontSize: 9, fontWeight: "900", textAlign: "center", letterSpacing: 0.5 },
+
+  socialRow:    { flexDirection: "row", gap: 8, marginBottom: 14, marginTop: -2 },
+  socialIconBtn:{ width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 });
