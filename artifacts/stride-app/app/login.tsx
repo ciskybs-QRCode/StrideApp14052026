@@ -236,7 +236,6 @@ const styles = StyleSheet.create({
     height: 50,
     borderWidth: 1,
     borderColor: "#D1D9F0",
-    overflow: "hidden",
   },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, fontSize: 15, color: "#1E3A8A" },
