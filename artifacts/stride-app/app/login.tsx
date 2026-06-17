@@ -184,14 +184,19 @@ export default function LoginScreen() {
               <Text style={styles.forgotLinkText}>Forgot Password?</Text>
             </Pressable>
 
+            <View style={styles.registerDivider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerLabel}>NEW HERE?</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
             <Pressable
               onPress={() => Linking.openURL(`https://${process.env["EXPO_PUBLIC_DOMAIN"] ?? "stride-platform.com"}/landing/register`)}
-              style={styles.registerLink}
+              style={styles.registerBtn}
             >
-              <Text style={styles.registerLinkText}>
-                Don't have an account?{" "}
-                <Text style={styles.registerLinkHighlight}>Register on our web portal</Text>
-              </Text>
+              <Ionicons name="person-add-outline" size={16} color="#1E3A8A" />
+              <Text style={styles.registerBtnText}>Create an account</Text>
+              <Ionicons name="chevron-forward" size={14} color="#6B7BA4" />
             </Pressable>
           </Animated.View>
 
@@ -231,6 +236,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderWidth: 1,
     borderColor: "#D1D9F0",
+    overflow: "hidden",
   },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, fontSize: 15, color: "#1E3A8A" },
@@ -262,7 +268,25 @@ const styles = StyleSheet.create({
   footer: { color: "rgba(30,58,138,0.35)", fontSize: 12, textAlign: "center", marginTop: 16 },
   forgotLink:      { alignItems: "center", paddingVertical: 8, marginTop: 6 },
   forgotLinkText:  { fontSize: 13, color: "#6B7BA4", fontWeight: "600" },
-  registerLink: { marginTop: 10, alignItems: "center", paddingVertical: 4 },
-  registerLinkText: { fontSize: 13, color: "#6B7BA4", textAlign: "center" },
-  registerLinkHighlight: { color: "#FBBF24", fontWeight: "700" },
+  registerDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 12,
+    gap: 10,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#E8EDF8" },
+  dividerLabel: { fontSize: 10, fontWeight: "700", color: "#B0BBDA", letterSpacing: 1.5 },
+  registerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: "#D1D9F0",
+    borderRadius: 12,
+    paddingVertical: 13,
+    backgroundColor: "#F8FAFF",
+  },
+  registerBtnText: { fontSize: 14, fontWeight: "600", color: "#1E3A8A", flex: 1, textAlign: "center" },
 });
