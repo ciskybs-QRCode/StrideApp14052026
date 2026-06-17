@@ -20,6 +20,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,10 +29,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api, type ProximityBeacon, type ChildBeaconAssignment, type ProximityRecentEntry, type ApiStudent } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+
+const TAB_H = Platform.OS === "web" ? 84 : 49;
 
 const ZONES = ["entrance", "studio-a", "studio-b", "lobby", "cafeteria", "exit"] as const;
 
@@ -197,9 +201,9 @@ export default function BeaconsScreen() {
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="BLE Proximity" onBack={() => router.push("/(admin)/operations-hub")} />
+      <ScreenHeader title="BLE Proximity" onBack={() => router.back()} />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + TAB_H + 40 }} showsVerticalScrollIndicator={false}>
 
         {/* ── Coming Soon Toggle ────────────────────────────────────────────── */}
         <View style={[S.toggleCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -254,6 +258,9 @@ export default function BeaconsScreen() {
             {" "}button on any wearable assignment below to test the detection flow end-to-end.
           </Text>
         </View>
+
+        {/* ── Locked content — greyed out when BLE not yet enabled ─────────── */}
+        <View style={{ position: "relative" }}>
 
         {/* ── School BLE Scanners ──────────────────────────────────────────── */}
         <View style={S.sectionHeader}>
@@ -396,6 +403,16 @@ export default function BeaconsScreen() {
             </View>
           );
         })}
+
+        {/* Grey overlay blocks all interaction when BLE is not enabled */}
+        {!bleEnabled && (
+          <View
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(160,160,160,0.45)", borderRadius: 8 }]}
+            pointerEvents="auto"
+          />
+        )}
+        </View>{/* end locked content */}
+
       </ScrollView>
 
       {/* ── Register Scanner Modal ─────────────────────────────────────────── */}

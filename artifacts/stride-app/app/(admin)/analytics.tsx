@@ -19,7 +19,7 @@ import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { getAnalytics, type AnalyticsMonthly } from "@/lib/api";
 
-const TAB_H = Platform.OS === "web" ? 84 : 49;
+const TAB_H = Platform.OS === "web" ? 110 : 70;
 
 export default function AdminAnalytics() {
   const { user }                        = useAuth();
