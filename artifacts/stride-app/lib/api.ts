@@ -401,12 +401,13 @@ export const api = {
   updateProfile: (data: { name?: string; phone?: string }) =>
     request<ApiUser>("PATCH", "/profile", data),
 
-  // Full profile update for onboarding (includes address + onboarding_complete)
+  // Full profile update for onboarding (includes address + onboarding_complete + next-of-kin)
   updateFullProfile: (data: {
     firstName: string;
     lastName: string;
     phone: string;
     address: { street: string; city: string; zip: string; state: string; country: string };
+    kin?: { name: string; phone: string; relationship: string };
   }) =>
     request<ApiUser>("PATCH", "/profile", {
       name: `${data.firstName} ${data.lastName}`.trim(),
@@ -417,6 +418,21 @@ export const api = {
       address_state:   data.address.state,
       address_country: data.address.country,
       onboarding_complete: true,
+      ...(data.kin ? {
+        emergency_contact_name:         data.kin.name,
+        emergency_contact_phone:        data.kin.phone,
+        emergency_contact_relationship: data.kin.relationship,
+      } : {}),
+    }),
+
+  // Promote a dependent member to an independent member account
+  // Requires the member's own password (proof of identity) + the dependent's future email.
+  // Returns { pending: true } — actual promotion only completes after email link is clicked.
+  promoteToMember: (memberId: string, data: { password: string; dependentEmail: string; dependentName: string }) =>
+    request<{ pending: boolean; message: string }>("POST", `/members/${memberId}/promote-to-member`, {
+      password:       data.password,
+      dependent_email: data.dependentEmail,
+      dependent_name:  data.dependentName,
     }),
 
   // Sign a document and attach drawn signature SVG

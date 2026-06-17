@@ -44,16 +44,7 @@ router.patch("/users/:id/role", requireAuth, requireRole("admin"), async (req, r
 
 router.patch("/profile", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
-  const {
-    name,
-    phone,
-    address_street,
-    address_city,
-    address_zip,
-    address_state,
-    address_country,
-    onboarding_complete,
-  } = req.body as {
+  const body = req.body as {
     name?: string;
     phone?: string;
     address_street?: string;
@@ -62,12 +53,15 @@ router.patch("/profile", requireAuth, async (req, res) => {
     address_state?: string;
     address_country?: string;
     onboarding_complete?: boolean;
+    emergency_contact_name?: string;
+    emergency_contact_phone?: string;
+    emergency_contact_relationship?: string;
   };
 
   // Always-safe fields that exist in the users table
   const baseUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (name  !== undefined) baseUpdates.name  = name;
-  if (phone !== undefined) baseUpdates.phone = phone;
+  if (body.name  !== undefined) baseUpdates.name  = body.name;
+  if (body.phone !== undefined) baseUpdates.phone = body.phone;
 
   const { data, error } = await supabase
     .from("users")
@@ -77,14 +71,17 @@ router.patch("/profile", requireAuth, async (req, res) => {
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
 
-  // Extended fields (address + onboarding flag) — best-effort, ignored if columns absent
+  // Extended fields (address + onboarding flag + next-of-kin) — best-effort, ignored if columns absent
   const ext: Record<string, unknown> = {};
-  if (address_street  !== undefined) ext.address_street  = address_street;
-  if (address_city    !== undefined) ext.address_city    = address_city;
-  if (address_zip     !== undefined) ext.address_zip     = address_zip;
-  if (address_state   !== undefined) ext.address_state   = address_state;
-  if (address_country !== undefined) ext.address_country = address_country;
-  if (onboarding_complete !== undefined) ext.onboarding_complete = onboarding_complete;
+  if (body.address_street  !== undefined) ext.address_street  = body.address_street;
+  if (body.address_city    !== undefined) ext.address_city    = body.address_city;
+  if (body.address_zip     !== undefined) ext.address_zip     = body.address_zip;
+  if (body.address_state   !== undefined) ext.address_state   = body.address_state;
+  if (body.address_country !== undefined) ext.address_country = body.address_country;
+  if (body.onboarding_complete !== undefined) ext.onboarding_complete = body.onboarding_complete;
+  if (body.emergency_contact_name         !== undefined) ext.emergency_contact_name         = body.emergency_contact_name;
+  if (body.emergency_contact_phone        !== undefined) ext.emergency_contact_phone        = body.emergency_contact_phone;
+  if (body.emergency_contact_relationship !== undefined) ext.emergency_contact_relationship = body.emergency_contact_relationship;
   if (Object.keys(ext).length > 0) {
     const { error: extErr } = await supabase
       .from("users")

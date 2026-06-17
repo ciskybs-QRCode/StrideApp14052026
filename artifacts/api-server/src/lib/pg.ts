@@ -792,5 +792,25 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ocl_org_idx  ON organization_compliance_logs (org_id);
   `).catch(() => {});
 
+  // Dependent-to-Member promotion tokens — email-confirmed upgrade flow
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS promotion_tokens (
+      id              SERIAL PRIMARY KEY,
+      token           TEXT        NOT NULL UNIQUE,
+      member_id       TEXT        NOT NULL,
+      user_id         TEXT        NOT NULL,
+      org_id          INTEGER,
+      dependent_email TEXT        NOT NULL,
+      dependent_name  TEXT        NOT NULL,
+      status          TEXT        NOT NULL DEFAULT 'pending',
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at      TIMESTAMPTZ NOT NULL,
+      confirmed_at    TIMESTAMPTZ,
+      CHECK (status IN ('pending', 'confirmed', 'expired'))
+    );
+    CREATE INDEX IF NOT EXISTS pt_token_idx ON promotion_tokens (token);
+    CREATE INDEX IF NOT EXISTS pt_user_idx  ON promotion_tokens (user_id);
+  `).catch(() => {});
+
   initialized = true;
 }

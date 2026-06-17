@@ -4,7 +4,9 @@ import QRCode from "react-native-qrcode-svg";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -64,6 +66,20 @@ export default function ChildrenScreen() {
   const [showAddChild, setShowAddChild] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Promote to Member — 2-step flow (email → password confirmation)
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [promoteStep,      setPromoteStep]      = useState<1 | 2>(1);
+  const [promoteChildId,   setPromoteChildId]   = useState("");
+  const [promoteChildName, setPromoteChildName] = useState("");
+  const [promoteDepEmail,  setPromoteDepEmail]  = useState("");
+  const [promotePassword,  setPromotePassword]  = useState("");
+  const [promoteLoading,   setPromoteLoading]   = useState(false);
+  const [promotePendingIds, setPromotePendingIds] = useState<Set<string>>(new Set());
+
+  // Privacy & notification settings (persisted in AsyncStorage, default ON)
+  const [absenceAlertsEnabled,    setAbsenceAlertsEnabled]    = useState(true);
+  const [emergencyContactVisible, setEmergencyContactVisible] = useState(true);
+
   // Add Child fields
   const [newChildName, setNewChildName] = useState("");
   const [newChildSurname, setNewChildSurname] = useState("");
@@ -104,6 +120,78 @@ export default function ChildrenScreen() {
     setMedicalWaiver(c?.medicalWaiver ?? "ambulance");
     setEditMediaConsent(c?.mediaConsent ?? "none");
   }, [selectedChild, children]);
+
+  // Load privacy settings + pending promotion IDs from AsyncStorage
+  useEffect(() => {
+    AsyncStorage.multiGet([
+      "stride:absenceAlerts",
+      "stride:emergencyContactVisible",
+      "stride:promotePendingIds",
+    ]).then(pairs => {
+      for (const [key, val] of pairs) {
+        if (val === null) continue;
+        if (key === "stride:absenceAlerts")           setAbsenceAlertsEnabled(val !== "false");
+        if (key === "stride:emergencyContactVisible") setEmergencyContactVisible(val !== "false");
+        if (key === "stride:promotePendingIds") {
+          try { setPromotePendingIds(new Set(JSON.parse(val))); } catch {}
+        }
+      }
+    });
+  }, []);
+
+  const toggleAbsenceAlerts = (v: boolean) => {
+    setAbsenceAlertsEnabled(v);
+    AsyncStorage.setItem("stride:absenceAlerts", String(v));
+  };
+  const toggleEmergencyContact = (v: boolean) => {
+    setEmergencyContactVisible(v);
+    AsyncStorage.setItem("stride:emergencyContactVisible", String(v));
+  };
+
+  // Step 1 — validate email and advance to password confirmation
+  const handlePromote = () => {
+    const email = promoteDepEmail.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      Alert.alert("Invalid email", "Please enter a valid email address for the dependent.");
+      return;
+    }
+    setPromoteStep(2);
+  };
+
+  // Step 2 — verify parent password and call API
+  const handlePromoteConfirm = async () => {
+    if (!promotePassword.trim()) {
+      Alert.alert("Password required", "Please enter your current password to confirm.");
+      return;
+    }
+    setPromoteLoading(true);
+    try {
+      await api.promoteToMember(promoteChildId, {
+        password: promotePassword,
+        dependentEmail: promoteDepEmail.trim().toLowerCase(),
+        dependentName: promoteChildName,
+      });
+      const next = new Set(promotePendingIds);
+      next.add(promoteChildId);
+      setPromotePendingIds(next);
+      await AsyncStorage.setItem("stride:promotePendingIds", JSON.stringify([...next]));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowPromoteModal(false);
+      setPromoteStep(1);
+      setPromotePassword("");
+      setPromoteDepEmail("");
+      Alert.alert(
+        "Confirmation Sent",
+        "A confirmation email has been sent to your inbox. Click the link within 24 hours to finalise the promotion.",
+        [{ text: "OK" }],
+      );
+    } catch (err: unknown) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Error", err instanceof Error ? err.message : "Could not process the promotion. Please try again.");
+    } finally {
+      setPromoteLoading(false);
+    }
+  };
 
   // Combine DD/MM/YYYY fields into a single Date (and keep newChildDob in sync)
   useEffect(() => {
@@ -564,6 +652,29 @@ export default function ChildrenScreen() {
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
+              {/* Promote to Member */}
+              <Pressable
+                style={[styles.actionBtn, { backgroundColor: "#F0FDF4", marginTop: 4, borderWidth: 1, borderColor: "#86EFAC" }]}
+                onPress={() => {
+                  setPromoteChildId(child.id);
+                  setPromoteChildName(child.name);
+                  setPromoteStep(1);
+                  setPromoteDepEmail("");
+                  setPromotePassword("");
+                  setShowPromoteModal(true);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                }}
+              >
+                <Ionicons name="arrow-up-circle-outline" size={18} color="#15803D" />
+                <Text style={[styles.actionBtnText, { color: "#15803D" }]}>Promote to Member</Text>
+                {promotePendingIds.has(child.id) && (
+                  <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#D97706" }}>PENDING EMAIL</Text>
+                  </View>
+                )}
+                <Ionicons name="chevron-forward" size={16} color="#15803D" />
+              </Pressable>
+
               {child.dateOfBirth && (
                 <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
                   <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Born:</Text>
@@ -668,9 +779,147 @@ export default function ChildrenScreen() {
                 </View>
               ))
             )}
-          </>
+          {/* Privacy & Notification Settings */}
+          <View style={[styles.childCard, { backgroundColor: colors.card, marginTop: 8 }]}>
+            <Text style={[styles.childName, { color: colors.primary, fontSize: 16, marginBottom: 14 }]}>
+              🔔  Privacy & Notification Settings
+            </Text>
+
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <View style={{ flex: 1, marginRight: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Absence Alerts</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2, lineHeight: 16 }}>
+                  Receive security alerts when a dependent hasn't checked in as expected.
+                </Text>
+              </View>
+              <Switch
+                value={absenceAlertsEnabled}
+                onValueChange={toggleAbsenceAlerts}
+                trackColor={{ false: "#D1D5DB", true: colors.primary }}
+                thumbColor="#FFF"
+              />
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12 }}>
+              <View style={{ flex: 1, marginRight: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Emergency Contact Visible</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2, lineHeight: 16 }}>
+                  Allow authorised staff to view your emergency contact (next of kin) details.
+                </Text>
+              </View>
+              <Switch
+                value={emergencyContactVisible}
+                onValueChange={toggleEmergencyContact}
+                trackColor={{ false: "#D1D5DB", true: colors.primary }}
+                thumbColor="#FFF"
+              />
+            </View>
+
+            <Text style={{ fontSize: 11, color: colors.mutedForeground, fontStyle: "italic", marginTop: 4, lineHeight: 15 }}>
+              Settings are active by default. Changes take effect immediately for new events.
+            </Text>
+          </View>
+        </>
         )}
       </ScrollView>
+
+      {/* Promote to Member Modal */}
+      <Modal
+        visible={showPromoteModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => { setShowPromoteModal(false); setPromoteStep(1); setPromotePassword(""); }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { position: "relative", maxHeight: "90%", paddingTop: 44 }]}>
+            <Pressable
+              style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }}
+              onPress={() => { setShowPromoteModal(false); setPromoteStep(1); setPromotePassword(""); }}
+              hitSlop={14}
+            >
+              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+            </Pressable>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>Promote to Member</Text>
+
+              {promoteStep === 1 ? (
+                <>
+                  <View style={{ backgroundColor: "#F0FDF4", borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#BBF7D0" }}>
+                    <Text style={{ fontSize: 13, color: "#15803D", lineHeight: 19 }}>
+                      <Text style={{ fontWeight: "700" }}>{promoteChildName}</Text> will become an independent member and manage their own account.{"\n\n"}
+                      For security you must:{"\n"}
+                      {"  "}1. Enter their new login email{"\n"}
+                      {"  "}2. Confirm with your own password{"\n"}
+                      {"  "}3. Click the link in the confirmation email we send you{"\n\n"}
+                      Until the email link is clicked, they remain linked to your account.
+                    </Text>
+                  </View>
+
+                  <Text style={[styles.modalLabel, { color: colors.primary }]}>
+                    {promoteChildName}&apos;s new login email
+                  </Text>
+                  <TextInput
+                    style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, marginBottom: 20 }]}
+                    value={promoteDepEmail}
+                    onChangeText={setPromoteDepEmail}
+                    placeholder="e.g. name@email.com"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowPromoteModal(false)}>
+                      <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+                    </Pressable>
+                    <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handlePromote}>
+                      <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Next</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={{ backgroundColor: "#FEF3C7", borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#FDE68A" }}>
+                    <Text style={{ fontSize: 13, color: "#92400E", lineHeight: 19 }}>
+                      Enter your current password to confirm this promotion.{"\n\n"}
+                      This verifies it is really you — not {promoteChildName} — requesting the change.
+                    </Text>
+                  </View>
+
+                  <Text style={[styles.modalLabel, { color: colors.primary }]}>Your Current Password</Text>
+                  <TextInput
+                    style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, marginBottom: 20 }]}
+                    value={promotePassword}
+                    onChangeText={setPromotePassword}
+                    placeholder="Enter your password"
+                    placeholderTextColor={colors.mutedForeground}
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setPromoteStep(1)}>
+                      <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.modalBtn, { backgroundColor: promoteLoading ? "#6B7280" : "#15803D", flex: 1 }]}
+                      onPress={handlePromoteConfirm}
+                      disabled={promoteLoading}
+                    >
+                      {promoteLoading ? (
+                        <ActivityIndicator color="#FFF" size="small" />
+                      ) : (
+                        <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Promotion</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Medical Modal */}
       <Modal visible={showMedical} transparent animationType="slide" onRequestClose={() => setShowMedical(false)}>

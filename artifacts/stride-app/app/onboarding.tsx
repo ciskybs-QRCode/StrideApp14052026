@@ -75,7 +75,7 @@ interface NewMember {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
 
@@ -155,14 +155,19 @@ export default function OnboardingScreen() {
   const [showCountryPicker,  setShowCountryPicker]  = useState(false);
   const [countrySearch,      setCountrySearch]      = useState("");
 
-  // Step 3 — Dependent members
+  // Step 3 — Emergency Contact / Next of Kin
+  const [kinName,         setKinName]         = useState("");
+  const [kinRelationship, setKinRelationship] = useState("");
+  const [kinPhone,        setKinPhone]        = useState("");
+
+  // Step 4 — Dependent members
   const [members,      setMembers]      = useState<NewMember[]>([]);
   const [addingMember, setAddingMember] = useState(false);
   const [newFn,        setNewFn]        = useState("");
   const [newLn,        setNewLn]        = useState("");
   const [newDob,       setNewDob]       = useState("");
 
-  // Step 4 — Documents
+  // Step 5 — Documents
   const [mandatoryDocs, setMandatoryDocs] = useState<ApiDocument[]>([]);
   const [signatures,    setSignatures]    = useState<Record<number, string>>({});
   const [docsLoaded,    setDocsLoaded]    = useState(false);
@@ -178,7 +183,7 @@ export default function OnboardingScreen() {
 
   // Load docs when entering step 4
   useEffect(() => {
-    if (step === 4 && !docsLoaded) {
+    if (step === 5 && !docsLoaded) {
       api.getDocuments()
         .then(docs => {
           setMandatoryDocs(docs.filter(d => d.mandatory && !d.signed));
@@ -196,7 +201,8 @@ export default function OnboardingScreen() {
   // ── Validation ──────────────────────────────────────────────────────────────
   const step1Valid = firstName.trim() && lastName.trim() && street.trim() && city.trim() && zip.trim() && country.trim();
   const step2Valid = phone.trim().length >= 5;
-  const step4Valid = mandatoryDocs.length === 0 || mandatoryDocs.every(d => signatures[d.id]);
+  const step3Valid = kinName.trim().length > 0 && kinPhone.trim().length >= 5;
+  const step5Valid = mandatoryDocs.length === 0 || mandatoryDocs.every(d => signatures[d.id]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const next = () => {
@@ -234,6 +240,7 @@ export default function OnboardingScreen() {
         lastName:  lastName.trim(),
         phone:     fullPhone,
         address: { street, city, zip, state, country },
+        ...(kinName.trim() ? { kin: { name: kinName.trim(), phone: kinPhone.trim(), relationship: kinRelationship.trim() } } : {}),
       });
 
       for (const m of members) {
@@ -382,11 +389,40 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ── STEP 3: Dependent Members ─────────────────────────────────── */}
+          {/* ── STEP 3: Emergency Contact / Next of Kin ──────────────────── */}
           {step === 3 && (
             <View style={styles.stepContent}>
               <StepHeader
                 step={3}
+                title="Emergency Contact"
+                subtitle="Who should we contact in an emergency? This stays private and is only accessible to authorised staff."
+              />
+              <View style={styles.card}>
+                <Text style={styles.sectionLabel}>🆘  Next of Kin</Text>
+                <Field label="Full Name" value={kinName} onChange={setKinName} placeholder="e.g. Giovanni Rossi" autoCapitalize="words" />
+                <Field label="Relationship" value={kinRelationship} onChange={setKinRelationship} placeholder="e.g. Spouse, Parent, Sibling" autoCapitalize="words" />
+                <Field label="Phone Number" value={kinPhone} onChange={setKinPhone} placeholder="e.g. +39 333 456 7890" keyboardType="phone-pad" last />
+                <Text style={styles.hint}>Include the country code (e.g. +39 for Italy)</Text>
+              </View>
+              <Pressable
+                style={[styles.primaryBtn, !step3Valid && styles.primaryBtnDisabled]}
+                onPress={next}
+                disabled={!step3Valid}
+              >
+                <Text style={styles.primaryBtnText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FFF" />
+              </Pressable>
+              <Pressable style={{ alignSelf: "center", marginTop: 12, padding: 8 }} onPress={next}>
+                <Text style={{ color: "#94A3B8", fontSize: 13 }}>Skip for now</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* ── STEP 4: Dependent Members ─────────────────────────────────── */}
+          {step === 4 && (
+            <View style={styles.stepContent}>
+              <StepHeader
+                step={4}
                 title="Family Members"
                 subtitle="Add the members attending the school. You can also add more later."
               />
@@ -450,11 +486,11 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ── STEP 4: Sign Documents ────────────────────────────────────── */}
-          {step === 4 && (
+          {/* ── STEP 5: Sign Documents ────────────────────────────────────── */}
+          {step === 5 && (
             <View style={styles.stepContent}>
               <StepHeader
-                step={4}
+                step={5}
                 title="Sign Documents"
                 subtitle="Please read and sign the required documents before entering the app."
               />
@@ -530,9 +566,9 @@ export default function OnboardingScreen() {
               )}
 
               <Pressable
-                style={[styles.primaryBtn, (!step4Valid || saving) && styles.primaryBtnDisabled]}
+                style={[styles.primaryBtn, (!step5Valid || saving) && styles.primaryBtnDisabled]}
                 onPress={handleComplete}
-                disabled={!step4Valid || saving}
+                disabled={!step5Valid || saving}
               >
                 {saving ? (
                   <ActivityIndicator color="#FFF" size="small" />
