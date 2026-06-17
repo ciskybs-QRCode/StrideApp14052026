@@ -199,8 +199,8 @@ jobs:
             core.setOutput('closed_count', closed.length);
             core.setOutput('closed_json', JSON.stringify(closed));
 
-      - name: Slack summary when multiple issues resolved
-        if: success() && fromJSON(steps.close_issues.outputs.closed_count) > 1
+      - name: Notify Slack on sync recovery
+        if: success() && fromJSON(steps.close_issues.outputs.closed_count) >= 1
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_ALERT_CHANNEL: ${{ vars.SLACK_ALERT_CHANNEL }}
@@ -209,7 +209,7 @@ jobs:
           script: |
             const webhookUrl = process.env.SLACK_WEBHOOK_URL;
             if (!webhookUrl) {
-              core.warning('SLACK_WEBHOOK_URL is not set — skipping bulk-resolve Slack summary');
+              core.warning('SLACK_WEBHOOK_URL is not set — skipping sync-recovery Slack notification');
               return;
             }
 
@@ -217,15 +217,16 @@ jobs:
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const shortSha = context.sha.slice(0, 7);
 
+            const issueWord = closed.length === 1 ? 'issue' : 'issues';
             const issueLines = closed
               .map(i => `• <${i.url}|#${i.number}>`)
               .join('\n');
 
-            const text = `:white_check_mark: *${closed.length} sync-failure issues resolved* (run #${context.runNumber})`;
+            const text = `:white_check_mark: *Sync recovered — ${closed.length} ${issueWord} resolved* (run #${context.runNumber})`;
             const mrkdwn =
-              `:white_check_mark: *${closed.length} sync-failure issues auto-resolved* — run #${context.runNumber}\n` +
+              `:white_check_mark: *Sync recovered* — ${closed.length} sync-failure ${issueWord} auto-closed — run #${context.runNumber}\n` +
               `*Commit:* \`${shortSha}\` · *Actor:* @${context.actor}\n` +
-              `*Closed issues:*\n${issueLines}\n` +
+              `*Resolved ${issueWord}:*\n${issueLines}\n` +
               `<${runUrl}|View run>`;
 
             const channel = process.env.SLACK_ALERT_CHANNEL;
@@ -249,7 +250,7 @@ jobs:
             if (!response.ok) {
               core.warning(`Slack webhook returned ${response.status}: ${await response.text()}`);
             } else {
-              console.log(`Slack bulk-resolve summary sent for ${closed.length} issues`);
+              console.log(`Slack recovery notification sent for ${closed.length} resolved ${issueWord}`);
             }
 
       - name: Notify on failure

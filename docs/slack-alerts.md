@@ -36,7 +36,9 @@ When `SLACK_ALERT_CHANNEL` is set, the `channel` field in the Slack payload over
 
 > **Note:** Channel overrides only work for [legacy Incoming Webhooks](https://api.slack.com/messaging/webhooks) created before 2018, and for some Slack plans. If the override is silently ignored, re-create the webhook pointing at the desired channel and leave `SLACK_ALERT_CHANNEL` unset.
 
-## What the alert looks like
+## What the alerts look like
+
+### Failure alert (first occurrence)
 
 ```
 🔴 Sync to GitHub failed — run #42
@@ -45,4 +47,20 @@ Actor: @your-username
 View failed run →
 ```
 
-A GitHub issue is also opened (or updated) automatically in the same run — see the "Notify on failure" step in `.github/workflows/sync-to-github.yml`.
+A GitHub issue labelled `sync-failure` is also opened automatically. Subsequent failures on the same open issue post a quieter "still failing" retry notice instead of a fresh alert.
+
+### Recovery notification
+
+When a successful run closes one or more open `sync-failure` issues, a recovery message is posted:
+
+```
+✅ Sync recovered — 1 issue resolved (run #43)
+Commit: `e5f6g7h` · Actor: @your-username
+Resolved issue:
+• #17
+View run →
+```
+
+The message lists every issue number that was auto-closed and links to the resolving run. It is sent once per successful run that closes at least one issue — if no issues were open, no recovery message is sent.
+
+A GitHub issue is also opened (or updated) automatically in the same run — see the "Notify on failure" and "Notify Slack on sync recovery" steps in `.github/workflows/sync-to-github.yml`.
