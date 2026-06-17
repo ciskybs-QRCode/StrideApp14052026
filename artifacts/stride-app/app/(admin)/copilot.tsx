@@ -5,7 +5,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -475,46 +474,41 @@ export default function CopilotScreen() {
       </ScrollView>
 
       {/* ── Input bar ─────────────────────────────────────────── */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={insets.bottom + 10}
-      >
-        <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 14), paddingTop: 10, borderTopWidth: 1, borderTopColor: CLR.border }]}>
-          <Pressable
-            style={s.micBtn}
-            onPress={() => Alert.alert("Coming Soon", "Voice input will be available in a future update.")}
-          >
-            <Ionicons name="mic-outline" size={22} color={CLR.textMuted} />
-          </Pressable>
-          <TextInput
-            style={s.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ask anything about your school data..."
-            placeholderTextColor={CLR.textMuted}
-            returnKeyType="send"
-            onSubmitEditing={() => sendMessage(input)}
-            multiline
-            maxLength={400}
-            editable={!loading}
-            selectionColor={CLR.userBubble}
-          />
-          <Pressable
-            style={({ pressed }) => [
-              s.sendBtn,
-              { opacity: loading || !input.trim() ? 0.38 : pressed ? 0.82 : 1 },
-              { backgroundColor: CLR.userBubble }
-            ]}
-            onPress={() => sendMessage(input)}
-            disabled={loading || !input.trim()}
-          >
-            {loading
-              ? <ActivityIndicator color="#FFF" size="small" />
-              : <Ionicons name="arrow-up" size={20} color="#FFF" />
-            }
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+      <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <Pressable
+          style={s.micBtn}
+          onPress={() => Alert.alert("Coming Soon", "Voice input will be available in a future update.")}
+        >
+          <Ionicons name="mic-outline" size={22} color={CLR.textMuted} />
+        </Pressable>
+        <TextInput
+          style={s.input}
+          value={input}
+          onChangeText={setInput}
+          placeholder="Ask anything about your school data..."
+          placeholderTextColor={CLR.textMuted}
+          returnKeyType="send"
+          onSubmitEditing={() => sendMessage(input)}
+          multiline
+          maxLength={400}
+          editable={!loading}
+          selectionColor={CLR.userBubble}
+        />
+        <Pressable
+          style={({ pressed }) => [
+            s.sendBtn,
+            { opacity: loading || !input.trim() ? 0.38 : pressed ? 0.82 : 1 },
+            { backgroundColor: CLR.userBubble }
+          ]}
+          onPress={() => sendMessage(input)}
+          disabled={loading || !input.trim()}
+        >
+          {loading
+            ? <ActivityIndicator color="#FFF" size="small" />
+            : <Ionicons name="arrow-up" size={20} color="#FFF" />
+          }
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -591,6 +585,7 @@ const s = StyleSheet.create({
     backgroundColor: CLR.navBg,
     paddingHorizontal: 14, paddingTop: 12,
     flexDirection: "row", alignItems: "flex-end", gap: 10,
+    borderTopWidth: 1, borderTopColor: CLR.border,
   },
   input: {
     flex: 1,
