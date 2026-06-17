@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -63,6 +64,7 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function MemberRegistration() {
+  const router  = useRouter();
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
   const { user } = useAuth();
@@ -150,7 +152,7 @@ export default function MemberRegistration() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Member Registration" />
+        <ScreenHeader title="Member Registration" onBack={() => router.push("/(admin)/settings" as never)} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -161,7 +163,7 @@ export default function MemberRegistration() {
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScreenHeader title="Member Registration" subtitle="Configure your public signup page" />
+      <ScreenHeader title="Member Registration" subtitle="Configure your public signup page" onBack={() => router.push("/(admin)/settings" as never)} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}

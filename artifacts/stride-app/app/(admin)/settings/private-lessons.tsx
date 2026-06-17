@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
@@ -30,6 +30,7 @@ function parseCents(s: string) { return Math.round(parseFloat(s.replace(",", "."
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PrivateLessonsSettings() {
+  const router  = useRouter();
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
 
@@ -141,7 +142,7 @@ export default function PrivateLessonsSettings() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Private Lessons" />
+        <ScreenHeader title="Private Lessons" onBack={() => router.push("/(admin)/settings" as never)} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -157,6 +158,7 @@ export default function PrivateLessonsSettings() {
       <ScreenHeader
         title="Private Lessons"
         subtitle="Configure pricing and availability"
+        onBack={() => router.push("/(admin)/settings" as never)}
       />
 
       <ScrollView

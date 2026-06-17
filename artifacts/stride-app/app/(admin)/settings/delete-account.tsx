@@ -32,7 +32,7 @@ export default function DeleteAccountPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Delete Account" subtitle="Permanently remove your administrator account" />
+      <ScreenHeader title="Delete Account" subtitle="Permanently remove your administrator account" onBack={() => router.push("/(admin)/settings" as never)} />
       <View style={[styles.inner, { paddingTop: 16, paddingBottom: insets.bottom + 40 }]}>
 
         <View style={[styles.warningBox, { backgroundColor: "#FEF2F2" }]}>

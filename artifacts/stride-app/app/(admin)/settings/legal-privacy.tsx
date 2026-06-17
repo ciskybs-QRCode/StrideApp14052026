@@ -365,7 +365,7 @@ export default function LegalPrivacyPage() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Legal & Waivers"
-        onBack={() => router.back()}
+        onBack={() => router.push("/(admin)/settings" as never)}
       />
       <ScrollView
         contentContainerStyle={[

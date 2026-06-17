@@ -44,7 +44,7 @@ export default function ChangePasswordPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Change Password" subtitle="Update your account password" />
+      <ScreenHeader title="Change Password" subtitle="Update your account password" onBack={() => router.push("/(admin)/settings" as never)} />
       <View style={[styles.inner, { paddingTop: 16, paddingBottom: insets.bottom + 40 }]}>
 
         {fields.map((f, i) => (

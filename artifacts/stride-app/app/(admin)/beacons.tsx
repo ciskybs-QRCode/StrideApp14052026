@@ -201,7 +201,7 @@ export default function BeaconsScreen() {
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="BLE Proximity" onBack={() => router.back()} />
+      <ScreenHeader title="BLE Proximity" onBack={() => router.push("/(admin)/operations-hub" as never)} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + TAB_H + 40 }} showsVerticalScrollIndicator={false}>
 

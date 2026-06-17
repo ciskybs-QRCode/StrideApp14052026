@@ -240,7 +240,7 @@ export default function FeeSettingsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Membership Fees"
-        onBack={() => router.back()}
+        onBack={() => router.push("/(admin)/finance-hub" as never)}
       />
       <ScrollView
         contentContainerStyle={[

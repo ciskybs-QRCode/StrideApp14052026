@@ -259,7 +259,7 @@ export default function RegionalPricingScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Global Pricing"
-        onBack={() => router.back()}
+        onBack={() => router.push("/(admin)/finance-hub" as never)}
       />
       <ScrollView
         contentContainerStyle={[

@@ -353,7 +353,7 @@ export default function AdminReimbursementsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Expense Claims" onBack={() => router.back()} />
+      <ScreenHeader title="Expense Claims" onBack={() => router.push("/(admin)/finance-hub" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}

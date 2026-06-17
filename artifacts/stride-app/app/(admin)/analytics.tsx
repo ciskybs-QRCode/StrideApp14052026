@@ -167,7 +167,7 @@ export default function AdminAnalytics() {
       <ScreenHeader
         title="Analytics"
         subtitle={user?.schoolName || "Stride"}
-        onBack={() => router.back()}
+        onBack={() => router.push("/(admin)/operations-hub" as never)}
       />
 
       <ScrollView

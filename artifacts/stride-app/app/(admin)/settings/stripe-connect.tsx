@@ -158,7 +158,7 @@ export default function StripeConnectScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Payment Processing" onBack={() => router.back()} />
+      <ScreenHeader title="Payment Processing" onBack={() => router.push("/(admin)/finance-hub" as never)} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}

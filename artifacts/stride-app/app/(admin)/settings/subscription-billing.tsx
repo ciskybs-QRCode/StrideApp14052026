@@ -98,7 +98,7 @@ export default function SubscriptionBillingScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Subscription & Billing" onBack={() => router.back()} />
+      <ScreenHeader title="Subscription & Billing" onBack={() => router.push("/(admin)/finance-hub" as never)} />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}

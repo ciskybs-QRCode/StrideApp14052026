@@ -259,7 +259,7 @@ export default function PromoCodesPage() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Promo Codes"
-        onBack={() => router.back()}
+        onBack={() => router.push("/(admin)/finance-hub" as never)}
         right={
           <Pressable style={[styles.createBtn, { backgroundColor: colors.primary }]} onPress={() => { resetCreate(); setShowCreate(true); }}>
             <Ionicons name="add" size={18} color="#FFF" />

@@ -157,7 +157,7 @@ export default function PayoutSettingsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Payout Settings" onBack={() => router.back()} />
+      <ScreenHeader title="Payout Settings" onBack={() => router.push("/(admin)/settings" as never)} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,

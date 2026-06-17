@@ -233,7 +233,7 @@ export default function SmartRosterScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="AI Roster Orchestrator" subtitle="Smart scheduling & cascade" onBack={() => router.back()} />
+      <ScreenHeader title="AI Roster Orchestrator" subtitle="Smart scheduling & cascade" onBack={() => router.push("/(admin)/operations-hub" as never)} />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + TAB_H + 20 }]}

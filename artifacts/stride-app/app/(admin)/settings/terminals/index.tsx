@@ -247,6 +247,7 @@ export default function TerminalsScreen() {
       <ScreenHeader
         title="Terminal Kiosks"
         subtitle="Provisioning & Access Control"
+        onBack={() => router.push("/(admin)/settings" as never)}
         right={<View style={styles.kioskCountBadge}><Text style={styles.kioskCountText}>{kiosks.length}</Text></View>}
       />
 

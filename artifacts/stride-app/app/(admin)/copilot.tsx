@@ -430,7 +430,7 @@ export default function CopilotScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: CLR.bg }]}>
-      <ScreenHeader title="Copilot" onBack={() => router.back()} />
+      <ScreenHeader title="Copilot" onBack={() => router.push("/(admin)/operations-hub" as never)} />
 
       {/* ── Quick prompts dropdown ────────────────────────────── */}
       <View style={s.promptsOuter}>
