@@ -269,6 +269,13 @@ jobs:
             const webhookUrl = process.env.SLACK_WEBHOOK_URL;
             if (!webhookUrl) {
               core.warning('SLACK_WEBHOOK_URL is not set — skipping sync-recovery Slack notification');
+              await core.summary
+                .addRaw(
+                  '> ⚠️ **Slack summary skipped** — `SLACK_WEBHOOK_URL` is not configured. ' +
+                  'The sync-recovery notification was not sent to Slack. ' +
+                  'Set the secret under **Settings → Secrets and variables → Actions** to enable Slack alerts.'
+                )
+                .write();
               return;
             }
 
