@@ -113,7 +113,7 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingTop: insets.top > 0 ? insets.top + 48 : (Platform.OS === "ios" ? 96 : 72), paddingBottom: insets.bottom + 32 }]}
+          contentContainerStyle={[styles.scroll, { paddingTop: insets.top > 0 ? insets.top + 16 : (Platform.OS === "ios" ? 56 : 40), paddingBottom: insets.bottom + 16 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -210,8 +210,8 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
   scroll: { flexGrow: 1, paddingHorizontal: 24 },
-  logoArea: { alignItems: "center", marginBottom: 36 },
-  logoImage: { width: 180, height: 100, marginBottom: 12 },
+  logoArea: { alignItems: "center", marginBottom: 20 },
+  logoImage: { width: 160, height: 80, marginBottom: 8 },
   orgName: { fontSize: 22, fontWeight: "800", color: "#1E3A8A", textAlign: "center" },
   tagline: { fontSize: 12, color: "#6B7BA4", marginTop: 4, letterSpacing: 1.5, textTransform: "uppercase" },
   formCard: {
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, fontSize: 13, color: "#1E3A8A" },
-  eyeBtn: { padding: 4 },
+  eyeBtn: { paddingLeft: 8, paddingRight: 0, paddingVertical: 4 },
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
