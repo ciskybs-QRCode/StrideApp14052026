@@ -689,11 +689,38 @@ export default function PdfBadgeGenerator() {
 // ── SafetyPreviewRow ──────────────────────────────────────────────────────────
 
 type IconChip = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  color: string;
-  bg: string;
+  icon?:  React.ComponentProps<typeof Ionicons>["name"];
+  cross?: boolean;   // render a Red-Cross style ✚ instead of an Ionicons icon
+  color:  string;
+  bg:     string;
   tooltip: string;
 };
+
+/** Renders a bold equal-armed cross (like the Red Cross emblem). */
+function MedicalCross({ size, color }: { size: number; color: string }) {
+  const arm = Math.round(size / 3);
+  const r   = Math.round(arm / 2.5);
+  return (
+    <View style={{ width: size, height: size }}>
+      {/* horizontal bar */}
+      <View style={{
+        position: "absolute",
+        top: arm, left: 0,
+        width: size, height: arm,
+        backgroundColor: color,
+        borderRadius: r,
+      }} />
+      {/* vertical bar */}
+      <View style={{
+        position: "absolute",
+        top: 0, left: arm,
+        width: arm, height: size,
+        backgroundColor: color,
+        borderRadius: r,
+      }} />
+    </View>
+  );
+}
 
 function SafetyPreviewRow({
   allergy, ambulance, photo, compact = false,
@@ -714,8 +741,8 @@ function SafetyPreviewRow({
   }
   if (ambulance !== null) {
     chips.push(ambulance
-      ? { icon: "add-circle",         color: "#16A34A", bg: "#F0FDF4", tooltip: "Amb. authorised" }
-      : { icon: "add-circle-outline", color: "#DC2626", bg: "#FEF2F2", tooltip: "Call guardian first" }
+      ? { cross: true, color: "#DC2626", bg: "#FEF2F2", tooltip: "Amb. authorised" }
+      : { cross: true, color: "#9CA3AF", bg: "#F3F4F6", tooltip: "Call guardian first" }
     );
   }
   if (photo !== null) {
@@ -734,7 +761,10 @@ function SafetyPreviewRow({
     <View style={[sr.row, compact && { gap: 3, marginTop: 3 }]}>
       {chips.map((c, i) => (
         <View key={i} style={[sr.chip, { backgroundColor: c.bg, padding: pad }]}>
-          <Ionicons name={c.icon} size={size} color={c.color} />
+          {c.cross
+            ? <MedicalCross size={size} color={c.color} />
+            : <Ionicons name={c.icon!} size={size} color={c.color} />
+          }
         </View>
       ))}
     </View>
