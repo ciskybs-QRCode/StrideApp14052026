@@ -157,7 +157,7 @@ export default function PayoutSettingsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Payout Settings" />
+      <ScreenHeader title="Payout Settings" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -168,12 +168,7 @@ export default function PayoutSettingsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.push("/(admin)/settings" as never)} style={styles.backRow} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color="#FBBF24" />
-          <Text style={[styles.backLabel, { color: colors.primary }]}>Settings</Text>
-        </Pressable>
-
-        <Text style={[styles.pageTitle, { color: colors.foreground }]}>Payout &amp; Fatture</Text>
+        <Text style={[styles.pageTitle, { color: colors.foreground }]}>Payout &amp; Invoices</Text>
         <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>
           {user?.schoolName ?? "Dance School"}
         </Text>

@@ -259,7 +259,7 @@ export default function RegionalPricingScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Global Pricing"
-        onBack={() => router.push("/(admin)/settings")}
+        onBack={() => router.back()}
       />
       <ScrollView
         contentContainerStyle={[
@@ -378,7 +378,7 @@ export default function RegionalPricingScreen() {
       {/* Floating Add Button for better UX since we removed the header one */}
       {!loading && !modal.visible && (
         <Pressable
-          style={[styles.floatingAddBtn, { backgroundColor: colors.primary, bottom: insets.bottom + 20 }]}
+          style={[styles.floatingAddBtn, { backgroundColor: colors.primary, bottom: insets.bottom + 20 + (Platform.OS === "web" ? 84 : 49) }]}
           onPress={() => setModal({ visible: true, mode: "create" })}
         >
           <Ionicons name="add" size={28} color="#FFF" />

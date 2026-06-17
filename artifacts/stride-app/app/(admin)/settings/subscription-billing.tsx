@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useCallback } from "react";
+import { useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -42,9 +43,34 @@ function StatusChip({ status }: { status: string }) {
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
+function detectCurrencyFromLocale(): string {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz === "Europe/London") return "GBP";
+    if (tz === "Europe/Zurich" || tz === "Europe/Bern") return "CHF";
+    if (tz.startsWith("Europe/")) return "EUR";
+    if (/^America\/(Toronto|Vancouver|Edmonton|Winnipeg|Halifax|Moncton|Thunder_Bay)/.test(tz)) return "CAD";
+    if (/^America\/(Sao_Paulo|Recife|Manaus|Belem|Fortaleza)/.test(tz)) return "BRL";
+    if (tz.startsWith("America/")) return "USD";
+    if (tz.startsWith("Australia/")) return "AUD";
+    if (tz === "Pacific/Auckland") return "NZD";
+    if (tz.startsWith("Asia/Tokyo")) return "JPY";
+    if (tz.startsWith("Asia/Shanghai") || tz.startsWith("Asia/Hong_Kong")) return "CNY";
+    if (tz.startsWith("Asia/Singapore")) return "SGD";
+    if (tz.startsWith("Asia/Dubai")) return "AED";
+    if (tz.startsWith("Asia/Kolkata") || tz.startsWith("Asia/Calcutta")) return "INR";
+    if (tz.startsWith("Asia/Seoul")) return "KRW";
+    return "EUR";
+  } catch {
+    return "EUR";
+  }
+}
+
 export default function SubscriptionBillingScreen() {
-  const insets         = useSafeAreaInsets();
-  const { user }       = useAuth();
+  const insets             = useSafeAreaInsets();
+  const router             = useRouter();
+  const [detectedCurrency] = useState(detectCurrencyFromLocale);
+  const { user }           = useAuth();
   const { children }   = useAppData();
   const { status, loading, error, refresh, isSuspended } = useBillingStatus();
 
@@ -72,7 +98,7 @@ export default function SubscriptionBillingScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Subscription & Billing" />
+      <ScreenHeader title="Subscription & Billing" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
@@ -238,12 +264,15 @@ export default function SubscriptionBillingScreen() {
             <Text style={s.statusLabel}>QR codes counted</Text>
             <Text style={s.statusValue}>{memberCount}</Text>
           </View>
-          {!!status?.currency && (
-            <View style={s.statusRow}>
-              <Text style={s.statusLabel}>Billing currency</Text>
-              <Text style={s.statusValue}>{status.currency}</Text>
+          <View style={s.statusRow}>
+            <Text style={s.statusLabel}>Billing currency</Text>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={s.statusValue}>{status?.currency ?? detectedCurrency}</Text>
+              {!status?.currency && (
+                <Text style={{ fontSize: 10, color: "#9CA3AF", marginTop: 1 }}>auto-detected</Text>
+              )}
             </View>
-          )}
+          </View>
         </View>
 
         {/* ── SUPPORT ── */}

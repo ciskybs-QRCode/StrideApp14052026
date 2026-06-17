@@ -44,24 +44,6 @@ const NAV_ROWS = [
     description: "Branding, colours and themes",
     icon: "brush-outline" as const,
   },
-  {
-    key: "promo-codes",
-    title: "Promo Codes",
-    description: "Manage discounts and offers",
-    icon: "pricetag-outline" as const,
-  },
-  {
-    key: "fee-settings",
-    title: "Fee Settings",
-    description: "Transaction fee strategies",
-    icon: "card-outline" as const,
-  },
-  {
-    key: "regional-pricing",
-    title: "Global Pricing",
-    description: "Multi-currency regional rates",
-    icon: "globe-outline" as const,
-  },
 ] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────

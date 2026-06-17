@@ -5,12 +5,10 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -150,62 +148,10 @@ export default function FeeSettingsScreen() {
   const [monthPicker, setMonthPicker] = useState(false);
   const [dayPicker,   setDayPicker]   = useState(false);
 
-  // ── Payout Schedule ───────────────────────────────────────────────────────
-  type PayoutSchedule = "weekly" | "biweekly" | "monthly";
-  const PAYOUT_SCHEDULE_KEY   = "stride_payout_schedule";
-  const PAYOUT_REMINDER_KEY   = "stride_payout_reminders";
-  const REIMBURSEMENT_THRESHOLD_KEY = "stride_reimbursement_threshold";
-
-  const [payoutSchedule, setPayoutSchedule]   = useState<PayoutSchedule>("monthly");
-  const [payoutReminders, setPayoutReminders] = useState(true);
-  const [reimbThresholdText, setReimbThresholdText] = useState("0");
-  const [payoutSaving, setPayoutSaving]         = useState(false);
-  const [payoutSaved,  setPayoutSaved]          = useState(false);
-
-  const PAYOUT_OPTIONS: { value: PayoutSchedule; label: string; desc: string }[] = [
-    { value: "weekly",   label: "Weekly",     desc: "Operators paid every Friday" },
-    { value: "biweekly", label: "Bi-weekly",  desc: "Operators paid every 2nd Friday" },
-    { value: "monthly",  label: "Monthly",    desc: "Operators paid on the last working day of each month" },
-  ];
-
-  const handleSavePayout = async () => {
-    const threshold = Math.round(parseFloat(reimbThresholdText || "0") * 100);
-    if (isNaN(threshold) || threshold < 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Invalid", "Receipt threshold must be 0 or a positive amount.");
-      return;
-    }
-    setPayoutSaving(true);
-    try {
-      await Promise.all([
-        AsyncStorage.setItem(PAYOUT_SCHEDULE_KEY, payoutSchedule),
-        AsyncStorage.setItem(PAYOUT_REMINDER_KEY, JSON.stringify(payoutReminders)),
-        AsyncStorage.setItem(REIMBURSEMENT_THRESHOLD_KEY, String(threshold)),
-      ]);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPayoutSaved(true);
-      setTimeout(() => setPayoutSaved(false), 2500);
-    } catch {
-      Alert.alert("Error", "Could not save payout settings.");
-    } finally {
-      setPayoutSaving(false);
-    }
-  };
 
   // ── Load ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    // Load payout schedule settings
-    Promise.all([
-      AsyncStorage.getItem(PAYOUT_SCHEDULE_KEY),
-      AsyncStorage.getItem(PAYOUT_REMINDER_KEY),
-      AsyncStorage.getItem(REIMBURSEMENT_THRESHOLD_KEY),
-    ]).then(([sched, remind, thresh]) => {
-      if (sched) setPayoutSchedule(sched as PayoutSchedule);
-      if (remind !== null) { try { setPayoutReminders(JSON.parse(remind) as boolean); } catch { /* ignore */ } }
-      if (thresh !== null) setReimbThresholdText((Number(thresh) / 100).toFixed(2));
-    }).catch(() => {});
-
     AsyncStorage.getItem(FEE_SETTINGS_KEY).then(raw => {
       if (raw) {
         try {
@@ -294,7 +240,7 @@ export default function FeeSettingsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title="Membership Fees"
-        onBack={() => router.push("/(admin)/settings")}
+        onBack={() => router.back()}
       />
       <ScrollView
         contentContainerStyle={[
@@ -495,99 +441,6 @@ export default function FeeSettingsScreen() {
           </View>
         </View>
 
-        {/* ══════════════════════════════════════════════════════════════════
-            SECTION — Payout Schedule & Reimbursements
-        ══════════════════════════════════════════════════════════════════ */}
-        <SectionHeader
-          title="Payout Schedule"
-          subtitle="How often operators receive their pay. A reminder is sent 1 day before and on the morning of each payout."
-        />
-
-        <View style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
-          <View style={styles.optionList}>
-            {PAYOUT_OPTIONS.map(opt => (
-              <Pressable
-                key={opt.value}
-                onPress={() => { Haptics.selectionAsync(); setPayoutSchedule(opt.value); setPayoutSaved(false); }}
-                style={[
-                  styles.optionCard,
-                  {
-                    borderColor: payoutSchedule === opt.value ? colors.primary : colors.border,
-                    backgroundColor: payoutSchedule === opt.value ? `${colors.primary}10` : colors.card,
-                  },
-                ]}
-              >
-                <View style={styles.optionCardRow}>
-                  <View style={[styles.optionRadio, { borderColor: payoutSchedule === opt.value ? colors.primary : colors.border }]}>
-                    {payoutSchedule === opt.value && <View style={[styles.optionRadioInner, { backgroundColor: colors.primary }]} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.optionLabel, { color: colors.foreground }]}>{opt.label}</Text>
-                    <Text style={[styles.optionDesc, { color: colors.mutedForeground }]}>{opt.desc}</Text>
-                  </View>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[styles.inputLabel, { color: colors.foreground }]}>Payout Reminders</Text>
-              <Text style={[styles.inputHint, { color: colors.mutedForeground }]}>
-                Notify operators 1 day before and on payout morning
-              </Text>
-            </View>
-            <Switch
-              value={payoutReminders}
-              onValueChange={v => { setPayoutReminders(v); setPayoutSaved(false); }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#FFF"
-            />
-          </View>
-        </View>
-
-        <SectionHeader
-          title="Expense Reimbursements"
-          subtitle="Receipts are required for claims above this threshold. Set to $0 to always require a receipt."
-        />
-
-        <View style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
-          <Text style={[styles.inputLabel, { color: colors.foreground }]}>Receipt-required threshold</Text>
-          <View style={[styles.amountRow, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-            <Text style={[styles.currencySymbol, { color: colors.mutedForeground }]}>$</Text>
-            <TextInput
-              style={[styles.amountInput, { color: colors.foreground }]}
-              value={reimbThresholdText}
-              onChangeText={v => { setReimbThresholdText(v.replace(/[^0-9.]/g, "")); setPayoutSaved(false); }}
-              keyboardType="decimal-pad"
-              placeholder="0.00"
-              placeholderTextColor={colors.mutedForeground}
-            />
-          </View>
-          <Text style={[styles.inputHint, { color: colors.mutedForeground }]}>
-            {parseFloat(reimbThresholdText || "0") === 0
-              ? "All claims require a receipt regardless of amount."
-              : `Claims over $${parseFloat(reimbThresholdText || "0").toFixed(2)} require a receipt.`}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={handleSavePayout}
-          disabled={payoutSaving}
-          style={({ pressed }) => [
-            styles.saveBtn,
-            { backgroundColor: payoutSaved ? "#10B981" : colors.primary, opacity: pressed ? 0.88 : 1, marginTop: 8, marginBottom: 8 },
-          ]}
-        >
-          {payoutSaving ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <>
-              <Ionicons name={payoutSaved ? "checkmark-circle" : "save-outline"} size={18} color="#FFF" />
-              <Text style={styles.saveBtnText}>{payoutSaved ? "Payout Settings Saved!" : "Save Payout Settings"}</Text>
-            </>
-          )}
-        </Pressable>
 
       </ScrollView>
 

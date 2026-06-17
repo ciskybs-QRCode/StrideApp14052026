@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { request as apiRequest } from "@/lib/api";
+import * as ImagePicker from "expo-image-picker";
 
 type AccountStatus = {
   connected:   boolean;
@@ -43,6 +44,7 @@ export default function StripeConnectScreen() {
   const [primaryCol,  setPrimaryCol]  = useState("");
   const [secondaryCol,setSecondaryCol]= useState("");
   const [logoUrl,     setLogoUrl]     = useState("");
+  const [logoMode,    setLogoMode]    = useState<"url" | "file">("url");
   const [brandSaving, setBrandSaving] = useState(false);
 
   const loadStatus = useCallback(async () => {
@@ -132,9 +134,31 @@ export default function StripeConnectScreen() {
     }
   };
 
+  const handlePickLogo = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images" as never,
+        allowsEditing: true,
+        aspect: [4, 1] as [number, number],
+        quality: 0.8,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setLogoUrl(`data:${asset.mimeType ?? "image/png"};base64,${asset.base64}`);
+        } else {
+          setLogoUrl(asset.uri);
+        }
+      }
+    } catch {
+      Alert.alert("Upload Failed", "Could not access the photo library.");
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Payment Processing" light />
+      <ScreenHeader title="Payment Processing" onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
@@ -300,20 +324,61 @@ export default function StripeConnectScreen() {
                 />
               </View>
 
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Logo URL (optional)</Text>
-              <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                <Ionicons name="image-outline" size={18} color={colors.mutedForeground} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={[styles.input, { color: colors.foreground, flex: 1 }]}
-                  placeholder="https://..."
-                  placeholderTextColor={colors.mutedForeground}
-                  value={logoUrl}
-                  onChangeText={setLogoUrl}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="url"
-                />
+              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Logo (optional)</Text>
+              <View style={styles.logoTabRow}>
+                <Pressable
+                  style={[styles.logoTab, { borderColor: logoMode === "url" ? "#1E3A8A" : colors.border, backgroundColor: logoMode === "url" ? "#EFF6FF" : colors.background }]}
+                  onPress={() => setLogoMode("url")}
+                >
+                  <Ionicons name="link-outline" size={14} color={logoMode === "url" ? "#1E3A8A" : colors.mutedForeground} />
+                  <Text style={[styles.logoTabText, { color: logoMode === "url" ? "#1E3A8A" : colors.mutedForeground }]}>Paste URL</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.logoTab, { borderColor: logoMode === "file" ? "#1E3A8A" : colors.border, backgroundColor: logoMode === "file" ? "#EFF6FF" : colors.background }]}
+                  onPress={() => setLogoMode("file")}
+                >
+                  <Ionicons name="cloud-upload-outline" size={14} color={logoMode === "file" ? "#1E3A8A" : colors.mutedForeground} />
+                  <Text style={[styles.logoTabText, { color: logoMode === "file" ? "#1E3A8A" : colors.mutedForeground }]}>Upload File</Text>
+                </Pressable>
               </View>
+              {logoMode === "url" ? (
+                <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <Ionicons name="image-outline" size={18} color={colors.mutedForeground} style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={[styles.input, { color: colors.foreground, flex: 1 }]}
+                    placeholder="https://..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={logoUrl.startsWith("data:") ? "" : logoUrl}
+                    onChangeText={setLogoUrl}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="url"
+                  />
+                </View>
+              ) : (
+                <Pressable
+                  style={[styles.logoUploadBtn, {
+                    borderColor: logoUrl.startsWith("data:") ? "#10B981" : colors.border,
+                    backgroundColor: logoUrl.startsWith("data:") ? "#F0FDF4" : colors.background,
+                  }]}
+                  onPress={handlePickLogo}
+                >
+                  {logoUrl.startsWith("data:") ? (
+                    <>
+                      <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                      <Text style={[styles.logoUploadText, { color: "#10B981" }]}>Logo uploaded</Text>
+                      <Pressable onPress={() => { setLogoUrl(""); }} hitSlop={8}>
+                        <Ionicons name="close-circle-outline" size={18} color="#10B981" />
+                      </Pressable>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="image-outline" size={20} color="#1E3A8A" />
+                      <Text style={[styles.logoUploadText, { color: "#1E3A8A" }]}>Choose from photo library</Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
 
               <Pressable
                 style={({ pressed }) => [styles.saveBtn, {
@@ -443,4 +508,10 @@ const styles = StyleSheet.create({
   dangerBtnText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
 
   secureNote: { fontSize: 12, textAlign: "center", lineHeight: 17, marginTop: 4 },
+
+  logoTabRow:     { flexDirection: "row", gap: 8, marginBottom: 12 },
+  logoTab:        { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 10 },
+  logoTabText:    { fontSize: 13, fontWeight: "600" as const },
+  logoUploadBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderWidth: 1.5, borderStyle: "dashed" as const, borderRadius: 12, paddingVertical: 14, marginBottom: 14 },
+  logoUploadText: { fontSize: 14, fontWeight: "600" as const },
 });

@@ -115,7 +115,7 @@ export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantN
       <View style={formStyles.overlay}>
         <View style={[formStyles.sheet, { backgroundColor: colors.card }]}>
           <View style={formStyles.handle} />
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={[formStyles.title, { color: colors.primary }]}>Request Reimbursement</Text>
             <Text style={[formStyles.subtitle, { color: colors.mutedForeground }]}>
               {ROLE_LABELS[claimantRole]} · {claimantName}{schoolName ? ` · ${schoolName}` : ""}
@@ -353,7 +353,7 @@ export default function AdminReimbursementsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Expense Claims" />
+      <ScreenHeader title="Expense Claims" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
 
 const formStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, maxHeight: "90%" },
+  sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, maxHeight: "90%", overflow: "hidden" as const },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB", alignSelf: "center", marginBottom: 20 },
   title: { fontSize: 22, fontWeight: "800", marginBottom: 4 },
   subtitle: { fontSize: 13, marginBottom: 20 },
