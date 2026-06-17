@@ -18,6 +18,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Preflight — check Slack webhook secret
+        uses: actions/github-script@v7
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          script: |
+            if (!process.env.SLACK_WEBHOOK_URL) {
+              core.warning(
+                'SLACK_WEBHOOK_URL secret is not set. ' +
+                'Slack notifications will be silently skipped for the entire run. ' +
+                'See docs/slack-alerts.md for setup instructions.'
+              );
+            } else {
+              console.log('SLACK_WEBHOOK_URL is configured — Slack notifications are active.');
+            }
+
       - name: Push to target repository
         id: push
         run: |
