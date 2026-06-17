@@ -364,9 +364,9 @@ export default function PromoCodesPage() {
 
             {/* Code + random */}
             <Text style={[styles.fieldLabel, { color: colors.primary }]}>Code Name</Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <TextInput style={[styles.input, { flex: 1, borderColor: colors.primary, color: colors.foreground }]} placeholder="e.g. WELCOME20" value={newCode} onChangeText={t => setNewCode(t.toUpperCase())} placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" autoCorrect={false} />
-              <Pressable style={[styles.randomBtn, { backgroundColor: colors.muted }]} onPress={() => { setNewCode(generateRandomCode()); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, overflow: "hidden" }}>
+              <TextInput style={[styles.input, { flex: 1, minWidth: 0, borderColor: colors.primary, color: colors.foreground }]} placeholder="e.g. WELCOME20" value={newCode} onChangeText={t => setNewCode(t.toUpperCase())} placeholderTextColor={colors.mutedForeground} autoCapitalize="characters" autoCorrect={false} />
+              <Pressable style={[styles.randomBtn, { flexShrink: 0, backgroundColor: colors.muted }]} onPress={() => { setNewCode(generateRandomCode()); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
                 <Ionicons name="dice-outline" size={18} color={colors.primary} />
                 <Text style={[styles.randomBtnText, { color: colors.primary }]}>Random</Text>
               </Pressable>

@@ -84,7 +84,7 @@ export function ScreenHeader({
     >
       <View style={styles.inner}>
         {/* Left — back button */}
-        <View style={styles.side}>
+        <View style={styles.sideLeft}>
           {showBack && (
             <Pressable
               onPress={handleBack}
@@ -110,8 +110,8 @@ export function ScreenHeader({
           ) : null}
         </View>
 
-        {/* Right — optional slot */}
-        <View style={styles.side}>
+        {/* Right — optional slot (auto-width so wide buttons are never clipped) */}
+        <View style={styles.sideRight}>
           {right ?? null}
         </View>
       </View>
@@ -136,10 +136,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 56,
   },
-  side: {
+  sideLeft: {
     width: 52,
     alignItems: "center",
     justifyContent: "center",
+  },
+  sideRight: {
+    minWidth: 52,
+    flexShrink: 0,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    paddingRight: 8,
   },
   centre: {
     flex: 1,
