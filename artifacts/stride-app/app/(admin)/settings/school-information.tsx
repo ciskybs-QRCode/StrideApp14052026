@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -41,15 +41,70 @@ interface HoursEntry {
   closeTime: string;
 }
 
+// ── Geo-based tax ID detection ─────────────────────────────────────────────────
+
+interface TaxConfig { label: string; placeholder: string; hint: string }
+
+const COUNTRY_TAX: Record<string, TaxConfig> = {
+  AU: { label: "ABN / ACN",          placeholder: "ABN 12 345 678 901",         hint: "Australian Business Number" },
+  IT: { label: "P.IVA / C.F.",       placeholder: "IT 12345678901",             hint: "Partita IVA o Codice Fiscale" },
+  GB: { label: "Company No. / UTR",  placeholder: "12345678 / UTR 12345 67890", hint: "Company Number or UTR" },
+  US: { label: "EIN / SSN",          placeholder: "12-3456789",                 hint: "Employer Identification Number" },
+  CA: { label: "BN / GST",           placeholder: "123456789 RT 0001",          hint: "Canada Revenue Agency BN" },
+  DE: { label: "Steuernummer",        placeholder: "12/345/67890",               hint: "Finanzamt Steuernummer" },
+  FR: { label: "SIRET / N° TVA",     placeholder: "12345678901234",             hint: "Numéro SIRET ou TVA" },
+  ES: { label: "NIF / CIF",          placeholder: "A12345678",                  hint: "Número de Identificación Fiscal" },
+  NZ: { label: "NZBN / IRD",         placeholder: "9429000000000",              hint: "New Zealand Business Number" },
+  CH: { label: "UID / MWST",         placeholder: "CHE-123.456.789",            hint: "Unternehmens-Identifikationsnummer" },
+  AT: { label: "UID / Steuernummer", placeholder: "ATU12345678",                hint: "Umsatzsteuer-Identifikationsnummer" },
+  BE: { label: "BTW / N° TVA",       placeholder: "BE 1234.567.890",            hint: "Btw-identificatienummer" },
+  NL: { label: "KvK / BTW",          placeholder: "NL123456789B01",             hint: "BTW-nummer" },
+  PT: { label: "NIF / NIPC",         placeholder: "PT123456789",                hint: "Número de Identificação Fiscal" },
+  PL: { label: "NIP / REGON",        placeholder: "1234567890",                 hint: "Numer Identyfikacji Podatkowej" },
+  SE: { label: "Org. Nr / VAT",      placeholder: "556000-0000",                hint: "Organisationsnummer" },
+  NO: { label: "Org. Nr / MVA",      placeholder: "123 456 789 MVA",            hint: "Organisasjonsnummer" },
+  DK: { label: "CVR-nr.",            placeholder: "12345678",                   hint: "Centralt Virksomhedsregister" },
+  FI: { label: "Y-tunnus",           placeholder: "1234567-8",                  hint: "Yritys- ja yhteisötunnus" },
+  JP: { label: "法人番号",              placeholder: "1234567890123",              hint: "Hōjin Bangō (Corporate Number)" },
+  KR: { label: "사업자등록번호",           placeholder: "123-45-67890",               hint: "Saeopja deungneokbeonho" },
+  CN: { label: "统一社会信用代码",          placeholder: "91110000717305394N",         hint: "Unified Social Credit Code" },
+  IN: { label: "GSTIN / PAN",        placeholder: "22AAAAA0000A1Z5",            hint: "Goods and Services Tax ID" },
+  BR: { label: "CNPJ / CPF",         placeholder: "12.345.678/0001-90",         hint: "Cadastro Nacional de Pessoa Jurídica" },
+  MX: { label: "RFC",                placeholder: "XAXX010101000",              hint: "Registro Federal de Contribuyentes" },
+  ZA: { label: "VAT / Company Reg.", placeholder: "4012345678",                 hint: "SARS VAT Number" },
+  SG: { label: "UEN",                placeholder: "201234567A",                 hint: "Unique Entity Number" },
+  AE: { label: "TRN",                placeholder: "100012345600003",            hint: "Tax Registration Number" },
+};
+const DEFAULT_TAX: TaxConfig = { label: "Tax ID / VAT", placeholder: "Enter tax registration number", hint: "Business tax or VAT number" };
+
+function detectTaxConfig(): TaxConfig {
+  try {
+    const locale = Intl.DateTimeFormat().resolvedOptions().locale ?? "";
+    const country = locale.split("-").pop()?.toUpperCase() ?? "";
+    if (country && COUNTRY_TAX[country]) return COUNTRY_TAX[country];
+    const lang = locale.split("-")[0]?.toUpperCase() ?? "";
+    if (lang === "IT") return COUNTRY_TAX.IT!;
+    if (lang === "DE") return COUNTRY_TAX.DE!;
+    if (lang === "FR") return COUNTRY_TAX.FR!;
+    if (lang === "ES") return COUNTRY_TAX.ES!;
+    if (lang === "PT") return COUNTRY_TAX.PT!;
+    if (lang === "PL") return COUNTRY_TAX.PL!;
+    if (lang === "JA") return COUNTRY_TAX.JP!;
+    if (lang === "KO") return COUNTRY_TAX.KR!;
+    if (lang === "ZH") return COUNTRY_TAX.CN!;
+  } catch { /* fallback */ }
+  return DEFAULT_TAX;
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MAIN_FIELDS = [
-  { key: "name" as const,    label: "School Name",  placeholder: "e.g. Rising Stars Academy", icon: "school-outline" as const },
-  { key: "address" as const, label: "Address",      placeholder: "1 Main Street, City",   icon: "location-outline" as const },
-  { key: "phone" as const,   label: "Phone",        placeholder: "+61 2 9000 0000",       icon: "call-outline" as const },
-  { key: "email" as const,   label: "Email",        placeholder: "info@school.com",       icon: "mail-outline" as const },
-  { key: "website" as const, label: "Website",      placeholder: "www.school.com",        icon: "globe-outline" as const },
-  { key: "taxId" as const,   label: "Tax ID / ABN", placeholder: "ABN 12 345 678 901",    icon: "card-outline" as const },
+  { key: "name" as const,    label: "School Name", placeholder: "e.g. Rising Stars Academy", icon: "school-outline" as const },
+  { key: "address" as const, label: "Address",     placeholder: "1 Main Street, City",       icon: "location-outline" as const },
+  { key: "phone" as const,   label: "Phone",       placeholder: "+61 2 9000 0000",           icon: "call-outline" as const },
+  { key: "email" as const,   label: "Email",       placeholder: "info@school.com",           icon: "mail-outline" as const },
+  { key: "website" as const, label: "Website",     placeholder: "www.school.com",            icon: "globe-outline" as const },
+  { key: "taxId" as const,   label: "Tax ID",      placeholder: "Tax registration number",   icon: "card-outline" as const },
 ];
 type SchoolInfo = Record<typeof MAIN_FIELDS[number]["key"], string>;
 
@@ -110,6 +165,8 @@ const DEFAULT_INFO: SchoolInfo = {
     const colors = useColors();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+
+  const taxConfig = useMemo(() => detectTaxConfig(), []);
 
   const campusTypeInfo = (type: CampusType) => {
     const base = CAMPUS_TYPES.find(t => t.value === type) ?? CAMPUS_TYPES[4];
@@ -345,34 +402,46 @@ const DEFAULT_INFO: SchoolInfo = {
           )}
         </View>
         <View style={[styles.card, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: "#1E3A8A" }]}>
-          {MAIN_FIELDS.map((field, i) => (
-            <View
-              key={field.key}
-              style={[
-                editingInfo ? styles.editRow : styles.viewRow,
-                i < MAIN_FIELDS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-              ]}
-            >
-              <View style={[styles.fieldIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                <Ionicons name={field.icon} size={16} color={colors.primary} />
+          {MAIN_FIELDS.map((field, i) => {
+            const isTax       = field.key === "taxId";
+            const dynLabel    = isTax ? taxConfig.label       : field.label;
+            const dynPh       = isTax ? taxConfig.placeholder : field.placeholder;
+            return (
+              <View
+                key={field.key}
+                style={[
+                  editingInfo ? styles.editRow : styles.viewRow,
+                  i < MAIN_FIELDS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                ]}
+              >
+                <View style={[styles.fieldIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                  <Ionicons name={field.icon} size={16} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{dynLabel}</Text>
+                  {editingInfo ? (
+                    <>
+                      <TextInput
+                        style={[styles.fieldInput, { color: colors.foreground, borderBottomColor: colors.primary }]}
+                        value={draftInfo[field.key]}
+                        onChangeText={t => setDraftInfo(prev => ({ ...prev, [field.key]: t }))}
+                        placeholder={dynPh}
+                        placeholderTextColor={colors.mutedForeground}
+                        autoCorrect={false}
+                      />
+                      {isTax && (
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 3 }}>
+                          {taxConfig.hint}
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <Text style={[styles.fieldValue, { color: colors.foreground }]} numberOfLines={2}>{info[field.key]}</Text>
+                  )}
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{field.label}</Text>
-                {editingInfo ? (
-                  <TextInput
-                    style={[styles.fieldInput, { color: colors.foreground, borderBottomColor: colors.primary }]}
-                    value={draftInfo[field.key]}
-                    onChangeText={t => setDraftInfo(prev => ({ ...prev, [field.key]: t }))}
-                    placeholder={field.placeholder}
-                    placeholderTextColor={colors.mutedForeground}
-                    autoCorrect={false}
-                  />
-                ) : (
-                  <Text style={[styles.fieldValue, { color: colors.foreground }]} numberOfLines={2}>{info[field.key]}</Text>
-                )}
-              </View>
-            </View>
-          ))}
+            );
+          })}
           {editingInfo && (
             <View style={styles.editActions}>
               <Pressable style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => { setDraftInfo(info); setEditingInfo(false); }}>

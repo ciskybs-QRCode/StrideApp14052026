@@ -356,11 +356,18 @@ export default function TerminalsScreen() {
             <Text style={[styles.stateText, { color: colors.mutedForeground }]}>Loading terminals…</Text>
           </View>
         ) : fetchError ? (
-          <View style={[styles.errorCard, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
-            <Ionicons name="alert-circle-outline" size={20} color="#DC2626" />
-            <Text style={styles.errorCardText}>{fetchError}</Text>
-            <Pressable onPress={loadKiosks} style={styles.retryBtn}>
-              <Text style={styles.retryBtnText}>Retry</Text>
+          <View style={[styles.errorCard, { backgroundColor: "#FEF9EC", borderColor: "#FDE68A" }]}>
+            <Ionicons name="cloud-offline-outline" size={20} color="#92400E" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.errorCardText, { color: "#92400E" }]}>
+                Terminal data is temporarily unavailable.
+              </Text>
+              <Text style={[styles.errorCardText, { color: "#A78044", fontSize: 12, marginTop: 2 }]}>
+                Check your connection and try again.
+              </Text>
+            </View>
+            <Pressable onPress={loadKiosks} style={[styles.retryBtn, { backgroundColor: "#1E3A8A" }]}>
+              <Text style={[styles.retryBtnText, { color: "#FFF" }]}>Retry</Text>
             </Pressable>
           </View>
         ) : kiosks.length === 0 ? (

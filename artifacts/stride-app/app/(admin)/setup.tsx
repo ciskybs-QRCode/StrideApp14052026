@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -193,6 +194,7 @@ function InviteCard() {
 }
 
 export default function AdminSetup() {
+  const router = useRouter();
   const { user, updateUser } = useAuth();
   const { branding, saveBranding } = useBranding();
   const { activeAlert } = useSubstitution();
@@ -427,7 +429,7 @@ export default function AdminSetup() {
 
   return (
     <View style={[styles.container, { backgroundColor: "#F0F4FF" }]}>
-      <ScreenHeader title="School Setup" />
+      <ScreenHeader title="School Setup" onBack={() => router.push("/(admin)/settings" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}

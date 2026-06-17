@@ -2,12 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
-import React from "react";
+import React, { useState } from "react";
 import {
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -65,6 +68,7 @@ export default function SettingsIndex() {
     .toUpperCase();
 
   const qrValue = user ? `MBR-${user.id}` : "MBR-0";
+  const [qrModal, setQrModal] = useState(false);
 
   const navigate = (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -113,12 +117,15 @@ export default function SettingsIndex() {
         </View>
 
         {/* ── MEMBER ID + QR CODE ── */}
-        <View style={[styles.qrCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Pressable
+          style={({ pressed }) => [styles.qrCard, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setQrModal(true); }}
+        >
           <View style={styles.qrLeft}>
             <Text style={[styles.qrLabel, { color: colors.mutedForeground }]}>MEMBER ID</Text>
             <Text style={[styles.qrId, { color: colors.primary }]}>{qrValue}</Text>
             <Text style={[styles.qrSub, { color: colors.mutedForeground }]}>
-              Present for access verification
+              Tap to enlarge · Present for access verification
             </Text>
           </View>
           <View style={[styles.qrBox, { borderColor: colors.border }]}>
@@ -129,7 +136,7 @@ export default function SettingsIndex() {
               backgroundColor={colors.card}
             />
           </View>
-        </View>
+        </Pressable>
 
         {/* ── ACCOUNT ── */}
         <HubCard
@@ -148,7 +155,7 @@ export default function SettingsIndex() {
         {/* ── SCHOOL SETUP & MEMBER QR ── */}
         <HubCard
           icon="qr-code-outline"
-          title="School Setup & Member QR"
+          title="School Setup & QR"
           description="Branding, colours and invite QR code"
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -222,6 +229,34 @@ export default function SettingsIndex() {
           </>
         )}
       </ScrollView>
+
+      {/* ── FULL-SCREEN QR MODAL ── */}
+      <Modal visible={qrModal} transparent animationType="fade" onRequestClose={() => setQrModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setQrModal(false)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>My Member ID</Text>
+            <Text style={[styles.modalId, { color: colors.primary }]}>{qrValue}</Text>
+            <View style={[styles.modalQrWrap, { borderColor: colors.border }]}>
+              <QRCode
+                value={qrValue}
+                size={220}
+                color={colors.primary}
+                backgroundColor={colors.card}
+              />
+            </View>
+            <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
+              Present this QR code at the kiosk{"\n"}for access verification
+            </Text>
+            <TouchableOpacity
+              style={[styles.modalClose, { backgroundColor: colors.primary }]}
+              onPress={() => setQrModal(false)}
+            >
+              <Ionicons name="close" size={18} color="#FFF" />
+              <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -294,4 +329,37 @@ const styles = StyleSheet.create({
   },
 
   version: { fontSize: 12, textAlign: "center", marginBottom: 20, marginTop: 8 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 340,
+    borderRadius: 28,
+    padding: 28,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 20,
+  },
+  modalTitle:   { fontSize: 13, fontWeight: "700", letterSpacing: 1.2, marginBottom: 4 },
+  modalId:      { fontSize: 22, fontWeight: "800", marginBottom: 20 },
+  modalQrWrap:  { borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 18 },
+  modalSub:     { fontSize: 13, textAlign: "center", lineHeight: 19, marginBottom: 24 },
+  modalClose: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  modalCloseText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
 });
