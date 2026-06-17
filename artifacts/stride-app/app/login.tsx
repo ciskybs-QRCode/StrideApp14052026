@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     borderColor: "#D1D9F0",
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 15, color: "#1E3A8A" },
+  input: { flex: 1, fontSize: 13, color: "#1E3A8A" },
   eyeBtn: { padding: 4 },
   errorBox: {
     flexDirection: "row",
