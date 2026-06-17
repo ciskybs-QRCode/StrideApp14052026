@@ -2269,3 +2269,21 @@ export async function resetPassword(email: string, token: string, newPassword: s
   return request<{ ok: boolean }>("POST", "/auth/reset-password", { email, token, newPassword });
 }
 
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+
+export interface AnalyticsMonthly {
+  key:     string;
+  label:   string;
+  revenue: number;
+  members: number;
+}
+
+export interface AnalyticsData {
+  monthly:      AnalyticsMonthly[];
+  totalMembers: number;
+}
+
+export async function getAnalytics(): Promise<AnalyticsData> {
+  return request<AnalyticsData>("GET", "/stats/analytics");
+}

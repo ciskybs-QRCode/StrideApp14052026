@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -16,49 +17,54 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { getAnalytics, type AnalyticsMonthly } from "@/lib/api";
 
-// ── Static data ───────────────────────────────────────────────────────────────
-
-const MONTHLY = [
-  { month: "Jan", revenue: 2800, students: 28 },
-  { month: "Feb", revenue: 3100, students: 31 },
-  { month: "Mar", revenue: 2950, students: 30 },
-  { month: "Apr", revenue: 3360, students: 35 },
-  { month: "May", revenue: 3780, students: 38 },
-  { month: "Jun", revenue: 4100, students: 41 },
-];
-
-
-const SECTIONS = [
-  { key: "trends",       label: "Trends",           icon: "trending-up-outline"  as const, color: "#3B82F6", bg: "#DBEAFE" },
-  { key: "payments",     label: "Payment Status",    icon: "cash-outline"         as const, color: "#10B981", bg: "#D1FAE5" },
-  { key: "occupancy",    label: "Course Occupancy",  icon: "school-outline"       as const, color: "#7C3AED", bg: "#EDE9FE" },
-  { key: "demographics", label: "Age Distribution",  icon: "people-outline"       as const, color: "#F59E0B", bg: "#FEF3C7" },
-  { key: "activity",     label: "Recent Activity",   icon: "pulse-outline"        as const, color: "#EC4899", bg: "#FCE7F3" },
-  { key: "export",       label: "Data Export",       icon: "download-outline"     as const, color: "#059669", bg: "#D1FAE5" },
-] as const;
-
-// ── Component ─────────────────────────────────────────────────────────────────
+const TAB_H = Platform.OS === "web" ? 84 : 49;
 
 export default function AdminAnalytics() {
-  const { user } = useAuth();
+  const { user }                        = useAuth();
   const { courses, students, payments } = useAppData();
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const colors                          = useColors();
+  const insets                          = useSafeAreaInsets();
+  const router                          = useRouter();
 
-  const [chartMetric, setChartMetric] = useState<"revenue" | "students">("revenue");
+  const [chartMetric,    setChartMetric]    = useState<"revenue" | "members">("revenue");
+  const [monthly,        setMonthly]        = useState<AnalyticsMonthly[]>([]);
+  const [trendsLoading,  setTrendsLoading]  = useState(true);
+  const [totalMembers,   setTotalMembers]   = useState(0);
 
-  // ── Dynamic age distribution from real member data ──────────────────────────
+  // ── Fetch real trends from server ─────────────────────────────────────────
+  useEffect(() => {
+    setTrendsLoading(true);
+    getAnalytics()
+      .then(data => {
+        setMonthly(data.monthly);
+        setTotalMembers(data.totalMembers);
+      })
+      .catch(() => {
+        setMonthly([]);
+      })
+      .finally(() => setTrendsLoading(false));
+  }, []);
+
+  // ── Chart max ─────────────────────────────────────────────────────────────
+  const maxVal = useMemo(() => {
+    if (!monthly.length) return 1;
+    return Math.max(
+      ...monthly.map(d => chartMetric === "revenue" ? d.revenue : d.members),
+      1
+    );
+  }, [monthly, chartMetric]);
+
+  // ── Age distribution from real member data ────────────────────────────────
   const ageGroups = useMemo(() => {
     const PALETTE = [
-      "#4F46E5", "#0284C7", "#0891B2", "#059669", "#65A30D",
-      "#D97706", "#EA580C", "#DC2626", "#7C3AED", "#C026D3",
-      "#4338CA", "#0369A1",
+      "#4F46E5","#0284C7","#0891B2","#059669","#65A30D",
+      "#D97706","#EA580C","#DC2626","#7C3AED","#C026D3",
     ];
     const bands: { label: string; min: number; max: number }[] = [];
-    for (let i = 0; i < 20; i += 2) bands.push({ label: `${i}–${i + 1}`, min: i, max: i + 1 });
-    for (let i = 20; i < 40; i += 5) bands.push({ label: `${i}–${i + 4}`, min: i, max: i + 4 });
+    for (let i = 0; i < 20; i += 2) bands.push({ label: `${i}–${i+1}`, min: i, max: i+1 });
+    for (let i = 20; i < 40; i += 5) bands.push({ label: `${i}–${i+4}`, min: i, max: i+4 });
     bands.push({ label: "40+", min: 40, max: Infinity });
     const counts: Record<string, number> = {};
     for (const s of students) {
@@ -72,35 +78,36 @@ export default function AdminAnalytics() {
       .map((b, i) => ({ label: b.label, count: counts[b.label]!, color: PALETTE[i % PALETTE.length] }));
   }, [students]);
 
+  // ── Payment derived values ─────────────────────────────────────────────────
   const totalRevenue   = payments.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const pendingRevenue = payments.filter(p => p.status === "pending").reduce((s, p) => s + p.amount, 0);
   const paidCount      = payments.filter(p => p.status === "paid").length;
   const pendingCount   = payments.filter(p => p.status === "pending").length;
   const totalPayments  = paidCount + pendingCount;
-  const totalStudents  = students.length;
+  const totalStudents  = students.length || totalMembers;
   const totalAgeCount  = ageGroups.reduce((s, g) => s + g.count, 0);
-  const maxVal         = Math.max(...MONTHLY.map(d => chartMetric === "revenue" ? d.revenue : d.students));
 
   const recentActivity = payments
     .slice()
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 5)
     .map(p => ({
-      name: p.description || "Payment",
+      name:   p.description || "Payment",
       action: p.status === "paid" ? "Payment received" : "Payment pending",
       amount: `€${p.amount}`,
-      time: p.date,
-      icon: p.status === "paid" ? "checkmark-circle" as const : "time" as const,
-      color: p.status === "paid" ? "#10B981" : "#F59E0B",
+      time:   p.date,
+      icon:   p.status === "paid" ? "checkmark-circle" as const : "time" as const,
+      color:  p.status === "paid" ? "#10B981" : "#F59E0B",
     }));
 
+  // ── Export ────────────────────────────────────────────────────────────────
   const handleExport = (label: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (Platform.OS !== "web") {
       Alert.alert("Export", `"${label}.csv" export is available in the web version.`);
       return;
     }
-    const now  = new Date().toLocaleDateString("en-AU");
+    const now    = new Date().toLocaleDateString("en-AU");
     const school = user?.schoolName || "Stride";
     let rows: string[][] = [];
     switch (label) {
@@ -116,8 +123,7 @@ export default function AdminAnalytics() {
           ["Income Report", school, now], [],
           ["Description", "Amount (€)", "Status"],
           ...payments.map(p => [p.description || "Payment", String(p.amount), p.status]),
-          [], ["Total Paid (€)", String(totalRevenue)],
-          ["Pending (€)", String(pendingRevenue)],
+          [], ["Total Paid (€)", String(totalRevenue)], ["Pending (€)", String(pendingRevenue)],
         ];
         break;
       case "Registrations":
@@ -131,8 +137,8 @@ export default function AdminAnalytics() {
         rows = [
           ["Annual Report", school, now], [],
           ["Metric", "Value"],
+          ["Total Members", String(totalStudents)],
           ["Total Courses", String(courses.length)],
-          ["Total Students", String(totalStudents)],
           ["Total Revenue (€)", String(totalRevenue)],
           ["Pending Revenue (€)", String(pendingRevenue)],
         ];
@@ -144,7 +150,7 @@ export default function AdminAnalytics() {
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
-    a.href = url;
+    a.href     = url;
     a.download = `${label.replace(/\s+/g, "_")}_${now.replace(/\//g, "-")}.csv`;
     document.body.appendChild(a);
     a.click();
@@ -152,36 +158,44 @@ export default function AdminAnalytics() {
     URL.revokeObjectURL(url);
   };
 
+  // ── Render helpers ────────────────────────────────────────────────────────
+  const totalRevenueTrend = monthly.reduce((s, m) => s + m.revenue, 0);
+  const totalMembersTrend = monthly.reduce((s, m) => s + m.members, 0);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Analytics" subtitle={user?.schoolName || "Stride"} onBack={() => router.push("/(admin)/operations-hub")} />
+      <ScreenHeader
+        title="Analytics"
+        subtitle={user?.schoolName || "Stride"}
+        onBack={() => router.back()}
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + TAB_H + 24 }]}
         showsVerticalScrollIndicator={false}
       >
 
-        {/* ══════════════════════════════════════════════════
-            SECTION 1 — TRENDS
-        ══════════════════════════════════════════════════ */}
+        {/* ══ SECTION 1 — TRENDS ═══════════════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
             <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
               <Ionicons name="trending-up-outline" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Trends</Text>
+            {trendsLoading && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 6 }} />}
           </View>
 
-          <View style={[styles.metricToggleRow]}>
+          {/* Metric toggle */}
+          <View style={styles.metricToggleRow}>
             <View style={[styles.metricToggle, { backgroundColor: colors.muted }]}>
-              {(["revenue", "students"] as const).map(m => (
+              {(["revenue", "members"] as const).map(m => (
                 <Pressable
                   key={m}
                   style={[styles.metricBtn, chartMetric === m && { backgroundColor: "#FBBF24" }]}
                   onPress={() => setChartMetric(m)}
                 >
                   <Text style={[styles.metricBtnText, { color: chartMetric === m ? colors.primary : colors.mutedForeground }]}>
-                    {m === "revenue" ? "Revenue" : "Students"}
+                    {m === "revenue" ? "Revenue" : "Members"}
                   </Text>
                 </Pressable>
               ))}
@@ -189,42 +203,62 @@ export default function AdminAnalytics() {
           </View>
 
           <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
-            <View style={styles.chart}>
-              {MONTHLY.map((data, i) => {
-                const val  = chartMetric === "revenue" ? data.revenue : data.students;
-                const pct  = (val / maxVal) * 100;
-                const last = i === MONTHLY.length - 1;
-                return (
-                  <View key={i} style={styles.chartCol}>
-                    <Text style={[styles.chartValue, { color: colors.mutedForeground }]}>
-                      {chartMetric === "revenue" ? `€${(val / 1000).toFixed(1)}k` : val}
-                    </Text>
-                    <View style={styles.chartBarWrap}>
-                      <View style={[styles.chartBarFill, {
-                        height: `${pct}%` as `${number}%`,
-                        backgroundColor: last ? "#FBBF24" : colors.primary,
-                        opacity: last ? 1 : 0.55 + i * 0.09,
-                      }]} />
-                    </View>
-                    <Text style={[styles.chartMonth, { color: last ? colors.primary : colors.mutedForeground, fontWeight: last ? "800" : "600" }]}>
-                      {data.month}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-            <View style={[styles.chartFooter, { borderTopColor: colors.border }]}>
-              <Ionicons name="arrow-up-circle" size={14} color="#10B981" />
-              <Text style={[styles.chartFooterText, { color: colors.mutedForeground }]}>
-                {chartMetric === "revenue" ? "Revenue" : "Student"} growth +46% over last 6 months
-              </Text>
-            </View>
+            {trendsLoading ? (
+              <View style={styles.chartSkeleton}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={[styles.chartSkeletonText, { color: colors.mutedForeground }]}>
+                  Loading live data…
+                </Text>
+              </View>
+            ) : monthly.length === 0 ? (
+              <View style={styles.chartSkeleton}>
+                <Ionicons name="bar-chart-outline" size={32} color={colors.muted} />
+                <Text style={[styles.chartSkeletonText, { color: colors.mutedForeground }]}>
+                  No data yet — trends will appear here once activity is recorded.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.chart}>
+                  {monthly.map((data, i) => {
+                    const val  = chartMetric === "revenue" ? data.revenue : data.members;
+                    const pct  = maxVal > 0 ? (val / maxVal) * 100 : 0;
+                    const last = i === monthly.length - 1;
+                    return (
+                      <View key={data.key} style={styles.chartCol}>
+                        <Text style={[styles.chartValue, { color: colors.mutedForeground }]}>
+                          {chartMetric === "revenue"
+                            ? val >= 1000 ? `€${(val / 1000).toFixed(1)}k` : `€${val}`
+                            : String(val)}
+                        </Text>
+                        <View style={styles.chartBarWrap}>
+                          <View style={[styles.chartBarFill, {
+                            height: `${Math.max(pct, val > 0 ? 4 : 0)}%` as `${number}%`,
+                            backgroundColor: last ? "#FBBF24" : colors.primary,
+                            opacity: last ? 1 : 0.55 + i * 0.09,
+                          }]} />
+                        </View>
+                        <Text style={[styles.chartMonth, { color: last ? colors.primary : colors.mutedForeground, fontWeight: last ? "800" : "600" }]}>
+                          {data.label}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                <View style={[styles.chartFooter, { borderTopColor: colors.border }]}>
+                  <Ionicons name="information-circle-outline" size={14} color={colors.mutedForeground} />
+                  <Text style={[styles.chartFooterText, { color: colors.mutedForeground }]}>
+                    {chartMetric === "revenue"
+                      ? `Total revenue last 6 months: €${totalRevenueTrend.toLocaleString()}`
+                      : `New members last 6 months: ${totalMembersTrend}`}
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
-        {/* ══════════════════════════════════════════════════
-            SECTION 2 — PAYMENT STATUS
-        ══════════════════════════════════════════════════ */}
+        {/* ══ SECTION 2 — PAYMENT STATUS ═══════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
             <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
@@ -248,7 +282,7 @@ export default function AdminAnalytics() {
               <View style={styles.payLegend}>
                 {[
                   { label: "Paid",    count: paidCount,    amount: `€${totalRevenue.toLocaleString()}`,  color: "#10B981" },
-                  { label: "Pending", count: pendingCount, amount: `€${pendingRevenue}`,                 color: "#F59E0B" },
+                  { label: "Pending", count: pendingCount, amount: `€${pendingRevenue.toLocaleString()}`, color: "#F59E0B" },
                 ].map(item => (
                   <View key={item.label} style={styles.payLegendItem}>
                     <View style={[styles.payDot, { backgroundColor: item.color }]} />
@@ -270,9 +304,7 @@ export default function AdminAnalytics() {
           </View>
         </View>
 
-        {/* ══════════════════════════════════════════════════
-            SECTION 3 — COURSE OCCUPANCY
-        ══════════════════════════════════════════════════ */}
+        {/* ══ SECTION 3 — COURSE OCCUPANCY ════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
             <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
@@ -307,9 +339,7 @@ export default function AdminAnalytics() {
           </View>
         </View>
 
-        {/* ══════════════════════════════════════════════════
-            SECTION 4 — AGE DISTRIBUTION
-        ══════════════════════════════════════════════════ */}
+        {/* ══ SECTION 4 — AGE DISTRIBUTION ════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
             <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
@@ -334,9 +364,7 @@ export default function AdminAnalytics() {
           </View>
         </View>
 
-        {/* ══════════════════════════════════════════════════
-            SECTION 5 — RECENT ACTIVITY
-        ══════════════════════════════════════════════════ */}
+        {/* ══ SECTION 5 — RECENT ACTIVITY ═════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
             <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
@@ -363,9 +391,7 @@ export default function AdminAnalytics() {
           </View>
         </View>
 
-        {/* ══════════════════════════════════════════════════
-            SECTION 6 — DATA EXPORT
-        ══════════════════════════════════════════════════ */}
+        {/* ══ SECTION 6 — DATA EXPORT ══════════════════════════════════════════ */}
         <View style={styles.sectionBlock}>
           <View style={styles.sectionTitleRow}>
             <View style={[styles.sectionIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
@@ -377,10 +403,10 @@ export default function AdminAnalytics() {
 
           <View style={styles.exportGrid}>
             {[
-              { label: "Attendance",    icon: "people-outline"    as const, color: colors.primary, desc: "Daily attendance records" },
-              { label: "Income",        icon: "cash-outline"      as const, color: colors.primary, desc: "Revenue & payments" },
-              { label: "Registrations", icon: "school-outline"    as const, color: colors.primary, desc: "Student enrollments" },
-              { label: "Annual Report", icon: "bar-chart-outline" as const, color: colors.primary, desc: "Full year summary" },
+              { label: "Attendance",    icon: "people-outline"    as const, desc: "Daily attendance records" },
+              { label: "Income",        icon: "cash-outline"      as const, desc: "Revenue & payments" },
+              { label: "Registrations", icon: "school-outline"    as const, desc: "Student enrollments" },
+              { label: "Annual Report", icon: "bar-chart-outline" as const, desc: "Full year summary" },
             ].map(item => (
               <Pressable
                 key={item.label}
@@ -410,78 +436,77 @@ export default function AdminAnalytics() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1 },
-  headerTitle: { fontSize: 18, fontWeight: "800" },
-  headerSub: { fontSize: 12, marginTop: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 20 },
+  scroll:    { paddingHorizontal: 20, paddingTop: 20 },
 
-  sectionBlock: { marginBottom: 28 },
+  sectionBlock:    { marginBottom: 28 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
-  sectionIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  sectionTitle: { fontSize: 17, fontWeight: "800" },
+  sectionIconBox:  { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  sectionTitle:    { fontSize: 17, fontWeight: "800", flex: 1 },
 
   metricToggleRow: { marginBottom: 12 },
-  metricToggle: { flexDirection: "row", borderRadius: 8, padding: 2, gap: 2, alignSelf: "flex-start" },
-  metricBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 6 },
-  metricBtnText: { fontSize: 13, fontWeight: "700" },
+  metricToggle:    { flexDirection: "row", borderRadius: 8, padding: 2, gap: 2, alignSelf: "flex-start" },
+  metricBtn:       { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 6 },
+  metricBtnText:   { fontSize: 13, fontWeight: "700" },
 
-  chartCard: { borderRadius: 20, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  chart: { flexDirection: "row", alignItems: "flex-end", height: 160, gap: 8 },
-  chartCol: { flex: 1, alignItems: "center", height: "100%" },
-  chartValue: { fontSize: 9, marginBottom: 4, textAlign: "center" },
-  chartBarWrap: { flex: 1, width: "100%", justifyContent: "flex-end" },
-  chartBarFill: { width: "100%", borderRadius: 6 },
-  chartMonth: { fontSize: 11, marginTop: 6 },
-  chartFooter: { flexDirection: "row", alignItems: "center", gap: 6, borderTopWidth: 1, paddingTop: 14, marginTop: 14 },
-  chartFooterText: { fontSize: 12 },
+  chartCard:        { borderRadius: 20, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  chart:            { flexDirection: "row", alignItems: "flex-end", height: 160, gap: 8 },
+  chartCol:         { flex: 1, alignItems: "center", height: "100%" },
+  chartValue:       { fontSize: 9, marginBottom: 4, textAlign: "center" },
+  chartBarWrap:     { flex: 1, width: "100%", justifyContent: "flex-end" },
+  chartBarFill:     { width: "100%", borderRadius: 6 },
+  chartMonth:       { fontSize: 11, marginTop: 6 },
+  chartFooter:      { flexDirection: "row", alignItems: "center", gap: 6, borderTopWidth: 1, paddingTop: 14, marginTop: 14 },
+  chartFooterText:  { fontSize: 12, flex: 1 },
+  chartSkeleton:    { height: 160, alignItems: "center", justifyContent: "center", gap: 12 },
+  chartSkeletonText:{ fontSize: 13, textAlign: "center", lineHeight: 19, maxWidth: 260 },
 
-  payCard: { borderRadius: 20, padding: 18, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  payRow: { flexDirection: "row", gap: 16, marginBottom: 14 },
-  payDonut: { alignItems: "center", justifyContent: "center" },
-  payDonutOuter: { width: 80, height: 80, borderRadius: 40, borderWidth: 8, alignItems: "center", justifyContent: "center" },
-  payDonutInner: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
-  payDonutPct: { fontSize: 16, fontWeight: "800" },
-  payDonutLabel: { fontSize: 9 },
-  payLegend: { flex: 1, gap: 10 },
-  payLegendItem: { flexDirection: "row", alignItems: "center", gap: 10 },
-  payDot: { width: 10, height: 10, borderRadius: 5 },
-  payLegendLabel: { fontSize: 14, fontWeight: "600" },
-  payLegendCount: { fontSize: 12 },
+  payCard:         { borderRadius: 20, padding: 18, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  payRow:          { flexDirection: "row", gap: 16, marginBottom: 14 },
+  payDonut:        { alignItems: "center", justifyContent: "center" },
+  payDonutOuter:   { width: 80, height: 80, borderRadius: 40, borderWidth: 8, alignItems: "center", justifyContent: "center" },
+  payDonutInner:   { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
+  payDonutPct:     { fontSize: 16, fontWeight: "800" },
+  payDonutLabel:   { fontSize: 9 },
+  payLegend:       { flex: 1, gap: 10 },
+  payLegendItem:   { flexDirection: "row", alignItems: "center", gap: 10 },
+  payDot:          { width: 10, height: 10, borderRadius: 5 },
+  payLegendLabel:  { fontSize: 14, fontWeight: "600" },
+  payLegendCount:  { fontSize: 11 },
   payLegendAmount: { fontSize: 14, fontWeight: "800" },
-  payBarBg: { height: 8, borderRadius: 4, overflow: "hidden" },
-  payBarFill: { height: "100%", borderRadius: 4 },
+  payBarBg:        { height: 8, borderRadius: 4, overflow: "hidden" },
+  payBarFill:      { height: "100%", borderRadius: 4 },
 
-  card: { borderRadius: 18, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  emptyText: { padding: 20, textAlign: "center", fontSize: 14 },
+  card:     { borderRadius: 20, padding: 0, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  emptyText:{ padding: 20, fontSize: 13, textAlign: "center" },
 
-  occRow: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
-  occLeft: { flex: 1 },
-  occName: { fontSize: 14, fontWeight: "700", marginBottom: 6 },
-  occBarBg: { height: 6, borderRadius: 3, overflow: "hidden", marginBottom: 5 },
-  occBarFill: { height: "100%", borderRadius: 3 },
-  occMeta: { fontSize: 11 },
-  occBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: "center" },
-  occPct: { fontSize: 14, fontWeight: "800" },
+  occRow:    { padding: 16, gap: 6 },
+  occLeft:   { flex: 1, gap: 6 },
+  occName:   { fontSize: 14, fontWeight: "700" },
+  occBarBg:  { height: 6, borderRadius: 3, overflow: "hidden" },
+  occBarFill:{ height: "100%", borderRadius: 3 },
+  occMeta:   { fontSize: 11 },
+  occBadge:  { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: "flex-start" },
+  occPct:    { fontSize: 13, fontWeight: "800" },
 
-  ageRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
-  ageDot: { width: 10, height: 10, borderRadius: 5 },
-  ageLabel: { width: 72, fontSize: 13, fontWeight: "600" },
-  ageBarBg: { flex: 1, height: 7, borderRadius: 4, overflow: "hidden" },
-  ageBarFill: { height: "100%", borderRadius: 4 },
-  ageCount: { width: 28, fontSize: 14, fontWeight: "800", textAlign: "right" },
+  ageRow:    { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
+  ageDot:    { width: 10, height: 10, borderRadius: 5 },
+  ageLabel:  { fontSize: 13, fontWeight: "600", width: 50 },
+  ageBarBg:  { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
+  ageBarFill:{ height: "100%", borderRadius: 3 },
+  ageCount:  { fontSize: 13, fontWeight: "800", width: 28, textAlign: "right" },
 
-  actRow: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
-  actIcon: { width: 42, height: 42, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  actName: { fontSize: 14, fontWeight: "700" },
-  actAction: { fontSize: 12, marginTop: 2 },
-  actAmount: { fontSize: 15, fontWeight: "800" },
+  actRow:    { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
+  actIcon:   { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  actName:   { fontSize: 13, fontWeight: "700" },
+  actAction: { fontSize: 11, marginTop: 2 },
+  actAmount: { fontSize: 14, fontWeight: "800" },
 
-  exportSubtitle: { fontSize: 13, marginBottom: 14, marginTop: -4 },
-  exportGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  exportBtn: { width: "47%", borderRadius: 16, padding: 16, alignItems: "center", gap: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  exportIconWrap: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  exportLabel: { fontSize: 13, fontWeight: "700", textAlign: "center" },
-  exportDesc: { fontSize: 10, textAlign: "center" },
-  exportBadge: { flexDirection: "row", alignItems: "center", gap: 3 },
-  exportBadgeText: { fontSize: 11, fontWeight: "700", color: "#10B981" },
+  exportSubtitle: { fontSize: 13, marginBottom: 14 },
+  exportGrid:     { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  exportBtn:      { width: "47%", borderRadius: 18, padding: 18, gap: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  exportIconWrap: { width: 50, height: 50, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  exportLabel:    { fontSize: 14, fontWeight: "800" },
+  exportDesc:     { fontSize: 11, lineHeight: 16 },
+  exportBadge:    { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  exportBadgeText:{ color: "#10B981", fontSize: 11, fontWeight: "700" },
 });

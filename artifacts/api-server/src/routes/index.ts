@@ -56,6 +56,7 @@ import publicJoinRouter      from "./public-join.js";
 import privateLessonsRouter   from "./private-lessons.js";
 import notificationPrefsRouter from "./notification-prefs.js";
 import calendarEventsRouter    from "./calendar-events.js";
+import statsRouter             from "./stats.js";
 
 const router: IRouter = Router();
 
@@ -116,5 +117,6 @@ router.use(publicJoinRouter);
 router.use(privateLessonsRouter);
 router.use(notificationPrefsRouter);
 router.use(calendarEventsRouter);
+router.use(statsRouter);
 
 export default router;
