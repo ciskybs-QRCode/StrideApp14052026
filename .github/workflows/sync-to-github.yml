@@ -143,6 +143,12 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            // Issues closed here carry the `auto-resolved` label so you can
+            // filter them in the GitHub issue dashboard:
+            //   Auto-resolved:   label:auto-resolved is:closed
+            //   Manually closed: label:sync-failure -label:auto-resolved is:closed
+            // See docs/issue-filters.md for saved search URLs and audit guidance.
+
             // Ensure the auto-resolved label exists; create it if not.
             const AUTO_LABEL = 'auto-resolved';
             try {
