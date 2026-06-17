@@ -36,9 +36,9 @@ function centsToCurrency(cents: number, currency = "€") {
 }
 
 const FREQ_OPTIONS: Array<{ value: "weekly" | "biweekly" | "monthly"; label: string; desc: string }> = [
-  { value: "weekly",   label: "Settimanale",    desc: "Every Monday" },
-  { value: "biweekly", label: "Bisettimanale",  desc: "Every 2 weeks" },
-  { value: "monthly",  label: "Mensile",        desc: "First of each month" },
+  { value: "weekly",   label: "Weekly",    desc: "Every Monday" },
+  { value: "biweekly", label: "Bi-weekly", desc: "Every 2 weeks" },
+  { value: "monthly",  label: "Monthly",   desc: "First of each month" },
 ];
 
 const STATUS_COLOR: Record<string, string> = {
@@ -49,10 +49,10 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  pending:  "In attesa",
-  approved: "Approvata",
-  paid:     "Pagata",
-  rejected: "Rifiutata",
+  pending:  "Pending",
+  approved: "Approved",
+  paid:     "Paid",
+  rejected: "Rejected",
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ export default function PayoutSettingsScreen() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch {
-      Alert.alert("Errore", "Impossibile salvare le impostazioni.");
+      Alert.alert("Error", "Could not save settings.");
     } finally {
       setSaving(false);
     }
@@ -144,7 +144,7 @@ export default function PayoutSettingsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setReviewInvoice(null);
     } catch {
-      Alert.alert("Errore", "Impossibile aggiornare la fattura.");
+      Alert.alert("Error", "Could not update the invoice.");
     } finally {
       setActionLoading(false);
     }
@@ -157,7 +157,7 @@ export default function PayoutSettingsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Payout Settings" onBack={() => router.push("/(admin)/settings" as never)} />
+      <ScreenHeader title="Payout & Invoices" onBack={() => router.push("/(admin)/settings" as never)} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -168,16 +168,12 @@ export default function PayoutSettingsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.pageTitle, { color: colors.foreground }]}>Payout &amp; Invoices</Text>
-        <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>
-          {user?.schoolName ?? "Dance School"}
-        </Text>
 
         {/* ── PAYOUT FREQUENCY ── */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Frequenza pagamenti</Text>
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Payout Frequency</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-            Con quale frequenza vengono elaborati i pagamenti agli operatori?
+            How often are operator payments processed?
           </Text>
           <View style={styles.freqRow}>
             {FREQ_OPTIONS.map(opt => {
@@ -208,9 +204,9 @@ export default function PayoutSettingsScreen() {
 
         {/* ── RECEIPT THRESHOLD ── */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Soglia ricevuta rimborso</Text>
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Expense Receipt Threshold</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-            Gli importi superiori a questa soglia richiedono una ricevuta. Inserisci 0 per richiedere sempre la ricevuta.
+            Amounts above this threshold require a receipt. Set to 0 to always require one.
           </Text>
           <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
             <Text style={[styles.currencySymbol, { color: colors.mutedForeground }]}>€</Text>
@@ -227,9 +223,9 @@ export default function PayoutSettingsScreen() {
 
         {/* ── NEXT PAYOUT DATE ── */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Prossima data di pagamento</Text>
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Next Payout Date</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-            Data del prossimo ciclo di pagamento (AAAA-MM-GG)
+            Date of the next payout cycle (YYYY-MM-DD)
           </Text>
           <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
             <Ionicons name="calendar-outline" size={18} color={colors.mutedForeground} />
@@ -251,21 +247,21 @@ export default function PayoutSettingsScreen() {
         >
           <Ionicons name={saved ? "checkmark" : "save-outline"} size={18} color="#fff" />
           <Text style={styles.saveBtnText}>
-            {saving ? "Salvataggio…" : saved ? "Salvato!" : "Salva impostazioni"}
+            {saving ? "Saving…" : saved ? "Saved!" : "Save Settings"}
           </Text>
         </Pressable>
 
         {/* ── PENDING INVOICES ── */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-          FATTURE IN ATTESA ({pendingInvoices.length})
+          PENDING INVOICES ({pendingInvoices.length})
         </Text>
 
         {invoiceLoading ? (
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Caricamento…</Text>
+          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Loading…</Text>
         ) : pendingInvoices.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="checkmark-circle-outline" size={36} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Nessuna fattura in attesa</Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No pending invoices</Text>
           </View>
         ) : (
           pendingInvoices.map(inv => <InvoiceRow key={inv.id} inv={inv} colors={colors} onPress={() => openReview(inv)} />)
@@ -274,7 +270,7 @@ export default function PayoutSettingsScreen() {
         {/* ── HISTORY ── */}
         {historyInvoices.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CRONOLOGIA</Text>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>HISTORY</Text>
             {historyInvoices.map(inv => <InvoiceRow key={inv.id} inv={inv} colors={colors} onPress={() => openReview(inv)} />)}
           </>
         )}
@@ -291,7 +287,7 @@ export default function PayoutSettingsScreen() {
                   {reviewInvoice.period_label}
                 </Text>
                 <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
-                  Operatore #{reviewInvoice.operator_id} · {centsToCurrency(reviewInvoice.total_cents)}
+                  Operator #{reviewInvoice.operator_id} · {centsToCurrency(reviewInvoice.total_cents)}
                 </Text>
 
                 {/* Line items */}
@@ -309,13 +305,13 @@ export default function PayoutSettingsScreen() {
                 </View>
 
                 {/* Admin note */}
-                <Text style={[styles.noteLabel, { color: colors.mutedForeground }]}>Nota admin</Text>
+                <Text style={[styles.noteLabel, { color: colors.mutedForeground }]}>Admin Note</Text>
                 <TextInput
                   value={adminNote}
                   onChangeText={setAdminNote}
                   multiline
                   numberOfLines={3}
-                  placeholder="Aggiungi una nota (opzionale)"
+                  placeholder="Add a note (optional)"
                   placeholderTextColor={colors.mutedForeground}
                   style={[styles.noteInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                 />
@@ -329,7 +325,7 @@ export default function PayoutSettingsScreen() {
                       style={[styles.actionBtn, { backgroundColor: "#FEE2E2", flex: 1 }]}
                     >
                       <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
-                      <Text style={[styles.actionBtnText, { color: "#EF4444" }]}>Rifiuta</Text>
+                      <Text style={[styles.actionBtnText, { color: "#EF4444" }]}>Reject</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => handleAction("approved")}
@@ -337,7 +333,7 @@ export default function PayoutSettingsScreen() {
                       style={[styles.actionBtn, { backgroundColor: "#D1FAE5", flex: 1 }]}
                     >
                       <Ionicons name="checkmark-circle-outline" size={18} color="#10B981" />
-                      <Text style={[styles.actionBtnText, { color: "#10B981" }]}>Approva</Text>
+                      <Text style={[styles.actionBtnText, { color: "#10B981" }]}>Approve</Text>
                     </Pressable>
                   </View>
                 )}
@@ -348,7 +344,7 @@ export default function PayoutSettingsScreen() {
                     style={[styles.actionBtn, { backgroundColor: colors.primary, marginTop: 8 }]}
                   >
                     <Ionicons name="cash-outline" size={18} color="#fff" />
-                    <Text style={[styles.actionBtnText, { color: "#fff" }]}>Segna come Pagata</Text>
+                    <Text style={[styles.actionBtnText, { color: "#fff" }]}>Mark as Paid</Text>
                   </Pressable>
                 )}
 
@@ -356,7 +352,7 @@ export default function PayoutSettingsScreen() {
                   onPress={() => setReviewInvoice(null)}
                   style={[styles.closeBtn, { borderColor: colors.border }]}
                 >
-                  <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Chiudi</Text>
+                  <Text style={[styles.closeBtnText, { color: colors.mutedForeground }]}>Close</Text>
                 </Pressable>
               </>
             )}
@@ -386,7 +382,7 @@ function InvoiceRow({ inv, colors, onPress }: { inv: ApiOperatorInvoice; colors:
       <View style={{ flex: 1 }}>
         <Text style={[styles.invLabel, { color: colors.foreground }]}>{inv.period_label}</Text>
         <Text style={[styles.invSub, { color: colors.mutedForeground }]}>
-          Operatore #{inv.operator_id} · {new Date(inv.submitted_at).toLocaleDateString("it-IT")}
+          Operator #{inv.operator_id} · {new Date(inv.submitted_at).toLocaleDateString()}
         </Text>
       </View>
       <View style={{ alignItems: "flex-end", gap: 4 }}>

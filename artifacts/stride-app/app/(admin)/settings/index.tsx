@@ -179,14 +179,6 @@ export default function SettingsIndex() {
           onPress={() => navigate("payout-settings")}
         />
 
-        {/* ── MEMBER REGISTRATION ── */}
-        <HubCard
-          icon="people-circle-outline"
-          title="Member Registration"
-          description="Signup page, custom fields and join link for new members"
-          onPress={() => navigate("member-registration")}
-        />
-
         {/* ── PRIVATE LESSONS ── */}
         <HubCard
           icon="school-outline"

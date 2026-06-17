@@ -37,6 +37,7 @@ interface CustomField {
 }
 
 interface RegistrationConfig {
+  showWelcomeMessage?: boolean;
   welcomeMessage?: string;
   requirePhone?: boolean;
   requireAddress?: boolean;
@@ -72,11 +73,12 @@ export default function MemberRegistration() {
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [config,   setConfig]   = useState<RegistrationConfig>({
-    welcomeMessage:   "",
-    requirePhone:     false,
-    requireAddress:   false,
-    requireDependants: false,
-    customFields:     [],
+    showWelcomeMessage: true,
+    welcomeMessage:     "",
+    requirePhone:       false,
+    requireAddress:     false,
+    requireDependants:  false,
+    customFields:       [],
   });
   const [newFieldLabel, setNewFieldLabel] = useState("");
   const [newFieldType,  setNewFieldType]  = useState<FieldType>("text");
@@ -152,7 +154,7 @@ export default function MemberRegistration() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Member Registration" onBack={() => router.push("/(admin)/settings" as never)} />
+        <ScreenHeader title="Member Registration" onBack={() => router.push("/(admin)/setup" as never)} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -163,7 +165,7 @@ export default function MemberRegistration() {
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScreenHeader title="Member Registration" subtitle="Configure your public signup page" onBack={() => router.push("/(admin)/settings" as never)} />
+      <ScreenHeader title="Member Registration" subtitle="Configure your public signup page" onBack={() => router.push("/(admin)/setup" as never)} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
@@ -212,17 +214,30 @@ export default function MemberRegistration() {
         {/* ── WELCOME MESSAGE ────────────────────────────────────── */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>WELCOME MESSAGE</Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Shown at top of registration page</Text>
-          <TextInput
-            style={[styles.textArea, { borderColor: colors.border, color: colors.foreground }]}
-            value={config.welcomeMessage ?? ""}
-            onChangeText={t => setConfig(c => ({ ...c, welcomeMessage: t }))}
-            onBlur={() => void save({ welcomeMessage: config.welcomeMessage })}
-            placeholder="e.g. Welcome to our association! Complete the form below to create your member account."
-            placeholderTextColor={colors.mutedForeground}
-            multiline
-            numberOfLines={3}
-          />
+          <View style={[styles.toggleRow, { borderColor: colors.border }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Show Welcome Message</Text>
+              <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Display a greeting at the top of the registration page</Text>
+            </View>
+            <Switch
+              value={config.showWelcomeMessage !== false}
+              onValueChange={v => void save({ showWelcomeMessage: v })}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              thumbColor="#FFF"
+            />
+          </View>
+          {config.showWelcomeMessage !== false && (
+            <TextInput
+              style={[styles.textArea, { borderColor: colors.border, color: colors.foreground, marginTop: 12 }]}
+              value={config.welcomeMessage ?? ""}
+              onChangeText={t => setConfig(c => ({ ...c, welcomeMessage: t }))}
+              onBlur={() => void save({ welcomeMessage: config.welcomeMessage })}
+              placeholder={`Welcome to ${orgName}! Complete the form below to create your member account.`}
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              numberOfLines={3}
+            />
+          )}
         </View>
 
         {/* ── REQUIRED FIELDS ────────────────────────────────────── */}

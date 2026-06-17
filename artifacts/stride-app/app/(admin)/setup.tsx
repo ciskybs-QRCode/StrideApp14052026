@@ -193,6 +193,34 @@ function InviteCard() {
   );
 }
 
+// ── Member Portal Card ─────────────────────────────────────────────────────────
+function MemberPortalCard() {
+  const colors = useColors();
+  const router = useRouter();
+  return (
+    <View style={[{ backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 }}>
+        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#EDE9FE", alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name="people-circle-outline" size={22} color="#6D28D9" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 15, fontWeight: "800", color: colors.primary }}>Member Portal</Text>
+          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
+            Signup page, custom fields, welcome message and join link for new members.
+          </Text>
+        </View>
+      </View>
+      <Pressable
+        style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 13, opacity: pressed ? 0.85 : 1 }]}
+        onPress={() => router.push("/(admin)/settings/member-registration" as never)}
+      >
+        <Ionicons name="settings-outline" size={18} color="#FFF" />
+        <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Configure Member Registration</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function AdminSetup() {
   const router = useRouter();
   const { user, updateUser } = useAuth();
@@ -740,6 +768,9 @@ export default function AdminSetup() {
 
         {/* ── Secure Invite Link Generator ── */}
         <InviteCard />
+
+        {/* ── Member Portal ── */}
+        <MemberPortalCard />
 
       </ScrollView>
 

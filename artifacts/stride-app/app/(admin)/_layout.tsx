@@ -1,15 +1,153 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
-import React from "react";
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Tabs, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { Alert, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColors } from "@/hooks/useColors";
 import { useUnread } from "@/context/UnreadContext";
 import { useBillingStatus } from "@/hooks/useBillingStatus";
+import { useAppData } from "@/context/AppDataContext";
 import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { BILLING_TIERS } from "@/lib/billingEngine";
+
+const DOCS_REMINDER_KEY = "stride_docs_reminder_dismissed_v1";
+const FALLBACK_DOC_IDS  = ["ld1", "ld2", "ld3", "ld4"];
+
+// ── Document Reminder Modal ───────────────────────────────────────────────────
+
+function DocReminderModal() {
+  const colors  = useColors();
+  const router  = useRouter();
+  const insets  = useSafeAreaInsets();
+  const { legalAdminDocs } = useAppData();
+
+  const [visible,     setVisible]     = useState(false);
+  const [dontRemind,  setDontRemind]  = useState(false);
+  const [dismissing,  setDismissing]  = useState(false);
+
+  const hasOnlyDefaultDocs = useCallback(() => {
+    return legalAdminDocs.every(d => FALLBACK_DOC_IDS.includes(d.id)) &&
+      legalAdminDocs.length <= FALLBACK_DOC_IDS.length;
+  }, [legalAdminDocs]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(DOCS_REMINDER_KEY).then(val => {
+      if (!val && hasOnlyDefaultDocs()) setVisible(true);
+    }).catch(() => {});
+  }, [hasOnlyDefaultDocs]);
+
+  const handleDismiss = () => {
+    if (!dontRemind) { setVisible(false); return; }
+    Alert.alert(
+      "Are you sure?",
+      "Uploading your association's own documents (Terms & Conditions, Privacy Policy, Media Release, etc.) is important for legal protection.\n\nYou can always add them later from Settings → Legal & Privacy.",
+      [
+        { text: "Keep reminding me", style: "cancel" },
+        {
+          text: "Don't remind me again",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Final confirmation",
+              "You won't receive any more reminders. Remember: custom legal documents protect both you and your members.",
+              [
+                { text: "Go back", style: "cancel" },
+                {
+                  text: "Understood, disable reminders",
+                  style: "destructive",
+                  onPress: () => {
+                    setDismissing(true);
+                    AsyncStorage.setItem(DOCS_REMINDER_KEY, "true").catch(() => {});
+                    setVisible(false);
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleGoToDocs = () => {
+    setVisible(false);
+    router.push("/(admin)/settings/legal-privacy" as never);
+  };
+
+  if (!visible) return null;
+
+  return (
+    <Modal visible animationType="slide" transparent presentationStyle="overFullScreen">
+      <View style={dr.overlay}>
+        <View style={[dr.sheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 16 }]}>
+          <View style={dr.handleBar} />
+
+          <View style={dr.iconRow}>
+            <View style={dr.iconBg}>
+              <Ionicons name="document-text-outline" size={32} color="#B45309" />
+            </View>
+          </View>
+
+          <Text style={[dr.title, { color: colors.foreground }]}>Upload Your Legal Documents</Text>
+          <Text style={[dr.body, { color: colors.mutedForeground }]}>
+            Your association currently uses Stride platform default documents. Upload your own{" "}
+            <Text style={{ fontWeight: "700" }}>Terms & Conditions, Privacy Policy, Media Release</Text>{" "}
+            or other documents to protect your association and members legally.
+          </Text>
+
+          <Pressable
+            style={[dr.primaryBtn, { backgroundColor: colors.primary }]}
+            onPress={handleGoToDocs}
+          >
+            <Ionicons name="cloud-upload-outline" size={18} color="#FFF" />
+            <Text style={dr.primaryBtnText}>Go to Legal & Privacy</Text>
+          </Pressable>
+
+          <View style={dr.toggleRow}>
+            <Text style={[dr.toggleLabel, { color: colors.mutedForeground }]}>
+              Don't remind me again
+            </Text>
+            <Switch
+              value={dontRemind}
+              onValueChange={setDontRemind}
+              trackColor={{ true: "#EF4444", false: colors.border }}
+              thumbColor="#FFF"
+            />
+          </View>
+
+          <Pressable
+            style={[dr.dismissBtn, { borderColor: colors.border, opacity: dismissing ? 0.5 : 1 }]}
+            onPress={handleDismiss}
+            disabled={dismissing}
+          >
+            <Text style={[dr.dismissBtnText, { color: colors.mutedForeground }]}>
+              {dontRemind ? "Dismiss & stop reminders" : "Remind me next time"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const dr = StyleSheet.create({
+  overlay:       { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" },
+  sheet:         { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingTop: 12 },
+  handleBar:     { width: 40, height: 4, backgroundColor: "#D1D5DB", borderRadius: 2, alignSelf: "center", marginBottom: 20 },
+  iconRow:       { alignItems: "center", marginBottom: 16 },
+  iconBg:        { width: 68, height: 68, borderRadius: 20, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
+  title:         { fontSize: 18, fontWeight: "800", textAlign: "center", marginBottom: 10 },
+  body:          { fontSize: 13, lineHeight: 20, textAlign: "center", marginBottom: 20 },
+  primaryBtn:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14, marginBottom: 16 },
+  primaryBtnText:{ color: "#FFF", fontSize: 14, fontWeight: "700" },
+  toggleRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 },
+  toggleLabel:   { fontSize: 13 },
+  dismissBtn:    { borderWidth: 1, borderRadius: 14, paddingVertical: 13, alignItems: "center" },
+  dismissBtnText:{ fontSize: 13, fontWeight: "600" },
+});
 
 // ── Account Suspension Hard-Lockout ───────────────────────────────────────────
 
@@ -194,6 +332,7 @@ export default function AdminTabLayout() {
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <BrandingLogoOverlay />
+    <DocReminderModal />
     </View>
   );
 }
