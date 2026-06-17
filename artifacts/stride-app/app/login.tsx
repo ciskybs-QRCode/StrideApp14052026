@@ -279,12 +279,12 @@ const styles = StyleSheet.create({
   registerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 8,
     borderWidth: 1.5,
     borderColor: "#D1D9F0",
     borderRadius: 12,
     paddingVertical: 13,
+    paddingHorizontal: 14,
     backgroundColor: "#F8FAFF",
   },
   registerBtnText: { fontSize: 14, fontWeight: "600", color: "#1E3A8A", flex: 1, textAlign: "center" },
