@@ -132,7 +132,7 @@ type ScanResult = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AdminHome() {
-  const { user } = useAuth();
+  const { user, allRoles } = useAuth();
   const { marketplaceEnabled } = useFeatures();
   const { courses, students, payments } = useAppData();
   const colors = useColors();
@@ -296,6 +296,29 @@ export default function AdminHome() {
 
         {/* ── ROLE SWITCHER ── */}
         <RoleSwitcherRow />
+
+        {/* ── Platform-org banner (super_admin with no personal association yet) ── */}
+        {allRoles.some(r => r.role === "super_admin") && (user?.orgId === 1 || !user?.orgId) && (
+          <Pressable
+            onPress={() => router.push("/(super_admin)/create-association" as never)}
+            style={({ pressed }) => ({
+              flexDirection: "row" as const, alignItems: "center" as const, gap: 10,
+              backgroundColor: "#FFFBEB", borderRadius: 14, padding: 14, marginBottom: 14,
+              borderWidth: 1.5, borderColor: "#FDE68A", opacity: pressed ? 0.85 : 1,
+            })}
+          >
+            <Ionicons name="business-outline" size={20} color="#D4AF37" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#92400E" }}>
+                You don&apos;t have a personal association yet
+              </Text>
+              <Text style={{ fontSize: 11, color: "#B45309", marginTop: 2, lineHeight: 16 }}>
+                Tap to create your own school. As platform owner you&apos;re separate from the Stride platform org.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#D4AF37" />
+          </Pressable>
+        )}
 
         {/* ── Org load error banner ── */}
         {orgLoadError && (

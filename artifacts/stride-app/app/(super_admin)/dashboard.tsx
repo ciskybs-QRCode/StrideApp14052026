@@ -52,6 +52,14 @@ const MENU_CARDS: MenuCard[] = [
   },
 ];
 
+const MY_ASSOC_CARD: MenuCard = {
+  id: "create-association",
+  icon: "add-circle-outline",
+  title: "Create My Association",
+  subtitle: "Open your own school and manage it as Admin",
+  route: "/(super_admin)/create-association",
+};
+
 // ── Metric grid (2-col wrap + full-width churned card) ────────────────────────
 
 type MetricItem = {
@@ -171,6 +179,14 @@ const nc = StyleSheet.create({
   subtitle:  { fontSize: 11, color: "#6B7280", lineHeight: 15 },
 });
 
+const nc2 = StyleSheet.create({
+  card:      { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#FFFBEB", borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1.5, borderColor: "#FDE68A" },
+  iconBox:   { width: 44, height: 44, borderRadius: 12, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  textBlock: { flex: 1 },
+  title:     { fontSize: 14, fontWeight: "800", color: "#92400E", marginBottom: 2 },
+  subtitle:  { fontSize: 11, color: "#B45309", lineHeight: 15 },
+});
+
 // ── Main Dashboard Hub ─────────────────────────────────────────────────────────
 
 export default function SuperAdminDashboard() {
@@ -231,6 +247,23 @@ export default function SuperAdminDashboard() {
           {/* Statistics sub-header + metric cards */}
           <StatsHeader />
           <MetricGrid metrics={metrics} />
+
+          {/* My Association — gold-bordered CTA */}
+          <Text style={styles.sectionLabel}>MY ASSOCIATION</Text>
+          <Pressable
+            style={({ pressed }) => [nc2.card, { opacity: pressed ? 0.88 : 1 }]}
+            onPress={() => navigate(MY_ASSOC_CARD.route)}
+            accessibilityRole="button"
+          >
+            <View style={nc2.iconBox}>
+              <Ionicons name={MY_ASSOC_CARD.icon} size={22} color="#D4AF37" />
+            </View>
+            <View style={nc2.textBlock}>
+              <Text style={nc2.title}>{MY_ASSOC_CARD.title}</Text>
+              <Text style={nc2.subtitle}>{MY_ASSOC_CARD.subtitle}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={17} color="#D4AF37" />
+          </Pressable>
 
           {/* Nav cards — divider */}
           <View style={styles.divider} />

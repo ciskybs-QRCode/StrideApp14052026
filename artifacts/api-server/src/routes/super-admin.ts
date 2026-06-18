@@ -662,4 +662,43 @@ router.get(
   },
 );
 
+// ── POST /super-admin/create-my-org ──────────────────────────────────────────
+// Super-admin creates their own association (separate from the platform org).
+// Inserts into organization_members so GET /user/roles picks it up immediately.
+router.post("/super-admin/create-my-org", requireAuth, requireRole("super_admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const { name, description } = req.body as { name?: string; description?: string };
+
+  if (!name?.trim()) { res.status(400).json({ error: "name is required" }); return; }
+
+  const slug = name.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 60);
+
+  const { data: newOrg, error: orgErr } = await sa
+    .from("organizations")
+    .insert({ name: name.trim(), slug, description: description?.trim() ?? null, subscription_status: "active" })
+    .select("id, name, slug, subscription_status")
+    .single();
+
+  if (orgErr || !newOrg) { res.status(500).json({ error: orgErr?.message ?? "Failed to create org" }); return; }
+
+  const orgId = (newOrg as { id: number }).id;
+
+  await sa.from("organization_members").insert({
+    user_id: String(user.id),
+    organization_id: orgId,
+    role: "admin",
+  });
+
+  try {
+    await sa.from("platform_events").insert({
+      event_type: "super_admin_created_org",
+      title: `Super-admin created association: ${name.trim()}`,
+      description: `${user.email} created their own association (org ${orgId})`,
+      payload: { orgId, createdBy: user.email },
+    });
+  } catch { /* non-critical */ }
+
+  res.status(201).json(newOrg);
+});
+
 export default router;

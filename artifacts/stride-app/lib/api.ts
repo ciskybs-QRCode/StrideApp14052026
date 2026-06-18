@@ -1865,6 +1865,17 @@ export async function addSuperAdmin(
   return request<AddSuperAdminResult>("POST", "/super-admin/add-super-admin", { email, name });
 }
 
+export interface MyOrgResult {
+  id: number;
+  name: string;
+  slug: string;
+  subscription_status: string;
+}
+
+export async function createMyOrg(data: { name: string; description?: string }): Promise<MyOrgResult> {
+  return request<MyOrgResult>("POST", "/super-admin/create-my-org", data);
+}
+
 // ── Admin Copilot ─────────────────────────────────────────────────────────────
 
 export interface CopilotResponse {
