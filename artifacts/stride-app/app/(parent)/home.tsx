@@ -559,6 +559,56 @@ export default function ParentHome() {
           )}
         </View>
 
+        {/* ── ⭐ Star Leaderboard ── */}
+        {children.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>⭐ Star Leaderboard</Text>
+            <View style={{ backgroundColor: colors.card, borderRadius: 18, overflow: "hidden", marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
+              {[...children]
+                .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0))
+                .map((child, idx, arr) => {
+                  const medals = ["🥇", "🥈", "🥉"];
+                  return (
+                    <View
+                      key={child.id}
+                      style={{
+                        flexDirection: "row", alignItems: "center", gap: 12,
+                        padding: 14,
+                        borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
+                        borderBottomColor: colors.border,
+                        backgroundColor: idx === 0 ? "#FFFBEB" : colors.card,
+                      }}
+                    >
+                      {/* Rank */}
+                      <View style={{ width: 28, alignItems: "center" }}>
+                        {idx < 3
+                          ? <Text style={{ fontSize: 18 }}>{medals[idx]}</Text>
+                          : <Text style={{ fontSize: 13, fontWeight: "700", color: colors.mutedForeground }}>#{idx + 1}</Text>
+                        }
+                      </View>
+                      {/* Avatar */}
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}12`, alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ fontSize: 15, fontWeight: "800", color: colors.primary }}>{child.name.charAt(0)}</Text>
+                      </View>
+                      {/* Name */}
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{child.name}</Text>
+                        {child.allergies && child.allergies !== "None" && child.allergies.trim() !== "" && (
+                          <Text style={{ fontSize: 11, color: "#F59E0B", marginTop: 1 }}>⚠️ Allergies on file</Text>
+                        )}
+                      </View>
+                      {/* Stars */}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: idx === 0 ? "#FEF3C7" : `${colors.primary}08`, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
+                        <Ionicons name="star" size={14} color="#F59E0B" />
+                        <Text style={{ fontSize: 15, fontWeight: "900", color: "#92400E" }}>{child.stars ?? 0}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+            </View>
+          </>
+        )}
+
         {/* Upcoming Private Sessions — shown only after payment */}
         {paidLessons.length > 0 && (
           <>

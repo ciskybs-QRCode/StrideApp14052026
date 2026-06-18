@@ -103,6 +103,8 @@ export default function SessionsScreen() {
   const [overrideChild, setOverrideChild] = useState<RosterChild | null>(null);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [awardingStarId, setAwardingStarId] = useState<number | null>(null);
+  const [starToast, setStarToast] = useState<string | null>(null);
 
   // ── Summaries ────────────────────────────────────────────────────────────────
 
@@ -185,6 +187,26 @@ export default function SessionsScreen() {
     }
     setOverrideChild(null);
   }, [overrideChild, selectedId]);
+
+  // ── Award star ───────────────────────────────────────────────────────────────
+
+  const handleAwardStar = useCallback(async (child: RosterChild) => {
+    if (awardingStarId === child.child_id) return;
+    setAwardingStarId(child.child_id);
+    try {
+      await api.addStars(String(child.child_id), 1);
+      setRoster(prev => prev.map(r =>
+        r.child_id === child.child_id ? { ...r, gold_stars: r.gold_stars + 1 } : r
+      ));
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setStarToast(`⭐ Star awarded to ${child.first_name}!`);
+      setTimeout(() => setStarToast(null), 2500);
+    } catch {
+      Alert.alert("Error", "Could not award star. Please try again.");
+    } finally {
+      setAwardingStarId(null);
+    }
+  }, [awardingStarId]);
 
   // ── Bulk sign-out ────────────────────────────────────────────────────────────
 
@@ -287,17 +309,25 @@ export default function SessionsScreen() {
                 <Text style={styles.allergyText}>Allergy</Text>
               </View>
             ) : null}
-            {child.gold_stars > 0 ? (
-              <View style={styles.starsBadge}>
-                <Ionicons name="star" size={10} color="#FBBF24" />
-                <Text style={styles.starsText}>{child.gold_stars}</Text>
-              </View>
-            ) : null}
+            <View style={styles.starsBadge}>
+              <Ionicons name="star" size={10} color="#FBBF24" />
+              <Text style={styles.starsText}>{child.gold_stars}</Text>
+            </View>
           </View>
         </View>
 
-        {/* Action hint for absent students */}
-        {isAbsent && (
+        {/* ⭐ Award Star (present only) */}
+        {!isAbsent ? (
+          <Pressable
+            style={[styles.starBtn, awardingStarId === child.child_id && { opacity: 0.5 }]}
+            onPress={() => handleAwardStar(child)}
+            disabled={awardingStarId === child.child_id}
+            hitSlop={8}
+          >
+            <Ionicons name="star" size={16} color="#F59E0B" />
+            <Text style={styles.starBtnText}>+1</Text>
+          </Pressable>
+        ) : (
           <View style={styles.tapHint}>
             <Ionicons name="finger-print-outline" size={18} color={colors.mutedForeground} />
           </View>
@@ -464,6 +494,14 @@ export default function SessionsScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* ⭐ Star Toast */}
+      {starToast !== null && (
+        <View style={[styles.starToast, { bottom: insets.bottom + 120 }]}>
+          <Ionicons name="star" size={20} color="#FFF" />
+          <Text style={styles.starToastText}>{starToast}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -548,6 +586,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     alignItems: "center", justifyContent: "center",
   },
+
+  starBtn: {
+    flexDirection: "row", alignItems: "center", gap: 3,
+    backgroundColor: "#FEF3C7", borderRadius: 10,
+    paddingHorizontal: 9, paddingVertical: 7,
+    borderWidth: 1, borderColor: "#FDE68A",
+  },
+  starBtnText: { fontSize: 12, fontWeight: "800", color: "#92400E" },
+
+  starToast: {
+    position: "absolute", left: 20, right: 20,
+    backgroundColor: "#F59E0B", borderRadius: 14,
+    padding: 14, flexDirection: "row", alignItems: "center", gap: 10,
+    shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 8, elevation: 8,
+  },
+  starToastText: { color: "#FFF", fontWeight: "700", fontSize: 14, flex: 1 },
 
   bottomBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
