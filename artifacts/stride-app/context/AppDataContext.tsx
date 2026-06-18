@@ -25,6 +25,8 @@ export interface Child {
   qrPayload?: string;
   dateOfBirth?: string;
   skillLevel?: string;
+  medicalCertUri?: string;
+  medicalCertExpiry?: string;
 }
 
 export interface Delegate {

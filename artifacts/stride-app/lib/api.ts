@@ -851,6 +851,9 @@ export const api = {
 
   // ── Vision AI ───────────────────────────────────────────────────────────────
 
+  analyzeChildMedCert: (payload: { image_base64: string; mime_type: string }) =>
+    request<{ expiryDate: string | null }>("POST", "/children/analyze-cert", payload),
+
   analyzeMedicalCertificate: (payload: {
     image_base64: string;
     mime_type: string;

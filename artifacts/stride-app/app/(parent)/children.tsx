@@ -3,6 +3,8 @@ import { router } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import * as Notifications from "expo-notifications";
 import React, { useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -87,14 +89,22 @@ export default function ChildrenScreen() {
   const [dobDay,   setDobDay]   = useState("");
   const [dobMonth, setDobMonth] = useState("");
   const [dobYear,  setDobYear]  = useState("");
-  const dobMonthRef = useRef<TextInput>(null);
-  const dobYearRef  = useRef<TextInput>(null);
+  const dobMonthRef    = useRef<TextInput>(null);
+  const dobYearRef     = useRef<TextInput>(null);
+  const pendingCertRef = useRef<{ uri: string; expiry: string | null } | null>(null);
+  const prevChildCount = useRef(0);
   const [newChildHasAllergies, setNewChildHasAllergies] = useState(false);
   const [newChildAllergies, setNewChildAllergies] = useState("");
   const [newChildMedications, setNewChildMedications] = useState("");
   const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent" | "no_intervention">("ambulance");
   const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("none");
   const [newChildPhotoUri, setNewChildPhotoUri] = useState<string | null>(null);
+  const [newChildMedCertUri, setNewChildMedCertUri] = useState<string | null>(null);
+  const [newChildMedCertExpiry, setNewChildMedCertExpiry] = useState<string | null>(null);
+  const [medCertAnalyzing, setMedCertAnalyzing] = useState(false);
+
+  // Per-child cert data stored locally (keyed by child id)
+  const [certDataByChild, setCertDataByChild] = useState<Record<string, { uri: string; expiry: string | null }>>({});
 
   // Delegate fields
   const [delegateName, setDelegateName] = useState("");
@@ -115,6 +125,15 @@ export default function ChildrenScreen() {
     } else if (children.length === 0) {
       setSelectedChild("");
     }
+    // Associate pending cert with newly added child
+    if (pendingCertRef.current && children.length > prevChildCount.current) {
+      const newest = children[children.length - 1];
+      if (newest) {
+        saveChildCert(newest.id, pendingCertRef.current.uri, pendingCertRef.current.expiry).catch(() => {});
+        pendingCertRef.current = null;
+      }
+    }
+    prevChildCount.current = children.length;
   }, [children]);
 
   // Sync medical fields when selected child changes
@@ -132,6 +151,7 @@ export default function ChildrenScreen() {
       "stride:absenceAlerts",
       "stride:emergencyContactVisible",
       "stride:promotePendingIds",
+      "stride:child_certs",
     ]).then(pairs => {
       for (const [key, val] of pairs) {
         if (val === null) continue;
@@ -139,6 +159,9 @@ export default function ChildrenScreen() {
         if (key === "stride:emergencyContactVisible") setEmergencyContactVisible(val !== "false");
         if (key === "stride:promotePendingIds") {
           try { setPromotePendingIds(new Set(JSON.parse(val))); } catch {}
+        }
+        if (key === "stride:child_certs") {
+          try { setCertDataByChild(JSON.parse(val)); } catch {}
         }
       }
     });
@@ -234,6 +257,8 @@ export default function ChildrenScreen() {
     setNewChildWaiver("ambulance");
     setNewChildMediaConsent("none");
     setNewChildPhotoUri(null);
+    setNewChildMedCertUri(null);
+    setNewChildMedCertExpiry(null);
   };
 
   const openImagePicker = async (): Promise<string | null> => {
@@ -269,6 +294,9 @@ export default function ChildrenScreen() {
   // Errors are always surfaced via Alert so failures are never silent.
   const commitAddChild = async (dobStr: string, age: number) => {
     try {
+      if (newChildMedCertUri) {
+        pendingCertRef.current = { uri: newChildMedCertUri, expiry: newChildMedCertExpiry };
+      }
       await addChild({
         name: `${newChildName.trim()} ${newChildSurname.trim()}`,
         age,
@@ -280,6 +308,8 @@ export default function ChildrenScreen() {
         stars: 0,
         courses: [],
         photoUrl: newChildPhotoUri ?? undefined,
+        medicalCertUri: newChildMedCertUri ?? undefined,
+        medicalCertExpiry: newChildMedCertExpiry ?? undefined,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       resetAddChildForm();
@@ -364,144 +394,63 @@ export default function ChildrenScreen() {
     } catch {}
   };
 
-  if (children.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.scroll, {
-          paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28),
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingHorizontal: 32,
-        }]}>
-          <View style={[styles.emptyStateCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.emptyStateIconBox, { backgroundColor: `${colors.primary}15` }]}>
-              <Ionicons name="people-circle-outline" size={52} color={colors.primary} />
-            </View>
-            <Text style={[styles.emptyStateTitle, { color: colors.primary }]}>No Dependent Members Linked</Text>
-            <Text style={[styles.emptyStateSub, { color: colors.mutedForeground }]}>
-              No dependent members linked to your account.
-            </Text>
-            <Pressable
-              style={[styles.emptyStateBtn, { backgroundColor: colors.primary }]}
-              onPress={() => { setShowAddChild(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            >
-              <Ionicons name="add" size={18} color="#FFF" />
-              <Text style={styles.emptyStateBtnText}>Add {secondaryRoleName}</Text>
-            </Pressable>
-          </View>
-        </View>
+  // ── Cert data helpers ────────────────────────────────────────────────────────
 
-        {/* Add Child Modal — still accessible from empty state */}
-        {showAddChild && (
-          <Modal visible={showAddChild} transparent animationType="slide" onRequestClose={() => setShowAddChild(false)}>
-            <View style={styles.modalOverlay}>
-              <View style={[styles.modalCard, { position: "relative", maxHeight: "90%", paddingTop: 44 }]}>
-                <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => setShowAddChild(false)} hitSlop={14}>
-                  <Ionicons name="close-circle" size={30} color="#9CA3AF" />
-                </Pressable>
-                <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
-                  <Text style={[styles.modalTitle, { color: colors.primary }]}>Add {secondaryRoleName}</Text>
-                  {[
-                    { key: "fn", label: `${secondaryRoleName}'s First Name`, value: newChildName, setter: setNewChildName, placeholder: "Jane" },
-                    { key: "ln", label: `${secondaryRoleName}'s Last Name`,  value: newChildSurname, setter: setNewChildSurname, placeholder: "Doe" },
-                  ].map(field => (
-                    <View key={field.key} style={{ marginBottom: 12 }}>
-                      <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
-                      <TextInput
-                        style={[styles.modalInput, { borderColor: colors.border }]}
-                        value={field.value}
-                        onChangeText={field.setter}
-                        placeholder={field.placeholder}
-                        placeholderTextColor={colors.mutedForeground}
-                      />
-                    </View>
-                  ))}
-                  <Text style={[styles.modalLabel, { color: colors.primary }]}>Date of Birth</Text>
-                  <View style={styles.dobGrid}>
-                    <View style={styles.dobField}>
-                      <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Day</Text>
-                      <TextInput
-                        style={[styles.dobInput, { borderColor: dobDay.length === 2 ? colors.primary : colors.border, color: colors.foreground }]}
-                        value={dobDay}
-                        onChangeText={t => {
-                          const v = t.replace(/\D/g, "").slice(0, 2);
-                          setDobDay(v);
-                          if (v.length === 2) dobMonthRef.current?.focus();
-                        }}
-                        placeholder="DD"
-                        placeholderTextColor={colors.mutedForeground}
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        returnKeyType="next"
-                        onSubmitEditing={() => dobMonthRef.current?.focus()}
-                      />
-                    </View>
-                    <Text style={[styles.dobSep, { color: colors.mutedForeground }]}>/</Text>
-                    <View style={styles.dobField}>
-                      <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Month</Text>
-                      <TextInput
-                        ref={dobMonthRef}
-                        style={[styles.dobInput, { borderColor: dobMonth.length === 2 ? colors.primary : colors.border, color: colors.foreground }]}
-                        value={dobMonth}
-                        onChangeText={t => {
-                          const v = t.replace(/\D/g, "").slice(0, 2);
-                          setDobMonth(v);
-                          if (v.length === 2) dobYearRef.current?.focus();
-                        }}
-                        placeholder="MM"
-                        placeholderTextColor={colors.mutedForeground}
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        returnKeyType="next"
-                        onSubmitEditing={() => dobYearRef.current?.focus()}
-                      />
-                    </View>
-                    <Text style={[styles.dobSep, { color: colors.mutedForeground }]}>/</Text>
-                    <View style={[styles.dobField, { flex: 2 }]}>
-                      <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Year</Text>
-                      <TextInput
-                        ref={dobYearRef}
-                        style={[styles.dobInput, { borderColor: dobYear.length === 4 ? colors.primary : colors.border, color: colors.foreground }]}
-                        value={dobYear}
-                        onChangeText={t => setDobYear(t.replace(/\D/g, "").slice(0, 4))}
-                        placeholder="YYYY"
-                        placeholderTextColor={colors.mutedForeground}
-                        keyboardType="number-pad"
-                        maxLength={4}
-                        returnKeyType="done"
-                      />
-                    </View>
-                  </View>
-                  {newChildDob ? (
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 8 }}>
-                      <Ionicons name="checkmark-circle" size={13} color="#10B981" />
-                      <Text style={{ fontSize: 12, color: "#10B981" }}>
-                        {newChildDob.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                      </Text>
-                    </View>
-                  ) : (dobDay || dobMonth || dobYear) ? (
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 8 }}>
-                      <Ionicons name="alert-circle" size={13} color="#EF4444" />
-                      <Text style={{ fontSize: 12, color: "#EF4444" }}>Enter a valid date (DD / MM / YYYY)</Text>
-                    </View>
-                  ) : <View style={{ marginBottom: 8 }} />}
-                  <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-                    <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { resetAddChildForm(); setShowAddChild(false); }}>
-                      <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-                    </Pressable>
-                    <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
-                      <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
-                    </Pressable>
-                  </View>
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
-        )}
-      </View>
-    );
-  }
+  const saveChildCert = async (childId: string, uri: string, expiry: string | null) => {
+    const raw = await AsyncStorage.getItem("stride:child_certs");
+    const current: Record<string, { uri: string; expiry: string | null }> = raw ? JSON.parse(raw) : {};
+    const next = { ...current, [childId]: { uri, expiry } };
+    setCertDataByChild(next);
+    await AsyncStorage.setItem("stride:child_certs", JSON.stringify(next));
+    if (expiry) scheduleMedCertReminders(expiry).catch(() => {});
+  };
+
+  const scheduleMedCertReminders = async (expiryDateStr: string) => {
+    try {
+      const perms = await Notifications.requestPermissionsAsync() as unknown as { granted?: boolean; status?: string };
+      if (!perms.granted && perms.status !== "granted") return;
+      const expiry = new Date(expiryDateStr);
+      const now = new Date();
+      const oneMonth = new Date(expiry);
+      oneMonth.setMonth(oneMonth.getMonth() - 1);
+      const oneWeek = new Date(expiry);
+      oneWeek.setDate(oneWeek.getDate() - 7);
+      if (oneMonth > now) {
+        await Notifications.scheduleNotificationAsync({
+          content: { title: "📋 Certificato Medico", body: "Il certificato medico scade tra 1 mese. Contatta il medico per il rinnovo." },
+          trigger: { date: oneMonth } as never,
+        });
+      }
+      if (oneWeek > now) {
+        await Notifications.scheduleNotificationAsync({
+          content: { title: "⚠️ Certificato in Scadenza", body: "Il certificato medico scade tra 1 settimana. Rinnova urgentemente!" },
+          trigger: { date: oneWeek } as never,
+        });
+      }
+    } catch {}
+  };
+
+  const uploadCertForChild = async (childId: string) => {
+    const uri = await openImagePicker();
+    if (!uri) return;
+    setMedCertAnalyzing(true);
+    try {
+      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+      const result = await api.analyzeChildMedCert({ image_base64: base64, mime_type: "image/jpeg" });
+      await saveChildCert(childId, uri, result.expiryDate ?? null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        "Certificato salvato",
+        result.expiryDate
+          ? `Data di scadenza rilevata: ${new Date(result.expiryDate).toLocaleDateString("it-IT")}. Riceverai promemoria 1 mese e 1 settimana prima.`
+          : "Certificato salvato. Data di scadenza non rilevata automaticamente.",
+      );
+    } catch {
+      Alert.alert("Errore", "Impossibile analizzare il certificato. Riprova.");
+    } finally {
+      setMedCertAnalyzing(false);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -550,6 +499,18 @@ export default function ChildrenScreen() {
           <Text style={[styles.addMemberCardText, { color: colors.primary }]}>Add {secondaryRoleName}</Text>
           <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
         </Pressable>
+
+        {children.length === 0 && (
+          <View style={{ alignItems: "center", paddingVertical: 40, gap: 14 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: `${colors.primary}12`, alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="people-circle-outline" size={48} color={colors.primary} />
+            </View>
+            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.primary }}>Nessun dipendente collegato</Text>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", paddingHorizontal: 16 }}>
+              Aggiungi un dipendente per gestire informazioni mediche, consensi e ritiri autorizzati.
+            </Text>
+          </View>
+        )}
 
         {children.length > 0 && (
           <View style={styles.childSelectorRow}>
@@ -690,6 +651,42 @@ export default function ChildrenScreen() {
                 <Text style={[styles.actionBtnText, { color: colors.primary }]}>Guardian Circle</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
+
+              {/* Medical Certificate */}
+              {(() => {
+                const cert = certDataByChild[child.id];
+                const isExpired = cert?.expiry ? new Date(cert.expiry) < new Date() : false;
+                const expiresIn30 = cert?.expiry ? (new Date(cert.expiry).getTime() - Date.now()) < 30 * 24 * 60 * 60 * 1000 && !isExpired : false;
+                const certColor = isExpired ? "#EF4444" : expiresIn30 ? "#F59E0B" : "#10B981";
+                const certBg = isExpired ? "#FEE2E2" : expiresIn30 ? "#FEF3C7" : "#D1FAE5";
+                return (
+                  <Pressable
+                    style={[styles.actionBtn, { marginTop: 4, borderWidth: 1, borderColor: cert ? certColor : colors.border, backgroundColor: cert ? certBg : colors.muted }]}
+                    onPress={() => uploadCertForChild(child.id)}
+                    disabled={medCertAnalyzing}
+                  >
+                    {medCertAnalyzing ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Ionicons name="document-text-outline" size={18} color={cert ? certColor : colors.primary} />
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.actionBtnText, { flex: 0, color: cert ? certColor : colors.primary }]}>
+                        {cert ? "Certificato Medico" : "Carica Certificato Medico"}
+                      </Text>
+                      {cert?.expiry ? (
+                        <Text style={{ fontSize: 11, color: certColor, fontWeight: "600" }}>
+                          {isExpired ? "SCADUTO — " : expiresIn30 ? "In scadenza — " : "Valido fino: "}
+                          {new Date(cert.expiry).toLocaleDateString("it-IT")}
+                        </Text>
+                      ) : cert ? (
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Scadenza non rilevata — tocca per aggiornare</Text>
+                      ) : null}
+                    </View>
+                    <Ionicons name={cert ? "refresh-outline" : "cloud-upload-outline"} size={16} color={cert ? certColor : colors.mutedForeground} />
+                  </Pressable>
+                );
+              })()}
 
               {/* Promote to Member */}
               <Pressable
@@ -1400,6 +1397,62 @@ export default function ChildrenScreen() {
                   </Pressable>
                 );
               })}
+
+              {/* ── Medical Certificate ── */}
+              <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
+              <View style={styles.sectionLabelRow}>
+                <Ionicons name="document-text" size={15} color={colors.primary} />
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Certificato Medico</Text>
+              </View>
+              <Text style={[styles.fieldHint, { color: colors.mutedForeground, marginBottom: 10 }]}>
+                Carica il certificato sportivo (opzionale). L'AI rileva automaticamente la data di scadenza e imposta i promemoria.
+              </Text>
+              {newChildMedCertUri ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#D1FAE5", borderRadius: 12, padding: 12, marginBottom: 14 }}>
+                  <Ionicons name="checkmark-circle" size={22} color="#10B981" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#065F46" }}>Certificato caricato</Text>
+                    {medCertAnalyzing ? (
+                      <Text style={{ fontSize: 12, color: "#065F46" }}>Analisi AI in corso...</Text>
+                    ) : newChildMedCertExpiry ? (
+                      <Text style={{ fontSize: 12, color: "#065F46" }}>Scadenza: {new Date(newChildMedCertExpiry).toLocaleDateString("it-IT")}</Text>
+                    ) : (
+                      <Text style={{ fontSize: 12, color: "#92400E" }}>Scadenza non rilevata — controlla manualmente</Text>
+                    )}
+                  </View>
+                  <Pressable onPress={() => { setNewChildMedCertUri(null); setNewChildMedCertExpiry(null); }} hitSlop={8}>
+                    <Ionicons name="close-circle" size={22} color="#6B7280" />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  style={[styles.modalInput, { borderStyle: "dashed", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, paddingVertical: 16, marginBottom: 14 }]}
+                  onPress={async () => {
+                    const uri = await openImagePicker();
+                    if (!uri) return;
+                    setNewChildMedCertUri(uri);
+                    setMedCertAnalyzing(true);
+                    try {
+                      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+                      const result = await api.analyzeChildMedCert({ image_base64: base64, mime_type: "image/jpeg" });
+                      setNewChildMedCertExpiry(result.expiryDate ?? null);
+                    } catch {
+                      Alert.alert("AI", "Certificato salvato ma data non rilevata automaticamente.");
+                    } finally {
+                      setMedCertAnalyzing(false);
+                    }
+                  }}
+                >
+                  {medCertAnalyzing ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <>
+                      <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
+                      <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>Carica certificato medico</Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
 
               <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); resetAddChildForm(); }}>

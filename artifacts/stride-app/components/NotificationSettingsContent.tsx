@@ -199,8 +199,9 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
             <Switch
               value={lessonOn}
               onValueChange={handleLessonToggle}
-              trackColor={{ false: "#D1D5DB", true: "#FBBF24" }}
-              thumbColor={lessonOn ? "#1E3A8A" : "#FFF"}
+              trackColor={{ false: "#D1D5DB", true: "#1E3A8A" }}
+              thumbColor={lessonOn ? "#FBBF24" : "#F3F4F6"}
+              ios_backgroundColor="#D1D5DB"
             />
           )}
         </View>
@@ -237,7 +238,8 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
               value={emergencyOn}
               onValueChange={handleEmergencyToggle}
               trackColor={{ false: "#D1D5DB", true: "#EF4444" }}
-              thumbColor="#FFF"
+              thumbColor={emergencyOn ? "#1E3A8A" : "#F3F4F6"}
+              ios_backgroundColor="#D1D5DB"
             />
           )}
         </View>

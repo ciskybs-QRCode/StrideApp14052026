@@ -458,4 +458,36 @@ router.delete("/members/link-to-org/:memberId/:orgId", requireAuth, async (req, 
   res.json({ ok: true });
 });
 
+// ── Medical certificate AI analysis (parent-accessible) ──────────────────────
+router.post("/analyze-cert", requireAuth, async (req, res) => {
+  const { image_base64, mime_type } = req.body as { image_base64?: string; mime_type?: string };
+  if (!image_base64 || !mime_type) {
+    return res.status(400).json({ error: "Missing image_base64 or mime_type" });
+  }
+  try {
+    const { openai } = await import("@workspace/integrations-openai-ai-server");
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: `data:${mime_type};base64,${image_base64}` } },
+          {
+            type: "text",
+            text: 'This is an Italian sports/medical fitness certificate (certificato medico sportivo). Find the expiry date (data di scadenza / valido fino al / scade il). Return only JSON: {"expiryDate": "YYYY-MM-DD"} or {"expiryDate": null} if not found.',
+          },
+        ],
+      }],
+      max_tokens: 120,
+      response_format: { type: "json_object" },
+    });
+    const content = response.choices[0]?.message?.content ?? "{}";
+    const parsed = JSON.parse(content) as { expiryDate?: string | null };
+    return res.json({ expiryDate: parsed.expiryDate ?? null });
+  } catch (err) {
+    req.log.error({ err }, "med cert analysis failed");
+    return res.status(500).json({ error: "Analysis failed" });
+  }
+});
+
 export default router;
