@@ -241,7 +241,7 @@ export default function AdminMarketplaceScreen() {
       <ScreenHeader
         title="Marketplace"
         subtitle="Products & shop links"
-        onBack={() => router.canGoBack() ? router.back() : router.push("/(admin)/stats" as never)}
+        onBack={() => router.back()}
         right={
           <Pressable onPress={() => tab === "products" ? void loadProducts() : void loadLinks()} hitSlop={12} style={{ padding: 6 }}>
             <Ionicons name="refresh" size={20} color="#FFF" />

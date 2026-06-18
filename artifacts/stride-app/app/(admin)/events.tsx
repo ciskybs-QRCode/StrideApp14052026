@@ -1136,7 +1136,7 @@ export default function AdminEventsScreen() {
       <ScreenHeader
         title="Events & Tickets"
         subtitle="Manage events and ticket sales"
-        onBack={() => router.canGoBack() ? router.back() : router.replace("/(admin)/stats" as never)}
+        onBack={() => router.back()}
       />
 
       {loading ? (
