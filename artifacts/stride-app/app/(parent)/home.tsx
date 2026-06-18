@@ -550,7 +550,7 @@ export default function ParentHome() {
           >
             <View style={styles.marketplaceBannerLeft}>
               <View style={styles.marketplaceBannerIcon}>
-                <Ionicons name="storefront" size={24} color="#D4AF37" />
+                <Ionicons name="storefront" size={24} color="#1E3A8A" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.marketplaceBannerTitle}>Stride Marketplace</Text>

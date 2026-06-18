@@ -94,8 +94,8 @@ export default function OperationsHub() {
           icon="storefront-outline"
           title="Stride Marketplace"
           description="Products, shop links and platform commission"
-          iconBg="#78350F"
-          iconColor="#D4AF37"
+          iconBg="#DBEAFE"
+          iconColor="#1E3A8A"
           onPress={() => router.push("/(admin)/marketplace" as never)}
         />
         <HubCard

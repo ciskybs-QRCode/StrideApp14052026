@@ -35,11 +35,11 @@ import { api, type MarketplaceProduct, type ShopLink } from "@/lib/api";
 type CategoryKey = "insurance" | "equipment" | "apparel" | "accessories" | "services";
 
 const CATEGORY_META: Record<CategoryKey | string, { icon: React.ComponentProps<typeof Ionicons>["name"]; color: string; bg: string; label: string }> = {
-  insurance:   { icon: "shield-checkmark", color: "#4F46E5", bg: "#EEF2FF",  label: "Insurance"   },
-  equipment:   { icon: "barbell-outline",  color: "#D97706", bg: "#FEF3C7",  label: "Equipment"   },
-  apparel:     { icon: "shirt-outline",    color: "#059669", bg: "#ECFDF5",  label: "Apparel"     },
-  accessories: { icon: "bag-handle",       color: "#DC2626", bg: "#FEF2F2",  label: "Accessories" },
-  services:    { icon: "sparkles",         color: "#7C3AED", bg: "#F5F3FF",  label: "Services"    },
+  insurance:   { icon: "shield-checkmark", color: "#1E3A8A", bg: "#DBEAFE",  label: "Insurance"   },
+  equipment:   { icon: "barbell-outline",  color: "#1E3A8A", bg: "#DBEAFE",  label: "Equipment"   },
+  apparel:     { icon: "shirt-outline",    color: "#1E3A8A", bg: "#DBEAFE",  label: "Apparel"     },
+  accessories: { icon: "bag-handle",       color: "#1E3A8A", bg: "#DBEAFE",  label: "Accessories" },
+  services:    { icon: "sparkles",         color: "#1E3A8A", bg: "#DBEAFE",  label: "Services"    },
 };
 
 function catMeta(cat: string) {
@@ -129,7 +129,7 @@ export default function MarketplaceScreen() {
   if (loading) {
     return (
       <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28) }]}>
-        <ActivityIndicator size="large" color="#D4AF37" />
+        <ActivityIndicator size="large" color="#1E3A8A" />
         <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading marketplace…</Text>
       </View>
     );
@@ -152,7 +152,7 @@ export default function MarketplaceScreen() {
             <Text style={S.heroSub}>Gear, shop links, insurance — all Stride-vetted and one-tap checkout.</Text>
           </View>
           <View style={S.heroIcon}>
-            <Ionicons name="shield-checkmark" size={44} color="#D4AF37" />
+            <Ionicons name="shield-checkmark" size={44} color="#1E3A8A" />
           </View>
         </View>
 
@@ -161,7 +161,7 @@ export default function MarketplaceScreen() {
           <View style={S.section}>
             <View style={S.sectionHeader}>
               <View style={S.shopBadgeRow}>
-                <Ionicons name="bag-handle" size={16} color="#4F46E5" />
+                <Ionicons name="bag-handle" size={16} color="#1E3A8A" />
                 <Text style={S.shopBadgeText}>SHOP</Text>
               </View>
               <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Tap to open in browser</Text>
@@ -400,7 +400,7 @@ const S = StyleSheet.create({
 
   // School Shop
   shopBadgeRow:  { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 },
-  shopBadgeText: { color: "#4F46E5", fontWeight: "900", fontSize: 12, letterSpacing: 0.8 },
+  shopBadgeText: { color: "#1E3A8A", fontWeight: "900", fontSize: 12, letterSpacing: 0.8 },
   shopLinkBtn:   { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
   shopLinkIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   shopLinkName:  { flex: 1, color: "#FFF", fontWeight: "800", fontSize: 15 },

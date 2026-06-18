@@ -267,7 +267,7 @@ export default function AdminMarketplaceScreen() {
       {/* ── Products tab ──────────────────────────────────────────────────── */}
       {tab === "products" && (
         loading ? (
-          <View style={S.loader}><ActivityIndicator size="large" color="#D4AF37" /></View>
+          <View style={S.loader}><ActivityIndicator size="large" color="#1E3A8A" /></View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
             <View style={[S.infoCard, { backgroundColor: "#FEF9E7" }]}>
@@ -281,7 +281,7 @@ export default function AdminMarketplaceScreen() {
               <>
                 <View style={S.sectionHeader}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Ionicons name="checkmark-circle" size={16} color="#D4AF37" />
+                    <Ionicons name="checkmark-circle" size={16} color="#1E3A8A" />
                     <Text style={[S.sectionTitle, { color: colors.foreground }]}>Stride Verified Partners</Text>
                   </View>
                   <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Global products — read only</Text>
@@ -329,12 +329,12 @@ export default function AdminMarketplaceScreen() {
       {/* ── Shop Links tab ────────────────────────────────────────────────── */}
       {tab === "shop" && (
         linksLoading ? (
-          <View style={S.loader}><ActivityIndicator size="large" color="#D4AF37" /></View>
+          <View style={S.loader}><ActivityIndicator size="large" color="#1E3A8A" /></View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
-            <View style={[S.infoCard, { backgroundColor: "#EEF2FF" }]}>
-              <Ionicons name="bag-handle" size={20} color="#4F46E5" />
-              <Text style={[S.infoText, { color: "#3730A3" }]}>
+            <View style={[S.infoCard, { backgroundColor: "#EFF6FF" }]}>
+              <Ionicons name="bag-handle" size={20} color="#1E3A8A" />
+              <Text style={[S.infoText, { color: "#1E3A8A" }]}>
                 <Text style={{ fontWeight: "800" }}>Shop Links</Text> — Add buttons that open your collections (or any URL) directly in the member{"'"}s browser. Members see these in the Marketplace under {"\""}Shop{"\""}.
               </Text>
             </View>
@@ -377,7 +377,7 @@ export default function AdminMarketplaceScreen() {
         <View style={S.modalOverlay}>
           <View style={[S.modalCard, { backgroundColor: colors.card }]}>
             <View style={S.modalHeader}>
-              <Ionicons name="storefront" size={22} color="#D4AF37" />
+              <Ionicons name="storefront" size={22} color="#1E3A8A" />
               <Text style={[S.modalTitle, { color: colors.foreground }]}>
                 {editTarget ? "Edit Product" : "New Product"}
               </Text>
@@ -460,7 +460,7 @@ export default function AdminMarketplaceScreen() {
         <View style={S.modalOverlay}>
           <View style={[S.modalCard, { backgroundColor: colors.card }]}>
             <View style={S.modalHeader}>
-              <Ionicons name="bag-handle" size={22} color="#4F46E5" />
+              <Ionicons name="bag-handle" size={22} color="#1E3A8A" />
               <Text style={[S.modalTitle, { color: colors.foreground }]}>
                 {editLink ? "Edit Shop Link" : "New Shop Link"}
               </Text>
@@ -564,7 +564,7 @@ function ProductRow({ product, colors, readOnly = false, onEdit, onRemove, onTog
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
           <Text style={[S.productTitle, { color: colors.foreground }]} numberOfLines={1}>{product.title}</Text>
-          {product.is_stride_verified && <Ionicons name="checkmark-circle" size={14} color="#D4AF37" />}
+          {product.is_stride_verified && <Ionicons name="checkmark-circle" size={14} color="#1E3A8A" />}
           {!product.is_active && !readOnly && (
             <View style={{ backgroundColor: "#FEF3C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
               <Text style={{ fontSize: 10, fontWeight: "800", color: "#D97706" }}>DRAFT</Text>
