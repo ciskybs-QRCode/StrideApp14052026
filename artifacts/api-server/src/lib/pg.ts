@@ -160,6 +160,12 @@ export async function ensureTables(): Promise<void> {
     ADD COLUMN IF NOT EXISTS activation_status TEXT DEFAULT 'active';
   `).catch(() => {});
 
+  // Profile photo: base64 data URI stored per-user, synced across devices
+  await pool.query(`
+    ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS profile_photo_url TEXT;
+  `).catch(() => {});
+
   // system_config: stores pioneer wizard state (system_configured) and owner_email.
   // Lives in Supabase (single source of truth) — pool now points to SUPABASE_DB_URL.
   await pool.query(`

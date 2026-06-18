@@ -205,14 +205,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : derivedRoles;
 
     const mapped: User = {
-      id:         String(apiUser.id),
-      name:       apiUser.name,
-      email:      apiUser.email,
-      role:       primaryRole,
-      roles:      resolvedRoles.length > 0 ? resolvedRoles : derivedRoles,
-      activeRole: primaryRole,
-      orgId:      apiUser.orgId ?? (apiUser.organization_id as number | undefined),
-      is_owner:   apiUser.is_owner ?? false,
+      id:             String(apiUser.id),
+      name:           apiUser.name,
+      email:          apiUser.email,
+      role:           primaryRole,
+      roles:          resolvedRoles.length > 0 ? resolvedRoles : derivedRoles,
+      activeRole:     primaryRole,
+      orgId:          apiUser.orgId ?? (apiUser.organization_id as number | undefined),
+      is_owner:       apiUser.is_owner ?? false,
+      profilePhotoUri: ((apiUser as unknown) as Record<string, unknown>).profilePhotoUri as string | undefined ?? undefined,
     };
 
     const finalAllRoles = dbRoles ?? derivedRoles.map(r => ({ role: r, orgId: mapped.orgId ?? 0 }));
@@ -273,6 +274,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Update error:", e);
     }
     setUser(updated);
+
+    // Persist profile fields to backend so they sync across devices on login.
+    const backendPayload: { profilePhotoUri?: string | null; name?: string } = {};
+    if ("profilePhotoUri" in updates) backendPayload.profilePhotoUri = updates.profilePhotoUri ?? null;
+    if ("name" in updates && updates.name) backendPayload.name = updates.name;
+    if (Object.keys(backendPayload).length > 0) {
+      api.updateMyProfile(backendPayload).catch(() => {
+        // Fire-and-forget — local state is already updated; backend sync best-effort.
+      });
+    }
   };
 
   // ── switchActiveRole — Task 2 ─────────────────────────────────────────────

@@ -255,6 +255,13 @@ export const api = {
     request<{ roles: { role: string; orgId: number }[] }>("GET", "/user/roles"),
 
   /**
+   * PATCH /user/me — persists profile fields (name, profile photo) to the backend.
+   * profilePhotoUri is stored as a base64 data URI, synced across devices on login.
+   */
+  updateMyProfile: (data: { profilePhotoUri?: string | null; name?: string; preferred_name?: string }) =>
+    request<{ ok: boolean }>("PATCH", "/user/me", data),
+
+  /**
    * POST /user/activate-operator — upserts an operator_profiles row for the
    * current user + their active orgId, granting them the operator/teacher role
    * without modifying their primary organization_members row.

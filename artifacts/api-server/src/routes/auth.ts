@@ -52,7 +52,7 @@ router.post("/auth/login", authLimiter, async (req, res) => {
 
   const { data: users, error } = await supabase
     .from("users")
-    .select("id, name, email, password_hash, role, roles, organization_id, blocked")
+    .select("id, name, email, password_hash, role, roles, organization_id, blocked, profile_photo_url")
     .ilike("email", email.trim())
     .limit(1);
 
@@ -125,9 +125,49 @@ router.post("/auth/login", authLimiter, async (req, res) => {
       role: effectiveRole,
       orgId: resolvedOrgId,
       is_owner: user.email?.toLowerCase() === getOwnerEmail().toLowerCase(),
+      profilePhotoUri: (user as Record<string, unknown>).profile_photo_url ?? null,
       ...(globalUserId !== null ? { globalUserId } : {}),
     },
   });
+});
+
+// ── PATCH /user/me ────────────────────────────────────────────────────────────
+// Updates the calling user's own profile fields (name, profile photo).
+router.patch("/user/me", requireAuth, async (req, res) => {
+  const authUser = (req as unknown as AuthReq).user;
+  const userId = authUser.id;
+  const { profilePhotoUri, name, preferred_name } = req.body as {
+    profilePhotoUri?: string | null;
+    name?: string;
+    preferred_name?: string;
+  };
+
+  const updates: Record<string, unknown> = {};
+  if (profilePhotoUri !== undefined) updates["profile_photo_url"] = profilePhotoUri;
+  if (name !== undefined) updates["name"] = name;
+  if (preferred_name !== undefined) updates["preferred_name"] = preferred_name;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("users")
+      .update(updates)
+      .eq("id", userId);
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update profile" });
+    req.log?.error({ err }, "PATCH /user/me failed");
+  }
 });
 
 // ── POST /auth/register ───────────────────────────────────────────────────────
