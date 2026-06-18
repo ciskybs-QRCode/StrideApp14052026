@@ -1,0 +1,200 @@
+name: Slack Failure Digest
+
+# Posts a single Slack message every hour while a sync-failure issue remains
+# open. This keeps the team informed after the per-run retry-notice cap has
+# been reached and the main sync workflow goes silent.
+#
+# Toggle:  set the repository variable SLACK_FAILURE_DIGEST to "false" to
+#          disable the digest without touching this file.
+#          Settings → Secrets and variables → Actions → Variables
+#
+# Default: digest is ON (fires whenever a sync-failure issue is open).
+
+on:
+  schedule:
+    # Every hour at :00
+    - cron: '0 * * * *'
+  # Allow a manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    # Skip immediately when the digest is explicitly disabled.
+    if: vars.SLACK_FAILURE_DIGEST != 'false'
+    steps:
+      - name: Check for open sync-failure issues and post digest
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_ALERT_CHANNEL: ${{ vars.SLACK_ALERT_CHANNEL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // ── Guard: digest disabled ──────────────────────────────────────
+            // vars.SLACK_FAILURE_DIGEST is checked at job level (if:), but we
+            // also handle it here in case someone sets it to an empty string.
+            // (The job-level condition only catches the literal string "false".)
+
+            // ── Find open sync-failure issues ───────────────────────────────
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'sync-failure',
+              state: 'open',
+              per_page: 1,
+              // Sort by creation date ascending so we get the oldest (primary) issue.
+              sort: 'created',
+              direction: 'asc',
+            });
+
+            if (issues.length === 0) {
+              console.log('No open sync-failure issues — digest skipped.');
+              return;
+            }
+
+            const issue = issues[0];
+
+            // ── Calculate how long the sync has been failing ─────────────────
+            const createdAt = new Date(issue.created_at);
+            const now = new Date();
+            const elapsedMs = now - createdAt;
+
+            const totalMinutes = Math.floor(elapsedMs / 60_000);
+            const days    = Math.floor(totalMinutes / 1440);
+            const hours   = Math.floor((totalMinutes % 1440) / 60);
+            const minutes = totalMinutes % 60;
+
+            let durationParts = [];
+            if (days > 0)    durationParts.push(`${days}d`);
+            if (hours > 0)   durationParts.push(`${hours}h`);
+            if (minutes > 0 || durationParts.length === 0) durationParts.push(`${minutes}m`);
+            const duration = durationParts.join(' ');
+
+            const issueUrl   = issue.html_url;
+            const issueTitle = issue.title;
+            const repoUrl    = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`;
+
+            console.log(
+              `Open sync-failure issue #${issue.number} found — ` +
+              `failing for ${duration} (since ${createdAt.toISOString()})`
+            );
+
+            // ── Build Slack message ──────────────────────────────────────────
+            const slackText =
+              `:rotating_light: *Sync still failing* — open for ${duration}`;
+
+            const slackMrkdwn =
+              `:rotating_light: *Sync to GitHub is still failing*\n` +
+              `*Duration:* ${duration} (since <!date^${Math.floor(createdAt.getTime() / 1000)}^{date_short_pretty} at {time}|${createdAt.toISOString()}>)\n` +
+              `*Issue:* <${issueUrl}|#${issue.number}: ${issueTitle}>\n` +
+              `:speech_balloon: _Hourly digest — no action needed until the sync recovers._`;
+
+            // ── Post to Slack ────────────────────────────────────────────────
+            const botToken  = process.env.SLACK_BOT_TOKEN;
+            const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+            const channel   = process.env.SLACK_ALERT_CHANNEL;
+
+            if (!botToken && !webhookUrl) {
+              core.warning(
+                'Neither SLACK_BOT_TOKEN nor SLACK_WEBHOOK_URL is set — ' +
+                'skipping failure digest notification'
+              );
+              await core.summary
+                .addRaw(
+                  '> ⚠️ **Slack digest skipped** — `SLACK_WEBHOOK_URL` is not configured. ' +
+                  'The hourly sync-failure digest was not sent to Slack. ' +
+                  'Set the secret under **Settings → Secrets and variables → Actions** to enable Slack alerts.'
+                )
+                .write();
+              return;
+            }
+
+            const blocks = [
+              {
+                type: 'section',
+                text: { type: 'mrkdwn', text: slackMrkdwn },
+              },
+            ];
+
+            if (botToken && channel) {
+              // ── Web API path (preferred; supports threading) ────────────────
+              // Read the stored thread-ts from the issue body so the digest
+              // replies in the existing failure thread instead of creating noise.
+              function extractSlackTs(body) {
+                const m = (body || '').match(/<!--\s*slack-thread-ts:\s*(\S+)\s*-->/);
+                return m ? m[1] : null;
+              }
+
+              const threadTs = extractSlackTs(issue.body);
+
+              const apiPayload = {
+                channel,
+                text: slackText,
+                blocks,
+                ...(threadTs ? { thread_ts: threadTs } : {}),
+              };
+
+              const apiResponse = await fetch('https://slack.com/api/chat.postMessage', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${botToken}`,
+                },
+                body: JSON.stringify(apiPayload),
+              });
+
+              const apiResult = await apiResponse.json();
+
+              if (!apiResult.ok) {
+                core.warning(`Slack API error: ${apiResult.error}`);
+              } else {
+                const target = threadTs ? `thread reply (ts=${threadTs})` : 'new top-level message';
+                console.log(
+                  `Slack failure digest sent via Web API (${target}) — ` +
+                  `issue #${issue.number} open for ${duration}`
+                );
+              }
+            } else {
+              // ── Webhook fallback ────────────────────────────────────────────
+              if (!webhookUrl) {
+                core.warning(
+                  'SLACK_BOT_TOKEN requires SLACK_ALERT_CHANNEL to be set — ' +
+                  'skipping failure digest notification'
+                );
+                return;
+              }
+
+              const payload = {
+                text: slackText,
+                ...(channel ? { channel } : {}),
+                blocks,
+              };
+
+              const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+
+              if (!response.ok) {
+                core.warning(
+                  `Slack webhook returned ${response.status}: ${await response.text()}`
+                );
+              } else {
+                console.log(
+                  `Slack failure digest sent via webhook — ` +
+                  `issue #${issue.number} open for ${duration}`
+                );
+              }
+            }
+
+            // ── Job summary ──────────────────────────────────────────────────
+            await core.summary
+              .addHeading('Slack Failure Digest', 3)
+              .addRaw(
+                `Digest sent for open sync-failure issue [#${issue.number}](${issueUrl}) — ` +
+                `failing for **${duration}**.`
+              )
+              .write();
