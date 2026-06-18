@@ -22,6 +22,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { useRouter } from "expo-router";
 import {
@@ -1132,24 +1133,11 @@ export default function AdminEventsScreen() {
     <View style={[S.root, { backgroundColor: colors.background }]}>
 
       {/* ── Top Bar ── */}
-      <View style={[S.topBar, { paddingTop: Math.max(insets.top, 20) + 12 }]}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Pressable
-            onPress={() => router.canGoBack() ? router.back() : router.replace("/(admin)/stats" as never)}
-            hitSlop={12}
-          >
-            <Ionicons name="chevron-back" size={24} color="#FBBF24" />
-          </Pressable>
-          <Text style={S.topBarTitle}>Events & Tickets</Text>
-        </View>
-        <Pressable
-          onPress={() => setShowCreate(true)}
-          style={S.addIconBtn}
-          hitSlop={8}
-        >
-          <Ionicons name="add" size={22} color="#FBBF24" />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="Events & Tickets"
+        subtitle="Manage events and ticket sales"
+        onBack={() => router.canGoBack() ? router.back() : router.replace("/(admin)/stats" as never)}
+      />
 
       {loading ? (
         <View style={S.loader}>
@@ -1214,21 +1202,6 @@ const S = StyleSheet.create({
   root: { flex: 1 },
 
   // Top bar
-  topBar: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    backgroundColor: "#1E3A8A",
-  },
-  topBarTitle: { fontSize: 22, fontWeight: "900", color: "#FFF" },
-  addIconBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center", justifyContent: "center",
-  },
-
   loader: { flex: 1, alignItems: "center", justifyContent: "center" },
 
   // Empty state
