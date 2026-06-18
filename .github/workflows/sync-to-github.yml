@@ -55,7 +55,25 @@ jobs:
             echo "Target main does not exist yet — skipping backup branch creation"
           fi
 
-          git push target main --force
+          # Temporarily disable errexit so we can capture the exit code and
+          # stderr text from a failing push before deciding what to do.
+          set +e
+          PUSH_OUTPUT=$(git push target main --force 2>&1)
+          PUSH_EXIT=$?
+          set -e
+
+          if [ $PUSH_EXIT -ne 0 ]; then
+            TRUNCATED="${PUSH_OUTPUT:0:500}"
+            {
+              echo "push_error<<PUSH_EOF"
+              printf '%s\n' "$TRUNCATED"
+              echo "PUSH_EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "Push failed (exit ${PUSH_EXIT}): ${PUSH_OUTPUT}"
+            exit $PUSH_EXIT
+          fi
+          echo "$PUSH_OUTPUT"
+          echo "push_error=" >> "$GITHUB_OUTPUT"
 
       - name: Prune old backup branches on target
         id: prune
@@ -333,6 +351,7 @@ jobs:
           SLACK_ALERT_CHANNEL: ${{ vars.SLACK_ALERT_CHANNEL }}
           SLACK_RETRY_NOTICE_CAP: ${{ env.SLACK_RETRY_NOTICE_CAP }}
           DELETED_BRANCHES: ${{ steps.prune.outputs.deleted_branches }}
+          PUSH_ERROR: ${{ steps.push.outputs.push_error }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -346,6 +365,22 @@ jobs:
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const shortSha = context.sha.slice(0, 7);
             const isRetry = issues.length > 0;
+
+            // ── Push error snippet ───────────────────────────────────────────
+            // Captured from the "Push to target repository" step's stderr.
+            // Truncated to 300 chars so Slack messages stay readable.
+            const rawPushError = (process.env.PUSH_ERROR || '').trim();
+            const pushErrorSnippet = rawPushError
+              ? rawPushError.slice(0, 300) + (rawPushError.length > 300 ? '…' : '')
+              : '';
+            // Slack mrkdwn block (empty string when no error was captured)
+            const errorBlock = pushErrorSnippet
+              ? `\n*Error:* \`\`\`${pushErrorSnippet}\`\`\``
+              : '';
+            // Plain-text version for GitHub issue/comment (fenced code block)
+            const errorMd = pushErrorSnippet
+              ? `\n\n**Push error:**\n\`\`\`\n${pushErrorSnippet}\n\`\`\``
+              : '';
 
             // ── Helpers for Slack thread-ts storage in issue body ────────────
             // The ts is embedded as an HTML comment so it is invisible in the
@@ -390,7 +425,8 @@ jobs:
                 issue_number: existingIssue.number,
                 body: `### New failure on run #${context.runNumber}\n\n` +
                       `**Commit:** \`${shortSha}\` · **Actor:** @${context.actor}\n\n` +
-                      `[View run](${runUrl})`,
+                      `[View run](${runUrl})` +
+                      errorMd,
               });
               console.log(`Commented on existing issue #${existingIssue.number}`);
             } else {
@@ -401,6 +437,13 @@ jobs:
                 `**Workflow run:** [#${context.runNumber}](${runUrl})`,
                 `**Triggered by commit:** \`${shortSha}\` on branch \`${context.ref.replace('refs/heads/', '')}\``,
                 `**Actor:** @${context.actor}`,
+                ...(pushErrorSnippet ? [
+                  '',
+                  '## Push error',
+                  '```',
+                  pushErrorSnippet,
+                  '```',
+                ] : []),
                 '',
                 '## Likely causes',
                 '- The `GITHUB_PAT` secret has expired or been revoked',
@@ -499,7 +542,8 @@ jobs:
                   `<${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues/${existingIssue.number}|Open issue #${existingIssue.number}>`;
               }
 
-              // Append pruning summary when branches were pruned in this same run.
+              // Append push error and pruning summary when present.
+              slackMrkdwn += errorBlock;
               slackMrkdwn += pruningFooter;
 
               // Fetch the latest issue body to read the stored thread ts.
@@ -586,7 +630,8 @@ jobs:
                     `<${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues/${existingIssue.number}|Open issue #${existingIssue.number}>`;
                 }
 
-                // Append pruning summary when branches were pruned in this same run.
+                // Append push error and pruning summary when present.
+                slackMrkdwn += errorBlock;
                 slackMrkdwn += pruningFooter;
 
                 const payload = {
