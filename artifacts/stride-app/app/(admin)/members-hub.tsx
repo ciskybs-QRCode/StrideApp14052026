@@ -38,6 +38,12 @@ export default function MembersHub() {
           onPress={() => router.push("/(admin)/users" as never)}
         />
         <HubCard
+          icon="qr-code-outline"
+          title="Invite Members"
+          description="Generate invite codes and association QR code"
+          onPress={() => router.push("/(admin)/invites" as never)}
+        />
+        <HubCard
           icon="person-remove-outline"
           title="Blacklist"
           description="Manage restricted access entries"
