@@ -559,7 +559,8 @@ export default function LegalPrivacyPage() {
                 { opacity: pressed ? 0.75 : 1 },
               ]}
               onPress={() => {
-                const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+                const raw = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+                const domain = raw.startsWith("http") ? raw : `https://${raw}`;
                 Linking.openURL(`${domain}/api/legal/view/${d.id}`);
               }}
             >
@@ -1067,7 +1068,28 @@ export default function LegalPrivacyPage() {
                   <Text style={[styles.detailTitle, { color: colors.primary }]}>{doc.title}</Text>
                   <Text style={[styles.viewerSubtitle, { color: colors.mutedForeground }]}>Added {doc.createdAt}</Text>
 
-                  {hasLink ? (
+                  {doc.source === "stride_platform" ? (
+                    <View style={{ gap: 12, marginTop: 16 }}>
+                      <View style={[styles.sourceInfoBox, { backgroundColor: "#EFF6FF", borderColor: colors.primary }]}>
+                        <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.sourceInfoLabel, { color: colors.primary }]}>Stride Platform Document</Text>
+                          <Text style={[styles.sourceInfoUrl, { color: colors.mutedForeground }]}>Official legal document · read-only</Text>
+                        </View>
+                      </View>
+                      <Pressable
+                        style={[styles.openFullBtn, { backgroundColor: colors.primary }]}
+                        onPress={() => {
+                          const raw = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+                          const domain = raw.startsWith("http") ? raw : `https://${raw}`;
+                          Linking.openURL(`${domain}/api/legal/view/${doc.id}`);
+                        }}
+                      >
+                        <Ionicons name="open-outline" size={18} color="#FFF" />
+                        <Text style={styles.openFullBtnText}>Open in Browser</Text>
+                      </Pressable>
+                    </View>
+                  ) : hasLink ? (
                     <View style={{ gap: 12, marginTop: 16 }}>
                       <View style={[styles.sourceInfoBox, { backgroundColor: brand!.bg, borderColor: brand!.color }]}>
                         <Ionicons name={brand!.icon} size={22} color={brand!.color} />
