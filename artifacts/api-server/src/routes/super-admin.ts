@@ -1,12 +1,15 @@
 import { Router, type Request } from "express";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { Expo } from "expo-server-sdk";
 import { requireAuth, requireOwnerOrSuperAdmin, requireRole, signToken, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
 import { ensureTables, pool } from "../lib/pg.js";
 import { getOwnerEmail, setOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
 import { canDelete, canUpdateRole, type UserRole } from "../services/securityGuard.js";
 import { calcQrBillCents } from "../lib/qr-pricing.js";
+
+const expoClient = new Expo();
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -699,6 +702,210 @@ router.post("/super-admin/create-my-org", requireAuth, requireRole("super_admin"
   } catch { /* non-critical */ }
 
   res.status(201).json(newOrg);
+});
+
+// ── POST /super-admin/platform-broadcast ──────────────────────────────────────
+// STRIDE sends a message (email + in-app bell + push) to all association admins
+// or to the admins of a specific organisation.
+router.post("/super-admin/platform-broadcast", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const { subject, body, channels, urgency, targetType, targetOrgId } = req.body as {
+    subject?: string; body?: string; channels?: string[];
+    urgency?: string; targetType?: string; targetOrgId?: number;
+  };
+
+  if (!subject?.trim() || !body?.trim()) {
+    res.status(400).json({ error: "subject and body are required" }); return;
+  }
+  if (!channels?.length) {
+    res.status(400).json({ error: "At least one channel is required" }); return;
+  }
+
+  await ensureTables();
+
+  // Resolve recipients
+  let adminQuery = sa.from("users").select("id, name, email, organization_id").eq("role", "admin");
+  if (targetType === "specific_org" && targetOrgId) {
+    adminQuery = adminQuery.eq("organization_id", targetOrgId);
+  }
+  const { data: admins, error: adminsErr } = await adminQuery;
+  if (adminsErr) { res.status(500).json({ error: adminsErr.message }); return; }
+
+  const recipients = (admins ?? []) as Array<{ id: number; name: string; email: string; organization_id: number }>;
+  if (recipients.length === 0) {
+    res.status(404).json({ error: "No admin recipients found" }); return;
+  }
+
+  const urgencyVal    = ["normal", "urgent", "critical"].includes(urgency ?? "") ? urgency! : "normal";
+  const targetTypeVal = targetType === "specific_org" ? "specific_org" : "all_admins";
+
+  const { rows: [msg] } = await pool.query<{ id: number }>(
+    `INSERT INTO sa_platform_messages
+       (sender_id, subject, body, channels, urgency, target_type, target_org_id, recipient_count)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+    [
+      parseInt(user.id), subject.trim(), body.trim(), channels,
+      urgencyVal, targetTypeVal,
+      targetType === "specific_org" ? (targetOrgId ?? null) : null,
+      recipients.length,
+    ],
+  );
+  if (!msg) { res.status(500).json({ error: "Failed to create message record" }); return; }
+
+  res.status(201).json({ id: msg.id, recipientCount: recipients.length });
+
+  // Fire delivery in background — never blocks the caller
+  void (async () => {
+    try {
+      const urgencyPrefix = urgencyVal === "critical" ? "🚨 " : urgencyVal === "urgent" ? "⚠️ " : "📣 ";
+      const notifTitle    = `${urgencyPrefix}${subject.trim()}`;
+      const notifBody     = body.trim().slice(0, 200);
+
+      // Insert recipient log rows
+      if (recipients.length > 0) {
+        const ph = recipients.map((_: unknown, i: number) =>
+          `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`).join(",");
+        await pool.query(
+          `INSERT INTO sa_platform_message_recipients
+             (message_id, recipient_id, org_id, in_app_sent)
+           VALUES ${ph} ON CONFLICT (message_id, recipient_id) DO NOTHING`,
+          recipients.flatMap(r => [msg.id, r.id, r.organization_id, channels.includes("in_app")]),
+        ).catch(() => {});
+      }
+
+      // ── In-App bell ──────────────────────────────────────────────────────────
+      if (channels.includes("in_app")) {
+        const notifRows = recipients.map(r => ({
+          organization_id: r.organization_id,
+          recipient_id:    r.id,
+          sender_id:       parseInt(user.id),
+          type:            "platform_broadcast",
+          title:           notifTitle,
+          body:            notifBody,
+          read:            false,
+        }));
+        await sa.from("private_notifications").insert(notifRows);
+      }
+
+      // ── Push ─────────────────────────────────────────────────────────────────
+      if (channels.includes("push")) {
+        const recipientIds = recipients.map(r => String(r.id));
+        const { rows: tokenRows } = await pool.query<{ token: string }>(
+          `SELECT token FROM device_push_tokens WHERE user_id = ANY($1)`,
+          [recipientIds],
+        );
+        const validPushes = tokenRows
+          .filter(r => Expo.isExpoPushToken(r.token))
+          .map(r => ({
+            to:       r.token,
+            title:    notifTitle,
+            body:     notifBody,
+            sound:    "default" as const,
+            priority: (urgencyVal !== "normal" ? "high" : "normal") as "high" | "normal",
+            data:     { type: "platform_broadcast", messageId: String(msg.id) },
+            badge:    1,
+          }));
+        if (validPushes.length > 0) {
+          const chunks = expoClient.chunkPushNotifications(validPushes);
+          await Promise.all(chunks.map(c => expoClient.sendPushNotificationsAsync(c).catch(() => {})));
+          await pool.query(
+            `UPDATE sa_platform_message_recipients SET push_sent = true WHERE message_id = $1`,
+            [msg.id],
+          ).catch(() => {});
+        }
+      }
+
+      // ── Email ────────────────────────────────────────────────────────────────
+      if (channels.includes("email")) {
+        const smtpHost = process.env["SMTP_HOST"];
+        if (smtpHost) {
+          const nodemailer  = await import("nodemailer");
+          const transporter = nodemailer.default.createTransport({
+            host:   smtpHost,
+            port:   Number(process.env["SMTP_PORT"] ?? 587),
+            secure: process.env["SMTP_PORT"] === "465",
+            auth:   { user: process.env["SMTP_USER"], pass: process.env["SMTP_PASS"] },
+          });
+          const urgencyLabel = urgencyVal === "critical" ? "CRITICAL ALERT"
+            : urgencyVal === "urgent" ? "URGENT NOTICE" : "Platform Update";
+          const accentColor  = urgencyVal === "critical" ? "#DC2626"
+            : urgencyVal === "urgent" ? "#D97706" : "#1E3A8A";
+          await Promise.allSettled(recipients.map(r =>
+            transporter.sendMail({
+              from:    process.env["SMTP_FROM"] ?? "STRIDE Platform <no-reply@stride.app>",
+              to:      r.email,
+              subject: `[STRIDE – ${urgencyLabel}] ${subject.trim()}`,
+              html: `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden">
+  <div style="background:#1E3A8A;padding:24px;text-align:center">
+    <h1 style="color:#FBBF24;margin:0;font-size:22px;letter-spacing:2px">STRIDE</h1>
+    <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:12px;letter-spacing:1px">PLATFORM COMMUNICATIONS</p>
+  </div>
+  <div style="padding:28px 24px">
+    ${urgencyVal !== "normal"
+      ? `<div style="background:${urgencyVal === "critical" ? "#FEE2E2" : "#FEF3C7"};border-left:4px solid ${accentColor};padding:10px 14px;border-radius:4px;margin-bottom:20px">
+           <strong style="color:${accentColor}">${urgencyLabel}</strong>
+         </div>` : ""}
+    <h2 style="color:#111827;font-size:18px;margin:0 0 16px">${subject.trim()}</h2>
+    <p style="color:#374151;line-height:1.7;white-space:pre-wrap">${body.trim()}</p>
+  </div>
+  <div style="background:#F9FAFB;padding:16px 24px;border-top:1px solid #E2E8F0;text-align:center">
+    <p style="color:#9CA3AF;font-size:11px;margin:0">
+      This message was sent by STRIDE to ${r.name} (${r.email}).<br>
+      If you believe you received this in error, contact support@stride.app.
+    </p>
+  </div>
+</div>`,
+              text: `[STRIDE – ${urgencyLabel}]\n\n${subject.trim()}\n\n${body.trim()}\n\n---\nSent by STRIDE Platform.`,
+            }).catch(() => {}),
+          ));
+          await pool.query(
+            `UPDATE sa_platform_message_recipients SET email_sent = true WHERE message_id = $1`,
+            [msg.id],
+          ).catch(() => {});
+        }
+        // If no SMTP configured — delivery is skipped silently (no-op in dev)
+      }
+    } catch { /* non-critical background — never blocks caller */ }
+  })();
+});
+
+// ── GET /super-admin/platform-broadcasts ──────────────────────────────────────
+router.get("/super-admin/platform-broadcasts", requireAuth, requireOwnerOrSuperAdmin, async (_req, res) => {
+  await ensureTables();
+  const { rows } = await pool.query(
+    `SELECT id, sender_id, subject, body, channels, urgency,
+            target_type, target_org_id, recipient_count, created_at
+     FROM sa_platform_messages ORDER BY created_at DESC LIMIT 100`,
+  );
+  res.json(rows);
+});
+
+// ── GET /super-admin/platform-broadcasts/:id/report ───────────────────────────
+router.get("/super-admin/platform-broadcasts/:id/report", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  await ensureTables();
+  const id = parseInt(String(req.params["id"] ?? ""), 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const { rows: msgs } = await pool.query(
+    `SELECT id, subject, body, channels, urgency, target_type, target_org_id, recipient_count, created_at
+     FROM sa_platform_messages WHERE id = $1`, [id],
+  );
+  if (!msgs.length) { res.status(404).json({ error: "Message not found" }); return; }
+
+  const { rows: recipients } = await pool.query(
+    `SELECT recipient_id, org_id, email_sent, push_sent, in_app_sent, read_at, created_at
+     FROM sa_platform_message_recipients WHERE message_id = $1 ORDER BY created_at ASC`,
+    [id],
+  );
+
+  const total    = recipients.length;
+  const read     = recipients.filter((r: { read_at: string | null }) => r.read_at).length;
+  const emailSent = recipients.filter((r: { email_sent: boolean }) => r.email_sent).length;
+  const pushSent  = recipients.filter((r: { push_sent: boolean }) => r.push_sent).length;
+  const inAppSent = recipients.filter((r: { in_app_sent: boolean }) => r.in_app_sent).length;
+
+  res.json({ message: msgs[0], stats: { total, read, emailSent, pushSent, inAppSent }, recipients });
 });
 
 export default router;

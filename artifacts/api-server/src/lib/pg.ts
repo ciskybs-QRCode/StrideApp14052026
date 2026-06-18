@@ -1027,5 +1027,40 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_mrl_recip ON message_read_log(recipient_id);
   `).catch(() => {});
 
+  // ── STRIDE Platform Messages (Super Admin → Association Admins) ───────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS sa_platform_messages (
+      id              SERIAL      PRIMARY KEY,
+      sender_id       INTEGER     NOT NULL,
+      subject         TEXT        NOT NULL,
+      body            TEXT        NOT NULL,
+      channels        TEXT[]      NOT NULL DEFAULT '{}',
+      urgency         TEXT        NOT NULL DEFAULT 'normal',
+      target_type     TEXT        NOT NULL DEFAULT 'all_admins',
+      target_org_id   INTEGER,
+      recipient_count INTEGER     NOT NULL DEFAULT 0,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).catch(() => {});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS sa_platform_message_recipients (
+      id           SERIAL      PRIMARY KEY,
+      message_id   INTEGER     NOT NULL,
+      recipient_id INTEGER     NOT NULL,
+      org_id       INTEGER     NOT NULL,
+      email_sent   BOOLEAN     NOT NULL DEFAULT FALSE,
+      push_sent    BOOLEAN     NOT NULL DEFAULT FALSE,
+      in_app_sent  BOOLEAN     NOT NULL DEFAULT FALSE,
+      read_at      TIMESTAMPTZ,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (message_id, recipient_id)
+    )
+  `).catch(() => {});
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_sapm_created  ON sa_platform_messages(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_sapmr_message ON sa_platform_message_recipients(message_id);
+    CREATE INDEX IF NOT EXISTS idx_sapmr_recip   ON sa_platform_message_recipients(recipient_id);
+  `).catch(() => {});
+
   initialized = true;
 }

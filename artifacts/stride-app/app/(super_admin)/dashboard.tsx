@@ -44,6 +44,13 @@ const MENU_CARDS: MenuCard[] = [
     route: "/(super_admin)/user-admin",
   },
   {
+    id: "comms",
+    icon: "megaphone-outline",
+    title: "Platform Communications",
+    subtitle: "Email · push · in-app messages to admins",
+    route: "/(super_admin)/sa-comms",
+  },
+  {
     id: "activity",
     icon: "pulse-outline",
     title: "Recent Activity",
