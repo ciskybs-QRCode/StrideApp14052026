@@ -161,6 +161,8 @@ export default function AdminHome() {
   const [orgName, setOrgName]               = useState<string>("");
   const [orgLoadError, setOrgLoadError]     = useState(false);
   const [preferredName, setPreferredName]   = useState("");
+  const [orgContactPhone, setOrgContactPhone] = useState("");
+  const [orgContactEmail, setOrgContactEmail] = useState("");
 
   const handlePickProfilePhoto = async () => {
     try {
@@ -188,6 +190,8 @@ export default function AdminHome() {
     }).catch(() => {});
     api.getOrg().then(org => {
       if (org?.name) setOrgName(org.name);
+      if (org?.contact_phone)  setOrgContactPhone(org.contact_phone);
+      if (org?.official_email) setOrgContactEmail(org.official_email);
     }).catch(() => setOrgLoadError(true));
     Animated.loop(
       Animated.sequence([
@@ -485,6 +489,51 @@ export default function AdminHome() {
           ))}
         </View>
 
+        {/* ── Contact the Office ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 24, marginBottom: 10 }]}>
+          Contact the Office
+        </Text>
+        <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
+          {(orgContactPhone || orgContactEmail) ? (
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {!!orgContactPhone && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`https://wa.me/${orgContactPhone.replace(/\D/g, "")}`)}
+                >
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>WhatsApp</Text>
+                </Pressable>
+              )}
+              {!!orgContactEmail && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
+                >
+                  <Ionicons name="mail" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Email</Text>
+                </Pressable>
+              )}
+              {!!orgContactPhone && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
+                >
+                  <Ionicons name="call" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Call</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <View style={{ alignItems: "center", paddingVertical: 18, gap: 6 }}>
+              <Ionicons name="call-outline" size={24} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center" }}>
+                Contact info not configured yet.{"\n"}Go to Settings → Organisation Info to add it.
+              </Text>
+            </View>
+          )}
+        </View>
+
       </ScrollView>
 
       {/* ══════════════════════════════════════════════════
@@ -775,6 +824,7 @@ const styles = StyleSheet.create({
   periodBtnText: { fontSize: 13, fontWeight: "600" },
 
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
+  contactCard:  { borderRadius: 16, padding: 14, marginBottom: 20 },
 
   qrCodeBtn: { flexDirection: "row", alignItems: "center", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
   qrCodeBtnIcon: { width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },

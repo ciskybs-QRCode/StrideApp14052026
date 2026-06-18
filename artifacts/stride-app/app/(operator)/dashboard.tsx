@@ -305,6 +305,8 @@ export default function OperatorDashboard() {
   const [preferredName, setPreferredName] = useState("");
   const [scanned, setScanned]             = useState(false);
   const [orgLogoUri, setOrgLogoUri]       = useState<string | null>(null);
+  const [orgContactPhone, setOrgContactPhone] = useState("");
+  const [orgContactEmail, setOrgContactEmail] = useState("");
   const pulseAnim  = useRef(new Animated.Value(1)).current;
   const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activityLog, setActivityLog]     = useState<LogEntry[]>([]);
@@ -388,7 +390,9 @@ export default function OperatorDashboard() {
       if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
     }).catch(() => {});
     api.getOrg().then(org => {
-      if (org.logo_url) setOrgLogoUri(org.logo_url);
+      if (org.logo_url)       setOrgLogoUri(org.logo_url);
+      if (org.contact_phone)  setOrgContactPhone(org.contact_phone);
+      if (org.official_email) setOrgContactEmail(org.official_email);
     }).catch(() => {});
     Animated.loop(
       Animated.sequence([
@@ -1548,6 +1552,51 @@ export default function OperatorDashboard() {
           </View>
         ))}
 
+        {/* ── Contact the Office ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 24, marginBottom: 10 }]}>
+          Contact the Office
+        </Text>
+        <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
+          {(orgContactPhone || orgContactEmail) ? (
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {!!orgContactPhone && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`https://wa.me/${orgContactPhone.replace(/\D/g, "")}`)}
+                >
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>WhatsApp</Text>
+                </Pressable>
+              )}
+              {!!orgContactEmail && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
+                >
+                  <Ionicons name="mail" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Email</Text>
+                </Pressable>
+              )}
+              {!!orgContactPhone && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
+                >
+                  <Ionicons name="call" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Call</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <View style={{ alignItems: "center", paddingVertical: 18, gap: 6 }}>
+              <Ionicons name="call-outline" size={24} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center" }}>
+                Contact info not configured yet.{"\n"}Go to Settings → Organisation Info to add it.
+              </Text>
+            </View>
+          )}
+        </View>
+
       </ScrollView>
 
       {/* ══════════════════════════════════════════════════
@@ -2613,6 +2662,7 @@ const styles = StyleSheet.create({
 
   // Section title — exact copy of Parent
   sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12 },
+  contactCard:  { borderRadius: 16, padding: 14, marginBottom: 20 },
   privateLessonCard: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 18, padding: 16, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
   privateLessonIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   privateLessonTitle: { fontSize: 16, fontWeight: "800", color: "#FFF", marginBottom: 2 },

@@ -190,44 +190,6 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
-        {/* ── Contact the Office ── */}
-        {(orgContactPhone || orgContactEmail) && (
-          <>
-            <Text style={[styles.pageTitle, { color: colors.primary, fontSize: 16, marginBottom: 12, marginTop: 4 }]}>
-              Contact the Office
-            </Text>
-            <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
-              {!!orgContactPhone && (
-                <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
-                  onPress={() => Linking.openURL(`https://wa.me/${orgContactPhone.replace(/\D/g, "")}`)}
-                >
-                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>WhatsApp</Text>
-                </Pressable>
-              )}
-              {!!orgContactEmail && (
-                <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
-                  onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
-                >
-                  <Ionicons name="mail" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Email</Text>
-                </Pressable>
-              )}
-              {!!orgContactPhone && (
-                <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
-                  onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
-                >
-                  <Ionicons name="call" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Call</Text>
-                </Pressable>
-              )}
-            </View>
-          </>
-        )}
-
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` · ${user.schoolName}` : ""}
         </Text>
