@@ -490,28 +490,6 @@ export default function ParentHome() {
           <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        {/* My Associations */}
-        <Pressable
-          style={({ pressed }) => ({
-            flexDirection: "row" as const, alignItems: "center" as const, gap: 14,
-            paddingVertical: 14, paddingHorizontal: 16,
-            borderRadius: 16, marginBottom: 10, borderWidth: 1,
-            backgroundColor: colors.card, borderColor: colors.border,
-            opacity: pressed ? 0.85 : 1,
-          })}
-          onPress={() => router.push("/my-associations" as Parameters<typeof router.push>[0])}
-          accessibilityRole="button"
-        >
-          <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.primary}10` }}>
-            <Ionicons name="shield-checkmark" size={22} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground, marginBottom: 1 }}>My Associations</Text>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>View and switch your active association</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-        </Pressable>
-
         {/* ── SOS Emergency ── */}
         <SOSButton onConfirm={handleMemberSOS} />
 
