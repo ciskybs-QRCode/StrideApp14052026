@@ -105,7 +105,9 @@ export default function AdminMarketplaceScreen() {
   // ── Load ─────────────────────────────────────────────────────────────────
   const loadProducts = useCallback(async () => {
     try {
-      const res = await api.listMarketplaceProducts(orgId ? { org_id: orgId } : undefined);
+      const res = await api.listMarketplaceProducts(
+        orgId ? { org_id: orgId, include_drafts: true } : { include_drafts: true },
+      );
       setProducts(res.products);
     } catch { /* silent */ }
     finally { setLoading(false); }
@@ -177,6 +179,14 @@ export default function AdminMarketplaceScreen() {
         catch { Alert.alert("Error", "Could not remove product."); }
       }},
     ]);
+  };
+
+  const togglePublishProduct = async (p: MarketplaceProduct) => {
+    try {
+      await api.updateMarketplaceProduct(p.id, { is_active: !p.is_active });
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void loadProducts();
+    } catch { Alert.alert("Error", "Could not update product status."); }
   };
 
   // ── Shop Links CRUD ───────────────────────────────────────────────────────
@@ -281,7 +291,10 @@ export default function AdminMarketplaceScreen() {
             <View style={[S.sectionHeader, { marginTop: 20 }]}>
               <View style={S.sectionLeft}>
                 <Text style={[S.sectionTitle, { color: colors.foreground }]}>Your Products</Text>
-                <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>{orgProducts.length} product{orgProducts.length !== 1 ? "s" : ""} listed</Text>
+                <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>
+                  {orgProducts.filter(p => p.is_active).length} published
+                  {orgProducts.filter(p => !p.is_active).length > 0 ? ` · ${orgProducts.filter(p => !p.is_active).length} draft` : ""}
+                </Text>
               </View>
               <Pressable style={S.addBtn} onPress={openAddProduct}>
                 <Ionicons name="add" size={16} color="#FFF" />
@@ -296,7 +309,14 @@ export default function AdminMarketplaceScreen() {
 
               </View>
             ) : orgProducts.map(p => (
-              <ProductRow key={p.id} product={p} colors={colors} onEdit={() => openEditProduct(p)} onRemove={() => removeProduct(p)} />
+              <ProductRow
+                key={p.id}
+                product={p}
+                colors={colors}
+                onEdit={() => openEditProduct(p)}
+                onRemove={() => removeProduct(p)}
+                onTogglePublish={() => void togglePublishProduct(p)}
+              />
             ))}
           </ScrollView>
         )
@@ -503,19 +523,20 @@ function FieldLabel({ label, colors }: { label: string; colors: ReturnType<typeo
   return <Text style={[S.fieldLabel, { color: colors.mutedForeground }]}>{label}</Text>;
 }
 
-function ProductRow({ product, colors, readOnly = false, onEdit, onRemove }: {
+function ProductRow({ product, colors, readOnly = false, onEdit, onRemove, onTogglePublish }: {
   product: MarketplaceProduct;
   colors: ReturnType<typeof useColors>;
   readOnly?: boolean;
   onEdit?: () => void;
   onRemove?: () => void;
+  onTogglePublish?: () => void;
 }) {
   const meta = catMeta(product.category);
   const platformFee = Math.round(product.price_cents * Number(product.platform_fee_pct) / 100);
   const netAmount   = product.price_cents - platformFee;
 
   return (
-    <View style={[S.productRow, { backgroundColor: colors.card }]}>
+    <View style={[S.productRow, { backgroundColor: colors.card, opacity: product.is_active ? 1 : 0.8 }]}>
       <View style={[S.productIcon, { backgroundColor: meta.bg }]}>
         <Ionicons name={meta.icon} size={18} color={meta.color} />
       </View>
@@ -523,6 +544,11 @@ function ProductRow({ product, colors, readOnly = false, onEdit, onRemove }: {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
           <Text style={[S.productTitle, { color: colors.foreground }]} numberOfLines={1}>{product.title}</Text>
           {product.is_stride_verified && <Ionicons name="checkmark-circle" size={14} color="#D4AF37" />}
+          {!product.is_active && !readOnly && (
+            <View style={{ backgroundColor: "#FEF3C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+              <Text style={{ fontSize: 10, fontWeight: "800", color: "#D97706" }}>DRAFT</Text>
+            </View>
+          )}
         </View>
         <View style={S.productMeta}>
           <View style={[S.catPill, { backgroundColor: meta.bg }]}>
@@ -534,6 +560,17 @@ function ProductRow({ product, colors, readOnly = false, onEdit, onRemove }: {
           </Text>
         </View>
         <Text style={{ color: "#059669", fontSize: 11, fontWeight: "600" }}>You receive: {fmtPrice(netAmount)}</Text>
+        {!readOnly && !product.is_stride_verified && (
+          <Pressable onPress={onTogglePublish} style={{ marginTop: 6, alignSelf: "flex-start" }}>
+            <Text style={{
+              fontSize: 11, fontWeight: "700",
+              color: product.is_active ? "#6B7280" : "#1E3A8A",
+              textDecorationLine: "underline",
+            }}>
+              {product.is_active ? "Unpublish" : "Publish"}
+            </Text>
+          </Pressable>
+        )}
       </View>
       {!readOnly && (
         <View style={{ flexDirection: "row", gap: 8 }}>

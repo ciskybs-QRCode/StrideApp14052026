@@ -29,7 +29,7 @@ import { usePaidLessons, type PaidLesson } from "@/context/PaidLessonsContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useFeatures } from "@/context/FeaturesContext";
 import { useColors } from "@/hooks/useColors";
-import { api } from "@/lib/api";
+import { api, listEvents } from "@/lib/api";
 
 const LOGO = require("@/assets/images/stride-logo.png");
 
@@ -76,6 +76,19 @@ export default function ParentHome() {
   const [absenceType, setAbsenceType] = useState<AbsenceType>("absent");
   const [selectedChild, setSelectedChild] = useState<string>("self");
   const [qrTarget, setQrTarget] = useState<"parent" | string>("parent");
+
+  const orgId = (user as { orgId?: number } | null)?.orgId;
+  const [hasPublishedEvents,   setHasPublishedEvents]   = useState(false);
+  const [hasPublishedProducts, setHasPublishedProducts] = useState(false);
+
+  useEffect(() => {
+    listEvents().then(evts => setHasPublishedEvents(evts.length > 0)).catch(() => {});
+    if (orgId) {
+      api.listMarketplaceProducts({ org_id: orgId })
+        .then(res => setHasPublishedProducts(res.products.filter(p => !p.is_stride_verified).length > 0))
+        .catch(() => {});
+    }
+  }, [orgId]);
 
   // Future absence state
   const [absMode, setAbsMode] = useState<"today" | "future">("today");
@@ -529,8 +542,8 @@ export default function ParentHome() {
           </Pressable>
         </View>
 
-        {/* ── Stride Marketplace Banner (visible only when global flag is ON) ── */}
-        {marketplaceEnabled && (
+        {/* ── Stride Marketplace Banner (global flag ON + org has published products) ── */}
+        {marketplaceEnabled && hasPublishedProducts && (
           <Pressable
             style={({ pressed }) => [styles.marketplaceBanner, { transform: pressed ? [{ scale: 0.98 }] : [] }]}
             onPress={() => router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0])}
@@ -551,8 +564,8 @@ export default function ParentHome() {
           </Pressable>
         )}
 
-        {/* ── Events Banner ── */}
-        <Pressable
+        {/* ── Events Banner (only when org has published events) ── */}
+        {hasPublishedEvents && <Pressable
           style={({ pressed }) => [styles.marketplaceBanner, { backgroundColor: "#7C3AED", transform: pressed ? [{ scale: 0.98 }] : [] }]}
           onPress={() => router.push("/(parent)/events" as Parameters<typeof router.push>[0])}
         >
@@ -566,7 +579,7 @@ export default function ParentHome() {
             </View>
           </View>
           <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
-        </Pressable>
+        </Pressable>}
 
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>

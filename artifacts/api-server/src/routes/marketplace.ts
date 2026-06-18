@@ -78,12 +78,12 @@ router.use("/marketplace", async (_req: Request, res: Response, next: NextFuncti
 });
 
 // ── GET /marketplace/products ─────────────────────────────────────────────────
-// List all active marketplace products.
-// Query params: org_id (includes org products + global verified), category, verified=true
+// List marketplace products.
+// Query params: org_id, category, verified=true, include_drafts=true (admin)
 router.get("/marketplace/products", requireAuth, async (req: Request, res: Response) => {
-  const { org_id, category, verified } = req.query as Record<string, string | undefined>;
+  const { org_id, category, verified, include_drafts } = req.query as Record<string, string | undefined>;
 
-  const conditions: string[] = ["is_active = true"];
+  const conditions: string[] = include_drafts === "true" ? [] : ["is_active = true"];
   const params: unknown[] = [];
 
   if (org_id) {
@@ -98,13 +98,15 @@ router.get("/marketplace/products", requireAuth, async (req: Request, res: Respo
     conditions.push("is_stride_verified = true");
   }
 
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
   const { rows } = await pool.query(
     `SELECT id, org_id, title, description, category,
             price_cents, currency, platform_fee_pct,
-            image_url, is_stride_verified, created_at
+            image_url, is_stride_verified, is_active, created_at
      FROM marketplace_products
-     WHERE ${conditions.join(" AND ")}
-     ORDER BY is_stride_verified DESC, org_id NULLS FIRST, created_at DESC`,
+     ${whereClause}
+     ORDER BY is_stride_verified DESC, is_active DESC, org_id NULLS FIRST, created_at DESC`,
     params,
   );
 
@@ -140,8 +142,8 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
 
   const { rows } = await pool.query(
     `INSERT INTO marketplace_products
-       (org_id, title, description, category, price_cents, currency, platform_fee_pct, image_url, is_stride_verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (org_id, title, description, category, price_cents, currency, platform_fee_pct, image_url, is_stride_verified, is_active)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false)
      RETURNING *`,
     [
       resolvedOrgId,

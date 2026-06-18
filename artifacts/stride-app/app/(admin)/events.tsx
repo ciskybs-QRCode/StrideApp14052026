@@ -90,7 +90,8 @@ function EventDetailSheet({
   const [newTypeMax, setNewTypeMax]       = useState("10");
   const [newTypeFree, setNewTypeFree]     = useState("0");
 
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]       = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   const reload = useCallback(async (id: string) => {
     setLoadingDetail(true);
@@ -163,6 +164,17 @@ function EventDetailSheet({
     ]);
   };
 
+  const handleTogglePublish = async () => {
+    if (!ev) return;
+    setPublishing(true);
+    try {
+      await updateEvent(ev.id, { is_active: !ev.is_active });
+      await reload(ev.id);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { /* ignore */ }
+    setPublishing(false);
+  };
+
   const handleDeleteEvent = () => {
     Alert.alert("Delete event?", "Members won't be able to browse or purchase tickets.", [
       { text: "Cancel", style: "cancel" },
@@ -181,6 +193,9 @@ function EventDetailSheet({
         <View style={[styles.sheetHeader, { borderBottomColor: colors.border }]}>
           <Text style={[styles.sheetTitle, { color: colors.text }]} numberOfLines={1}>{ev.title}</Text>
           <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>
+            <Pressable onPress={handleTogglePublish} disabled={publishing} style={{ opacity: publishing ? 0.5 : 1 }}>
+              <Ionicons name={ev.is_active ? "eye-off-outline" : "eye-outline"} size={20} color={ev.is_active ? "#6B7280" : "#1E3A8A"} />
+            </Pressable>
             <Pressable onPress={handleDeleteEvent}>
               <Ionicons name="trash-outline" size={20} color="#EF4444" />
             </Pressable>
@@ -194,6 +209,36 @@ function EventDetailSheet({
           <ActivityIndicator size="large" color="#1E3A8A" style={{ marginTop: 60 }} />
         ) : (
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+            {/* ── Draft / Published status banner ── */}
+            {!ev.is_active ? (
+              <View style={{ backgroundColor: "#FEF3C7", borderRadius: 12, padding: 14, marginBottom: 16, flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Ionicons name="eye-off-outline" size={20} color="#D97706" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "800", color: "#D97706", fontSize: 13 }}>Draft — not visible to members</Text>
+                  <Text style={{ color: "#92400E", fontSize: 12, marginTop: 2 }}>Add dates & ticket types, then publish when ready.</Text>
+                </View>
+                <Pressable
+                  onPress={handleTogglePublish}
+                  disabled={publishing}
+                  style={{ backgroundColor: "#D97706", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}
+                >
+                  {publishing
+                    ? <ActivityIndicator size="small" color="#FFF" />
+                    : <Text style={{ color: "#FFF", fontWeight: "800", fontSize: 12 }}>Publish</Text>}
+                </Pressable>
+              </View>
+            ) : (
+              <View style={{ backgroundColor: "#F0FDF4", borderRadius: 12, padding: 12, marginBottom: 16, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                <Text style={{ color: "#059669", fontSize: 12, fontWeight: "700", flex: 1 }}>Published — visible to members</Text>
+                <Pressable onPress={handleTogglePublish} disabled={publishing}>
+                  <Text style={{ color: "#6B7280", fontSize: 11, textDecorationLine: "underline" }}>
+                    {publishing ? "..." : "Unpublish"}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+
             {ev.location ? (
               <View style={styles.infoRow}>
                 <Ionicons name="location-outline" size={14} color={colors.mutedForeground} />
@@ -361,7 +406,7 @@ export default function AdminEventsScreen() {
   const [showDetail, setShowDetail] = useState(false);
 
   const load = useCallback(async () => {
-    try { setEvents(await listEvents()); } catch { /* ignore */ }
+    try { setEvents(await listEvents(undefined, { includeDrafts: true })); } catch { /* ignore */ }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
@@ -429,6 +474,16 @@ export default function AdminEventsScreen() {
                     </Text>
                   ) : null}
                   <View style={styles.cardTags}>
+                    {!e.is_active && (
+                      <View style={[styles.catPill, { backgroundColor: "#FEF3C7" }]}>
+                        <Text style={[styles.catPillText, { color: "#D97706" }]}>Draft</Text>
+                      </View>
+                    )}
+                    {e.is_active && (
+                      <View style={[styles.catPill, { backgroundColor: "#F0FDF4" }]}>
+                        <Text style={[styles.catPillText, { color: "#059669" }]}>Published</Text>
+                      </View>
+                    )}
                     <View style={styles.catPill}>
                       <Text style={styles.catPillText}>{e.category}</Text>
                     </View>

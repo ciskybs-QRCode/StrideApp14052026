@@ -963,11 +963,12 @@ export const api = {
     request<{ ok: boolean; child_id: string; status: string }>("POST", `/proximity/transit-clear/${childId}`),
 
   // ── Stride-Verified Marketplace ────────────────────────────────────────────
-  listMarketplaceProducts: (params?: { org_id?: number; category?: string; verified?: boolean }) => {
+  listMarketplaceProducts: (params?: { org_id?: number; category?: string; verified?: boolean; include_drafts?: boolean }) => {
     const qs = new URLSearchParams();
-    if (params?.org_id   != null)  qs.set("org_id",   String(params.org_id));
-    if (params?.category)          qs.set("category",  params.category);
-    if (params?.verified === true) qs.set("verified",  "true");
+    if (params?.org_id        != null)  qs.set("org_id",         String(params.org_id));
+    if (params?.category)               qs.set("category",        params.category);
+    if (params?.verified === true)      qs.set("verified",        "true");
+    if (params?.include_drafts === true) qs.set("include_drafts", "true");
     const q = qs.toString();
     return request<{ products: MarketplaceProduct[] }>("GET", `/marketplace/products${q ? `?${q}` : ""}`);
   },
@@ -2520,8 +2521,11 @@ export interface EventTicket {
   ticket_type_name?: string;
 }
 
-export function listEvents(orgId?: number): Promise<StrideEvent[]> {
-  const q = orgId ? `?org_id=${orgId}` : "";
+export function listEvents(orgId?: number, opts?: { includeDrafts?: boolean }): Promise<StrideEvent[]> {
+  const qs = new URLSearchParams();
+  if (orgId) qs.set("org_id", String(orgId));
+  if (opts?.includeDrafts) qs.set("include_drafts", "true");
+  const q = qs.size > 0 ? `?${qs.toString()}` : "";
   return request<StrideEvent[]>("GET", `/events${q}`);
 }
 

@@ -29,9 +29,13 @@ type AuthReq = Request & { user: TokenPayload };
 const router = Router();
 
 // ── GET /events ───────────────────────────────────────────────────────────────
+// include_drafts=true  → admin/operator fetches ALL events (draft + published)
+// include_drafts=false → members only see published events (is_active = true)
 router.get("/events", requireAuth, async (req: Request, res: Response) => {
   const user = (req as AuthReq).user;
   const orgId = parseInt(String(req.query["org_id"] ?? user.orgId), 10);
+  const includeDrafts = req.query["include_drafts"] === "true";
+  const activeFilter = includeDrafts ? "" : " AND e.is_active = true";
   try {
     const { rows } = await pool.query<{
       id: string; org_id: number; title: string; description: string;
@@ -44,7 +48,7 @@ router.get("/events", requireAuth, async (req: Request, res: Response) => {
        FROM events e
        LEFT JOIN event_dates       ed  ON ed.event_id  = e.id
        LEFT JOIN event_ticket_types ett ON ett.event_id = e.id AND ett.is_active = true
-       WHERE e.org_id = $1 AND e.is_active = true
+       WHERE e.org_id = $1${activeFilter}
        GROUP BY e.id
        ORDER BY e.created_at DESC`,
       [orgId],
@@ -340,7 +344,7 @@ router.get("/events/:id", requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params as { id: string };
   try {
     const { rows: events } = await pool.query(
-      `SELECT * FROM events WHERE id = $1 AND is_active = true`, [id],
+      `SELECT * FROM events WHERE id = $1`, [id],
     );
     if (!events[0]) { res.status(404).json({ error: "Event not found" }); return; }
 
@@ -366,8 +370,8 @@ router.post("/events", requireAuth, requireRole("admin"), async (req: Request, r
   if (!title?.trim()) { res.status(400).json({ error: "title is required" }); return; }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO events (org_id, title, description, location, category, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      `INSERT INTO events (org_id, title, description, location, category, created_by, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6, false) RETURNING *`,
       [user.orgId, title.trim(), description ?? null, location ?? null, category, user.id],
     );
     res.status(201).json(rows[0]);
