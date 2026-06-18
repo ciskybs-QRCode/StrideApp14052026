@@ -284,7 +284,7 @@ export default function DocumentsScreen() {
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Settings</Text>
 
         {/* ── Profile Identity Card ── */}
-        <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
+        <View style={[styles.profileCard, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
           <View style={styles.profileCardInner}>
             <Pressable onPress={handlePickProfilePhoto} style={styles.avatarWrap}>
               {user?.profilePhotoUri ? (
@@ -299,16 +299,16 @@ export default function DocumentsScreen() {
               </View>
             </Pressable>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName} numberOfLines={1}>{user?.name ?? "Member"}</Text>
-              {user?.email ? <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text> : null}
+              <Text style={[styles.profileName, { color: colors.foreground }]} numberOfLines={1}>{user?.name ?? "Member"}</Text>
+              {user?.email ? <Text style={[styles.profileEmail, { color: colors.mutedForeground }]} numberOfLines={1}>{user.email}</Text> : null}
               <View style={styles.roleBadge}>
                 <Ionicons name="person" size={11} color="#1E3A8A" />
                 <Text style={styles.roleBadgeText}>Member</Text>
               </View>
             </View>
-            <Pressable style={styles.editProfileBtn} onPress={openEditProfile} hitSlop={8}>
-              <Ionicons name="pencil-outline" size={14} color="#FFF" />
-              <Text style={styles.editProfileBtnText}>Edit</Text>
+            <Pressable style={[styles.editProfileBtn, { backgroundColor: "rgba(30,58,138,0.08)", borderWidth: 1, borderColor: "rgba(30,58,138,0.2)" }]} onPress={openEditProfile} hitSlop={8}>
+              <Ionicons name="pencil-outline" size={14} color="#1E3A8A" />
+              <Text style={[styles.editProfileBtnText, { color: "#1E3A8A" }]}>Edit</Text>
             </Pressable>
           </View>
         </View>
@@ -747,17 +747,17 @@ const styles = StyleSheet.create({
   profileCard: { borderRadius: 20, marginBottom: 24, overflow: "hidden" },
   profileCardInner: { flexDirection: "row", alignItems: "center", gap: 14, padding: 20 },
   avatarWrap: { position: "relative" },
-  avatarCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
+  avatarCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" },
   avatarPhoto: { width: 54, height: 54, borderRadius: 27 },
-  avatarInitial: { color: "#FFF", fontSize: 22, fontWeight: "700" },
+  avatarInitial: { color: "#1E3A8A", fontSize: 22, fontWeight: "700" },
   cameraOverlay: { position: "absolute", bottom: 0, right: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
   profileInfo: { flex: 1, minWidth: 0 },
-  profileName: { color: "#FFF", fontSize: 16, fontWeight: "700", marginBottom: 2 },
-  profileEmail: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginBottom: 6 },
+  profileName: { fontSize: 16, fontWeight: "700", marginBottom: 2 },
+  profileEmail: { fontSize: 12, marginBottom: 6 },
   roleBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FBBF24", alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
   roleBadgeText: { fontSize: 10, fontWeight: "700", color: "#1E3A8A" },
-  editProfileBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8 },
-  editProfileBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
+  editProfileBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8 },
+  editProfileBtnText: { fontSize: 12, fontWeight: "700" },
 
   // Document tiles
   docTile: { borderRadius: 16, marginBottom: 12, overflow: "hidden" },
