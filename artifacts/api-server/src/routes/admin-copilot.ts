@@ -36,7 +36,7 @@ const CLASSIFY_TOOL = {
       properties: {
         intent: {
           type: "string",
-          enum: ["missing_payments","expired_documents","operator_absences","member_summary","revenue_summary","unknown"],
+          enum: ["missing_payments","expired_documents","operator_absences","member_summary","revenue_summary","message_read_receipt","unknown"],
           description: "The detected intent of the query.",
         },
         period: {
@@ -47,6 +47,8 @@ const CLASSIFY_TOOL = {
         location: { type: "string", description: "Location or city name if mentioned, otherwise null." },
         limit: { type: "number", description: "Maximum number of rows to return, default 20." },
         status_filter: { type: "string", description: "Status to filter on (e.g. expired, pending, overdue)." },
+        member_name: { type: "string", description: "Name or partial name of the member/recipient to look up." },
+        message_title: { type: "string", description: "Title or subject of the broadcast message to look up." },
       },
       required: ["intent","period"],
     },
@@ -67,6 +69,8 @@ function classifyByKeywords(text: string): IntentResult {
     return { intent: "member_summary", period: "all_time", limit: 0 };
   if (/revenue|earning|income|money|sales/.test(t))
     return { intent: "revenue_summary", period: "this_month", limit: 0 };
+  if (/letto|read|visto|seen|messag|notif|comunicaz|skip|ignor|aperto/.test(t))
+    return { intent: "message_read_receipt", period: "this_month", limit: 50 };
   return { intent: "unknown", period: "all_time", limit: 0 };
 }
 
@@ -112,6 +116,8 @@ interface IntentResult {
   location?: string | null;
   limit?: number;
   status_filter?: string | null;
+  member_name?: string | null;
+  message_title?: string | null;
 }
 
 // ── Query executors ────────────────────────────────────────────────────────────
@@ -327,6 +333,88 @@ async function queryRevenueSummary(orgId: number, ir: IntentResult) {
   };
 }
 
+// ── Message read-receipt audit query ─────────────────────────────────────────
+
+async function queryMessageReadReceipt(orgId: number, ir: IntentResult) {
+  const { from, to } = getDateRange(ir.period);
+
+  // Build dynamic WHERE filters
+  const conditions: string[] = [
+    "mrl.organization_id = $1",
+    `mrl.delivered_at >= $2`,
+    `mrl.delivered_at <= $3`,
+  ];
+  const params: unknown[] = [orgId, from, to + "T23:59:59"];
+  let idx = 4;
+
+  if (ir.member_name) {
+    conditions.push(`mrl.recipient_name ILIKE $${idx}`);
+    params.push(`%${ir.member_name}%`);
+    idx++;
+  }
+  if (ir.message_title) {
+    conditions.push(`bm.title ILIKE $${idx}`);
+    params.push(`%${ir.message_title}%`);
+    idx++;
+  }
+
+  const { rows } = await pool.query<{
+    recipient_name: string;
+    recipient_role: string;
+    message_title: string;
+    delivered_at: string;
+    read_at: string | null;
+    skipped_at: string | null;
+    push_sent: boolean;
+  }>(
+    `SELECT mrl.recipient_name,
+            mrl.recipient_role,
+            bm.title AS message_title,
+            mrl.delivered_at,
+            mrl.read_at,
+            mrl.skipped_at,
+            mrl.push_sent
+     FROM message_read_log mrl
+     LEFT JOIN broadcast_messages bm
+            ON bm.id::text = mrl.broadcast_message_id
+     WHERE ${conditions.join(" AND ")}
+     ORDER BY mrl.delivered_at DESC
+     LIMIT 100`,
+    params,
+  );
+
+  const total   = rows.length;
+  const read    = rows.filter(r => r.read_at).length;
+  const skipped = rows.filter(r => r.skipped_at && !r.read_at).length;
+  const pending = total - read - skipped;
+
+  const summaryParts: string[] = [];
+  if (total === 0) {
+    summaryParts.push("Nessun record trovato per questa ricerca.");
+  } else {
+    summaryParts.push(`Trovate ${total} consegne — ✅ ${read} letti, ⏭ ${skipped} saltati, ⏳ ${pending} in attesa.`);
+    if (ir.member_name) summaryParts.push(`Filtrato per membro: "${ir.member_name}".`);
+    if (ir.message_title) summaryParts.push(`Filtrato per messaggio: "${ir.message_title}".`);
+  }
+
+  return {
+    intent: "message_read_receipt",
+    summary: summaryParts.join(" "),
+    columns: ["Membro", "Ruolo", "Messaggio", "Consegnato", "Letto", "Saltato", "Push"],
+    rows: rows.map(r => [
+      r.recipient_name ?? "—",
+      r.recipient_role ?? "—",
+      (r.message_title ?? "—").slice(0, 30),
+      r.delivered_at?.slice(0, 16).replace("T", " ") ?? "—",
+      r.read_at     ? r.read_at.slice(0, 16).replace("T", " ") : "Non letto",
+      r.skipped_at  ? r.skipped_at.slice(0, 16).replace("T", " ") : "—",
+      r.push_sent ? "✅" : "—",
+    ]),
+    totalCount: total,
+    meta: { total, read, skipped, pending, from, to },
+  };
+}
+
 // ── Main route ────────────────────────────────────────────────────────────────
 
 router.post(
@@ -404,6 +492,9 @@ router.post(
           break;
         case "revenue_summary":
           result = await queryRevenueSummary(orgId, intentResult);
+          break;
+        case "message_read_receipt":
+          result = await queryMessageReadReceipt(orgId, intentResult);
           break;
         default:
           result = {

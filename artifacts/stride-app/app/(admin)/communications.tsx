@@ -249,6 +249,12 @@ export default function AdminCommunications() {
   const [showCompose, setShowCompose] = useState(false);
   const [showDetail, setShowDetail] = useState<SentMessage | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showReport, setShowReport] = useState<SentMessage | null>(null);
+  const [reportData, setReportData] = useState<{
+    stats: { total: number; read: number; skipped: number; pending: number };
+    recipients: { recipient_name: string; recipient_role: string; delivered_at: string; read_at: string | null; skipped_at: string | null; push_sent: boolean }[];
+  } | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
 
   // Compose fields
   const [title, setTitle] = useState("");
@@ -412,6 +418,21 @@ export default function AdminCommunications() {
     Alert.alert("Copied", ok ? "Message copied to clipboard." : "Please select and copy the text manually.");
   };
 
+  const handleOpenReport = async (item: SentMessage) => {
+    setShowReport(item);
+    setReportData(null);
+    setReportLoading(true);
+    try {
+      const res = await fetch(`/api/messages/broadcast/${item.id}/report`, {
+        headers: { Authorization: `Bearer ${await AsyncStorage.getItem("stride_token")}` },
+      });
+      if (res.ok) setReportData(await res.json());
+    } catch { /* silent */ } finally {
+      setReportLoading(false);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const handleOpenAttachment = (a: ApiAttachmentItem) => {
     Linking.openURL(a.url).catch(() =>
       Alert.alert("Cannot Open", "This file could not be opened on this device.")
@@ -545,9 +566,23 @@ export default function AdminCommunications() {
                 <View style={[styles.readBar, { backgroundColor: colors.muted }]}>
                   <View style={[styles.readBarFill, { width: `${Math.min((item.read / Math.max(item.recipients, 1)) * 100, 100)}%` as `${number}%`, backgroundColor: "#10B981" }]} />
                 </View>
-                <View style={styles.tapHint}>
-                  <Ionicons name="open-outline" size={11} color={colors.mutedForeground} />
-                  <Text style={[styles.tapHintText, { color: colors.mutedForeground }]}>Tap to read & copy</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+                  <View style={styles.tapHint}>
+                    <Ionicons name="open-outline" size={11} color={colors.mutedForeground} />
+                    <Text style={[styles.tapHintText, { color: colors.mutedForeground }]}>Tap to read & copy</Text>
+                  </View>
+                  <Pressable
+                    onPress={e => { e.stopPropagation(); void handleOpenReport(item); }}
+                    style={({ pressed }) => ({
+                      flexDirection: "row", alignItems: "center", gap: 4,
+                      backgroundColor: "rgba(30,58,138,0.08)", borderRadius: 8,
+                      paddingHorizontal: 10, paddingVertical: 5,
+                      opacity: pressed ? 0.7 : 1,
+                    })}
+                  >
+                    <Ionicons name="bar-chart-outline" size={12} color={colors.primary} />
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Report</Text>
+                  </Pressable>
                 </View>
               </Pressable>
             ))}

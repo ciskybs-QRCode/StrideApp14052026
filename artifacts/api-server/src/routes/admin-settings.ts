@@ -53,6 +53,14 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
     if (!("reimbursement_receipt_threshold_cents" in row)) row.reimbursement_receipt_threshold_cents = 5000;
     if (!("payout_next_date"           in row)) row.payout_next_date           = null;
     if (!("lesson_reminders_enabled"   in row)) row.lesson_reminders_enabled   = true;
+
+    // Security: never send the raw Stripe secret key to the frontend.
+    // Replace with a masked hint (last 4 chars) so the UI can show connection status.
+    const rawKey = row.stripe_secret_key as string | null | undefined;
+    delete row.stripe_secret_key;
+    row.stripe_key_hint    = rawKey ? `...${rawKey.slice(-4)}` : null;
+    row.stripe_key_is_live = rawKey ? rawKey.startsWith("sk_live_") : null;
+
     res.json(row);
   } catch (err) {
     req.log.error(err, "admin-settings GET: error");
@@ -111,6 +119,12 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     if (!("cascade_auto_trigger" in row)) row.cascade_auto_trigger = false;
     if (!("payout_frequency"     in row)) row.payout_frequency     = "monthly";
     if (!("reimbursement_receipt_threshold_cents" in row)) row.reimbursement_receipt_threshold_cents = 5000;
+
+    // Security: never send the raw Stripe secret key back to the frontend.
+    const rawKey = row.stripe_secret_key as string | null | undefined;
+    delete row.stripe_secret_key;
+    row.stripe_key_hint    = rawKey ? `...${rawKey.slice(-4)}` : null;
+    row.stripe_key_is_live = rawKey ? rawKey.startsWith("sk_live_") : null;
 
     req.log.info({ orgId, settings: body }, "admin settings updated");
     res.json(row);

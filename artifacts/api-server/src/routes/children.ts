@@ -67,8 +67,11 @@ router.post("/members", requireAuth, async (req, res) => {
     return;
   }
 
-  // Resolve org: prefer body-supplied orgId, then JWT orgId; never allow 0 (invalid)
-  const resolvedOrg = Number(body.organization_id) || Number(user.orgId) || null;
+  // Resolve org: use JWT orgId always (prevents cross-org injection).
+  // super_admin ciskybs@gmail.com may supply body.organization_id to target any org.
+  const resolvedOrg = (user.role === "super_admin")
+    ? (Number(body.organization_id) || Number(user.orgId) || null)
+    : (Number(user.orgId) || null);
   if (!resolvedOrg) {
     res.status(400).json({
       error: "No organization context. Complete school setup before adding dependents.",

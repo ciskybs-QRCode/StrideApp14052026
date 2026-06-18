@@ -1,10 +1,13 @@
 import { Router, type Request } from "express";
 import multer from "multer";
+import { Expo } from "expo-server-sdk";
 import { supabase } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+const expo = new Expo();
 type AuthReq = Request & { user: TokenPayload };
 
 interface AttachmentItem { name: string; url: string; mimeType: string }
@@ -30,11 +33,12 @@ async function resolveRecipients(
   } else if (mode === "operators") {
     query = query.eq("role", "operator");
   }
-  // "all" and "course" → no extra filter (course-specific lookup is a future enhancement)
 
   const { data: users } = await query;
   return (users ?? []).map((u: { id: number }) => u.id);
 }
+
+// ── List broadcast messages ───────────────────────────────────────────────────
 
 router.get("/messages", requireAuth, requireRole("admin", "operator"), async (req, res) => {
   const user = (req as AuthReq).user;
@@ -46,6 +50,8 @@ router.get("/messages", requireAuth, requireRole("admin", "operator"), async (re
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data ?? []);
 });
+
+// ── Upload attachment to Supabase Storage ─────────────────────────────────────
 
 router.post(
   "/messages/upload-attachment",
@@ -72,6 +78,74 @@ router.post(
     res.json({ url: publicUrl, name: originalname, mimeType: mimetype } satisfies AttachmentItem);
   },
 );
+
+// ── Delivery report (admin-only) ──────────────────────────────────────────────
+
+router.get("/messages/broadcast/:msgId/report", requireAuth, requireRole("admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const msgId = req.params["msgId"] ?? "";
+
+  const { data: msg } = await supabase
+    .from("broadcast_messages")
+    .select("id, title, body, created_at, urgent, recipient_mode, sender:users!sender_id(id,name)")
+    .eq("id", parseInt(msgId))
+    .eq("organization_id", user.orgId)
+    .single();
+
+  if (!msg) { res.status(404).json({ error: "Message not found" }); return; }
+
+  const { rows } = await pool.query<{
+    recipient_id: number;
+    recipient_name: string;
+    recipient_role: string;
+    delivered_at: string;
+    read_at: string | null;
+    skipped_at: string | null;
+    push_sent: boolean;
+  }>(
+    `SELECT recipient_id, recipient_name, recipient_role,
+            delivered_at, read_at, skipped_at, push_sent
+     FROM message_read_log
+     WHERE broadcast_message_id = $1 AND organization_id = $2
+     ORDER BY recipient_name ASC`,
+    [msgId, user.orgId ?? 0],
+  );
+
+  const total   = rows.length;
+  const read    = rows.filter(r => r.read_at).length;
+  const skipped = rows.filter(r => r.skipped_at && !r.read_at).length;
+  const pending = total - read - skipped;
+
+  res.json({ message: msg, stats: { total, read, skipped, pending }, recipients: rows });
+});
+
+// ── Mark broadcast notification as read ───────────────────────────────────────
+
+router.post("/messages/broadcast/:msgId/read", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const msgId = req.params["msgId"] ?? "";
+  await pool.query(
+    `UPDATE message_read_log SET read_at = NOW()
+     WHERE broadcast_message_id = $1 AND recipient_id = $2 AND read_at IS NULL`,
+    [msgId, parseInt(user.id)],
+  ).catch(() => {});
+  res.json({ ok: true });
+});
+
+// ── Mark broadcast notification as skipped ────────────────────────────────────
+
+router.post("/messages/broadcast/:msgId/skip", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const msgId = req.params["msgId"] ?? "";
+  await pool.query(
+    `UPDATE message_read_log SET skipped_at = NOW()
+     WHERE broadcast_message_id = $1 AND recipient_id = $2 AND skipped_at IS NULL AND read_at IS NULL`,
+    [msgId, parseInt(user.id)],
+  ).catch(() => {});
+  res.json({ ok: true });
+});
+
+// ── Send broadcast message ────────────────────────────────────────────────────
 
 router.post("/messages", requireAuth, requireRole("admin", "operator"), async (req, res) => {
   const user = (req as AuthReq).user;
@@ -112,6 +186,13 @@ router.post("/messages", requireAuth, requireRole("admin", "operator"), async (r
       );
       if (recipientIds.length === 0) return;
 
+      // Fetch user info for the audit log
+      const { data: userInfos } = await supabase
+        .from("users")
+        .select("id, name, role")
+        .in("id", recipientIds);
+      const userMap = new Map((userInfos ?? []).map((u: { id: number; name: string; role: string }) => [u.id, u]));
+
       const hasFiles   = (body.attachments?.length ?? 0) > 0;
       const notifTitle = body.urgent ? `🔴 ${body.title}` : body.title;
       const notifBody  = [
@@ -131,7 +212,60 @@ router.post("/messages", requireAuth, requireRole("admin", "operator"), async (r
         read:            false,
       }));
 
-      await supabase.from("private_notifications").insert(rows);
+      // Insert private_notifications and capture IDs for audit linking
+      const { data: inserted } = await supabase
+        .from("private_notifications")
+        .insert(rows)
+        .select("id, recipient_id");
+
+      // Insert audit log rows
+      if (inserted && inserted.length > 0 && msg?.id != null) {
+        const ph = inserted
+          .map((_: unknown, i: number) => `($${i * 6 + 1},$${i * 6 + 2},$${i * 6 + 3},$${i * 6 + 4},$${i * 6 + 5},$${i * 6 + 6})`)
+          .join(",");
+        await pool.query(
+          `INSERT INTO message_read_log
+             (broadcast_message_id, notification_id, organization_id, recipient_id, recipient_name, recipient_role)
+           VALUES ${ph}
+           ON CONFLICT (broadcast_message_id, recipient_id) DO NOTHING`,
+          (inserted as { id: number; recipient_id: number }[]).flatMap(n => {
+            const u = userMap.get(n.recipient_id);
+            return [String(msg.id), n.id, user.orgId ?? 0, n.recipient_id, u?.name ?? "", u?.role ?? ""];
+          }),
+        ).catch(() => {});
+      }
+
+      // ── Fire Expo push notifications ──────────────────────────────────────
+      const { rows: tokenRows } = await pool.query<{ token: string }>(
+        `SELECT token FROM device_push_tokens WHERE org_id = $1 AND user_id = ANY($2)`,
+        [user.orgId ?? 0, recipientIds.map(String)],
+      );
+
+      if (tokenRows.length > 0) {
+        const pushMessages = tokenRows
+          .filter(r => Expo.isExpoPushToken(r.token))
+          .map(r => ({
+            to: r.token,
+            title: notifTitle,
+            body: body.body.slice(0, 200),
+            sound: "default" as const,
+            data: { type: "broadcast", broadcastMessageId: String(msg?.id ?? "") },
+            badge: 1,
+          }));
+
+        if (pushMessages.length > 0) {
+          const chunks = expo.chunkPushNotifications(pushMessages);
+          await Promise.all(chunks.map(chunk => expo.sendPushNotificationsAsync(chunk).catch(() => {})));
+
+          if (msg?.id != null) {
+            await pool.query(
+              `UPDATE message_read_log SET push_sent = true
+               WHERE broadcast_message_id = $1 AND organization_id = $2`,
+              [String(msg.id), user.orgId ?? 0],
+            ).catch(() => {});
+          }
+        }
+      }
     } catch { /* never block the caller */ }
   })();
 

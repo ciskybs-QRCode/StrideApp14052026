@@ -1004,5 +1004,28 @@ export async function ensureTables(): Promise<void> {
       ADD COLUMN IF NOT EXISTS signature_required  BOOLEAN DEFAULT FALSE;
   `).catch(() => {});
 
+  // Message delivery + read-receipt audit log (legal-grade, immutable per recipient)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS message_read_log (
+      id                    SERIAL      PRIMARY KEY,
+      broadcast_message_id  TEXT        NOT NULL,
+      notification_id       INTEGER,
+      organization_id       INTEGER     NOT NULL,
+      recipient_id          INTEGER     NOT NULL,
+      recipient_name        TEXT        NOT NULL DEFAULT '',
+      recipient_role        TEXT        NOT NULL DEFAULT '',
+      delivered_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      read_at               TIMESTAMPTZ,
+      skipped_at            TIMESTAMPTZ,
+      push_sent             BOOLEAN     NOT NULL DEFAULT FALSE,
+      UNIQUE (broadcast_message_id, recipient_id)
+    )
+  `).catch(() => {});
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_mrl_bcast ON message_read_log(broadcast_message_id);
+    CREATE INDEX IF NOT EXISTS idx_mrl_org   ON message_read_log(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_mrl_recip ON message_read_log(recipient_id);
+  `).catch(() => {});
+
   initialized = true;
 }
