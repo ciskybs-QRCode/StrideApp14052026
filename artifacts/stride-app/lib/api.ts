@@ -2492,6 +2492,10 @@ export interface StrideEvent {
   title: string;
   description: string | null;
   location: string | null;
+  address: string | null;
+  banner_url: string | null;
+  website_url: string | null;
+  online_event: boolean;
   category: string;
   is_active: boolean;
   created_at: string;
@@ -2538,12 +2542,14 @@ export function getEvent(id: string): Promise<StrideEvent> {
 
 export function createEvent(data: {
   title: string; description?: string; location?: string; category?: string;
+  banner_url?: string; address?: string; website_url?: string; online_event?: boolean;
 }): Promise<StrideEvent> {
   return request<StrideEvent>("POST", "/events", data);
 }
 
 export function updateEvent(id: string, data: Partial<{
   title: string; description: string; location: string; category: string; is_active: boolean;
+  banner_url: string; address: string; website_url: string; online_event: boolean;
 }>): Promise<StrideEvent> {
   return request<StrideEvent>("PATCH", `/events/${id}`, data);
 }

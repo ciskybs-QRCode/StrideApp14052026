@@ -364,15 +364,19 @@ router.get("/events/:id", requireAuth, async (req: Request, res: Response) => {
 // ── POST /events ──────────────────────────────────────────────────────────────
 router.post("/events", requireAuth, requireRole("admin"), async (req: Request, res: Response) => {
   const user = (req as AuthReq).user;
-  const { title, description, location, category = "general" } = req.body as {
+  const { title, description, location, category = "general",
+          banner_url, address, website_url, online_event } = req.body as {
     title: string; description?: string; location?: string; category?: string;
+    banner_url?: string; address?: string; website_url?: string; online_event?: boolean;
   };
   if (!title?.trim()) { res.status(400).json({ error: "title is required" }); return; }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO events (org_id, title, description, location, category, created_by, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6, false) RETURNING *`,
-      [user.orgId, title.trim(), description ?? null, location ?? null, category, user.id],
+      `INSERT INTO events (org_id, title, description, location, category, created_by, is_active,
+                           banner_url, address, website_url, online_event)
+       VALUES ($1,$2,$3,$4,$5,$6, false,$7,$8,$9,$10) RETURNING *`,
+      [user.orgId, title.trim(), description ?? null, location ?? null, category, user.id,
+       banner_url ?? null, address ?? null, website_url ?? null, online_event ?? false],
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -385,20 +389,27 @@ router.post("/events", requireAuth, requireRole("admin"), async (req: Request, r
 router.patch("/events/:id", requireAuth, requireRole("admin"), async (req: Request, res: Response) => {
   const user = (req as AuthReq).user;
   const { id } = req.params as { id: string };
-  const { title, description, location, category, is_active } = req.body as {
+  const { title, description, location, category, is_active,
+          banner_url, address, website_url, online_event } = req.body as {
     title?: string; description?: string; location?: string; category?: string; is_active?: boolean;
+    banner_url?: string; address?: string; website_url?: string; online_event?: boolean;
   };
   try {
     const { rows } = await pool.query(
       `UPDATE events SET
-         title       = COALESCE($1, title),
-         description = COALESCE($2, description),
-         location    = COALESCE($3, location),
-         category    = COALESCE($4, category),
-         is_active   = COALESCE($5, is_active)
-       WHERE id = $6 AND org_id = $7 RETURNING *`,
+         title        = COALESCE($1, title),
+         description  = COALESCE($2, description),
+         location     = COALESCE($3, location),
+         category     = COALESCE($4, category),
+         is_active    = COALESCE($5, is_active),
+         banner_url   = COALESCE($6, banner_url),
+         address      = COALESCE($7, address),
+         website_url  = COALESCE($8, website_url),
+         online_event = COALESCE($9, online_event)
+       WHERE id = $10 AND org_id = $11 RETURNING *`,
       [title ?? null, description ?? null, location ?? null, category ?? null,
-       is_active ?? null, id, user.orgId],
+       is_active ?? null, banner_url ?? null, address ?? null, website_url ?? null,
+       online_event ?? null, id, user.orgId],
     );
     if (!rows[0]) { res.status(404).json({ error: "Event not found" }); return; }
     res.json(rows[0]);
