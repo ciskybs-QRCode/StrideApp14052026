@@ -14,8 +14,8 @@ export default function SASettingsScreen() {
           icon: "key-outline" as const,
           label: "Platform Credentials",
           desc: "Change the platform owner email and password",
-          iconBg: "#FBBF2420",
-          iconColor: "#FBBF24",
+          iconBg: "#1E3A8A12",
+          iconColor: "#1E3A8A",
           onPress: () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push("/(super_admin)/owner-settings" as never);
@@ -29,6 +29,8 @@ export default function SASettingsScreen() {
       parentRoute="/(super_admin)/dashboard"
       profileEditRoute="/(super_admin)/sa-profile-edit"
       extraRows={extraRows}
+      showDeleteAccount={false}
+      requireCurrentEmail={true}
     />
   );
 }

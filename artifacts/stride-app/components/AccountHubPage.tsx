@@ -33,11 +33,13 @@ interface Props {
   parentRoute: string;
   profileEditRoute: string;
   extraRows?: ExtraRow[];
+  showDeleteAccount?: boolean;
+  requireCurrentEmail?: boolean;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [] }: Props) {
+export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], showDeleteAccount = true, requireCurrentEmail = false }: Props) {
   const { user, logout, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -45,7 +47,9 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [] }
 
   // ── Change Email ─────────────────────────────────────────────────────────
   const [showEmail, setShowEmail] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
 
   // ── Change Password ──────────────────────────────────────────────────────
   const [showPassword, setShowPassword] = useState(false);
@@ -64,12 +68,32 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [] }
   const [deleteText, setDeleteText] = useState("");
 
   const handleSaveEmail = async () => {
-    if (!newEmail.trim() || !newEmail.includes("@")) {
-      Alert.alert("Invalid address", "Please enter a valid email address.");
-      return;
+    if (requireCurrentEmail) {
+      if (!currentEmail.trim()) {
+        Alert.alert("Error", "Please enter your current email address.");
+        return;
+      }
+      if (currentEmail.trim().toLowerCase() !== (user?.email ?? "").toLowerCase()) {
+        Alert.alert("Error", "Current email does not match your account email.");
+        return;
+      }
+      if (!newEmail.trim() || !newEmail.includes("@")) {
+        Alert.alert("Invalid address", "Please enter a valid new email address.");
+        return;
+      }
+      if (newEmail.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
+        Alert.alert("Error", "New email and confirmation do not match.");
+        return;
+      }
+    } else {
+      if (!newEmail.trim() || !newEmail.includes("@")) {
+        Alert.alert("Invalid address", "Please enter a valid email address.");
+        return;
+      }
     }
     await updateUser({ email: newEmail.trim() });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCurrentEmail(""); setNewEmail(""); setConfirmEmail("");
     setShowEmail(false);
   };
 
@@ -117,7 +141,7 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [] }
       desc: user?.email ?? "Update your login email address",
       iconBg: "#1E3A8A12",
       iconColor: "#1E3A8A",
-      onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewEmail(user?.email ?? ""); setShowEmail(true); },
+      onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCurrentEmail(""); setNewEmail(""); setConfirmEmail(""); setShowEmail(true); },
     },
     {
       icon: "lock-closed-outline",
@@ -136,15 +160,15 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [] }
       iconColor: "#1E3A8A",
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowLogout(true); },
     },
-    {
-      icon: "trash-outline",
+    ...(showDeleteAccount ? [{
+      icon: "trash-outline" as const,
       label: "Delete Account",
       desc: "Permanently remove your account and all data",
       iconBg: "#FEF2F2",
       iconColor: "#EF4444",
       titleColor: "#EF4444",
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setDeleteText(""); setShowDelete(true); },
-    },
+    }] : []),
   ];
 
   return (
@@ -184,24 +208,59 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [] }
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Change Email</Text>
             </View>
             <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
-              A verification link will be sent to your new email address.
+              {requireCurrentEmail
+                ? "Enter your current email, then choose a new one."
+                : "A verification link will be sent to your new email address."}
             </Text>
+            {requireCurrentEmail && (
+              <>
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Current Email Address</Text>
+                <TextInput
+                  style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }]}
+                  value={currentEmail}
+                  onChangeText={setCurrentEmail}
+                  placeholder="your.current@email.com"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </>
+            )}
             <Text style={[styles.fieldLabel, { color: colors.primary }]}>New Email Address</Text>
             <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: requireCurrentEmail ? 14 : 4 }]}
               value={newEmail}
               onChangeText={setNewEmail}
-              placeholder="your@email.com"
+              placeholder="new@email.com"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {requireCurrentEmail && (
+              <>
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Confirm New Email</Text>
+                <TextInput
+                  style={[styles.input, { borderColor: newEmail && confirmEmail && newEmail.trim().toLowerCase() !== confirmEmail.trim().toLowerCase() ? "#EF4444" : colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                  value={confirmEmail}
+                  onChangeText={setConfirmEmail}
+                  placeholder="confirm new@email.com"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {newEmail.length > 0 && confirmEmail.length > 0 && newEmail.trim().toLowerCase() !== confirmEmail.trim().toLowerCase() && (
+                  <Text style={styles.errorText}>Emails do not match</Text>
+                )}
+              </>
+            )}
             <View style={styles.btnRow}>
-              <Pressable style={[styles.btn, { backgroundColor: colors.muted }]} onPress={() => setShowEmail(false)}>
+              <Pressable style={[styles.btn, { backgroundColor: colors.muted }]} onPress={() => { setCurrentEmail(""); setNewEmail(""); setConfirmEmail(""); setShowEmail(false); }}>
                 <Text style={[styles.btnText, { color: colors.mutedForeground }]}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.btn, { backgroundColor: colors.primary }]} onPress={handleSaveEmail}>
+              <Pressable style={[styles.btn, { backgroundColor: colors.primary }]} onPress={() => void handleSaveEmail()}>
                 <Text style={[styles.btnText, { color: "#FFF" }]}>Save</Text>
               </Pressable>
             </View>
