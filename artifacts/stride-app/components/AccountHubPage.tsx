@@ -19,14 +19,25 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
+interface ExtraRow {
+  icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
+  label: string;
+  desc: string;
+  iconBg: string;
+  iconColor: string;
+  titleColor?: string;
+  onPress: () => void;
+}
+
 interface Props {
   parentRoute: string;
   profileEditRoute: string;
+  extraRows?: ExtraRow[];
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function AccountHubPage({ parentRoute, profileEditRoute }: Props) {
+export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [] }: Props) {
   const { user, logout, updateUser } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -116,6 +127,7 @@ export function AccountHubPage({ parentRoute, profileEditRoute }: Props) {
       iconColor: "#1E3A8A",
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPwCurrent(""); setPwNew(""); setPwConfirm(""); setShowPassword(true); },
     },
+    ...extraRows,
     {
       icon: "log-out-outline",
       label: "Log Out",
