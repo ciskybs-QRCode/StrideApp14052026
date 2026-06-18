@@ -34,6 +34,10 @@ import {
   MOCK_SUBS,
   useSubstitution,
 } from "@/context/SubstitutionContext";
+import { RoleSwitcherRow } from "@/components/RoleSwitcher";
+import { QRScanButton } from "@/components/QRScanButton";
+import { SOSButton } from "@/components/SOSButton";
+import { HubCard } from "@/components/HubCard";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -893,19 +897,23 @@ export default function OperatorDashboard() {
   };
 
   // ── SOS ───────────────────────────────────────────────────────────────────
+  const openSOS = () => {
+    setSosPhase("type");
+    setSosType(null);
+    setSosProcStep(0);
+    setSosProcDone(false);
+    setShowSOS(true);
+    setSosCount(0);
+    pushLog({ time: nowTime(), action: "⚠️ SOS Emergency activated", type: "error" });
+  };
+
   const handleSOSPress = () => {
     if (sosPressTimer.current) clearTimeout(sosPressTimer.current);
     const newCount = sosCount + 1;
     setSosCount(newCount);
     if (newCount >= 2) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setSosPhase("type");
-      setSosType(null);
-      setSosProcStep(0);
-      setSosProcDone(false);
-      setShowSOS(true);
-      setSosCount(0);
-      pushLog({ time: nowTime(), action: "⚠️ SOS Emergency activated", type: "error" });
+      openSOS();
     } else {
       Alert.alert("SOS", "Press again quickly to confirm the emergency.");
       sosPressTimer.current = setTimeout(() => setSosCount(0), 3000);
@@ -1149,6 +1157,9 @@ export default function OperatorDashboard() {
             </Text>
           </View>
         </View>
+
+        {/* ── ROLE SWITCHER ── */}
+        <RoleSwitcherRow />
 
         {/* ── Active Alert Banner (substitution cascade only — red alert goes to Admin) ── */}
         {activeAlert && !activeAlert.resolved && activeAlert.cascadeStep < 4 && (
@@ -1431,36 +1442,43 @@ export default function OperatorDashboard() {
           </View>
         )}
 
-        {/* ── Quick Actions — identical 2-col grid as Parent ── */}
+        {/* ── QUICK ACTIONS ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
-        <View style={styles.quickActions}>
+        <View style={{ gap: 12, marginBottom: 16 }}>
+          <QRScanButton onPress={handleScan} label="Scan Member QR" />
           <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#EEF2FF", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
-            onPress={handleScan}
+            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => { setShowQRPanel(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <View>
-              <Ionicons name="qr-code-outline" size={28} color={colors.primary} />
-              {offlinePendingCount > 0 && (
-                <View style={styles.offlineBadge}>
-                  <Text style={styles.offlineBadgeText}>{offlinePendingCount}</Text>
-                </View>
-              )}
+            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EEF2FF" }]}>
+              <Ionicons name="qr-code" size={26} color={colors.primary} />
             </View>
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>SCAN{"\n"}QR</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Your Operator QR Code</Text>
+              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Tap to display your badge</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", transform: pressed ? [{ scale: 0.96 }] : [] }]}
-            onPress={() => { setAbsenceSent(false); setAbsenceType("absent"); setShowAbsenceModal(true); }}
+            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: "#FEF3C7", borderColor: "#FDE68A", opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => { setAbsenceSent(false); setAbsenceType("absent"); setShowAbsenceModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <Ionicons name="person-remove-outline" size={28} color="#F59E0B" />
-            <Text style={[styles.quickBtnText, { color: "#F59E0B" }]}>REPORT{"\n"}ABSENCE/DELAY</Text>
+            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#FEF9C3" }]}>
+              <Ionicons name="person-remove-outline" size={26} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.qrCodeBtnLabel, { color: "#D97706" }]}>Report Absence / Delay</Text>
+              <Text style={[styles.qrCodeBtnSub, { color: "#B45309" }]}>Notify admin and trigger substitution</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#D97706" />
           </Pressable>
+          <SOSButton onConfirm={openSOS} />
         </View>
 
         {/* ── Security Alerts Quick Access ── */}
         {secAlerts.length > 0 && (
           <Pressable
-            style={({ pressed }) => [styles.secAlertBtn, { opacity: pressed ? 0.9 : 1 }]}
+            style={({ pressed }) => [styles.secAlertBtn, { opacity: pressed ? 0.9 : 1, marginBottom: 16 }]}
             onPress={() => router.push("/(operator)/alerts" as Parameters<typeof router.push>[0])}
           >
             <Ionicons name="shield-checkmark" size={20} color="#FFF" />
@@ -1474,36 +1492,16 @@ export default function OperatorDashboard() {
           </Pressable>
         )}
 
-        {/* ── SOS Button — below Quick Actions ── */}
-        <Pressable
-          style={({ pressed }) => [styles.sosStandaloneBtn, { opacity: pressed ? 0.92 : 1 }]}
-          onPress={handleSOSPress}
-        >
-          <View style={styles.sosIconRing}>
-            <Ionicons name="warning" size={32} color="#EF4444" />
-          </View>
-          <Text style={styles.sosStandaloneBtnLabel}>SOS EMERGENCY</Text>
-          <Text style={styles.sosStandaloneBtnHint}>Press twice to activate</Text>
-        </Pressable>
-
-        {/* ── Clock Out / QR Logout ── */}
-        <Pressable
-          style={[styles.qrPanel, { backgroundColor: colors.card, marginTop: 10 }]}
+        {/* ── Clock Out ── */}
+        <HubCard
+          icon="log-out-outline"
+          title="Clock Out"
+          description="Log your departure — schedules checked automatically"
           onPress={() => { setClockOutStatus("idle"); setShowClockOutModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-        >
-          <View style={[styles.qrMiniBox, { backgroundColor: "#FEF3C7", width: 56, height: 56, borderRadius: 14 }]}>
-            <Ionicons name="log-out-outline" size={26} color="#D97706" />
-          </View>
-          <View style={styles.qrPanelRight}>
-            <Text style={[styles.qrPanelTitle, { color: "#D97706" }]}>CLOCK OUT</Text>
-            <Text style={[styles.qrPanelName, { color: colors.foreground, fontSize: 13 }]}>Log your departure from the facility</Text>
-            <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>Schedules checked automatically</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-        </Pressable>
+        />
 
-        {/* ── Activity Log — using Parent's notifCard style ── */}
-        <View style={styles.logHeader}>
+        {/* ── Activity Log ── */}
+        <View style={[styles.logHeader, { marginTop: 8 }]}>
           <Text style={[styles.sectionTitle, { color: colors.primary }]}>Activity Log</Text>
           <View style={[styles.logCountBadge, { backgroundColor: colors.primary }]}>
             <Text style={styles.logCountText}>{activityLog.length}</Text>
@@ -2577,7 +2575,13 @@ const styles = StyleSheet.create({
   privateLessonBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
   privateLessonBadgeText: { fontSize: 11, fontWeight: "800", color: "#FFF" },
 
-  // Quick Actions grid — exact copy of Parent
+  // Quick Actions — admin-style full-width cards
+  qrCodeBtn:     { flexDirection: "row", alignItems: "center", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  qrCodeBtnIcon: { width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  qrCodeBtnLabel: { fontSize: 15, fontWeight: "800" },
+  qrCodeBtnSub:  { fontSize: 12, fontWeight: "500", marginTop: 2 },
+
+  // Legacy quick-actions grid (kept for any residual references)
   quickActions: { flexDirection: "row", gap: 12, marginBottom: 24 },
   quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 20, gap: 8, borderWidth: 2 },
   quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
