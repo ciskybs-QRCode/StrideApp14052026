@@ -1050,9 +1050,58 @@ export const api = {
 
   deleteShopLink: (id: string) =>
     request<void>("DELETE", `/marketplace/shop-links/${id}`),
+
+  // ── Certificates ─────────────────────────────────────────────────────────
+  getMyMedicalCert: () =>
+    request<MedicalCertStatus | null>("GET", "/documents/my-medical-cert"),
+
+  getMyFirstAidCert: () =>
+    request<OperatorFirstAidCert | null>("GET", "/documents/my-first-aid-cert"),
+
+  analyzeFirstAidCert: (imageBase64: string, mimeType?: string) =>
+    request<OperatorFirstAidCert & { classification_confidence: number }>(
+      "POST", "/documents/analyze-first-aid-cert",
+      { image_base64: imageBase64, mime_type: mimeType ?? "image/jpeg" },
+    ),
+
+  // ── Waitlist (member) ─────────────────────────────────────────────────────
+  getMyWaitlistStatus: (courseId: number) =>
+    request<WaitlistMyStatus | null>("GET", `/waitlist/my-status/${courseId}`),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface MedicalCertStatus {
+  id: number;
+  member_id: number;
+  expiration_date: string | null;
+  certificate_type: string;
+  status: string;
+  potential_anomaly_detected: boolean;
+  anomaly_reasons: string | null;
+  uploaded_at: string;
+}
+
+export interface OperatorFirstAidCert {
+  id: number;
+  operator_id: number;
+  expiration_date: string | null;
+  status: "approved" | "pending" | "flagged";
+  potential_anomaly_detected: boolean;
+  anomaly_reasons: string | null;
+  uploaded_at: string;
+  classification_confidence?: number;
+}
+
+export interface WaitlistMyStatus {
+  id: number;
+  status: "waiting" | "offered";
+  position: number;
+  joined_at: string;
+  offer_expires_at: string | null;
+  preferred_days: string[];
+  preferred_times: string[];
+}
 
 export interface OrgSearchResult {
   id:           number;

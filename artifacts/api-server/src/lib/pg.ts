@@ -1143,5 +1143,27 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS waitlist_enabled           BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
 
+  // ── Operator first-aid certificates ────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS operator_first_aid_certs (
+      id                         SERIAL PRIMARY KEY,
+      operator_id                INTEGER NOT NULL,
+      org_id                     INTEGER,
+      expiration_date            DATE,
+      classification_confidence  FLOAT,
+      potential_anomaly_detected BOOLEAN NOT NULL DEFAULT FALSE,
+      status                     TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('approved','pending','flagged')),
+      anomaly_reasons            TEXT,
+      uploaded_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS ofa_operator_idx ON operator_first_aid_certs (operator_id);
+  `);
+  // Expand cert_reminders_sent to include expiry variants
+  await pool.query(`
+    ALTER TABLE cert_reminders_sent DROP CONSTRAINT IF EXISTS cert_reminders_sent_cert_type_check;
+    ALTER TABLE cert_reminders_sent ADD CONSTRAINT cert_reminders_sent_cert_type_check
+      CHECK (cert_type IN ('medical','first_aid','medical_expiry','first_aid_expiry'));
+  `).catch(() => {}); // ignore if constraint already correct
+
   initialized = true;
 }

@@ -4,7 +4,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { getWaitlist, notifyWaitlistSpot } from "@/lib/api";
+import type { WaitlistEntry } from "@/lib/api";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
@@ -287,6 +289,93 @@ const pm = StyleSheet.create({
 
 // ── Main Screen ──────────────────────────────────────────────────────────────
 
+// ── Waitlist panel shown inside expanded operator course card ─────────────────
+function WaitlistOperatorSection({ courseId, isFull, colors }: {
+  courseId: number;
+  isFull: boolean;
+  colors: ReturnType<typeof import("@/hooks/useColors").useColors>;
+}) {
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [count, setCount] = useState(0);
+  const [offerLoading, setOfferLoading] = useState(false);
+
+  const reload = useCallback(() => {
+    getWaitlist(courseId)
+      .then(r => { setWaitlist(r.waitlist); setCount(r.count); })
+      .catch(() => {});
+  }, [courseId]);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  if (count === 0) {
+    return (
+      <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+          <Ionicons name="list-outline" size={15} color={colors.mutedForeground} />
+          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.mutedForeground }}>Waitlist</Text>
+        </View>
+        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>No one waiting</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <Ionicons name="list-outline" size={15} color={colors.primary} />
+        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>Waitlist</Text>
+        <View style={{ backgroundColor: "#FBBF24", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+          <Text style={{ fontSize: 11, fontWeight: "800", color: "#1E3A8A" }}>{count}</Text>
+        </View>
+      </View>
+      {waitlist.slice(0, 4).map((entry, idx) => (
+        <View key={entry.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6,
+          borderBottomWidth: idx < Math.min(waitlist.length, 4) - 1 ? 1 : 0, borderBottomColor: colors.border }}>
+          <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>{idx + 1}</Text>
+          </View>
+          <Text style={{ flex: 1, fontSize: 13, fontWeight: "500", color: colors.foreground }} numberOfLines={1}>
+            {entry.member_name}
+          </Text>
+          {entry.status === "offered" && (
+            <View style={{ backgroundColor: "#FEF3C7", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: "#92400E" }}>OFFERED</Text>
+            </View>
+          )}
+        </View>
+      ))}
+      {isFull && waitlist.every(e => e.status !== "offered") && (
+        <Pressable
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+            backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 10, marginTop: 10,
+            opacity: offerLoading ? 0.7 : 1 }}
+          disabled={offerLoading}
+          onPress={async () => {
+            setOfferLoading(true);
+            try {
+              const r = await notifyWaitlistSpot(courseId);
+              if (r.ok) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Alert.alert("Spot Offered", "The next person on the waitlist has been notified.");
+                reload();
+              }
+            } catch {
+              Alert.alert("Error", "Could not offer the spot. Please try again.");
+            } finally {
+              setOfferLoading(false);
+            }
+          }}
+        >
+          {offerLoading ? <ActivityIndicator size="small" color="#FBBF24" /> : (
+            <><Ionicons name="person-add-outline" size={15} color="#FBBF24" />
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#FBBF24" }}>Offer Spot to Next</Text></>
+          )}
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
 export default function OperatorCoursesScreen() {
   const { courses } = useAppData();
   const { user } = useAuth();
@@ -486,6 +575,13 @@ export default function OperatorCoursesScreen() {
                       <Text style={[styles.materialsPanelTitle, { color: colors.primary }]}>Teaching Materials</Text>
                     </View>
                     <CourseMaterialsPanel courseId={course.id} courseName={course.name} colors={colors} />
+
+                    {/* Waitlist */}
+                    <WaitlistOperatorSection
+                      courseId={parseInt(course.id, 10)}
+                      isFull={course.capacity > 0 && course.enrolled >= course.capacity}
+                      colors={colors}
+                    />
                   </View>
                 )}
               </View>

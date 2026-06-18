@@ -232,4 +232,102 @@ router.post("/documents", requireAuth, async (req, res) => {
   res.status(201).json(data);
 });
 
+// ── AI First-Aid Certificate Analysis ────────────────────────────────────────
+const FIRST_AID_PROMPT = `You are a certified document inspector. Analyse the attached first aid certificate image.
+Extract the following information and return ONLY a valid JSON object with exactly these keys:
+{
+  "holder_full_name": "<full name of the certificate holder>",
+  "expiration_date": "<validity end date in YYYY-MM-DD format, or null if not found>",
+  "issuing_body": "<organisation that issued the certificate>",
+  "classification_confidence": <float 0.0-1.0>,
+  "potential_anomaly_detected": <true if suspicious — false otherwise>,
+  "anomaly_reasons": "<short English description, or null>"
+}
+No prose. No markdown. Just the JSON object.`;
+
+router.post("/documents/analyze-first-aid-cert", requireAuth, requireRole("operator", "admin"), aiLimiter, async (req, res) => {
+  const user = (req as AuthReq).user;
+  await ensureTables();
+  const body = req.body as { image_base64?: string; mime_type?: string };
+  if (!body.image_base64) { res.status(400).json({ error: "image_base64 is required" }); return; }
+  const mimeType   = (body.mime_type ?? "image/jpeg").replace(/[^a-z/]/g, "");
+  const operatorId = parseInt(user.id, 10);
+  req.log.info({ userId: user.id, orgId: user.orgId }, "first-aid-cert analysis started");
+
+  let extracted: {
+    holder_full_name: string;
+    expiration_date: string | null;
+    issuing_body: string;
+    classification_confidence: number;
+    potential_anomaly_detected: boolean;
+    anomaly_reasons: string | null;
+  };
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.1",
+      max_completion_tokens: 1024,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: FIRST_AID_PROMPT },
+          { type: "image_url", image_url: { url: `data:${mimeType};base64,${body.image_base64}`, detail: "high" } },
+        ],
+      }],
+    });
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    extracted = JSON.parse(raw) as typeof extracted;
+  } catch (err) {
+    req.log.error(err, "first-aid-cert AI analysis failed");
+    res.status(502).json({ error: "Document analysis failed. Please try again." });
+    return;
+  }
+
+  const status = extracted.classification_confidence >= 0.7 && !extracted.potential_anomaly_detected ? "approved" : "flagged";
+  const { rows } = await pool.query<{ id: number }>(
+    `INSERT INTO operator_first_aid_certs
+       (operator_id, org_id, expiration_date, classification_confidence, potential_anomaly_detected, status, anomaly_reasons)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [operatorId, user.orgId ?? null, extracted.expiration_date, extracted.classification_confidence,
+     extracted.potential_anomaly_detected, status, extracted.anomaly_reasons],
+  );
+  req.log.info({ recordId: rows[0]?.id, status }, "first-aid-cert record saved");
+  res.status(201).json({ record_id: rows[0]?.id ?? null, ...extracted, status });
+});
+
+// ── GET my latest medical cert ────────────────────────────────────────────────
+router.get("/documents/my-medical-cert", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, member_id, expiration_date, certificate_type, status,
+              potential_anomaly_detected, anomaly_reasons, uploaded_at
+       FROM member_medical_certs WHERE member_id = $1 ORDER BY uploaded_at DESC LIMIT 1`,
+      [userId],
+    );
+    res.json(rows[0] ?? null);
+  } catch (err) {
+    req.log.error(err, "my-medical-cert GET error");
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// ── GET my latest first-aid cert ──────────────────────────────────────────────
+router.get("/documents/my-first-aid-cert", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, operator_id, expiration_date, status,
+              potential_anomaly_detected, anomaly_reasons, uploaded_at
+       FROM operator_first_aid_certs WHERE operator_id = $1 ORDER BY uploaded_at DESC LIMIT 1`,
+      [userId],
+    );
+    res.json(rows[0] ?? null);
+  } catch (err) {
+    req.log.error(err, "my-first-aid-cert GET error");
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
 export default router;

@@ -249,4 +249,28 @@ router.get("/waitlist/ai-suggestion/:courseId", requireAuth, requireRole("admin"
   }
 });
 
+// ── GET /waitlist/my-status/:courseId ─────────────────────────────────────────
+router.get("/waitlist/my-status/:courseId", requireAuth, async (req, res) => {
+  const user     = (req as AuthReq).user;
+  const memberId = parseInt(user.id, 10);
+  const courseId = parseInt(String(req.params["courseId"]), 10);
+  if (isNaN(courseId)) { res.status(400).json({ error: "Invalid courseId" }); return; }
+  try {
+    const { rows } = await pool.query(
+      `SELECT w.*,
+         (SELECT COUNT(*)::int FROM course_waitlist w2
+          WHERE w2.course_id = w.course_id AND w2.status IN ('waiting','offered')
+            AND w2.joined_at <= w.joined_at) AS position
+       FROM course_waitlist w
+       WHERE w.course_id = $1 AND w.member_id = $2 AND w.status IN ('waiting','offered')
+       LIMIT 1`,
+      [courseId, memberId],
+    );
+    res.json(rows[0] ?? null);
+  } catch (err) {
+    req.log.error(err, "waitlist my-status error");
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
 export default router;

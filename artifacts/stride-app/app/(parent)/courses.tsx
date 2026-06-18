@@ -2,8 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
-import { api } from "@/lib/api";
+import { api, joinWaitlist, leaveWaitlist, acceptWaitlistSpot } from "@/lib/api";
+import type { WaitlistMyStatus } from "@/lib/api";
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   Linking,
   Modal,
@@ -421,6 +424,8 @@ export default function CoursesScreen() {
   const [enrollCourse, setEnrollCourse] = useState<(typeof courses)[0] | null>(null);
   const [enrollParticipants, setEnrollParticipants] = useState<string[]>([]);
   const [enrollPackage, setEnrollPackage] = useState<"dropIn" | "fixedBlock" | null>(null);
+  const [waitlistStatuses, setWaitlistStatuses] = useState<Record<string, WaitlistMyStatus | null>>({});
+  const [waitlistLoading, setWaitlistLoading] = useState<string | null>(null);
 
   const course = courses.find(c => c.id === selectedCourse);
   const isEnrolled = (courseId: string) => allBookings.some(b => b.courseId === courseId);
@@ -494,6 +499,66 @@ export default function CoursesScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const count = enrollParticipants.length;
     showSnack(count > 1 ? `${count} participants added to cart!` : "Added to cart! Tap the cart icon to review.");
+  };
+
+  // Load waitlist status for any full courses on mount / data refresh
+  useEffect(() => {
+    const fullCourses = availableCourses.filter(c => c.capacity > 0 && c.enrolled >= c.capacity);
+    fullCourses.forEach(c => {
+      api.getMyWaitlistStatus(parseInt(c.id, 10))
+        .then(status => setWaitlistStatuses(prev => ({ ...prev, [c.id]: status })))
+        .catch(() => {});
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableCourses.length]);
+
+  const handleJoinWaitlist = async (courseId: string) => {
+    setWaitlistLoading(courseId);
+    try {
+      await joinWaitlist(parseInt(courseId, 10));
+      const status = await api.getMyWaitlistStatus(parseInt(courseId, 10)).catch(() => null);
+      setWaitlistStatuses(prev => ({ ...prev, [courseId]: status }));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not join the waitlist. Please try again.");
+    } finally {
+      setWaitlistLoading(null);
+    }
+  };
+
+  const handleAcceptWaitlistSpot = async (courseId: string) => {
+    setWaitlistLoading(courseId);
+    try {
+      await acceptWaitlistSpot(parseInt(courseId, 10));
+      const status = await api.getMyWaitlistStatus(parseInt(courseId, 10)).catch(() => null);
+      setWaitlistStatuses(prev => ({ ...prev, [courseId]: status }));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Spot Reserved!", "You have successfully reserved your spot. Proceed to enroll.");
+    } catch {
+      Alert.alert("Error", "Could not accept the spot. Please try again.");
+    } finally {
+      setWaitlistLoading(null);
+    }
+  };
+
+  const handleLeaveWaitlist = async (courseId: string) => {
+    Alert.alert("Leave Waitlist", "Are you sure you want to leave the waitlist for this course?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Leave", style: "destructive",
+        onPress: async () => {
+          setWaitlistLoading(courseId);
+          try {
+            await leaveWaitlist(parseInt(courseId, 10));
+            setWaitlistStatuses(prev => ({ ...prev, [courseId]: null }));
+          } catch {
+            Alert.alert("Error", "Could not leave the waitlist. Please try again.");
+          } finally {
+            setWaitlistLoading(null);
+          }
+        },
+      },
+    ]);
   };
 
   const resetPrivate = () => {
@@ -686,7 +751,48 @@ export default function CoursesScreen() {
                       <Pressable style={[styles.infoBtn, { borderColor: colors.border }]} onPress={() => setSelectedCourse(c.id)}>
                         <Text style={[styles.infoBtnText, { color: colors.primary }]}>COURSE INFO</Text>
                       </Pressable>
-                      {isInCart(c.id) ? (
+                      {c.capacity > 0 && c.enrolled >= c.capacity ? (
+                        // Course is FULL — show waitlist flow
+                        (() => {
+                          const ws = waitlistStatuses[c.id];
+                          if (ws?.status === "offered") {
+                            return (
+                              <Pressable
+                                style={[styles.enrollBtn, { backgroundColor: "#D97706" }]}
+                                onPress={() => handleAcceptWaitlistSpot(c.id)}
+                                disabled={waitlistLoading === c.id}
+                              >
+                                {waitlistLoading === c.id ? <ActivityIndicator size="small" color="#FFF" /> : (
+                                  <><Ionicons name="checkmark-circle-outline" size={14} color="#FFF" /><Text style={styles.enrollBtnText}>ACCEPT SPOT</Text></>
+                                )}
+                              </Pressable>
+                            );
+                          }
+                          if (ws?.status === "waiting") {
+                            return (
+                              <Pressable
+                                style={[styles.enrollBtn, { backgroundColor: "#DBEAFE" }]}
+                                onPress={() => handleLeaveWaitlist(c.id)}
+                                disabled={waitlistLoading === c.id}
+                              >
+                                <Ionicons name="time-outline" size={14} color={colors.primary} />
+                                <Text style={[styles.enrollBtnText, { color: colors.primary }]}>#{ws.position} IN LINE</Text>
+                              </Pressable>
+                            );
+                          }
+                          return (
+                            <Pressable
+                              style={[styles.enrollBtn, { backgroundColor: "#F59E0B" }]}
+                              onPress={() => handleJoinWaitlist(c.id)}
+                              disabled={waitlistLoading === c.id}
+                            >
+                              {waitlistLoading === c.id ? <ActivityIndicator size="small" color="#FFF" /> : (
+                                <><Ionicons name="list-outline" size={14} color="#FFF" /><Text style={styles.enrollBtnText}>JOIN WAITLIST</Text></>
+                              )}
+                            </Pressable>
+                          );
+                        })()
+                      ) : isInCart(c.id) ? (
                         <Pressable style={[styles.enrollBtn, { backgroundColor: colors.secondary }]} onPress={() => router.push("/(parent)/cart")}>
                           <Ionicons name="cart" size={14} color={colors.primary} />
                           <Text style={[styles.enrollBtnText, { color: colors.primary }]}>IN CART</Text>
