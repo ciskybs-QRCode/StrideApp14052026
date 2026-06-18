@@ -16,6 +16,7 @@ import {
   buildTrialReminderEmail,
   sendTransactionalEmail,
 } from "../services/emailService.js";
+import { getPlatformStripeKey } from "./pg.js";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ export function startTrialBillingScheduler(): void {
 async function checkTrialReminders(): Promise<void> {
   const now = new Date();
 
-  // Fetch all organizations still in trial with a future (or very recent) expiry
+  // Fetch all organizations still in trial (with or without expiry date)
   const { data: orgs, error } = await supabase
     .from("organizations")
     .select(`
@@ -91,6 +92,22 @@ async function checkTrialReminders(): Promise<void> {
   for (const org of orgs as TrialingOrg[]) {
     await processOrg(org, now);
   }
+
+  // ── Auto-expire orgs whose trial has ended and have no active subscription ──
+  // This is the key automation: when trial_ends_at < now, mark as expired so
+  // the app shows the paywall and prompts the association admin to subscribe.
+  // Stripe handles the rest automatically once they enter their card.
+  const { error: expireError } = await supabase
+    .from("organizations")
+    .update({ subscription_status: "expired" })
+    .eq("subscription_status", "trialing")
+    .lt("trial_ends_at", now.toISOString());
+
+  if (expireError) {
+    logger.warn({ err: expireError }, "trial-billing: failed to auto-expire trialing orgs");
+  } else {
+    logger.debug("trial-billing: auto-expiry pass complete");
+  }
 }
 
 // ── Per-org processing ────────────────────────────────────────────────────────
@@ -100,7 +117,7 @@ async function processOrg(org: TrialingOrg, now: Date): Promise<void> {
   const msLeft    = expiryMs - now.getTime();
   const daysLeft  = msLeft / (1000 * 60 * 60 * 24);
 
-  // Already expired — no reminder needed (and don't spam)
+  // Already expired — handled by the auto-expiry pass above, skip reminders
   if (daysLeft <= 0) return;
 
   // Find which thresholds are due and not yet sent

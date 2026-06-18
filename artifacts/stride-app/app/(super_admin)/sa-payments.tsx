@@ -23,16 +23,17 @@ function fmt(cents: number, currency: string): string {
 }
 
 function statusColor(s: string): string {
-  if (s === "active")   return "#059669";
-  if (s === "trialing") return "#D97706";
-  if (s === "expired" || s === "suspended") return "#DC2626";
+  if (s === "active")    return "#059669";
+  if (s === "trialing")  return "#D97706";
+  if (s === "expired" || s === "suspended" || s === "past_due") return "#DC2626";
   return "#6B7280";
 }
 
 function statusLabel(s: string): string {
-  if (s === "active")   return "Active";
+  if (s === "active")   return "Active — paying";
   if (s === "trialing") return "Trial";
-  if (s === "expired")  return "Expired";
+  if (s === "expired")  return "Trial expired";
+  if (s === "past_due") return "Payment failed";
   if (s === "suspended") return "Suspended";
   return s;
 }
@@ -70,7 +71,7 @@ function StripeKeyCard({
   const handleRemove = () => {
     Alert.alert(
       "Remove Stripe Key",
-      "This will disable automated billing until a new key is added. Are you sure?",
+      "This will pause automated billing until you add a new key. Associations will not be charged.",
       [
         { text: "Cancel", style: "cancel" },
         { text: "Remove", style: "destructive", onPress: () => void onRemove() },
@@ -80,7 +81,6 @@ function StripeKeyCard({
 
   return (
     <View style={s.card}>
-      {/* Status row */}
       <View style={s.cardHeader}>
         <View style={[s.iconBox, { backgroundColor: status?.configured ? "#ECFDF5" : "#FEF2F2" }]}>
           <Ionicons
@@ -90,13 +90,13 @@ function StripeKeyCard({
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.cardTitle}>Platform Stripe Key</Text>
+          <Text style={s.cardTitle}>Your Stripe Key</Text>
           <Text style={[s.cardSub, { color: status?.configured ? "#059669" : "#DC2626" }]}>
             {status === null
               ? "Checking…"
               : status.configured
                 ? `Connected · ${status.prefix}`
-                : "Not configured — billing is disabled"}
+                : "Not set — billing is paused"}
           </Text>
         </View>
         {status?.configured && !editing && (
@@ -106,15 +106,13 @@ function StripeKeyCard({
         )}
       </View>
 
-      {/* Info box */}
       <View style={[s.infoBox, { backgroundColor: "#FFFBEB", borderColor: "#FCD34D" }]}>
-        <Ionicons name="information-circle-outline" size={15} color="#D97706" />
+        <Ionicons name="lock-closed-outline" size={13} color="#D97706" />
         <Text style={[s.infoText, { color: "#92400E" }]}>
-          This key is stored encrypted in the platform database and never exposed to association admins. It is used exclusively to generate Stripe payment links and collect subscription payments from your associations.
+          Stored encrypted in the platform database. Never exposed to association admins. All subscription payments from every association land directly in your Stripe account.
         </Text>
       </View>
 
-      {/* Input form */}
       {(!status?.configured || editing) && (
         <View style={{ marginTop: 14 }}>
           <Text style={s.fieldLabel}>Stripe Secret Key</Text>
@@ -160,12 +158,89 @@ function StripeKeyCard({
   );
 }
 
-// ── Org row ───────────────────────────────────────────────────────────────────
+// ── Automation Flow Card ──────────────────────────────────────────────────────
+
+function AutomationFlowCard() {
+  const steps = [
+    {
+      icon: "key-outline" as const,
+      color: NAVY,
+      who: "You — once",
+      title: "Enter your Stripe key here",
+      desc: "Done. That's the only thing you ever do manually.",
+    },
+    {
+      icon: "timer-outline" as const,
+      color: "#D97706",
+      who: "System — automatic",
+      title: "Trial expires → access paused",
+      desc: "After 30 days, Stride automatically locks the association out and shows them a payment screen inside the app.",
+    },
+    {
+      icon: "card-outline" as const,
+      color: "#7C3AED",
+      who: "Association admin — once",
+      title: "They enter their card once",
+      desc: "They tap \"Subscribe\" in their app → Stripe Checkout opens → they enter their card. Takes 60 seconds. Then they're in.",
+    },
+    {
+      icon: "refresh-outline" as const,
+      color: "#059669",
+      who: "Stripe — every month forever",
+      title: "Stripe charges them automatically",
+      desc: "On the 1st of each month, Stride reports the current QR count to Stripe. Stripe charges their card. Money lands in your account. You do nothing.",
+    },
+    {
+      icon: "ban-outline" as const,
+      color: "#DC2626",
+      who: "Stripe — if payment fails",
+      title: "Failed payment → Stripe retries → suspension",
+      desc: "Stripe retries 3 times. If it still fails, Stride marks the org as past_due and suspends access after 7 days. Automated.",
+    },
+  ];
+
+  return (
+    <View style={s.card}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <View style={[s.iconBox, { backgroundColor: "#EFF6FF" }]}>
+          <Ionicons name="flash" size={20} color={NAVY} />
+        </View>
+        <View>
+          <Text style={s.cardTitle}>Fully Automatic — You Do Nothing</Text>
+          <Text style={[s.cardSub, { color: "#6B7280" }]}>10,000 associations? Same process.</Text>
+        </View>
+      </View>
+
+      {steps.map((step, i) => (
+        <View key={step.title}>
+          {i > 0 && (
+            <View style={{ alignItems: "center", marginVertical: 2 }}>
+              <Ionicons name="chevron-down" size={14} color="#D1D5DB" />
+            </View>
+          )}
+          <View style={[s.flowStep, { borderColor: step.color + "30", backgroundColor: step.color + "08" }]}>
+            <View style={[s.flowIcon, { backgroundColor: step.color + "18" }]}>
+              <Ionicons name={step.icon} size={17} color={step.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.flowWho, { color: step.color }]}>{step.who}</Text>
+              <Text style={s.flowTitle}>{step.title}</Text>
+              <Text style={s.flowDesc}>{step.desc}</Text>
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ── Org Row ───────────────────────────────────────────────────────────────────
 
 function OrgRow({ org }: { org: OrgBillingRow }) {
-  const trialEnds = org.trialEndsAt ? new Date(org.trialEndsAt) : null;
+  const trialEnds    = org.trialEndsAt ? new Date(org.trialEndsAt) : null;
   const trialExpired = trialEnds ? trialEnds < new Date() : false;
-  const displayStatus = trialExpired && org.subscriptionStatus === "trialing" ? "expired" : org.subscriptionStatus;
+  const displayStatus =
+    trialExpired && org.subscriptionStatus === "trialing" ? "expired" : org.subscriptionStatus;
 
   return (
     <View style={s.orgRow}>
@@ -175,7 +250,9 @@ function OrgRow({ org }: { org: OrgBillingRow }) {
           <View style={[s.statusDot, { backgroundColor: statusColor(displayStatus) }]} />
           <Text style={[s.orgSub, { color: statusColor(displayStatus) }]}>{statusLabel(displayStatus)}</Text>
           {trialEnds && !trialExpired && (
-            <Text style={s.orgSub}>· Trial ends {trialEnds.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</Text>
+            <Text style={s.orgSub}>
+              · Trial ends {trialEnds.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+            </Text>
           )}
         </View>
       </View>
@@ -187,17 +264,17 @@ function OrgRow({ org }: { org: OrgBillingRow }) {
   );
 }
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+// ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function SAPaymentsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isOwner } = useAuth();
 
-  const [stripeStatus,   setStripeStatus]   = useState<PlatformStripeStatus | null>(null);
-  const [overview,       setOverview]       = useState<{ orgs: OrgBillingRow[]; totalMonthlyCents: number } | null>(null);
-  const [loading,        setLoading]        = useState(true);
-  const [refreshing,     setRefreshing]     = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<PlatformStripeStatus | null>(null);
+  const [overview,     setOverview]     = useState<{ orgs: OrgBillingRow[]; totalMonthlyCents: number } | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -208,9 +285,8 @@ export default function SAPaymentsScreen() {
       ]);
       setStripeStatus(st);
       setOverview(ov);
-    } catch {
-      /* keep stale data */
-    } finally {
+    } catch { /* keep stale data */ }
+    finally {
       setLoading(false);
       setRefreshing(false);
     }
@@ -228,13 +304,17 @@ export default function SAPaymentsScreen() {
     setStripeStatus({ configured: false, prefix: null });
   };
 
-  const totalCurrency = overview?.orgs[0]?.currency ?? "EUR";
+  const activeOrgs  = overview?.orgs.filter(o => o.subscriptionStatus === "active").length  ?? 0;
+  const trialOrgs   = overview?.orgs.filter(o => o.subscriptionStatus === "trialing").length ?? 0;
+  const totalCurrency = overview?.orgs.find(o => o.subscriptionStatus === "active")?.currency
+    ?? overview?.orgs[0]?.currency
+    ?? "EUR";
 
   return (
     <View style={[s.container, { backgroundColor: "#F8FAFC" }]}>
       <ScreenHeader
         title="Payment Hub"
-        subtitle="Stripe & billing overview"
+        subtitle="Automated billing · hands-off"
         onBack={() => router.push("/(super_admin)/dashboard")}
       />
 
@@ -254,60 +334,64 @@ export default function SAPaymentsScreen() {
             />
           }
         >
-          {/* Owner-only badge */}
+          {/* Owner badge */}
           {isOwner() && (
             <View style={s.ownerBadge}>
               <Ionicons name="shield-checkmark" size={14} color={NAVY} />
-              <Text style={s.ownerBadgeText}>Platform Owner — billing control is exclusive to your account</Text>
+              <Text style={s.ownerBadgeText}>Platform Owner — you control billing for all associations</Text>
             </View>
           )}
 
-          {/* ── STRIPE CONFIGURATION ── */}
-          <Text style={s.sectionLabel}>STRIPE CONFIGURATION</Text>
+          {/* ── STRIPE KEY ── */}
+          <Text style={s.sectionLabel}>STEP 1 OF 1 — YOUR STRIPE KEY</Text>
           <StripeKeyCard
             status={stripeStatus}
             onSave={handleSaveKey}
             onRemove={handleRemoveKey}
           />
 
-          {/* ── HOW BILLING WORKS ── */}
-          <Text style={s.sectionLabel}>HOW AUTOMATIC BILLING WORKS</Text>
-          <View style={s.card}>
-            {[
-              { icon: "people-outline" as const,    color: NAVY,     title: "QR codes counted monthly", desc: "Every member account + every dependent child = 1 QR code. Pickup-only contacts are always FREE and never counted." },
-              { icon: "calculator-outline" as const, color: "#D97706", title: "Tiered pricing applied", desc: "First 100 QRs · next 200 (101–300) · 301+ — each tier at a lower rate. The total is calculated automatically." },
-              { icon: "card-outline" as const,       color: "#059669", title: "Stripe charges automatically", desc: "On the 1st of each month, Stripe charges each association's saved payment method. You receive the money directly." },
-              { icon: "ban-outline" as const,        color: "#DC2626", title: "Non-payment = suspension", desc: "If Stripe cannot charge after retries, the association is flagged as past_due and access is restricted after 7 days." },
-            ].map(item => (
-              <View key={item.title} style={s.howRow}>
-                <View style={[s.howIcon, { backgroundColor: item.color + "15" }]}>
-                  <Ionicons name={item.icon} size={18} color={item.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.howTitle}>{item.title}</Text>
-                  <Text style={s.howDesc}>{item.desc}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
+          {/* ── HOW IT WORKS ── */}
+          <Text style={s.sectionLabel}>HOW IT WORKS</Text>
+          <AutomationFlowCard />
 
-          {/* ── MONTHLY REVENUE ESTIMATE ── */}
-          <Text style={s.sectionLabel}>MONTHLY REVENUE ESTIMATE</Text>
-          <View style={[s.card, { backgroundColor: NAVY }]}>
-            <Text style={{ fontSize: 11, fontWeight: "800", color: "rgba(255,255,255,0.5)", letterSpacing: 1, marginBottom: 4 }}>ESTIMATED TOTAL</Text>
-            <Text style={{ fontSize: 34, fontWeight: "900", color: GOLD }}>
+          {/* ── REVENUE SUMMARY ── */}
+          <Text style={s.sectionLabel}>MONTHLY REVENUE</Text>
+          <View style={[s.card, { backgroundColor: NAVY, padding: 20 }]}>
+            <Text style={{ fontSize: 11, fontWeight: "800", color: "rgba(255,255,255,0.45)", letterSpacing: 1, marginBottom: 6 }}>
+              ESTIMATED TOTAL
+            </Text>
+            <Text style={{ fontSize: 36, fontWeight: "900", color: GOLD }}>
               {overview ? fmt(overview.totalMonthlyCents, totalCurrency) : "—"}
             </Text>
-            <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>
-              per month · {overview?.orgs.length ?? 0} association{overview?.orgs.length !== 1 ? "s" : ""}
+            <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 6 }}>
+              per month from active subscriptions
             </Text>
+
+            <View style={{ flexDirection: "row", gap: 16, marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.12)" }}>
+              <View style={{ flex: 1, alignItems: "center" }}>
+                <Text style={{ fontSize: 22, fontWeight: "900", color: "#FFF" }}>{activeOrgs}</Text>
+                <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>Paying</Text>
+              </View>
+              <View style={{ width: 1, backgroundColor: "rgba(255,255,255,0.12)" }} />
+              <View style={{ flex: 1, alignItems: "center" }}>
+                <Text style={{ fontSize: 22, fontWeight: "900", color: GOLD }}>{trialOrgs}</Text>
+                <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>In Trial</Text>
+              </View>
+              <View style={{ width: 1, backgroundColor: "rgba(255,255,255,0.12)" }} />
+              <View style={{ flex: 1, alignItems: "center" }}>
+                <Text style={{ fontSize: 22, fontWeight: "900", color: "#FFF" }}>{overview?.orgs.length ?? 0}</Text>
+                <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>Total</Text>
+              </View>
+            </View>
           </View>
 
-          {/* ── PER-ASSOCIATION BREAKDOWN ── */}
+          {/* ── PER-ORG BREAKDOWN ── */}
           <Text style={s.sectionLabel}>PER-ASSOCIATION BREAKDOWN</Text>
           <View style={s.card}>
-            {overview?.orgs.length === 0 && (
-              <Text style={{ fontSize: 13, color: "#9CA3AF", textAlign: "center", padding: 12 }}>No associations registered yet.</Text>
+            {!overview?.orgs.length && (
+              <Text style={{ fontSize: 13, color: "#9CA3AF", textAlign: "center", padding: 16 }}>
+                No associations registered yet.
+              </Text>
             )}
             {overview?.orgs.map((org, i) => (
               <View key={org.orgId}>
@@ -321,9 +405,9 @@ export default function SAPaymentsScreen() {
           <Text style={s.sectionLabel}>PRICING TIERS (AUD BASE)</Text>
           <View style={s.card}>
             {[
-              { label: "1 – 100 QR codes",   price: "AUD $1.20 / QR" },
-              { label: "101 – 300 QR codes",  price: "AUD $1.05 / QR" },
-              { label: "301+ QR codes",       price: "AUD $0.90 / QR" },
+              { label: "1 – 100 QR codes",  price: "AUD $1.20 / QR" },
+              { label: "101 – 300 QR codes", price: "AUD $1.05 / QR" },
+              { label: "301+ QR codes",      price: "AUD $0.90 / QR" },
             ].map(tier => (
               <View key={tier.label} style={s.tierRow}>
                 <Text style={s.tierLabel}>{tier.label}</Text>
@@ -333,19 +417,19 @@ export default function SAPaymentsScreen() {
             <View style={[s.infoBox, { marginTop: 12, backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
               <Ionicons name="globe-outline" size={13} color={NAVY} />
               <Text style={[s.infoText, { color: "#1E40AF" }]}>
-                EUR ×0.60 · USD ×0.65 · GBP ×0.52 — conversions applied automatically based on each org's currency setting.
+                FX applied automatically per org: EUR ×0.60 · USD ×0.65 · GBP ×0.52
               </Text>
             </View>
           </View>
 
-          {/* ── IMPORTANT NOTE ── */}
+          {/* ── PICKUP NOTE ── */}
           <View style={[s.card, { backgroundColor: "#FEF2F2", borderColor: "#FCA5A5", borderWidth: 1.5 }]}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <Ionicons name="warning" size={18} color="#DC2626" />
-              <Text style={{ fontSize: 13, fontWeight: "900", color: "#DC2626" }}>Important Reminder</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <Ionicons name="warning" size={16} color="#DC2626" />
+              <Text style={{ fontSize: 12, fontWeight: "900", color: "#DC2626" }}>Hard Rule</Text>
             </View>
             <Text style={{ fontSize: 12, color: "#7F1D1D", lineHeight: 19 }}>
-              Pickup-only contacts (authorized_pickups) are <Text style={{ fontWeight: "800" }}>never counted</Text> as QR codes and are always free. Only member accounts and dependent children carry billable QR codes.
+              Pickup-only contacts (authorized_pickups) are <Text style={{ fontWeight: "800" }}>never billed</Text> — they have no QR code. Only member accounts and their children carry billable QR codes.
             </Text>
           </View>
 
@@ -375,10 +459,11 @@ const s = StyleSheet.create({
   actionBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, paddingVertical: 12 },
   actionBtnText:  { fontSize: 13, fontWeight: "700" },
   smallBtn:       { width: 34, height: 34, borderRadius: 10, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" },
-  howRow:         { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
-  howIcon:        { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  howTitle:       { fontSize: 13, fontWeight: "700", color: "#111827", marginBottom: 2 },
-  howDesc:        { fontSize: 12, color: "#6B7280", lineHeight: 17 },
+  flowStep:       { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, padding: 12, borderWidth: 1, marginVertical: 2 },
+  flowIcon:       { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  flowWho:        { fontSize: 9, fontWeight: "900", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 2 },
+  flowTitle:      { fontSize: 13, fontWeight: "700", color: "#111827", marginBottom: 2 },
+  flowDesc:       { fontSize: 11, color: "#6B7280", lineHeight: 16 },
   orgRow:         { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
   orgName:        { fontSize: 13, fontWeight: "700", color: "#111827" },
   orgSub:         { fontSize: 11, color: "#9CA3AF" },

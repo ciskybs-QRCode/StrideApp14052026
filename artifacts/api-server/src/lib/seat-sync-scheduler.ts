@@ -13,6 +13,7 @@
 import { supabase } from "./supabase.js";
 import { logger } from "./logger.js";
 import { calcQrBillCents } from "./qr-pricing.js";
+import { getPlatformStripeKey } from "./pg.js";
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const INITIAL_DELAY_MS  = 90_000;               // 90 s after boot (after warm-up)
@@ -27,7 +28,7 @@ export function startSeatSyncScheduler(): void {
 }
 
 async function syncAllSeats(): Promise<void> {
-  const stripeKey = process.env["STRIPE_SECRET_KEY"];
+  const stripeKey = await getPlatformStripeKey();
   if (!stripeKey) return;
 
   const { data: orgs, error } = await supabase

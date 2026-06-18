@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
-import { pool } from "../lib/pg.js";
+import { pool, getPlatformStripeKey } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
 import { calcQrBillCents, qrPricingTiers } from "../lib/qr-pricing.js";
@@ -79,10 +79,12 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
 
 // ── POST /billing/checkout-session ────────────────────────────────────────────
 // Creates a Stripe Checkout Session (subscription mode) for the admin's org.
+// Uses the platform owner's Stripe key (stored in system_config) so all
+// subscription payments flow to the platform owner automatically.
 router.post("/billing/checkout-session", requireAuth, requireRole("admin"), async (req, res) => {
   const user = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
-  const stripeKey = process.env["STRIPE_SECRET_KEY"];
+  const stripeKey = await getPlatformStripeKey();
   if (!stripeKey) { res.status(503).json({ error: "stripe_not_configured" }); return; }
 
   try {
@@ -201,7 +203,7 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
 router.post("/billing/sync-seats", requireAuth, requireRole("admin"), async (req, res) => {
   const user = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
-  const stripeKey = process.env["STRIPE_SECRET_KEY"];
+  const stripeKey = await getPlatformStripeKey();
   if (!stripeKey) { res.status(503).json({ error: "stripe_not_configured" }); return; }
 
   try {
@@ -252,7 +254,7 @@ router.post("/billing/sync-seats", requireAuth, requireRole("admin"), async (req
 // ── POST /billing/webhook ─────────────────────────────────────────────────────
 // Stripe webhook handler (public — no auth, raw body required for sig check).
 router.post("/billing/webhook", async (req, res) => {
-  const stripeKey      = process.env["STRIPE_SECRET_KEY"];
+  const stripeKey      = await getPlatformStripeKey();
   const webhookSecret  = process.env["STRIPE_WEBHOOK_SECRET"];
   if (!stripeKey) { res.status(503).json({ error: "stripe_not_configured" }); return; }
 

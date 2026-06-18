@@ -38,6 +38,25 @@ export const pool = new Pool({
   max: 10,
 });
 
+/**
+ * getPlatformStripeKey
+ *
+ * Reads the platform owner's Stripe secret key from the system_config table.
+ * Falls back to the STRIPE_SECRET_KEY env var for local/dev environments.
+ * Returns null if neither is configured.
+ */
+export async function getPlatformStripeKey(): Promise<string | null> {
+  try {
+    const { rows } = await pool.query<{ value: string }>(
+      `SELECT value FROM system_config WHERE key = 'platform_stripe_key' LIMIT 1`,
+    );
+    if (rows[0]?.value) return rows[0].value;
+  } catch {
+    // system_config table may not exist yet in dev; fall through to env var
+  }
+  return process.env["STRIPE_SECRET_KEY"] ?? null;
+}
+
 let initialized = false;
 
 export async function ensureTables(): Promise<void> {
