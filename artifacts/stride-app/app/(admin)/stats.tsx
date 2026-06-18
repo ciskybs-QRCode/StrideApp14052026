@@ -339,23 +339,38 @@ export default function AdminHome() {
         {/* ── QUICK ACTIONS ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
         <View style={{ gap: 12, marginBottom: 16 }}>
-          <QRScanButton onPress={handleScan} label="Scan Member QR" />
+
+          {/* 1. SOS Emergency */}
+          <SOSButton onConfirm={openSOS} />
+
+          {/* 2. Admin Pass */}
           <Pressable
-            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            style={[styles.qrPanel, { backgroundColor: colors.card }]}
             onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EEF2FF" }]}>
-              <Ionicons name="qr-code" size={26} color={colors.primary} />
+            <View style={[styles.qrMiniBox, { backgroundColor: "#EFF6FF" }]}>
+              <QRCode value={qrValue} size={72} color={colors.primary} backgroundColor="transparent" />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Your Admin QR Code</Text>
-              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Tap to display your badge</Text>
+            <View style={styles.qrPanelRight}>
+              <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>ADMIN PASS</Text>
+              <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Admin"}</Text>
+              <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>
+                {user?.role === "super_admin" ? "Super Admin" : "Admin"} · {orgName || user?.schoolName || ""}
+              </Text>
+              <View style={[styles.qrActiveBadge, { backgroundColor: "#DBEAFE" }]}>
+                <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
+                <Text style={[styles.qrActiveBadgeText, { color: colors.primary }]}>Active Credential</Text>
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+            <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
           </Pressable>
-          <SOSButton onConfirm={openSOS} />
+
+          {/* 3. Scan Member QR */}
+          <QRScanButton onPress={handleScan} label="Scan Member QR" />
+
         </View>
 
+        {/* ── HUB CARDS ── */}
         <HubCard
           icon="storefront"
           title="Stride Marketplace"
@@ -425,10 +440,10 @@ export default function AdminHome() {
         {/* ── KPI CARDS ── */}
         <View style={styles.kpiRow}>
           {[
-            { label: "Outstanding", value: `${cur}${pendingRevenue.toLocaleString()}`,  icon: "time-outline"    as const, color: "#F59E0B", bg: "#FEF3C7" },
-            { label: "Avg/Member",  value: `${cur}${avgPerStudent.toLocaleString()}`,  icon: "person-outline"  as const, color: "#3B82F6", bg: "#DBEAFE" },
-            { label: "Renewal Rate",value: "87%",                icon: "refresh-outline" as const, color: "#10B981", bg: "#D1FAE5" },
-            { label: "NPS Score",   value: "4.8★",               icon: "star-outline"    as const, color: "#7C3AED", bg: "#EDE9FE" },
+            { label: "Outstanding", value: `${cur}${pendingRevenue.toLocaleString()}`,  icon: "time-outline"    as const, color: "#1E3A8A", bg: "#EFF6FF" },
+            { label: "Avg/Member",  value: `${cur}${avgPerStudent.toLocaleString()}`,  icon: "person-outline"  as const, color: "#1E3A8A", bg: "#DBEAFE" },
+            { label: "Renewal Rate",value: "87%",                icon: "refresh-outline" as const, color: "#1E3A8A", bg: "#EFF6FF" },
+            { label: "NPS Score",   value: "4.8★",               icon: "star-outline"    as const, color: "#FBBF24", bg: "#1E3A8A" },
           ].map(k => (
             <View key={k.label} style={[styles.kpiCard, { backgroundColor: colors.card }]}>
               <View style={[styles.kpiIcon, { backgroundColor: k.bg }]}>
@@ -732,6 +747,15 @@ const styles = StyleSheet.create({
   qrCodeBtnIcon: { width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   qrCodeBtnLabel: { fontSize: 15, fontWeight: "800" },
   qrCodeBtnSub: { fontSize: 12, fontWeight: "500", marginTop: 2 },
+
+  qrPanel: { flexDirection: "row", alignItems: "center", borderRadius: 20, padding: 16, gap: 14, marginBottom: 0, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },
+  qrMiniBox: { width: 88, height: 88, borderRadius: 14, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  qrPanelRight: { flex: 1, gap: 3 },
+  qrPanelTitle: { fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
+  qrPanelName: { fontSize: 16, fontWeight: "800" },
+  qrPanelId: { fontSize: 12, fontWeight: "500" },
+  qrActiveBadge: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start", marginTop: 4 },
+  qrActiveBadgeText: { fontSize: 10, fontWeight: "700" },
 
   heroBanner: { borderRadius: 24, padding: 22, marginBottom: 16 },
   heroMain: { marginBottom: 18 },
