@@ -122,7 +122,7 @@ You agree not to: (a) use the platform for any unlawful purpose; (b) upload mali
 To the maximum extent permitted by law, Stride shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform, including loss of data, revenue, or business opportunity. Our total aggregate liability shall not exceed the fees paid in the 12 months preceding the claim.
 
 10. TERMINATION
-Either party may terminate with 30 days written notice. You may export your data within a 14-day grace period; after that, data will be permanently deleted in accordance with our retention schedules.
+Either party may terminate with 30 days written notice. If your subscription lapses, is not renewed, or your free trial expires without a valid payment method being added, all Organisation data (including member records, children, attendance logs, and documents) will be retained for exactly 30 days from the date of expiry and then permanently and irreversibly deleted from all Stride systems. You will receive automated reminder notices at 7, 3, and 1 day before your trial expires. You may contact support@stride.app to request a data export before the 30-day window closes.
 
 11. GOVERNING LAW
 These Terms are governed by the laws of the jurisdiction in which your Organisation primarily operates, without regard to conflict-of-law principles. Any disputes shall be resolved by the courts of that jurisdiction.
@@ -152,7 +152,7 @@ We process data on the following grounds: (a) performance of the platform servic
 We share data only with: authorised platform sub-processors (cloud infrastructure, payment gateways); your Organisation's designated staff; and regulatory authorities when legally required. We do not sell, rent, or trade personal data with third parties for marketing purposes.
 
 6. DATA RETENTION
-Account data is retained for the duration of your active subscription plus a 90-day post-termination window. Student records and compliance logs are retained for 7 years to satisfy legal record-keeping requirements. You may request earlier deletion subject to applicable legal constraints.
+Account data is retained for the duration of your active subscription. If your trial expires or subscription lapses without payment, all Organisation data is retained for 30 days after expiry and then permanently and irreversibly deleted. Student records and compliance logs for active subscriptions are retained for 7 years to satisfy legal record-keeping requirements. You may request earlier deletion subject to applicable legal constraints. To request a data export before deletion, contact support@stride.app.
 
 7. INTERNATIONAL TRANSFERS
 Data may be stored on servers in the European Economic Area, Australia, or the United States. All transfers comply with applicable frameworks including GDPR, the Australian Privacy Act 1988, and standard contractual clauses where required.

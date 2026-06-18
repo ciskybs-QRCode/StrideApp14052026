@@ -10,8 +10,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import {
   getPlatformStripeStatus, setPlatformStripeKey, removePlatformStripeKey,
-  getSABillingOverview,
-  type PlatformStripeStatus, type OrgBillingRow,
+  getSABillingOverview, listAssociations, grantTrial, extendTrial,
+  type PlatformStripeStatus, type OrgBillingRow, type AssociationRecord,
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -271,26 +271,55 @@ export default function SAPaymentsScreen() {
   const router = useRouter();
   const { isOwner } = useAuth();
 
-  const [stripeStatus, setStripeStatus] = useState<PlatformStripeStatus | null>(null);
-  const [overview,     setOverview]     = useState<{ orgs: OrgBillingRow[]; totalMonthlyCents: number } | null>(null);
-  const [loading,      setLoading]      = useState(true);
-  const [refreshing,   setRefreshing]   = useState(false);
+  const [stripeStatus,  setStripeStatus]  = useState<PlatformStripeStatus | null>(null);
+  const [overview,      setOverview]      = useState<{ orgs: OrgBillingRow[]; totalMonthlyCents: number } | null>(null);
+  const [loading,       setLoading]       = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
+
+  // Trial management state
+  const [trialOrgsData,  setTrialOrgsData]  = useState<AssociationRecord[]>([]);
+  const [trialExpanded,  setTrialExpanded]  = useState<number | null>(null); // orgId that is expanded
+  const [trialDays,      setTrialDays]      = useState("30");
+  const [trialSaving,    setTrialSaving]    = useState<number | null>(null); // orgId being saved
+  const [trialMsg,       setTrialMsg]       = useState<{ orgId: number; msg: string; ok: boolean } | null>(null);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [st, ov] = await Promise.all([
+      const [st, ov, orgs] = await Promise.all([
         getPlatformStripeStatus(),
         getSABillingOverview(),
+        listAssociations(),
       ]);
       setStripeStatus(st);
       setOverview(ov);
+      setTrialOrgsData(orgs);
     } catch { /* keep stale data */ }
     finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
+
+  const handleGrantTrial = useCallback(async (orgId: number) => {
+    const days = parseInt(trialDays, 10);
+    if (!days || days < 1) { Alert.alert("Enter valid days", "Please enter a number ≥ 1."); return; }
+    setTrialSaving(orgId);
+    setTrialMsg(null);
+    try {
+      await grantTrial(orgId, days);
+      setTrialOrgsData(prev =>
+        prev.map(o => o.id === orgId
+          ? { ...o, subscription_status: "trialing" }
+          : o,
+        ),
+      );
+      setTrialMsg({ orgId, msg: `✓ ${days}-day trial granted successfully.`, ok: true });
+      setTrialExpanded(null);
+    } catch (e) {
+      setTrialMsg({ orgId, msg: (e as Error).message ?? "Failed", ok: false });
+    } finally { setTrialSaving(null); }
+  }, [trialDays]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -433,6 +462,102 @@ export default function SAPaymentsScreen() {
             </Text>
           </View>
 
+          {/* ── TRIAL MANAGEMENT ── */}
+          <Text style={s.sectionLabel}>TRIAL MANAGEMENT</Text>
+          <View style={[s.card, { backgroundColor: "#0F172A" }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <Ionicons name="timer" size={18} color={GOLD} />
+              <Text style={{ fontSize: 13, fontWeight: "900", color: "#FFF" }}>Grant / Reactivate Trial</Text>
+            </View>
+            <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 12, lineHeight: 16 }}>
+              Grants a fresh trial starting from NOW. Works even if the org's previous trial has already expired — instant reactivation on their next app open.
+            </Text>
+            {/* Days input — shared across all orgs */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", flex: 1 }}>Trial duration (days):</Text>
+              <TextInput
+                value={trialDays}
+                onChangeText={setTrialDays}
+                keyboardType="number-pad"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 10,
+                  paddingHorizontal: 12, paddingVertical: 8, color: GOLD,
+                  fontSize: 16, fontWeight: "800", width: 80, textAlign: "center",
+                }}
+                placeholder="30"
+                placeholderTextColor="rgba(255,255,255,0.25)"
+              />
+            </View>
+
+            {trialOrgsData.length === 0 && (
+              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", textAlign: "center", paddingVertical: 8 }}>
+                Loading associations…
+              </Text>
+            )}
+
+            {trialOrgsData.map((org, i) => {
+              const st = org.subscription_status ?? "trialing";
+              const trialEnd = org.trial_ends_at
+                ? new Date(org.trial_ends_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
+                : null;
+              const isExpanded = trialExpanded === org.id;
+              const isSaving   = trialSaving === org.id;
+              const myMsg      = trialMsg?.orgId === org.id ? trialMsg : null;
+              const dotColor   = statusColor(st);
+
+              return (
+                <View key={org.id}>
+                  {i > 0 && <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.07)", marginVertical: 6 }} />}
+                  <Pressable
+                    style={({ pressed }) => [s.trialOrgRow, { opacity: pressed ? 0.75 : 1 }]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setTrialExpanded(isExpanded ? null : org.id);
+                      setTrialMsg(null);
+                    }}
+                  >
+                    <View style={[s.statusDot, { backgroundColor: dotColor }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.trialOrgName} numberOfLines={1}>{org.name}</Text>
+                      <Text style={[s.trialOrgSub, { color: dotColor }]}>
+                        {statusLabel(st)}{trialEnd ? ` · ${trialEnd}` : ""}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={isExpanded ? "chevron-up" : "chevron-down"}
+                      size={14} color="rgba(255,255,255,0.35)"
+                    />
+                  </Pressable>
+
+                  {isExpanded && (
+                    <View style={s.trialExpandBox}>
+                      {!!myMsg && (
+                        <Text style={[s.trialFeedback, { color: myMsg.ok ? "#4ADE80" : "#FCA5A5" }]}>
+                          {myMsg.msg}
+                        </Text>
+                      )}
+                      <Pressable
+                        style={({ pressed }) => [s.trialGrantBtn, { opacity: pressed || isSaving ? 0.75 : 1 }]}
+                        onPress={() => handleGrantTrial(org.id)}
+                        disabled={isSaving}
+                      >
+                        {isSaving
+                          ? <ActivityIndicator size="small" color={NAVY} />
+                          : <>
+                              <Ionicons name="flash" size={14} color={NAVY} />
+                              <Text style={s.trialGrantBtnText}>
+                                Grant {trialDays || "?"}-day Trial Now
+                              </Text>
+                            </>
+                        }
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+
         </ScrollView>
       )}
     </View>
@@ -474,4 +599,16 @@ const s = StyleSheet.create({
   tierRow:        { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
   tierLabel:      { fontSize: 13, color: "#374151", fontWeight: "600" },
   tierPrice:      { fontSize: 13, fontWeight: "800" },
+
+  // Trial management
+  trialOrgRow:      { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 },
+  trialOrgName:     { fontSize: 13, fontWeight: "700", color: "#FFF" },
+  trialOrgSub:      { fontSize: 11, marginTop: 2 },
+  trialExpandBox:   { paddingBottom: 10, paddingLeft: 18 },
+  trialFeedback:    { fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  trialGrantBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    backgroundColor: GOLD, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20,
+  },
+  trialGrantBtnText: { fontSize: 13, fontWeight: "900", color: NAVY },
 });

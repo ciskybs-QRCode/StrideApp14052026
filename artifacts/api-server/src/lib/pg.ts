@@ -220,6 +220,9 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS stripe_price_id_per_seat TEXT;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS cost_per_seat_cents INTEGER DEFAULT 150;`).catch(() => {});
 
+  // Data lifecycle: schedule deletion 30 days after trial/subscription expiry
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS data_deletion_scheduled_at TIMESTAMPTZ;`).catch(() => {});
+
   // Platform owner configuration (dynamic OWNER_EMAIL, etc.)
   // system_config table already created above — this is a no-op guard.
 

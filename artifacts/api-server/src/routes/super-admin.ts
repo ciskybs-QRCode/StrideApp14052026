@@ -73,9 +73,14 @@ router.post("/super-admin/extend-trial", requireAuth, requireOwnerOrSuperAdmin, 
   const newEnd = new Date(new Date(base).getTime() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await sa
     .from("organizations")
-    .update({ trial_ends_at: newEnd, is_trial_extended: true })
+    .update({
+      trial_ends_at: newEnd,
+      is_trial_extended: true,
+      subscription_status: "trialing",         // reactivate if expired
+      data_deletion_scheduled_at: null,        // cancel any scheduled deletion
+    })
     .eq("id", orgId)
-    .select("id, name, trial_ends_at, is_trial_extended")
+    .select("id, name, trial_ends_at, is_trial_extended, subscription_status")
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   invalidateTrialCache(orgId);
@@ -85,6 +90,40 @@ router.post("/super-admin/extend-trial", requireAuth, requireOwnerOrSuperAdmin, 
       title: `Trial extended: ${(data as { name?: string }).name ?? "Unknown"}`,
       description: `Extended by ${months} month(s). New expiry: ${new Date(newEnd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`,
       payload: { orgId, months, newEnd },
+    });
+  } catch { /* non-critical */ }
+  res.json(data);
+});
+
+// ── POST /super-admin/grant-trial ─────────────────────────────────────────────
+// Grants a fresh trial for exactly `days` days starting from RIGHT NOW.
+// Works even if the previous trial has already expired — instant reactivation.
+// Use this for test orgs that need more time and for customer goodwill.
+router.post("/super-admin/grant-trial", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const { orgId, days } = req.body as { orgId?: number; days?: number };
+  if (!orgId || !days || days < 1) { res.status(400).json({ error: "orgId and days (>=1) required" }); return; }
+  const now    = new Date();
+  const newEnd = new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await sa
+    .from("organizations")
+    .update({
+      trial_started_at: now.toISOString(),
+      trial_ends_at: newEnd,
+      is_trial_extended: true,
+      subscription_status: "trialing",   // instant reactivation — takes effect on next app open
+      data_deletion_scheduled_at: null,  // cancel any scheduled deletion
+    })
+    .eq("id", orgId)
+    .select("id, name, trial_ends_at, subscription_status")
+    .single();
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  invalidateTrialCache(orgId);
+  try {
+    await sa.from("platform_events").insert({
+      event_type: "trial_granted",
+      title: `Trial granted: ${(data as { name?: string }).name ?? "Unknown"}`,
+      description: `Fresh trial: ${days} day(s). Expires: ${new Date(newEnd).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`,
+      payload: { orgId, days, newEnd },
     });
   } catch { /* non-critical */ }
   res.json(data);

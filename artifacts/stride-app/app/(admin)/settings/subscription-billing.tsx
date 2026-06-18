@@ -5,7 +5,6 @@ import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,86 +14,116 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
-
-import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useBillingStatus } from "@/hooks/useBillingStatus";
-import { calculateFullBill, BILLING_TIERS } from "@/lib/billingEngine";
+import { createCheckoutSession } from "@/lib/api";
+import { BILLING_TIERS } from "@/lib/billingEngine";
 
-const NAVY  = "#1E3A8A";
-const GOLD  = "#FBBF24";
-const RED   = "#DC2626";
+const NAVY = "#1E3A8A";
+const GOLD = "#FBBF24";
+const RED  = "#DC2626";
+
+function fmt(cents: number, currency: string): string {
+  return (cents / 100).toLocaleString("en-AU", {
+    style: "currency",
+    currency: currency || "EUR",
+    minimumFractionDigits: 2,
+  });
+}
 
 function StatusChip({ status }: { status: string }) {
   const MAP: Record<string, { label: string; color: string; bg: string }> = {
     active:    { label: "ACTIVE",    color: "#059669", bg: "#ECFDF5" },
-    trialing:  { label: "TRIALING",  color: "#D97706", bg: "#FFFBEB" },
+    trialing:  { label: "TRIAL",     color: "#D97706", bg: "#FFFBEB" },
     past_due:  { label: "PAST DUE",  color: RED,       bg: "#FEF2F2" },
     suspended: { label: "SUSPENDED", color: RED,       bg: "#FEF2F2" },
     expired:   { label: "EXPIRED",   color: "#6B7280", bg: "#F9FAFB" },
+    deleted:   { label: "DELETED",   color: "#6B7280", bg: "#F9FAFB" },
   };
   const cfg = MAP[status] ?? { label: status.toUpperCase(), color: "#6B7280", bg: "#F9FAFB" };
   return (
     <View style={[s.chip, { backgroundColor: cfg.bg }]}>
+      <View style={[s.chipDot, { backgroundColor: cfg.color }]} />
       <Text style={[s.chipText, { color: cfg.color }]}>{cfg.label}</Text>
     </View>
   );
 }
 
-// ── Main Screen ───────────────────────────────────────────────────────────────
+// ── Breakdown row ─────────────────────────────────────────────────────────────
 
-function detectCurrencyFromLocale(): string {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz === "Europe/London") return "GBP";
-    if (tz === "Europe/Zurich" || tz === "Europe/Bern") return "CHF";
-    if (tz.startsWith("Europe/")) return "EUR";
-    if (/^America\/(Toronto|Vancouver|Edmonton|Winnipeg|Halifax|Moncton|Thunder_Bay)/.test(tz)) return "CAD";
-    if (/^America\/(Sao_Paulo|Recife|Manaus|Belem|Fortaleza)/.test(tz)) return "BRL";
-    if (tz.startsWith("America/")) return "USD";
-    if (tz.startsWith("Australia/")) return "AUD";
-    if (tz === "Pacific/Auckland") return "NZD";
-    if (tz.startsWith("Asia/Tokyo")) return "JPY";
-    if (tz.startsWith("Asia/Shanghai") || tz.startsWith("Asia/Hong_Kong")) return "CNY";
-    if (tz.startsWith("Asia/Singapore")) return "SGD";
-    if (tz.startsWith("Asia/Dubai")) return "AED";
-    if (tz.startsWith("Asia/Kolkata") || tz.startsWith("Asia/Calcutta")) return "INR";
-    if (tz.startsWith("Asia/Seoul")) return "KRW";
-    return "EUR";
-  } catch {
-    return "EUR";
-  }
+function QRRow({
+  label, sub, count, free,
+}: { label: string; sub?: string; count: number; free: boolean }) {
+  return (
+    <View style={s.qrRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={s.qrLabel}>{label}</Text>
+        {!!sub && <Text style={s.qrSub}>{sub}</Text>}
+      </View>
+      <Text style={s.qrCount}>{count}</Text>
+      <View style={[s.tag, free ? s.tagFree : s.tagBillable]}>
+        <Text style={[s.tagText, { color: free ? "#059669" : NAVY }]}>
+          {free ? "FREE" : "BILLABLE"}
+        </Text>
+      </View>
+    </View>
+  );
 }
 
+// ── Main screen ───────────────────────────────────────────────────────────────
+
 export default function SubscriptionBillingScreen() {
-  const insets             = useSafeAreaInsets();
-  const router             = useRouter();
-  const [detectedCurrency] = useState(detectCurrencyFromLocale);
-  const { user }           = useAuth();
-  const { children }   = useAppData();
+  const insets  = useSafeAreaInsets();
+  const router  = useRouter();
+  const { user } = useAuth();
   const { status, loading, error, refresh, isSuspended } = useBillingStatus();
 
-  const memberCount = status?.memberCount ?? children.length;
+  const [launching, setLaunching] = useState(false);
+  const [launchErr, setLaunchErr] = useState<string | null>(null);
 
-  const bill = calculateFullBill({
-    admins:         1,
-    kiosks:         0,
-    members:        memberCount,
-    dependents:     0,
-    pickupContacts: 0,
-  });
+  const subStatus     = status?.subscriptionStatus ?? "trialing";
+  const currency      = status?.currency ?? "EUR";
+  const membersCount  = status?.membersCount  ?? 0;
+  const childrenCount = status?.childrenCount ?? 0;
+  const pickupCount   = status?.pickupCount   ?? 0;
+  const qrTotal       = membersCount + childrenCount;
+  const totalCents    = status?.totalMonthlyCents ?? 0;
 
-  const subStatus  = status?.subscriptionStatus ?? "trialing";
-  const trialLabel = status?.trialEndsAt
-    ? new Date(status.trialEndsAt).toLocaleDateString("en-GB", {
-        day: "numeric", month: "long", year: "numeric",
-      })
+  const trialEndsAt   = status?.trialEndsAt;
+  const trialExpired  = status?.trialExpired ?? false;
+  const deletionAt    = status?.dataDeletionScheduledAt;
+  const trialEndsDate = trialEndsAt
+    ? new Date(trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
     : null;
+  const deletionDate  = deletionAt
+    ? new Date(deletionAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : null;
+
+  // days until trial expiry
+  const daysUntilExpiry = trialEndsAt
+    ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000)
+    : null;
+
+  // active billing tier
+  const activeTier = [...BILLING_TIERS].find(
+    t => qrTotal >= t.from && (t.to === null || qrTotal <= t.to),
+  ) ?? BILLING_TIERS[0];
 
   const onRefresh = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await refresh();
   }, [refresh]);
+
+  const handleSubscribe = useCallback(async () => {
+    setLaunching(true);
+    setLaunchErr(null);
+    try {
+      const { url } = await createCheckoutSession();
+      if (url) await Linking.openURL(url);
+    } catch (e) {
+      setLaunchErr((e as Error).message ?? "Checkout unavailable");
+    } finally { setLaunching(false); }
+  }, []);
 
   return (
     <View style={s.container}>
@@ -102,147 +131,151 @@ export default function SubscriptionBillingScreen() {
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={NAVY} />
-        }
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={NAVY} />}
       >
-        {/* ── PAGE HEADER ── */}
-        <View style={s.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.pageTitle}>Subscription & Billing</Text>
-            <Text style={s.pageSub}>{user?.schoolName ?? "Stride Platform"}</Text>
-          </View>
-          <Pressable
-            onPress={onRefresh}
-            style={({ pressed }) => [s.refreshBtn, { opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Ionicons name="refresh-outline" size={20} color={NAVY} />
-          </Pressable>
-        </View>
 
-        {/* ── SUSPENSION BANNER ── */}
-        {isSuspended && (
-          <View style={s.suspendBanner}>
-            <View style={s.suspendTitleRow}>
-              <Ionicons name="lock-closed" size={20} color={RED} />
-              <Text style={s.suspendTitle}>Account Suspended</Text>
+        {/* ── EXPIRED DANGER BANNER ── */}
+        {(trialExpired || subStatus === "expired" || subStatus === "past_due" || isSuspended) && (
+          <View style={s.dangerBanner}>
+            <View style={s.dangerTitleRow}>
+              <Ionicons name="warning" size={18} color={RED} />
+              <Text style={s.dangerTitle}>
+                {subStatus === "past_due" ? "Payment Failed" : "Trial Expired — Action Required"}
+              </Text>
             </View>
-            <Text style={s.suspendBody}>
-              Access to your organization is currently suspended due to an outstanding balance.
-              All your data is safely stored for 30 days. After this window, if no payment is received,
-              all organization data will be permanently and irreversibly deleted.
+            <Text style={s.dangerBody}>
+              Your association's access has been suspended.
+              {deletionDate
+                ? ` All your data will be permanently and irreversibly deleted on ${deletionDate} unless you activate a subscription.`
+                : " All data is safely stored for 30 days. After this window, all organisation data will be permanently deleted."}
             </Text>
-            <Pressable
-              style={({ pressed }) => [s.suspendCta, { opacity: pressed ? 0.85 : 1 }]}
-              onPress={() =>
-                Linking.openURL(
-                  "mailto:support@stride.app?subject=Account%20Suspension%20%E2%80%94%20Reactivation%20Request",
-                )
-              }
-            >
-              <Ionicons name="mail-outline" size={15} color="#FFF" />
-              <Text style={s.suspendCtaText}>Contact Stride to Reactivate</Text>
-            </Pressable>
+            {!!deletionDate && (
+              <View style={s.deletionRow}>
+                <Ionicons name="trash" size={14} color="#7F1D1D" />
+                <Text style={s.deletionText}>Data deletion scheduled: {deletionDate}</Text>
+              </View>
+            )}
           </View>
         )}
 
-        {/* ── CURRENT BILL ── */}
-        <Text style={s.sectionLabel}>CURRENT MONTHLY BILL</Text>
-        <View style={s.billCard}>
+        {/* ── TRIAL EXPIRY WARNING ── */}
+        {!trialExpired && subStatus === "trialing" && daysUntilExpiry !== null && daysUntilExpiry <= 7 && (
+          <View style={s.warnBanner}>
+            <Ionicons name="time-outline" size={16} color="#92400E" />
+            <View style={{ flex: 1 }}>
+              <Text style={s.warnTitle}>
+                Trial expires {daysUntilExpiry === 0 ? "today" : daysUntilExpiry === 1 ? "tomorrow" : `in ${daysUntilExpiry} days`}
+              </Text>
+              <Text style={s.warnBody}>
+                On <Text style={{ fontWeight: "800" }}>{trialEndsDate}</Text>, your app will stop working until a payment method is added. Data is kept for 30 days after expiry.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* ── THIS MONTH'S BILL ── */}
+        <Text style={s.sectionLabel}>THIS MONTH'S INVOICE</Text>
+        <View style={[s.billCard, { backgroundColor: NAVY }]}>
           {loading && !status ? (
-            <ActivityIndicator color={NAVY} size="large" style={{ paddingVertical: 20 }} />
+            <ActivityIndicator color={GOLD} size="large" style={{ paddingVertical: 24 }} />
           ) : (
             <>
-              <Text style={s.billAmount}>
-                ${bill.totalMonthlyUsd.toFixed(2)}
-                <Text style={s.billPer}> / mo</Text>
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                <Text style={s.billAmount}>{fmt(totalCents, currency)}</Text>
+                <Text style={s.billPer}>/ month</Text>
+              </View>
               <Text style={s.billSub}>
-                {bill.breakdown.totalBillable} billable QR codes
-                {"  \u00B7  "}{bill.activeTier.label}
+                {qrTotal} billable QR code{qrTotal !== 1 ? "s" : ""} · {activeTier.label}
               </Text>
-              <Text style={s.billRate}>
-                Effective rate: ${bill.effectiveRateUsd.toFixed(4)} per QR / month
-              </Text>
-              {!!error && (
-                <View style={s.warnRow}>
-                  <Ionicons name="warning-outline" size={13} color="#D97706" />
-                  <Text style={s.warnText}>Estimated data \u2014 {error}</Text>
-                </View>
-              )}
+              <View style={[s.billTierPill, { marginTop: 10 }]}>
+                <Text style={s.billTierPillText}>
+                  Rate: ${activeTier.rateUsd.toFixed(2)} per QR / month
+                </Text>
+              </View>
             </>
           )}
         </View>
 
-        {/* ── QR BREAKDOWN ── */}
+        {/* ── QR CODE BREAKDOWN ── */}
         <Text style={s.sectionLabel}>QR CODE BREAKDOWN</Text>
         <View style={s.card}>
-          {(
-            [
-              { label: "Admin accounts",   count: bill.breakdown.admins,         free: false },
-              { label: "Kiosk terminals",  count: bill.breakdown.kiosks,         free: false },
-              { label: "Active members",   count: bill.breakdown.members,        free: false },
-              { label: "Dependents",       count: bill.breakdown.dependents,     free: false },
-              { label: "Pick-up contacts", count: bill.breakdown.pickupContacts, free: true  },
-            ] as const
-          ).map(({ label, count, free }) => (
-            <View key={label} style={s.breakdownRow}>
-              <Text style={s.breakdownLabel}>{label}</Text>
-              <Text style={s.breakdownCount}>{count}</Text>
-              <View style={[s.tag, free ? s.tagFree : s.tagBillable]}>
-                <Text style={[s.tagText, { color: free ? "#059669" : NAVY }]}>
-                  {free ? "FREE" : "BILLABLE"}
-                </Text>
-              </View>
+          <QRRow
+            label="Member accounts"
+            sub="Adult members — each has a personal QR code"
+            count={membersCount}
+            free={false}
+          />
+          <View style={s.rowDivider} />
+          <QRRow
+            label="Dependent children"
+            sub="Each child enrolled = 1 QR code"
+            count={childrenCount}
+            free={false}
+          />
+          <View style={s.rowDivider} />
+          <QRRow
+            label="Pick-up contacts"
+            sub="Authorised pick-up only — no QR code"
+            count={pickupCount}
+            free
+          />
+          <View style={[s.rowDivider, { marginVertical: 4 }]} />
+          {/* Totals */}
+          <View style={s.totalsRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.totalsLabel}>Billable QRs</Text>
+              <Text style={s.totalsSub}>members + children</Text>
             </View>
-          ))}
-          <View style={s.breakdownDivider} />
-          <View style={s.breakdownRow}>
-            <Text style={[s.breakdownLabel, s.breakdownTotal]}>Total billable</Text>
-            <Text style={[s.breakdownCount, { color: NAVY, fontWeight: "900", fontSize: 17 }]}>
-              {bill.breakdown.totalBillable}
-            </Text>
-            <View style={{ width: 76 }} />
+            <Text style={s.totalsValue}>{qrTotal}</Text>
           </View>
+          <View style={s.totalsRow}>
+            <Text style={s.totalsLabel}>Free QRs (pickup only)</Text>
+            <Text style={[s.totalsValue, { color: "#059669" }]}>{pickupCount}</Text>
+          </View>
+          <View style={s.totalsRow}>
+            <Text style={[s.totalsLabel, { fontWeight: "900", color: NAVY }]}>Monthly total</Text>
+            <Text style={[s.totalsValue, { fontWeight: "900", color: NAVY, fontSize: 17 }]}>
+              {fmt(totalCents, currency)}
+            </Text>
+          </View>
+
+          {!!error && (
+            <View style={[s.infoRow, { marginTop: 8 }]}>
+              <Ionicons name="warning-outline" size={13} color="#D97706" />
+              <Text style={{ flex: 1, fontSize: 11, color: "#92400E" }}>Estimated data — {error}</Text>
+            </View>
+          )}
         </View>
 
         {/* ── PRICING TIERS ── */}
         <Text style={s.sectionLabel}>VOLUME PRICING TIERS</Text>
         <View style={s.card}>
           {BILLING_TIERS.map(tier => {
-            const active =
-              bill.breakdown.totalBillable >= tier.from &&
-              (tier.to === null || bill.breakdown.totalBillable <= tier.to);
+            const isActive = qrTotal >= tier.from && (tier.to === null || qrTotal <= tier.to);
             return (
-              <View key={tier.label} style={[s.tierRow, active && s.tierRowActive]}>
+              <View key={tier.label} style={[s.tierRow, isActive && s.tierRowActive]}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.tierName, active && { color: NAVY, fontWeight: "800" }]}>
-                    {tier.label}
-                  </Text>
+                  <Text style={[s.tierName, isActive && { color: NAVY }]}>{tier.label}</Text>
                   <Text style={s.tierRange}>
-                    {tier.from}
-                    {tier.to !== null ? `\u2013${tier.to}` : "+"}
-                    {" QR codes"}
+                    {tier.from}{tier.to !== null ? `–${tier.to}` : "+"} QR codes
                   </Text>
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
-                  <Text style={[s.tierRate, active && { color: NAVY }]}>
+                  <Text style={[s.tierRate, isActive && { color: NAVY }]}>
                     ${tier.rateUsd.toFixed(2)}
                   </Text>
                   <Text style={s.tierRateSub}>per QR / mo</Text>
                 </View>
-                {active && (
-                  <View style={s.activePill}>
-                    <Text style={s.activePillText}>YOUR TIER</Text>
-                  </View>
+                {isActive && (
+                  <View style={s.activePill}><Text style={s.activePillText}>YOUR TIER</Text></View>
                 )}
               </View>
             );
           })}
-          <View style={s.freeNote}>
+          <View style={s.infoRow}>
             <Ionicons name="checkmark-circle" size={14} color="#059669" />
-            <Text style={s.freeNoteText}>
-              Authorized pick-up contacts are always free of charge.
+            <Text style={{ flex: 1, fontSize: 12, color: "#059669" }}>
+              Pick-up contacts are always free of charge and never counted.
             </Text>
           </View>
         </View>
@@ -254,40 +287,84 @@ export default function SubscriptionBillingScreen() {
             <Text style={s.statusLabel}>Status</Text>
             <StatusChip status={subStatus} />
           </View>
-          {!!trialLabel && (
+          {!!trialEndsDate && (
             <View style={s.statusRow}>
-              <Text style={s.statusLabel}>Trial expires</Text>
-              <Text style={s.statusValue}>{trialLabel}</Text>
+              <Text style={s.statusLabel}>
+                {trialExpired ? "Trial ended" : "Trial expires"}
+              </Text>
+              <Text style={[s.statusValue, trialExpired && { color: RED }]}>{trialEndsDate}</Text>
+            </View>
+          )}
+          {!!deletionDate && (
+            <View style={s.statusRow}>
+              <Text style={[s.statusLabel, { color: RED }]}>Data deleted on</Text>
+              <Text style={[s.statusValue, { color: RED, fontWeight: "900" }]}>{deletionDate}</Text>
             </View>
           )}
           <View style={s.statusRow}>
-            <Text style={s.statusLabel}>QR codes counted</Text>
-            <Text style={s.statusValue}>{memberCount}</Text>
+            <Text style={s.statusLabel}>Billing currency</Text>
+            <Text style={s.statusValue}>{currency}</Text>
           </View>
           <View style={s.statusRow}>
-            <Text style={s.statusLabel}>Billing currency</Text>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={s.statusValue}>{status?.currency ?? detectedCurrency}</Text>
-              {!status?.currency && (
-                <Text style={{ fontSize: 10, color: "#9CA3AF", marginTop: 1 }}>auto-detected</Text>
-              )}
-            </View>
+            <Text style={s.statusLabel}>Organisation</Text>
+            <Text style={s.statusValue} numberOfLines={1}>{user?.schoolName ?? "—"}</Text>
           </View>
         </View>
+
+        {/* ── HOW BILLING WORKS ── */}
+        <Text style={s.sectionLabel}>HOW BILLING WORKS</Text>
+        <View style={s.card}>
+          {[
+            { icon: "timer-outline" as const, color: "#D97706", title: "Trial period", desc: "Your free trial starts when your first member joins. You receive reminder emails at 7, 3, and 1 day before expiry." },
+            { icon: "refresh-outline" as const, color: NAVY, title: "Monthly billing", desc: "On the 1st of each month, Stride updates your QR count and charges your saved payment method automatically." },
+            { icon: "trash-outline" as const, color: RED, title: "Data retention", desc: "If your subscription lapses, all data is kept for 30 days. After that, it is permanently and irreversibly deleted." },
+          ].map(item => (
+            <View key={item.title} style={s.howRow}>
+              <View style={[s.howIcon, { backgroundColor: item.color + "18" }]}>
+                <Ionicons name={item.icon} size={16} color={item.color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.howTitle}>{item.title}</Text>
+                <Text style={s.howDesc}>{item.desc}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ── SUBSCRIBE CTA (if not active) ── */}
+        {subStatus !== "active" && (
+          <View style={s.ctaBox}>
+            <Pressable
+              style={({ pressed }) => [s.ctaBtn, { opacity: pressed || launching ? 0.85 : 1 }]}
+              onPress={handleSubscribe}
+              disabled={launching}
+            >
+              {launching
+                ? <ActivityIndicator size="small" color={NAVY} />
+                : <>
+                    <Ionicons name="card-outline" size={20} color={NAVY} />
+                    <Text style={s.ctaBtnText}>Activate Subscription</Text>
+                  </>}
+            </Pressable>
+            {!!launchErr && (
+              <Text style={{ fontSize: 12, color: RED, textAlign: "center", marginTop: 6 }}>{launchErr}</Text>
+            )}
+            <Text style={s.ctaNote}>
+              Secure payment powered by Stripe · Cancel any time
+            </Text>
+          </View>
+        )}
 
         {/* ── SUPPORT ── */}
         <Pressable
           style={({ pressed }) => [s.supportBtn, { opacity: pressed ? 0.85 : 1 }]}
-          onPress={() =>
-            Linking.openURL("mailto:support@stride.app?subject=Billing%20Enquiry")
-          }
+          onPress={() => Linking.openURL("mailto:support@stride.app?subject=Billing%20Enquiry")}
         >
-          <Ionicons name="mail-outline" size={18} color={GOLD} />
+          <Ionicons name="mail-outline" size={17} color={GOLD} />
           <Text style={s.supportBtnText}>Contact Billing Support</Text>
         </Pressable>
-        <Text style={s.supportNote}>
-          Billing questions? Reach us at support@stride.app
-        </Text>
+        <Text style={s.supportNote}>support@stride.app · we respond within 24 h</Text>
+
       </ScrollView>
     </View>
   );
@@ -296,117 +373,104 @@ export default function SubscriptionBillingScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: "#F8FAFC" },
-  scroll:     { paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  scroll:    { paddingHorizontal: 16, paddingTop: 8 },
 
-  // header
-  headerRow:  { flexDirection: "row", alignItems: "flex-start", marginBottom: 20 },
-  pageTitle:  { fontSize: 26, fontWeight: "900", color: "#111827" },
-  pageSub:    { fontSize: 13, color: "#6B7280", marginTop: 2 },
-  refreshBtn: {
-    width: 40, height: 40, borderRadius: 12,
-    backgroundColor: "#EFF6FF",
-    alignItems: "center", justifyContent: "center",
-  },
-
-  // suspension banner
-  suspendBanner: {
-    backgroundColor: "#FEF2F2",
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "#FECACA",
-    padding: 16,
-    marginBottom: 20,
-    gap: 10,
-  },
-  suspendTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  suspendTitle:    { fontSize: 16, fontWeight: "900", color: RED },
-  suspendBody:     { fontSize: 13, color: "#7F1D1D", lineHeight: 20 },
-  suspendCta: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: RED, borderRadius: 10, paddingVertical: 12, marginTop: 4,
-  },
-  suspendCtaText: { color: "#FFF", fontSize: 14, fontWeight: "800" },
-
-  // bill card
-  billCard: {
-    backgroundColor: NAVY, borderRadius: 20, padding: 22, marginBottom: 24, alignItems: "center",
-  },
-  billAmount: { fontSize: 44, fontWeight: "900", color: "#FFF", lineHeight: 50 },
-  billPer:    { fontSize: 18, fontWeight: "400", color: "rgba(255,255,255,0.6)" },
-  billSub:    { fontSize: 13, color: "rgba(255,255,255,0.75)", marginTop: 6 },
-  billRate:   { fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 4 },
-  warnRow:    {
-    flexDirection: "row", alignItems: "center", gap: 5, marginTop: 8,
-    backgroundColor: "rgba(217,119,6,0.15)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
-  },
-  warnText:   { flex: 1, fontSize: 11, color: "#FBB024" },
-
-  // section label
-  sectionLabel: {
-    fontSize: 10, fontWeight: "800", letterSpacing: 1.2, color: "#9CA3AF",
-    marginBottom: 10, marginTop: 4,
-  },
-
-  // generic card
+  sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#9CA3AF", marginBottom: 10, marginTop: 14 },
   card: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#F3F4F6",
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 4,
+    borderWidth: 1, borderColor: "#E2E8F0",
   },
 
-  // breakdown
-  breakdownRow:    { flexDirection: "row", alignItems: "center", paddingVertical: 9 },
-  breakdownLabel:  { flex: 1, fontSize: 13, color: "#374151" },
-  breakdownCount:  { fontSize: 15, fontWeight: "700", color: "#111827", marginRight: 10, width: 36, textAlign: "right" },
-  breakdownDivider:{ height: StyleSheet.hairlineWidth, backgroundColor: "#E5E7EB", marginVertical: 6 },
-  breakdownTotal:  { fontWeight: "800", color: "#111827" },
-  tag: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, minWidth: 76, alignItems: "center" },
-  tagFree:     { backgroundColor: "#ECFDF5" },
+  // Danger / warning banners
+  dangerBanner: {
+    backgroundColor: "#FEF2F2", borderRadius: 14, borderWidth: 1.5, borderColor: "#FECACA",
+    padding: 14, marginBottom: 16, marginTop: 8,
+  },
+  dangerTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  dangerTitle:    { fontSize: 14, fontWeight: "900", color: RED },
+  dangerBody:     { fontSize: 12, color: "#7F1D1D", lineHeight: 18 },
+  deletionRow:    { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
+  deletionText:   { fontSize: 12, fontWeight: "800", color: "#7F1D1D" },
+
+  warnBanner: {
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    backgroundColor: "#FFFBEB", borderRadius: 14, borderWidth: 1, borderColor: "#FDE68A",
+    padding: 12, marginBottom: 16, marginTop: 8,
+  },
+  warnTitle: { fontSize: 13, fontWeight: "800", color: "#92400E", marginBottom: 3 },
+  warnBody:  { fontSize: 12, color: "#92400E", lineHeight: 17 },
+
+  // Bill card
+  billCard: {
+    borderRadius: 16, padding: 20, marginBottom: 4,
+    alignItems: "flex-start",
+  },
+  billAmount: { fontSize: 36, fontWeight: "900", color: GOLD },
+  billPer:    { fontSize: 14, color: "rgba(255,255,255,0.6)", fontWeight: "600" },
+  billSub:    { fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 4 },
+  billTierPill: {
+    backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 4,
+  },
+  billTierPillText: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.7)" },
+
+  // QR Rows
+  qrRow:     { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 },
+  qrLabel:   { fontSize: 13, fontWeight: "600", color: "#111827" },
+  qrSub:     { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
+  qrCount:   { fontSize: 15, fontWeight: "800", color: "#111827", width: 32, textAlign: "right" },
+  tag:       { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, minWidth: 72, alignItems: "center" },
+  tagFree:   { backgroundColor: "#ECFDF5" },
   tagBillable: { backgroundColor: "#EFF6FF" },
-  tagText:     { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
+  tagText:   { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
+  rowDivider:{ height: StyleSheet.hairlineWidth, backgroundColor: "#E5E7EB", marginVertical: 2 },
 
-  // tiers
-  tierRow: {
-    flexDirection: "row", alignItems: "center", paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6",
-  },
-  tierRowActive: { backgroundColor: "#EFF6FF", marginHorizontal: -16, paddingHorizontal: 16, borderRadius: 10 },
-  tierName:      { fontSize: 13, fontWeight: "700", color: "#374151" },
-  tierRange:     { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
-  tierRate:      { fontSize: 18, fontWeight: "900", color: "#374151" },
-  tierRateSub:   { fontSize: 10, color: "#9CA3AF" },
-  activePill:    {
-    backgroundColor: NAVY, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3,
-    marginLeft: 8,
-  },
-  activePillText: { fontSize: 9, fontWeight: "900", color: "#FFF", letterSpacing: 0.5 },
-  freeNote: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    paddingTop: 12, marginTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#F3F4F6",
-  },
-  freeNoteText: { flex: 1, fontSize: 12, color: "#059669" },
+  // Totals
+  totalsRow:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 },
+  totalsLabel: { fontSize: 13, color: "#374151", fontWeight: "600" },
+  totalsSub:   { fontSize: 10, color: "#9CA3AF", marginTop: 1 },
+  totalsValue: { fontSize: 15, fontWeight: "700", color: "#111827" },
 
-  // status
+  // Tiers
+  tierRow:      { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" },
+  tierRowActive:{ backgroundColor: "#EFF6FF", marginHorizontal: -16, paddingHorizontal: 16, borderRadius: 10 },
+  tierName:     { fontSize: 13, fontWeight: "700", color: "#374151" },
+  tierRange:    { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
+  tierRate:     { fontSize: 18, fontWeight: "900", color: "#374151" },
+  tierRateSub:  { fontSize: 10, color: "#9CA3AF" },
+  activePill:   { backgroundColor: NAVY, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3, marginLeft: 8 },
+  activePillText:{ fontSize: 9, fontWeight: "900", color: "#FFF", letterSpacing: 0.5 },
+  infoRow:      { flexDirection: "row", alignItems: "center", gap: 6, paddingTop: 12, marginTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#F3F4F6" },
+
+  // Status
   statusRow:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" },
   statusLabel: { fontSize: 13, color: "#6B7280" },
   statusValue: { fontSize: 13, fontWeight: "700", color: "#111827" },
-  chip:        { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  chip:        { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  chipDot:     { width: 6, height: 6, borderRadius: 3 },
   chipText:    { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
 
-  // support
+  // How it works rows
+  howRow:  { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" },
+  howIcon: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  howTitle:{ fontSize: 13, fontWeight: "700", color: "#111827", marginBottom: 2 },
+  howDesc: { fontSize: 12, color: "#6B7280", lineHeight: 17 },
+
+  // CTA
+  ctaBox: { marginTop: 10, marginBottom: 4 },
+  ctaBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    backgroundColor: GOLD, borderRadius: 16, paddingVertical: 16, marginBottom: 8,
+  },
+  ctaBtnText: { color: NAVY, fontSize: 15, fontWeight: "900" },
+  ctaNote:    { textAlign: "center", fontSize: 11, color: "#9CA3AF" },
+
+  // Support
   supportBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: NAVY, borderRadius: 16, paddingVertical: 16, marginBottom: 10,
+    backgroundColor: NAVY, borderRadius: 14, paddingVertical: 14, marginTop: 16, marginBottom: 6,
   },
-  supportBtnText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
+  supportBtnText: { color: "#FFF", fontSize: 15, fontWeight: "800" },
   supportNote:    { textAlign: "center", fontSize: 12, color: "#9CA3AF", marginBottom: 8 },
 });

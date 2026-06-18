@@ -94,14 +94,20 @@ async function checkTrialReminders(): Promise<void> {
   }
 
   // ── Auto-expire orgs whose trial has ended and have no active subscription ──
-  // This is the key automation: when trial_ends_at < now, mark as expired so
-  // the app shows the paywall and prompts the association admin to subscribe.
-  // Stripe handles the rest automatically once they enter their card.
+  // Sets status = 'expired' AND schedules data deletion 30 days from now.
+  // The admin sees the paywall immediately on next app open.
+  // Data is kept for 30 days so the super-admin can still grant a new trial.
+  const deletionDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
   const { error: expireError } = await supabase
     .from("organizations")
-    .update({ subscription_status: "expired" })
+    .update({
+      subscription_status: "expired",
+      data_deletion_scheduled_at: deletionDate,
+    })
     .eq("subscription_status", "trialing")
-    .lt("trial_ends_at", now.toISOString());
+    .lt("trial_ends_at", now.toISOString())
+    .is("data_deletion_scheduled_at", null); // only set it once
 
   if (expireError) {
     logger.warn({ err: expireError }, "trial-billing: failed to auto-expire trialing orgs");

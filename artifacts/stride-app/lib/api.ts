@@ -1776,6 +1776,13 @@ export async function extendTrial(
   return request<AssociationRecord>("POST", "/super-admin/extend-trial", { orgId, months });
 }
 
+export async function grantTrial(
+  orgId: number,
+  days: number,
+): Promise<AssociationRecord> {
+  return request<AssociationRecord>("POST", "/super-admin/grant-trial", { orgId, days });
+}
+
 export async function updateAssociation(
   id: number,
   data: Partial<Pick<AssociationRecord, "currency" | "country" | "legal_framework" | "tenant_type" | "stripe_connect_account_id">>,
@@ -1910,9 +1917,13 @@ export type BillingStatus = {
   subscriptionStatus: string;
   trialEndsAt: string | null;
   trialExpired: boolean;
-  qrCodeCount: number;
-  memberCount: number;        // alias for qrCodeCount (backward compat)
-  costPerSeatCents: number;   // 0 with tiered pricing
+  dataDeletionScheduledAt: string | null;  // 30 days after expiry
+  qrCodeCount: number;                     // billable total = membersCount + childrenCount
+  membersCount: number;                    // adult member accounts (billable QR)
+  childrenCount: number;                   // dependent children (billable QR)
+  pickupCount: number;                     // pickup-only contacts (always FREE)
+  memberCount: number;                     // alias for qrCodeCount (backward compat)
+  costPerSeatCents: number;                // 0 with tiered pricing
   currency: string;
   totalMonthlyCents: number;
   hasActiveSubscription: boolean;

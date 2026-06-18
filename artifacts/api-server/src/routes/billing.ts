@@ -18,11 +18,11 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
     // Billing unit = QR code.  Every member account AND every dependant (child)
     // carries a QR code and therefore counts as one seat.
     // authorized_pickups are NOT in either table — pickup contacts are always free.
-    const [orgResult, memberResult, childResult] = await Promise.all([
+    const [orgResult, memberResult, childResult, pickupResult] = await Promise.all([
       supabase
         .from("organizations")
         .select(
-          "subscription_status, trial_ends_at, stripe_customer_id, " +
+          "subscription_status, trial_ends_at, data_deletion_scheduled_at, stripe_customer_id, " +
           "stripe_subscription_id, stripe_price_id_per_seat, cost_per_seat_cents, currency",
         )
         .eq("id", orgId)
@@ -35,11 +35,17 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
         .from("children")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", orgId),
+      // authorized_pickups are always FREE — counted separately for transparency
+      supabase
+        .from("authorized_pickups")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", orgId),
     ]);
 
     const org = orgResult.data as {
       subscription_status?: string;
       trial_ends_at?: string;
+      data_deletion_scheduled_at?: string;
       stripe_customer_id?: string;
       stripe_subscription_id?: string;
       stripe_price_id_per_seat?: string;
@@ -47,21 +53,26 @@ router.get("/billing/status", requireAuth, requireRole("admin", "super_admin"), 
       currency?: string;
     } | null;
 
-    // memberCount here = total QR codes (member seats + dependant seats)
-    const memberCount = (memberResult.count ?? 0) + (childResult.count ?? 0);
-    // Use landing-page tiered pricing; flat per-seat rate is no longer used.
-    const currency = (org?.currency ?? "EUR").toUpperCase();
-    const qrCodeCount = memberCount;  // memberCount already = members + children
-    const totalMonthlyCents = calcQrBillCents(qrCodeCount, currency);
+    const membersCount  = memberResult.count ?? 0;   // adult member accounts
+    const childrenCount = childResult.count  ?? 0;   // dependant children
+    const pickupCount   = pickupResult.count ?? 0;   // pickup-only contacts (always free)
+    const qrCodeCount   = membersCount + childrenCount; // billable QR total
+
+    const currency           = (org?.currency ?? "EUR").toUpperCase();
+    const totalMonthlyCents  = calcQrBillCents(qrCodeCount, currency);
     const subscriptionStatus = org?.subscription_status ?? "trialing";
-    const trialEndsAt = org?.trial_ends_at ?? null;
-    const trialExpired = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
+    const trialEndsAt        = org?.trial_ends_at ?? null;
+    const trialExpired       = trialEndsAt ? new Date() > new Date(trialEndsAt) : false;
 
     res.json({
       subscriptionStatus,
       trialEndsAt,
       trialExpired,
+      dataDeletionScheduledAt: org?.data_deletion_scheduled_at ?? null,
       qrCodeCount,
+      membersCount,
+      childrenCount,
+      pickupCount,
       memberCount: qrCodeCount,    // backward compat alias
       costPerSeatCents: 0,         // N/A with tiered pricing
       currency,
