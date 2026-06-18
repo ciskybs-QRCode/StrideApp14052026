@@ -461,3 +461,95 @@ export function prepareEmailTemplate(
 
   return { subject, body, actionLinks };
 }
+
+// ── Role Assignment Email ─────────────────────────────────────────────────────
+
+export interface RoleAssignmentEmailParams {
+  userName: string;
+  orgName: string;
+  appName: string;
+  /** Human-readable role names, e.g. ["Member", "Operator"] */
+  newRoles: string[];
+  /** Hex color, e.g. "#1E3A8A" */
+  primaryColor: string;
+  logoUrl?: string | null;
+  /** Subject template — supports {name}, {org_name}, {roles} */
+  emailSubjectTpl: string;
+  /** Body template — supports {name}, {org_name}, {roles} */
+  emailBodyTpl: string;
+}
+
+function fillTemplate(tpl: string, vars: Record<string, string>): string {
+  return tpl.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? `{${k}}`);
+}
+
+export function buildRoleAssignmentEmail(p: RoleAssignmentEmailParams): { html: string; text: string; subject: string } {
+  const vars: Record<string, string> = {
+    name:     p.userName,
+    org_name: p.orgName,
+    app_name: p.appName,
+    roles:    p.newRoles.join(", "),
+  };
+
+  const subject  = fillTemplate(p.emailSubjectTpl, vars);
+  const bodyText = fillTemplate(p.emailBodyTpl,    vars);
+
+  const logoHtml = p.logoUrl
+    ? `<img src="${p.logoUrl}" alt="${p.appName}" style="max-height:48px;max-width:160px;object-fit:contain;" />`
+    : `<span style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#FFFFFF;">${p.appName}</span>`;
+
+  const rolesBadgesHtml = p.newRoles.map(r => {
+    const bg    = r === "Admin" ? "#FBBF24" : r === "Operator" ? "#A78BFA" : "#93C5FD";
+    const color = r === "Admin" ? "#92400E" : r === "Operator" ? "#4C1D95" : "#1E3A8A";
+    return `<span style="display:inline-block;padding:4px 14px;background:${bg};color:${color};border-radius:20px;font-size:13px;font-weight:700;margin:4px 2px;">${r}</span>`;
+  }).join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr><td align="center" style="padding:40px 16px;">
+      <table width="560" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px;width:100%;">
+
+        <!-- Header -->
+        <tr><td style="background:${p.primaryColor};border-radius:12px 12px 0 0;padding:28px 40px;text-align:center;">
+          ${logoHtml}
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="background:#FFFFFF;padding:36px 40px;border-radius:0 0 12px 12px;">
+          <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:1.5px;color:${p.primaryColor};text-transform:uppercase;">Role Update</p>
+          <h1 style="margin:0 0 18px;font-size:22px;font-weight:800;color:#111827;line-height:1.3;">Hi ${p.userName},</h1>
+          <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.65;">${bodyText}</p>
+
+          <!-- Role badges -->
+          <div style="text-align:center;margin:24px 0;padding:20px 16px;background:#F9FAFB;border-radius:10px;border:1px solid #E5E7EB;">
+            <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:1px;color:#6B7280;text-transform:uppercase;">Your active roles</p>
+            <div>${rolesBadgesHtml}</div>
+          </div>
+
+          <p style="margin:20px 0 0;font-size:12px;color:#9CA3AF;text-align:center;">
+            This change was made by an administrator of ${p.orgName}.<br/>
+            If you have questions, please contact your association directly.
+          </p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:20px;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9CA3AF;">Powered by Stride &middot; Association Management Platform</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `${subject}\n\nHi ${p.userName},\n\n${bodyText}\n\nYour active roles: ${p.newRoles.join(", ")}\n\nThis change was made by an administrator of ${p.orgName}.\n\nPowered by Stride`;
+
+  return { html, text, subject };
+}

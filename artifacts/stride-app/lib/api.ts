@@ -255,6 +255,13 @@ export const api = {
     request<{ roles: { role: string; orgId: number }[] }>("GET", "/user/roles"),
 
   /**
+   * PATCH /users/:id/roles — assign multiple simultaneous roles to a user.
+   * Triggers a branded email + bell notification automatically.
+   */
+  setUserRoles: (id: string, roles: string[]) =>
+    request<{ id: string; name: string; email: string; role: string }>("PATCH", `/users/${id}/roles`, { roles }),
+
+  /**
    * PATCH /user/me — persists profile fields (name, profile photo) to the backend.
    * profilePhotoUri is stored as a base64 data URI, synced across devices on login.
    */
@@ -1645,6 +1652,8 @@ export interface ApiAdminSettings {
   reimbursement_receipt_threshold_cents?: number;
   payout_next_date?: string | null;
   lesson_reminders_enabled?: boolean;
+  role_assignment_email_subject?: string | null;
+  role_assignment_email_body?: string | null;
   updated_at?: string;
 }
 

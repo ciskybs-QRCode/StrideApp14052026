@@ -160,6 +160,12 @@ export default function AdminCommunications() {
   const [editWelcome,      setEditWelcome]      = useState(false);
   const [pendingOps, setPendingOps] = useState<{ id: string; name: string; venue: string; slots: string[] }[]>([]);
 
+  // ── Role Assignment Email Template ───────────────────────────────────────────
+  const [roleEmailSubject,      setRoleEmailSubject]      = useState("Your role has been updated at {org_name}");
+  const [roleEmailBody,         setRoleEmailBody]         = useState("Hi {name}, your role at {org_name} has been updated. You now have access as: {roles}. Log in to the app to explore your new features.");
+  const [editRoleEmail,         setEditRoleEmail]         = useState(false);
+  const [savingRoleEmail,       setSavingRoleEmail]       = useState(false);
+
   // ── Read Receipts ─────────────────────────────────────────────────────────────
   const [receipts, setReceipts] = useState<NotifReceipt[]>([]);
   const [receiptFilter, setReceiptFilter] = useState<"all" | "read" | "unread">("all");
@@ -204,6 +210,31 @@ export default function AdminCommunications() {
       setCommUsers(mapped);
     }).catch(() => {});
   }, []);
+
+  // Load role email template from backend on mount
+  useEffect(() => {
+    api.getAdminSettings().then(s => {
+      if (s.role_assignment_email_subject) setRoleEmailSubject(s.role_assignment_email_subject);
+      if (s.role_assignment_email_body)    setRoleEmailBody(s.role_assignment_email_body);
+    }).catch(() => {});
+  }, []);
+
+  const saveRoleEmailTemplate = async () => {
+    setSavingRoleEmail(true);
+    try {
+      await api.updateAdminSettings({
+        role_assignment_email_subject: roleEmailSubject,
+        role_assignment_email_body:    roleEmailBody,
+      });
+      setEditRoleEmail(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Saved", "Role assignment email template updated.");
+    } catch {
+      Alert.alert("Error", "Failed to save template. Please try again.");
+    } finally {
+      setSavingRoleEmail(false);
+    }
+  };
 
   const memberCount   = commUsers.filter(u => u.role === "parent" || u.role === "member" as never).length;
   const operatorCount = commUsers.filter(u => u.role === "operator").length;
@@ -662,6 +693,98 @@ export default function AdminCommunications() {
                 </>
               )}
             </View>
+
+            {/* ── ROLE ASSIGNMENT EMAIL TEMPLATE ── */}
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>Role Assignment Email</Text>
+            <View style={[autoStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={autoStyles.cardHeader}>
+                <View style={[autoStyles.iconWrap, { backgroundColor: "#DBEAFE" }]}>
+                  <Ionicons name="mail-outline" size={18} color="#1E3A8A" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[autoStyles.cardTitle, { color: colors.foreground }]}>Role Update Notification</Text>
+                  <Text style={[autoStyles.cardSub, { color: colors.mutedForeground }]}>
+                    Sent automatically when an admin changes a member's role
+                  </Text>
+                </View>
+              </View>
+
+              {/* Variables hint */}
+              <View style={[autoStyles.stepsBox, { backgroundColor: colors.muted, marginTop: 8 }]}>
+                <Text style={[autoStyles.stepsTitle, { color: colors.primary }]}>TEMPLATE VARIABLES</Text>
+                {[
+                  { v: "{name}",     desc: "Recipient's full name" },
+                  { v: "{org_name}", desc: "Your association name" },
+                  { v: "{roles}",    desc: "Updated roles, e.g. Member, Operator" },
+                ].map(item => (
+                  <View key={item.v} style={autoStyles.stepRow}>
+                    <View style={[autoStyles.stepBadge, { backgroundColor: colors.primary }]}>
+                      <Text style={autoStyles.stepNum}>·</Text>
+                    </View>
+                    <Text style={[autoStyles.stepText, { color: colors.foreground }]}>
+                      <Text style={{ fontWeight: "800" }}>{item.v}</Text>{" — "}{item.desc}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Subject */}
+              <Text style={[autoStyles.msgLabel, { color: colors.mutedForeground, marginTop: 10 }]}>EMAIL SUBJECT</Text>
+              <View style={[autoStyles.msgBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                {editRoleEmail ? (
+                  <TextInput
+                    style={[autoStyles.msgInput, { color: colors.foreground, borderColor: colors.border }]}
+                    value={roleEmailSubject}
+                    onChangeText={setRoleEmailSubject}
+                    placeholderTextColor={colors.mutedForeground}
+                  />
+                ) : (
+                  <Text style={[autoStyles.msgText, { color: colors.foreground }]}>{roleEmailSubject}</Text>
+                )}
+              </View>
+
+              {/* Body */}
+              <Text style={[autoStyles.msgLabel, { color: colors.mutedForeground, marginTop: 6 }]}>EMAIL BODY</Text>
+              <View style={[autoStyles.msgBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                {editRoleEmail ? (
+                  <TextInput
+                    style={[autoStyles.msgInput, { color: colors.foreground, borderColor: colors.border, minHeight: 72 }]}
+                    value={roleEmailBody}
+                    onChangeText={setRoleEmailBody}
+                    multiline
+                    placeholderTextColor={colors.mutedForeground}
+                  />
+                ) : (
+                  <Text style={[autoStyles.msgText, { color: colors.foreground }]}>{roleEmailBody}</Text>
+                )}
+              </View>
+
+              {/* Edit / Save buttons */}
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                <Pressable
+                  style={({ pressed }) => [autoStyles.editBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1, flex: 1 }]}
+                  onPress={() => setEditRoleEmail(v => !v)}
+                >
+                  <Ionicons name={editRoleEmail ? "close-outline" : "create-outline"} size={14} color={colors.primary} />
+                  <Text style={[autoStyles.editBtnText, { color: colors.primary }]}>
+                    {editRoleEmail ? "Cancel" : "Customize Template"}
+                  </Text>
+                </Pressable>
+                {editRoleEmail && (
+                  <Pressable
+                    style={({ pressed }) => [autoStyles.editBtn, { borderColor: colors.primary, backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
+                    onPress={saveRoleEmailTemplate}
+                    disabled={savingRoleEmail}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={14} color="#FFF" />
+                    <Text style={[autoStyles.editBtnText, { color: "#FFF" }]}>
+                      {savingRoleEmail ? "Saving..." : "Save"}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
           </>
         )}
 

@@ -10,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -32,6 +33,8 @@ interface UserRecord {
   email:         string;
   phone:         string;
   role:          UserRole;
+  /** All active roles for this user (multi-role support). Falls back to [role]. */
+  roles?:        string[];
   status:        UserStatus;
   joinDate:      string;
   // student safety fields (populated from DB)
@@ -74,12 +77,15 @@ function normalizeMediaConsent(raw?: string | null): MediaConsent {
   return "none";
 }
 
-function apiUserToRecord(u: { id: string | number; name: string; email: string; phone?: string; role?: string; blocked?: boolean; created_at?: string }): UserRecord {
+function apiUserToRecord(u: { id: string | number; name: string; email: string; phone?: string; role?: string; roles?: string; blocked?: boolean; created_at?: string }): UserRecord {
   const role: UserRole   = (["parent", "operator", "admin", "student"].includes(u.role ?? "") ? u.role : "parent") as UserRole;
   const status: UserStatus = u.blocked ? "suspended" : "active";
   let joinDate = "";
   if (u.created_at) { try { joinDate = new Date(u.created_at).toLocaleDateString("en-AU"); } catch { joinDate = ""; } }
-  return { id: String(u.id), name: u.name, email: u.email, phone: u.phone ?? "", role, status, joinDate };
+  let roles: string[] | undefined;
+  if (u.roles) { try { roles = JSON.parse(u.roles); } catch { /* ignore */ } }
+  if (!roles || roles.length === 0) roles = [role];
+  return { id: String(u.id), name: u.name, email: u.email, phone: u.phone ?? "", role, roles, status, joinDate };
 }
 
 function apiStudentToRecord(s: ApiStudent, childById: Map<number, ApiChild>): UserRecord {
@@ -125,6 +131,10 @@ export default function AdminUsers() {
     type: "suspend" | "reactivate" | "approve" | "role_change";
     user: UserRecord;
     newRole?: UserRole;
+    /** Full set of roles after the toggle (multi-role). */
+    newRoles?: string[];
+    /** Whether the toggle is enabling (true) or disabling (false) a role. */
+    enabling?: boolean;
   } | null>(null);
   const [operatorProfile, setOperatorProfile] = useState<ApiOperatorProfile | null>(null);
 
@@ -240,7 +250,7 @@ export default function AdminUsers() {
 
   const executeConfirmAction = () => {
     if (!confirmAction) return;
-    const { type, user, newRole } = confirmAction;
+    const { type, user, newRole, newRoles } = confirmAction;
     setConfirmAction(null);
     switch (type) {
       case "suspend":
@@ -253,17 +263,37 @@ export default function AdminUsers() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         break;
       case "role_change":
-        if (newRole) {
-          setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u));
-          setSelected(prev => prev?.id === user.id ? { ...prev, role: newRole } : prev);
+        if (newRoles && newRoles.length > 0) {
+          const PRIORITY = ["admin", "operator", "parent"] as UserRole[];
+          const primaryRole = PRIORITY.find(r => newRoles.includes(r)) ?? "parent" as UserRole;
+          // Optimistic update
+          setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: primaryRole, roles: newRoles } : u));
+          setSelected(prev => prev?.id === user.id ? { ...prev, role: primaryRole, roles: newRoles } : prev);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          // Persist to backend (sends email + bell notification automatically)
+          api.setUserRoles(user.id, newRoles).catch(() => {
+            Alert.alert("Sync Error", "Role updated locally but failed to sync. Please refresh.");
+          });
+        } else if (newRole) {
+          // Legacy fallback
+          setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole, roles: [newRole] } : u));
+          setSelected(prev => prev?.id === user.id ? { ...prev, role: newRole, roles: [newRole] } : prev);
+          api.setUserRoles(user.id, [newRole]).catch(() => {});
         }
         break;
     }
   };
 
-  const handleRoleChange = (user: UserRecord, newRole: "parent" | "operator" | "admin") => {
-    setConfirmAction({ type: "role_change", user, newRole });
+  const handleRoleToggle = (user: UserRecord, role: UserRole, enabled: boolean) => {
+    const currentRoles: string[] = user.roles ?? [user.role];
+    const newRoles = enabled
+      ? [...new Set([...currentRoles, role as string])]
+      : currentRoles.filter(r => r !== role);
+    if (newRoles.length === 0) {
+      Alert.alert("Cannot remove", "A user must have at least one active role.");
+      return;
+    }
+    setConfirmAction({ type: "role_change", user, newRole: role, newRoles, enabling: enabled });
   };
 
   // ── Grouped list ─────────────────────────────────────────────────────────
@@ -598,35 +628,35 @@ export default function AdminUsers() {
                         <Text style={[styles.modalActionText, { color: "#059669" }]}>Approve Access</Text>
                       </Pressable>
                     )}
-                    {user.role === "parent" && user.status !== "suspended" && (
-                      <Pressable style={[styles.modalActionBtn, { backgroundColor: "#EDE9FE" }]} onPress={() => handleRoleChange(user, "operator")}>
-                        <Ionicons name="arrow-up-circle" size={18} color="#7C3AED" />
-                        <Text style={[styles.modalActionText, { color: "#7C3AED" }]}>Promote to Operator</Text>
-                      </Pressable>
-                    )}
-                    {user.role === "operator" && user.status !== "suspended" && (
-                      <>
-                        <Pressable style={[styles.modalActionBtn, { backgroundColor: "#FEF3C7" }]} onPress={() => handleRoleChange(user, "admin")}>
-                          <Ionicons name="arrow-up-circle" size={18} color="#B45309" />
-                          <Text style={[styles.modalActionText, { color: "#B45309" }]}>Promote to Admin</Text>
-                        </Pressable>
-                        <Pressable style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]} onPress={() => handleRoleChange(user, "parent")}>
-                          <Ionicons name="arrow-down-circle" size={18} color="#1E3A8A" />
-                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>Move to Member</Text>
-                        </Pressable>
-                      </>
-                    )}
-                    {user.role === "admin" && user.status !== "suspended" && (
-                      <>
-                        <Pressable style={[styles.modalActionBtn, { backgroundColor: "#EDE9FE" }]} onPress={() => handleRoleChange(user, "operator")}>
-                          <Ionicons name="arrow-down-circle" size={18} color="#7C3AED" />
-                          <Text style={[styles.modalActionText, { color: "#7C3AED" }]}>Move to Operator</Text>
-                        </Pressable>
-                        <Pressable style={[styles.modalActionBtn, { backgroundColor: "#DBEAFE" }]} onPress={() => handleRoleChange(user, "parent")}>
-                          <Ionicons name="arrow-down-circle" size={18} color="#1E3A8A" />
-                          <Text style={[styles.modalActionText, { color: "#1E3A8A" }]}>Move to Member</Text>
-                        </Pressable>
-                      </>
+                    {/* ── Multi-role switches ── */}
+                    {user.status !== "suspended" && user.role !== "student" && (
+                      <View style={styles.roleSwitchSection}>
+                        <Text style={[styles.roleSwitchHeader, { color: colors.mutedForeground }]}>ROLES</Text>
+                        {(
+                          [
+                            { role: "parent"   as UserRole, label: "Member",   color: "#1E3A8A" },
+                            { role: "operator" as UserRole, label: "Operator", color: "#7C3AED" },
+                            { role: "admin"    as UserRole, label: "Admin",    color: "#B45309" },
+                          ] as const
+                        ).map(({ role: r, label, color: c }) => {
+                          const active = (user.roles ?? [user.role]).includes(r);
+                          return (
+                            <View key={r} style={[styles.roleSwitchRow, { borderColor: colors.border }]}>
+                              <View style={styles.roleSwitchLeft}>
+                                <View style={[styles.roleDot, { backgroundColor: c }]} />
+                                <Text style={[styles.roleSwitchLabel, { color: colors.foreground }]}>{label}</Text>
+                              </View>
+                              <Switch
+                                value={active}
+                                onValueChange={(val) => handleRoleToggle(user, r, val)}
+                                trackColor={{ true: c, false: colors.border }}
+                                thumbColor="#FFF"
+                                ios_backgroundColor={colors.border}
+                              />
+                            </View>
+                          );
+                        })}
+                      </View>
                     )}
                     {user.status === "suspended" ? (
                       <Pressable style={[styles.modalActionBtn, { backgroundColor: "#D1FAE5" }]} onPress={() => handleReactivate(user)}>
@@ -649,7 +679,7 @@ export default function AdminUsers() {
                       suspend:     { title: "Suspend User",    body: `Suspend ${user.name}? They will immediately lose app access.`, confirmLabel: "Suspend",    confirmColor: "#EF4444" },
                       reactivate:  { title: "Reactivate User", body: `Restore full access for ${user.name}?`,                        confirmLabel: "Reactivate", confirmColor: "#10B981" },
                       approve:     { title: "Approve User",    body: `Approve ${user.name} and grant full access?`,                  confirmLabel: "Approve",    confirmColor: "#10B981" },
-                      role_change: { title: "Change Role",     body: `Change ${user.name}'s role to ${confirmAction.newRole}?`,      confirmLabel: "Confirm",    confirmColor: "#1E3A8A" },
+                      role_change: { title: confirmAction.enabling ? "Grant Role" : "Remove Role", body: `${confirmAction.enabling ? "Add" : "Remove"} the ${confirmAction.newRole === "parent" ? "Member" : confirmAction.newRole === "operator" ? "Operator" : "Admin"} role for ${user.name}?`, confirmLabel: "Confirm", confirmColor: "#1E3A8A" },
                     };
                     const m = msgs[confirmAction.type];
                     return (
@@ -915,6 +945,13 @@ const styles = StyleSheet.create({
 
   contactBtn:     { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24, marginBottom: 16, width: "85%", justifyContent: "center" },
   contactBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+
+  roleSwitchSection: { width: "85%", marginBottom: 12, gap: 4 },
+  roleSwitchHeader:  { fontSize: 9, fontWeight: "800", letterSpacing: 1.5, marginBottom: 6 },
+  roleSwitchRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, marginBottom: 4 },
+  roleSwitchLeft:    { flexDirection: "row", alignItems: "center", gap: 10 },
+  roleDot:           { width: 10, height: 10, borderRadius: 5 },
+  roleSwitchLabel:   { fontSize: 15, fontWeight: "600" },
 
   modalActions:    { flexDirection: "column", gap: 10, width: "85%", marginBottom: 12 },
   modalActionBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 15 },

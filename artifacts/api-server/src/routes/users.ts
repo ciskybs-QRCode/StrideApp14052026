@@ -1,7 +1,10 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { getOwnerEmail } from "../lib/owner-config.js";
+import { sendTransactionalEmail } from "../services/emailService.js";
+import { buildRoleAssignmentEmail } from "../services/emailService.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -83,6 +86,110 @@ router.patch("/users/:id/role", requireAuth, requireRole("admin"), async (req, r
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data);
+});
+
+// ── PATCH /users/:id/roles ────────────────────────────────────────────────────
+// Set one or more roles for a user simultaneously (multi-role system).
+// Automatically picks the highest-priority role as the primary `role` column.
+// Side-effects (email + private notification) are fire-and-forget.
+
+router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, res) => {
+  const admin    = (req as AuthReq).user;
+  const targetId = parseInt(String(req.params["id"] ?? ""), 10);
+  if (isNaN(targetId)) { res.status(400).json({ error: "Invalid user id" }); return; }
+  if (await rejectIfOwner(res, targetId)) return;
+
+  const { roles } = req.body as { roles: string[] };
+  if (!Array.isArray(roles) || roles.length === 0) {
+    res.status(400).json({ error: "At least one role is required" });
+    return;
+  }
+  const VALID = ["parent", "operator", "admin"];
+  const cleanRoles = [...new Set(roles.filter(r => VALID.includes(r)))];
+  if (cleanRoles.length === 0) {
+    res.status(400).json({ error: "No valid roles provided" });
+    return;
+  }
+
+  // Highest-priority role becomes the primary column value
+  const PRIORITY = ["admin", "operator", "parent"];
+  const primaryRole = PRIORITY.find(r => cleanRoles.includes(r)) ?? cleanRoles[0];
+
+  const { data: updatedUser, error } = await supabase
+    .from("users")
+    .update({
+      role:       primaryRole,
+      roles:      JSON.stringify(cleanRoles),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", targetId)
+    .select("id, name, email, role")
+    .single();
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+
+  // ── Side-effects: email + bell notification (fire-and-forget) ──────────────
+  void (async () => {
+    try {
+      const orgId = admin.orgId ?? 1;
+
+      const [orgRes, settingsRes] = await Promise.all([
+        supabase.from("organizations").select("name").eq("id", orgId).maybeSingle(),
+        pool.query<{
+          brand_primary_color?: string;
+          brand_logo_url?: string;
+          brand_app_name?: string;
+          role_assignment_email_subject?: string;
+          role_assignment_email_body?: string;
+        }>(
+          `SELECT brand_primary_color, brand_logo_url, brand_app_name,
+                  role_assignment_email_subject, role_assignment_email_body
+           FROM admin_settings WHERE organization_id = $1 LIMIT 1`,
+          [orgId],
+        ),
+      ]);
+
+      const orgName      = (orgRes.data as { name?: string } | null)?.name ?? "Your Association";
+      const s            = settingsRes.rows[0];
+      const primaryColor = s?.brand_primary_color ?? "#1E3A8A";
+      const logoUrl      = s?.brand_logo_url ?? null;
+      const appName      = s?.brand_app_name ?? orgName;
+      const subjectTpl   = s?.role_assignment_email_subject ?? "Your role has been updated at {org_name}";
+      const bodyTpl      = s?.role_assignment_email_body ?? "Hi {name}, your role at {org_name} has been updated. You now have access as: {roles}.";
+
+      const roleLabels = cleanRoles.map(r =>
+        r === "parent" ? "Member" : r === "operator" ? "Operator" : "Admin",
+      );
+      const userName  = (updatedUser as { name?: string })?.name ?? "User";
+      const userEmail = (updatedUser as { email?: string })?.email;
+
+      // Send email
+      if (userEmail) {
+        const { html, text, subject } = buildRoleAssignmentEmail({
+          userName, orgName, appName,
+          newRoles: roleLabels,
+          primaryColor, logoUrl,
+          emailSubjectTpl: subjectTpl,
+          emailBodyTpl:    bodyTpl,
+        });
+        await sendTransactionalEmail({ to: userEmail, subject, html, text });
+      }
+
+      // Bell notification
+      await supabase.from("private_notifications").insert({
+        organization_id: orgId,
+        recipient_id:    targetId,
+        sender_id:       parseInt(admin.id),
+        type:            "role_assignment",
+        title:           "Your roles have been updated",
+        body:            `You now have access as: ${roleLabels.join(", ")}.`,
+      });
+    } catch (err) {
+      req.log.warn({ err }, "PATCH /users/:id/roles — side-effects failed");
+    }
+  })();
+
+  res.json(updatedUser);
 });
 
 // ── PATCH /profile ────────────────────────────────────────────────────────────

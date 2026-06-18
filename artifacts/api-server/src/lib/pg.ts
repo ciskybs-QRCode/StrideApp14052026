@@ -166,6 +166,18 @@ export async function ensureTables(): Promise<void> {
     ADD COLUMN IF NOT EXISTS profile_photo_url TEXT;
   `).catch(() => {});
 
+  // Role assignment email templates (editable by admin, used when roles change)
+  await pool.query(`
+    ALTER TABLE IF EXISTS admin_settings
+    ADD COLUMN IF NOT EXISTS role_assignment_email_subject TEXT
+      DEFAULT 'Your role has been updated at {org_name}';
+  `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE IF EXISTS admin_settings
+    ADD COLUMN IF NOT EXISTS role_assignment_email_body TEXT
+      DEFAULT 'Hi {name}, your role at {org_name} has been updated. You now have access as: {roles}. Log in to the app to explore your new features.';
+  `).catch(() => {});
+
   // system_config: stores pioneer wizard state (system_configured) and owner_email.
   // Lives in Supabase (single source of truth) — pool now points to SUPABASE_DB_URL.
   await pool.query(`

@@ -83,6 +83,8 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "payout_next_date",
     "private_lessons_enabled",
     "lesson_reminders_enabled",
+    "role_assignment_email_subject",
+    "role_assignment_email_body",
   ];
 
   const setClauses: string[] = ["updated_at = NOW()"];
