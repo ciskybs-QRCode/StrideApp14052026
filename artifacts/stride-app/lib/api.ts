@@ -1736,6 +1736,7 @@ export interface ApiAdminSettings {
   waitlist_enabled?: boolean;
   // Document requirements
   medical_cert_required?: boolean;
+  medical_cert_required_members?: boolean;
   first_aid_cert_required?: boolean;
   cert_grace_days?: number;
   cert_reminder_body?: string | null;

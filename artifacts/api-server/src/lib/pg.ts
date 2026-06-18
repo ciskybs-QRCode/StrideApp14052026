@@ -1130,7 +1130,8 @@ export async function ensureTables(): Promise<void> {
 
   // ── admin_settings — new feature-flag columns ────────────────────────────
   await pool.query(`
-    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS medical_cert_required      BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS medical_cert_required          BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS medical_cert_required_members BOOLEAN NOT NULL DEFAULT FALSE;
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS first_aid_cert_required    BOOLEAN NOT NULL DEFAULT FALSE;
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS cert_grace_days            INTEGER NOT NULL DEFAULT 30;
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS cert_reminder_body         TEXT;

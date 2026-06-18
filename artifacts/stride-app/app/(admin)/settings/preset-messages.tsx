@@ -130,8 +130,6 @@ export default function PresetMessagesPage() {
                   if (!draft) return null;
                   const meta = TEMPLATE_META[key];
                   const isExpanded = expanded === key;
-                  const sw = brandSwitch(true);
-
                   return (
                     <View
                       key={key}
@@ -146,8 +144,8 @@ export default function PresetMessagesPage() {
                           <Text style={[styles.msgLabel, { color: colors.foreground }]}>{meta.label}</Text>
                           <View style={styles.channelRow}>
                             {draft.channel_inapp  && <ChipTag label="In-app"  color="#1E3A8A" />}
-                            {draft.channel_push   && <ChipTag label="Push"    color="#7C3AED" />}
-                            {draft.channel_email  && <ChipTag label="Email"   color="#047857" />}
+                            {draft.channel_push   && <ChipTag label="Push"    color="#1E3A8A" />}
+                            {draft.channel_email  && <ChipTag label="Email"   color="#1E3A8A" />}
                           </View>
                         </View>
                         <Ionicons
@@ -169,7 +167,7 @@ export default function PresetMessagesPage() {
                               value={draft.channel_inapp}
                               onChange={v => updateDraft(key, "channel_inapp", v)}
                               color="#1E3A8A"
-                              sw={sw}
+                              sw={brandSwitch(draft.channel_inapp)}
                             />
                             <ChannelToggle
                               label="Push"
@@ -189,7 +187,7 @@ export default function PresetMessagesPage() {
                                   updateDraft(key, "channel_push", false);
                                 }
                               }}
-                              color="#7C3AED"
+                              color="#1E3A8A"
                               sw={brandSwitch(draft.channel_push)}
                             />
                             <ChannelToggle
@@ -197,8 +195,8 @@ export default function PresetMessagesPage() {
                               icon="mail-outline"
                               value={draft.channel_email}
                               onChange={v => updateDraft(key, "channel_email", v)}
-                              color="#047857"
-                              sw={sw}
+                              color="#1E3A8A"
+                              sw={brandSwitch(draft.channel_email)}
                             />
                           </View>
 

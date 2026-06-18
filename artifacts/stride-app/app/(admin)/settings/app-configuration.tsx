@@ -54,6 +54,7 @@ export default function AppConfigurationPage() {
     waitlist_alerts_enabled: true,
     waitlist_enabled: false,
     medical_cert_required: false,
+    medical_cert_required_members: false,
     first_aid_cert_required: false,
     cert_grace_days: 30,
     cert_reminder_body: null,
@@ -257,15 +258,33 @@ export default function AppConfigurationPage() {
 
         {/* ── DOCUMENTS REQUIRED ── */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>DOCUMENTS REQUIRED</Text>
+        <View style={[{ borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
+          { backgroundColor: "rgba(251,191,36,0.08)", borderLeftWidth: 3, borderLeftColor: "#FBBF24" }]}>
+          <Text style={{ fontSize: 12, color: "#92740A", lineHeight: 18 }}>
+            <Text style={{ fontWeight: "700" }}>Dependants</Text> are students who attend courses.{" "}
+            <Text style={{ fontWeight: "700" }}>Adult Members</Text> who only accompany a dependant do not need to provide their own certificate — enable their switch only if they also take courses.
+          </Text>
+        </View>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
             <SwitchRow
               icon="medkit-outline"
-              label="Medical Certificate (Members & Dependants)"
-              description="Require members and dependants to upload a valid medical certificate. Not required in all regions — OFF by default."
+              label="Medical Certificate — Dependants/Students"
+              description="Require enrolled dependants (students) to have a valid medical certificate on file. OFF by default."
               value={settings.medical_cert_required ?? false}
               saving={isSaving("medical_cert_required")}
               onToggle={v => saveKey("medical_cert_required", v)}
+              colors={colors}
+            />
+          </View>
+          <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <SwitchRow
+              icon="person-outline"
+              label="Medical Certificate — Adult Members"
+              description="Require adult members who personally take courses to also provide a medical certificate. Not needed if they only accompany a dependant. OFF by default."
+              value={settings.medical_cert_required_members ?? false}
+              saving={isSaving("medical_cert_required_members")}
+              onToggle={v => saveKey("medical_cert_required_members", v)}
               colors={colors}
             />
           </View>
@@ -280,7 +299,7 @@ export default function AppConfigurationPage() {
           />
         </View>
 
-        {(settings.medical_cert_required || settings.first_aid_cert_required) && (
+        {(settings.medical_cert_required || settings.medical_cert_required_members || settings.first_aid_cert_required) && (
           <View style={[styles.card, { backgroundColor: colors.card, marginTop: -4, padding: 16 }]}>
             <Text style={[styles.rowLabel, { color: colors.foreground, marginBottom: 4 }]}>Grace Period (days)</Text>
             <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 10 }]}>
