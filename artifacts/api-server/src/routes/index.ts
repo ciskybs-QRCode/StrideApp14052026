@@ -59,6 +59,8 @@ import calendarEventsRouter    from "./calendar-events.js";
 import statsRouter             from "./stats.js";
 import invitesRouter           from "./invites.js";
 import eventsRouter            from "./events.js";
+import presetMessagesRouter    from "./preset-messages.js";
+import waitlistRouter          from "./waitlist.js";
 
 const router: IRouter = Router();
 
@@ -122,5 +124,7 @@ router.use(calendarEventsRouter);
 router.use(statsRouter);
 router.use(invitesRouter);
 router.use(eventsRouter);
+router.use(presetMessagesRouter);
+router.use(waitlistRouter);
 
 export default router;

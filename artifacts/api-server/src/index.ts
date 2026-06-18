@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { startReminderScheduler } from "./lib/reminder-scheduler.js";
+import { startReminderScheduler, startCertReminderScheduler } from "./lib/reminder-scheduler.js";
 import { startTrialBillingScheduler } from "./lib/trial-billing-scheduler.js";
 import { startSeatSyncScheduler } from "./lib/seat-sync-scheduler.js";
 import { startDataDeletionScheduler } from "./lib/data-deletion-scheduler.js";
@@ -29,6 +29,7 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   startReminderScheduler();
+  startCertReminderScheduler();
   startTrialBillingScheduler();
   startSeatSyncScheduler();
   startDataDeletionScheduler();

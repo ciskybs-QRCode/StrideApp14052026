@@ -1,6 +1,7 @@
 import { supabase } from "./supabase.js";
 import { pool }     from "./pg.js";
 import { logger }   from "./logger.js";
+import { sendTransactionalEmail } from "../services/emailService.js";
 
 const WINDOW_MINUTES = 5;
 
@@ -410,4 +411,174 @@ async function checkNoShowAlerts(): Promise<void> {
       }
     }
   }
+}
+
+// ── Certificate Reminder Scheduler ───────────────────────────────────────────
+// Runs every 6 hours. For each org that requires medical or first-aid certs,
+// sends in-app + email reminders at 7, 3, and 1 day before the grace deadline.
+// Uses cert_reminders_sent table to prevent duplicate sends.
+
+const CERT_CHECK_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
+const REMINDER_DAYS = [7, 3, 1];
+
+async function checkCertReminders(): Promise<void> {
+  try {
+    // Get orgs with cert requirements enabled
+    const { rows: orgs } = await pool.query<{
+      organization_id: number;
+      medical_cert_required: boolean;
+      first_aid_cert_required: boolean;
+      cert_grace_days: number;
+      cert_reminder_body: string | null;
+    }>(
+      `SELECT organization_id, medical_cert_required, first_aid_cert_required,
+              cert_grace_days, cert_reminder_body
+       FROM admin_settings
+       WHERE medical_cert_required = TRUE OR first_aid_cert_required = TRUE`,
+    );
+
+    for (const org of orgs) {
+      const graceDays = org.cert_grace_days ?? 30;
+
+      // ── Medical cert — all parent-role users in this org ───────────────────
+      if (org.medical_cert_required) {
+        const { data: users } = await supabase
+          .from("users")
+          .select("id, first_name, last_name, email, created_at")
+          .eq("organization_id", org.organization_id)
+          .eq("role", "parent");
+
+        for (const u of users ?? []) {
+          const user = u as { id: number; first_name: string; last_name: string; email: string; created_at: string };
+          // Check if cert already uploaded
+          const { rows: certs } = await pool.query(
+            `SELECT id FROM member_medical_certs WHERE member_id = $1 LIMIT 1`,
+            [user.id],
+          );
+          if (certs.length > 0) continue;
+
+          const createdAt  = new Date(user.created_at);
+          const deadline   = new Date(createdAt.getTime() + graceDays * 24 * 60 * 60 * 1000);
+          const now        = new Date();
+          const daysLeft   = Math.ceil((deadline.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+
+          if (!REMINDER_DAYS.includes(daysLeft)) continue;
+
+          // Dedup
+          const { rows: alreadySent } = await pool.query(
+            `SELECT id FROM cert_reminders_sent WHERE user_id = $1 AND cert_type = 'medical' AND reminder_day = $2`,
+            [user.id, daysLeft],
+          );
+          if (alreadySent.length > 0) continue;
+
+          const name       = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
+          const deadlineFmt = deadline.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+          const defaultBody = `Hi ${name}, your medical certificate must be uploaded by ${deadlineFmt} (${daysLeft} day(s) remaining). After this date access will be suspended until the document is provided.`;
+          const msgBody     = (org.cert_reminder_body ?? defaultBody)
+            .replace("{name}", name)
+            .replace("{cert_type}", "medical certificate")
+            .replace("{deadline}", deadlineFmt)
+            .replace("{days_remaining}", String(daysLeft));
+
+          // In-app notification
+          await pool.query(
+            `INSERT INTO private_notifications (user_id, org_id, title, body, type)
+             VALUES ($1, $2, 'Medical certificate required', $3, 'cert_reminder')
+             ON CONFLICT DO NOTHING`,
+            [user.id, org.organization_id, msgBody],
+          ).catch(() => {});
+
+          // Email
+          if (user.email) {
+            await sendTransactionalEmail({
+              to:      user.email,
+              subject: `Action required: Medical certificate (${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining)`,
+              text:    msgBody,
+              html:    `<p>${msgBody.replace(/\n/g, "<br/>")}</p>`,
+            }).catch(() => {});
+          }
+
+          // Mark sent
+          await pool.query(
+            `INSERT INTO cert_reminders_sent (user_id, org_id, cert_type, reminder_day)
+             VALUES ($1, $2, 'medical', $3) ON CONFLICT DO NOTHING`,
+            [user.id, org.organization_id, daysLeft],
+          ).catch(() => {});
+
+          logger.info({ userId: user.id, orgId: org.organization_id, daysLeft }, "medical cert reminder sent");
+        }
+      }
+
+      // ── First-aid cert — operator-role users ───────────────────────────────
+      if (org.first_aid_cert_required) {
+        const { data: operators } = await supabase
+          .from("users")
+          .select("id, first_name, last_name, email, created_at")
+          .eq("organization_id", org.organization_id)
+          .eq("role", "operator");
+
+        for (const u of operators ?? []) {
+          const user = u as { id: number; first_name: string; last_name: string; email: string; created_at: string };
+
+          const createdAt  = new Date(user.created_at);
+          const deadline   = new Date(createdAt.getTime() + graceDays * 24 * 60 * 60 * 1000);
+          const now        = new Date();
+          const daysLeft   = Math.ceil((deadline.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+
+          if (!REMINDER_DAYS.includes(daysLeft)) continue;
+
+          const { rows: alreadySent } = await pool.query(
+            `SELECT id FROM cert_reminders_sent WHERE user_id = $1 AND cert_type = 'first_aid' AND reminder_day = $2`,
+            [user.id, daysLeft],
+          );
+          if (alreadySent.length > 0) continue;
+
+          const name        = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
+          const deadlineFmt = deadline.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+          const defaultBody = `Hi ${name}, your First Aid certificate must be uploaded by ${deadlineFmt} (${daysLeft} day(s) remaining). After this date you will not be able to lead lessons.`;
+          const msgBody     = (org.cert_reminder_body ?? defaultBody)
+            .replace("{name}", name)
+            .replace("{cert_type}", "First Aid certificate")
+            .replace("{deadline}", deadlineFmt)
+            .replace("{days_remaining}", String(daysLeft));
+
+          await pool.query(
+            `INSERT INTO private_notifications (user_id, org_id, title, body, type)
+             VALUES ($1, $2, 'First Aid certificate required', $3, 'cert_reminder')
+             ON CONFLICT DO NOTHING`,
+            [user.id, org.organization_id, msgBody],
+          ).catch(() => {});
+
+          if (user.email) {
+            await sendTransactionalEmail({
+              to:      user.email,
+              subject: `Action required: First Aid certificate (${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining)`,
+              text:    msgBody,
+              html:    `<p>${msgBody.replace(/\n/g, "<br/>")}</p>`,
+            }).catch(() => {});
+          }
+
+          await pool.query(
+            `INSERT INTO cert_reminders_sent (user_id, org_id, cert_type, reminder_day)
+             VALUES ($1, $2, 'first_aid', $3) ON CONFLICT DO NOTHING`,
+            [user.id, org.organization_id, daysLeft],
+          ).catch(() => {});
+
+          logger.info({ userId: user.id, orgId: org.organization_id, daysLeft }, "first-aid cert reminder sent");
+        }
+      }
+    }
+  } catch (err) {
+    logger.error(err, "cert-reminder-scheduler: unexpected error");
+  }
+}
+
+export function startCertReminderScheduler(): void {
+  // Initial run after 60 s (let the server fully start first)
+  setTimeout(() => {
+    checkCertReminders().catch(() => {});
+    setInterval(() => checkCertReminders().catch(() => {}), CERT_CHECK_INTERVAL);
+  }, 60_000);
+
+  logger.info("cert reminder scheduler started (interval: 6 h)");
 }

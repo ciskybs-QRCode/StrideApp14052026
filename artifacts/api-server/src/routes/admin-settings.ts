@@ -52,7 +52,18 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
     if (!("payout_frequency"        in row)) row.payout_frequency        = "monthly";
     if (!("reimbursement_receipt_threshold_cents" in row)) row.reimbursement_receipt_threshold_cents = 5000;
     if (!("payout_next_date"           in row)) row.payout_next_date           = null;
-    if (!("lesson_reminders_enabled"   in row)) row.lesson_reminders_enabled   = true;
+    if (!("lesson_reminders_enabled"         in row)) row.lesson_reminders_enabled         = true;
+    if (!("push_notifications_enabled"      in row)) row.push_notifications_enabled      = true;
+    if (!("auto_invoice_enabled"            in row)) row.auto_invoice_enabled            = true;
+    if (!("member_alerts_enabled"           in row)) row.member_alerts_enabled           = true;
+    if (!("payment_reminders_enabled"       in row)) row.payment_reminders_enabled       = false;
+    if (!("attendance_reports_enabled"      in row)) row.attendance_reports_enabled      = false;
+    if (!("waitlist_alerts_enabled"         in row)) row.waitlist_alerts_enabled         = true;
+    if (!("waitlist_enabled"                in row)) row.waitlist_enabled                = false;
+    if (!("medical_cert_required"           in row)) row.medical_cert_required           = false;
+    if (!("first_aid_cert_required"         in row)) row.first_aid_cert_required         = false;
+    if (!("cert_grace_days"                 in row)) row.cert_grace_days                 = 30;
+    if (!("cert_reminder_body"              in row)) row.cert_reminder_body              = null;
 
     // Security: never send the raw Stripe secret key to the frontend.
     // Replace with a masked hint (last 4 chars) so the UI can show connection status.
@@ -93,6 +104,19 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "lesson_reminders_enabled",
     "role_assignment_email_subject",
     "role_assignment_email_body",
+    // Feature toggles (migrated from AsyncStorage)
+    "push_notifications_enabled",
+    "auto_invoice_enabled",
+    "member_alerts_enabled",
+    "payment_reminders_enabled",
+    "attendance_reports_enabled",
+    "waitlist_alerts_enabled",
+    "waitlist_enabled",
+    // Document requirements
+    "medical_cert_required",
+    "first_aid_cert_required",
+    "cert_grace_days",
+    "cert_reminder_body",
   ];
 
   const setClauses: string[] = ["updated_at = NOW()"];

@@ -1062,5 +1062,86 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_sapmr_recip   ON sa_platform_message_recipients(recipient_id);
   `).catch(() => {});
 
+  // ── Preset message templates ──────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS preset_messages (
+      id             SERIAL PRIMARY KEY,
+      org_id         INTEGER NOT NULL,
+      key            TEXT    NOT NULL,
+      subject        TEXT,
+      body           TEXT    NOT NULL DEFAULT '',
+      channel_inapp  BOOLEAN NOT NULL DEFAULT TRUE,
+      channel_push   BOOLEAN NOT NULL DEFAULT FALSE,
+      channel_email  BOOLEAN NOT NULL DEFAULT TRUE,
+      updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (org_id, key)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pm_org ON preset_messages(org_id);
+  `).catch(() => {});
+
+  // ── Per-course waitlist config ────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS course_waitlist_config (
+      id                 SERIAL PRIMARY KEY,
+      course_id          INTEGER NOT NULL UNIQUE,
+      org_id             INTEGER NOT NULL,
+      waitlist_enabled   BOOLEAN NOT NULL DEFAULT FALSE,
+      max_capacity       INTEGER NOT NULL DEFAULT 20,
+      waitlist_threshold INTEGER NOT NULL DEFAULT 5,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_cwc_org ON course_waitlist_config(org_id);
+  `).catch(() => {});
+
+  // ── Course waitlist entries ───────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS course_waitlist (
+      id               SERIAL PRIMARY KEY,
+      org_id           INTEGER NOT NULL,
+      course_id        INTEGER NOT NULL,
+      member_id        INTEGER NOT NULL,
+      dependent_id     INTEGER,
+      preferred_days   JSONB   NOT NULL DEFAULT '[]'::jsonb,
+      preferred_times  JSONB   NOT NULL DEFAULT '[]'::jsonb,
+      joined_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      status           TEXT NOT NULL DEFAULT 'waiting'
+                         CHECK (status IN ('waiting','offered','accepted','declined','enrolled')),
+      offered_at       TIMESTAMPTZ,
+      offer_expires_at TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS idx_cwl_course ON course_waitlist(course_id);
+    CREATE INDEX IF NOT EXISTS idx_cwl_member ON course_waitlist(member_id);
+    CREATE INDEX IF NOT EXISTS idx_cwl_org    ON course_waitlist(org_id);
+  `).catch(() => {});
+
+  // ── Certificate reminder dedup log ────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cert_reminders_sent (
+      id           SERIAL PRIMARY KEY,
+      user_id      INTEGER NOT NULL,
+      org_id       INTEGER NOT NULL,
+      cert_type    TEXT    NOT NULL CHECK (cert_type IN ('medical','first_aid')),
+      reminder_day INTEGER NOT NULL,
+      sent_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (user_id, cert_type, reminder_day)
+    );
+  `).catch(() => {});
+
+  // ── admin_settings — new feature-flag columns ────────────────────────────
+  await pool.query(`
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS medical_cert_required      BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS first_aid_cert_required    BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS cert_grace_days            INTEGER NOT NULL DEFAULT 30;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS cert_reminder_body         TEXT;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS push_notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS auto_invoice_enabled       BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS member_alerts_enabled      BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS payment_reminders_enabled  BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS attendance_reports_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS waitlist_alerts_enabled    BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS waitlist_enabled           BOOLEAN NOT NULL DEFAULT FALSE;
+  `).catch(() => {});
+
   initialized = true;
 }

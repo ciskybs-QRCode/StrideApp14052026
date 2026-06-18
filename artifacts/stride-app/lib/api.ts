@@ -1677,7 +1677,60 @@ export interface ApiAdminSettings {
   lesson_reminders_enabled?: boolean;
   role_assignment_email_subject?: string | null;
   role_assignment_email_body?: string | null;
+  // Feature toggles (DB-backed)
+  push_notifications_enabled?: boolean;
+  auto_invoice_enabled?: boolean;
+  member_alerts_enabled?: boolean;
+  payment_reminders_enabled?: boolean;
+  attendance_reports_enabled?: boolean;
+  waitlist_alerts_enabled?: boolean;
+  waitlist_enabled?: boolean;
+  // Document requirements
+  medical_cert_required?: boolean;
+  first_aid_cert_required?: boolean;
+  cert_grace_days?: number;
+  cert_reminder_body?: string | null;
   updated_at?: string;
+}
+
+export interface PresetMessage {
+  key: string;
+  subject: string;
+  body: string;
+  channel_inapp: boolean;
+  channel_push: boolean;
+  channel_email: boolean;
+  updated_at: string | null;
+}
+
+export interface WaitlistEntry {
+  id: number;
+  course_id: number;
+  member_id: number;
+  dependent_id: number | null;
+  member_name: string;
+  preferred_days: string[];
+  preferred_times: string[];
+  joined_at: string;
+  status: "waiting" | "offered" | "accepted" | "declined" | "enrolled";
+  offered_at: string | null;
+  offer_expires_at: string | null;
+}
+
+export interface WaitlistConfig {
+  course_id: number;
+  org_id: number;
+  waitlist_enabled: boolean;
+  max_capacity: number;
+  waitlist_threshold: number;
+}
+
+export interface WaitlistAiSuggestion {
+  suggested_day: string;
+  suggested_time: string;
+  total_waitlist: number;
+  day_votes: Record<string, number>;
+  time_votes: Record<string, number>;
 }
 
 export interface ApiNotificationPrefs {
@@ -2655,4 +2708,38 @@ export function validateTicketQr(qrCode: string): Promise<EventTicket & {
 
 export function markTicketUsed(qrCode: string): Promise<EventTicket> {
   return request("POST", `/events/validate/${encodeURIComponent(qrCode)}/use`);
+}
+
+// ── Preset Messages ───────────────────────────────────────────────────────────
+export function getPresetMessages(): Promise<PresetMessage[]> {
+  return request<PresetMessage[]>("GET", "/preset-messages");
+}
+export function updatePresetMessage(key: string, data: Partial<Omit<PresetMessage, "key" | "updated_at">>): Promise<PresetMessage> {
+  return request<PresetMessage>("PUT", `/preset-messages/${key}`, data);
+}
+
+// ── Waitlist ──────────────────────────────────────────────────────────────────
+export function getWaitlistConfig(courseId: number): Promise<WaitlistConfig> {
+  return request<WaitlistConfig>("GET", `/waitlist/config/${courseId}`);
+}
+export function updateWaitlistConfig(courseId: number, data: Partial<Omit<WaitlistConfig, "course_id" | "org_id">>): Promise<WaitlistConfig> {
+  return request<WaitlistConfig>("PUT", `/waitlist/config/${courseId}`, data);
+}
+export function getWaitlist(courseId: number): Promise<{ waitlist: WaitlistEntry[]; count: number }> {
+  return request<{ waitlist: WaitlistEntry[]; count: number }>("GET", `/waitlist/${courseId}`);
+}
+export function joinWaitlist(courseId: number, data?: { dependent_id?: number; preferred_days?: string[]; preferred_times?: string[] }): Promise<{ waitlist_entry: WaitlistEntry; position: number }> {
+  return request("POST", `/waitlist/${courseId}/join`, data ?? {});
+}
+export function leaveWaitlist(courseId: number): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("DELETE", `/waitlist/${courseId}/leave`);
+}
+export function acceptWaitlistSpot(courseId: number): Promise<{ ok: boolean; message: string }> {
+  return request<{ ok: boolean; message: string }>("POST", `/waitlist/${courseId}/accept`);
+}
+export function notifyWaitlistSpot(courseId: number): Promise<{ ok: boolean; offered_to?: number; expires_at?: string }> {
+  return request("POST", `/waitlist/${courseId}/notify-spot`);
+}
+export function getWaitlistAiSuggestion(courseId: number): Promise<WaitlistAiSuggestion> {
+  return request<WaitlistAiSuggestion>("GET", `/waitlist/ai-suggestion/${courseId}`);
 }

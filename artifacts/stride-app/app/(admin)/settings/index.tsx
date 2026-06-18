@@ -33,8 +33,14 @@ const NAV_ROWS = [
   {
     key: "app-configuration",
     title: "App Configuration",
-    description: "Notifications, invoicing and alerts",
+    description: "Notifications, certificates, waitlists and access",
     icon: "settings-outline" as const,
+  },
+  {
+    key: "preset-messages",
+    title: "Preset Messages",
+    description: "Email and notification templates",
+    icon: "mail-outline" as const,
   },
   {
     key: "legal-privacy",
