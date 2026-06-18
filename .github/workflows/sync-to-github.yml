@@ -410,6 +410,16 @@ jobs:
               return body + '\n' + marker;
             }
 
+            function appendSlackLink(body, ts, channelId) {
+              // Replace an existing deep-link line or append a new one.
+              const link = `🔗 [Slack thread](https://slack.com/app_redirect?channel=${channelId}&message_ts=${ts})`;
+              const pattern = /🔗 \[Slack thread\]\(https:\/\/slack\.com\/app_redirect\?[^)]+\)/;
+              if (pattern.test(body)) {
+                return body.replace(pattern, link);
+              }
+              return body + '\n' + link;
+            }
+
             // ── GitHub issue de-duplication ──────────────────────────────────
             let existingIssue = null;
             if (isRetry) {
@@ -598,15 +608,18 @@ jobs:
 
                 // On first failure, persist the message ts in the issue body so
                 // subsequent retries can post as thread replies.
+                // Also add a visible deep-link so engineers can jump straight
+                // from the issue to the Slack conversation.
                 if (!isRetry && apiResult.ts) {
-                  const updatedBody = appendSlackTs(freshIssue.body, apiResult.ts);
+                  let updatedBody = appendSlackTs(freshIssue.body, apiResult.ts);
+                  updatedBody = appendSlackLink(updatedBody, apiResult.ts, apiResult.channel);
                   await github.rest.issues.update({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: existingIssue.number,
                     body: updatedBody,
                   });
-                  console.log(`Stored Slack thread ts ${apiResult.ts} in issue #${existingIssue.number}`);
+                  console.log(`Stored Slack thread ts ${apiResult.ts} and deep-link in issue #${existingIssue.number}`);
                 }
               }
             } else {
