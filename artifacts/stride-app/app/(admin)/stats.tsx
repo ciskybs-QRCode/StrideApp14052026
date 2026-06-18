@@ -29,6 +29,7 @@ import { useDeviceLocale } from "@/hooks/useDeviceLocale";
 import { api } from "@/lib/api";
 import { HubCard } from "@/components/HubCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
+import { SetupChecklist } from "@/components/SetupChecklist";
 import { QRScanButton } from "@/components/QRScanButton";
 import { SOSButton } from "@/components/SOSButton";
 
@@ -334,6 +335,9 @@ export default function AdminHome() {
 
         {/* ── ROLE SWITCHER ── */}
         <RoleSwitcherRow />
+
+        {/* ── SETUP CHECKLIST (non-intrusive, disappears when done) ── */}
+        <SetupChecklist />
 
         {/* ── Platform-org banner (super_admin with no personal association yet) ── */}
         {allRoles.some(r => r.role === "super_admin") && (user?.orgId === 1 || !user?.orgId) && (
