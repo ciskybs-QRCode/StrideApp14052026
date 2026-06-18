@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -276,7 +277,7 @@ const inboxStyles = StyleSheet.create({
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function OperatorDashboard() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { lessons, students, updateStudentPresence } = useAppData();
   const { reportAbsence, reportDelay, respondToSub, activeAlert, cascadeCountdown } = useSubstitution();
   const { unreadCount, notifications, markAllRead, markRead, myBookings } = usePrivateLessons();
@@ -361,6 +362,22 @@ export default function OperatorDashboard() {
   const logoSource    = orgLogoUri ?? (user?.logoUri ?? null);
   const firstName     = preferredName || user?.name?.split(" ")[0] || "Operator";
   const emergency     = detectEmergencyInfo(campusAddress);
+
+  const handlePickProfilePhoto = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        await updateUser({ profilePhotoUri: result.assets[0].uri });
+      }
+    } catch { }
+  };
 
   // ── Effects ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1158,6 +1175,16 @@ export default function OperatorDashboard() {
             )}
           </View>
           <NotificationBell light />
+          <Pressable
+            style={({ pressed }) => [styles.avatarCircle, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
+            onPress={handlePickProfilePhoto}
+          >
+            {user?.profilePhotoUri ? (
+              <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} contentFit="cover" />
+            ) : (
+              <Text style={styles.avatarText}>{user?.name?.charAt(0)}</Text>
+            )}
+          </Pressable>
         </View>
 
         {/* ── ROLE SWITCHER ── */}
@@ -2554,9 +2581,12 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
 
   // Header — exact copy of Parent
-  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSubtitle: { fontSize: 13, marginTop: 2 },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarPhoto:  { width: 44, height: 44, borderRadius: 22 },
+  avatarText:   { color: "#FFF", fontWeight: "700", fontSize: 18 },
   gpsBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   gpsText: { fontSize: 13, fontWeight: "700" },
 

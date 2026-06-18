@@ -60,7 +60,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     } catch {
       // silent — don't disrupt the UI for polling failures
     }
-  }, [token]);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
