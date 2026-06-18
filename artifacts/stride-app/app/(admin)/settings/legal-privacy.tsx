@@ -30,11 +30,13 @@ const LEGAL_TYPES: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
-  { value: "terms",   label: "Terms",   icon: "document-text-outline"       },
-  { value: "privacy", label: "Privacy", icon: "shield-outline"              },
-  { value: "cookies", label: "Cookies", icon: "disc-outline"                },
-  { value: "waiver",  label: "Waiver",  icon: "medkit-outline"              },
-  { value: "other",   label: "Other",   icon: "ellipsis-horizontal-outline" },
+  { value: "terms",         label: "Terms",         icon: "document-text-outline"       },
+  { value: "privacy",       label: "Privacy",       icon: "shield-outline"              },
+  { value: "cookies",       label: "Cookies",       icon: "disc-outline"                },
+  { value: "waiver",        label: "Waiver",        icon: "medkit-outline"              },
+  { value: "photo_consent", label: "Photo Consent", icon: "camera-outline"              },
+  { value: "media_consent", label: "Media Consent", icon: "film-outline"                },
+  { value: "other",         label: "Other",         icon: "ellipsis-horizontal-outline" },
 ];
 
 type SourceType = "file" | "link";
@@ -98,6 +100,11 @@ export default function LegalPrivacyPage() {
   const [newContent, setNewContent] = useState("");
   const [newVersion, setNewVersion] = useState("1");
   const [newHasOptions, setNewHasOptions] = useState(false);
+  const [newOptionA, setNewOptionA] = useState("");
+  const [newOptionB, setNewOptionB] = useState("");
+  const [newOptionC, setNewOptionC] = useState("");
+  const [newAnalysing, setNewAnalysing] = useState(false);
+  const [newAnalyseExpl, setNewAnalyseExpl] = useState("");
   const [newSourceType, setNewSourceType] = useState<SourceType>("file");
   const [newFileUri, setNewFileUri] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState<string | null>(null);
@@ -170,7 +177,9 @@ export default function LegalPrivacyPage() {
   const resetAddForm = () => {
     setNewTitle(""); setNewType("terms"); setNewHighPriority(false);
     setNewMandatory(false); setNewDescription(""); setNewContent("");
-    setNewVersion("1"); setNewHasOptions(false); setNewSourceType("file");
+    setNewVersion("1"); setNewHasOptions(false);
+    setNewOptionA(""); setNewOptionB(""); setNewOptionC("");
+    setNewAnalyseExpl(""); setNewSourceType("file");
     setNewFileUri(null); setNewFileName(null); setNewFileSize(null); setNewLinkUrl("");
   };
 
@@ -189,6 +198,9 @@ export default function LegalPrivacyPage() {
       content: newContent.trim() || undefined,
       version: newVersion.trim() || "1",
       has_options: newHasOptions || undefined,
+      option_labels: newHasOptions && (newOptionA.trim() || newOptionB.trim() || newOptionC.trim())
+        ? { a: newOptionA.trim() || "Option A", b: newOptionB.trim() || "Option B", c: newOptionC.trim() || "Option C" }
+        : undefined,
       fileUri:  newSourceType === "file" ? (newFileUri ?? undefined)  : undefined,
       fileName: newSourceType === "file" ? (newFileName ?? undefined) : undefined,
       fileSize: newSourceType === "file" ? (newFileSize ?? undefined) : undefined,
@@ -379,13 +391,13 @@ export default function LegalPrivacyPage() {
         {/* Stats — based on association docs only */}
         <View style={styles.statsRow}>
           {[
-            { label: "Documents",    value: assocDocs.length, color: colors.primary, bg: "rgba(30,58,138,0.1)" },
-            { label: "Mandatory",    value: mandatoryCount,   color: colors.primary, bg: "rgba(30,58,138,0.1)" },
-            { label: "High Priority",value: priorityCount,    color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "Documents", value: assocDocs.length, color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "Mandatory",  value: mandatoryCount,  color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "Priority",   value: priorityCount,   color: colors.primary, bg: "rgba(30,58,138,0.1)" },
           ].map(s => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
               <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-              <Text style={[styles.statLabel, { color: s.color }]}>{s.label}</Text>
+              <Text style={[styles.statLabel, { color: s.color }]} numberOfLines={1} adjustsFontSizeToFit>{s.label}</Text>
             </View>
           ))}
         </View>
@@ -701,20 +713,95 @@ export default function LegalPrivacyPage() {
             />
 
             <View style={{ gap: 14, marginTop: 20 }}>
-              <View style={styles.toggleRow}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Ionicons name="list-outline" size={16} color="#7C3AED" />
-                    <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Requires Option Selection</Text>
+              {/* ── Consent Level Selection (AI-powered) ── */}
+              <View style={[{ borderRadius: 16, borderWidth: 1.5, borderColor: newHasOptions ? "#C4B5FD" : colors.border, backgroundColor: newHasOptions ? "#F5F3FF" : colors.card, padding: 14 }]}>
+                <View style={styles.toggleRow}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Ionicons name="list-outline" size={16} color="#7C3AED" />
+                      <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Consent Level Selection</Text>
+                    </View>
+                    <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>
+                      Members must choose between options when signing (e.g. no consent / internal / full)
+                    </Text>
                   </View>
-                  <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Signer must choose Option A, B, or C</Text>
+                  <Switch
+                    value={newHasOptions}
+                    onValueChange={v => { setNewHasOptions(v); setNewAnalyseExpl(""); }}
+                    trackColor={{ false: colors.muted, true: "#EDE9FE" }}
+                    thumbColor={newHasOptions ? "#7C3AED" : "#9CA3AF"}
+                  />
                 </View>
-                <Switch
-                  value={newHasOptions}
-                  onValueChange={setNewHasOptions}
-                  trackColor={{ false: colors.muted, true: "#EDE9FE" }}
-                  thumbColor={newHasOptions ? "#7C3AED" : "#9CA3AF"}
-                />
+
+                {newHasOptions && (
+                  <View style={{ marginTop: 14, gap: 10 }}>
+                    {/* AI analyse button */}
+                    {newContent.trim().length >= 30 && (
+                      <Pressable
+                        style={({ pressed }) => [{
+                          flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const,
+                          gap: 8, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16,
+                          backgroundColor: newAnalysing ? "#EDE9FE" : "#7C3AED",
+                          opacity: pressed ? 0.8 : 1,
+                        }]}
+                        onPress={async () => {
+                          setNewAnalysing(true);
+                          setNewAnalyseExpl("");
+                          try {
+                            const result = await api.legalAnalyseOptions(newContent);
+                            if (result.has_options) {
+                              setNewOptionA(result.option_a ?? "");
+                              setNewOptionB(result.option_b ?? "");
+                              setNewOptionC(result.option_c ?? "");
+                              setNewAnalyseExpl(result.explanation);
+                            } else {
+                              setNewAnalyseExpl("AI found no selectable options in this document. You can still add labels manually.");
+                            }
+                          } catch {
+                            Alert.alert("AI Analysis", "Could not analyse document. Please add option labels manually.");
+                          } finally {
+                            setNewAnalysing(false);
+                          }
+                        }}
+                        disabled={newAnalysing}
+                      >
+                        {newAnalysing
+                          ? <><Ionicons name="hourglass-outline" size={16} color="#7C3AED" /><Text style={{ color: "#7C3AED", fontWeight: "700", fontSize: 13 }}>Analysing…</Text></>
+                          : <><Ionicons name="sparkles-outline" size={16} color="#FFF" /><Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Analyse Document with AI</Text></>
+                        }
+                      </Pressable>
+                    )}
+                    {newAnalyseExpl ? (
+                      <View style={{ backgroundColor: "#EDE9FE", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8 }}>
+                        <Ionicons name="information-circle-outline" size={15} color="#7C3AED" style={{ marginTop: 1 }} />
+                        <Text style={{ fontSize: 12, color: "#5B21B6", flex: 1, lineHeight: 17 }}>{newAnalyseExpl}</Text>
+                      </View>
+                    ) : null}
+
+                    {/* Option label inputs */}
+                    {(["A", "B", "C"] as const).map((key, i) => {
+                      const val   = i === 0 ? newOptionA : i === 1 ? newOptionB : newOptionC;
+                      const setVal = i === 0 ? setNewOptionA : i === 1 ? setNewOptionB : setNewOptionC;
+                      return (
+                        <View key={key} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" }}>
+                            <Text style={{ color: "#FFF", fontSize: 11, fontWeight: "800" }}>{key}</Text>
+                          </View>
+                          <TextInput
+                            style={[styles.input, { flex: 1, borderColor: val.trim() ? "#7C3AED" : colors.border, color: colors.foreground, paddingVertical: 9, marginBottom: 0 }]}
+                            value={val}
+                            onChangeText={setVal}
+                            placeholder={`Option ${key} label (e.g. Full consent)`}
+                            placeholderTextColor={colors.mutedForeground}
+                          />
+                        </View>
+                      );
+                    })}
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground, lineHeight: 16 }}>
+                      Leave Option C blank for a 2-choice document. Labels are shown to the member during signing.
+                    </Text>
+                  </View>
+                )}
               </View>
               <View style={styles.toggleRow}>
                 <View style={{ flex: 1 }}>

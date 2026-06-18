@@ -464,6 +464,15 @@ export const api = {
     user_email: string | null;
   }[]>("GET", "/legal/audit-log"),
 
+  legalAnalyseOptions: (document_text: string) =>
+    request<{
+      has_options: boolean;
+      option_a: string | null;
+      option_b: string | null;
+      option_c: string | null;
+      explanation: string;
+    }>("POST", "/legal/analyse-options", { document_text }),
+
   // Audit Logs
   logPdfGeneration: (data: { period: string; month: string; total_amount: number; action: "generated" | "shared" }) =>
     request<{ ok: boolean }>("POST", "/pdf-logs", data),

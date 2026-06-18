@@ -1,7 +1,9 @@
 import { Router, type Request } from "express";
 import { createHash } from "crypto";
 import { pool } from "../lib/pg.js";
-import { requireAuth, type TokenPayload } from "../lib/auth.js";
+import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { openai } from "@workspace/integrations-openai-ai-server";
+import { aiLimiter } from "../lib/rate-limit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -95,6 +97,57 @@ router.get("/legal/audit-log", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "legal/audit-log query failed");
     res.status(500).json({ error: "Failed to fetch audit log" });
+  }
+});
+
+// ── AI: analyse document for selectable options ───────────────────────────────
+
+router.post("/legal/analyse-options", requireAuth, requireRole("admin"), aiLimiter, async (req, res) => {
+  const { document_text } = req.body as { document_text?: string };
+  if (!document_text || document_text.trim().length < 30) {
+    res.status(400).json({ error: "document_text is required (min 30 chars)" });
+    return;
+  }
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a legal document analyst for an association management platform. " +
+            "Analyse the given document and detect whether it contains multiple-choice options " +
+            "that a member must select from (e.g. media/photo consent levels, liability waiver tiers, etc.). " +
+            "If you find selectable options, extract exactly 2 or 3 short, clear option labels in the same language as the document. " +
+            "If no selectable options are present, set has_options to false. " +
+            "Respond ONLY with a valid JSON object: " +
+            '{ "has_options": boolean, "option_a": string|null, "option_b": string|null, "option_c": string|null, "explanation": string }',
+        },
+        {
+          role: "user",
+          content: `Analyse this document:\n\n${document_text.slice(0, 4000)}`,
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 300,
+      response_format: { type: "json_object" },
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    let parsed: Record<string, unknown> = {};
+    try { parsed = JSON.parse(raw); } catch { /* leave empty */ }
+
+    res.json({
+      has_options:  Boolean(parsed.has_options),
+      option_a:     (parsed.option_a as string | null) ?? null,
+      option_b:     (parsed.option_b as string | null) ?? null,
+      option_c:     (parsed.option_c as string | null) ?? null,
+      explanation:  (parsed.explanation as string)     ?? "",
+    });
+  } catch (err) {
+    req.log.error({ err }, "legal/analyse-options failed");
+    res.status(500).json({ error: "AI analysis failed" });
   }
 });
 
