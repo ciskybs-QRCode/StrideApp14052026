@@ -1368,7 +1368,7 @@ export default function AdminCommunications() {
               <Pressable
                 onPress={() => setShowReport(null)}
                 style={{ padding: 6 }}
-                accessibilityLabel="Chiudi report"
+                accessibilityLabel="Close report"
               >
                 <Ionicons name="close-circle" size={28} color={colors.mutedForeground} />
               </Pressable>
@@ -1378,14 +1378,14 @@ export default function AdminCommunications() {
               <View style={{ alignItems: "center", paddingVertical: 40 }}>
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 13 }}>
-                  Carico i dati…
+                  Loading data…
                 </Text>
               </View>
             ) : !reportData ? (
               <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
                 <Ionicons name="alert-circle-outline" size={40} color={colors.mutedForeground} />
                 <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>
-                  Nessun dato disponibile
+                  No data available
                 </Text>
               </View>
             ) : (
@@ -1393,10 +1393,10 @@ export default function AdminCommunications() {
                 {/* Stats Cards */}
                 <View style={styles.reportStatsRow}>
                   {[
-                    { label: "Inviati",  value: reportData.stats.total,   icon: "paper-plane",    bg: "#1E3A8A" },
-                    { label: "Letti",    value: reportData.stats.read,    icon: "checkmark-done", bg: "#16A34A" },
-                    { label: "Saltati",  value: reportData.stats.skipped, icon: "close-circle",   bg: "#DC2626" },
-                    { label: "In attesa", value: reportData.stats.pending, icon: "time",           bg: "#D97706" },
+                    { label: "Sent",    value: reportData.stats.total,   icon: "paper-plane",    bg: "#1E3A8A" },
+                    { label: "Read",    value: reportData.stats.read,    icon: "checkmark-done", bg: "#16A34A" },
+                    { label: "Skipped", value: reportData.stats.skipped, icon: "close-circle",   bg: "#DC2626" },
+                    { label: "Pending", value: reportData.stats.pending, icon: "time",           bg: "#D97706" },
                   ].map(s => (
                     <View key={s.label} style={[styles.reportStatCard, { backgroundColor: s.bg }]}>
                       <Ionicons name={s.icon as never} size={16} color="#FFF" />
@@ -1421,7 +1421,7 @@ export default function AdminCommunications() {
                       />
                     </View>
                     <Text style={{ color: colors.mutedForeground, fontSize: 11, textAlign: "right" }}>
-                      {Math.round((reportData.stats.read / reportData.stats.total) * 100)}% letto
+                      {Math.round((reportData.stats.read / reportData.stats.total) * 100)}% read
                     </Text>
                   </View>
                 )}
@@ -1435,10 +1435,10 @@ export default function AdminCommunications() {
                     const iconName  = isRead ? "checkmark-done-circle" : isSkipped ? "close-circle" : "time-outline";
                     const iconColor = isRead ? "#16A34A" : isSkipped ? "#DC2626" : "#D97706";
                     const statusLabel = isRead
-                      ? `Letto ${new Date(r.read_at!).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+                      ? `Read ${new Date(r.read_at!).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}`
                       : isSkipped
-                        ? `Saltato ${new Date(r.skipped_at!).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}`
-                        : "In attesa";
+                        ? `Skipped ${new Date(r.skipped_at!).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+                        : "Pending";
                     return (
                       <View
                         key={i}
@@ -1469,7 +1469,7 @@ export default function AdminCommunications() {
                   onPress={() => setShowReport(null)}
                   style={[styles.modalBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
                 >
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Chiudi</Text>
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Close</Text>
                 </Pressable>
               </>
             )}

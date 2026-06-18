@@ -225,7 +225,7 @@ export default function AdminAlerts() {
                   {a.studentName} — {a.type === "missed_checkin" ? "check-in" : "check-out"} — {a.courseName}
                 </Text>
                 <Text style={[styles.logTime, { color: colors.mutedForeground }]}>
-                  {a.resolvedAt ? new Date(a.resolvedAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""}
+                  {a.resolvedAt ? new Date(a.resolvedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""}
                 </Text>
               </View>
             ))}

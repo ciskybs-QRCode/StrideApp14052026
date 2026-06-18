@@ -531,7 +531,7 @@ export default function AdminUsers() {
                     profileLoading ? (
                       <View style={styles.profileLoadingRow}>
                         <Ionicons name="location-outline" size={14} color={colors.mutedForeground} />
-                        <Text style={[styles.profileLoadingText, { color: colors.mutedForeground }]}>Caricamento profilo…</Text>
+                        <Text style={[styles.profileLoadingText, { color: colors.mutedForeground }]}>Loading profile…</Text>
                       </View>
                     ) : fullProfile ? (
                       <>

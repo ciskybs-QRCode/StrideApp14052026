@@ -508,9 +508,9 @@ export default function ChildrenScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: `${colors.primary}12`, alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="people-circle-outline" size={48} color={colors.primary} />
             </View>
-            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.primary }}>Nessun dipendente collegato</Text>
+            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.primary }}>No dependents linked</Text>
             <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", paddingHorizontal: 16 }}>
-              Aggiungi un dipendente per gestire informazioni mediche, consensi e ritiri autorizzati.
+              Add a dependent to manage medical information, consents and authorised pick-ups.
             </Text>
           </View>
         )}

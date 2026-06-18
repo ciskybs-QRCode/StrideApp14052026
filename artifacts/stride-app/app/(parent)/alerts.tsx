@@ -342,7 +342,7 @@ export default function ParentAlerts() {
                   </Text>
                 </View>
                 <Text style={[styles.resolvedTime, { color: colors.mutedForeground }]}>
-                  {a.resolvedAt ? new Date(a.resolvedAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""}
+                  {a.resolvedAt ? new Date(a.resolvedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""}
                 </Text>
               </View>
             ))}

@@ -207,10 +207,10 @@ export default function OperatorAlerts() {
               <View key={a.id} style={[styles.resolvedRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="checkmark-circle" size={16} color="#10B981" />
                 <Text style={[styles.resolvedText, { color: colors.mutedForeground }]}>
-                  {a.studentName} · {a.type === "missed_checkin" ? "check-in" : "check-out"} risolto
+                  {a.studentName} · {a.type === "missed_checkin" ? "check-in" : "check-out"} resolved
                 </Text>
                 <Text style={[styles.resolvedTime, { color: colors.mutedForeground }]}>
-                  {a.resolvedAt ? new Date(a.resolvedAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""}
+                  {a.resolvedAt ? new Date(a.resolvedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""}
                 </Text>
               </View>
             ))}

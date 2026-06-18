@@ -136,7 +136,7 @@ export default function ParentReimbursementsScreen() {
       setAmountText("");
       setReceiptUrl("");
     } catch {
-      Alert.alert("Errore", "Impossibile inviare la richiesta. Riprova.");
+      Alert.alert("Error", "Could not submit the request. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -191,11 +191,11 @@ export default function ParentReimbursementsScreen() {
 
         {/* ── PENDING ── */}
         {loading ? (
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Caricamento…</Text>
+          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Loading…</Text>
         ) : loadError ? (
           <View style={[styles.errorBox, { borderColor: colors.border }]}>
             <Ionicons name="warning-outline" size={28} color="#EF4444" />
-            <Text style={[styles.emptyText, { color: "#EF4444" }]}>Impossibile caricare le richieste.</Text>
+            <Text style={[styles.emptyText, { color: "#EF4444" }]}>Could not load requests.</Text>
           </View>
         ) : (
           <>
@@ -216,9 +216,9 @@ export default function ParentReimbursementsScreen() {
             {items.length === 0 && (
               <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="receipt-outline" size={40} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nessuna richiesta</Text>
+                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No requests yet</Text>
                 <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                  Le tue richieste di rimborso appariranno qui.
+                  Your reimbursement requests will appear here.
                 </Text>
               </View>
             )}
@@ -287,14 +287,14 @@ export default function ParentReimbursementsScreen() {
                 onPress={() => { setShowForm(false); setDesc(""); setAmountText(""); setReceiptUrl(""); }}
                 style={[styles.cancelBtn, { borderColor: colors.border }]}
               >
-                <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>Annulla</Text>
+                <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={handleSubmit}
                 disabled={submitting}
                 style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.6 : 1 }]}
               >
-                <Text style={styles.submitBtnText}>{submitting ? "Invio…" : "Invia richiesta"}</Text>
+                <Text style={styles.submitBtnText}>{submitting ? "Sending…" : "Submit request"}</Text>
               </Pressable>
             </View>
           </View>
@@ -320,11 +320,11 @@ export default function ParentReimbursementsScreen() {
                     <Text style={[styles.detailDesc, { color: colors.foreground }]}>{detailItem.description}</Text>
                     <Text style={[styles.detailAmt, { color: colors.primary }]}>{centsToCurrency(detailItem.amount_cents)}</Text>
                     <Text style={[styles.detailDate, { color: colors.mutedForeground }]}>
-                      Inviata il {new Date(detailItem.created_at).toLocaleDateString("it-IT")}
+                      Submitted on {new Date(detailItem.created_at).toLocaleDateString("en-GB")}
                     </Text>
                     {detailItem.admin_note ? (
                       <View style={[styles.noteBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <Text style={[styles.noteBoxLabel, { color: colors.mutedForeground }]}>Nota admin</Text>
+                        <Text style={[styles.noteBoxLabel, { color: colors.mutedForeground }]}>Admin note</Text>
                         <Text style={[styles.noteBoxText, { color: colors.foreground }]}>{detailItem.admin_note}</Text>
                       </View>
                     ) : null}
@@ -332,7 +332,7 @@ export default function ParentReimbursementsScreen() {
                 );
               })()}
               <Pressable onPress={() => setDetailItem(null)} style={[styles.cancelBtn, { borderColor: colors.border, marginTop: 16, width: "100%" }]}>
-                <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>Chiudi</Text>
+                <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>Close</Text>
               </Pressable>
             </Pressable>
           )}
@@ -357,7 +357,7 @@ function ClaimCard({ item, colors, onPress }: { item: ReimbursementItem; colors:
       <View style={{ flex: 1 }}>
         <Text style={[styles.claimDesc, { color: colors.foreground }]} numberOfLines={1}>{item.description}</Text>
         <Text style={[styles.claimDate, { color: colors.mutedForeground }]}>
-          {new Date(item.created_at).toLocaleDateString("it-IT")}
+          {new Date(item.created_at).toLocaleDateString("en-GB")}
         </Text>
       </View>
       <View style={{ alignItems: "flex-end", gap: 4 }}>

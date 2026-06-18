@@ -147,7 +147,7 @@ export default function DocSignScreen() {
           disabled={!submitUnlocked || submitting}
         >
           <Ionicons name={submitting ? "hourglass-outline" : "checkmark-circle"} size={20} color="#FFF" />
-          <Text style={s.submitBtnText}>{submitting ? "Signing…" : "Conferma e Firma"}</Text>
+          <Text style={s.submitBtnText}>{submitting ? "Signing…" : "Confirm & Sign"}</Text>
         </Pressable>
 
         {!submitUnlocked && (

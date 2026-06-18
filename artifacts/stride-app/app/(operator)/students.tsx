@@ -429,7 +429,7 @@ export default function OperatorStudents() {
               <Text style={styles.qcAvatarText}>{quickContact?.name.charAt(0) ?? "?"}</Text>
             </View>
             <Text style={[styles.qcTitle, { color: colors.primary }]}>{quickContact?.name}</Text>
-            <Text style={[styles.qcSub, { color: colors.mutedForeground }]}>Contatto Genitore / Tutore</Text>
+            <Text style={[styles.qcSub, { color: colors.mutedForeground }]}>Guardian / Carer Contact</Text>
 
             {quickContact?.phone ? (
               <>
@@ -461,12 +461,12 @@ export default function OperatorStudents() {
             ) : (
               <View style={[styles.qcNoPhone, { backgroundColor: colors.muted }]}>
                 <Ionicons name="alert-circle-outline" size={24} color={colors.mutedForeground} />
-                <Text style={[styles.qcNoPhoneText, { color: colors.mutedForeground }]}>Numero non disponibile</Text>
+                <Text style={[styles.qcNoPhoneText, { color: colors.mutedForeground }]}>No phone number on record</Text>
               </View>
             )}
 
             <Pressable style={[styles.qcClose, { backgroundColor: colors.muted }]} onPress={() => setQuickContact(null)}>
-              <Text style={[styles.qcCloseText, { color: colors.mutedForeground }]}>Chiudi</Text>
+              <Text style={[styles.qcCloseText, { color: colors.mutedForeground }]}>Close</Text>
             </Pressable>
           </View>
         </Pressable>

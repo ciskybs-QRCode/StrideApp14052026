@@ -990,7 +990,7 @@ export default function OperatorDashboard() {
         setSosPulseId(result.pulse_id);
         pushLog({
           time:   nowTime(),
-          action: `🚨 Push critico inviato a tutti i genitori — ${result.checked_in_count} presenze stimate`,
+          action: `🚨 Critical push sent to all parents — ${result.checked_in_count} estimated attendees`,
           type:   "error",
         });
       }).catch(() => {});
@@ -1009,15 +1009,15 @@ export default function OperatorDashboard() {
       });
       setSosPulseId(result.pulse_id);
       const targetLabel = result.targeted_parents != null
-        ? `${result.targeted_parents} genitori notificati`
-        : "tutti i genitori notificati";
+        ? `${result.targeted_parents} parents notified`
+        : "all parents notified";
       pushLog({
         time:   nowTime(),
-        action: `🏥 Push medico inviato — ${targetLabel}`,
+        action: `🏥 Medical push sent — ${targetLabel}`,
         type:   "error",
       });
     } catch {
-      pushLog({ time: nowTime(), action: "⚠️ Invio push fallito — riprova", type: "error" });
+      pushLog({ time: nowTime(), action: "⚠️ Push notification failed — please retry", type: "error" });
     }
   };
 
@@ -2387,7 +2387,7 @@ export default function OperatorDashboard() {
                 {sosMembersLoading ? (
                   <View style={{ alignItems: "center", paddingVertical: 24 }}>
                     <ActivityIndicator size="large" color="#F59E0B" />
-                    <Text style={[styles.sosModalDesc, { marginTop: 10, color: "#9CA3AF" }]}>Caricamento membri…</Text>
+                    <Text style={[styles.sosModalDesc, { marginTop: 10, color: "#9CA3AF" }]}>Loading members…</Text>
                   </View>
                 ) : (
                   <ScrollView style={styles.sosPickerScroll} showsVerticalScrollIndicator={false}>
@@ -2508,10 +2508,10 @@ export default function OperatorDashboard() {
                       )}
                       <Pressable style={[styles.sosProceedBtn, { backgroundColor: "#10B981", marginTop: sosPulseId ? 8 : 16 }]} onPress={closeSOS}>
                         <Ionicons name="checkmark-circle" size={18} color="#FFF" />
-                        <Text style={styles.sosProceedBtnText}>Situazione Risolta — Chiudi</Text>
+                        <Text style={styles.sosProceedBtnText}>Situation Resolved — Close</Text>
                       </Pressable>
                       <Pressable style={[styles.sosResolveBtn, { marginTop: 8 }]} onPress={() => { setSosProcStep(0); setSosProcDone(false); }}>
-                        <Text style={[styles.sosResolveBtnText, { color: "rgba(255,255,255,0.55)" }]}>Ripeti Procedura</Text>
+                        <Text style={[styles.sosResolveBtnText, { color: "rgba(255,255,255,0.55)" }]}>Repeat Procedure</Text>
                       </Pressable>
                     </View>
                   ) : (

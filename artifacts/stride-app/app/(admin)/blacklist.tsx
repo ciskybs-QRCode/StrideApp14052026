@@ -396,7 +396,7 @@ export default function BlacklistScreen() {
                         onPress={() => setConfirmDelete(false)}
                         disabled={deleting}
                       >
-                        <Text style={[styles.confirmBtnText, { color: colors.foreground }]}>Annulla</Text>
+                        <Text style={[styles.confirmBtnText, { color: colors.foreground }]}>Cancel</Text>
                       </Pressable>
                       <Pressable
                         style={[styles.confirmBtn, { backgroundColor: "#DC2626", flex: 1, opacity: deleting ? 0.6 : 1 }]}
@@ -405,7 +405,7 @@ export default function BlacklistScreen() {
                       >
                         {deleting
                           ? <ActivityIndicator color="#FFF" size="small" />
-                          : <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Sì, rimuovi</Text>
+                          : <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Yes, remove</Text>
                         }
                       </Pressable>
                     </View>
@@ -424,7 +424,7 @@ export default function BlacklistScreen() {
                   style={[styles.detailCancelBtn, { backgroundColor: colors.muted }]}
                   onPress={() => { setDetailEntry(null); setConfirmDelete(false); }}
                 >
-                  <Text style={[styles.detailCancelText, { color: colors.mutedForeground }]}>Chiudi</Text>
+                  <Text style={[styles.detailCancelText, { color: colors.mutedForeground }]}>Close</Text>
                 </Pressable>
               </>
             )}
