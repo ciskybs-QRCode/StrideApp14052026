@@ -292,10 +292,7 @@ export default function AdminHome() {
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>
-              Hello, {preferredName || user?.name?.split(" ")[0] || "Admin"}
-            </Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              {user?.schoolName || "Stride"} {"\u00B7"} {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              Hi, {preferredName || user?.name?.split(" ")[0] || "Admin"}
             </Text>
           </View>
         </View>
