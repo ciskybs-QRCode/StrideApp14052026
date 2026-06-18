@@ -168,43 +168,9 @@ function isEventPast(date: string, endTime: string): boolean {
   } catch { return false; }
 }
 
-const INITIAL_EVENTS: CalendarEvent[] = [
-  {
-    id: "ev-001",
-    title: "End-of-Year Recital",
-    date: "2026-06-15",
-    time: "18:00",
-    endTime: "21:00",
-    location: "Main Hall, 1 Theatre Lane",
-    description: "Annual end-of-year showcase. All students perform. Dress rehearsal at 16:00. Operators must be on site by 17:00 for setup.",
-    type: "event",
-    notes: "Black uniform required. Bring your ID badge.",
-  },
-  {
-    id: "ev-002",
-    title: "Staff Meeting",
-    date: "2026-04-20",
-    time: "09:00",
-    endTime: "10:30",
-    location: "Studio B — Admin Conference Room",
-    description: "Monthly staff meeting. Topics: summer schedule, enrollment targets, payroll review.",
-    type: "meeting",
-    notes: "Attendance mandatory. Remote join via link in your email if travelling.",
-  },
-];
+const INITIAL_EVENTS: CalendarEvent[] = [];
 
-const INITIAL_SCHEDULE: LessonItem[][] = [
-  [{ course: "Classical Dance",    start: "15:30", end: "17:00", room: "Room A", students: 12 }],
-  [{ course: "Hip Hop Junior",     start: "16:00", end: "17:30", room: "Room B", students: 10 }],
-  [
-    { course: "Classical Dance",   start: "15:30", end: "17:00", room: "Room A", students: 12 },
-    { course: "Contemporary Dance",start: "17:00", end: "18:30", room: "Room C", students: 8  },
-  ],
-  [{ course: "Hip Hop Junior",     start: "16:00", end: "17:30", room: "Room B", students: 10 }],
-  [{ course: "Contemporary Dance", start: "17:00", end: "18:30", room: "Room C", students: 8  }],
-  [{ course: "Juniors Yoga",        start: "10:00", end: "11:00", room: "Room D", students: 6  }],
-  [],
-];
+const INITIAL_SCHEDULE: LessonItem[][] = [[], [], [], [], [], [], []];
 
 export default function OperatorCalendar() {
   const { courses } = useAppData();
