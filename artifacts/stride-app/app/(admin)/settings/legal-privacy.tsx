@@ -714,11 +714,11 @@ export default function LegalPrivacyPage() {
 
             <View style={{ gap: 14, marginTop: 20 }}>
               {/* ── Consent Level Selection (AI-powered) ── */}
-              <View style={[{ borderRadius: 16, borderWidth: 1.5, borderColor: newHasOptions ? "#C4B5FD" : colors.border, backgroundColor: newHasOptions ? "#F5F3FF" : colors.card, padding: 14 }]}>
+              <View style={[{ borderRadius: 16, borderWidth: 1.5, borderColor: newHasOptions ? "#1E3A8A" : colors.border, backgroundColor: newHasOptions ? "#EFF6FF" : colors.card, padding: 14 }]}>
                 <View style={styles.toggleRow}>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                      <Ionicons name="list-outline" size={16} color="#7C3AED" />
+                      <Ionicons name="list-outline" size={16} color="#1E3A8A" />
                       <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Consent Level Selection</Text>
                     </View>
                     <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>
@@ -728,8 +728,8 @@ export default function LegalPrivacyPage() {
                   <Switch
                     value={newHasOptions}
                     onValueChange={v => { setNewHasOptions(v); setNewAnalyseExpl(""); }}
-                    trackColor={{ false: colors.muted, true: "#EDE9FE" }}
-                    thumbColor={newHasOptions ? "#7C3AED" : "#9CA3AF"}
+                    trackColor={{ false: colors.muted, true: "#DBEAFE" }}
+                    thumbColor={newHasOptions ? "#1E3A8A" : "#9CA3AF"}
                   />
                 </View>
 
@@ -741,7 +741,7 @@ export default function LegalPrivacyPage() {
                         style={({ pressed }) => [{
                           flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const,
                           gap: 8, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16,
-                          backgroundColor: newAnalysing ? "#EDE9FE" : "#7C3AED",
+                          backgroundColor: newAnalysing ? "#DBEAFE" : "#1E3A8A",
                           opacity: pressed ? 0.8 : 1,
                         }]}
                         onPress={async () => {
@@ -766,15 +766,15 @@ export default function LegalPrivacyPage() {
                         disabled={newAnalysing}
                       >
                         {newAnalysing
-                          ? <><Ionicons name="hourglass-outline" size={16} color="#7C3AED" /><Text style={{ color: "#7C3AED", fontWeight: "700", fontSize: 13 }}>Analysing…</Text></>
-                          : <><Ionicons name="sparkles-outline" size={16} color="#FFF" /><Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Analyse Document with AI</Text></>
+                          ? <><Ionicons name="hourglass-outline" size={16} color="#1E3A8A" /><Text style={{ color: "#1E3A8A", fontWeight: "700", fontSize: 13 }}>Analysing…</Text></>
+                          : <><Ionicons name="sparkles-outline" size={16} color="#FBBF24" /><Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Analyse Document with AI</Text></>
                         }
                       </Pressable>
                     )}
                     {newAnalyseExpl ? (
-                      <View style={{ backgroundColor: "#EDE9FE", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8 }}>
-                        <Ionicons name="information-circle-outline" size={15} color="#7C3AED" style={{ marginTop: 1 }} />
-                        <Text style={{ fontSize: 12, color: "#5B21B6", flex: 1, lineHeight: 17 }}>{newAnalyseExpl}</Text>
+                      <View style={{ backgroundColor: "#DBEAFE", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8 }}>
+                        <Ionicons name="information-circle-outline" size={15} color="#1E3A8A" style={{ marginTop: 1 }} />
+                        <Text style={{ fontSize: 12, color: "#1E3A8A", flex: 1, lineHeight: 17 }}>{newAnalyseExpl}</Text>
                       </View>
                     ) : null}
 
@@ -784,11 +784,11 @@ export default function LegalPrivacyPage() {
                       const setVal = i === 0 ? setNewOptionA : i === 1 ? setNewOptionB : setNewOptionC;
                       return (
                         <View key={key} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: "#7C3AED", alignItems: "center", justifyContent: "center" }}>
-                            <Text style={{ color: "#FFF", fontSize: 11, fontWeight: "800" }}>{key}</Text>
+                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: "#1E3A8A", alignItems: "center", justifyContent: "center" }}>
+                            <Text style={{ color: "#FBBF24", fontSize: 11, fontWeight: "800" }}>{key}</Text>
                           </View>
                           <TextInput
-                            style={[styles.input, { flex: 1, borderColor: val.trim() ? "#7C3AED" : colors.border, color: colors.foreground, paddingVertical: 9, marginBottom: 0 }]}
+                            style={[styles.input, { flex: 1, borderColor: val.trim() ? "#1E3A8A" : colors.border, color: colors.foreground, paddingVertical: 9, marginBottom: 0 }]}
                             value={val}
                             onChangeText={setVal}
                             placeholder={`Option ${key} label (e.g. Full consent)`}
