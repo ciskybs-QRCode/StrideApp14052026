@@ -842,4 +842,73 @@ router.post("/auth/reset-password", authLimiter, async (req, res) => {
   }
 });
 
+// ── POST /auth/switch-context ─────────────────────────────────────────────────
+// Swap JWT for a different org + role context without re-login.
+// Used when a multi-org user wants to act as their role in a different org.
+// Body: { orgId: number, role: string }
+router.post("/auth/switch-context", requireAuth, async (req, res) => {
+  const authUser = (req as AuthReq).user;
+  const { orgId, role } = req.body as { orgId?: number; role?: string };
+
+  if (!orgId || !role) {
+    res.status(400).json({ error: "orgId and role are required" });
+    return;
+  }
+
+  // super_admin bypass — can switch to any org/role on the platform
+  if (authUser.role === "super_admin") {
+    const token = signToken({ id: authUser.id, email: authUser.email, role, orgId });
+    res.json({ token, orgId, role });
+    return;
+  }
+
+  const userId = String(authUser.id);
+
+  // Check primary membership in target org
+  const { data: primary } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("organization_id", orgId)
+    .maybeSingle() as { data: { role: string } | null };
+
+  // Check operator profile (extra role)
+  const { data: opProfile } = await supabase
+    .from("operator_profiles")
+    .select("id")
+    .eq("user_id", authUser.id)
+    .eq("organization_id", orgId)
+    .eq("active", true)
+    .maybeSingle();
+
+  // Check parent profile (extra role)
+  const { data: parentProfile } = await supabase
+    .from("parent_profiles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("organization_id", orgId)
+    .eq("active", true)
+    .maybeSingle();
+
+  const hasRole =
+    (primary?.role === role) ||
+    (primary?.role === "admin" && role === "admin") ||
+    (role === "operator" && !!opProfile) ||
+    (role === "parent"   && (!!parentProfile || primary?.role === "parent"));
+
+  if (!hasRole) {
+    res.status(403).json({ error: "You do not hold this role in this organisation" });
+    return;
+  }
+
+  const token = signToken({
+    id:    authUser.id,
+    email: authUser.email,
+    role,
+    orgId,
+  });
+
+  res.json({ token, orgId, role });
+});
+
 export default router;

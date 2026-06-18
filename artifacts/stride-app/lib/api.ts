@@ -2349,3 +2349,87 @@ export interface AnalyticsData {
 export async function getAnalytics(): Promise<AnalyticsData> {
   return request<AnalyticsData>("GET", "/stats/analytics");
 }
+
+// ── Multi-org / Invite API ────────────────────────────────────────────────────
+
+export interface InviteCode {
+  id:         number;
+  code:       string;
+  role:       string;
+  note:       string | null;
+  expires_at: string | null;
+  max_uses:   number | null;
+  used_count: number;
+  active:     boolean;
+  created_at: string;
+}
+
+export interface OrgEntry {
+  orgId:       number;
+  orgName:     string;
+  slug:        string;
+  primaryRole: string;
+  roles:       string[];
+  joinedAt:    string | null;
+}
+
+export async function generateInviteCode(data: {
+  role?: string; note?: string; expiresInDays?: number; maxUses?: number;
+}): Promise<InviteCode> {
+  return request<InviteCode>("POST", "/invites/generate-code", data);
+}
+
+export async function listInviteCodes(): Promise<InviteCode[]> {
+  return request<InviteCode[]>("GET", "/invites/codes");
+}
+
+export async function revokeInviteCode(id: number): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("DELETE", `/invites/codes/${id}`);
+}
+
+export async function joinByCode(code: string): Promise<{
+  ok: boolean; alreadyMember: boolean; orgId: number; orgName: string; role: string;
+}> {
+  return request("POST", "/invites/join-by-code", { code });
+}
+
+export async function joinByOrgSlug(slug: string): Promise<{
+  ok: boolean; alreadyMember: boolean; orgId: number; orgName: string; role: string;
+}> {
+  return request("POST", "/invites/join-by-org-slug", { slug });
+}
+
+export async function getMyOrgs(): Promise<{ orgs: OrgEntry[] }> {
+  return request<{ orgs: OrgEntry[] }>("GET", "/invites/my-orgs");
+}
+
+export async function addRoleToOrg(orgId: number, role: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("POST", "/invites/add-role-to-org", { orgId, role });
+}
+
+export async function apiSwitchOrgContext(orgId: number, role: string): Promise<{
+  token: string; orgId: number; role: string;
+}> {
+  return request<{ token: string; orgId: number; role: string }>(
+    "POST", "/auth/switch-context", { orgId, role },
+  );
+}
+
+// ── Per-org child membership API ──────────────────────────────────────────────
+
+export interface ChildOrgMembership {
+  orgIds: number[];
+  orgs:   { orgId: number; orgName: string }[];
+}
+
+export async function getChildOrgMemberships(memberId: number): Promise<ChildOrgMembership> {
+  return request<ChildOrgMembership>("GET", `/members/child-org-memberships/${memberId}`);
+}
+
+export async function linkChildToOrg(memberId: number, targetOrgId: number): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("POST", "/members/link-to-org", { memberId, targetOrgId });
+}
+
+export async function unlinkChildFromOrg(memberId: number, orgId: number): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("DELETE", `/members/link-to-org/${memberId}/${orgId}`);
+}

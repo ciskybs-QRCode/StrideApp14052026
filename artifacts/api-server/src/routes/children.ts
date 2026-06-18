@@ -328,4 +328,131 @@ router.get("/members/confirm-promotion", async (req, res) => {
   `);
 });
 
+// ── GET /members/child-org-memberships/:memberId ──────────────────────────────
+// Returns all orgs that a specific child (member) is linked to.
+router.get("/members/child-org-memberships/:memberId", requireAuth, async (req, res) => {
+  const user     = (req as AuthReq).user;
+  const rawId    = Array.isArray(req.params["memberId"]) ? req.params["memberId"][0] : req.params["memberId"];
+  const memberId = parseInt(rawId ?? "0", 10);
+
+  if (!memberId) { res.status(400).json({ error: "memberId is required" }); return; }
+
+  const [comRows, memberRow] = await Promise.all([
+    supabase
+      .from("child_org_memberships")
+      .select("id, organization_id, created_at")
+      .eq("member_id", memberId),
+    supabase
+      .from("members")
+      .select("organization_id")
+      .eq("id", memberId)
+      .maybeSingle(),
+  ]);
+
+  const orgs = ((comRows.data ?? []) as { id: number; organization_id: number; created_at: string }[])
+    .map(r => r.organization_id);
+
+  // Always include the member's primary org
+  const primaryOrg = (memberRow.data as { organization_id?: number } | null)?.organization_id;
+  if (primaryOrg && !orgs.includes(primaryOrg)) orgs.unshift(primaryOrg);
+
+  if (orgs.length === 0) { res.json({ orgIds: [] }); return; }
+
+  const { data: orgData } = await supabase
+    .from("organizations")
+    .select("id, name")
+    .in("id", orgs) as { data: { id: number; name: string }[] | null };
+
+  res.json({
+    orgIds: orgs,
+    orgs:   (orgData ?? []).map(o => ({ orgId: o.id, orgName: o.name })),
+  });
+});
+
+// ── POST /members/link-to-org ─────────────────────────────────────────────────
+// Link a child (member) to an additional org. Parent must be in both orgs.
+router.post("/members/link-to-org", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const { memberId, targetOrgId } = req.body as { memberId?: number; targetOrgId?: number };
+
+  if (!memberId || !targetOrgId) {
+    res.status(400).json({ error: "memberId and targetOrgId are required" });
+    return;
+  }
+
+  // Verify caller is the parent of this member
+  const { data: member } = await supabase
+    .from("members")
+    .select("id, user_id, organization_id")
+    .eq("id", memberId)
+    .maybeSingle() as { data: { id: number; user_id: string; organization_id: number } | null };
+
+  if (!member) { res.status(404).json({ error: "Member not found" }); return; }
+
+  const isAdmin  = user.role === "admin" || user.role === "super_admin";
+  const isParent = String(member.user_id) === String(user.id);
+  if (!isAdmin && !isParent) {
+    res.status(403).json({ error: "You are not the parent of this member" });
+    return;
+  }
+
+  // Verify caller is also a member of targetOrgId (unless admin)
+  if (!isAdmin) {
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("id")
+      .eq("user_id", String(user.id))
+      .eq("organization_id", targetOrgId)
+      .maybeSingle();
+
+    if (!membership) {
+      res.status(403).json({ error: "You are not a member of the target organisation" });
+      return;
+    }
+  }
+
+  const { error } = await supabase
+    .from("child_org_memberships")
+    .upsert(
+      { member_id: memberId, organization_id: targetOrgId, parent_user_id: user.id },
+      { onConflict: "member_id,organization_id" },
+    );
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  res.json({ ok: true, memberId, targetOrgId });
+});
+
+// ── DELETE /members/link-to-org/:memberId/:orgId ──────────────────────────────
+// Remove a child from a specific org membership (not the primary org).
+router.delete("/members/link-to-org/:memberId/:orgId", requireAuth, async (req, res) => {
+  const user     = (req as AuthReq).user;
+  const rawMid   = Array.isArray(req.params["memberId"]) ? req.params["memberId"][0] : req.params["memberId"];
+  const rawOid   = Array.isArray(req.params["orgId"])    ? req.params["orgId"][0]    : req.params["orgId"];
+  const memberId = parseInt(rawMid ?? "0", 10);
+  const orgId    = parseInt(rawOid ?? "0", 10);
+
+  if (!memberId || !orgId) { res.status(400).json({ error: "Invalid parameters" }); return; }
+
+  const isAdmin = user.role === "admin" || user.role === "super_admin";
+  if (!isAdmin) {
+    const { data: member } = await supabase
+      .from("members")
+      .select("user_id")
+      .eq("id", memberId)
+      .maybeSingle() as { data: { user_id: string } | null };
+    if (!member || String(member.user_id) !== String(user.id)) {
+      res.status(403).json({ error: "Not authorised to modify this member" });
+      return;
+    }
+  }
+
+  await supabase
+    .from("child_org_memberships")
+    .delete()
+    .eq("member_id", memberId)
+    .eq("organization_id", orgId);
+
+  res.json({ ok: true });
+});
+
 export default router;

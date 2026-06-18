@@ -834,5 +834,67 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS pt_user_idx  ON promotion_tokens (user_id);
   `).catch(() => {});
 
+  // Multi-association invite codes — admin-generated shareable join codes
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_invite_codes (
+      id                  SERIAL PRIMARY KEY,
+      code                VARCHAR(8) UNIQUE NOT NULL,
+      organization_id     INT NOT NULL,
+      role                VARCHAR(20) NOT NULL DEFAULT 'parent',
+      created_by_user_id  INT,
+      note                TEXT,
+      expires_at          TIMESTAMPTZ,
+      max_uses            INT,
+      used_count          INT NOT NULL DEFAULT 0,
+      active              BOOLEAN NOT NULL DEFAULT true,
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_oic_org  ON org_invite_codes(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_oic_code ON org_invite_codes(code);
+  `).catch(() => {});
+
+  // Per-org child memberships — which orgs each dependent is enrolled in
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS child_org_memberships (
+      id              SERIAL PRIMARY KEY,
+      member_id       INT NOT NULL,
+      organization_id INT NOT NULL,
+      parent_user_id  INT,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(member_id, organization_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_com_member ON child_org_memberships(member_id);
+    CREATE INDEX IF NOT EXISTS idx_com_org    ON child_org_memberships(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_com_parent ON child_org_memberships(parent_user_id);
+  `).catch(() => {});
+
+  // organization_members: primary multi-org membership (one primary role per user per org)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS organization_members (
+      id              SERIAL PRIMARY KEY,
+      user_id         TEXT NOT NULL,
+      organization_id INT NOT NULL,
+      role            VARCHAR(20) NOT NULL DEFAULT 'parent',
+      joined_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id, organization_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_om_user ON organization_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_om_org  ON organization_members(organization_id);
+  `).catch(() => {});
+
+  // parent_profiles: self-provisioned parent/member role per org
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS parent_profiles (
+      id              SERIAL PRIMARY KEY,
+      user_id         TEXT NOT NULL,
+      organization_id INT NOT NULL,
+      active          BOOLEAN NOT NULL DEFAULT true,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id, organization_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pp_user ON parent_profiles(user_id);
+    CREATE INDEX IF NOT EXISTS idx_pp_org  ON parent_profiles(organization_id);
+  `).catch(() => {});
+
   initialized = true;
 }

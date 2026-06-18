@@ -7,6 +7,7 @@
 - [Stride legal gate](stride-legal-gate.md) — mandatory sequential signature gate with SHA-256 audit, IP/device capture, options, checkbox, gold-bordered pad.
 - [Stride kiosk & sessions](stride-kiosk-sessions.md) — dual QR entity dispatch, operator clock, roll call roster, no-show disarm.
 - [Stride curly-quote parser bug](stride-curly-quotes.md) — Babel/Metro and Vite treat Unicode curly quotes U+201C/U+201D as string delimiters in JSX; always use ASCII alternatives or escape codes.
+- [Stride Multi-Association Architecture](stride-multi-assoc.md) — multi-org/invite system: org_invite_codes+child_org_memberships tables, 11 new backend routes, switchOrgContext JWT swap, join-org+my-associations+admin/invites screens.
 - [Stride Global System Architecture](stride-pioneer.md) — Pioneer wizard, invite loop, pending_activation flow, system-status routing fully implemented.
 - [Stride system_configured hybrid storage](stride-system-config.md) — system_configured lives in pg system_config table (not Supabase organizations) because ensureTables() targets Replit PostgreSQL, not Supabase.
 - [Stride OpenAI Vision integration](stride-openai-vision.md) — AI integration provisioned; lib/integrations-openai-ai-server built; image client needed optional-chaining fix for response.data; react lib removed from root tsconfig (not needed server-side).

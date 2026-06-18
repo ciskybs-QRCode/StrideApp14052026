@@ -24,6 +24,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { router } from "expo-router";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -120,7 +121,7 @@ function RoleSheet({ open, onClose, availableRoles, activeRole, onSwitch, colors
 // ── Shared hook ───────────────────────────────────────────────────────────────
 
 function useRoleSwitcher() {
-  const { user, allRoles, switchActiveRole } = useAuth();
+  const { user, allRoles, switchActiveRole, switchOrgContext } = useAuth();
   const colors = useColors();
   const [open, setOpen] = useState(false);
 
@@ -132,6 +133,9 @@ function useRoleSwitcher() {
   const activeRole: UserRole = user?.activeRole ?? user?.role ?? "parent";
   const current = ROLE_META[activeRole];
 
+  // Unique orgs across allRoles (for multi-org display)
+  const orgCount = new Set(allRoles.map(r => r.orgId).filter(Boolean)).size;
+
   const handleOpen = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setOpen(true);
@@ -140,12 +144,18 @@ function useRoleSwitcher() {
   const handleSwitch = async (role: UserRole) => {
     setOpen(false);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await switchActiveRole(role);
+    // If role belongs to a different org, do a full context switch
+    const targetEntry = allRoles.find(r => r.role === role && r.orgId !== user?.orgId);
+    if (targetEntry?.orgId) {
+      await switchOrgContext(targetEntry.orgId, role);
+    } else {
+      await switchActiveRole(role);
+    }
   };
 
   return {
     user, colors, open, setOpen,
-    availableRoles, activeRole, current,
+    availableRoles, activeRole, current, orgCount,
     handleOpen, handleSwitch,
   };
 }
@@ -210,18 +220,22 @@ export function RoleSwitcherHeaderButton() {
 // ── RoleSwitcherRow — embedded settings row (used in profile / settings) ──────
 
 /**
- * Renders a full-width "Switch Role" row with the same bottom sheet.
- * Drop this inside a ScrollView / settings list.
- * Invisible when the user holds only one role.
+ * Renders two rows:
+ *   1. "Switch Role" — opens bottom sheet to switch role (+ org if different).
+ *   2. "My Associations" — navigates to the multi-org hub screen.
+ * Invisible when the user holds only one role AND is only in one org.
  */
 export function RoleSwitcherRow() {
   const {
     user, colors, open, setOpen,
-    availableRoles, activeRole, current,
+    availableRoles, activeRole, current, orgCount,
     handleOpen, handleSwitch,
   } = useRoleSwitcher();
 
-  if (!user || availableRoles.length <= 1) return null;
+  if (!user) return null;
+
+  const showSwitcher   = availableRoles.length > 1;
+  const showMultiOrg   = (orgCount ?? 0) > 1;
 
   return (
     <>
@@ -234,6 +248,39 @@ export function RoleSwitcherRow() {
         colors={colors}
       />
 
+      {showSwitcher && (
+        <Pressable
+          style={({ pressed }) => [
+            row.container,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
+          onPress={handleOpen}
+          accessibilityLabel="Switch role"
+          accessibilityRole="button"
+        >
+          <View style={[row.iconBox, { backgroundColor: `${current.color}18` }]}>
+            <Ionicons name={current.icon} size={20} color={current.color} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[row.label, { color: colors.foreground }]}>Switch Role</Text>
+            <Text style={[row.sub, { color: colors.mutedForeground }]}>
+              Active: {current.label}
+            </Text>
+          </View>
+          <View style={[row.activePill, { backgroundColor: `${current.color}15` }]}>
+            <Text style={[row.activePillText, { color: current.color }]} numberOfLines={1}>
+              {current.label}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} style={{ marginLeft: 4 }} />
+        </Pressable>
+      )}
+
+      {/* My Associations — multi-org hub */}
       <Pressable
         style={({ pressed }) => [
           row.container,
@@ -243,25 +290,48 @@ export function RoleSwitcherRow() {
             opacity: pressed ? 0.8 : 1,
           },
         ]}
-        onPress={handleOpen}
-        accessibilityLabel="Switch role"
+        onPress={() => router.push("/my-associations" as never)}
+        accessibilityLabel="My Associations"
         accessibilityRole="button"
       >
-        <View style={[row.iconBox, { backgroundColor: `${current.color}18` }]}>
-          <Ionicons name={current.icon} size={20} color={current.color} />
+        <View style={[row.iconBox, { backgroundColor: `${colors.primary}15` }]}>
+          <Ionicons name="business-outline" size={20} color={colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[row.label, { color: colors.foreground }]}>Switch Role</Text>
+          <Text style={[row.label, { color: colors.foreground }]}>My Associations</Text>
           <Text style={[row.sub, { color: colors.mutedForeground }]}>
-            Active context: {current.label}
+            {showMultiOrg
+              ? `Member of ${orgCount} associations`
+              : "View & switch between your associations"}
           </Text>
         </View>
-        <View style={[row.activePill, { backgroundColor: `${current.color}15` }]}>
-          <Text style={[row.activePillText, { color: current.color }]} numberOfLines={1}>
-            {current.label}
+        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+      </Pressable>
+
+      {/* Join another association */}
+      <Pressable
+        style={({ pressed }) => [
+          row.container,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            opacity: pressed ? 0.8 : 1,
+          },
+        ]}
+        onPress={() => router.push("/join-org" as never)}
+        accessibilityLabel="Join an Association"
+        accessibilityRole="button"
+      >
+        <View style={[row.iconBox, { backgroundColor: `${colors.primary}10` }]}>
+          <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[row.label, { color: colors.foreground }]}>Join an Association</Text>
+          <Text style={[row.sub, { color: colors.mutedForeground }]}>
+            Use an invite code or scan an org QR
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} style={{ marginLeft: 4 }} />
+        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
       </Pressable>
     </>
   );

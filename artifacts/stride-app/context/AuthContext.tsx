@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { router } from "expo-router";
-import { api, setToken, clearToken, getToken } from "../lib/api";
+import { api, setToken, clearToken, getToken, apiSwitchOrgContext } from "../lib/api";
 
 export type UserRole =
   | "parent"
@@ -75,6 +75,12 @@ interface AuthContextType {
    * so the switcher reflects the change immediately without forcing a logout.
    */
   refreshAllRoles: () => Promise<void>;
+  /**
+   * Switch both the org and the role context in one step.
+   * Calls POST /auth/switch-context, stores the new JWT, updates state, and routes.
+   * Use when a multi-org user wants to act as their role in a different org.
+   */
+  switchOrgContext: (orgId: number, role: string) => Promise<void>;
   isOwner: () => boolean;
 }
 
@@ -337,6 +343,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await switchActiveRole(role);
   };
 
+  // ── switchOrgContext ────────────────────────────────────────────────────────
+  /**
+   * Switch both org and role context without re-login.
+   * 1. Calls POST /auth/switch-context to get a new JWT for targetOrgId + targetRole.
+   * 2. Stores the new token (replaces old JWT).
+   * 3. Updates user state with new orgId + role.
+   * 4. Routes to the correct layout root.
+   */
+  const switchOrgContext = async (targetOrgId: number, targetRole: string) => {
+    if (!user) {
+      Alert.alert("Switch Failed", "No active session. Please log in again.");
+      return;
+    }
+    try {
+      const { token, orgId, role } = await apiSwitchOrgContext(targetOrgId, targetRole);
+      setToken(token);
+      await updateUser({
+        orgId,
+        activeRole: role as UserRole,
+        role:       role as UserRole,
+      });
+      const route = ROLE_ROUTES[role as UserRole] ?? "/(parent)/home";
+      router.replace(route as never);
+    } catch (err: unknown) {
+      console.error("❌ switchOrgContext ERROR:", err);
+      Alert.alert(
+        "Switch Failed",
+        err instanceof Error ? err.message : "Could not switch context. Please try again.",
+      );
+    }
+  };
+
   // ── refreshAllRoles ────────────────────────────────────────────────────────
   /**
    * Re-fetches GET /user/roles and syncs allRoles + user.roles in state and
@@ -379,6 +417,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         switchActiveRole,
         switchRole,
         refreshAllRoles,
+        switchOrgContext,
         isOwner,
       }}
     >

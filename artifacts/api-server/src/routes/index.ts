@@ -57,6 +57,7 @@ import privateLessonsRouter   from "./private-lessons.js";
 import notificationPrefsRouter from "./notification-prefs.js";
 import calendarEventsRouter    from "./calendar-events.js";
 import statsRouter             from "./stats.js";
+import invitesRouter           from "./invites.js";
 
 const router: IRouter = Router();
 
@@ -118,5 +119,6 @@ router.use(privateLessonsRouter);
 router.use(notificationPrefsRouter);
 router.use(calendarEventsRouter);
 router.use(statsRouter);
+router.use(invitesRouter);
 
 export default router;
