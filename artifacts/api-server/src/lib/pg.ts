@@ -505,6 +505,22 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS mpur_session_idx ON marketplace_purchases (stripe_session_id);
   `).catch(() => {});
 
+  // Shopify / external shop links — per-org named URL buttons
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS shop_links (
+      id         UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      org_id     INTEGER     NOT NULL,
+      name       TEXT        NOT NULL,
+      url        TEXT        NOT NULL,
+      icon       TEXT        NOT NULL DEFAULT 'bag-handle-outline',
+      color      TEXT        NOT NULL DEFAULT '#1E3A8A',
+      position   INTEGER     NOT NULL DEFAULT 0,
+      is_active  BOOLEAN     NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS sl_org_idx ON shop_links (org_id);
+  `).catch(() => {});
+
   // Seed Stride-Verified insurance partner products (demo)
   await pool.query(`
     INSERT INTO marketplace_products

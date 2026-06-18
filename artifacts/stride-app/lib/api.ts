@@ -993,6 +993,19 @@ export const api = {
 
   listMarketplacePurchases: () =>
     request<{ purchases: MarketplacePurchase[] }>("GET", "/marketplace/purchases"),
+
+  // ── Shop Links (Shopify / external) ────────────────────────────────────────
+  listShopLinks: (orgId: number) =>
+    request<{ links: ShopLink[] }>("GET", `/marketplace/shop-links?org_id=${orgId}`),
+
+  createShopLink: (data: { name: string; url: string; icon?: string; color?: string; position?: number }) =>
+    request<ShopLink>("POST", "/marketplace/shop-links", data),
+
+  updateShopLink: (id: string, data: Partial<{ name: string; url: string; icon: string; color: string; position: number; is_active: boolean }>) =>
+    request<ShopLink>("PATCH", `/marketplace/shop-links/${id}`, data),
+
+  deleteShopLink: (id: string) =>
+    request<void>("DELETE", `/marketplace/shop-links/${id}`),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1048,6 +1061,18 @@ export interface PulseStatus extends EmergencyPulse {
   missing_count: number;
   total_acks:    number;
   acks: Array<{ parent_id: string; status: string; acked_at: string }>;
+}
+
+export interface ShopLink {
+  id:         string;
+  org_id:     number;
+  name:       string;
+  url:        string;
+  icon:       string;
+  color:      string;
+  position:   number;
+  is_active:  boolean;
+  created_at: string;
 }
 
 export interface MarketplaceProduct {

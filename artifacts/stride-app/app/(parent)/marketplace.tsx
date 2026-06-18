@@ -1,16 +1,15 @@
 /**
- * Stride-Verified Marketplace — Parent view
+ * Stride Marketplace — Parent view
  *
- * Two sections:
- *   1. "Stride Verified Partners" — insurance / global products with gold ✓ badge
- *   2. "From Your School" — org-specific equipment, gear, accessories
- *
- * Tapping a product opens a detail sheet; "Buy Now" calls POST /marketplace/checkout
- * and opens the Stripe-hosted checkout page via expo-web-browser.
+ * Three sections:
+ *   1. "School Shop" — named Shopify / external link buttons (admin-configured)
+ *   2. "Stride Verified Partners" — insurance / global products with gold ✓ badge
+ *   3. "From Your School" — org-specific equipment, gear, accessories
  */
 
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -29,7 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
-import { api, type MarketplaceProduct } from "@/lib/api";
+import { api, type MarketplaceProduct, type ShopLink } from "@/lib/api";
 
 // ── Category metadata ─────────────────────────────────────────────────────────
 
@@ -64,17 +63,23 @@ export default function MarketplaceScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  const [products,  setProducts]  = useState<MarketplaceProduct[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [selected,  setSelected]  = useState<MarketplaceProduct | null>(null);
-  const [checking,  setChecking]  = useState(false);
-
   const orgId = (user as { orgId?: number } | null)?.orgId;
+
+  const [products,   setProducts]   = useState<MarketplaceProduct[]>([]);
+  const [shopLinks,  setShopLinks]  = useState<ShopLink[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [selected,   setSelected]   = useState<MarketplaceProduct | null>(null);
+  const [checking,   setChecking]   = useState(false);
+  const [openingUrl, setOpeningUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await api.listMarketplaceProducts(orgId ? { org_id: orgId } : undefined);
-      setProducts(res.products);
+      const [prodRes, linkRes] = await Promise.allSettled([
+        api.listMarketplaceProducts(orgId ? { org_id: orgId } : undefined),
+        orgId ? api.listShopLinks(orgId) : Promise.resolve({ links: [] }),
+      ]);
+      if (prodRes.status === "fulfilled")  setProducts(prodRes.value.products);
+      if (linkRes.status === "fulfilled")  setShopLinks(linkRes.value.links);
     } catch { /* silent */ }
     finally { setLoading(false); }
   }, [orgId]);
@@ -104,6 +109,23 @@ export default function MarketplaceScreen() {
     }
   };
 
+  const openShopLink = async (link: ShopLink) => {
+    setOpeningUrl(link.id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const canOpen = await Linking.canOpenURL(link.url);
+      if (canOpen) {
+        await Linking.openURL(link.url);
+      } else {
+        Alert.alert("Cannot Open Link", "This link could not be opened on your device.");
+      }
+    } catch {
+      Alert.alert("Error", "Could not open this link. Please try again.");
+    } finally {
+      setOpeningUrl(null);
+    }
+  };
+
   if (loading) {
     return (
       <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28) }]}>
@@ -112,6 +134,8 @@ export default function MarketplaceScreen() {
       </View>
     );
   }
+
+  const hasContent = verifiedProducts.length > 0 || orgProducts.length > 0 || shopLinks.length > 0;
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
@@ -125,16 +149,50 @@ export default function MarketplaceScreen() {
         <View style={S.hero}>
           <View style={S.heroLeft}>
             <Text style={S.heroTitle}>Everything your{"\n"}child needs, in one place.</Text>
-            <Text style={S.heroSub}>Gear, insurance, accessories — all Stride-vetted and one-tap checkout.</Text>
+            <Text style={S.heroSub}>Gear, shop links, insurance — all Stride-vetted and one-tap checkout.</Text>
           </View>
           <View style={S.heroIcon}>
             <Ionicons name="shield-checkmark" size={44} color="#D4AF37" />
           </View>
         </View>
 
+        {/* ── School Shop (external links) ─────────────────────────────────── */}
+        {shopLinks.length > 0 && (
+          <View style={S.section}>
+            <View style={S.sectionHeader}>
+              <View style={S.shopBadgeRow}>
+                <Ionicons name="bag-handle" size={16} color="#4F46E5" />
+                <Text style={S.shopBadgeText}>SCHOOL SHOP</Text>
+              </View>
+              <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Tap to open in browser</Text>
+            </View>
+
+            {shopLinks.map(link => (
+              <Pressable
+                key={link.id}
+                style={({ pressed }) => [
+                  S.shopLinkBtn,
+                  { backgroundColor: link.color, opacity: pressed || openingUrl === link.id ? 0.85 : 1 },
+                ]}
+                onPress={() => void openShopLink(link)}
+                disabled={openingUrl !== null}
+              >
+                <View style={S.shopLinkIconWrap}>
+                  <Ionicons name={link.icon as React.ComponentProps<typeof Ionicons>["name"]} size={22} color="#FFF" />
+                </View>
+                <Text style={S.shopLinkName} numberOfLines={1}>{link.name}</Text>
+                {openingUrl === link.id
+                  ? <ActivityIndicator size="small" color="rgba(255,255,255,0.8)" />
+                  : <Ionicons name="open-outline" size={18} color="rgba(255,255,255,0.75)" />
+                }
+              </Pressable>
+            ))}
+          </View>
+        )}
+
         {/* ── Stride Verified Partners ─────────────────────────────────────── */}
         {verifiedProducts.length > 0 && (
-          <View style={S.section}>
+          <View style={[S.section, { marginTop: shopLinks.length > 0 ? 8 : 0 }]}>
             <View style={S.sectionHeader}>
               <View style={S.verifiedBadgeLarge}>
                 <Ionicons name="checkmark-circle" size={16} color="#D4AF37" />
@@ -165,7 +223,7 @@ export default function MarketplaceScreen() {
           </View>
         )}
 
-        {verifiedProducts.length === 0 && orgProducts.length === 0 && (
+        {!hasContent && (
           <View style={[S.emptyCard, { backgroundColor: colors.card, margin: 20 }]}>
             <Ionicons name="storefront-outline" size={40} color="#9CA3AF" />
             <Text style={[S.emptyText, { color: colors.foreground }]}>No products yet</Text>
@@ -187,10 +245,8 @@ export default function MarketplaceScreen() {
           <Pressable style={S.sheetDismiss} onPress={() => setSelected(null)} />
           {selected && (
             <View style={[S.sheetCard, { backgroundColor: colors.card }]}>
-              {/* Handle */}
               <View style={S.sheetHandle} />
 
-              {/* Category icon */}
               {(() => {
                 const meta = catMeta(selected.category);
                 return (
@@ -200,7 +256,6 @@ export default function MarketplaceScreen() {
                 );
               })()}
 
-              {/* Title + Verified */}
               <View style={S.sheetTitleRow}>
                 <Text style={[S.sheetTitle, { color: colors.foreground }]}>{selected.title}</Text>
                 {selected.is_stride_verified && (
@@ -211,7 +266,6 @@ export default function MarketplaceScreen() {
                 )}
               </View>
 
-              {/* Category chip */}
               {(() => {
                 const meta = catMeta(selected.category);
                 return (
@@ -221,12 +275,10 @@ export default function MarketplaceScreen() {
                 );
               })()}
 
-              {/* Description */}
               {selected.description && (
                 <Text style={[S.sheetDesc, { color: colors.mutedForeground }]}>{selected.description}</Text>
               )}
 
-              {/* Price breakdown */}
               <View style={[S.priceBox, { backgroundColor: colors.background }]}>
                 <View style={S.priceRow}>
                   <Text style={[S.priceLabel, { color: colors.mutedForeground }]}>Price</Text>
@@ -243,7 +295,6 @@ export default function MarketplaceScreen() {
                 </View>
               </View>
 
-              {/* Buy Now */}
               <Pressable
                 style={[S.buyBtn, { opacity: checking ? 0.7 : 1 }]}
                 onPress={() => void buyNow(selected)}
@@ -332,28 +383,27 @@ function ProductGridCard({ product, colors, onPress }: {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
-  root:   { flex: 1 },
-  loader: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  loaderText: { fontSize: 14, fontWeight: "500" },
+  root:      { flex: 1 },
+  loader:    { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loaderText:{ fontSize: 14, fontWeight: "500" },
 
-  // Header
-  header:       { flexDirection: "row", alignItems: "center", paddingBottom: 12, paddingHorizontal: 16, gap: 10, backgroundColor: "#1E3A8A" },
-  backBtn:      { padding: 4 },
-  headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-  headerTitle:  { color: "#FFF", fontWeight: "900", fontSize: 16 },
-
-  // Hero
   hero:     { backgroundColor: "#1E3A8A", flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingBottom: 24, paddingTop: 4, gap: 12 },
   heroLeft: { flex: 1 },
-  heroTitle: { color: "#FFF", fontSize: 17, fontWeight: "900", lineHeight: 24, marginBottom: 6 },
+  heroTitle:{ color: "#FFF", fontSize: 17, fontWeight: "900", lineHeight: 24, marginBottom: 6 },
   heroSub:  { color: "rgba(255,255,255,0.65)", fontSize: 12, lineHeight: 18 },
   heroIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(212,175,55,0.15)", alignItems: "center", justifyContent: "center" },
 
-  // Sections
   section:       { paddingHorizontal: 16, paddingTop: 20 },
   sectionHeader: { marginBottom: 14 },
   sectionTitle:  { fontSize: 16, fontWeight: "800", marginBottom: 2 },
   sectionSub:    { fontSize: 12 },
+
+  // School Shop
+  shopBadgeRow:  { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 },
+  shopBadgeText: { color: "#4F46E5", fontWeight: "900", fontSize: 12, letterSpacing: 0.8 },
+  shopLinkBtn:   { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
+  shopLinkIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  shopLinkName:  { flex: 1, color: "#FFF", fontWeight: "800", fontSize: 15 },
 
   // Stride Verified badge
   verifiedBadgeLarge:     { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 },
@@ -361,7 +411,6 @@ const S = StyleSheet.create({
   verifiedBadge:      { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#FEF9E7", borderWidth: 1, borderColor: "#D4AF3740", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   verifiedBadgeText:  { color: "#B8960C", fontSize: 9, fontWeight: "900", letterSpacing: 0.6 },
 
-  // Verified product card
   verifiedCard:       { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#FFF", borderWidth: 1.5, borderColor: "#D4AF3730", borderRadius: 16, padding: 14, marginBottom: 12, shadowColor: "#D4AF37", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
   verifiedCardLeft:   { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   verifiedCardTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
@@ -372,7 +421,6 @@ const S = StyleSheet.create({
   verifiedCardCta:    { flexDirection: "row", alignItems: "center", gap: 2 },
   verifiedCardCtaText:{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" },
 
-  // Grid
   grid:          { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   gridCard:      { width: "47%", borderRadius: 16, padding: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
   gridCardIcon:  { width: 50, height: 50, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 10 },
@@ -383,12 +431,10 @@ const S = StyleSheet.create({
   gridCardBtn:   { backgroundColor: "#1E3A8A", borderRadius: 10, paddingVertical: 9, alignItems: "center" },
   gridCardBtnText: { color: "#FFF", fontWeight: "800", fontSize: 12 },
 
-  // Empty
   emptyCard: { alignItems: "center", gap: 10, borderRadius: 20, padding: 40 },
   emptyText: { fontSize: 16, fontWeight: "800" },
   emptySub:  { fontSize: 13, textAlign: "center", lineHeight: 20 },
 
-  // Detail sheet
   sheetOverlay:  { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   sheetDismiss:  { flex: 1 },
   sheetCard:     { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 12 },
@@ -400,14 +446,12 @@ const S = StyleSheet.create({
   catChipText:   { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
   sheetDesc:     { fontSize: 14, lineHeight: 21, marginBottom: 16 },
 
-  // Price box
   priceBox:     { borderRadius: 12, padding: 14, marginBottom: 20 },
   priceRow:     { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   priceLabel:   { fontSize: 13 },
   priceValue:   { fontSize: 18, fontWeight: "900" },
   priceDivider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 8 },
 
-  // Buy button
   buyBtn:     { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#1E3A8A", borderRadius: 16, paddingVertical: 16, marginBottom: 4 },
   buyBtnText: { color: "#FFF", fontWeight: "900", fontSize: 16 },
 });

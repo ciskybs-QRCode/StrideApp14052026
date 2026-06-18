@@ -331,6 +331,76 @@ router.post("/marketplace/checkout", requireAuth, async (req: Request, res: Resp
   });
 });
 
+// ── Shop Links CRUD ───────────────────────────────────────────────────────────
+// GET  /marketplace/shop-links?org_id=X  — list active shop links for an org
+// POST /marketplace/shop-links           — admin creates a link
+// PATCH /marketplace/shop-links/:id      — admin updates a link
+// DELETE /marketplace/shop-links/:id     — admin deletes a link
+
+router.get("/marketplace/shop-links", requireAuth, async (req: Request, res: Response) => {
+  const { org_id } = req.query as Record<string, string | undefined>;
+  if (!org_id) { res.status(400).json({ error: "org_id is required" }); return; }
+  const { rows } = await pool.query(
+    `SELECT id, org_id, name, url, icon, color, position, is_active, created_at
+     FROM shop_links WHERE org_id = $1 AND is_active = true
+     ORDER BY position ASC, created_at ASC`,
+    [parseInt(org_id, 10)],
+  );
+  res.json({ links: rows });
+});
+
+router.post("/marketplace/shop-links", requireAuth, requireRole("admin", "super_admin"), async (req: Request, res: Response) => {
+  const user = (req as AuthReq).user;
+  const { name, url, icon, color, position } = req.body as {
+    name: string; url: string; icon?: string; color?: string; position?: number;
+  };
+  if (!name?.trim() || !url?.trim()) {
+    res.status(400).json({ error: "name and url are required" });
+    return;
+  }
+  const orgId = user.orgId;
+  if (!orgId) { res.status(400).json({ error: "No org associated with this account" }); return; }
+  const { rows } = await pool.query(
+    `INSERT INTO shop_links (org_id, name, url, icon, color, position)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [orgId, name.trim(), url.trim(), icon ?? "bag-handle-outline", color ?? "#1E3A8A", position ?? 0],
+  );
+  res.status(201).json(rows[0]);
+});
+
+router.patch("/marketplace/shop-links/:id", requireAuth, requireRole("admin", "super_admin"), async (req: Request, res: Response) => {
+  const user = (req as AuthReq).user;
+  const { id } = req.params;
+  const { name, url, icon, color, position, is_active } = req.body as Partial<{
+    name: string; url: string; icon: string; color: string; position: number; is_active: boolean;
+  }>;
+  const { rows } = await pool.query(
+    `UPDATE shop_links
+     SET name      = COALESCE($1, name),
+         url       = COALESCE($2, url),
+         icon      = COALESCE($3, icon),
+         color     = COALESCE($4, color),
+         position  = COALESCE($5, position),
+         is_active = COALESCE($6, is_active)
+     WHERE id = $7 AND org_id = $8
+     RETURNING *`,
+    [name?.trim() ?? null, url?.trim() ?? null, icon ?? null, color ?? null,
+     position ?? null, is_active ?? null, id, user.orgId],
+  );
+  if (!rows[0]) { res.status(404).json({ error: "Link not found" }); return; }
+  res.json(rows[0]);
+});
+
+router.delete("/marketplace/shop-links/:id", requireAuth, requireRole("admin", "super_admin"), async (req: Request, res: Response) => {
+  const user = (req as AuthReq).user;
+  const { id } = req.params;
+  await pool.query(
+    `UPDATE shop_links SET is_active = false WHERE id = $1 AND org_id = $2`,
+    [id, user.orgId],
+  );
+  res.status(204).end();
+});
+
 // ── GET /marketplace/purchases ────────────────────────────────────────────────
 // Current authenticated user's purchase history.
 router.get("/marketplace/purchases", requireAuth, async (req: Request, res: Response) => {
