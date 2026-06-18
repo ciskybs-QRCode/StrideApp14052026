@@ -162,7 +162,7 @@ export default function MarketplaceScreen() {
             <View style={S.sectionHeader}>
               <View style={S.shopBadgeRow}>
                 <Ionicons name="bag-handle" size={16} color="#4F46E5" />
-                <Text style={S.shopBadgeText}>SCHOOL SHOP</Text>
+                <Text style={S.shopBadgeText}>SHOP</Text>
               </View>
               <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Tap to open in browser</Text>
             </View>
@@ -211,7 +211,7 @@ export default function MarketplaceScreen() {
         {orgProducts.length > 0 && (
           <View style={[S.section, { marginTop: 8 }]}>
             <View style={S.sectionHeader}>
-              <Text style={[S.sectionTitle, { color: colors.foreground }]}>From Your School</Text>
+              <Text style={[S.sectionTitle, { color: colors.foreground }]}>From Your Organisation</Text>
               <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Equipment & accessories</Text>
             </View>
 
@@ -228,7 +228,7 @@ export default function MarketplaceScreen() {
             <Ionicons name="storefront-outline" size={40} color="#9CA3AF" />
             <Text style={[S.emptyText, { color: colors.foreground }]}>No products yet</Text>
             <Text style={[S.emptySub, { color: colors.mutedForeground }]}>
-              Your school hasn{"'"}t listed any products.{"\n"}Check back soon!
+              No products listed yet.{"\n"}Check back soon!
             </Text>
           </View>
         )}
@@ -390,7 +390,7 @@ const S = StyleSheet.create({
   hero:     { backgroundColor: "#1E3A8A", flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingBottom: 24, paddingTop: 4, gap: 12 },
   heroLeft: { flex: 1 },
   heroTitle:{ color: "#FFF", fontSize: 17, fontWeight: "900", lineHeight: 24, marginBottom: 6 },
-  heroSub:  { color: "rgba(255,255,255,0.65)", fontSize: 12, lineHeight: 18 },
+  heroSub:   { color: "rgba(255,255,255,0.65)", fontSize: 12, lineHeight: 18 },
   heroIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(212,175,55,0.15)", alignItems: "center", justifyContent: "center" },
 
   section:       { paddingHorizontal: 16, paddingTop: 20 },

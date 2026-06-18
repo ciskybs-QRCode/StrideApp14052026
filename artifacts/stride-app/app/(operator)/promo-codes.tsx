@@ -124,8 +124,8 @@ export default function OperatorPromoCodesScreen() {
     triggerPromoReceived({
       code: newPromo.code,
       description: isGift
-        ? `Gift from the school — 100% Free for ${scope.join(", ")}`
-        : `${formatDiscount(newPromo)} — sent to you by the school`,
+        ? `Gift from the association — 100% Free for ${scope.join(", ")}`
+        : `${formatDiscount(newPromo)} — sent to you by the association`,
       discountType: "percent",
       discountPercent: isGift ? 100 : (discountType === "percent" ? dv : undefined),
       targetCourseNames: scope,

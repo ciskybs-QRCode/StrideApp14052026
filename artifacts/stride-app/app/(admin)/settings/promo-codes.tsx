@@ -184,7 +184,7 @@ export default function PromoCodesPage() {
     if (targetType === "student" && selectedStudent) {
       triggerPromoReceived({
         code: newPromo.code,
-        description: `${formatDiscount(newPromo)} — sent to you by the school`,
+        description: `${formatDiscount(newPromo)} — sent to you by the organisation`,
         discountType: newPromo.discountType === "percent" ? "percent" : "percent",
         discountPercent: newPromo.discountType === "percent" ? newPromo.discountValue : 100,
         targetCourseNames: selectedStudent.courses,

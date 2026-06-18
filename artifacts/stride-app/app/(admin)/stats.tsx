@@ -364,6 +364,12 @@ export default function AdminHome() {
             onPress={() => { router.push("/(admin)/marketplace" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           />
         )}
+        <HubCard
+          icon="ticket-outline"
+          title="Events & Tickets"
+          description="Create events, manage dates and ticket types"
+          onPress={() => { router.push("/(admin)/events" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        />
         {user?.role === "super_admin" && (
           <HubCard
             icon="shield-checkmark"

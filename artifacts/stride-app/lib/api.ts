@@ -2458,3 +2458,139 @@ export async function linkChildToOrg(memberId: number, targetOrgId: number): Pro
 export async function unlinkChildFromOrg(memberId: number, orgId: number): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>("DELETE", `/members/link-to-org/${memberId}/${orgId}`);
 }
+
+// ── Event Ticketing ───────────────────────────────────────────────────────────
+
+export interface EventDate {
+  id: string;
+  event_id: string;
+  date: string;
+  start_time: string | null;
+  end_time: string | null;
+  capacity: number;
+  tickets_sold: number;
+}
+
+export interface EventTicketType {
+  id: string;
+  event_id: string;
+  name: string;
+  description: string | null;
+  price_cents: number;
+  max_per_order: number;
+  member_free_qty: number;
+  is_active: boolean;
+}
+
+export interface StrideEvent {
+  id: string;
+  org_id: number;
+  title: string;
+  description: string | null;
+  location: string | null;
+  category: string;
+  is_active: boolean;
+  created_at: string;
+  date_count?: string;
+  min_price_cents?: string;
+  dates?: EventDate[];
+  ticket_types?: EventTicketType[];
+}
+
+export interface EventTicket {
+  id: string;
+  event_id: string;
+  event_date_id: string | null;
+  ticket_type_id: string | null;
+  user_id: string;
+  org_id: number;
+  quantity: number;
+  unit_price_cents: number;
+  total_cents: number;
+  status: "confirmed" | "used" | "cancelled";
+  qr_code: string;
+  stripe_session_id: string | null;
+  attendee_name: string | null;
+  created_at: string;
+  event_title?: string;
+  event_location?: string;
+  event_date?: string;
+  event_start_time?: string;
+  event_end_time?: string;
+  ticket_type_name?: string;
+}
+
+export function listEvents(orgId?: number): Promise<StrideEvent[]> {
+  const q = orgId ? `?org_id=${orgId}` : "";
+  return request<StrideEvent[]>("GET", `/events${q}`);
+}
+
+export function getEvent(id: string): Promise<StrideEvent> {
+  return request<StrideEvent>("GET", `/events/${id}`);
+}
+
+export function createEvent(data: {
+  title: string; description?: string; location?: string; category?: string;
+}): Promise<StrideEvent> {
+  return request<StrideEvent>("POST", "/events", data);
+}
+
+export function updateEvent(id: string, data: Partial<{
+  title: string; description: string; location: string; category: string; is_active: boolean;
+}>): Promise<StrideEvent> {
+  return request<StrideEvent>("PATCH", `/events/${id}`, data);
+}
+
+export function deleteEvent(id: string): Promise<void> {
+  return request<void>("DELETE", `/events/${id}`);
+}
+
+export function addEventDate(eventId: string, data: {
+  date: string; start_time?: string; end_time?: string; capacity?: number;
+}): Promise<EventDate> {
+  return request<EventDate>("POST", `/events/${eventId}/dates`, data);
+}
+
+export function deleteEventDate(eventId: string, dateId: string): Promise<void> {
+  return request<void>("DELETE", `/events/${eventId}/dates/${dateId}`);
+}
+
+export function addEventTicketType(eventId: string, data: {
+  name: string; description?: string; price_cents?: number;
+  max_per_order?: number; member_free_qty?: number;
+}): Promise<EventTicketType> {
+  return request<EventTicketType>("POST", `/events/${eventId}/ticket-types`, data);
+}
+
+export function updateEventTicketType(eventId: string, typeId: string, data: Partial<{
+  name: string; description: string; price_cents: number;
+  max_per_order: number; member_free_qty: number; is_active: boolean;
+}>): Promise<EventTicketType> {
+  return request<EventTicketType>("PATCH", `/events/${eventId}/ticket-types/${typeId}`, data);
+}
+
+export function deleteEventTicketType(eventId: string, typeId: string): Promise<void> {
+  return request<void>("DELETE", `/events/${eventId}/ticket-types/${typeId}`);
+}
+
+export function purchaseEventTickets(data: {
+  event_id: string; event_date_id?: string; ticket_type_id: string;
+  quantity: number; attendee_name?: string;
+}): Promise<{ free: boolean; ticket?: EventTicket; checkout_url?: string }> {
+  return request("POST", "/events/purchase", data);
+}
+
+export function getMyTickets(): Promise<EventTicket[]> {
+  return request<EventTicket[]>("GET", "/events/my-tickets");
+}
+
+export function validateTicketQr(qrCode: string): Promise<EventTicket & {
+  event_title: string; event_location: string;
+  event_date: string; start_time: string; end_time: string; ticket_type_name: string;
+}> {
+  return request("GET", `/events/validate/${encodeURIComponent(qrCode)}`);
+}
+
+export function markTicketUsed(qrCode: string): Promise<EventTicket> {
+  return request("POST", `/events/validate/${encodeURIComponent(qrCode)}/use`);
+}

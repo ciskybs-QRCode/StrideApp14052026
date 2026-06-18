@@ -224,7 +224,7 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
   }, [visible]);
 
   const handleCreate = async () => {
-    if (!name.trim() || !email.trim()) { setError("School name and admin email are required."); return; }
+    if (!name.trim() || !email.trim()) { setError("Organisation name and admin email are required."); return; }
     if (!email.includes("@"))         { setError("Enter a valid email address."); return; }
     const tv = parseInt(trialValue) || 30;
     if (tv < 1) { setError("Trial duration must be at least 1."); return; }
@@ -279,11 +279,11 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                 <View style={{ alignItems: "center", padding: 24, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" }}>
                   <View style={em.headerIcon}><Ionicons name="business" size={28} color="#1E3A8A" /></View>
                   <Text style={em.title}>Add New Tenant</Text>
-                  <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Creates a school account + admin user with a custom trial</Text>
+                  <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Creates an organisation account + admin user with a custom trial</Text>
                 </View>
-                <Text style={em.sectionLabel}>SCHOOL DETAILS</Text>
+                <Text style={em.sectionLabel}>ORGANISATION DETAILS</Text>
                 <View style={{ paddingHorizontal: 24, gap: 10 }}>
-                  <TextInput style={inp.field} value={name} onChangeText={setName} placeholder="School / Association Name" placeholderTextColor="#9CA3AF" />
+                  <TextInput style={inp.field} value={name} onChangeText={setName} placeholder="Organisation / Association Name" placeholderTextColor="#9CA3AF" />
                   <TextInput style={inp.field} value={email} onChangeText={setEmail} placeholder="Admin Email" placeholderTextColor="#9CA3AF" keyboardType="email-address" autoCapitalize="none" />
                 </View>
                 <Text style={em.sectionLabel}>SUBSCRIPTION PLAN</Text>
@@ -411,7 +411,7 @@ export default function TenantsScreen() {
           {/* Search */}
           <View style={styles.searchRow}>
             <Ionicons name="search-outline" size={15} color="#9CA3AF" />
-            <TextInput ref={searchRef} style={styles.searchInput} value={search} onChangeText={setSearch} placeholder="Search schools..." placeholderTextColor="#9CA3AF" returnKeyType="search" />
+            <TextInput ref={searchRef} style={styles.searchInput} value={search} onChangeText={setSearch} placeholder="Search organisations..." placeholderTextColor="#9CA3AF" returnKeyType="search" />
             {search.length > 0 && (
               <Pressable onPress={() => { setSearch(""); searchRef.current?.blur(); }}>
                 <Ionicons name="close-circle" size={15} color="#9CA3AF" />
@@ -422,7 +422,7 @@ export default function TenantsScreen() {
           {filteredOrgs.length === 0 ? (
             <View style={styles.emptyBox}>
               <Ionicons name="business-outline" size={40} color="#D1D5DB" />
-              <Text style={styles.emptyText}>{search ? "No schools match your search." : "No tenants registered yet."}</Text>
+              <Text style={styles.emptyText}>{search ? "No organisations match your search." : "No tenants registered yet."}</Text>
             </View>
           ) : (
             filteredOrgs.map(org => <TenantCard key={org.id} org={org} onExtend={o => { setSelectedOrg(o); setExtendVisible(true); }} />)

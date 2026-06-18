@@ -548,7 +548,7 @@ export default function CopilotScreen() {
           style={s.input}
           value={input}
           onChangeText={setInput}
-          placeholder="Ask anything about your school data..."
+          placeholder="Ask anything about your data..."
           placeholderTextColor={CLR.textMuted}
           returnKeyType="send"
           onSubmitEditing={() => sendMessage(input)}

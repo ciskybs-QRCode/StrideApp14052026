@@ -58,6 +58,7 @@ import notificationPrefsRouter from "./notification-prefs.js";
 import calendarEventsRouter    from "./calendar-events.js";
 import statsRouter             from "./stats.js";
 import invitesRouter           from "./invites.js";
+import eventsRouter            from "./events.js";
 
 const router: IRouter = Router();
 
@@ -120,5 +121,6 @@ router.use(notificationPrefsRouter);
 router.use(calendarEventsRouter);
 router.use(statsRouter);
 router.use(invitesRouter);
+router.use(eventsRouter);
 
 export default router;

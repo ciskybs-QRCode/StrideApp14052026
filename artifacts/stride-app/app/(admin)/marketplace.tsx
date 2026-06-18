@@ -280,7 +280,7 @@ export default function AdminMarketplaceScreen() {
 
             <View style={[S.sectionHeader, { marginTop: 20 }]}>
               <View style={S.sectionLeft}>
-                <Text style={[S.sectionTitle, { color: colors.foreground }]}>Your School Products</Text>
+                <Text style={[S.sectionTitle, { color: colors.foreground }]}>Your Products</Text>
                 <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>{orgProducts.length} product{orgProducts.length !== 1 ? "s" : ""} listed</Text>
               </View>
               <Pressable style={S.addBtn} onPress={openAddProduct}>
@@ -293,6 +293,7 @@ export default function AdminMarketplaceScreen() {
               <View style={[S.emptyCard, { backgroundColor: colors.card }]}>
                 <Ionicons name="storefront-outline" size={32} color="#9CA3AF" />
                 <Text style={[S.emptyText, { color: colors.mutedForeground }]}>No products yet — tap Add Product to list your first item.</Text>
+
               </View>
             ) : orgProducts.map(p => (
               <ProductRow key={p.id} product={p} colors={colors} onEdit={() => openEditProduct(p)} onRemove={() => removeProduct(p)} />
@@ -310,7 +311,7 @@ export default function AdminMarketplaceScreen() {
             <View style={[S.infoCard, { backgroundColor: "#EEF2FF" }]}>
               <Ionicons name="bag-handle" size={20} color="#4F46E5" />
               <Text style={[S.infoText, { color: "#3730A3" }]}>
-                <Text style={{ fontWeight: "800" }}>Shop Links</Text> — Add buttons that open your Shopify collections (or any URL) directly in the parent{"'"}s browser. Parents see these in the Marketplace under {"\""}School Shop{"\""}.
+                <Text style={{ fontWeight: "800" }}>Shop Links</Text> — Add buttons that open your collections (or any URL) directly in the member{"'"}s browser. Members see these in the Marketplace under {"\""}Shop{"\""}.
               </Text>
             </View>
 
@@ -328,7 +329,7 @@ export default function AdminMarketplaceScreen() {
             {shopLinks.length === 0 ? (
               <View style={[S.emptyCard, { backgroundColor: colors.card }]}>
                 <Ionicons name="bag-handle-outline" size={32} color="#9CA3AF" />
-                <Text style={[S.emptyText, { color: colors.mutedForeground }]}>No shop links yet.{"\n"}Add a Shopify collection URL to let parents shop directly from the app.</Text>
+                <Text style={[S.emptyText, { color: colors.mutedForeground }]}>No shop links yet.{"\n"}Add a collection URL to let members shop directly from the app.</Text>
               </View>
             ) : shopLinks.map(l => (
               <ShopLinkRow key={l.id} link={l} colors={colors} onEdit={() => openEditLink(l)} onRemove={() => removeLink(l)} />
@@ -339,7 +340,7 @@ export default function AdminMarketplaceScreen() {
               <View style={[S.previewNote, { backgroundColor: colors.card }]}>
                 <Ionicons name="eye-outline" size={14} color={colors.mutedForeground} />
                 <Text style={[S.previewNoteText, { color: colors.mutedForeground }]}>
-                  Parents see these buttons in the Marketplace {"→"} School Shop section.
+                  Members see these buttons in the Marketplace {"→"} Shop section.
                 </Text>
               </View>
             )}

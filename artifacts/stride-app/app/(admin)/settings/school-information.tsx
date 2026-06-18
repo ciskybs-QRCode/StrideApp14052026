@@ -99,20 +99,20 @@ function detectTaxConfig(): TaxConfig {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MAIN_FIELDS = [
-  { key: "name" as const,    label: "School Name", placeholder: "e.g. Rising Stars Academy", icon: "school-outline" as const },
-  { key: "address" as const, label: "Address",     placeholder: "1 Main Street, City",       icon: "location-outline" as const },
-  { key: "phone" as const,   label: "Phone",       placeholder: "+61 2 9000 0000",           icon: "call-outline" as const },
-  { key: "email" as const,   label: "Email",       placeholder: "info@school.com",           icon: "mail-outline" as const },
-  { key: "website" as const, label: "Website",     placeholder: "www.school.com",            icon: "globe-outline" as const },
+  { key: "name" as const,    label: "Organisation Name", placeholder: "e.g. Rising Stars Academy", icon: "business-outline" as const },
+  { key: "address" as const, label: "Address",          placeholder: "1 Main Street, City",       icon: "location-outline" as const },
+  { key: "phone" as const,   label: "Phone",            placeholder: "+61 2 9000 0000",           icon: "call-outline" as const },
+  { key: "email" as const,   label: "Email",            placeholder: "info@organisation.com",     icon: "mail-outline" as const },
+  { key: "website" as const, label: "Website",          placeholder: "www.organisation.com",      icon: "globe-outline" as const },
   { key: "taxId" as const,   label: "Tax ID",      placeholder: "Tax registration number",   icon: "card-outline" as const },
 ];
 type SchoolInfo = Record<typeof MAIN_FIELDS[number]["key"], string>;
 
 const SOCIAL_FIELDS = [
-  { key: "instagram" as const, label: "Instagram",  placeholder: "instagram.com/yourschool",  icon: "logo-instagram" as const },
-  { key: "facebook" as const,  label: "Facebook",   placeholder: "facebook.com/yourschool",   icon: "logo-facebook" as const },
-  { key: "tiktok" as const,    label: "TikTok",     placeholder: "tiktok.com/@yourschool",    icon: "musical-note-outline" as const },
-  { key: "youtube" as const,   label: "YouTube",    placeholder: "youtube.com/@yourschool",   icon: "logo-youtube" as const },
+  { key: "instagram" as const, label: "Instagram",  placeholder: "instagram.com/yourorg",     icon: "logo-instagram" as const },
+  { key: "facebook" as const,  label: "Facebook",   placeholder: "facebook.com/yourorg",      icon: "logo-facebook" as const },
+  { key: "tiktok" as const,    label: "TikTok",     placeholder: "tiktok.com/@yourorg",       icon: "musical-note-outline" as const },
+  { key: "youtube" as const,   label: "YouTube",    placeholder: "youtube.com/@yourorg",      icon: "logo-youtube" as const },
   { key: "whatsapp" as const,  label: "WhatsApp",   placeholder: "+61 4xx xxx xxx",           icon: "logo-whatsapp" as const },
   { key: "linkedin" as const,  label: "LinkedIn",   placeholder: "linkedin.com/company/name", icon: "logo-linkedin" as const },
 ];
@@ -267,7 +267,7 @@ const DEFAULT_INFO: SchoolInfo = {
     Alert.alert(
       apiOk ? "Saved" : "Saved Locally",
       apiOk
-        ? "School information updated successfully."
+        ? "Organisation info updated successfully."
         : "Could not sync with server — changes saved locally and will retry when connection is restored."
     );
   };
@@ -368,7 +368,7 @@ const DEFAULT_INFO: SchoolInfo = {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="School Information" onBack={() => router.push("/(admin)/settings")} />
+      <ScreenHeader title="Organisation Info" onBack={() => router.push("/(admin)/settings")} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -383,7 +383,7 @@ const DEFAULT_INFO: SchoolInfo = {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FEF3C7", borderRadius: 12, padding: 12, marginBottom: 8 }}>
             <ActivityIndicator size="small" color="#FBBF24" />
             <Text style={{ fontSize: 13, fontWeight: "600", color: "#92400E" }}>
-              Loading school data…
+              Loading organisation data…
             </Text>
           </View>
         )}

@@ -93,7 +93,7 @@ export default function CartScreen() {
               showSnack(`"${item.courseName}" was approved — you can now pay!`);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } else {
-              showSnack(`"${item.courseName}" was not approved. Contact the school.`);
+              showSnack(`"${item.courseName}" was not approved. Contact the association.`);
             }
           }
         }

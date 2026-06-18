@@ -71,7 +71,7 @@ export default function AppCustomizationPage() {
   };
 
   const handleApply = async () => {
-    if (!schoolName.trim()) { Alert.alert("Error", "Please enter the school name."); return; }
+    if (!schoolName.trim()) { Alert.alert("Error", "Please enter the organisation name."); return; }
     setSaving(true);
     try {
       await updateUser({
@@ -132,8 +132,8 @@ export default function AppCustomizationPage() {
           )}
         </Pressable>
 
-        {/* School name */}
-        <Text style={[styles.sectionLabel, { color: colors.primary }]}>School / Association Name</Text>
+        {/* Organisation name */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>Organisation Name</Text>
         <TextInput
           style={[styles.nameInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
           value={schoolName}
@@ -198,7 +198,7 @@ export default function AppCustomizationPage() {
         {/* Live preview */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>Live Preview</Text>
         <View style={[styles.previewBox, { backgroundColor: preset.primary }]}>
-          <Text style={styles.previewName}>{schoolName || "School Name"}</Text>
+          <Text style={styles.previewName}>{schoolName || "Organisation Name"}</Text>
           <Text style={styles.previewSub}>APP DASHBOARD</Text>
           <View style={[styles.previewBtn, { backgroundColor: preset.secondary, borderRadius: buttonStyle === "rounded" ? 20 : 4 }]}>
             <Text style={[styles.previewBtnText, { color: preset.primary }]}>BUTTON</Text>

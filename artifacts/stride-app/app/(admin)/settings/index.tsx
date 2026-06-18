@@ -24,9 +24,9 @@ import { HubCard } from "@/components/HubCard";
 const NAV_ROWS = [
   {
     key: "school-information",
-    title: "School Information",
+    title: "Organisation Info",
     description: "Contact details and campus data",
-    icon: "school-outline" as const,
+    icon: "business-outline" as const,
   },
   {
     key: "app-configuration",
@@ -150,12 +150,12 @@ export default function SettingsIndex() {
         />
 
         {/* ── SECTION LABEL ── */}
-        <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>SCHOOL</Text>
+        <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>ORGANISATION</Text>
 
-        {/* ── SCHOOL SETUP & MEMBER QR ── */}
+        {/* ── SETUP & MEMBER QR ── */}
         <HubCard
           icon="qr-code-outline"
-          title="School Setup & QR"
+          title="Setup & QR Code"
           description="Branding, colours and invite QR code"
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -181,7 +181,7 @@ export default function SettingsIndex() {
 
         {/* ── PRIVATE LESSONS ── */}
         <HubCard
-          icon="school-outline"
+          icon="book-outline"
           title="Private Lessons"
           description="Enable booking, set prices per discipline and operator payouts"
           onPress={() => navigate("private-lessons")}

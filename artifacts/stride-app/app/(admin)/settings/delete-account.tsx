@@ -40,7 +40,7 @@ export default function DeleteAccountPage() {
           <View style={{ flex: 1 }}>
             <Text style={styles.warningTitle}>This action is permanent</Text>
             <Text style={styles.warningDesc}>
-              All school data, student records, legal documents, promo codes, and settings will be permanently deleted. This cannot be undone.
+              All data, member records, legal documents, promo codes, and settings will be permanently deleted. This cannot be undone.
             </Text>
           </View>
         </View>

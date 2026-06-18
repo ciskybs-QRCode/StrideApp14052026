@@ -71,7 +71,7 @@ const PROTOCOLS: Protocol[] = [
       { icon: "walk-outline",       text: "Evacuate the room in an orderly fashion — no running." },
       { icon: "people-outline",     text: "Escort all students to the designated assembly point." },
       { icon: "call",               text: "Call the fire brigade using the emergency number." },
-      { icon: "megaphone-outline",  text: "Notify school administration and await further instructions." },
+      { icon: "megaphone-outline",  text: "Notify association administration and await further instructions." },
     ],
   },
   {
@@ -100,7 +100,7 @@ const PROTOCOLS: Protocol[] = [
       { icon: "time-outline",             text: "Wait 15 minutes past the scheduled collection time." },
       { icon: "call",                     text: "Attempt to contact the primary member or guardian by phone." },
       { icon: "people-outline",           text: "Contact all authorised delegates listed in the student's profile." },
-      { icon: "notifications-outline",    text: "After 30 minutes with no contact: notify school administration." },
+      { icon: "notifications-outline",    text: "After 30 minutes with no contact: notify association administration." },
       { icon: "eye-outline",              text: "Do not leave the dependent member unattended under any circumstances." },
     ],
   },
@@ -114,7 +114,7 @@ const PROTOCOLS: Protocol[] = [
       { icon: "card-outline",             text: "Request a government-issued photo ID for verification." },
       { icon: "call",                     text: "Call the registered member to confirm the collection." },
       { icon: "hand-left",               text: "If any doubt exists: DO NOT release the dependent member — safety first." },
-      { icon: "shield-checkmark-outline", text: "Immediately notify school administration of the incident." },
+      { icon: "shield-checkmark-outline", text: "Immediately notify association administration of the incident." },
     ],
   },
 ];

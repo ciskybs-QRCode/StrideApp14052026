@@ -56,7 +56,7 @@ export function BrandingLogoOverlay({
         ]}
         resizeMode="contain"
         onError={() => setFailed(true)}
-        accessibilityLabel="School logo"
+        accessibilityLabel="Organisation logo"
       />
     </View>
   );

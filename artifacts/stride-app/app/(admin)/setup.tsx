@@ -132,7 +132,7 @@ function InviteCard() {
 
   const handleShare = () => {
     if (!inviteUrl) return;
-    Share.share({ message: inviteUrl, title: "Join our school on Stride" });
+    Share.share({ message: inviteUrl, title: "Join our association on Stride" });
   };
 
   if (!user || user.role !== "admin") return null;
@@ -344,7 +344,7 @@ export default function AdminSetup() {
   };
 
   const handleApply = async () => {
-    if (!schoolName.trim()) { Alert.alert("Please enter the school name first"); return; }
+    if (!schoolName.trim()) { Alert.alert("Please enter the organisation name first"); return; }
     // Validate hex — fall back to preset if user typed something invalid
     const validHex = /^#[0-9A-Fa-f]{6}$/;
     const primary   = validHex.test(customPrimary)   ? customPrimary   : PRESET_COLORS[selectedColors].primary;
@@ -366,7 +366,7 @@ export default function AdminSetup() {
 
   const handleGenerateQr = () => {
     if (!schoolName.trim()) {
-      Alert.alert("Enter School Name", "Please enter your school name before generating the QR code.");
+      Alert.alert("Enter Organisation Name", "Please enter your organisation name before generating the QR code.");
       return;
     }
     setQrGenerated(true);
@@ -376,8 +376,8 @@ export default function AdminSetup() {
   const handleShareQr = async () => {
     try {
       await Share.share({
-        title: `Join ${schoolName || "our school"} on Stride`,
-        message: `Scan the QR code or open this link to sign in to ${schoolName || "our school"}'s Stride app:\n\n${registrationUrl}`,
+        title: `Join ${schoolName || "our association"} on Stride`,
+        message: `Scan the QR code or open this link to sign in to ${schoolName || "our association"}'s Stride app:\n\n${registrationUrl}`,
         url: registrationUrl,
       });
     } catch {
@@ -387,7 +387,7 @@ export default function AdminSetup() {
 
   const handlePrintQr = async () => {
     if (!schoolName.trim()) {
-      Alert.alert("Enter School Name", "Please enter your school name before printing.");
+      Alert.alert("Enter Organisation Name", "Please enter your organisation name before printing.");
       return;
     }
     try {
@@ -457,7 +457,7 @@ export default function AdminSetup() {
 
   return (
     <View style={[styles.container, { backgroundColor: "#F0F4FF" }]}>
-      <ScreenHeader title="School Setup" onBack={() => router.push("/(admin)/settings" as never)} />
+      <ScreenHeader title="Organisation Setup" onBack={() => router.push("/(admin)/settings" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
@@ -632,7 +632,7 @@ export default function AdminSetup() {
               ) : (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: customPrimary }} />
-                  <Text style={{ fontSize: 14, fontWeight: "800", color: customPrimary }}>{schoolName || "Your School"}</Text>
+                  <Text style={{ fontSize: 14, fontWeight: "800", color: customPrimary }}>{schoolName || "Your Organisation"}</Text>
                 </View>
               )}
               <View style={{ flex: 1 }} />
@@ -648,8 +648,8 @@ export default function AdminSetup() {
           </View>
 
           <View style={[styles.previewBox, { backgroundColor: customPrimary }]}>
-            <Text style={styles.previewSchoolName}>{schoolName || "School Name"}</Text>
-            <Text style={styles.previewTagline}>STRIDE DANCE SCHOOL</Text>
+            <Text style={styles.previewSchoolName}>{schoolName || "Organisation Name"}</Text>
+            <Text style={styles.previewTagline}>POWERED BY STRIDE</Text>
             <Text style={styles.previewBody}>Sample body text in {selectedFont}</Text>
             <View style={[styles.previewButton, { backgroundColor: customSecondary, borderRadius: buttonStyle === "rounded" ? 20 : 4 }]}>
               <Text style={{ color: customPrimary, fontWeight: "700" }}>SIGN IN</Text>
@@ -714,7 +714,7 @@ export default function AdminSetup() {
                   backgroundColor="#FFFFFF"
                 />
                 <Text style={[styles.qrSchoolLabel, { color: colors.primary }]}>
-                  {schoolName || "Your School"}
+                  {schoolName || "Your Organisation"}
                 </Text>
                 <Text style={[styles.qrSubLabel, { color: colors.mutedForeground }]}>
                   Scan to Sign In

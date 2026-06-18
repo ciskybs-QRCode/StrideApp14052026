@@ -333,7 +333,7 @@ export default function Pioneer() {
 
   // ── Step 2: Organisation ──────────────────────────────────────────────────
   const handleStep2 = () => {
-    if (!schoolName.trim()) { Alert.alert("School name required", "Enter your school or association name."); return; }
+    if (!schoolName.trim()) { Alert.alert("Name required", "Enter your organisation or association name."); return; }
     next();
   };
 
@@ -405,7 +405,7 @@ export default function Pioneer() {
           <Text style={st.title}>
             {step === 0
               ? (credState === "verify" ? "Verify Your Email" : "Create Your Account")
-              : "Configure Your School"}
+              : "Configure Your Organisation"}
           </Text>
           <Text style={st.subtitle}>
             {step === 0 && credState === "form"
@@ -623,9 +623,9 @@ export default function Pioneer() {
         {step === 2 && (
           <View style={st.card}>
             <Text style={st.cardTitle}>Organisation Details</Text>
-            <Text style={st.cardSub}>Your school's official name and registered address.</Text>
+            <Text style={st.cardSub}>Your organisation's official name and registered address.</Text>
 
-            <Text style={st.label}>School / Association Name *</Text>
+            <Text style={st.label}>Organisation / Association Name *</Text>
             <View style={st.inputWrap}>
               <Ionicons name="business-outline" size={16} color="#9CA3AF" />
               <TextInput style={st.input} value={schoolName} onChangeText={setSchoolName}

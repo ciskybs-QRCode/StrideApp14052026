@@ -912,5 +912,70 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_pp_org  ON parent_profiles(organization_id);
   `).catch(() => {});
 
+  // ── Event Ticketing ──────────────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS events (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      org_id      INTEGER NOT NULL,
+      title       TEXT NOT NULL,
+      description TEXT,
+      location    TEXT,
+      category    TEXT NOT NULL DEFAULT 'general',
+      is_active   BOOLEAN NOT NULL DEFAULT true,
+      created_by  TEXT,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_events_org ON events(org_id);
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS event_dates (
+      id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_id     UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+      date         DATE NOT NULL,
+      start_time   TEXT,
+      end_time     TEXT,
+      capacity     INTEGER NOT NULL DEFAULT 0,
+      tickets_sold INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_event_dates_event ON event_dates(event_id);
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS event_ticket_types (
+      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_id         UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+      name             TEXT NOT NULL,
+      description      TEXT,
+      price_cents      INTEGER NOT NULL DEFAULT 0,
+      max_per_order    INTEGER NOT NULL DEFAULT 10,
+      member_free_qty  INTEGER NOT NULL DEFAULT 0,
+      is_active        BOOLEAN NOT NULL DEFAULT true
+    );
+    CREATE INDEX IF NOT EXISTS idx_ett_event ON event_ticket_types(event_id);
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS event_tickets (
+      id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_id         UUID NOT NULL REFERENCES events(id),
+      event_date_id    UUID REFERENCES event_dates(id),
+      ticket_type_id   UUID REFERENCES event_ticket_types(id),
+      user_id          TEXT NOT NULL,
+      org_id           INTEGER NOT NULL,
+      quantity         INTEGER NOT NULL DEFAULT 1,
+      unit_price_cents INTEGER NOT NULL DEFAULT 0,
+      total_cents      INTEGER NOT NULL DEFAULT 0,
+      status           TEXT NOT NULL DEFAULT 'confirmed',
+      qr_code          TEXT UNIQUE NOT NULL,
+      stripe_session_id TEXT,
+      attendee_name    TEXT,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_et_event  ON event_tickets(event_id);
+    CREATE INDEX IF NOT EXISTS idx_et_user   ON event_tickets(user_id);
+    CREATE INDEX IF NOT EXISTS idx_et_qr     ON event_tickets(qr_code);
+  `).catch(() => {});
+
   initialized = true;
 }

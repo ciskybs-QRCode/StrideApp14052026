@@ -347,7 +347,7 @@ export default function OnboardingScreen() {
               <StepHeader
                 step={2}
                 title="Phone Number"
-                subtitle="We'll use this for urgent school communications."
+                subtitle="We'll use this for urgent communications."
               />
 
               <View style={styles.card}>
@@ -424,7 +424,7 @@ export default function OnboardingScreen() {
               <StepHeader
                 step={4}
                 title="Family Members"
-                subtitle="Add the members attending the school. You can also add more later."
+                subtitle="Add the members to enrol. You can also add more later."
               />
 
               <View style={styles.card}>
@@ -505,7 +505,7 @@ export default function OnboardingScreen() {
                   <View style={styles.noDocs}>
                     <Ionicons name="checkmark-circle" size={48} color="#10B981" />
                     <Text style={styles.noDocsTitle}>No signatures needed</Text>
-                    <Text style={styles.noDocsText}>Your school hasn't uploaded any mandatory documents yet.</Text>
+                    <Text style={styles.noDocsText}>No mandatory documents have been uploaded yet.</Text>
                   </View>
                 </View>
               ) : (

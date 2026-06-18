@@ -33,7 +33,7 @@ const MENU_CARDS: MenuCard[] = [
     id: "tenants",
     icon: "business-outline",
     title: "Tenant Management",
-    subtitle: "Schools, trials & billing controls",
+    subtitle: "Organisations, trials & billing controls",
     route: "/(super_admin)/tenants",
   },
   {
@@ -56,7 +56,7 @@ const MY_ASSOC_CARD: MenuCard = {
   id: "create-association",
   icon: "add-circle-outline",
   title: "Create My Association",
-  subtitle: "Open your own school and manage it as Admin",
+  subtitle: "Open your own organisation and manage it as Admin",
   route: "/(super_admin)/create-association",
 };
 
@@ -80,7 +80,7 @@ function MetricGrid({ metrics }: { metrics: PlatformMetrics | null }) {
     : "—";
 
   const topItems: MetricItem[] = [
-    { key: "schools", icon: "business",         label: "TOTAL SCHOOLS",  value: metrics.totalOrgs,    accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "schools", icon: "business",         label: "TOTAL ORGS",     value: metrics.totalOrgs,    accent: "#1E3A8A", bg: "#EFF6FF" },
     { key: "active",  icon: "checkmark-circle",  label: "ACTIVE SUBS",   value: metrics.activeCount,  accent: "#D4AF37", bg: "#FFFBEB" },
     { key: "members", icon: "people",            label: "GLOBAL MEMBERS", value: metrics.totalMembers, accent: "#1E3A8A", bg: "#EFF6FF" },
     { key: "health",  icon: "pulse-outline",     label: "HEALTH",         value: health,               accent: "#059669", bg: "#ECFDF5" },

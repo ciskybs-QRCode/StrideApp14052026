@@ -972,7 +972,7 @@ export default function ChildrenScreen() {
               {(["full", "internal", "none"] as const).map(opt => {
                 const labels = {
                   full:     { title: "Full Consent (Social / Promo)",    hint: "May be used on website, social media and promotional materials" },
-                  internal: { title: "Internal Educational Use Only",    hint: "Used only for school documents and internal communications" },
+                  internal: { title: "Internal Educational Use Only",    hint: "Used only for internal documents and communications" },
                   none:     { title: "No Consent",                       hint: `${secondaryRoleName} must not be photographed or filmed` },
                 };
                 const isSelected = editMediaConsent === opt;
@@ -1215,7 +1215,7 @@ export default function ChildrenScreen() {
               {(["full", "internal", "none"] as const).map(opt => {
                 const labels = {
                   full:     { title: "Full Consent (Social / Promo)",    hint: "May be used on website, social media and promotional materials" },
-                  internal: { title: "Internal Educational Use Only",    hint: "Used only for school documents and internal communications" },
+                  internal: { title: "Internal Educational Use Only",    hint: "Used only for internal documents and communications" },
                   none:     { title: "No Consent",                       hint: `${secondaryRoleName} must not be photographed or filmed` },
                 };
                 const isSelected = newChildMediaConsent === opt;

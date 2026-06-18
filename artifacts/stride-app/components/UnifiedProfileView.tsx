@@ -62,9 +62,9 @@ const ROLE_BADGE: Record<
 const ADMIN_CONFIG_ROWS = [
   {
     key:   "school-information",
-    title: "School Information",
+    title: "Organisation Info",
     desc:  "Contact details and campus data",
-    icon:  "school-outline"            as const,
+    icon:  "business-outline"          as const,
     color: "#0D9488",
     bg:    "#CCFBF1",
   },
@@ -280,7 +280,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
                 <Ionicons name="qr-code-outline" size={22} color="#FBBF24" />
               </View>
               <View style={s.featText}>
-                <Text style={s.featTitleNavy} numberOfLines={1}>School Setup & Member QR</Text>
+                <Text style={s.featTitleNavy} numberOfLines={1}>Setup & Member QR</Text>
                 <Text style={s.featDescNavy}  numberOfLines={1}>Branding, colours and invite code</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#FBBF24" />

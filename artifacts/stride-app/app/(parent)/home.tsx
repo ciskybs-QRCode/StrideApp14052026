@@ -551,6 +551,23 @@ export default function ParentHome() {
           </Pressable>
         )}
 
+        {/* ── Events Banner ── */}
+        <Pressable
+          style={({ pressed }) => [styles.marketplaceBanner, { backgroundColor: "#7C3AED", transform: pressed ? [{ scale: 0.98 }] : [] }]}
+          onPress={() => router.push("/(parent)/events" as Parameters<typeof router.push>[0])}
+        >
+          <View style={styles.marketplaceBannerLeft}>
+            <View style={[styles.marketplaceBannerIcon, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+              <Ionicons name="ticket" size={24} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.marketplaceBannerTitle}>Events & Tickets</Text>
+              <Text style={styles.marketplaceBannerSub}>Browse events · Buy tickets · My QR tickets</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
+        </Pressable>
+
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>
         <View style={[styles.notifCard, { backgroundColor: colors.card, alignItems: "center", justifyContent: "center", paddingVertical: 24 }]}>

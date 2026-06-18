@@ -31,7 +31,7 @@ export default function JoinScreen() {
   }>();
 
   const orgSlug   = params.org      ?? "";
-  const schoolName = params.school  ? decodeURIComponent(params.school) : "the School";
+  const schoolName = params.school  ? decodeURIComponent(params.school) : "the Association";
   const primary   = params.primary  ? decodeURIComponent(params.primary)   : "#1E3A8A";
   const secondary = params.secondary ? decodeURIComponent(params.secondary) : "#FBBF24";
 
@@ -159,7 +159,7 @@ export default function JoinScreen() {
           <View style={[styles.infoBox, { backgroundColor: `${primary}10`, borderColor: `${primary}30` }]}>
             <Ionicons name="information-circle-outline" size={15} color={primary} />
             <Text style={[styles.infoText, { color: primary }]}>
-              Your account will be linked to {schoolName}. The school administrator can manage your access from the admin panel.
+              Your account will be linked to {schoolName}. The association administrator can manage your access from the admin panel.
             </Text>
           </View>
         </View>

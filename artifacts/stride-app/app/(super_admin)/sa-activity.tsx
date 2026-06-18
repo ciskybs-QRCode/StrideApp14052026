@@ -154,7 +154,7 @@ export default function SAActivityScreen() {
                 style={({ pressed }) => [styles.breakdownToggle, { opacity: pressed ? 0.7 : 1 }]}
                 onPress={() => setShowBreakdown(v => !v)}
               >
-                <Text style={styles.breakdownToggleText}>Per-school breakdown</Text>
+                <Text style={styles.breakdownToggleText}>Per-org breakdown</Text>
                 <Ionicons name={showBreakdown ? "chevron-up" : "chevron-down"} size={14} color="#1E3A8A" />
               </Pressable>
               {showBreakdown && (

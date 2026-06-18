@@ -61,7 +61,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
 
   const handleCall = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert("Contact Operator", "Please contact your school operator directly to report any urgent matter.");
+    Alert.alert("Contact Operator", "Please contact your operator directly to report any urgent matter.");
   };
 
   return (

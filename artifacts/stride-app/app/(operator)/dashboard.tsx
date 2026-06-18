@@ -1147,7 +1147,7 @@ export default function OperatorDashboard() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi, {firstName}</Text>
             <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              {user?.schoolName ?? "My School"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              {user?.schoolName ?? "My Association"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </Text>
           </View>
           <View style={[styles.gpsBadge, { backgroundColor: isGPS ? "#D1FAE5" : "#FEE2E2" }]}>
@@ -1491,6 +1491,14 @@ export default function OperatorDashboard() {
             <Ionicons name="chevron-forward" size={18} color="#FFF" />
           </Pressable>
         )}
+
+        {/* ── Ticket Scanner ── */}
+        <HubCard
+          icon="ticket-outline"
+          title="Ticket Scanner"
+          description="Scan QR codes at the door to validate event tickets"
+          onPress={() => { router.push("/(operator)/ticket-scanner" as Parameters<typeof router.push>[0]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        />
 
         {/* ── Clock Out ── */}
         <HubCard
