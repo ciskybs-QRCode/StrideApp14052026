@@ -102,6 +102,7 @@ export default function ChildrenScreen() {
   const [newChildMedCertUri, setNewChildMedCertUri] = useState<string | null>(null);
   const [newChildMedCertExpiry, setNewChildMedCertExpiry] = useState<string | null>(null);
   const [medCertAnalyzing, setMedCertAnalyzing] = useState(false);
+  const [newChildPreferredName, setNewChildPreferredName] = useState("");
 
   // Per-child cert data stored locally (keyed by child id)
   const [certDataByChild, setCertDataByChild] = useState<Record<string, { uri: string; expiry: string | null }>>({});
@@ -259,6 +260,7 @@ export default function ChildrenScreen() {
     setNewChildPhotoUri(null);
     setNewChildMedCertUri(null);
     setNewChildMedCertExpiry(null);
+    setNewChildPreferredName("");
   };
 
   const openImagePicker = async (): Promise<string | null> => {
@@ -299,6 +301,7 @@ export default function ChildrenScreen() {
       }
       await addChild({
         name: `${newChildName.trim()} ${newChildSurname.trim()}`,
+        preferredName: newChildPreferredName.trim() || undefined,
         age,
         dateOfBirth: dobStr,
         allergies: newChildHasAllergies ? (newChildAllergies.trim() || "Allergies") : "None",
@@ -417,13 +420,13 @@ export default function ChildrenScreen() {
       oneWeek.setDate(oneWeek.getDate() - 7);
       if (oneMonth > now) {
         await Notifications.scheduleNotificationAsync({
-          content: { title: "📋 Certificato Medico", body: "Il certificato medico scade tra 1 mese. Contatta il medico per il rinnovo." },
+          content: { title: "📋 Medical Certificate", body: "The medical certificate expires in 1 month. Contact the doctor to renew." },
           trigger: { date: oneMonth } as never,
         });
       }
       if (oneWeek > now) {
         await Notifications.scheduleNotificationAsync({
-          content: { title: "⚠️ Certificato in Scadenza", body: "Il certificato medico scade tra 1 settimana. Rinnova urgentemente!" },
+          content: { title: "⚠️ Certificate Expiring", body: "The medical certificate expires in 1 week. Please renew urgently." },
           trigger: { date: oneWeek } as never,
         });
       }
@@ -440,13 +443,13 @@ export default function ChildrenScreen() {
       await saveChildCert(childId, uri, result.expiryDate ?? null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
-        "Certificato salvato",
+        "Certificate Saved",
         result.expiryDate
-          ? `Data di scadenza rilevata: ${new Date(result.expiryDate).toLocaleDateString("it-IT")}. Riceverai promemoria 1 mese e 1 settimana prima.`
-          : "Certificato salvato. Data di scadenza non rilevata automaticamente.",
+          ? `Expiry date detected: ${new Date(result.expiryDate).toLocaleDateString("en-GB")}. You will receive reminders 1 month and 1 week before.`
+          : "Certificate saved. Expiry date could not be detected automatically.",
       );
     } catch {
-      Alert.alert("Errore", "Impossibile analizzare il certificato. Riprova.");
+      Alert.alert("Error", "Could not analyse the certificate. Please try again.");
     } finally {
       setMedCertAnalyzing(false);
     }
@@ -559,6 +562,9 @@ export default function ChildrenScreen() {
                 </Pressable>
                 <View style={styles.childCardInfo}>
                   <Text style={[styles.childName, { color: colors.primary }]}>{child.name}</Text>
+                  {!!child.preferredName && (
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>Called: {child.preferredName}</Text>
+                  )}
                   <Text style={[styles.childAge, { color: colors.mutedForeground }]}>
                     {child.dateOfBirth ? calcAgeFromDob(child.dateOfBirth) : child.age} yrs
                   </Text>
@@ -672,15 +678,15 @@ export default function ChildrenScreen() {
                     )}
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.actionBtnText, { flex: 0, color: cert ? certColor : colors.primary }]}>
-                        {cert ? "Certificato Medico" : "Carica Certificato Medico"}
+                        {cert ? "Medical Certificate" : "Upload Medical Certificate"}
                       </Text>
                       {cert?.expiry ? (
                         <Text style={{ fontSize: 11, color: certColor, fontWeight: "600" }}>
-                          {isExpired ? "SCADUTO — " : expiresIn30 ? "In scadenza — " : "Valido fino: "}
-                          {new Date(cert.expiry).toLocaleDateString("it-IT")}
+                          {isExpired ? "EXPIRED — " : expiresIn30 ? "Expiring — " : "Valid until: "}
+                          {new Date(cert.expiry).toLocaleDateString("en-GB")}
                         </Text>
                       ) : cert ? (
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Scadenza non rilevata — tocca per aggiornare</Text>
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Expiry not detected — tap to update</Text>
                       ) : null}
                     </View>
                     <Ionicons name={cert ? "refresh-outline" : "cloud-upload-outline"} size={16} color={cert ? certColor : colors.mutedForeground} />
@@ -717,6 +723,12 @@ export default function ChildrenScreen() {
                   <Text style={[styles.infoValue, { color: colors.foreground }]}>
                     {new Date(child.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                   </Text>
+                </View>
+              )}
+              {!!child.preferredName && (
+                <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
+                  <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Called:</Text>
+                  <Text style={[styles.infoValue, { color: colors.foreground }]}>{child.preferredName}</Text>
                 </View>
               )}
               <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
@@ -1193,6 +1205,9 @@ export default function ChildrenScreen() {
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>{secondaryRoleName}'s Last Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Doe" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
+              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Preferred Name <Text style={{ color: colors.mutedForeground, fontWeight: "400" }}>(optional)</Text></Text>
+              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildPreferredName} onChangeText={setNewChildPreferredName} placeholder="e.g. Alex" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
+
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Date of Birth <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <View style={styles.dobGrid}>
                 <View style={styles.dobField}>
@@ -1402,22 +1417,22 @@ export default function ChildrenScreen() {
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="document-text" size={15} color={colors.primary} />
-                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Certificato Medico</Text>
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Medical Certificate</Text>
               </View>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground, marginBottom: 10 }]}>
-                Carica il certificato sportivo (opzionale). L'AI rileva automaticamente la data di scadenza e imposta i promemoria.
+                Upload the sports/medical certificate (optional). AI will automatically detect the expiry date and set reminders.
               </Text>
               {newChildMedCertUri ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#D1FAE5", borderRadius: 12, padding: 12, marginBottom: 14 }}>
                   <Ionicons name="checkmark-circle" size={22} color="#10B981" />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#065F46" }}>Certificato caricato</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#065F46" }}>Certificate uploaded</Text>
                     {medCertAnalyzing ? (
-                      <Text style={{ fontSize: 12, color: "#065F46" }}>Analisi AI in corso...</Text>
+                      <Text style={{ fontSize: 12, color: "#065F46" }}>AI analysis in progress...</Text>
                     ) : newChildMedCertExpiry ? (
-                      <Text style={{ fontSize: 12, color: "#065F46" }}>Scadenza: {new Date(newChildMedCertExpiry).toLocaleDateString("it-IT")}</Text>
+                      <Text style={{ fontSize: 12, color: "#065F46" }}>Expires: {new Date(newChildMedCertExpiry).toLocaleDateString("en-GB")}</Text>
                     ) : (
-                      <Text style={{ fontSize: 12, color: "#92400E" }}>Scadenza non rilevata — controlla manualmente</Text>
+                      <Text style={{ fontSize: 12, color: "#92400E" }}>Expiry not detected — check manually</Text>
                     )}
                   </View>
                   <Pressable onPress={() => { setNewChildMedCertUri(null); setNewChildMedCertExpiry(null); }} hitSlop={8}>
@@ -1437,7 +1452,7 @@ export default function ChildrenScreen() {
                       const result = await api.analyzeChildMedCert({ image_base64: base64, mime_type: "image/jpeg" });
                       setNewChildMedCertExpiry(result.expiryDate ?? null);
                     } catch {
-                      Alert.alert("AI", "Certificato salvato ma data non rilevata automaticamente.");
+                      Alert.alert("AI", "Certificate saved but expiry date could not be detected automatically.");
                     } finally {
                       setMedCertAnalyzing(false);
                     }
@@ -1448,7 +1463,7 @@ export default function ChildrenScreen() {
                   ) : (
                     <>
                       <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
-                      <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>Carica certificato medico</Text>
+                      <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>Upload medical certificate</Text>
                     </>
                   )}
                 </Pressable>

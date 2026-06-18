@@ -14,6 +14,7 @@ const LEGAL_DOCS_KEY = "stride_legal_docs_v2";
 export interface Child {
   id: string;
   name: string;
+  preferredName?: string;
   age: number;
   stars: number;
   allergies: string;
@@ -120,6 +121,7 @@ export interface LegalAdminDoc {
 export interface Student {
   id: string;
   name: string;
+  preferredName?: string;
   age: number;
   parentName: string;
   parentPhone: string;
