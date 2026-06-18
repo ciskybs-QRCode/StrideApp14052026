@@ -16,7 +16,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
 // ── Role badge helper ──────────────────────────────────────────────────────
 
@@ -94,9 +93,6 @@ export default function OperatorSettingsScreen() {
           </View>
         </View>
 
-        {/* ── Switch Role ── */}
-        <RoleSwitcherRow />
-
         {/* ── Account hub ── */}
         <Pressable
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1, marginTop: 16 }]}
@@ -109,6 +105,23 @@ export default function OperatorSettingsScreen() {
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>Account</Text>
             <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
               Personal data, email, password and access
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
+
+        {/* ── Join an Association ── */}
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { tap(); router.navigate("/join-org" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
+            <Ionicons name="person-add-outline" size={26} color="#1E3A8A" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>Join an Association</Text>
+            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
+              Find and join a new association
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
