@@ -656,6 +656,12 @@ export default function ChildrenScreen() {
                     </View>
                   );
                 })()}
+                {/* ⭐ Gold stars */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF3C7", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, flexShrink: 1 }}>
+                  <Ionicons name="star" size={15} color="#F59E0B" />
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#92400E" }}>{child.stars}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: "600", color: "#B45309" }}>Stars</Text>
+                </View>
               </View>
 
               <Pressable

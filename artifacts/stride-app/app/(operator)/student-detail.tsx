@@ -128,38 +128,79 @@ export default function StudentDetail() {
 
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Medical Information</Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+          {/* Allergies */}
           <View style={[styles.infoRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
             <View style={[styles.infoIcon, { backgroundColor: hasAllergies ? "#FEE2E2" : "#D1FAE5" }]}>
-              <Ionicons name="medkit" size={18} color={hasAllergies ? "#EF4444" : "#10B981"} />
+              <Ionicons name={hasAllergies ? "warning" : "checkmark-circle"} size={18} color={hasAllergies ? "#EF4444" : "#10B981"} />
             </View>
             <View style={styles.infoContent}>
               <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Allergies</Text>
-              <Text style={[styles.infoValue, { color: hasAllergies ? "#EF4444" : "#10B981" }]}>{student.allergies}</Text>
-            </View>
-          </View>
-          <View style={[styles.infoRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-            <View style={[styles.infoIcon, { backgroundColor: colors.muted }]}>
-              <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Medical Waiver</Text>
-              <Text style={[styles.infoValue, { color: colors.primary }]}>
-                {student.medicalWaiver === "ambulance" ? "Call Ambulance Immediately" : "Contact Primary Member"}
+              <Text style={[styles.infoValue, { color: hasAllergies ? "#EF4444" : "#10B981" }]}>
+                {hasAllergies ? student.allergies : "No known allergies"}
               </Text>
             </View>
           </View>
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: apiStudent?.ambulance_consent ? "#D1FAE5" : "#FEE2E2" }]}>
-              <Ionicons name="car" size={18} color={apiStudent?.ambulance_consent ? "#10B981" : "#EF4444"} />
+          {/* Medications */}
+          {!!(apiStudent?.medications ?? student.medications) && (
+            <View style={[styles.infoRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+              <View style={[styles.infoIcon, { backgroundColor: "#FEF3C7" }]}>
+                <Ionicons name="fitness" size={18} color="#D97706" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Medications required</Text>
+                <Text style={[styles.infoValue, { color: "#92400E" }]}>
+                  {(apiStudent?.medications ?? student.medications) || "—"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Ambulance Consent</Text>
-              <Text style={[styles.infoValue, { color: apiStudent?.ambulance_consent ? "#10B981" : "#EF4444" }]}>
-                {apiStudent?.ambulance_consent ? "YES — Consent given" : "NO — Contact primary member"}
-              </Text>
-            </View>
-          </View>
+          )}
+          {/* Ambulance consent — 3-way */}
+          {(() => {
+            const waiverCfg = {
+              ambulance:       { color: "#10B981", bg: "#D1FAE5", icon: "medkit"       as const, label: "Call Ambulance Immediately" },
+              call_parent:     { color: "#F59E0B", bg: "#FEF3C7", icon: "call"         as const, label: "Call Guardian First" },
+              no_intervention: { color: "#EF4444", bg: "#FEE2E2", icon: "close-circle" as const, label: "No Medical Intervention" },
+            };
+            const cfg = waiverCfg[student.medicalWaiver] ?? waiverCfg.call_parent;
+            return (
+              <View style={styles.infoRow}>
+                <View style={[styles.infoIcon, { backgroundColor: cfg.bg }]}>
+                  <Ionicons name={cfg.icon} size={18} color={cfg.color} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Ambulance Consent</Text>
+                  <Text style={[styles.infoValue, { color: cfg.color }]}>{cfg.label}</Text>
+                </View>
+              </View>
+            );
+          })()}
         </View>
+
+        {/* Media Release */}
+        {(() => {
+          const mediaCfg = {
+            full:     { color: "#10B981", bg: "#D1FAE5", icon: "camera"          as const, label: "Full Consent — Social & Promo" },
+            internal: { color: "#D97706", bg: "#FEF3C7", icon: "camera-outline"  as const, label: "Internal Use Only" },
+            none:     { color: "#EF4444", bg: "#FEE2E2", icon: "eye-off-outline" as const, label: "No Consent — Do Not Photograph" },
+          };
+          const cfg = mediaCfg[student.mediaConsent] ?? mediaCfg.none;
+          return (
+            <>
+              <Text style={[styles.sectionTitle, { color: colors.primary }]}>Media Release</Text>
+              <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+                <View style={styles.infoRow}>
+                  <View style={[styles.infoIcon, { backgroundColor: cfg.bg }]}>
+                    <Ionicons name={cfg.icon} size={18} color={cfg.color} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Photo & Video</Text>
+                    <Text style={[styles.infoValue, { color: cfg.color }]}>{cfg.label}</Text>
+                  </View>
+                </View>
+              </View>
+            </>
+          );
+        })()}
 
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Primary Member</Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>

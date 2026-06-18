@@ -123,7 +123,8 @@ export interface Student {
   parentPhone: string;
   courses: string[];
   allergies: string;
-  medicalWaiver: "ambulance" | "call_parent";
+  medications?: string;
+  medicalWaiver: "ambulance" | "call_parent" | "no_intervention";
   mediaConsent: "full" | "internal" | "none";
   stars: number;
   present?: boolean;
@@ -268,6 +269,7 @@ function mapStudent(s: ApiStudent): Student {
     parentPhone: s.parent?.phone ?? "",
     courses: coursesArr,
     allergies: s.allergies ?? "None",
+    medications: s.medications,
     medicalWaiver: s.ambulance_consent ? "ambulance" : "call_parent",
     mediaConsent: (s.media_consent as "full" | "internal" | "none") ?? "none",
     stars: s.gold_stars ?? 0,

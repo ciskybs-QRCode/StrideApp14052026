@@ -475,7 +475,7 @@ export default function AdminUsers() {
                               color={user.mediaCons === "full" ? "#16A34A" : user.mediaCons === "internal" ? "#D97706" : "#DC2626"}
                             />
                           </View>
-                          <Text style={[styles.safetyRowLabel, { color: colors.foreground }]}>Photo/Video Consent</Text>
+                          <Text style={[styles.safetyRowLabel, { color: colors.foreground }]}>Media Release</Text>
                         </View>
                         <View style={[styles.safetyRowValueWrap, { backgroundColor: user.mediaCons === "full" ? "#F0FDF4" : user.mediaCons === "internal" ? "#FFFBEB" : "#FEF2F2" }]}>
                           <Text style={[styles.safetyRowValue, { color: user.mediaCons === "full" ? "#16A34A" : user.mediaCons === "internal" ? "#D97706" : "#DC2626" }]}>

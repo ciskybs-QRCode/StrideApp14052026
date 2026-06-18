@@ -1336,6 +1336,7 @@ export interface ApiStudent {
   age?: number;
   gold_stars: number;
   allergies?: string;
+  medications?: string;
   ambulance_consent?: boolean;
   media_consent?: string;
   parent?: { id: number; name: string; phone?: string } | null;

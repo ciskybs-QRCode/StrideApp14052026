@@ -360,8 +360,8 @@ export default function OperatorStudents() {
                       <Text style={{ fontSize: 11, color: "#EF4444" }}>Allergies</Text>
                     </>
                   )}
-                  <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: s.medicalWaiver === "ambulance" ? "#D1FAE5" : "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
-                    <Ionicons name={s.medicalWaiver === "ambulance" ? "car-sport" : "call"} size={12} color={s.medicalWaiver === "ambulance" ? "#059669" : "#EF4444"} />
+                  <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: s.medicalWaiver === "ambulance" ? "#D1FAE5" : s.medicalWaiver === "no_intervention" ? "#FEE2E2" : "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name={s.medicalWaiver === "ambulance" ? "medkit" : s.medicalWaiver === "no_intervention" ? "close-circle" : "call"} size={12} color={s.medicalWaiver === "ambulance" ? "#059669" : s.medicalWaiver === "no_intervention" ? "#EF4444" : "#D97706"} />
                   </View>
                   <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: s.mediaConsent === "full" ? "#D1FAE5" : s.mediaConsent === "internal" ? "#FEF3C7" : "#F3F4F6", alignItems: "center", justifyContent: "center" }}>
                     <Ionicons name="camera" size={12} color={s.mediaConsent === "full" ? "#059669" : s.mediaConsent === "internal" ? "#D97706" : "#9CA3AF"} />
