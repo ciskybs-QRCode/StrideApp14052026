@@ -111,6 +111,8 @@ export default function ParentHome() {
   const [futureAbsNote, setFutureAbsNote] = useState("");
   const [futureAbsSuccess, setFutureAbsSuccess] = useState(false);
   const [orgLogoUri, setOrgLogoUri] = useState<string | null>(null);
+  const [orgContactPhone, setOrgContactPhone] = useState("");
+  const [orgContactEmail, setOrgContactEmail] = useState("");
   const [social, setSocial] = useState<Record<string, string>>({});
   const [preferredName, setPreferredName] = useState("");
 
@@ -199,6 +201,8 @@ export default function ParentHome() {
   useEffect(() => {
     api.getOrg().then(org => {
       if (org.logo_url) setOrgLogoUri(org.logo_url);
+      if (org.contact_phone) setOrgContactPhone(org.contact_phone);
+      if (org.official_email) setOrgContactEmail(org.official_email);
     }).catch(() => {});
   }, []);
 
@@ -700,20 +704,47 @@ export default function ParentHome() {
         {/* Contact */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact the Office</Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
-          <View style={styles.contactRow}>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]} onPress={() => Linking.openURL("https://wa.me/390212345678")}>
-              <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
-              <Text style={[styles.contactBtnText, { color: colors.primary }]}>WhatsApp</Text>
-            </Pressable>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]} onPress={() => Linking.openURL("mailto:office@dancevillage.com")}>
-              <Ionicons name="mail" size={22} color={colors.primary} />
-              <Text style={[styles.contactBtnText, { color: colors.primary }]}>Email</Text>
-            </Pressable>
-            <Pressable style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]} onPress={() => Linking.openURL("tel:+390212345678")}>
-              <Ionicons name="call" size={22} color={colors.primary} />
-              <Text style={[styles.contactBtnText, { color: colors.primary }]}>Call</Text>
-            </Pressable>
-          </View>
+          {(orgContactPhone || orgContactEmail || social.whatsapp) ? (
+            <View style={styles.contactRow}>
+              {!!(social.whatsapp || orgContactPhone) && (
+                <Pressable
+                  style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]}
+                  onPress={() => {
+                    const num = (social.whatsapp || orgContactPhone).replace(/\D/g, "");
+                    Linking.openURL(`https://wa.me/${num}`);
+                  }}
+                >
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
+                  <Text style={[styles.contactBtnText, { color: colors.primary }]}>WhatsApp</Text>
+                </Pressable>
+              )}
+              {!!orgContactEmail && (
+                <Pressable
+                  style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]}
+                  onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
+                >
+                  <Ionicons name="mail" size={22} color={colors.primary} />
+                  <Text style={[styles.contactBtnText, { color: colors.primary }]}>Email</Text>
+                </Pressable>
+              )}
+              {!!orgContactPhone && (
+                <Pressable
+                  style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]}
+                  onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
+                >
+                  <Ionicons name="call" size={22} color={colors.primary} />
+                  <Text style={[styles.contactBtnText, { color: colors.primary }]}>Call</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <View style={{ alignItems: "center", paddingVertical: 18, gap: 6 }}>
+              <Ionicons name="call-outline" size={24} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center" }}>
+                Contact info not configured yet.{"\n"}Ask your administrator to update Organisation Info.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 

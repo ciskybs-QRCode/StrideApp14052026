@@ -3,9 +3,10 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { api } from "@/lib/api";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -34,6 +36,16 @@ export default function OperatorSettingsScreen() {
   const router = useRouter();
 
   const meta = ROLE_META[user?.role ?? "operator"] ?? ROLE_META.operator;
+
+  const [orgContactPhone, setOrgContactPhone] = useState("");
+  const [orgContactEmail, setOrgContactEmail] = useState("");
+
+  useEffect(() => {
+    api.getOrg().then(org => {
+      if (org.contact_phone) setOrgContactPhone(org.contact_phone);
+      if (org.official_email) setOrgContactEmail(org.official_email);
+    }).catch(() => {});
+  }, []);
 
   const handlePickPhoto = async () => {
     if (Platform.OS !== "web") {
@@ -177,6 +189,44 @@ export default function OperatorSettingsScreen() {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
+
+        {/* ── Contact the Office ── */}
+        {(orgContactPhone || orgContactEmail) && (
+          <>
+            <Text style={[styles.pageTitle, { color: colors.primary, fontSize: 16, marginBottom: 12, marginTop: 4 }]}>
+              Contact the Office
+            </Text>
+            <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
+              {!!orgContactPhone && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`https://wa.me/${orgContactPhone.replace(/\D/g, "")}`)}
+                >
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>WhatsApp</Text>
+                </Pressable>
+              )}
+              {!!orgContactEmail && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
+                >
+                  <Ionicons name="mail" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Email</Text>
+                </Pressable>
+              )}
+              {!!orgContactPhone && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
+                >
+                  <Ionicons name="call" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Call</Text>
+                </Pressable>
+              )}
+            </View>
+          </>
+        )}
 
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` · ${user.schoolName}` : ""}

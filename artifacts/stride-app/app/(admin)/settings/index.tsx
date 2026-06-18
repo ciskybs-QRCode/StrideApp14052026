@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -13,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { api } from "@/lib/api";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
@@ -69,6 +71,15 @@ export default function SettingsIndex() {
 
   const qrValue = user ? `MBR-${user.id}` : "MBR-0";
   const [qrModal, setQrModal] = useState(false);
+  const [orgContactPhone, setOrgContactPhone] = useState("");
+  const [orgContactEmail, setOrgContactEmail] = useState("");
+
+  useEffect(() => {
+    api.getOrg().then(org => {
+      if (org.contact_phone) setOrgContactPhone(org.contact_phone);
+      if (org.official_email) setOrgContactEmail(org.official_email);
+    }).catch(() => {});
+  }, []);
 
   const navigate = (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -228,6 +239,42 @@ export default function SettingsIndex() {
             router.push("/(parent)/doc-consent" as never);
           }}
         />
+
+        {/* ── Contact the Office ── */}
+        {(orgContactPhone || orgContactEmail) && (
+          <>
+            <Text style={[styles.groupLabel, { color: colors.primary, marginTop: 8 }]}>CONTACT THE OFFICE</Text>
+            <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
+              {!!orgContactPhone && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`https://wa.me/${orgContactPhone.replace(/\D/g, "")}`)}
+                >
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>WhatsApp</Text>
+                </Pressable>
+              )}
+              {!!orgContactEmail && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
+                >
+                  <Ionicons name="mail" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Email</Text>
+                </Pressable>
+              )}
+              {!!orgContactPhone && (
+                <Pressable
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
+                >
+                  <Ionicons name="call" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Call</Text>
+                </Pressable>
+              )}
+            </View>
+          </>
+        )}
 
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` \u00B7 ${user.schoolName}` : ""}
