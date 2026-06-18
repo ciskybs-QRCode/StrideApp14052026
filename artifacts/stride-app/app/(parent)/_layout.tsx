@@ -171,7 +171,7 @@ export default function ParentTabLayout() {
             ) : isWeb ? (
               <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
             ) : null,
-          tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
+          tabBarLabelStyle: { fontSize: 9, fontWeight: "600" },
         }}
       >
         <Tabs.Screen name="home"      options={{ title: "Home",    tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
@@ -180,7 +180,8 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="wallet"      options={{ href: null }} />
         <Tabs.Screen name="marketplace" options={{ href: null }} />
         <Tabs.Screen name="cart"      options={{ title: "Cart",    tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
-        <Tabs.Screen name="profile"   options={{ href: null }} />
+        <Tabs.Screen name="profile"                options={{ href: null }} />
+        <Tabs.Screen name="notification-settings"  options={{ href: null }} />
         <Tabs.Screen name="documents" options={{ title: "Settings",tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />
         <Tabs.Screen name="checkout"    options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />

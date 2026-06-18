@@ -218,6 +218,17 @@ export default function SettingsIndex() {
           />
         ))}
 
+        {/* ── MEDIA RELEASE ── */}
+        <HubCard
+          icon="camera-outline"
+          title="Media Release"
+          description="Photo and video consent preferences"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(parent)/doc-consent" as never);
+          }}
+        />
+
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` \u00B7 ${user.schoolName}` : ""}
         </Text>

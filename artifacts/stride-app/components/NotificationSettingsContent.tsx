@@ -199,8 +199,8 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
             <Switch
               value={lessonOn}
               onValueChange={handleLessonToggle}
-              trackColor={{ false: "#D1D5DB", true: colors.primary }}
-              thumbColor="#FFF"
+              trackColor={{ false: "#D1D5DB", true: "#FBBF24" }}
+              thumbColor={lessonOn ? "#1E3A8A" : "#FFF"}
             />
           )}
         </View>
@@ -344,7 +344,7 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
 const styles = StyleSheet.create({
   root:   { flex: 1 },
   centred:{ flex: 1, alignItems: "center", justifyContent: "center" },
-  scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 },
 
   sectionLabel: {
     fontSize: 11, fontWeight: "800", letterSpacing: 1,

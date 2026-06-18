@@ -161,6 +161,23 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
+        {/* ── Media Release ── */}
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { tap(); router.push("/(parent)/doc-consent" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
+            <Ionicons name="camera-outline" size={26} color="#1E3A8A" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>Media Release</Text>
+            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
+              Photo and video consent preferences
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
+
         <Text style={[styles.version, { color: colors.mutedForeground }]}>
           Stride v1.0.0{user?.schoolName ? ` · ${user.schoolName}` : ""}
         </Text>

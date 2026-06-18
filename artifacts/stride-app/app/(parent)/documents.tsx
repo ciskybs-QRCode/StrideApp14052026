@@ -353,7 +353,7 @@ export default function DocumentsScreen() {
 
         {/* School Notices — informational docs from school, no item count */}
         {newDocs.length > 0 && (
-          <View style={[styles.docTile, { backgroundColor: colors.card }]}>
+          <View style={[styles.docTile, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
             <Pressable
               style={styles.docTileHeader}
               onPress={() => setExpandedSection(expandedSection === "new" ? null : "new")}
@@ -362,8 +362,8 @@ export default function DocumentsScreen() {
                 <Ionicons name="document-text-outline" size={22} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.docTileTitle, { color: colors.foreground }]}>School Notices</Text>
-                <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>Documents from your school</Text>
+                <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Association Notices</Text>
+                <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>Documents from your association</Text>
               </View>
               <View style={styles.unreadDot} />
               <Ionicons name={expandedSection === "new" ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
@@ -390,7 +390,7 @@ export default function DocumentsScreen() {
         )}
 
         {/* Medical Certificate Upload */}
-        <View style={[styles.docTile, { backgroundColor: colors.card }]}>
+        <View style={[styles.docTile, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
           <Pressable
             style={styles.docTileHeader}
             onPress={() => setExpandedSection(expandedSection === "cert" ? null : "cert")}
@@ -475,7 +475,7 @@ export default function DocumentsScreen() {
         </View>
 
         {/* Document Archive — each item navigates to dedicated read-only viewer */}
-        <View style={[styles.docTile, { backgroundColor: colors.card }]}>
+        <View style={[styles.docTile, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
           <View style={styles.docTileHeader}>
             <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
               <Ionicons name="folder-open-outline" size={22} color={colors.primary} />
@@ -530,24 +530,20 @@ export default function DocumentsScreen() {
           }}
         />
 
-        {/* Photo/Video Consent — navigates to dedicated signature flow */}
-        <Pressable
-          style={[styles.docTile, { backgroundColor: colors.card }]}
-          onPress={() => router.push("/(parent)/doc-consent")}
-        >
-          <View style={styles.docTileHeader}>
-            <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-              <Ionicons name="camera-outline" size={22} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Photo & Video Consent</Text>
-              <Text style={[styles.docTileSub, { color: colors.mutedForeground }]}>
-                {mediaConsent === "full" ? "Full consent granted" : mediaConsent === "internal" ? "Internal use only" : "No consent recorded — tap to sign"}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-          </View>
-        </Pressable>
+        {/* Media Release — navigates to dedicated signature flow */}
+        <HubCard
+          icon="camera-outline"
+          title="Media Release"
+          description={
+            mediaConsent === "full" ? "Full consent granted" :
+            mediaConsent === "internal" ? "Internal use only" :
+            "No consent recorded — tap to sign"
+          }
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(parent)/doc-consent" as never);
+          }}
+        />
       </ScrollView>
 
       {/* ── Edit Profile — Fullscreen Modal ── */}

@@ -30,6 +30,8 @@ import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useFeatures } from "@/context/FeaturesContext";
 import { useColors } from "@/hooks/useColors";
 import { api, listEvents } from "@/lib/api";
+import { SOSButton } from "@/components/SOSButton";
+import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
 const LOGO = require("@/assets/images/stride-logo.png");
 
@@ -298,6 +300,18 @@ export default function ParentHome() {
     setShowQR(true);
   };
 
+  const handleMemberSOS = async () => {
+    try {
+      await api.triggerEmergencyPulse({
+        category: "MEDICAL",
+        location_label: user?.schoolName ?? "Association",
+      });
+      Alert.alert("SOS Activated", "Your association has been notified. Stay calm and wait for assistance.");
+    } catch {
+      Alert.alert("SOS Alert", "Could not reach the server. Please call emergency services directly or contact your association.");
+    }
+  };
+
   const firstName = preferredName || user?.name?.split(" ")[0] || "User";
 
   // ── Emergency Pulse dynamic content ───────────────────────────────────────
@@ -365,6 +379,9 @@ export default function ParentHome() {
           </Pressable>
         </View>
 
+        {/* Role Switcher — only visible when user holds multiple roles */}
+        <RoleSwitcherRow />
+
         {/* Social links row */}
         {SOCIAL_ICONS.some(s => !!social[s.key]) && (
           <View style={styles.socialRow}>
@@ -426,65 +443,143 @@ export default function ParentHome() {
           </View>
         ))}
 
-        {/* Next Activity Card */}
-        <View style={[styles.lessonCard, { backgroundColor: colors.primary }]}>
-          <View style={styles.lessonCardTop}>
-            <View style={styles.lessonBadge}>
-              <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.lessonBadgeText}>NEXT ACTIVITY:</Text>
-            </View>
-          </View>
-          {nextLesson && nextCourse ? (
-            <>
-              <Text style={styles.lessonParticipant}>{childForLesson?.name}</Text>
-              <Text style={styles.lessonCourseName}>{nextCourse.name}</Text>
-              <View style={styles.lessonMeta}>
-                <View style={styles.lessonMetaItem}>
-                  <Ionicons name="time-outline" size={14} color="#FBBF24" />
-                  <Text style={styles.lessonMetaText}>{nextLesson.startTime} – {nextLesson.endTime}</Text>
-                </View>
-                {lessonLocation ? (
-                  <View style={styles.lessonMetaItem}>
-                    <Ionicons name="location-outline" size={14} color="#FBBF24" />
-                    <Text style={styles.lessonMetaText}>
-                      {nextLesson.location}
-                      {nextLesson.room ? ` · ${nextLesson.room}` : ""}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-              <Pressable
-                style={({ pressed }) => [styles.navigateBtn, pressed && { opacity: 0.85 }]}
-                onPress={handleNavigate}
-              >
-                <Ionicons name="navigate" size={14} color="#1E3A8A" />
-                <Text style={styles.navigateBtnText}>NAVIGATE</Text>
-              </Pressable>
-            </>
-          ) : (
-            <Text style={styles.lessonCourseName}>No upcoming activities</Text>
-          )}
-        </View>
+        {/* ── Quick Actions ── */}
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
 
-        {/* Private Lesson Entry Card */}
+        {/* Show QR Pass */}
         <Pressable
-          style={({ pressed }) => [styles.privateLessonCard, { backgroundColor: colors.primary, opacity: pressed ? 0.92 : 1 }]}
-          onPress={() => router.push("/(parent)/book-lesson")}
+          style={({ pressed }) => ({
+            flexDirection: "row" as const, alignItems: "center" as const, gap: 14,
+            paddingVertical: 14, paddingHorizontal: 16,
+            borderRadius: 16, marginBottom: 10, borderWidth: 1,
+            backgroundColor: colors.card, borderColor: colors.border,
+            opacity: pressed ? 0.85 : 1,
+          })}
+          onPress={() => openQR("parent")}
+          accessibilityRole="button"
         >
-          <View style={[styles.privateLessonIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-            <Ionicons name="school-outline" size={24} color={colors.primary} />
+          <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.primary}10` }}>
+            <Ionicons name="qr-code" size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.privateLessonTitle}>Private Lessons</Text>
-            <Text style={styles.privateLessonSub}>Book a 1-on-1 session with an operator</Text>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground, marginBottom: 1 }}>Show QR Pass</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Display your membership QR code</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </Pressable>
+
+        {/* Report Absence */}
+        <Pressable
+          style={({ pressed }) => ({
+            flexDirection: "row" as const, alignItems: "center" as const, gap: 14,
+            paddingVertical: 14, paddingHorizontal: 16,
+            borderRadius: 16, marginBottom: 10, borderWidth: 1,
+            backgroundColor: colors.card, borderColor: colors.border,
+            opacity: pressed ? 0.85 : 1,
+          })}
+          onPress={() => setShowAbsence(true)}
+          accessibilityRole="button"
+        >
+          <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.primary}10` }}>
+            <Ionicons name="alert-circle-outline" size={22} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground, marginBottom: 1 }}>Report Absence</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Notify the association of an absence</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </Pressable>
+
+        {/* My Associations */}
+        <Pressable
+          style={({ pressed }) => ({
+            flexDirection: "row" as const, alignItems: "center" as const, gap: 14,
+            paddingVertical: 14, paddingHorizontal: 16,
+            borderRadius: 16, marginBottom: 10, borderWidth: 1,
+            backgroundColor: colors.card, borderColor: colors.border,
+            opacity: pressed ? 0.85 : 1,
+          })}
+          onPress={() => router.push("/my-associations" as Parameters<typeof router.push>[0])}
+          accessibilityRole="button"
+        >
+          <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.primary}10` }}>
+            <Ionicons name="shield-checkmark" size={22} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground, marginBottom: 1 }}>My Associations</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>View and switch your active association</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </Pressable>
+
+        {/* ── SOS Emergency ── */}
+        <SOSButton onConfirm={handleMemberSOS} />
+
+        {/* ── Private Lessons ── */}
+        <Pressable
+          style={({ pressed }) => ({
+            flexDirection: "row" as const, alignItems: "center" as const, gap: 14,
+            paddingVertical: 14, paddingHorizontal: 16,
+            borderRadius: 16, marginTop: 10, marginBottom: 10, borderWidth: 1,
+            backgroundColor: colors.card, borderColor: colors.border,
+            opacity: pressed ? 0.85 : 1,
+          })}
+          onPress={() => router.push("/(parent)/book-lesson")}
+          accessibilityRole="button"
+        >
+          <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.primary}10` }}>
+            <Ionicons name="school-outline" size={22} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground, marginBottom: 1 }}>Private Lessons</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Book a 1-on-1 session with an instructor</Text>
           </View>
           {unreadCount > 0 && (
             <View style={styles.privateLessonBadge}>
               <Text style={styles.privateLessonBadgeText}>{unreadCount}</Text>
             </View>
           )}
-          <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
         </Pressable>
+
+        {/* ── Next Activity (light style) ── */}
+        <View style={[styles.nextActivityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.primary}10` }}>
+              <Ionicons name="time-outline" size={18} color={colors.primary} />
+            </View>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.8 }}>NEXT ACTIVITY</Text>
+          </View>
+          {nextLesson && nextCourse ? (
+            <>
+              {childForLesson?.name ? (
+                <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 2 }}>{childForLesson.name}</Text>
+              ) : null}
+              <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary, marginBottom: 6 }}>{nextCourse.name}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Ionicons name="time-outline" size={14} color={colors.primary} />
+                <Text style={{ fontSize: 13, color: colors.foreground }}>{nextLesson.startTime} – {nextLesson.endTime}</Text>
+              </View>
+              {lessonLocation ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <Ionicons name="location-outline" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 13, color: colors.foreground }}>
+                    {nextLesson.location}{nextLesson.room ? ` · ${nextLesson.room}` : ""}
+                  </Text>
+                </View>
+              ) : null}
+              <Pressable
+                style={({ pressed }) => [styles.navigateBtn, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}25`, borderWidth: 1 }, pressed && { opacity: 0.8 }]}
+                onPress={handleNavigate}
+              >
+                <Ionicons name="navigate" size={14} color={colors.primary} />
+                <Text style={[styles.navigateBtnText, { color: colors.primary }]}>NAVIGATE</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Text style={{ fontSize: 14, color: colors.mutedForeground }}>No upcoming activities scheduled</Text>
+          )}
+        </View>
 
         {/* Upcoming Private Sessions — shown only after payment */}
         {paidLessons.length > 0 && (
@@ -525,31 +620,6 @@ export default function ParentHome() {
           </>
         )}
 
-        {/* Quick Actions */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
-        <View style={styles.quickActions}>
-          <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
-            onPress={() => openQR("parent")}
-          >
-            <Ionicons name="qr-code" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]}>SHOW{"\n"}QR PASS</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
-            onPress={() => setShowAbsence(true)}
-          >
-            <Ionicons name="alert-circle-outline" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]} adjustsFontSizeToFit numberOfLines={2}>{"REPORT\nABSENCE"}</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.quickBtn, { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary, transform: pressed ? [{ scale: 0.96 }] : [] }]}
-            onPress={() => router.push("/(parent)/org-search" as Parameters<typeof router.push>[0])}
-          >
-            <Ionicons name="shield-checkmark" size={28} color={colors.primary} />
-            <Text style={[styles.quickBtnText, { color: colors.primary }]} adjustsFontSizeToFit numberOfLines={2}>SELECT{"\n"}ASSOCIATION</Text>
-          </Pressable>
-        </View>
 
         {/* ── Stride Marketplace Banner (global flag ON + org has published products) ── */}
         {marketplaceEnabled && hasPublishedProducts && (
@@ -1044,9 +1114,7 @@ const styles = StyleSheet.create({
   privateLessonSub: { fontSize: 12, color: "rgba(255,255,255,0.75)" },
   privateLessonBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center" },
   privateLessonBadgeText: { fontSize: 11, fontWeight: "800", color: "#FFF" },
-  quickActions: { flexDirection: "row", gap: 12, marginBottom: 24 },
-  quickBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18, paddingVertical: 20, gap: 8, borderWidth: 2 },
-  quickBtnText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
+  nextActivityCard: { borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1 },
   notifCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   notifIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   notifText: { flex: 1, fontSize: 14, fontWeight: "500" },
