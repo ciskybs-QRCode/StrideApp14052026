@@ -603,14 +603,26 @@ jobs:
               if (!apiResult.ok) {
                 core.warning(`Slack API error: ${apiResult.error}`);
               } else {
-                const label = !isRetry ? 'new message' : isFinalNotice ? 'final notice (cap reached)' : 'thread reply';
+                // Determine whether this post started a new top-level thread.
+                // That happens on the very first failure OR on a retry where the
+                // stored thread ts was missing from the issue body (e.g. someone
+                // edited the issue and accidentally removed the HTML comment).
+                const startedNewThread = !isRetry || (isRetry && !threadTs);
+
+                const label = !isRetry
+                  ? 'new message'
+                  : !threadTs
+                    ? 'new top-level message (previous thread ts not found in issue body)'
+                    : isFinalNotice
+                      ? 'final notice (cap reached)'
+                      : 'thread reply';
                 console.log(`Slack notified via Web API (${label}), ts=${apiResult.ts}`);
 
-                // On first failure, persist the message ts in the issue body so
-                // subsequent retries can post as thread replies.
+                // Persist the message ts whenever a new top-level thread is
+                // started: first failure, or a retry where the ts was lost.
                 // Also add a visible deep-link so engineers can jump straight
                 // from the issue to the Slack conversation.
-                if (!isRetry && apiResult.ts) {
+                if (startedNewThread && apiResult.ts) {
                   let updatedBody = appendSlackTs(freshIssue.body, apiResult.ts);
                   updatedBody = appendSlackLink(updatedBody, apiResult.ts, apiResult.channel);
                   await github.rest.issues.update({
@@ -619,7 +631,26 @@ jobs:
                     issue_number: existingIssue.number,
                     body: updatedBody,
                   });
-                  console.log(`Stored Slack thread ts ${apiResult.ts} and deep-link in issue #${existingIssue.number}`);
+
+                  if (!isRetry) {
+                    console.log(`Stored Slack thread ts ${apiResult.ts} and deep-link in issue #${existingIssue.number}`);
+                  } else {
+                    // Retry with a lost ts: log clearly and add a visible note
+                    // to the issue so the thread break is not silently ignored.
+                    console.log(
+                      `Previous Slack thread ts not found in issue #${existingIssue.number} body — ` +
+                      `re-created thread, stored new ts ${apiResult.ts}`
+                    );
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: existingIssue.number,
+                      body:
+                        '⚠️ Previous Slack thread ts not found in issue body — ' +
+                        'started a new Slack thread for this failure incident. ' +
+                        'The new thread ts has been stored so future retries will reply in the new thread.',
+                    });
+                  }
                 }
               }
             } else {
