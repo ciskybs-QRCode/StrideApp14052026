@@ -18,7 +18,6 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,6 +27,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AccountSettingsCard } from "@/components/AccountSettingsCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -40,22 +40,6 @@ export type ProfileRole = "admin" | "operator" | "parent";
 interface Props {
   currentRole: ProfileRole;
 }
-
-// ── Role badge config ─────────────────────────────────────────────────────────
-
-const ROLE_BADGE: Record<
-  ProfileRole,
-  {
-    label: string;
-    color: string;
-    bg: string;
-    icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
-  }
-> = {
-  admin:    { label: "Admin",    color: "#6D28D9", bg: "#EDE9FE", icon: "shield-checkmark" },
-  operator: { label: "Operator", color: "#0369A1", bg: "#DBEAFE", icon: "school"           },
-  parent:   { label: "Member",   color: "#047857", bg: "#D1FAE5", icon: "person"           },
-};
 
 // ── Admin configuration rows ──────────────────────────────────────────────────
 
@@ -181,7 +165,6 @@ export default function UnifiedProfileView({ currentRole }: Props) {
     }
   };
 
-  const badge    = ROLE_BADGE[currentRole];
   const initials = (user?.name ?? "?")
     .split(" ")
     .map(w => w[0] ?? "")
@@ -193,6 +176,11 @@ export default function UnifiedProfileView({ currentRole }: Props) {
   const pendingDocs  = legalAdminDocs.filter(d => !signedAdminDocIds.includes(d.id));
   const qrValue      = user ? `MBR-${user.id}` : "MBR-0";
 
+  const backRoute =
+    currentRole === "parent"   ? "/(parent)/account"   :
+    currentRole === "operator" ? "/(operator)/account" :
+                                 "/(admin)/account";
+
   const nav = (path: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(path as never);
@@ -200,25 +188,20 @@ export default function UnifiedProfileView({ currentRole }: Props) {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader
+        title="Profile"
+        onBack={() => router.navigate(backRoute as never)}
+      />
       <ScrollView
         contentContainerStyle={[
           s.scroll,
           {
-            paddingTop:    insets.top + (Platform.OS === "web" ? 67 : 20),
+            paddingTop:    20,
             paddingBottom: insets.bottom + 100,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-
-        {/* ── PAGE TITLE ROW ── */}
-        <View style={s.titleRow}>
-          <Text style={[s.pageTitle, { color: colors.primary }]}>Profile</Text>
-          <View style={[s.badge, { backgroundColor: badge.bg }]}>
-            <Ionicons name={badge.icon} size={12} color={badge.color} />
-            <Text style={[s.badgeText, { color: badge.color }]}>{badge.label}</Text>
-          </View>
-        </View>
 
         {/* ── HERO IDENTITY CARD ── */}
         <View style={[s.heroCard, { backgroundColor: colors.primary }]}>
@@ -596,24 +579,6 @@ export default function UnifiedProfileView({ currentRole }: Props) {
 const s = StyleSheet.create({
   container: { flex: 1 },
   scroll:    { paddingHorizontal: 20 },
-
-  // Title row
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  pageTitle: { fontSize: 28, fontWeight: "800" },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  badgeText: { fontSize: 12, fontWeight: "700" },
 
   // Hero card
   heroCard: {
