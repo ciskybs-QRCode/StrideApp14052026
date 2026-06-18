@@ -1343,6 +1343,139 @@ export default function AdminCommunications() {
           </View>
         </View>
       </Modal>
+
+      {/* ── Report di lettura ──────────────────────────────────────────── */}
+      <Modal
+        visible={!!showReport}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowReport(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.card, padding: 24 }]}>
+            {/* Header */}
+            <View style={styles.modalTitleRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalTitle, { color: colors.text, fontSize: 18 }]}>
+                  📊 Report di Lettura
+                </Text>
+                {showReport && (
+                  <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+                    {showReport.title}
+                  </Text>
+                )}
+              </View>
+              <Pressable
+                onPress={() => setShowReport(null)}
+                style={{ padding: 6 }}
+                accessibilityLabel="Chiudi report"
+              >
+                <Ionicons name="close-circle" size={28} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            {reportLoading ? (
+              <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 13 }}>
+                  Carico i dati…
+                </Text>
+              </View>
+            ) : !reportData ? (
+              <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
+                <Ionicons name="alert-circle-outline" size={40} color={colors.mutedForeground} />
+                <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>
+                  Nessun dato disponibile
+                </Text>
+              </View>
+            ) : (
+              <>
+                {/* Stats Cards */}
+                <View style={styles.reportStatsRow}>
+                  {[
+                    { label: "Inviati",  value: reportData.stats.total,   icon: "paper-plane",    bg: "#1E3A8A" },
+                    { label: "Letti",    value: reportData.stats.read,    icon: "checkmark-done", bg: "#16A34A" },
+                    { label: "Saltati",  value: reportData.stats.skipped, icon: "close-circle",   bg: "#DC2626" },
+                    { label: "In attesa", value: reportData.stats.pending, icon: "time",           bg: "#D97706" },
+                  ].map(s => (
+                    <View key={s.label} style={[styles.reportStatCard, { backgroundColor: s.bg }]}>
+                      <Ionicons name={s.icon as never} size={16} color="#FFF" />
+                      <Text style={styles.reportStatNum}>{s.value}</Text>
+                      <Text style={styles.reportStatLabel}>{s.label}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Progress bar */}
+                {reportData.stats.total > 0 && (
+                  <View style={{ marginBottom: 16 }}>
+                    <View style={[styles.readBar, { backgroundColor: colors.border }]}>
+                      <View
+                        style={[
+                          styles.readBarFill,
+                          {
+                            width: `${Math.round((reportData.stats.read / reportData.stats.total) * 100)}%`,
+                            backgroundColor: "#16A34A",
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 11, textAlign: "right" }}>
+                      {Math.round((reportData.stats.read / reportData.stats.total) * 100)}% letto
+                    </Text>
+                  </View>
+                )}
+
+                {/* Recipient list */}
+                <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+                  {reportData.recipients.map((r, i) => {
+                    const isRead    = !!r.read_at;
+                    const isSkipped = !!r.skipped_at && !isRead;
+                    const isPending = !isRead && !r.skipped_at;
+                    const iconName  = isRead ? "checkmark-done-circle" : isSkipped ? "close-circle" : "time-outline";
+                    const iconColor = isRead ? "#16A34A" : isSkipped ? "#DC2626" : "#D97706";
+                    const statusLabel = isRead
+                      ? `Letto ${new Date(r.read_at!).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+                      : isSkipped
+                        ? `Saltato ${new Date(r.skipped_at!).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+                        : "In attesa";
+                    return (
+                      <View
+                        key={i}
+                        style={[
+                          styles.reportRecipientRow,
+                          { borderBottomColor: colors.border },
+                          i === reportData.recipients.length - 1 && { borderBottomWidth: 0 },
+                        ]}
+                      >
+                        <Ionicons name={iconName as never} size={22} color={iconColor} style={{ marginRight: 12 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.text, fontWeight: "700", fontSize: 13 }}>
+                            {r.recipient_name}
+                          </Text>
+                          <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 1 }}>
+                            {r.recipient_role} · {statusLabel}
+                          </Text>
+                        </View>
+                        {r.push_sent && (
+                          <Ionicons name="notifications" size={14} color={colors.mutedForeground} />
+                        )}
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+
+                <Pressable
+                  onPress={() => setShowReport(null)}
+                  style={[styles.modalBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
+                >
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Chiudi</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1470,6 +1603,23 @@ const styles = StyleSheet.create({
   receiptFilterChip: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1.5 },
   receiptCard: { borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   receiptRoleBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+
+  reportStatsRow: {
+    flexDirection: "row", gap: 8, marginBottom: 14,
+  },
+  reportStatCard: {
+    flex: 1, borderRadius: 12, padding: 10, alignItems: "center", gap: 4,
+  },
+  reportStatNum: {
+    fontSize: 20, fontWeight: "800", color: "#FFF",
+  },
+  reportStatLabel: {
+    fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.85)", textAlign: "center",
+  },
+  reportRecipientRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth,
+  },
 });
 
 // ── Automated Messages styles ──────────────────────────────────────────────────

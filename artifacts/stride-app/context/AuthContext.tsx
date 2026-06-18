@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { router } from "expo-router";
+import * as Notifications from "expo-notifications";
 import { api, setToken, clearToken, getToken, apiSwitchOrgContext } from "../lib/api";
 
 export type UserRole =
@@ -229,6 +230,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setAllRoles(finalAllRoles);
     setUser(mapped);
+
+    // Fire-and-forget: register this device's Expo push token so the server
+    // can send push notifications to this user (messages, emergencies, etc.)
+    void (async () => {
+      try {
+        if (Platform.OS === "web") return;
+        // expo-notifications v55 types don't always expose .granted/.canAskAgain
+        // directly — cast like EmergencyService does to stay compatible.
+        const existing = await Notifications.getPermissionsAsync() as unknown as { granted?: boolean; canAskAgain?: boolean };
+        let granted = existing.granted ?? false;
+        if (!granted && existing.canAskAgain !== false) {
+          const result = await Notifications.requestPermissionsAsync() as unknown as { granted?: boolean };
+          granted = result.granted ?? false;
+        }
+        if (!granted) return;
+        const { data: pushToken } = await Notifications.getExpoPushTokenAsync();
+        if (!pushToken) return;
+        const t = await getToken();
+        if (!t) return;
+        await fetch("/api/notifications/register-token", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+          body:    JSON.stringify({ token: pushToken, platform: Platform.OS }),
+        });
+      } catch {
+        // non-blocking — push is best-effort at login
+      }
+    })();
+
     return mapped;
   };
 
