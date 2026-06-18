@@ -11,6 +11,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -24,6 +25,7 @@ import {
   View,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -38,6 +40,7 @@ import {
 export default function AdminInvitesScreen() {
   const { user } = useAuth();
   const colors   = useColors();
+  const router   = useRouter();
 
   const [codes, setCodes]             = useState<InviteCode[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -127,18 +130,22 @@ export default function AdminInvitesScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={s.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => { setRefreshing(true); void load(); }}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      <Text style={[s.pageTitle, { color: colors.foreground }]}>Invite Management</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScreenHeader
+        title="Invite Members"
+        onBack={() => router.push("/(admin)/members-hub" as never)}
+      />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={s.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => { setRefreshing(true); void load(); }}
+            tintColor={colors.primary}
+          />
+        }
+      >
 
       {/* ── Org QR Code ──────────────────────────────────────────────────── */}
       <View style={[s.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -300,7 +307,8 @@ export default function AdminInvitesScreen() {
           ))
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -308,7 +316,6 @@ export default function AdminInvitesScreen() {
 
 const s = StyleSheet.create({
   content:      { padding: 16, gap: 16, paddingBottom: 60 },
-  pageTitle:    { fontSize: 22, fontWeight: "800", marginBottom: 4 },
 
   section: {
     borderRadius: 18, borderWidth: 1, padding: 18, gap: 10,
