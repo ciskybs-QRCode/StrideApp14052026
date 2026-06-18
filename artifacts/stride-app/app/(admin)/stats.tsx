@@ -451,29 +451,6 @@ export default function AdminHome() {
           ))}
         </View>
 
-        {/* ── Join an Association (bottom) ── */}
-        <Pressable
-          style={({ pressed }) => ({
-            flexDirection: "row" as const, alignItems: "center" as const, gap: 14,
-            paddingVertical: 14, paddingHorizontal: 16,
-            borderRadius: 16, marginBottom: 10, borderWidth: 1,
-            backgroundColor: colors.card, borderColor: colors.border,
-            opacity: pressed ? 0.8 : 1,
-          })}
-          onPress={() => router.push("/join-org" as never)}
-          accessibilityLabel="Join an Association"
-          accessibilityRole="button"
-        >
-          <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.primary}10` }}>
-            <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 1, color: colors.foreground }}>Join an Association</Text>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Use an invite code or scan an org QR</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-        </Pressable>
-
       </ScrollView>
 
       {/* ══════════════════════════════════════════════════

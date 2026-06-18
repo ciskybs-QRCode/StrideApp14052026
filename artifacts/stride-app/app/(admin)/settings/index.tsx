@@ -148,6 +148,15 @@ export default function SettingsIndex() {
             router.push("/(admin)/account" as never);
           }}
         />
+        <HubCard
+          icon="add-circle-outline"
+          title="Join an Association"
+          description="Use an invite code or scan an org QR"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/join-org" as never);
+          }}
+        />
 
         {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>ORGANISATION</Text>
