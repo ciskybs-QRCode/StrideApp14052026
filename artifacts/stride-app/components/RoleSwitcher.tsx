@@ -308,31 +308,6 @@ export function RoleSwitcherRow() {
         <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
       </Pressable>
 
-      {/* Join another association */}
-      <Pressable
-        style={({ pressed }) => [
-          row.container,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            opacity: pressed ? 0.8 : 1,
-          },
-        ]}
-        onPress={() => router.push("/join-org" as never)}
-        accessibilityLabel="Join an Association"
-        accessibilityRole="button"
-      >
-        <View style={[row.iconBox, { backgroundColor: `${colors.primary}10` }]}>
-          <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[row.label, { color: colors.foreground }]}>Join an Association</Text>
-          <Text style={[row.sub, { color: colors.mutedForeground }]}>
-            Use an invite code or scan an org QR
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-      </Pressable>
     </>
   );
 }

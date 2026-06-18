@@ -44,21 +44,21 @@ export function QRScanButton({
       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
       style={({ pressed }) => [
         styles.btn,
-        { backgroundColor: colors.primary, opacity: pressed ? 0.78 : 1 },
+        { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.78 : 1 },
       ]}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <View style={[styles.iconWrap, { backgroundColor: "rgba(255,255,255,0.12)" }]}>
-        <Ionicons name="qr-code-outline" size={26} color={colors.secondary} />
+      <View style={[styles.iconWrap, { backgroundColor: "#EFF6FF" }]}>
+        <Ionicons name="qr-code-outline" size={26} color={colors.primary} />
       </View>
       <View style={styles.textWrap}>
-        <Text style={[styles.labelText, { color: "#FFFFFF" }]}>{label}</Text>
-        <Text style={[styles.sublabel, { color: "rgba(255,255,255,0.65)" }]}>
+        <Text style={[styles.labelText, { color: colors.primary }]}>{label}</Text>
+        <Text style={[styles.sublabel, { color: colors.mutedForeground }]}>
           Tap to scan member QR code
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.secondary} />
+      <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
     </Pressable>
   );
 }
@@ -71,11 +71,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
+    borderWidth: 1,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   iconWrap: {
     width: 46,

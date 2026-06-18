@@ -387,46 +387,46 @@ export default function AdminHome() {
         )}
 
         {/* ── HERO KPI BANNER ── */}
-        <View style={[styles.heroBanner, { backgroundColor: colors.primary }]}>
+        <View style={[styles.heroBanner, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
           <View style={styles.heroMain}>
             {/* Label + Month/Year toggle in same row */}
             <View style={styles.heroTopRow}>
-              <Text style={styles.heroLabel}>{period === "month" ? "Monthly" : "Annual"} Revenue</Text>
-              <View style={styles.heroPeriodToggle}>
+              <Text style={[styles.heroLabel, { color: colors.mutedForeground }]}>{period === "month" ? "Monthly" : "Annual"} Revenue</Text>
+              <View style={[styles.heroPeriodToggle, { backgroundColor: "#1E3A8A18" }]}>
                 <Pressable
-                  style={[styles.heroPeriodBtn, period === "month" && styles.heroPeriodBtnActive]}
+                  style={[styles.heroPeriodBtn, period === "month" && { backgroundColor: colors.primary }]}
                   onPress={() => setPeriod("month")}
                 >
-                  <Text style={[styles.heroPeriodBtnText, { color: period === "month" ? colors.primary : "rgba(255,255,255,0.7)" }]}>Month</Text>
+                  <Text style={[styles.heroPeriodBtnText, { color: period === "month" ? "#FFFFFF" : colors.mutedForeground }]}>Month</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.heroPeriodBtn, period === "year" && styles.heroPeriodBtnActive]}
+                  style={[styles.heroPeriodBtn, period === "year" && { backgroundColor: colors.primary }]}
                   onPress={() => setPeriod("year")}
                 >
-                  <Text style={[styles.heroPeriodBtnText, { color: period === "year" ? colors.primary : "rgba(255,255,255,0.7)" }]}>Year</Text>
+                  <Text style={[styles.heroPeriodBtnText, { color: period === "year" ? "#FFFFFF" : colors.mutedForeground }]}>Year</Text>
                 </Pressable>
               </View>
             </View>
-            <Text style={styles.heroValue}>{cur}{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
+            <Text style={[styles.heroValue, { color: colors.primary }]}>{cur}{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
             <View style={styles.heroTrend}>
               <Ionicons name="trending-up" size={16} color="#FBBF24" />
               <Text style={styles.heroTrendText}>+12.4% vs last month</Text>
             </View>
           </View>
-          <View style={styles.heroSide}>
+          <View style={[styles.heroSide, { borderTopColor: colors.border }]}>
             <View style={styles.heroSideItem}>
-              <Text style={styles.heroSideValue}>{totalStudents}</Text>
-              <Text style={styles.heroSideLabel}>Members</Text>
+              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{totalStudents}</Text>
+              <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Members</Text>
             </View>
-            <View style={styles.heroSideDivider} />
+            <View style={[styles.heroSideDivider, { backgroundColor: colors.border }]} />
             <View style={styles.heroSideItem}>
-              <Text style={styles.heroSideValue}>{courses.length}</Text>
-              <Text style={styles.heroSideLabel}>Courses</Text>
+              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{courses.length}</Text>
+              <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Courses</Text>
             </View>
-            <View style={styles.heroSideDivider} />
+            <View style={[styles.heroSideDivider, { backgroundColor: colors.border }]} />
             <View style={styles.heroSideItem}>
-              <Text style={styles.heroSideValue}>{avgOccupancy}%</Text>
-              <Text style={styles.heroSideLabel}>Occupancy</Text>
+              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{avgOccupancy}%</Text>
+              <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Occupancy</Text>
             </View>
           </View>
         </View>
@@ -448,6 +448,29 @@ export default function AdminHome() {
             </View>
           ))}
         </View>
+
+        {/* ── Join an Association (bottom) ── */}
+        <Pressable
+          style={({ pressed }) => ({
+            flexDirection: "row" as const, alignItems: "center" as const, gap: 14,
+            paddingVertical: 14, paddingHorizontal: 16,
+            borderRadius: 16, marginBottom: 10, borderWidth: 1,
+            backgroundColor: colors.card, borderColor: colors.border,
+            opacity: pressed ? 0.8 : 1,
+          })}
+          onPress={() => router.push("/join-org" as never)}
+          accessibilityLabel="Join an Association"
+          accessibilityRole="button"
+        >
+          <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.primary}10` }}>
+            <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", marginBottom: 1, color: colors.foreground }}>Join an Association</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Use an invite code or scan an org QR</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </Pressable>
 
       </ScrollView>
 
