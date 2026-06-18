@@ -92,7 +92,7 @@ export default function OperationsHub() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE & EVENTS</Text>
         <HubCard
           icon="storefront-outline"
-          title="Stride Marketplace"
+          title="Marketplace"
           description="Products, shop links and platform commission"
           iconBg="#DBEAFE"
           iconColor="#1E3A8A"
