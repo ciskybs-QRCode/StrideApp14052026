@@ -25,14 +25,25 @@ jobs:
         uses: actions/github-script@v7
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          REQUIRE_SLACK_WEBHOOK: ${{ vars.REQUIRE_SLACK_WEBHOOK }}
         with:
           script: |
             if (!process.env.SLACK_WEBHOOK_URL) {
-              core.warning(
+              const requireWebhook = process.env.REQUIRE_SLACK_WEBHOOK === 'true';
+              const message =
                 'SLACK_WEBHOOK_URL secret is not set. ' +
                 'Slack notifications will be silently skipped for the entire run. ' +
-                'See docs/slack-alerts.md for setup instructions.'
-              );
+                'See docs/slack-alerts.md for setup instructions.';
+              if (requireWebhook) {
+                core.setFailed(
+                  'REQUIRE_SLACK_WEBHOOK is true but SLACK_WEBHOOK_URL secret is not set. ' +
+                  'Add the secret under Settings → Secrets and variables → Actions → Secrets, ' +
+                  'or set REQUIRE_SLACK_WEBHOOK to false to downgrade this to a warning. ' +
+                  'See docs/slack-alerts.md for setup instructions.'
+                );
+              } else {
+                core.warning(message);
+              }
             } else {
               console.log('SLACK_WEBHOOK_URL is configured — Slack notifications are active.');
             }

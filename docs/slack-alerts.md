@@ -24,6 +24,25 @@ If a webhook URL is ever exposed or needs to be replaced:
 3. In GitHub, go to **Settings → Secrets and variables → Actions → Secrets**, edit `SLACK_WEBHOOK_URL`, and paste the new URL.
 4. The next workflow run will automatically use the new webhook.
 
+## Enforcing a hard failure when the webhook is missing
+
+By default, the preflight step emits a **warning** when `SLACK_WEBHOOK_URL` is absent and lets the rest of the run proceed. If your team requires Slack alerts to be active on every run, you can turn the missing-webhook warning into a **hard failure** by setting a repository variable:
+
+| Variable | Where to set it | Values |
+|----------|----------------|--------|
+| `REQUIRE_SLACK_WEBHOOK` | **Settings → Secrets and variables → Actions → Variables** | `true` to fail the run; omit or set to anything else to keep the default warning behaviour |
+
+When `REQUIRE_SLACK_WEBHOOK` is `true` and `SLACK_WEBHOOK_URL` is not configured, the preflight step calls `core.setFailed()` and the entire workflow stops immediately with a clear error message — no further steps run. This catches a misconfigured or missing secret at the very start of the run rather than silently skipping every notification.
+
+**Mode summary:**
+
+| `REQUIRE_SLACK_WEBHOOK` | `SLACK_WEBHOOK_URL` present | Behaviour |
+|------------------------|----------------------------|-----------|
+| not set / `false` | ✅ yes | Normal run, Slack alerts active |
+| not set / `false` | ❌ no | Yellow warning annotation, run continues |
+| `true` | ✅ yes | Normal run, Slack alerts active |
+| `true` | ❌ no | Run fails immediately at the preflight step |
+
 ## Changing the target channel
 
 By default, alerts go to whichever channel the webhook was created for. You can override this **without rotating the webhook** by setting a repository variable:
