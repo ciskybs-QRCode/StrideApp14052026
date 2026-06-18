@@ -22,6 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useFeatures } from "@/context/FeaturesContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { useDeviceLocale } from "@/hooks/useDeviceLocale";
 import { api } from "@/lib/api";
 import { HubCard } from "@/components/HubCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
@@ -137,6 +138,8 @@ export default function AdminHome() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const locale = useDeviceLocale();
+  const cur    = locale.currencySymbol;
 
   const [period, setPeriod]                 = useState<"month" | "year">("month");
   const [showScanner, setShowScanner]       = useState(false);
@@ -368,7 +371,7 @@ export default function AdminHome() {
                 </Pressable>
               </View>
             </View>
-            <Text style={styles.heroValue}>€{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
+            <Text style={styles.heroValue}>{cur}{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
             <View style={styles.heroTrend}>
               <Ionicons name="trending-up" size={16} color="#FBBF24" />
               <Text style={styles.heroTrendText}>+12.4% vs last month</Text>
@@ -395,8 +398,8 @@ export default function AdminHome() {
         {/* ── KPI CARDS ── */}
         <View style={styles.kpiRow}>
           {[
-            { label: "Outstanding", value: `€${pendingRevenue}`, icon: "time-outline"    as const, color: "#F59E0B", bg: "#FEF3C7" },
-            { label: "Avg/Member",  value: `€${avgPerStudent}`,  icon: "person-outline"  as const, color: "#3B82F6", bg: "#DBEAFE" },
+            { label: "Outstanding", value: `${cur}${pendingRevenue}`, icon: "time-outline"    as const, color: "#F59E0B", bg: "#FEF3C7" },
+            { label: "Avg/Member",  value: `${cur}${avgPerStudent}`,  icon: "person-outline"  as const, color: "#3B82F6", bg: "#DBEAFE" },
             { label: "Renewal Rate",value: "87%",                icon: "refresh-outline" as const, color: "#10B981", bg: "#D1FAE5" },
             { label: "NPS Score",   value: "4.8★",               icon: "star-outline"    as const, color: "#7C3AED", bg: "#EDE9FE" },
           ].map(k => (
