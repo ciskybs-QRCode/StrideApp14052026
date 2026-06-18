@@ -1219,28 +1219,6 @@ export default function OperatorDashboard() {
           </View>
         )}
 
-        {/* ── Operator QR Code Panel ── */}
-        <Pressable
-          style={[styles.qrPanel, { backgroundColor: colors.card }]}
-          onPress={() => setShowQRPanel(true)}
-        >
-          <View style={[styles.qrMiniBox, { backgroundColor: "#F0F4FF" }]}>
-            <QRCode value={operatorQrValue} size={72} color={colors.primary} backgroundColor="transparent" />
-          </View>
-          <View style={styles.qrPanelRight}>
-            <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>OPERATOR PASS</Text>
-            <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Operator"}</Text>
-            <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>
-              {user?.role === "super_admin" ? "Super Admin" : "Operator"} · {user?.orgId ? `Org ${user.orgId}` : ""}
-            </Text>
-            <View style={[styles.qrActiveBadge, { backgroundColor: "#D1FAE5" }]}>
-              <Ionicons name="shield-checkmark" size={12} color="#10B981" />
-              <Text style={[styles.qrActiveBadgeText, { color: "#10B981" }]}>Active Credential</Text>
-            </View>
-          </View>
-          <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
-        </Pressable>
-
         {/* ── Private Lesson Notifications ── */}
         {unreadCount > 0 && (
           <NotificationInbox
@@ -1445,34 +1423,80 @@ export default function OperatorDashboard() {
         {/* ── QUICK ACTIONS ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
         <View style={{ gap: 12, marginBottom: 16 }}>
-          <QRScanButton onPress={handleScan} label="Scan Member QR" />
+
+          {/* 1. Report Absence / Delay */}
           <Pressable
             style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => { setShowQRPanel(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            onPress={() => { setAbsenceSent(false); setAbsenceType("absent"); setShowAbsenceModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EEF2FF" }]}>
-              <Ionicons name="qr-code" size={26} color={colors.primary} />
+            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EFF6FF" }]}>
+              <Ionicons name="person-remove-outline" size={26} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Your Operator QR Code</Text>
-              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Tap to display your badge</Text>
+              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Report Absence / Delay</Text>
+              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Notify admin and trigger substitution</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
           </Pressable>
+
+          {/* 2. SOS Emergency */}
+          <SOSButton onConfirm={openSOS} />
+
+          {/* 3. Operator Pass */}
           <Pressable
-            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: "#FEF3C7", borderColor: "#FDE68A", opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => { setAbsenceSent(false); setAbsenceType("absent"); setShowAbsenceModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            style={[styles.qrPanel, { backgroundColor: colors.card }]}
+            onPress={() => setShowQRPanel(true)}
           >
-            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#FEF9C3" }]}>
-              <Ionicons name="person-remove-outline" size={26} color="#D97706" />
+            <View style={[styles.qrMiniBox, { backgroundColor: "#EFF6FF" }]}>
+              <QRCode value={operatorQrValue} size={72} color={colors.primary} backgroundColor="transparent" />
+            </View>
+            <View style={styles.qrPanelRight}>
+              <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>OPERATOR PASS</Text>
+              <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Operator"}</Text>
+              <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>
+                {user?.role === "super_admin" ? "Super Admin" : "Operator"} · {user?.orgId ? `Org ${user.orgId}` : ""}
+              </Text>
+              <View style={[styles.qrActiveBadge, { backgroundColor: "#DBEAFE" }]}>
+                <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
+                <Text style={[styles.qrActiveBadgeText, { color: colors.primary }]}>Active Credential</Text>
+              </View>
+            </View>
+            <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
+          </Pressable>
+
+          {/* 4. Scan Member QR */}
+          <QRScanButton onPress={handleScan} label="Scan Member QR" />
+
+          {/* 5. My Associations */}
+          <Pressable
+            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => { router.push("/my-associations" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EFF6FF" }]}>
+              <Ionicons name="business-outline" size={26} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.qrCodeBtnLabel, { color: "#D97706" }]}>Report Absence / Delay</Text>
-              <Text style={[styles.qrCodeBtnSub, { color: "#B45309" }]}>Notify admin and trigger substitution</Text>
+              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>My Associations</Text>
+              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>View and manage your memberships</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#D97706" />
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
           </Pressable>
-          <SOSButton onConfirm={openSOS} />
+
+          {/* 6. Join an Association */}
+          <Pressable
+            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => { router.push("/join-org" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EFF6FF" }]}>
+              <Ionicons name="person-add-outline" size={26} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Join an Association</Text>
+              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Find and join a new association</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+          </Pressable>
+
         </View>
 
         {/* ── Security Alerts Quick Access ── */}
@@ -1696,15 +1720,24 @@ export default function OperatorDashboard() {
           ABSENCE REPORT MODAL
       ══════════════════════════════════════════════════ */}
       <Modal visible={showAbsenceModal} transparent animationType="slide" onRequestClose={() => setShowAbsenceModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAbsenceModal(false)}>
+          <Pressable style={[styles.modalCard, { maxHeight: "88%", padding: 0 }]} onPress={e => e.stopPropagation()}>
+            {/* Drag handle */}
+            <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "#D1D9F0" }} />
+            </View>
+            <ScrollView
+              contentContainerStyle={{ padding: 24, paddingTop: 8 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
             {absenceSent ? (
               <View style={{ alignItems: "center", padding: 20, gap: 12 }}>
-                <View style={[styles.sentCircle, { backgroundColor: absenceType === "absent" ? "#FEE2E2" : "#FEF3C7" }]}>
+                <View style={[styles.sentCircle, { backgroundColor: absenceType === "absent" ? "#DBEAFE" : "#FEF9C3" }]}>
                   <Ionicons
                     name={absenceType === "absent" ? "warning" : "time-outline"}
                     size={36}
-                    color={absenceType === "absent" ? "#EF4444" : "#F59E0B"}
+                    color={colors.primary}
                   />
                 </View>
                 <Text style={[styles.sentTitle, { color: colors.primary }]}>
@@ -1855,8 +1888,9 @@ export default function OperatorDashboard() {
                 )}
               </>
             )}
-          </View>
-        </View>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* ══════════════════════════════════════════════════
