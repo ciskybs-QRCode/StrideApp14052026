@@ -89,8 +89,10 @@ export default function ChildrenScreen() {
   const [dobYear,  setDobYear]  = useState("");
   const dobMonthRef = useRef<TextInput>(null);
   const dobYearRef  = useRef<TextInput>(null);
+  const [newChildHasAllergies, setNewChildHasAllergies] = useState(false);
   const [newChildAllergies, setNewChildAllergies] = useState("");
-  const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent">("ambulance");
+  const [newChildMedications, setNewChildMedications] = useState("");
+  const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent" | "no_intervention">("ambulance");
   const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("none");
   const [newChildPhotoUri, setNewChildPhotoUri] = useState<string | null>(null);
 
@@ -102,7 +104,8 @@ export default function ChildrenScreen() {
 
   // Medical edit fields — synced via useEffect, never initialised from children
   const [allergies, setAllergies] = useState("");
-  const [medicalWaiver, setMedicalWaiver] = useState<"ambulance" | "call_parent">("ambulance");
+  const [medications, setMedications] = useState("");
+  const [medicalWaiver, setMedicalWaiver] = useState<"ambulance" | "call_parent" | "no_intervention">("ambulance");
   const [editMediaConsent, setEditMediaConsent] = useState<"full" | "internal" | "none">("none");
 
   // Auto-select the first child once data loads (or reset when children change)
@@ -118,6 +121,7 @@ export default function ChildrenScreen() {
   useEffect(() => {
     const c = children.find(ch => ch.id === selectedChild);
     setAllergies(c?.allergies ?? "");
+    setMedications(c?.medications ?? "");
     setMedicalWaiver(c?.medicalWaiver ?? "ambulance");
     setEditMediaConsent(c?.mediaConsent ?? "none");
   }, [selectedChild, children]);
@@ -224,7 +228,9 @@ export default function ChildrenScreen() {
     setDobDay("");
     setDobMonth("");
     setDobYear("");
+    setNewChildHasAllergies(false);
     setNewChildAllergies("");
+    setNewChildMedications("");
     setNewChildWaiver("ambulance");
     setNewChildMediaConsent("none");
     setNewChildPhotoUri(null);
@@ -267,7 +273,8 @@ export default function ChildrenScreen() {
         name: `${newChildName.trim()} ${newChildSurname.trim()}`,
         age,
         dateOfBirth: dobStr,
-        allergies: newChildAllergies.trim() || "None",
+        allergies: newChildHasAllergies ? (newChildAllergies.trim() || "Allergies") : "None",
+        medications: newChildMedications.trim() || undefined,
         medicalWaiver: newChildWaiver,
         mediaConsent: newChildMediaConsent,
         stars: 0,
@@ -320,7 +327,7 @@ export default function ChildrenScreen() {
       router.push("/(parent)/doc-consent");
       return;
     }
-    await updateChild(selectedChild, { allergies, medicalWaiver, mediaConsent: editMediaConsent });
+    await updateChild(selectedChild, { allergies, medications: medications.trim() || undefined, medicalWaiver, mediaConsent: editMediaConsent });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowMedical(false);
   };
@@ -601,30 +608,54 @@ export default function ChildrenScreen() {
                 </View>
               </View>
 
-              {/* At-a-glance badges */}
-              <View style={styles.badgesRow}>
-                {child.allergies && child.allergies !== "None" && (
-                  <View style={[styles.badge, { backgroundColor: "#FEF3C7" }]}>
-                    <Ionicons name="warning-outline" size={12} color="#D97706" />
-                    <Text style={[styles.badgeText, { color: "#D97706" }]}>{child.allergies.split(",")[0].trim()}</Text>
-                  </View>
-                )}
-                <View style={[styles.badge, { backgroundColor: child.medicalWaiver === "ambulance" ? "#DBEAFE" : "#F0FDF4" }]}>
-                  <Ionicons
-                    name={child.medicalWaiver === "ambulance" ? "medical" : "call"}
-                    size={12}
-                    color={child.medicalWaiver === "ambulance" ? "#1D4ED8" : "#15803D"}
-                  />
-                  <Text style={[styles.badgeText, { color: child.medicalWaiver === "ambulance" ? "#1D4ED8" : "#15803D" }]}>
-                    {child.medicalWaiver === "ambulance" ? "Ambulance Auth." : "Contact Primary Member"}
-                  </Text>
-                </View>
-                <View style={[styles.badge, { backgroundColor: `${MEDIA_CONSENT_COLORS[child.mediaConsent]}20` }]}>
-                  <Ionicons name="camera-outline" size={12} color={MEDIA_CONSENT_COLORS[child.mediaConsent]} />
-                  <Text style={[styles.badgeText, { color: MEDIA_CONSENT_COLORS[child.mediaConsent] }]}>
-                    {MEDIA_CONSENT_LABELS[child.mediaConsent]}
-                  </Text>
-                </View>
+              {/* ── Medical Status Indicators (traffic-light system) ── */}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                {/* 🏥 Ambulance consent */}
+                {(() => {
+                  const cfgMap = {
+                    ambulance:       { color: "#10B981", bg: "#D1FAE5", icon: "medkit"           as const, label: "Ambulance Auth." },
+                    call_parent:     { color: "#F59E0B", bg: "#FEF3C7", icon: "call"             as const, label: "Call Parent First" },
+                    no_intervention: { color: "#EF4444", bg: "#FEE2E2", icon: "close-circle"     as const, label: "No Intervention" },
+                  };
+                  const cfg = cfgMap[child.medicalWaiver] ?? cfgMap.call_parent;
+                  return (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: cfg.bg, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, flexShrink: 1 }}>
+                      <Ionicons name={cfg.icon} size={16} color={cfg.color} />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: cfg.color }}>{cfg.label}</Text>
+                    </View>
+                  );
+                })()}
+                {/* 📷 Media release */}
+                {(() => {
+                  const cfgMap = {
+                    full:     { color: "#10B981", bg: "#D1FAE5", icon: "camera"         as const, label: "Media: Full" },
+                    internal: { color: "#F59E0B", bg: "#FEF3C7", icon: "camera-outline" as const, label: "Media: Internal" },
+                    none:     { color: "#EF4444", bg: "#FEE2E2", icon: "eye-off-outline" as const, label: "No Media Consent" },
+                  };
+                  const cfg = cfgMap[child.mediaConsent];
+                  return (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: cfg.bg, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, flexShrink: 1 }}>
+                      <Ionicons name={cfg.icon} size={16} color={cfg.color} />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: cfg.color }}>{cfg.label}</Text>
+                    </View>
+                  );
+                })()}
+                {/* 💉 Allergies / medications */}
+                {(() => {
+                  const hasAllergy = child.allergies && child.allergies !== "None" && child.allergies.trim() !== "";
+                  const hasMeds    = !!(child.medications && child.medications.trim());
+                  const isEpipen   = hasMeds && /epipen|adrenaline|epinephrine/i.test(child.medications ?? "");
+                  const color = isEpipen ? "#EF4444" : hasAllergy ? "#F59E0B" : "#10B981";
+                  const bg    = isEpipen ? "#FEE2E2" : hasAllergy ? "#FEF3C7" : "#D1FAE5";
+                  const icon  = isEpipen ? "alert-circle" as const : hasAllergy ? "warning" as const : "checkmark-circle" as const;
+                  const label = isEpipen ? "Epipen/Severe" : hasAllergy ? "Allergies" : "No Allergies";
+                  return (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: bg, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, flexShrink: 1 }}>
+                      <Ionicons name={icon} size={16} color={color} />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color }}>{label}</Text>
+                    </View>
+                  );
+                })()}
               </View>
 
               <Pressable
@@ -938,48 +969,74 @@ export default function ChildrenScreen() {
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Health & Consent</Text>
 
               {/* Allergies */}
-              <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergies / Medical Notes</Text>
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergies</Text>
+              <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>Leave blank or write "None" if no allergies.</Text>
               <TextInput
-                style={[styles.modalInput, { borderColor: colors.border }]}
+                style={[styles.modalInput, { borderColor: colors.border, marginBottom: 14 }]}
                 value={allergies}
                 onChangeText={setAllergies}
-                placeholder="e.g. Penicillin, Lactose..."
+                placeholder="e.g. Penicillin, peanuts, lactose..."
                 placeholderTextColor={colors.mutedForeground}
                 multiline
-                numberOfLines={3}
+                numberOfLines={2}
               />
 
-              {/* Emergency Protocol */}
-              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Emergency Protocol</Text>
-              <Pressable
-                style={[styles.waiverOption, medicalWaiver === "ambulance" && { backgroundColor: colors.primary }]}
-                onPress={() => setMedicalWaiver("ambulance")}
-              >
-                <Ionicons name={medicalWaiver === "ambulance" ? "radio-button-on" : "radio-button-off"} size={18} color={medicalWaiver === "ambulance" ? "#FFF" : colors.primary} />
-                <Text style={[styles.waiverText, medicalWaiver === "ambulance" && { color: "#FFF" }]}>Call an ambulance (at my expense)</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.waiverOption, medicalWaiver === "call_parent" && { backgroundColor: colors.primary }]}
-                onPress={() => setMedicalWaiver("call_parent")}
-              >
-                <Ionicons name={medicalWaiver === "call_parent" ? "radio-button-on" : "radio-button-off"} size={18} color={medicalWaiver === "call_parent" ? "#FFF" : colors.primary} />
-                <Text style={[styles.waiverText, medicalWaiver === "call_parent" && { color: "#FFF" }]}>Call a family member first</Text>
-              </Pressable>
+              {/* Medications */}
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>Medications required</Text>
+              <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>EpiPen, inhaler, tablets or other — leave blank if none.</Text>
+              <TextInput
+                style={[styles.modalInput, { borderColor: colors.border, marginBottom: 14 }]}
+                value={medications}
+                onChangeText={setMedications}
+                placeholder="e.g. EpiPen (in bag), Ventolin, Antihistamine"
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                numberOfLines={2}
+              />
 
-              {/* Photo / Video Consent */}
+              {/* Ambulance Consent */}
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>Ambulance Consent</Text>
+              <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>What should staff do first in a medical emergency?</Text>
+              {(["ambulance", "call_parent", "no_intervention"] as const).map(opt => {
+                const cfg = {
+                  ambulance:       { label: "Call an Ambulance",       hint: "Authorise emergency services immediately", color: "#10B981" },
+                  call_parent:     { label: "Call a Family Member",    hint: "Contact me or an authorised guardian first", color: "#F59E0B" },
+                  no_intervention: { label: "No Medical Intervention", hint: "Do not call ambulance — manage in-house only", color: "#EF4444" },
+                }[opt];
+                const isSel = medicalWaiver === opt;
+                return (
+                  <Pressable
+                    key={opt}
+                    style={[
+                      styles.waiverOption,
+                      { borderColor: isSel ? cfg.color : colors.border },
+                      isSel && { backgroundColor: `${cfg.color}15` },
+                    ]}
+                    onPress={() => setMedicalWaiver(opt)}
+                  >
+                    <Ionicons name={isSel ? "radio-button-on" : "radio-button-off"} size={18} color={isSel ? cfg.color : colors.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.waiverText, { color: isSel ? cfg.color : colors.foreground }]}>{cfg.label}</Text>
+                      <Text style={[styles.waiverHint, { color: colors.mutedForeground }]}>{cfg.hint}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+
+              {/* Media Release */}
               <View style={[styles.sectionDivider, { borderTopColor: colors.border, marginTop: 16 }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="camera" size={15} color={colors.primary} />
-                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Photo & Video Consent</Text>
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Media Release</Text>
               </View>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground, marginBottom: 10 }]}>
                 Authorisation for photos or videos during lessons and events.
               </Text>
               {(["full", "internal", "none"] as const).map(opt => {
                 const labels = {
-                  full:     { title: "Full Consent (Social / Promo)",    hint: "May be used on website, social media and promotional materials" },
-                  internal: { title: "Internal Educational Use Only",    hint: "Used only for internal documents and communications" },
-                  none:     { title: "No Consent",                       hint: `${secondaryRoleName} must not be photographed or filmed` },
+                  full:     { title: "Full Consent (Social / Promo)",  hint: "May be used on website, social media and promotional materials" },
+                  internal: { title: "Internal Use Only",              hint: "Used only for internal documents and communications" },
+                  none:     { title: "No Consent",                     hint: `${secondaryRoleName} must not be photographed or filmed` },
                 };
                 const isSelected = editMediaConsent === opt;
                 return (
@@ -1202,66 +1259,117 @@ export default function ChildrenScreen() {
                   <Text style={{ fontSize: 12, color: "#EF4444" }}>Enter a valid date (DD / MM / YYYY)</Text>
                 </View>
               ) : <View style={{ marginBottom: 8 }} />}
-              {/* Medical Information */}
+              {/* ── Medical Information ── */}
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="medical" size={15} color={colors.primary} />
                 <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Medical Information</Text>
               </View>
-              <Text style={[styles.modalLabel, { color: colors.primary }]}>Allergies / Medical Notes</Text>
+
+              {/* Allergies Yes/No */}
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>Does this dependent have allergies?</Text>
+              <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
+                {([true, false] as const).map(opt => (
+                  <Pressable
+                    key={String(opt)}
+                    style={[
+                      styles.waiverOption,
+                      { flex: 1, justifyContent: "center" },
+                      newChildHasAllergies === opt && { backgroundColor: opt ? "#FEF3C720" : "#D1FAE520", borderColor: opt ? "#F59E0B" : "#10B981" },
+                    ]}
+                    onPress={() => setNewChildHasAllergies(opt)}
+                  >
+                    <Ionicons
+                      name={newChildHasAllergies === opt ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={newChildHasAllergies === opt ? (opt ? "#F59E0B" : "#10B981") : colors.primary}
+                    />
+                    <Text style={[styles.waiverText, { color: newChildHasAllergies === opt ? (opt ? "#F59E0B" : "#10B981") : colors.foreground }]}>
+                      {opt ? "Yes" : "No"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {newChildHasAllergies && (
+                <>
+                  <Text style={[styles.modalLabel, { color: colors.primary }]}>Which allergies? <Text style={{ color: "#EF4444" }}>*</Text></Text>
+                  <TextInput
+                    style={[styles.modalInput, { borderColor: "#F59E0B", color: colors.foreground, marginBottom: 14 }]}
+                    value={newChildAllergies}
+                    onChangeText={setNewChildAllergies}
+                    placeholder="e.g. Penicillin, peanuts, lactose..."
+                    placeholderTextColor={colors.mutedForeground}
+                    multiline
+                  />
+                </>
+              )}
+
+              {/* Medications */}
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>Medications required</Text>
+              <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>
+                EpiPen, inhaler, tablets or other — leave blank if none.
+              </Text>
               <TextInput
-                style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]}
-                value={newChildAllergies}
-                onChangeText={setNewChildAllergies}
-                placeholder="e.g. Penicillin, lactose intolerance (leave blank if none)"
+                style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, marginBottom: 14 }]}
+                value={newChildMedications}
+                onChangeText={setNewChildMedications}
+                placeholder="e.g. EpiPen (in bag), Ventolin, Antihistamine"
                 placeholderTextColor={colors.mutedForeground}
                 multiline
-                numberOfLines={2}
               />
 
-              {/* Priorità Emergenza */}
-              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 14 }]}>
-                Emergency Priority <Text style={{ color: "#EF4444" }}>*</Text>
+              {/* Ambulance Consent */}
+              <Text style={[styles.modalLabel, { color: colors.primary }]}>
+                Ambulance Consent <Text style={{ color: "#EF4444" }}>*</Text>
               </Text>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>
-                What should staff do first in case of a medical emergency?
+                What should staff do first in a medical emergency?
               </Text>
-              {(["ambulance", "call_parent"] as const).map(opt => (
-                <Pressable
-                  key={opt}
-                  style={[styles.waiverOption, newChildWaiver === opt && { backgroundColor: colors.primary }]}
-                  onPress={() => setNewChildWaiver(opt)}
-                >
-                  <Ionicons
-                    name={newChildWaiver === opt ? "radio-button-on" : "radio-button-off"}
-                    size={18}
-                    color={newChildWaiver === opt ? "#FFF" : colors.primary}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.waiverText, newChildWaiver === opt && { color: "#FFF" }]}>
-                      {opt === "ambulance" ? "Call an Ambulance" : "Call a Family Member"}
-                    </Text>
-                    <Text style={[styles.waiverHint, newChildWaiver === opt ? { color: "rgba(255,255,255,0.7)" } : { color: colors.mutedForeground }]}>
-                      {opt === "ambulance" ? "Authorise emergency services immediately (at my expense)" : "Contact me or an authorised family member first"}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
+              {(["ambulance", "call_parent", "no_intervention"] as const).map(opt => {
+                const cfg = {
+                  ambulance:       { label: "Call an Ambulance",       hint: "Authorise emergency services immediately", color: "#10B981" },
+                  call_parent:     { label: "Call a Family Member",    hint: "Contact me or an authorised guardian first", color: "#F59E0B" },
+                  no_intervention: { label: "No Medical Intervention", hint: "Do not call ambulance — manage in-house only", color: "#EF4444" },
+                }[opt];
+                const isSel = newChildWaiver === opt;
+                return (
+                  <Pressable
+                    key={opt}
+                    style={[
+                      styles.waiverOption,
+                      { borderColor: isSel ? cfg.color : colors.border },
+                      isSel && { backgroundColor: `${cfg.color}15` },
+                    ]}
+                    onPress={() => setNewChildWaiver(opt)}
+                  >
+                    <Ionicons
+                      name={isSel ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={isSel ? cfg.color : colors.primary}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.waiverText, { color: isSel ? cfg.color : colors.foreground }]}>{cfg.label}</Text>
+                      <Text style={[styles.waiverHint, { color: colors.mutedForeground }]}>{cfg.hint}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
 
-              {/* Photo / Video Consent */}
+              {/* ── Media Release ── */}
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="camera" size={15} color={colors.primary} />
-                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Photo & Video Consent</Text>
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Media Release</Text>
               </View>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground, marginBottom: 10 }]}>
                 Authorisation for photos or videos during lessons and events.
               </Text>
               {(["full", "internal", "none"] as const).map(opt => {
                 const labels = {
-                  full:     { title: "Full Consent (Social / Promo)",    hint: "May be used on website, social media and promotional materials" },
-                  internal: { title: "Internal Educational Use Only",    hint: "Used only for internal documents and communications" },
-                  none:     { title: "No Consent",                       hint: `${secondaryRoleName} must not be photographed or filmed` },
+                  full:     { title: "Full Consent (Social / Promo)",  hint: "May be used on website, social media and promotional materials" },
+                  internal: { title: "Internal Use Only",              hint: "Used only for internal documents and communications" },
+                  none:     { title: "No Consent",                     hint: `${secondaryRoleName} must not be photographed or filmed` },
                 };
                 const isSelected = newChildMediaConsent === opt;
                 return (

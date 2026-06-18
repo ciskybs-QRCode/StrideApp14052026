@@ -17,7 +17,8 @@ export interface Child {
   age: number;
   stars: number;
   allergies: string;
-  medicalWaiver: "ambulance" | "call_parent";
+  medications?: string;
+  medicalWaiver: "ambulance" | "call_parent" | "no_intervention";
   mediaConsent: "full" | "internal" | "none";
   courses: string[];
   photoUrl?: string;
@@ -553,7 +554,8 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       ...(child.dateOfBirth ? { date_of_birth: child.dateOfBirth } : {}),
       gold_stars: child.stars ?? 0,
       ...(child.allergies && child.allergies !== "None" ? { allergies_list: child.allergies } : {}),
-      ambulance_consent: child.medicalWaiver === "ambulance",
+      ...(child.medications && child.medications.trim() ? { medications: child.medications.trim() } : {}),
+      ambulance_consent: child.medicalWaiver === "ambulance" ? true : false,
       media_consent: child.mediaConsent,
       ...(child.photoUrl ? { photo_url: child.photoUrl } : {}),
     };
