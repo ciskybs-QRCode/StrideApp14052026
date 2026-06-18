@@ -1,9 +1,36 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { getOwnerEmail } from "../lib/owner-config.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
+
+// ── Owner-lock helper ─────────────────────────────────────────────────────────
+// Fetches the target user's email and returns 403 if it matches the platform
+// owner. Must be called before any destructive update to the users table.
+async function rejectIfOwner(
+  res: import("express").Response,
+  targetId: number,
+): Promise<boolean> {
+  const { data: target } = await supabase
+    .from("users")
+    .select("email")
+    .eq("id", targetId)
+    .maybeSingle();
+  if (
+    target &&
+    (target as { email: string }).email?.toLowerCase() === getOwnerEmail().toLowerCase()
+  ) {
+    res.status(403).json({
+      error: "Cannot modify the platform owner account",
+    });
+    return true; // caller should return immediately
+  }
+  return false;
+}
+
+// ── GET /users ────────────────────────────────────────────────────────────────
 
 router.get("/users", requireAuth, requireRole("admin"), async (req, res) => {
   const user = (req as AuthReq).user;
@@ -16,31 +43,50 @@ router.get("/users", requireAuth, requireRole("admin"), async (req, res) => {
   res.json(data ?? []);
 });
 
+// ── PATCH /users/:id/status ───────────────────────────────────────────────────
+// Block / unblock a user account. Owner is unconditionally protected.
+
 router.patch("/users/:id/status", requireAuth, requireRole("admin"), async (req, res) => {
-  const { id } = req.params;
+  const targetId = parseInt(String(req.params["id"] ?? ""), 10);
+  if (isNaN(targetId)) { res.status(400).json({ error: "Invalid user id" }); return; }
+
+  // Owner lock — must come before any write
+  if (await rejectIfOwner(res, targetId)) return;
+
   const { blocked, reason } = req.body as { blocked: boolean; reason?: string };
   const { data, error } = await supabase
     .from("users")
     .update({ blocked, blocked_reason: reason ?? null, updated_at: new Date().toISOString() })
-    .eq("id", parseInt(String(id)))
+    .eq("id", targetId)
     .select("id, name, email, role, blocked, blocked_reason")
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data);
 });
 
+// ── PATCH /users/:id/role ─────────────────────────────────────────────────────
+// Change a user's role. Owner is unconditionally protected.
+
 router.patch("/users/:id/role", requireAuth, requireRole("admin"), async (req, res) => {
-  const { id } = req.params;
+  const targetId = parseInt(String(req.params["id"] ?? ""), 10);
+  if (isNaN(targetId)) { res.status(400).json({ error: "Invalid user id" }); return; }
+
+  // Owner lock — must come before any write
+  if (await rejectIfOwner(res, targetId)) return;
+
   const { role } = req.body as { role: string };
   const { data, error } = await supabase
     .from("users")
     .update({ role, updated_at: new Date().toISOString() })
-    .eq("id", parseInt(String(id)))
+    .eq("id", targetId)
     .select("id, name, email, role")
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data);
 });
+
+// ── PATCH /profile ────────────────────────────────────────────────────────────
+// Self-service: a user updates their OWN profile (always safe — no cross-user writes).
 
 router.patch("/profile", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;

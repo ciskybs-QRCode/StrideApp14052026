@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { identityLimiter } from "../lib/rate-limit.js";
+import { getOwnerEmail } from "../lib/owner-config.js";
 import {
   validate, validBody, internalError,
   JoinSchema, PatchMembershipSchema, TenantDataSchema,
@@ -216,12 +217,28 @@ router.patch(
     try {
       const { data: existing, error: e1 } = await supabaseAdmin
         .from("tenant_memberships")
-        .select("id, organization_id, status")
+        .select("id, organization_id, status, global_user_id")
         .eq("id", Number(id))
         .eq("organization_id", orgId)
         .maybeSingle();
       if (e1) { internalError(res, e1, "identity/patch-membership", userId); return; }
       if (!existing) { res.status(404).json({ error: "Membership not found in your organization" }); return; }
+
+      // ── Owner lock: resolve the global_user's email and reject if it matches the platform owner ──
+      if ((existing as { global_user_id?: string }).global_user_id) {
+        const { data: globalUser } = await supabaseAdmin
+          .from("global_users")
+          .select("email")
+          .eq("id", (existing as { global_user_id: string }).global_user_id)
+          .maybeSingle();
+        if (
+          globalUser &&
+          (globalUser as { email: string }).email?.toLowerCase() === getOwnerEmail().toLowerCase()
+        ) {
+          res.status(403).json({ error: "Cannot modify the platform owner account" });
+          return;
+        }
+      }
 
       const updates: Record<string, unknown> = {};
       if (status !== undefined) {
