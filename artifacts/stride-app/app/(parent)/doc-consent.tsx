@@ -131,7 +131,7 @@ export default function DocConsentScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Photo & Video Consent" light />
+      <ScreenHeader title="Media Release" onBack={() => router.back()} light />
 
       <ScrollView
         style={{ flex: 1 }}
