@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { NotificationBell } from "@/components/NotificationBell";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -1156,6 +1157,7 @@ export default function OperatorDashboard() {
               </Text>
             )}
           </View>
+          <NotificationBell light />
         </View>
 
         {/* ── ROLE SWITCHER ── */}

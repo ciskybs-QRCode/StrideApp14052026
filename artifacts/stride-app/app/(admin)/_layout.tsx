@@ -11,6 +11,7 @@ import { useBillingStatus } from "@/hooks/useBillingStatus";
 import { useAppData } from "@/context/AppDataContext";
 import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
+import { NotificationsProvider } from "@/context/NotificationsContext";
 import { BILLING_TIERS } from "@/lib/billingEngine";
 
 const DOCS_REMINDER_KEY = "stride_docs_reminder_dismissed_v1";
@@ -275,6 +276,7 @@ export default function AdminTabLayout() {
   if (isSuspended) return <SuspensionScreen />;
 
   return (
+    <NotificationsProvider>
     <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
@@ -336,5 +338,6 @@ export default function AdminTabLayout() {
     <BrandingLogoOverlay />
     <DocReminderModal />
     </View>
+    </NotificationsProvider>
   );
 }

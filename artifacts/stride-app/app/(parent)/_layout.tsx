@@ -24,6 +24,7 @@ import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { SignaturePad } from "@/components/SignaturePad";
 import { useTerminology } from "@/context/TerminologyContext";
 import { useUnread } from "@/context/UnreadContext";
+import { NotificationsProvider } from "@/context/NotificationsContext";
 
 function DocsTabIcon({ color, size }: { color: string; size: number }) {
   const { hasUnreadDocs } = useUnread();
@@ -151,6 +152,7 @@ export default function ParentTabLayout() {
 
   // ── Tabs ─────────────────────────────────────────────────────────────────────
   return (
+    <NotificationsProvider>
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
@@ -493,6 +495,7 @@ export default function ParentTabLayout() {
         </View>
       </Modal>
     </View>
+    </NotificationsProvider>
   );
 }
 

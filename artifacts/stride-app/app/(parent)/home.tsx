@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useRef, useState } from "react";
@@ -367,6 +368,7 @@ export default function ParentHome() {
               </Text>
             )}
           </View>
+          <NotificationBell light />
           <Pressable
             style={({ pressed }) => [styles.avatarCircle, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
             onPress={handlePickProfilePhoto}

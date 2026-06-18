@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { NotificationBell } from "@/components/NotificationBell";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -300,6 +301,7 @@ export default function AdminHome() {
               </Text>
             )}
           </View>
+          <NotificationBell light />
         </View>
 
         {/* ── ROLE SWITCHER ── */}

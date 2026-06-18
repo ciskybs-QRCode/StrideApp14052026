@@ -116,11 +116,16 @@ router.patch("/students/:id/stars", requireAuth, requireRole("admin", "operator"
   const user = (req as AuthReq).user;
   const { id } = req.params;
   const { delta } = req.body as { delta: number };
-  // Org-scoped fetch — also acts as the ownership check
-  const { data: current } = await supabase.from("children").select("gold_stars")
-    .eq("id", parseInt(String(id), 10)).eq("organization_id", user.orgId).single();
+  // Org-scoped fetch — also acts as the ownership check; grab child info for notification
+  const { data: current } = await supabase
+    .from("children")
+    .select("gold_stars, first_name, last_name, parent_id")
+    .eq("id", parseInt(String(id), 10))
+    .eq("organization_id", user.orgId)
+    .single();
   if (!current) { res.status(403).json({ error: "Forbidden" }); return; }
-  const newStars = ((current as { gold_stars: number }).gold_stars ?? 0) + delta;
+  const child = current as { gold_stars: number; first_name: string; last_name: string; parent_id: number };
+  const newStars = (child.gold_stars ?? 0) + delta;
   const { data, error } = await supabase
     .from("children")
     .update({ gold_stars: newStars })
@@ -129,6 +134,19 @@ router.patch("/students/:id/stars", requireAuth, requireRole("admin", "operator"
     .select("id, gold_stars")
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
+
+  // Fire-and-forget: notify the parent/member account
+  if (child.parent_id && delta > 0) {
+    supabase.from("private_notifications").insert({
+      organization_id: user.orgId,
+      recipient_id:    child.parent_id,
+      type:            "star_awarded",
+      title:           `⭐ Star awarded to ${child.first_name}!`,
+      body:            `${child.first_name} ${child.last_name} received ${delta} star${delta !== 1 ? "s" : ""} from their instructor. Total: ${newStars} ⭐`,
+      read:            false,
+    }).then(() => {}).catch(() => {});
+  }
+
   res.json(data);
 });
 

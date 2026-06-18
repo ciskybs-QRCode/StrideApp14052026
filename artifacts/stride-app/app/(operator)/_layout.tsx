@@ -10,6 +10,7 @@ import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { useRealtime, type BookingNotification } from "@/context/RealtimeContext";
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
+import { NotificationsProvider } from "@/context/NotificationsContext";
 
 // ── Booking notification banner ───────────────────────────────────────────────
 
@@ -98,6 +99,7 @@ export default function OperatorTabLayout() {
   }, [activeNotif?.id]);
 
   return (
+    <NotificationsProvider>
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
@@ -168,6 +170,7 @@ export default function OperatorTabLayout() {
         />
       )}
     </View>
+    </NotificationsProvider>
   );
 }
 
