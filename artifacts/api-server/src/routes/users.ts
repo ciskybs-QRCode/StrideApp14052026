@@ -46,6 +46,43 @@ router.get("/users", requireAuth, requireRole("admin"), async (req, res) => {
   res.json(data ?? []);
 });
 
+// ── GET /users/:id/profile ────────────────────────────────────────────────────
+// Returns the full contact profile for a single user: phone + address + emergency
+// contacts. Admin only. Org-scoped: the target user must belong to the same org.
+
+router.get("/users/:id/profile", requireAuth, requireRole("admin"), async (req, res) => {
+  const admin    = (req as AuthReq).user;
+  const orgId    = admin.orgId ?? 1;
+  const targetId = parseInt(String(req.params["id"] ?? ""), 10);
+  if (isNaN(targetId)) { res.status(400).json({ error: "Invalid user id" }); return; }
+
+  // Verify the target user belongs to this org
+  const { data: scopeCheck } = await supabase
+    .from("users")
+    .select("id")
+    .eq("id", targetId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (!scopeCheck) {
+    res.status(404).json({ error: "User not found in this organization" });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("users")
+    .select(
+      "id, name, email, phone, role, created_at," +
+      "address_street, address_city, address_zip, address_state, address_country," +
+      "emergency_contact_name, emergency_contact_phone, emergency_contact_relationship",
+    )
+    .eq("id", targetId)
+    .maybeSingle();
+
+  if (error || !data) { res.status(404).json({ error: "User not found" }); return; }
+  res.json(data);
+});
+
 // ── PATCH /users/:id/status ───────────────────────────────────────────────────
 // Block / unblock a user account. Owner is unconditionally protected.
 

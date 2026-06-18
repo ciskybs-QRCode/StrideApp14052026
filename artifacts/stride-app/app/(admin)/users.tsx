@@ -18,8 +18,22 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { api, ApiChild, ApiOperatorProfile, ApiStudent } from "@/lib/api";
+import { api, request, ApiChild, ApiOperatorProfile, ApiStudent } from "@/lib/api";
 import { useTerminology } from "@/context/TerminologyContext";
+
+// ── Full member profile (fetched on-demand for admin detail modal) ──────────
+
+interface FullProfileData {
+  phone?: string;
+  address_street?: string;
+  address_city?: string;
+  address_zip?: string;
+  address_state?: string;
+  address_country?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -137,6 +151,8 @@ export default function AdminUsers() {
     enabling?: boolean;
   } | null>(null);
   const [operatorProfile, setOperatorProfile] = useState<ApiOperatorProfile | null>(null);
+  const [fullProfile,    setFullProfile]    = useState<FullProfileData | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // ── Data fetch ───────────────────────────────────────────────────────────────
 
@@ -190,6 +206,20 @@ export default function AdminUsers() {
       }).catch(() => {});
     }
   }, [selected?.id, selected?.role]);
+
+  // Full profile (phone + address + emergency contacts) for non-student users
+  useEffect(() => {
+    if (!selected || selected.id.startsWith("child-")) {
+      setFullProfile(null);
+      return;
+    }
+    setFullProfile(null);
+    setProfileLoading(true);
+    request<FullProfileData>("GET", `/api/users/${selected.id}/profile`)
+      .then(p => setFullProfile(p))
+      .catch(() => {})
+      .finally(() => setProfileLoading(false));
+  }, [selected?.id]);
 
   // ── Filtering ─────────────────────────────────────────────────────────────
 
@@ -471,6 +501,87 @@ export default function AdminUsers() {
                   </View>
 
                   {!!user.joinDate && <Text style={[styles.joinDateText, { color: colors.mutedForeground }]}>Joined {user.joinDate}</Text>}
+
+                  {/* ── PHONE ACTION ROW (non-student, has phone) ────────── */}
+                  {user.role !== "student" && !!user.phone && (
+                    <View style={styles.phoneActionRow}>
+                      {[
+                        { icon: "call"          as const, label: "Chiama",   color: "#10B981", bg: "#D1FAE5", action: "call"     as const },
+                        { icon: "chatbubble"    as const, label: "SMS",      color: "#1E3A8A", bg: "#EEF2FF", action: "sms"      as const },
+                        { icon: "logo-whatsapp" as const, label: "WhatsApp", color: "#25D366", bg: "#DCFCE7", action: "whatsapp" as const },
+                        { icon: "mail-outline"  as const, label: "Email",    color: "#7C3AED", bg: "#EDE9FE", action: "email"    as const },
+                      ].map(opt => (
+                        <Pressable
+                          key={opt.action}
+                          style={[styles.phoneActionBtn, { backgroundColor: opt.bg }]}
+                          onPress={() => openContact(user.phone, user.email, opt.action)}
+                        >
+                          <Ionicons name={opt.icon} size={18} color={opt.color} />
+                          <Text style={[styles.phoneActionLabel, { color: opt.color }]}>{opt.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* ── FULL PROFILE: address + emergency contact ──────────
+                       Fetched on-demand via GET /users/:id/profile.
+                       Only shown for non-student (child) records.          */}
+                  {user.role !== "student" && (
+                    profileLoading ? (
+                      <View style={styles.profileLoadingRow}>
+                        <Ionicons name="location-outline" size={14} color={colors.mutedForeground} />
+                        <Text style={[styles.profileLoadingText, { color: colors.mutedForeground }]}>Caricamento profilo…</Text>
+                      </View>
+                    ) : fullProfile ? (
+                      <>
+                        {/* Address */}
+                        {(fullProfile.address_street || fullProfile.address_city) && (
+                          <View style={[styles.profileSection, { borderColor: colors.border }]}>
+                            <View style={styles.profileSectionHeader}>
+                              <Ionicons name="location-outline" size={14} color={colors.primary} />
+                              <Text style={[styles.profileSectionTitle, { color: colors.primary }]}>Indirizzo</Text>
+                            </View>
+                            {!!fullProfile.address_street && (
+                              <Text style={[styles.profileSectionValue, { color: colors.foreground }]}>{fullProfile.address_street}</Text>
+                            )}
+                            {!!(fullProfile.address_zip || fullProfile.address_city) && (
+                              <Text style={[styles.profileSectionValue, { color: colors.foreground }]}>
+                                {[fullProfile.address_zip, fullProfile.address_city].filter(Boolean).join(" ")}
+                              </Text>
+                            )}
+                            {!!(fullProfile.address_state || fullProfile.address_country) && (
+                              <Text style={[styles.profileSectionMuted, { color: colors.mutedForeground }]}>
+                                {[fullProfile.address_state, fullProfile.address_country].filter(Boolean).join(", ")}
+                              </Text>
+                            )}
+                          </View>
+                        )}
+
+                        {/* Emergency contact */}
+                        {!!fullProfile.emergency_contact_name && (
+                          <View style={[styles.profileSection, { borderColor: colors.border }]}>
+                            <View style={styles.profileSectionHeader}>
+                              <Ionicons name="alert-circle-outline" size={14} color="#DC2626" />
+                              <Text style={[styles.profileSectionTitle, { color: "#DC2626" }]}>Contatto Emergenza</Text>
+                            </View>
+                            <Text style={[styles.profileSectionValue, { color: colors.foreground }]}>{fullProfile.emergency_contact_name}</Text>
+                            {!!fullProfile.emergency_contact_relationship && (
+                              <Text style={[styles.profileSectionMuted, { color: colors.mutedForeground }]}>{fullProfile.emergency_contact_relationship}</Text>
+                            )}
+                            {!!fullProfile.emergency_contact_phone && (
+                              <Pressable
+                                style={styles.emergencyPhoneBtn}
+                                onPress={() => openContact(fullProfile.emergency_contact_phone!, "", "call")}
+                              >
+                                <Ionicons name="call" size={14} color="#FFF" />
+                                <Text style={styles.emergencyPhoneBtnText}>{fullProfile.emergency_contact_phone}</Text>
+                              </Pressable>
+                            )}
+                          </View>
+                        )}
+                      </>
+                    ) : null
+                  )}
 
                   {/* ── SAFETY & LEGAL SECTION ──────────────────────────── */}
                   {user.role === "student" && (
@@ -986,4 +1097,20 @@ const styles = StyleSheet.create({
   profileTypePillText:     { fontSize: 12, fontWeight: "700" },
   manageProfileBtn:        { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, alignSelf: "center", marginTop: 6 },
   manageProfileBtnText:    { fontSize: 12, fontWeight: "700" },
+
+  phoneActionRow: { flexDirection: "row", gap: 8, width: "90%", marginTop: 10, marginBottom: 4 },
+  phoneActionBtn: { flex: 1, alignItems: "center", justifyContent: "center", gap: 4, borderRadius: 12, paddingVertical: 10 },
+  phoneActionLabel: { fontSize: 10, fontWeight: "700" },
+
+  profileLoadingRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12, marginBottom: 4 },
+  profileLoadingText: { fontSize: 12 },
+
+  profileSection: { width: "90%", borderWidth: 1, borderRadius: 14, padding: 14, marginTop: 12 },
+  profileSectionHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  profileSectionTitle: { fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  profileSectionValue: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
+  profileSectionMuted: { fontSize: 12, marginTop: 2 },
+
+  emergencyPhoneBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#DC2626", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, alignSelf: "flex-start", marginTop: 8 },
+  emergencyPhoneBtnText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
 });

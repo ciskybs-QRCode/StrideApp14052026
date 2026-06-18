@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -35,6 +37,7 @@ export default function OperatorStudents() {
   const [loadingApprovals, setLoadingApprovals] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [snack, setSnack] = useState<string | null>(null);
+  const [quickContact, setQuickContact] = useState<{ name: string; phone: string } | null>(null);
 
   const pendingCount = approvalRequests.filter(r => r.status === "pending").length;
 
@@ -110,6 +113,19 @@ export default function OperatorStudents() {
   const handleOpenDetail = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({ pathname: "/(operator)/student-detail", params: { id } });
+  };
+
+  const handleOpenQuickContact = (id: string) => {
+    const s = students.find(st => st.id === id);
+    if (!s) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setQuickContact({ name: s.name, phone: s.parentPhone ?? "" });
+  };
+
+  const openPhone = (phone: string, type: "call" | "sms" | "whatsapp") => {
+    const cleaned = phone.replace(/\D/g, "");
+    const url = type === "whatsapp" ? `whatsapp://send?phone=${cleaned}` : type === "sms" ? `sms:${phone}` : `tel:${phone}`;
+    Linking.canOpenURL(url).then(ok => { if (ok) Linking.openURL(url); }).catch(() => {});
   };
 
   const handleReview = async (id: string, decision: "approved" | "rejected") => {
@@ -337,7 +353,7 @@ export default function OperatorStudents() {
             <Pressable
               key={s.id}
               style={[styles.studentCard, { backgroundColor: colors.card }]}
-              onPress={() => handleOpenDetail(s.id)}
+              onPress={() => handleOpenQuickContact(s.id)}
             >
               <View style={[styles.studentAvatar, { backgroundColor: s.checkedIn ? "#D1FAE5" : colors.muted }]}>
                 <Text style={[styles.studentAvatarText, { color: s.checkedIn ? "#10B981" : colors.mutedForeground }]}>
@@ -371,11 +387,17 @@ export default function OperatorStudents() {
               <View style={styles.studentActions}>
                 <Pressable
                   style={[styles.presenceBtn, { backgroundColor: s.checkedIn ? "#D1FAE5" : "#FEE2E2" }]}
-                  onPress={() => handleTogglePresence(s.id, s.checkedIn || false)}
+                  onPress={(e) => { e.stopPropagation(); handleTogglePresence(s.id, s.checkedIn || false); }}
                 >
                   <Ionicons name={s.checkedIn ? "checkmark-circle" : "close-circle"} size={20} color={s.checkedIn ? "#10B981" : "#EF4444"} />
                 </Pressable>
-                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                <Pressable
+                  style={styles.detailArrow}
+                  onPress={(e) => { e.stopPropagation(); handleOpenDetail(s.id); }}
+                  hitSlop={12}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                </Pressable>
               </View>
             </Pressable>
           ))
@@ -387,6 +409,65 @@ export default function OperatorStudents() {
           <Text style={styles.snackText}>{snack}</Text>
         </View>
       )}
+
+      {/* ── Quick Contact Modal (phone only) ─────────────────────────────────── */}
+      <Modal
+        visible={!!quickContact}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setQuickContact(null)}
+      >
+        <Pressable style={styles.qcOverlay} onPress={() => setQuickContact(null)}>
+          <View style={[styles.qcSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.qcHandle} />
+
+            {/* Avatar + name */}
+            <View style={[styles.qcAvatar, { backgroundColor: colors.primary }]}>
+              <Text style={styles.qcAvatarText}>{quickContact?.name.charAt(0) ?? "?"}</Text>
+            </View>
+            <Text style={[styles.qcTitle, { color: colors.primary }]}>{quickContact?.name}</Text>
+            <Text style={[styles.qcSub, { color: colors.mutedForeground }]}>Contatto Genitore / Tutore</Text>
+
+            {quickContact?.phone ? (
+              <>
+                {/* Big phone number */}
+                <Pressable
+                  style={[styles.qcPhoneRow, { backgroundColor: colors.muted }]}
+                  onPress={() => openPhone(quickContact.phone, "call")}
+                >
+                  <Ionicons name="call" size={18} color={colors.primary} />
+                  <Text style={[styles.qcPhoneNumber, { color: colors.primary }]}>{quickContact.phone}</Text>
+                </Pressable>
+
+                {/* Action buttons */}
+                <View style={styles.qcActions}>
+                  <Pressable style={[styles.qcBtn, { backgroundColor: "#D1FAE5", flex: 1 }]} onPress={() => openPhone(quickContact.phone, "call")}>
+                    <Ionicons name="call" size={20} color="#10B981" />
+                    <Text style={[styles.qcBtnText, { color: "#10B981" }]}>Chiama</Text>
+                  </Pressable>
+                  <Pressable style={[styles.qcBtn, { backgroundColor: "#EEF2FF", flex: 1 }]} onPress={() => openPhone(quickContact.phone, "sms")}>
+                    <Ionicons name="chatbubble" size={20} color={colors.primary} />
+                    <Text style={[styles.qcBtnText, { color: colors.primary }]}>SMS</Text>
+                  </Pressable>
+                  <Pressable style={[styles.qcBtn, { backgroundColor: "#DCFCE7", flex: 1 }]} onPress={() => openPhone(quickContact.phone, "whatsapp")}>
+                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                    <Text style={[styles.qcBtnText, { color: "#25D366" }]}>WhatsApp</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <View style={[styles.qcNoPhone, { backgroundColor: colors.muted }]}>
+                <Ionicons name="alert-circle-outline" size={24} color={colors.mutedForeground} />
+                <Text style={[styles.qcNoPhoneText, { color: colors.mutedForeground }]}>Numero non disponibile</Text>
+              </View>
+            )}
+
+            <Pressable style={[styles.qcClose, { backgroundColor: colors.muted }]} onPress={() => setQuickContact(null)}>
+              <Text style={[styles.qcCloseText, { color: colors.mutedForeground }]}>Chiudi</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -445,4 +526,23 @@ const styles = StyleSheet.create({
 
   snack: { position: "absolute", left: 20, right: 20, padding: 14, borderRadius: 12, alignItems: "center" },
   snackText: { color: "#FFF", fontWeight: "600", fontSize: 14 },
+
+  detailArrow: { padding: 4 },
+
+  qcOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  qcSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingTop: 16, alignItems: "center" },
+  qcHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB", marginBottom: 20 },
+  qcAvatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  qcAvatarText: { fontSize: 30, fontWeight: "800", color: "#FFF" },
+  qcTitle: { fontSize: 22, fontWeight: "800", marginBottom: 4, textAlign: "center" },
+  qcSub: { fontSize: 13, marginBottom: 20, textAlign: "center" },
+  qcPhoneRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 20, marginBottom: 16, width: "100%" },
+  qcPhoneNumber: { fontSize: 20, fontWeight: "700", letterSpacing: 0.5 },
+  qcActions: { flexDirection: "row", gap: 10, width: "100%", marginBottom: 14 },
+  qcBtn: { alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 14, paddingVertical: 14 },
+  qcBtnText: { fontSize: 12, fontWeight: "700" },
+  qcNoPhone: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 20, marginBottom: 16, width: "100%" },
+  qcNoPhoneText: { fontSize: 15, fontWeight: "600" },
+  qcClose: { width: "100%", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 },
+  qcCloseText: { fontWeight: "700", fontSize: 15 },
 });
