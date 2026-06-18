@@ -25,7 +25,7 @@ import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 // ── Brand ─────────────────────────────────────────────────────────────────────
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
-const WIZARD_STEPS = 4; // steps 1-4 shown in indicator (after credentials)
+const WIZARD_STEPS = 5; // steps 1-5 shown in indicator (after credentials)
 
 // ── Auto-localization ──────────────────────────────────────────────────────────
 type Region = "IT" | "AU" | "GLOBAL";
@@ -201,7 +201,7 @@ const si = StyleSheet.create({
 // ── Chip presets ──────────────────────────────────────────────────────────────
 const AGE_GROUPS  = ["Under 6", "6–9", "10–13", "14–18", "Adult", "All Ages"];
 const SKILL_LVLS  = ["Beginner", "Intermediate", "Advanced", "Open Class"];
-const STEP_LABELS = ["Account Credentials", "Personal Profile", "Organisation Details", "System Assets", "Legal & Signature"];
+const STEP_LABELS = ["Account Credentials", "Personal Profile", "Organisation Details", "System Assets", "Your Legal Documents", "Legal & Signature"];
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Pioneer() {
@@ -773,8 +773,77 @@ export default function Pioneer() {
           </View>
         )}
 
-        {/* ════ STEP 4 — Legal & e-signature ════ */}
+        {/* ════ STEP 4 — Your Legal Documents ════ */}
         {step === 4 && (
+          <View style={st.card}>
+            {/* Red warning header */}
+            <View style={{ backgroundColor: "#FEF2F2", borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 2, borderColor: "#FCA5A5" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <Ionicons name="warning" size={20} color="#DC2626" />
+                <Text style={{ fontSize: 14, fontWeight: "900", color: "#DC2626", flex: 1 }}>
+                  STRIDE DOES NOT COVER YOUR ORGANISATION
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, color: "#7F1D1D", lineHeight: 19 }}>
+                Stride is a software platform. <Text style={{ fontWeight: "800" }}>Stride is not a legal entity, insurer, or compliance provider for your association.</Text>{"\n\n"}
+                Think of Stride like a car: we build the vehicle. How you drive it — and the rules you must follow in your country, region, and sport — are entirely your responsibility.{"\n\n"}
+                <Text style={{ fontWeight: "800" }}>Your members&apos; legal protection, waivers, data consent, child safeguarding policies, and operational regulations are YOUR obligation alone.</Text> Stride bears zero legal responsibility for your association&apos;s compliance with any local, national, or international law.
+              </Text>
+            </View>
+
+            <Text style={st.cardTitle}>Your Legal Documents</Text>
+            <Text style={st.cardSub}>Upload your association's own legal documents (terms, waivers, privacy policy) so your members can review and sign them inside the app.</Text>
+
+            {/* What to upload */}
+            <View style={{ backgroundColor: "#EFF6FF", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#BFDBFE", marginBottom: 14 }}>
+              <Text style={{ fontSize: 11, fontWeight: "800", color: NAVY, marginBottom: 8, letterSpacing: 0.5 }}>EXAMPLES OF DOCUMENTS YOU SHOULD UPLOAD</Text>
+              {[
+                "Your association's Terms & Conditions",
+                "Membership waiver / liability release",
+                "Child safeguarding & GDPR consent (if minors are enrolled)",
+                "Photography & video release policy",
+                "Health & safety declaration",
+              ].map(item => (
+                <View key={item} style={{ flexDirection: "row", alignItems: "flex-start", gap: 6, marginBottom: 5 }}>
+                  <Ionicons name="document-text-outline" size={13} color={NAVY} style={{ marginTop: 1 }} />
+                  <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>{item}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Upload later notice */}
+            <View style={{ backgroundColor: "#FFFBEB", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#FCD34D", marginBottom: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <Ionicons name="time-outline" size={14} color="#D97706" />
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#92400E" }}>YOU CAN UPLOAD DOCUMENTS LATER</Text>
+              </View>
+              <Text style={{ fontSize: 12, color: "#78350F", lineHeight: 18 }}>
+                You may continue setup now and upload your documents later via{" "}
+                <Text style={{ fontWeight: "800" }}>Admin → Documents</Text>.{"\n"}
+                <Text style={{ fontWeight: "800" }}>However, until your own documents are uploaded, your members will not be presented with any association-specific legal agreement inside the Stride app. Stride assumes NO responsibility for this gap.</Text>
+              </Text>
+            </View>
+
+            <Pressable
+              style={[st.primaryBtn, { marginTop: 4 }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); next(5); }}
+            >
+              <Text style={st.primaryBtnText}>I Understand — Continue</Text>
+              <Ionicons name="arrow-forward-outline" size={18} color={NAVY} />
+            </Pressable>
+
+            <Pressable
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, paddingVertical: 10 }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); next(5); }}
+            >
+              <Ionicons name="chevron-forward-outline" size={13} color="rgba(255,255,255,0.4)" />
+              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Skip for now — upload documents later</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* ════ STEP 5 — Legal & e-signature ════ */}
+        {step === 5 && (
           <View style={st.card}>
             <Text style={st.cardTitle}>Legal Acceptance</Text>
             <Text style={st.cardSub}>Scroll through each document to unlock the checkboxes, then sign with your full name.</Text>

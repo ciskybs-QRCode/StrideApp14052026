@@ -825,6 +825,104 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── LEGAL RESPONSIBILITY DISCLAIMER ──────────────────────────────── */}
+      <section className="py-20 bg-red-50 border-y border-red-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col items-center text-center mb-10">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-100 border-2 border-red-300 mb-5 mx-auto">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <span className="inline-flex items-center gap-2 bg-red-100 border border-red-300 rounded-full px-4 py-1.5 mb-4">
+              <span className="text-red-700 text-xs font-bold tracking-wider uppercase">Important Legal Notice</span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">
+              Stride Does Not Cover <span className="text-red-600">Your Organisation</span>
+            </h2>
+            <p className="text-slate-600 text-lg max-w-2xl mx-auto leading-relaxed">
+              Stride provides software infrastructure. We are not a legal entity, insurer, or compliance provider for your association.
+            </p>
+          </div>
+
+          {/* Car analogy */}
+          <div className="bg-white border-2 border-red-200 rounded-2xl p-8 mb-8">
+            <div className="flex items-start gap-5">
+              <div className="w-14 h-14 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center flex-shrink-0 text-2xl">🚗</div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 mb-2">Think of Stride like a car manufacturer</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  We build the vehicle. But an American driver, an Italian driver, an Australian driver and a driver from Mali all follow <strong>completely different rules</strong> — different road laws, speed limits, licensing requirements. We cannot know or be responsible for the rules in your jurisdiction.{" "}
+                  <strong>You, the association, are the driver. The road rules are yours to follow.</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* What Stride does NOT cover */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {[
+              { title: "Member Legal Agreements", desc: "Your members' Terms & Conditions, liability waivers, and membership contracts are your documents — not Stride's. You must upload your own." },
+              { title: "Child Safeguarding", desc: "Compliance with child protection, safeguarding, and supervision laws in your country is entirely your organisation's responsibility." },
+              { title: "Data Protection Laws", desc: "GDPR, CCPA, PDPA, or whichever data law applies in your jurisdiction — your organisation is the data controller. Stride is a processor." },
+              { title: "Financial & Tax Obligations", desc: "Association membership fees, invoicing requirements, tax collection, and reporting obligations are your responsibility to manage." },
+            ].map(item => (
+              <div key={item.title} className="bg-white border border-red-200 rounded-xl p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-900 text-sm mb-1">{item.title}</p>
+                    <p className="text-slate-500 text-sm leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* What you must do */}
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-7 mb-6">
+            <h3 className="text-base font-black text-amber-900 mb-4 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              What you must do as an association using Stride
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                "Upload your own Terms & Conditions",
+                "Upload your membership waiver / liability release",
+                "Obtain proper data consent from parents & members",
+                "Comply with child safeguarding laws in your country",
+                "Manage your tax and financial reporting obligations",
+                "Consult your own legal counsel for compliance",
+              ].map(item => (
+                <div key={item} className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span className="text-sm text-amber-800 font-medium">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Final bold statement */}
+          <div className="bg-red-900 rounded-2xl p-7 text-center">
+            <p className="text-white text-base font-black leading-relaxed mb-2">
+              Stride bears <span className="text-red-300">zero legal responsibility</span> for your association's compliance with any local, national, or international law.
+            </p>
+            <p className="text-red-200 text-sm">
+              Associations that have not uploaded their own legal documents provide no legal agreement to their members through the Stride platform. This is entirely the association's risk, not Stride's.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── PRICING ────────────────────────────────────────────────────────── */}
       <section id="pricing" className="py-24 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">

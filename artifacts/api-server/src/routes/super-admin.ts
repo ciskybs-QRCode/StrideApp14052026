@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import { requireAuth, requireOwnerOrSuperAdmin, requireRole, signToken, type TokenPayload } from "../lib/auth.js";
 import { invalidateTrialCache } from "../middleware/trial-guard.js";
-import { ensureTables } from "../lib/pg.js";
+import { ensureTables, pool } from "../lib/pg.js";
 import { getOwnerEmail, setOwnerEmail, initOwnerEmail } from "../lib/owner-config.js";
 import { canDelete, canUpdateRole, type UserRole } from "../services/securityGuard.js";
 import { calcQrBillCents } from "../lib/qr-pricing.js";
@@ -531,6 +531,95 @@ router.post(
     const newHash = await bcrypt.hash(newPassword, 10);
     await sa.from("users").update({ password_hash: newHash }).eq("id", ownerUser.id);
     res.json({ success: true });
+  },
+);
+
+// ── GET /super-admin/platform-stripe ─────────────────────────────────────────
+// Returns whether a platform Stripe key is configured (never returns the key itself).
+router.get(
+  "/super-admin/platform-stripe",
+  requireAuth,
+  requireOwnerOrSuperAdmin,
+  async (_req, res) => {
+    const { rows } = await pool.query<{ value: string }>(
+      `SELECT value FROM system_config WHERE key = 'platform_stripe_key' LIMIT 1`,
+    );
+    const hasKey = rows.length > 0 && rows[0]!.value.length > 20;
+    res.json({ configured: hasKey, prefix: hasKey ? rows[0]!.value.slice(0, 7) + "…" : null });
+  },
+);
+
+// ── POST /super-admin/platform-stripe ────────────────────────────────────────
+// Saves the platform owner's Stripe secret key to system_config.
+router.post(
+  "/super-admin/platform-stripe",
+  requireAuth,
+  requireOwnerOrSuperAdmin,
+  async (req, res) => {
+    const { stripeKey } = req.body as { stripeKey?: string };
+    if (!stripeKey?.trim() || !stripeKey.startsWith("sk_")) {
+      res.status(400).json({ error: "A valid Stripe secret key (starting with sk_) is required." });
+      return;
+    }
+    await pool.query(
+      `INSERT INTO system_config (key, value, updated_at)
+       VALUES ('platform_stripe_key', $1, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+      [stripeKey.trim()],
+    );
+    res.json({ success: true, prefix: stripeKey.trim().slice(0, 7) + "…" });
+  },
+);
+
+// ── DELETE /super-admin/platform-stripe ──────────────────────────────────────
+router.delete(
+  "/super-admin/platform-stripe",
+  requireAuth,
+  requireOwnerOrSuperAdmin,
+  async (_req, res) => {
+    await pool.query(`DELETE FROM system_config WHERE key = 'platform_stripe_key'`);
+    res.json({ success: true });
+  },
+);
+
+// ── GET /super-admin/billing-overview ────────────────────────────────────────
+// Returns per-org QR count + estimated monthly bill for the SA billing hub.
+router.get(
+  "/super-admin/billing-overview",
+  requireAuth,
+  requireOwnerOrSuperAdmin,
+  async (_req, res) => {
+    const orgsResult = await sa
+      .from("organizations")
+      .select("id, name, currency, subscription_status, trial_ends_at, stripe_customer_id, stripe_subscription_id");
+    const orgs = (orgsResult.data ?? []) as Array<{
+      id: number; name: string; currency?: string; subscription_status?: string;
+      trial_ends_at?: string; stripe_customer_id?: string; stripe_subscription_id?: string;
+    }>;
+
+    const rows = await Promise.all(orgs.map(async org => {
+      const [mRes, cRes] = await Promise.all([
+        sa.from("members").select("*", { count: "exact", head: true }).eq("organization_id", org.id),
+        sa.from("children").select("*", { count: "exact", head: true }).eq("organization_id", org.id),
+      ]);
+      const qrCount = (mRes.count ?? 0) + (cRes.count ?? 0);
+      const currency = (org.currency ?? "EUR").toUpperCase();
+      const monthlyCents = calcQrBillCents(qrCount, currency);
+      return {
+        orgId: org.id,
+        orgName: org.name,
+        currency,
+        subscriptionStatus: org.subscription_status ?? "trialing",
+        trialEndsAt: org.trial_ends_at ?? null,
+        qrCount,
+        monthlyCents,
+        hasStripeCustomer: !!org.stripe_customer_id,
+        stripeSubscriptionId: org.stripe_subscription_id ?? null,
+      };
+    }));
+
+    const totalMonthlyCents = rows.reduce((s, r) => s + r.monthlyCents, 0);
+    res.json({ orgs: rows, totalMonthlyCents });
   },
 );
 

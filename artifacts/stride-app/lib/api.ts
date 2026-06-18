@@ -1957,6 +1957,46 @@ export async function updateOwnerPassword(
   );
 }
 
+// ── Platform Stripe (Super Admin) ───────────────────────────────────────────
+
+export type PlatformStripeStatus = {
+  configured: boolean;
+  prefix: string | null;
+};
+
+export async function getPlatformStripeStatus(): Promise<PlatformStripeStatus> {
+  return request<PlatformStripeStatus>("GET", "/super-admin/platform-stripe");
+}
+
+export async function setPlatformStripeKey(stripeKey: string): Promise<{ success: boolean; prefix: string }> {
+  return request<{ success: boolean; prefix: string }>("POST", "/super-admin/platform-stripe", { stripeKey });
+}
+
+export async function removePlatformStripeKey(): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>("DELETE", "/super-admin/platform-stripe");
+}
+
+export type OrgBillingRow = {
+  orgId: number;
+  orgName: string;
+  currency: string;
+  subscriptionStatus: string;
+  trialEndsAt: string | null;
+  qrCount: number;
+  monthlyCents: number;
+  hasStripeCustomer: boolean;
+  stripeSubscriptionId: string | null;
+};
+
+export type BillingOverview = {
+  orgs: OrgBillingRow[];
+  totalMonthlyCents: number;
+};
+
+export async function getSABillingOverview(): Promise<BillingOverview> {
+  return request<BillingOverview>("GET", "/super-admin/billing-overview");
+}
+
 export async function seedSuperAdmin(
   name: string,
   email: string,

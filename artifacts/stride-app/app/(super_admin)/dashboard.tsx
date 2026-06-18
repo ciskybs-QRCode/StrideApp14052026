@@ -23,6 +23,13 @@ type MenuCard = {
 
 const MENU_CARDS: MenuCard[] = [
   {
+    id: "payments",
+    icon: "card-outline",
+    title: "Payment Hub",
+    subtitle: "Stripe key · billing overview · revenue",
+    route: "/(super_admin)/sa-payments",
+  },
+  {
     id: "tenants",
     icon: "business-outline",
     title: "Tenant Management",
