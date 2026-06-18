@@ -1150,6 +1150,11 @@ export default function OperatorDashboard() {
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi, {firstName}</Text>
+            {!!user?.schoolName && (
+              <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
+                {user.schoolName}
+              </Text>
+            )}
           </View>
         </View>
 
