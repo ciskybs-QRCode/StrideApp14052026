@@ -300,6 +300,7 @@ export default function OperatorDashboard() {
   const [sosMembersLoading, setSosMembersLoading] = useState(false);
   const [sosPulseId, setSosPulseId]               = useState<string | null>(null);
   const [campusAddress, setCampusAddress] = useState("1 Main Street, Sydney NSW 2000");
+  const [preferredName, setPreferredName] = useState("");
   const [scanned, setScanned]             = useState(false);
   const [orgLogoUri, setOrgLogoUri]       = useState<string | null>(null);
   const pulseAnim  = useRef(new Animated.Value(1)).current;
@@ -357,7 +358,7 @@ export default function OperatorDashboard() {
   const checkedIn     = students.filter(s => s.checkedIn).length;
   const operatorQrValue = `STRIDE:OPERATOR:${user?.id ?? "0"}:${user?.orgId ?? "1"}`;
   const logoSource    = orgLogoUri ?? (user?.logoUri ?? null);
-  const firstName     = user?.name?.split(" ")[0] || "Operator";
+  const firstName     = preferredName || user?.name?.split(" ")[0] || "Operator";
   const emergency     = detectEmergencyInfo(campusAddress);
 
   // ── Effects ─────────────────────────────────────────────────────────────────
@@ -365,6 +366,9 @@ export default function OperatorDashboard() {
     AsyncStorage.getItem("stride_campus_address").catch(() => null).then(addr => {
       if (addr) setCampusAddress(addr);
     });
+    AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
+      if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
+    }).catch(() => {});
     api.getOrg().then(org => {
       if (org.logo_url) setOrgLogoUri(org.logo_url);
     }).catch(() => {});

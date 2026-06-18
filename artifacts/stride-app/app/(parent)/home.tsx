@@ -90,6 +90,12 @@ export default function ParentHome() {
     }
   }, [orgId]);
 
+  useEffect(() => {
+    AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
+      if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
+    }).catch(() => {});
+  }, []);
+
   // Future absence state
   const [absMode, setAbsMode] = useState<"today" | "future">("today");
   const [futureAbsDay, setFutureAbsDay] = useState("");
@@ -103,6 +109,7 @@ export default function ParentHome() {
   const [futureAbsSuccess, setFutureAbsSuccess] = useState(false);
   const [orgLogoUri, setOrgLogoUri] = useState<string | null>(null);
   const [social, setSocial] = useState<Record<string, string>>({});
+  const [preferredName, setPreferredName] = useState("");
 
   // ── Emergency Pulse ────────────────────────────────────────────────────────
   const [activePulse,    setActivePulse]    = useState<import("@/lib/api").EmergencyPulse | null>(null);
@@ -291,7 +298,7 @@ export default function ParentHome() {
     setShowQR(true);
   };
 
-  const firstName = user?.name?.split(" ")[0] || "User";
+  const firstName = preferredName || user?.name?.split(" ")[0] || "User";
 
   // ── Emergency Pulse dynamic content ───────────────────────────────────────
   const pulseType       = activePulse?.type ?? "emergency_pulse";

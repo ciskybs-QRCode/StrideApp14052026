@@ -20,6 +20,7 @@ export const PROFILE_KEY = "stride_profile_extra_v1";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface ProfileExtra {
+  preferredName: string;
   firstName: string;
   lastName: string;
   dateOfBirth: string;
@@ -36,6 +37,7 @@ export interface ProfileExtra {
 }
 
 export const PROFILE_EMPTY: ProfileExtra = {
+  preferredName: "",
   firstName: "", lastName: "", dateOfBirth: "", gender: "",
   phone: "",
   addressStreet: "", addressSuburb: "", addressCity: "", addressPostcode: "", addressState: "",
@@ -328,6 +330,24 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
       {/* ── PERSONAL INFORMATION ── */}
       <SectionHeader icon="person-outline" title="Personal Information" colors={colors} />
       <View style={[styles.card, { backgroundColor: colors.card }]}>
+
+        {/* Preferred Name / Nickname */}
+        <View style={styles.fieldBlock}>
+          <FieldLabel label="Preferred Name / Nickname" colors={colors} />
+          <FieldInput
+            value={form.preferredName}
+            onChangeText={set("preferredName")}
+            placeholder="e.g. Alex, Luca, J.B. — how the app will greet you"
+            colors={colors}
+            autoCapitalize="words"
+          />
+          <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 5, marginLeft: 2 }}>
+            If set, the app will say "Hello, {form.preferredName || "nickname"}" instead of your full name.
+          </Text>
+        </View>
+
+        <View style={[styles.divider, { borderTopColor: colors.border, marginVertical: 14 }]} />
+
         <View style={styles.row2}>
           <View style={{ flex: 1 }}>
             <FieldLabel label="First Name" required colors={colors} />

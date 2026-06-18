@@ -36,6 +36,7 @@ export interface Delegate {
   approved: boolean;
   relationship?: string;
   email?: string;
+  photoUrl?: string;
 }
 
 export interface Course {

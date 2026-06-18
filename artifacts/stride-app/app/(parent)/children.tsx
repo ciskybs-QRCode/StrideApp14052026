@@ -98,6 +98,7 @@ export default function ChildrenScreen() {
   const [delegateName, setDelegateName] = useState("");
   const [delegateSurname, setDelegateSurname] = useState("");
   const [delegatePhone, setDelegatePhone] = useState("");
+  const [delegatePhoto, setDelegatePhoto] = useState("");
 
   // Medical edit fields — synced via useEffect, never initialised from children
   const [allergies, setAllergies] = useState("");
@@ -338,11 +339,12 @@ export default function ChildrenScreen() {
       Alert.alert("Error", "Please fill all fields.");
       return;
     }
-    await addDelegate({ childId: selectedChild, name: delegateName, surname: delegateSurname, phone: delegatePhone, approved: true });
+    await addDelegate({ childId: selectedChild, name: delegateName, surname: delegateSurname, phone: delegatePhone, approved: true, photoUrl: delegatePhoto || undefined });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setDelegateName("");
     setDelegateSurname("");
     setDelegatePhone("");
+    setDelegatePhoto("");
     setShowAddDelegate(false);
   };
 
@@ -752,8 +754,12 @@ export default function ChildrenScreen() {
             ) : (
               childDelegates.map(delegate => (
                 <View key={delegate.id} style={[styles.delegateCard, { backgroundColor: colors.card }]}>
-                  <View style={[styles.delegateAvatar, { backgroundColor: colors.muted }]}>
-                    <Ionicons name="person" size={20} color={colors.primary} />
+                  <View style={[styles.delegateAvatar, { backgroundColor: delegate.photoUrl ? "transparent" : colors.muted, overflow: "hidden" }]}>
+                    {delegate.photoUrl ? (
+                      <Image source={{ uri: delegate.photoUrl }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                    ) : (
+                      <Ionicons name="person" size={20} color={colors.primary} />
+                    )}
                   </View>
                   <View style={styles.delegateInfo}>
                     <Text style={[styles.delegateName, { color: colors.primary }]}>{delegate.name} {delegate.surname}</Text>
@@ -1020,7 +1026,46 @@ export default function ChildrenScreen() {
               <Ionicons name="close-circle" size={30} color="#9CA3AF" />
             </Pressable>
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 4 }}>
-              <Text style={[styles.modalTitle, { color: colors.primary }]}>Add Delegate</Text>
+              <Text style={[styles.modalTitle, { color: colors.primary }]}>Add Authorised Delegate</Text>
+
+              {/* Security photo tip */}
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#EFF6FF", borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                <Ionicons name="shield-checkmark-outline" size={20} color="#1E3A8A" style={{ marginTop: 1 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A", marginBottom: 3 }}>Safety tip: add a photo</Text>
+                  <Text style={{ fontSize: 11, color: "#1E3A8A", lineHeight: 16, opacity: 0.8 }}>
+                    Adding a photo of the person authorised to collect your dependent reduces the risk of them being released to the wrong person. Operators will see it when scanning the collection pass.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Delegate photo picker */}
+              <Pressable
+                onPress={async () => {
+                  if (Platform.OS !== "web") {
+                    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                    if (!perm.granted) { Alert.alert("Permission Required", "Please allow photo library access in Settings."); return; }
+                  }
+                  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8, allowsEditing: true, aspect: [1, 1] });
+                  if (!res.canceled) setDelegatePhoto(res.assets[0].uri);
+                }}
+                style={{ alignSelf: "center", marginBottom: 16 }}
+              >
+                <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: delegatePhoto ? "transparent" : "#DBEAFE", alignItems: "center", justifyContent: "center", overflow: "hidden", borderWidth: 2, borderColor: "#1E3A8A", borderStyle: delegatePhoto ? "solid" : "dashed" }}>
+                  {delegatePhoto ? (
+                    <Image source={{ uri: delegatePhoto }} style={{ width: 72, height: 72, borderRadius: 36 }} />
+                  ) : (
+                    <View style={{ alignItems: "center", gap: 4 }}>
+                      <Ionicons name="camera-outline" size={24} color="#1E3A8A" />
+                      <Text style={{ fontSize: 9, color: "#1E3A8A", fontWeight: "700" }}>ADD PHOTO</Text>
+                    </View>
+                  )}
+                </View>
+                {delegatePhoto && (
+                  <Text style={{ fontSize: 10, color: "#1E3A8A", textAlign: "center", marginTop: 4, fontWeight: "600" }}>Tap to change</Text>
+                )}
+              </Pressable>
+
               {[
                 { label: "First Name", value: delegateName,    setter: setDelegateName,    placeholder: "John" },
                 { label: "Last Name",  value: delegateSurname, setter: setDelegateSurname, placeholder: "Smith" },
@@ -1039,11 +1084,11 @@ export default function ChildrenScreen() {
                 </View>
               ))}
               <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-                <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowAddDelegate(false)}>
+                <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddDelegate(false); setDelegatePhoto(""); }}>
                   <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddDelegate}>
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add Delegate</Text>
                 </Pressable>
               </View>
             </ScrollView>

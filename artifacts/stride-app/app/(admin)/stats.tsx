@@ -156,12 +156,16 @@ export default function AdminHome() {
   const [campusAddress, setCampusAddress]   = useState("1 Main Street, Sydney NSW 2000");
   const [orgName, setOrgName]               = useState<string>("");
   const [orgLoadError, setOrgLoadError]     = useState(false);
+  const [preferredName, setPreferredName]   = useState("");
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     AsyncStorage.getItem("stride_campus_address").catch(() => null).then(addr => {
       if (addr) setCampusAddress(addr);
     });
+    AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
+      if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
+    }).catch(() => {});
     api.getOrg().then(org => {
       if (org?.name) setOrgName(org.name);
     }).catch(() => setOrgLoadError(true));
@@ -286,8 +290,10 @@ export default function AdminHome() {
       >
         {/* ── HEADER ── */}
         <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Home</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>
+              Hello, {preferredName || user?.name?.split(" ")[0] || "Admin"}
+            </Text>
             <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
               {user?.schoolName || "Stride"} {"\u00B7"} {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </Text>
