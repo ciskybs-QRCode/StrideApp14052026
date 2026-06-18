@@ -36,6 +36,7 @@ interface SentEntry {
 
 function attachmentIcon(a: ApiAttachmentItem): { icon: keyof typeof Ionicons.glyphMap; color: string } {
   const m = a.mimeType;
+  if (m === "text/uri-list")                               return { icon: "link-outline",          color: "#3B82F6" };
   if (m.startsWith("image/"))                              return { icon: "image-outline",        color: "#3B82F6" };
   if (m.startsWith("video/"))                              return { icon: "videocam-outline",     color: "#8B5CF6" };
   if (m.startsWith("audio/"))                              return { icon: "musical-note-outline", color: "#F59E0B" };
@@ -64,9 +65,11 @@ export default function OperatorCommunications() {
   const [courseName,    setCourseName]    = useState("");
   const [attachments,   setAttachments]   = useState<ApiAttachmentItem[]>([]);
   const [isUrgent,      setIsUrgent]      = useState(false);
-  const [uploading,     setUploading]     = useState(false);
-  const [sending,       setSending]       = useState(false);
-  const [sent,          setSent]          = useState<SentEntry[]>([]);
+  const [uploading,        setUploading]        = useState(false);
+  const [sending,          setSending]          = useState(false);
+  const [linkInputVisible, setLinkInputVisible] = useState(false);
+  const [linkInputValue,   setLinkInputValue]   = useState("");
+  const [sent,             setSent]             = useState<SentEntry[]>([]);
 
   const recipientLabel = (mode: RecipientMode, course: string) => {
     if (mode === "course") return course ? `Course: ${course}` : "Select a course below";
@@ -379,7 +382,48 @@ export default function OperatorCommunications() {
                 <Ionicons name="document-attach-outline" size={18} color="#FBBF24" />
                 <Text style={[styles.attachPickerText, { color: colors.foreground }]}>File / Script</Text>
               </Pressable>
+              <Pressable
+                style={[styles.attachPickerBtn, { backgroundColor: colors.card, borderColor: "#D1D9F0" }]}
+                onPress={() => { setLinkInputVisible(v => !v); setLinkInputValue(""); }}
+              >
+                <Ionicons name="link-outline" size={18} color="#3B82F6" />
+                <Text style={[styles.attachPickerText, { color: colors.foreground }]}>Add Link</Text>
+              </Pressable>
             </View>
+            {linkInputVisible && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}>
+                <TextInput
+                  style={[styles.attachPickerBtn, { flex: 1, color: colors.foreground, borderColor: "#D1D9F0", backgroundColor: colors.card, paddingVertical: 10 }]}
+                  value={linkInputValue}
+                  onChangeText={setLinkInputValue}
+                  placeholder="https://youtube.com/watch?v=..."
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+                <Pressable
+                  onPress={() => {
+                    const url = linkInputValue.trim();
+                    if (!url) return;
+                    const normalized = url.startsWith("http") ? url : `https://${url}`;
+                    const label = normalized.replace(/^https?:\/\//, "").slice(0, 48);
+                    setAttachments(prev => [...prev, { name: label, url: normalized, mimeType: "text/uri-list" }]);
+                    setLinkInputValue("");
+                    setLinkInputVisible(false);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={({ pressed }) => ({
+                    backgroundColor: colors.primary,
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Add</Text>
+                </Pressable>
+              </View>
+            )}
 
             {uploading && (
               <View style={[styles.attachRow, { backgroundColor: colors.card, marginBottom: 6 }]}>

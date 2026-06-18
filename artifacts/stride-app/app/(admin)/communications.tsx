@@ -67,7 +67,7 @@ interface NotifReceipt {
 
 const RECEIPTS_KEY = "stride_notif_receipts";
 
-type AttachmentType = "pdf" | "image" | "video" | "audio" | "doc" | "excel";
+type AttachmentType = "pdf" | "image" | "video" | "audio" | "doc" | "excel" | "link";
 type RecipientMode = "all" | "group" | "course" | "individuals";
 
 interface RecipientSelection {
@@ -105,6 +105,7 @@ const ATTACHMENT_TYPES: { type: AttachmentType; label: string; icon: keyof typeo
   { type: "audio", label: "Audio", icon: "musical-note-outline",  color: "#1E3A8A" },
   { type: "doc",   label: "Word",  icon: "document-text-outline", color: "#1E3A8A" },
   { type: "excel", label: "Excel", icon: "grid-outline",          color: "#1E3A8A" },
+  { type: "link",  label: "Link",  icon: "link-outline",          color: "#1E3A8A" },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -258,6 +259,8 @@ export default function AdminCommunications() {
   const [attachments, setAttachments] = useState<ApiAttachmentItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [linkInputVisible, setLinkInputVisible] = useState(false);
+  const [linkInputValue,   setLinkInputValue]   = useState("");
 
   // Recipient picker modal
   const [showRecipientPicker, setShowRecipientPicker] = useState(false);
@@ -285,6 +288,7 @@ export default function AdminCommunications() {
   // ── Attachment handlers ───────────────────────────────────────────────────────
 
   const handleAttachment = async (type: AttachmentType) => {
+    if (type === "link") { setLinkInputVisible(v => !v); setLinkInputValue(""); return; }
     try {
       let uri = ""; let name = ""; let mimeType = "";
 
@@ -417,6 +421,7 @@ export default function AdminCommunications() {
 
   const attachmentIcon = (a: ApiAttachmentItem): { icon: keyof typeof Ionicons.glyphMap; color: string } => {
     const m = a.mimeType; const n = a.name;
+    if (m === "text/uri-list")                                         return { icon: "link-outline",          color: "#3B82F6" };
     if (m.startsWith("image/"))                                        return { icon: "image-outline",        color: "#3B82F6" };
     if (m.startsWith("video/"))                                        return { icon: "videocam-outline",     color: "#8B5CF6" };
     if (m.startsWith("audio/"))                                        return { icon: "musical-note-outline", color: "#F59E0B" };
@@ -1013,6 +1018,40 @@ export default function AdminCommunications() {
                 </Pressable>
               ))}
             </View>
+            {linkInputVisible && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}>
+                <TextInput
+                  style={[styles.fieldInput, { flex: 1, height: 42, color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background, paddingVertical: 0 }]}
+                  value={linkInputValue}
+                  onChangeText={setLinkInputValue}
+                  placeholder="https://youtube.com/watch?v=..."
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+                <Pressable
+                  onPress={() => {
+                    const url = linkInputValue.trim();
+                    if (!url) return;
+                    const normalized = url.startsWith("http") ? url : `https://${url}`;
+                    const label = normalized.replace(/^https?:\/\//, "").slice(0, 48);
+                    setAttachments(prev => [...prev, { name: label, url: normalized, mimeType: "text/uri-list" }]);
+                    setLinkInputValue("");
+                    setLinkInputVisible(false);
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  }}
+                  style={({ pressed }) => ({
+                    backgroundColor: colors.primary,
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Add</Text>
+                </Pressable>
+              </View>
+            )}
             {uploading && (
               <View style={[styles.attachedItem, { backgroundColor: colors.muted, marginTop: 4 }]}>
                 <ActivityIndicator size="small" color={colors.primary} />

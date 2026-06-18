@@ -50,6 +50,7 @@ type CheckoutQuote = {
   calculatedTotal: number;
   discountApplied: number;
   currency:        string;
+  freeEnrollment?: boolean;
 };
 
 type BatchSession = {
@@ -398,7 +399,15 @@ export default function CheckoutScreen() {
             promoTargetCourseIds: activePromo.targetCourseIds,
           } : {}),
         });
-        setQuote(result);
+        const typedResult = result as CheckoutQuote;
+        if (typedResult.freeEnrollment) {
+          payableItems.forEach(item => removeItem(item.id));
+          clearCartBadge();
+          setSuccess({ invoiceNumber: typedResult.sessionId, invoiceId: null, amount: 0 });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          setQuote(typedResult);
+        }
       }
     } catch (err) {
       const msg = (err as Error).message ?? "";

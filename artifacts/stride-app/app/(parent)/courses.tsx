@@ -666,15 +666,19 @@ export default function CoursesScreen() {
                     </View>
                     <View style={styles.pricingRow}>
                       {c.dropInEnabled && (
-                        <View style={[styles.pricePill, { backgroundColor: colors.muted }]}>
-                          <Text style={[styles.pricePillLabel, { color: colors.mutedForeground }]}>Single</Text>
-                          <Text style={[styles.pricePillAmount, { color: colors.foreground }]}>€{c.dropInPrice}</Text>
+                        <View style={[styles.pricePill, { backgroundColor: c.dropInPrice === 0 ? "#DCFCE7" : colors.muted }]}>
+                          <Text style={[styles.pricePillLabel, { color: c.dropInPrice === 0 ? "#16A34A" : colors.mutedForeground }]}>Single</Text>
+                          <Text style={[styles.pricePillAmount, { color: c.dropInPrice === 0 ? "#16A34A" : colors.foreground }]}>
+                            {c.dropInPrice === 0 ? "Free" : `€${c.dropInPrice}`}
+                          </Text>
                         </View>
                       )}
                       {c.fixedBlockEnabled && (
-                        <View style={[styles.pricePill, { backgroundColor: colors.secondary }]}>
-                          <Text style={[styles.pricePillLabel, { color: colors.primary }]}>Package ×{c.fixedBlockLessons}</Text>
-                          <Text style={[styles.pricePillAmount, { color: colors.primary }]}>€{c.fixedBlockPrice}</Text>
+                        <View style={[styles.pricePill, { backgroundColor: c.fixedBlockPrice === 0 ? "#DCFCE7" : colors.secondary }]}>
+                          <Text style={[styles.pricePillLabel, { color: c.fixedBlockPrice === 0 ? "#16A34A" : colors.primary }]}>Package ×{c.fixedBlockLessons}</Text>
+                          <Text style={[styles.pricePillAmount, { color: c.fixedBlockPrice === 0 ? "#16A34A" : colors.primary }]}>
+                            {c.fixedBlockPrice === 0 ? "Free" : `€${c.fixedBlockPrice}`}
+                          </Text>
                         </View>
                       )}
                     </View>

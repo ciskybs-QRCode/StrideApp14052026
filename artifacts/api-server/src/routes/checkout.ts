@@ -176,7 +176,25 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     const calculatedCents = Math.round(calculatedTotal * 100);
 
     if (calculatedCents <= 0) {
-      res.status(400).json({ error: "Calculated total is zero" });
+      // Free enrollment — skip Stripe, mark as paid immediately
+      const freeSessionId = `free_${Date.now()}`;
+      await supabase.from("checkout_sessions").insert({
+        session_id:      freeSessionId,
+        organization_id: orgId,
+        user_id:         String(user.id),
+        status:          "paid",
+        items:           lineItems,
+        amount_cents:    0,
+        checkout_url:    null,
+      });
+      res.json({
+        freeEnrollment:  true,
+        sessionId:       freeSessionId,
+        lineItems,
+        calculatedTotal: 0,
+        discountApplied,
+        currency,
+      });
       return;
     }
 
