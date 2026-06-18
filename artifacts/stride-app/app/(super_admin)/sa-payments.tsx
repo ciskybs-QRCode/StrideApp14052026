@@ -205,9 +205,9 @@ function AutomationFlowCard() {
         <View style={[s.iconBox, { backgroundColor: "#EFF6FF" }]}>
           <Ionicons name="flash" size={20} color={NAVY} />
         </View>
-        <View>
-          <Text style={s.cardTitle}>Fully Automatic — You Do Nothing</Text>
-          <Text style={[s.cardSub, { color: "#6B7280" }]}>10,000 associations? Same process.</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={s.cardTitle}>Fully Automatic</Text>
+          <Text style={[s.cardSub, { color: "#6B7280" }]}>You do nothing — 10,000 orgs? Same process.</Text>
         </View>
       </View>
 
@@ -335,9 +335,25 @@ export default function SAPaymentsScreen() {
 
   const activeOrgs  = overview?.orgs.filter(o => o.subscriptionStatus === "active").length  ?? 0;
   const trialOrgs   = overview?.orgs.filter(o => o.subscriptionStatus === "trialing").length ?? 0;
-  const totalCurrency = overview?.orgs.find(o => o.subscriptionStatus === "active")?.currency
-    ?? overview?.orgs[0]?.currency
-    ?? "EUR";
+
+  // Prefer the currency of an active org; fall back to device locale (same logic as subscription-billing)
+  const totalCurrency = React.useMemo(() => {
+    if (overview?.orgs.find(o => o.subscriptionStatus === "active")?.currency) {
+      return overview.orgs.find(o => o.subscriptionStatus === "active")!.currency;
+    }
+    if (overview?.orgs[0]?.currency) return overview.orgs[0].currency;
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz === "Europe/London") return "GBP";
+      if (tz === "Europe/Zurich" || tz === "Europe/Bern") return "CHF";
+      if (tz.startsWith("Europe/")) return "EUR";
+      if (/^America\/(Toronto|Vancouver|Edmonton|Winnipeg|Halifax)/.test(tz)) return "CAD";
+      if (tz.startsWith("Australia/")) return "AUD";
+      if (tz === "Pacific/Auckland") return "NZD";
+      if (tz.startsWith("America/")) return "USD";
+      return "EUR";
+    } catch { return "EUR"; }
+  }, [overview]);
 
   return (
     <View style={[s.container, { backgroundColor: "#F8FAFC" }]}>
