@@ -98,20 +98,20 @@ export default function SettingsIndex() {
         </View>
 
         {/* ── PROFILE CARD ── */}
-        <View style={[styles.profileCard, { backgroundColor: colors.primary }]}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{initials}</Text>
+        <View style={[styles.profileCard, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
+          <View style={[styles.avatarCircle, { backgroundColor: "#EFF6FF" }]}>
+            <Text style={[styles.avatarText, { color: colors.primary }]}>{initials}</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName} numberOfLines={1}>{user?.name ?? "Administrator"}</Text>
+            <Text style={[styles.profileName, { color: colors.primary }]} numberOfLines={1}>{user?.name ?? "Administrator"}</Text>
             {!!user?.schoolName && (
-              <Text style={styles.profileSchool} numberOfLines={1}>{user.schoolName}</Text>
+              <Text style={[styles.profileSchool, { color: "#FBBF24" }]} numberOfLines={1}>{user.schoolName}</Text>
             )}
             {!!user?.email && (
-              <Text style={styles.profileMeta} numberOfLines={1}>{user.email}</Text>
+              <Text style={[styles.profileMeta, { color: colors.mutedForeground }]} numberOfLines={1}>{user.email}</Text>
             )}
             {!!(user as any)?.phone && (
-              <Text style={styles.profileMeta} numberOfLines={1}>{(user as any).phone}</Text>
+              <Text style={[styles.profileMeta, { color: colors.mutedForeground }]} numberOfLines={1}>{(user as any).phone}</Text>
             )}
           </View>
         </View>
