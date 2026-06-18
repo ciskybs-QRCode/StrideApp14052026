@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
@@ -21,6 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { api, setToken } from "@/lib/api";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
+import { TERMS_OF_SERVICE, PRIVACY_POLICY, DATA_PROCESSING_AGREEMENT } from "@/lib/legal-texts";
 
 // ── Brand ─────────────────────────────────────────────────────────────────────
 const NAVY = "#1E3A8A";
@@ -78,96 +80,11 @@ const REGION_CFG: Record<Region, RegionCfg> = {
   },
 };
 
-// ── Legal text (long enough to require scrolling) ─────────────────────────────
-const TERMS_TEXT = `STRIDE PLATFORM — TERMS AND CONDITIONS
-Last updated: January 2025
-
-1. ACCEPTANCE
-By completing setup and activating your Stride account ("Account"), you ("Administrator") agree to be bound by these Terms. If you do not agree, do not proceed.
-
-2. PLATFORM DESCRIPTION
-Stride is an association management platform providing tools for enrollment management, attendance tracking, payment processing, member communication, and operational scheduling. It is licensed on a subscription basis to associations and member organisations.
-
-3. ADMINISTRATOR RESPONSIBILITIES
-As designated Administrator you are responsible for: (a) accuracy of all organisational data entered into the platform; (b) maintaining the confidentiality of all credentials; (c) obtaining necessary consents from parents and guardians before enrolling minors; (d) complying with all applicable data protection laws in your jurisdiction; and (e) ensuring all platform users within your Organisation adhere to these Terms.
-
-4. SUBSCRIPTION AND PAYMENT
-Platform access is subject to the plan selected during onboarding. Trial periods are non-renewable. Continued access after expiry requires an active paid subscription. All fees are non-refundable except as required by law. Stride reserves the right to suspend access for non-payment with 7 days notice.
-
-5. MEMBER ACCOUNT MANAGEMENT AND BILLING RESPONSIBILITY
-⚠ IMPORTANT — READ CAREFULLY. This section governs how active member accounts are counted and billed.
-
-(a) Billing is based on the total number of active member accounts and QR codes registered within your Organisation at the time each invoice is generated. "Active" means any account that has not been explicitly deleted from the platform, regardless of whether that account is in regular use.
-
-(b) It is the sole and exclusive responsibility of the Administrator and the Organisation to delete member accounts and associated QR codes that are no longer required. This includes, without limitation, accounts of members who have left the Organisation, whose membership has lapsed, or who are otherwise no longer active.
-
-(c) Members may delete their own account at any time via the platform. Administrators may delete any member account within their Organisation at any time via the Admin panel. Stride does not automatically deactivate or remove accounts under any circumstances.
-
-(d) FAILURE TO DELETE ACCOUNTS. If an account is not deleted, it will continue to be counted as active and will be included in the billing calculation for each subsequent invoice period. Stride bears no responsibility whatsoever for charges arising from accounts that the Organisation failed to delete. No credit, refund, or adjustment will be issued for accounts that were active at the time of billing, even if those accounts were not in use.
-
-(e) EXAMPLE FOR CLARITY. If your Organisation has 10 member accounts that are no longer active but were never deleted by the Administrator or the relevant members, those 10 accounts will be counted in your invoice and you will be charged accordingly. This is entirely the responsibility of the Organisation. Stride will not adjust, waive, or refund those charges under any circumstances.
-
-(f) The Administrator is strongly advised to conduct regular audits of active accounts and QR codes, and to promptly delete any that are no longer required, in order to avoid unnecessary charges.
-
-6. DATA OWNERSHIP
-All data you input into Stride remains your property. Stride processes this data solely to provide platform services and does not sell it to third parties. See the Privacy Policy for full details.
-
-7. INTELLECTUAL PROPERTY
-The Stride platform — including all software, design, trademarks, and documentation — is owned by Stride Technologies and protected by intellectual property laws. You are granted a limited, non-exclusive, non-transferable licence to use the platform for its intended purpose.
-
-8. ACCEPTABLE USE
-You agree not to: (a) use the platform for any unlawful purpose; (b) upload malicious code or harmful content; (c) attempt to gain unauthorised access to other accounts or systems; (d) reverse-engineer or resell the platform.
-
-9. LIMITATION OF LIABILITY
-To the maximum extent permitted by law, Stride shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform, including loss of data, revenue, or business opportunity. Our total aggregate liability shall not exceed the fees paid in the 12 months preceding the claim.
-
-10. TERMINATION
-Either party may terminate with 30 days written notice. If your subscription lapses, is not renewed, or your free trial expires without a valid payment method being added, all Organisation data (including member records, children, attendance logs, and documents) will be retained for exactly 30 days from the date of expiry and then permanently and irreversibly deleted from all Stride systems. You will receive automated reminder notices at 7, 3, and 1 day before your trial expires. You may contact support@stride.app to request a data export before the 30-day window closes.
-
-11. GOVERNING LAW
-These Terms are governed by the laws of the jurisdiction in which your Organisation primarily operates, without regard to conflict-of-law principles. Any disputes shall be resolved by the courts of that jurisdiction.
-
-12. AMENDMENTS
-Stride may modify these Terms at any time with reasonable notice. Continued use of the platform after notification constitutes acceptance of the revised Terms.`;
-
-const PRIVACY_TEXT = `STRIDE PLATFORM — PRIVACY POLICY
-Last updated: January 2025
-
-1. DATA CONTROLLER
-Stride Technologies Pty Ltd ("Stride") acts as data controller for personal data processed through this platform. Contact: privacy@stride.app
-
-2. DATA WE COLLECT
-Account Data: name, email address, hashed password, phone number, organisation details.
-Operational Data: student enrolment records, attendance logs, payment transactions, health notes, and guardian contact details entered by your Organisation.
-Technical Data: IP addresses, device identifiers, session tokens, and usage analytics.
-Legal Data: consent records, e-signature data, compliance audit logs with IP and device information.
-
-3. HOW WE USE YOUR DATA
-Personal data is used to: provide and maintain platform services; process payments and issue receipts; send operational notifications and reminders; generate reports and analytics for your Organisation; comply with legal obligations; and improve platform functionality.
-
-4. LEGAL BASIS FOR PROCESSING
-We process data on the following grounds: (a) performance of the platform services contract; (b) your explicit consent where required; (c) legitimate interests in platform operation and security; (d) compliance with legal obligations applicable in your jurisdiction.
-
-5. DATA SHARING
-We share data only with: authorised platform sub-processors (cloud infrastructure, payment gateways); your Organisation's designated staff; and regulatory authorities when legally required. We do not sell, rent, or trade personal data with third parties for marketing purposes.
-
-6. DATA RETENTION
-Account data is retained for the duration of your active subscription. If your trial expires or subscription lapses without payment, all Organisation data is retained for 30 days after expiry and then permanently and irreversibly deleted. Student records and compliance logs for active subscriptions are retained for 7 years to satisfy legal record-keeping requirements. You may request earlier deletion subject to applicable legal constraints. To request a data export before deletion, contact support@stride.app.
-
-7. INTERNATIONAL TRANSFERS
-Data may be stored on servers in the European Economic Area, Australia, or the United States. All transfers comply with applicable frameworks including GDPR, the Australian Privacy Act 1988, and standard contractual clauses where required.
-
-8. YOUR RIGHTS
-Depending on your jurisdiction, you may: access, correct, or delete your personal data; restrict or object to processing; receive a portable copy of your data; withdraw consent at any time without affecting lawful prior processing. Submit requests to privacy@stride.app — we respond within 30 days.
-
-9. COOKIES AND TRACKING
-The mobile application uses essential session tokens only. No advertising cookies, cross-site tracking, or third-party analytics SDKs are used without your explicit consent.
-
-10. CHILDREN'S PRIVACY
-The platform is not intended for direct access by children under 13. Organisations are responsible for obtaining appropriate parental or guardian consent before entering any minor students' data into the platform.
-
-11. CHANGES TO THIS POLICY
-We will notify you of material changes via in-app notification or email at least 14 days before they take effect.`;
+// ── Legal document URL helper ──────────────────────────────────────────────────
+const legalDocUrl = (docId: string) => {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+  return `${domain}/api/legal/view/${docId}`;
+};
 
 // ── Step indicator ─────────────────────────────────────────────────────────────
 function StepIndicator({ current, total }: { current: number; total: number }) {
@@ -254,8 +171,10 @@ export default function Pioneer() {
   // ── Step 4 ────────────────────────────────────────────────────────────────
   const [termsScrolled,   setTermsScrolled]   = useState(false);
   const [privacyScrolled, setPrivacyScrolled] = useState(false);
+  const [dpaScrolled,     setDpaScrolled]     = useState(false);
   const [acceptTerms,     setAcceptTerms]     = useState(false);
   const [acceptPrivacy,   setAcceptPrivacy]   = useState(false);
+  const [acceptDpa,       setAcceptDpa]       = useState(false);
   const [signatureText,   setSignatureText]   = useState("");
   const [completing,      setCompleting]      = useState(false);
   const [s4Err,           setS4Err]           = useState("");
@@ -354,7 +273,7 @@ export default function Pioneer() {
 
   // ── Step 4: Complete ──────────────────────────────────────────────────────
   const handleComplete = async () => {
-    if (!acceptTerms || !acceptPrivacy) { setS4Err("Accept both the Terms and Privacy Policy."); return; }
+    if (!acceptTerms || !acceptPrivacy || !acceptDpa) { setS4Err("You must accept all three agreements to continue."); return; }
     if (!signatureText.trim())          { setS4Err("Digital signature is required."); return; }
     setCompleting(true); setS4Err("");
     try {
@@ -382,7 +301,7 @@ export default function Pioneer() {
     }
   };
 
-  const canFinish = acceptTerms && acceptPrivacy && signatureText.trim().length > 0 && !completing;
+  const canFinish = acceptTerms && acceptPrivacy && acceptDpa && signatureText.trim().length > 0 && !completing;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -846,11 +765,48 @@ export default function Pioneer() {
         {step === 5 && (
           <View style={st.card}>
             <Text style={st.cardTitle}>Legal Acceptance</Text>
-            <Text style={st.cardSub}>Scroll through each document to unlock the checkboxes, then sign with your full name.</Text>
+            <Text style={st.cardSub}>
+              Scroll through each document to unlock the checkbox. All three must be accepted before
+              completing setup. Your acceptance is permanently recorded with timestamp, IP address,
+              device information, and SHA-256 document hash.
+            </Text>
 
-            {/* Terms & Conditions */}
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-              <Text style={st.sectionHdr}>Terms & Conditions</Text>
+            {/* ── Download banner ── */}
+            <View style={{ backgroundColor: "#EFF6FF", borderRadius: 12, borderWidth: 1, borderColor: "#BFDBFE", padding: 12, marginTop: 8, marginBottom: 16 }}>
+              <Text style={{ fontSize: 12, color: "#1E40AF", fontWeight: "700", marginBottom: 6 }}>
+                📄 Download Documents
+              </Text>
+              <Text style={{ fontSize: 11, color: "#3B82F6", lineHeight: 16, marginBottom: 10 }}>
+                Save a copy of these documents to your device (HTML, print-to-PDF from browser).
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {[
+                  { id: "terms", label: "Terms of Service" },
+                  { id: "privacy", label: "Privacy Policy" },
+                  { id: "dpa", label: "DPA" },
+                  { id: "media-consent", label: "Media Consent Template" },
+                  { id: "member-privacy", label: "Member Privacy Template" },
+                ].map(d => (
+                  <Pressable
+                    key={d.id}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 })}
+                    onPress={() => Linking.openURL(legalDocUrl(d.id))}
+                  >
+                    <Ionicons name="download-outline" size={12} color="#1E40AF" />
+                    <Text style={{ fontSize: 11, color: "#1E40AF", fontWeight: "600" }}>{d.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            {/* ── 1. Terms & Conditions ── */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: NAVY }}>1</Text>
+                </View>
+                <Text style={st.sectionHdr}>Terms of Service</Text>
+              </View>
               {!termsScrolled && <ScrollHint />}
             </View>
             <ScrollView
@@ -858,7 +814,7 @@ export default function Pioneer() {
               onScroll={e => { if (isNearBottom(e)) setTermsScrolled(true); }}
               scrollEventThrottle={80}
             >
-              <Text style={st.legalText}>{TERMS_TEXT}</Text>
+              <Text style={st.legalText}>{TERMS_OF_SERVICE}</Text>
             </ScrollView>
             <Pressable
               style={[st.checkRow, !termsScrolled && st.checkRowOff]}
@@ -868,15 +824,20 @@ export default function Pioneer() {
                 name={acceptTerms ? "checkbox" : "square-outline"} size={22}
                 color={acceptTerms ? "#10B981" : termsScrolled ? NAVY : "#D1D5DB"} />
               <Text style={[st.checkLabel, !termsScrolled && { color: "#9CA3AF" }]}>
-                I have read and accept the Terms & Conditions
+                I have read and accept the Terms of Service
               </Text>
             </Pressable>
 
             <View style={st.divider} />
 
-            {/* Privacy Policy */}
+            {/* ── 2. Privacy Policy ── */}
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={st.sectionHdr}>Privacy Policy</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: NAVY }}>2</Text>
+                </View>
+                <Text style={st.sectionHdr}>Privacy Policy</Text>
+              </View>
               {!privacyScrolled && <ScrollHint />}
             </View>
             <ScrollView
@@ -884,7 +845,7 @@ export default function Pioneer() {
               onScroll={e => { if (isNearBottom(e)) setPrivacyScrolled(true); }}
               scrollEventThrottle={80}
             >
-              <Text style={st.legalText}>{PRIVACY_TEXT}</Text>
+              <Text style={st.legalText}>{PRIVACY_POLICY}</Text>
             </ScrollView>
             <Pressable
               style={[st.checkRow, !privacyScrolled && st.checkRowOff]}
@@ -900,11 +861,51 @@ export default function Pioneer() {
 
             <View style={st.divider} />
 
-            {/* Digital signature */}
+            {/* ── 3. Data Processing Agreement ── */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: NAVY }}>3</Text>
+                </View>
+                <Text style={st.sectionHdr}>Data Processing Agreement</Text>
+              </View>
+              {!dpaScrolled && <ScrollHint />}
+            </View>
+            <View style={{ backgroundColor: "#F0FDF4", borderRadius: 8, borderWidth: 1, borderColor: "#BBF7D0", padding: 10, marginBottom: 6 }}>
+              <Text style={{ fontSize: 11, color: "#15803D", lineHeight: 15 }}>
+                <Text style={{ fontWeight: "700" }}>GDPR Art. 28 — </Text>
+                This agreement defines Stride as your Data Processor and your Organisation as the
+                Data Controller. Stride staff do not access your member data. All technical access
+                is break-glass only, logged, and audited — identical to how Stripe and Salesforce operate.
+              </Text>
+            </View>
+            <ScrollView
+              style={st.legalScroll} nestedScrollEnabled
+              onScroll={e => { if (isNearBottom(e)) setDpaScrolled(true); }}
+              scrollEventThrottle={80}
+            >
+              <Text style={st.legalText}>{DATA_PROCESSING_AGREEMENT}</Text>
+            </ScrollView>
+            <Pressable
+              style={[st.checkRow, !dpaScrolled && st.checkRowOff]}
+              onPress={() => dpaScrolled && setAcceptDpa(v => !v)}
+            >
+              <Ionicons
+                name={acceptDpa ? "checkbox" : "square-outline"} size={22}
+                color={acceptDpa ? "#10B981" : dpaScrolled ? NAVY : "#D1D5DB"} />
+              <Text style={[st.checkLabel, !dpaScrolled && { color: "#9CA3AF" }]}>
+                I accept the Data Processing Agreement on behalf of my Organisation
+              </Text>
+            </Pressable>
+
+            <View style={st.divider} />
+
+            {/* ── Digital signature ── */}
             <Text style={st.sectionHdr}>Digital Confirmation</Text>
             <Text style={st.cardSub}>
-              Type your full legal name below as your digital signature. This acceptance is permanently
-              recorded with a timestamp, IP address, and device information.
+              Type your full legal name below as your binding digital signature. This acceptance is
+              permanently recorded with a timestamp, IP address, device fingerprint, and
+              SHA-256 cryptographic hash of each document accepted.
             </Text>
             <View style={[st.inputWrap, {
               borderColor: signatureText.trim() ? "#10B981" : "#E5E7EB",
@@ -918,6 +919,16 @@ export default function Pioneer() {
                 autoCapitalize="words"
               />
             </View>
+
+            {/* Progress indicator */}
+            <View style={{ flexDirection: "row", gap: 6, marginTop: 8, marginBottom: 4 }}>
+              {[acceptTerms, acceptPrivacy, acceptDpa].map((done, i) => (
+                <View key={i} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: done ? "#10B981" : "#E5E7EB" }} />
+              ))}
+            </View>
+            <Text style={{ fontSize: 11, color: "#6B7280", textAlign: "center", marginBottom: 8 }}>
+              {[acceptTerms, acceptPrivacy, acceptDpa].filter(Boolean).length}/3 agreements accepted
+            </Text>
 
             {s4Err ? <ErrorBox msg={s4Err} /> : null}
 

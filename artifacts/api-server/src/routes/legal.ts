@@ -4,6 +4,7 @@ import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { aiLimiter } from "../lib/rate-limit.js";
+import { LEGAL_DOCS, generateDocumentHtml } from "../lib/legal-texts.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -149,6 +150,50 @@ router.post("/legal/analyse-options", requireAuth, requireRole("admin"), aiLimit
     req.log.error({ err }, "legal/analyse-options failed");
     res.status(500).json({ error: "AI analysis failed" });
   }
+});
+
+// ── Document download — public (HTML, print-to-PDF) ──────────────────────────
+
+router.get("/legal/download/:docId", (req, res) => {
+  const { docId } = req.params;
+  const doc = LEGAL_DOCS[docId];
+  if (!doc) {
+    res.status(404).json({ error: `Unknown document: ${docId}. Valid ids: ${Object.keys(LEGAL_DOCS).join(", ")}` });
+    return;
+  }
+  const html = generateDocumentHtml(doc);
+  const filename = `stride-${docId}-v${doc.version}.html`;
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(html);
+});
+
+// ── Document view in browser (no attachment header) ──────────────────────────
+
+router.get("/legal/view/:docId", (req, res) => {
+  const { docId } = req.params;
+  const doc = LEGAL_DOCS[docId];
+  if (!doc) {
+    res.status(404).send("<h1>Document not found</h1>");
+    return;
+  }
+  const html = generateDocumentHtml(doc);
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(html);
+});
+
+// ── List available documents (public) ────────────────────────────────────────
+
+router.get("/legal/documents", (_req, res) => {
+  const list = Object.values(LEGAL_DOCS).map(d => ({
+    id: d.id,
+    title: d.title,
+    subtitle: d.subtitle,
+    version: d.version,
+  }));
+  res.json(list);
 });
 
 export default router;

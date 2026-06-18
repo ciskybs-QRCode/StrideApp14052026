@@ -528,6 +528,55 @@ export default function LegalPrivacyPage() {
           </>
         )}
 
+        {/* ── STRIDE LEGAL DOCUMENTS DOWNLOAD ── */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 24, marginBottom: 10, marginHorizontal: 4 }}>
+          <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#DCFCE7", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="download-outline" size={15} color="#15803D" />
+          </View>
+          <Text style={{ fontSize: 11, fontWeight: "800", letterSpacing: 1.2, color: "#15803D", flex: 1 }}>STRIDE LEGAL DOCUMENTS</Text>
+          <View style={{ backgroundColor: "#DCFCE7", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+            <Text style={{ fontSize: 9, fontWeight: "800", color: "#15803D" }}>DOWNLOAD</Text>
+          </View>
+        </View>
+        <View style={{ backgroundColor: "#F0FDF4", borderRadius: 16, borderWidth: 1.5, borderColor: "#86EFAC", marginBottom: 4 }}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+            <Text style={{ fontSize: 12, color: "#15803D", lineHeight: 17 }}>
+              Download copies of all Stride platform legal documents. Files open in your browser (HTML) — use File → Print → Save as PDF to save a copy.
+            </Text>
+          </View>
+          {[
+            { id: "terms",          icon: "document-text-outline" as const, label: "Terms of Service",              sub: "Platform agreement · v1.0" },
+            { id: "privacy",        icon: "shield-checkmark-outline" as const, label: "Privacy Policy",             sub: "GDPR Art. 13 notice · v1.0" },
+            { id: "dpa",            icon: "lock-closed-outline" as const, label: "Data Processing Agreement",       sub: "GDPR Art. 28 DPA · v1.0" },
+            { id: "media-consent",  icon: "camera-outline" as const, label: "Media Consent Form (Template)",        sub: "For your members · customisable" },
+            { id: "member-privacy", icon: "people-outline" as const, label: "Member Privacy Notice (Template)",     sub: "GDPR Art. 13 for members · customisable" },
+          ].map((d, i, arr) => (
+            <Pressable
+              key={d.id}
+              style={({ pressed }) => [
+                styles.docRow,
+                i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: "#86EFAC" },
+                { opacity: pressed ? 0.75 : 1 },
+              ]}
+              onPress={() => {
+                const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+                Linking.openURL(`${domain}/api/legal/view/${d.id}`);
+              }}
+            >
+              <View style={[styles.docIcon, { backgroundColor: "#DCFCE7" }]}>
+                <Ionicons name={d.icon} size={18} color="#15803D" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.docTitle, { color: "#166534" }]}>{d.label}</Text>
+                <Text style={{ fontSize: 11, color: "#4ADE80", marginTop: 2 }}>{d.sub}</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Ionicons name="open-outline" size={14} color="#15803D" />
+              </View>
+            </Pressable>
+          ))}
+        </View>
+
         {/* ── CONSENT AUDIT LOG ── */}
         <Pressable
           style={({ pressed }) => [styles.placeholderCard, { backgroundColor: colors.card, borderColor: "#1E3A8A", opacity: pressed ? 0.85 : 1, marginTop: 16 }]}
