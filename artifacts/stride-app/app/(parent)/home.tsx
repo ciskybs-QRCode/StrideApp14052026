@@ -346,10 +346,12 @@ export default function ParentHome() {
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Hello, {firstName}</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-              {user?.schoolName || "Stride"} • {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-            </Text>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi, {firstName}</Text>
+            {!!user?.schoolName && (
+              <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
+                {user.schoolName}
+              </Text>
+            )}
           </View>
           <Pressable
             style={({ pressed }) => [styles.avatarCircle, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}

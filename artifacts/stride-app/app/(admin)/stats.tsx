@@ -294,6 +294,11 @@ export default function AdminHome() {
             <Text style={[styles.pageTitle, { color: colors.primary }]}>
               Hi, {preferredName || user?.name?.split(" ")[0] || "Admin"}
             </Text>
+            {!!(orgName || user?.schoolName) && (
+              <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
+                {orgName || user?.schoolName}
+              </Text>
+            )}
           </View>
         </View>
 
