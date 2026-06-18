@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { cacheDirectory, writeAsStringAsync, EncodingType } from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -101,12 +103,8 @@ export default function AdminAnalytics() {
     }));
 
   // ── Export ────────────────────────────────────────────────────────────────
-  const handleExport = (label: string) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    if (Platform.OS !== "web") {
-      Alert.alert("Export", `"${label}.csv" export is available in the web version.`);
-      return;
-    }
+  const handleExport = async (label: string) => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const now    = new Date().toLocaleDateString("en-AU");
     const school = user?.schoolName || "Stride";
     let rows: string[][] = [];
@@ -121,8 +119,8 @@ export default function AdminAnalytics() {
       case "Income":
         rows = [
           ["Income Report", school, now], [],
-          ["Description", "Amount (€)", "Status"],
-          ...payments.map(p => [p.description || "Payment", String(p.amount), p.status]),
+          ["Description", "Amount (€)", "Status", "Date"],
+          ...payments.map(p => [p.description || "Payment", String(p.amount), p.status, p.date]),
           [], ["Total Paid (€)", String(totalRevenue)], ["Pending (€)", String(pendingRevenue)],
         ];
         break;
@@ -141,21 +139,46 @@ export default function AdminAnalytics() {
           ["Total Courses", String(courses.length)],
           ["Total Revenue (€)", String(totalRevenue)],
           ["Pending Revenue (€)", String(pendingRevenue)],
+          [], ["Monthly Trends", ""],
+          ["Month", "Revenue (€)", "New Members"],
+          ...monthly.map(m => [m.label, String(m.revenue), String(m.members)]),
         ];
         break;
       default:
         rows = [["Export", school, now]];
     }
-    const csv  = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `${label.replace(/\s+/g, "_")}_${now.replace(/\//g, "-")}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const csv      = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const bom      = "\uFEFF";
+    const filename = `${label.replace(/\s+/g, "_")}_${now.replace(/\//g, "-")}.csv`;
+
+    if (Platform.OS === "web") {
+      const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      try {
+        const uri = `${cacheDirectory ?? ""}${filename}`;
+        await writeAsStringAsync(uri, bom + csv, { encoding: EncodingType.UTF8 });
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(uri, {
+            mimeType:    "text/csv",
+            dialogTitle: filename,
+            UTI:         "public.comma-separated-values-text",
+          });
+        } else {
+          Alert.alert("Not Available", "File sharing is not supported on this device.");
+        }
+      } catch (err) {
+        Alert.alert("Export Failed", (err as Error).message ?? "Could not export file.");
+      }
+    }
   };
 
   // ── Render helpers ────────────────────────────────────────────────────────
@@ -401,7 +424,7 @@ export default function AdminAnalytics() {
           </View>
           <Text style={[styles.exportSubtitle, { color: colors.mutedForeground }]}>Download individual reports as CSV</Text>
 
-          <View style={styles.exportGrid}>
+          <View style={styles.exportList}>
             {[
               { label: "Attendance",    icon: "people-outline"    as const, desc: "Daily attendance records" },
               { label: "Income",        icon: "cash-outline"      as const, desc: "Revenue & payments" },
@@ -410,16 +433,18 @@ export default function AdminAnalytics() {
             ].map(item => (
               <Pressable
                 key={item.label}
-                style={({ pressed }) => [styles.exportBtn, { backgroundColor: colors.card, opacity: pressed ? 0.85 : 1 }]}
-                onPress={() => handleExport(item.label)}
+                style={({ pressed }) => [styles.exportRow, { backgroundColor: colors.card, opacity: pressed ? 0.82 : 1 }]}
+                onPress={() => void handleExport(item.label)}
               >
                 <View style={[styles.exportIconWrap, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Ionicons name={item.icon} size={26} color={colors.primary} />
+                  <Ionicons name={item.icon} size={22} color={colors.primary} />
                 </View>
-                <Text style={[styles.exportLabel, { color: colors.primary }]}>{item.label}</Text>
-                <Text style={[styles.exportDesc, { color: colors.mutedForeground }]}>{item.desc}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.exportLabel, { color: colors.primary }]}>{item.label}</Text>
+                  <Text style={[styles.exportDesc, { color: colors.mutedForeground }]}>{item.desc}</Text>
+                </View>
                 <View style={styles.exportBadge}>
-                  <Ionicons name="download-outline" size={12} color="#10B981" />
+                  <Ionicons name="download-outline" size={14} color="#10B981" />
                   <Text style={styles.exportBadgeText}>.csv</Text>
                 </View>
               </Pressable>
@@ -502,11 +527,11 @@ const styles = StyleSheet.create({
   actAmount: { fontSize: 14, fontWeight: "800" },
 
   exportSubtitle: { fontSize: 13, marginBottom: 14 },
-  exportGrid:     { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  exportBtn:      { width: "47%", borderRadius: 18, padding: 18, gap: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  exportIconWrap: { width: 50, height: 50, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  exportList:     { gap: 10 },
+  exportRow:      { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 14, padding: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  exportIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   exportLabel:    { fontSize: 14, fontWeight: "800" },
-  exportDesc:     { fontSize: 11, lineHeight: 16 },
-  exportBadge:    { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  exportBadgeText:{ color: "#10B981", fontSize: 11, fontWeight: "700" },
+  exportDesc:     { fontSize: 11, lineHeight: 16, marginTop: 2 },
+  exportBadge:    { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 0 },
+  exportBadgeText:{ color: "#10B981", fontSize: 12, fontWeight: "700" },
 });

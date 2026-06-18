@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { cacheDirectory, writeAsStringAsync, EncodingType } from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
@@ -47,6 +49,45 @@ const CLR = {
   green:     "#10B981",
   accentGold: "#FBBF24",
 } as const;
+
+// ─── CSV download utility (works on web + mobile) ─────────────────────────────
+
+async function downloadCsvData(
+  columns: string[],
+  rows: string[][],
+  filename: string,
+): Promise<void> {
+  const header = columns.length ? [columns] : [];
+  const all    = [...header, ...rows];
+  const csv    = all.map(r => r.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const bom    = "\uFEFF";
+  const file   = `${filename.replace(/[^a-z0-9_\-]/gi, "_")}.csv`;
+
+  if (Platform.OS === "web") {
+    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = file;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } else {
+    const uri = `${cacheDirectory ?? ""}${file}`;
+    await writeAsStringAsync(uri, bom + csv, { encoding: EncodingType.UTF8 });
+    const canShare = await Sharing.isAvailableAsync();
+    if (canShare) {
+      await Sharing.shareAsync(uri, {
+        mimeType:    "text/csv",
+        dialogTitle: file,
+        UTI:         "public.comma-separated-values-text",
+      });
+    } else {
+      Alert.alert("Not Available", "File sharing is not supported on this device.");
+    }
+  }
+}
 
 // ─── Intent metadata ──────────────────────────────────────────────────────────
 
@@ -289,6 +330,26 @@ function MessageBubble({ msg }: { msg: Message }) {
           {/* Data section */}
           {renderData()}
 
+          {/* ── Download CSV button — shown whenever there are data rows ── */}
+          {r && r.rows.length > 0 && (() => {
+            // Build columns: use explicit columns, or synthetic ones for known intents
+            let cols = r.columns;
+            if (!cols.length && r.intent === "member_summary")  cols = ["Metric", "Value"];
+            if (!cols.length && r.intent === "revenue_summary") cols = ["Period", "Amount"];
+            const label = `copilot_${r.intent ?? "export"}_${new Date().toISOString().slice(0, 10)}`;
+            return (
+              <Pressable
+                style={({ pressed }) => [ab.downloadBtn, { opacity: pressed ? 0.7 : 1 }]}
+                onPress={() => void downloadCsvData(cols, r.rows, label).catch(err =>
+                  Alert.alert("Export Failed", (err as Error).message ?? "Could not export file.")
+                )}
+              >
+                <Ionicons name="download-outline" size={13} color="#10B981" />
+                <Text style={ab.downloadText}>Download CSV</Text>
+              </Pressable>
+            );
+          })()}
+
           {/* Footer */}
           {r && (r.totalCount > 0 || !!r.latencyMs) && (
             <View style={ab.footer}>
@@ -344,6 +405,8 @@ const ab = StyleSheet.create({
   footer:       { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(30,58,138,0.1)" },
   footerText:   { color: "#6B7BA4", fontSize: 10 },
   ts:           { color: CLR.textDim, fontSize: 10, marginTop: 4, marginLeft: 13 },
+  downloadBtn:  { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 10, alignSelf: "flex-start", backgroundColor: "rgba(16,185,129,0.08)", borderWidth: 1, borderColor: "rgba(16,185,129,0.25)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  downloadText: { color: "#10B981", fontSize: 11.5, fontWeight: "700" },
 });
 
 // ─── Welcome banner ───────────────────────────────────────────────────────────
