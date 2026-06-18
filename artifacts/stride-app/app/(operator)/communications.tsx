@@ -5,9 +5,10 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Linking,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,24 +19,29 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { api } from "@/lib/api";
+
+type ApiAttachmentItem = { name: string; url: string; mimeType: string };
 
 type RecipientMode = "all" | "members" | "operators" | "course";
 
 interface SentEntry {
-  id:         string;
-  title:      string;
-  date:       string;
-  recipients: string;
-  urgent:     boolean;
-  attachments: string[];
+  id:          string;
+  title:       string;
+  date:        string;
+  recipients:  string;
+  urgent:      boolean;
+  attachments: ApiAttachmentItem[];
 }
 
-function attachmentIcon(a: string): { icon: keyof typeof Ionicons.glyphMap; color: string } {
-  if (/\.(jpg|jpeg|png|gif|webp)/i.test(a)) return { icon: "image-outline",        color: "#3B82F6" };
-  if (/\.(mp4|mov|avi|mkv)/i.test(a))       return { icon: "videocam-outline",     color: "#8B5CF6" };
-  if (/\.(mp3|wav|ogg|aac|m4a)/i.test(a))   return { icon: "musical-note-outline", color: "#F59E0B" };
-  if (/\.(pdf)/i.test(a))                   return { icon: "document-text-outline", color: "#EF4444" };
-  if (/\.(doc|docx)/i.test(a))              return { icon: "document-text-outline", color: "#2563EB" };
+function attachmentIcon(a: ApiAttachmentItem): { icon: keyof typeof Ionicons.glyphMap; color: string } {
+  const m = a.mimeType;
+  if (m.startsWith("image/"))                              return { icon: "image-outline",        color: "#3B82F6" };
+  if (m.startsWith("video/"))                              return { icon: "videocam-outline",     color: "#8B5CF6" };
+  if (m.startsWith("audio/"))                              return { icon: "musical-note-outline", color: "#F59E0B" };
+  if (m.includes("pdf"))                                   return { icon: "document-text-outline", color: "#EF4444" };
+  if (m.includes("spreadsheet") || /\.(xls|xlsx)/i.test(a.name)) return { icon: "grid-outline", color: "#16A34A" };
+  if (m.includes("word") || /\.(doc|docx)/i.test(a.name))        return { icon: "document-text-outline", color: "#2563EB" };
   return { icon: "document-attach-outline", color: "#6B7BA4" };
 }
 
@@ -56,14 +62,28 @@ export default function OperatorCommunications() {
   const [body,          setBody]          = useState("");
   const [recipientMode, setRecipientMode] = useState<RecipientMode>("all");
   const [courseName,    setCourseName]    = useState("");
-  const [attachments,   setAttachments]   = useState<string[]>([]);
+  const [attachments,   setAttachments]   = useState<ApiAttachmentItem[]>([]);
   const [isUrgent,      setIsUrgent]      = useState(false);
+  const [uploading,     setUploading]     = useState(false);
   const [sending,       setSending]       = useState(false);
   const [sent,          setSent]          = useState<SentEntry[]>([]);
 
   const recipientLabel = (mode: RecipientMode, course: string) => {
     if (mode === "course") return course ? `Course: ${course}` : "Select a course below";
     return RECIPIENT_LABELS[mode];
+  };
+
+  const uploadFile = async (uri: string, name: string, mimeType: string) => {
+    setUploading(true);
+    try {
+      const result = await api.uploadAttachment(uri, name, mimeType);
+      setAttachments(prev => [...prev, result]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: unknown) {
+      Alert.alert("Upload failed", (err as Error).message || "Could not upload file. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const pickImage = async () => {
@@ -76,17 +96,19 @@ export default function OperatorCommunications() {
       quality:    0.85,
     });
     if (!res.canceled && res.assets[0]) {
-      setAttachments(prev => [...prev, res.assets[0].fileName || `media_${Date.now()}.jpg`]);
+      const asset = res.assets[0];
+      await uploadFile(asset.uri, asset.fileName || `media_${Date.now()}.jpg`, asset.mimeType || "image/jpeg");
     }
   };
 
   const pickDocument = async () => {
     try {
-      const res = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: false });
+      const res = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
       if (!res.canceled && res.assets?.[0]) {
-        setAttachments(prev => [...prev, res.assets[0].name]);
+        const asset = res.assets[0];
+        await uploadFile(asset.uri, asset.name, asset.mimeType || "application/octet-stream");
       }
-    } catch { /* silently ignored */ }
+    } catch { Alert.alert("Error", "Could not open file picker. Please try again."); }
   };
 
   const resetForm = () => {
@@ -101,21 +123,41 @@ export default function OperatorCommunications() {
       Alert.alert("Missing course", "Please specify the course name."); return;
     }
     setSending(true);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await new Promise(r => setTimeout(r, 500));
-    const label = recipientLabel(recipientMode, courseName);
-    setSent(prev => [{
-      id:          Date.now().toString(),
-      title:       isUrgent ? `URGENT: ${title}` : title,
-      date:        new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
-      recipients:  label,
-      urgent:      isUrgent,
-      attachments: [...attachments],
-    }, ...prev]);
-    setSending(false);
-    setShowCompose(false);
-    resetForm();
-    Alert.alert("Sent!", `Your message has been delivered to: ${label}.`);
+    try {
+      await api.sendMessage({
+        title:          isUrgent ? `🔴 ${title}` : title,
+        body,
+        recipient_mode: recipientMode,
+        recipient_data: recipientMode === "course" ? { courseName } : {},
+        attachments,
+        urgent:         isUrgent,
+      });
+
+      const label = recipientLabel(recipientMode, courseName);
+      setSent(prev => [{
+        id:          Date.now().toString(),
+        title:       isUrgent ? `🔴 ${title}` : title,
+        date:        new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+        recipients:  label,
+        urgent:      isUrgent,
+        attachments: [...attachments],
+      }, ...prev]);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowCompose(false);
+      resetForm();
+      Alert.alert("Sent!", `Your message has been delivered to: ${label}.`);
+    } catch (err: unknown) {
+      Alert.alert("Send failed", (err as Error).message || "Could not send message.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const openAttachment = (a: ApiAttachmentItem) => {
+    Linking.openURL(a.url).catch(() =>
+      Alert.alert("Cannot Open", "This file could not be opened on this device.")
+    );
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   return (
@@ -182,12 +224,12 @@ export default function OperatorCommunications() {
                       {s.attachments.slice(0, 3).map((a, i) => {
                         const { icon, color } = attachmentIcon(a);
                         return (
-                          <View key={i} style={styles.msgAttachChip}>
+                          <Pressable key={i} style={styles.msgAttachChip} onPress={() => openAttachment(a)}>
                             <Ionicons name={icon} size={12} color={color} />
                             <Text style={[styles.msgAttachName, { color: colors.mutedForeground }]} numberOfLines={1}>
-                              {a.length > 14 ? `${a.slice(0, 12)}...` : a}
+                              {a.name.length > 14 ? `${a.name.slice(0, 12)}...` : a.name}
                             </Text>
-                          </View>
+                          </Pressable>
                         );
                       })}
                       {s.attachments.length > 3 && (
@@ -216,7 +258,6 @@ export default function OperatorCommunications() {
       >
         <View style={[styles.modalRoot, { paddingTop: insets.top + 4, backgroundColor: colors.background }]}>
 
-          {/* Modal header */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.card }]}>
             <Pressable
               onPress={() => { setShowCompose(false); resetForm(); }}
@@ -229,10 +270,12 @@ export default function OperatorCommunications() {
             <Pressable
               style={[styles.modalSendBtn, { backgroundColor: isUrgent ? "#EF4444" : colors.primary, opacity: sending ? 0.7 : 1 }]}
               onPress={handleSend}
-              disabled={sending}
+              disabled={sending || uploading}
             >
-              <Ionicons name="send" size={14} color="#FFF" />
-              <Text style={styles.modalSendText}>{sending ? "..." : "Send"}</Text>
+              {sending
+                ? <ActivityIndicator size="small" color="#FFF" />
+                : <><Ionicons name="send" size={14} color="#FFF" /><Text style={styles.modalSendText}>Send</Text></>
+              }
             </Pressable>
           </View>
 
@@ -328,15 +371,22 @@ export default function OperatorCommunications() {
               Attach scripts, choreography notes, photos, videos, music files, or any document.
             </Text>
             <View style={styles.attachBtnRow}>
-              <Pressable style={[styles.attachPickerBtn, { backgroundColor: colors.card, borderColor: "#D1D9F0" }]} onPress={pickImage}>
+              <Pressable style={[styles.attachPickerBtn, { backgroundColor: colors.card, borderColor: "#D1D9F0", opacity: uploading ? 0.6 : 1 }]} onPress={pickImage} disabled={uploading}>
                 <Ionicons name="image-outline" size={18} color="#3B82F6" />
                 <Text style={[styles.attachPickerText, { color: colors.foreground }]}>Photo / Video</Text>
               </Pressable>
-              <Pressable style={[styles.attachPickerBtn, { backgroundColor: colors.card, borderColor: "#D1D9F0" }]} onPress={pickDocument}>
+              <Pressable style={[styles.attachPickerBtn, { backgroundColor: colors.card, borderColor: "#D1D9F0", opacity: uploading ? 0.6 : 1 }]} onPress={pickDocument} disabled={uploading}>
                 <Ionicons name="document-attach-outline" size={18} color="#FBBF24" />
                 <Text style={[styles.attachPickerText, { color: colors.foreground }]}>File / Script</Text>
               </Pressable>
             </View>
+
+            {uploading && (
+              <View style={[styles.attachRow, { backgroundColor: colors.card, marginBottom: 6 }]}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.attachName, { color: colors.mutedForeground }]}>Uploading...</Text>
+              </View>
+            )}
 
             {attachments.length > 0 && (
               <View style={styles.attachList}>
@@ -347,7 +397,7 @@ export default function OperatorCommunications() {
                       <View style={[styles.attachIconWrap, { backgroundColor: color + "18" }]}>
                         <Ionicons name={icon} size={16} color={color} />
                       </View>
-                      <Text style={[styles.attachName, { color: colors.foreground }]} numberOfLines={1}>{a}</Text>
+                      <Text style={[styles.attachName, { color: colors.foreground }]} numberOfLines={1}>{a.name}</Text>
                       <Pressable onPress={() => setAttachments(prev => prev.filter((_, j) => j !== i))} hitSlop={8}>
                         <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
                       </Pressable>
@@ -388,7 +438,7 @@ const styles = StyleSheet.create({
   modalHeader:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   modalCloseBtn:     { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   modalTitle:        { fontSize: 16, fontWeight: "700" },
-  modalSendBtn:      { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  modalSendBtn:      { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, minWidth: 70, justifyContent: "center" },
   modalSendText:     { color: "#FFF", fontWeight: "700", fontSize: 13 },
   modalScroll:       { paddingHorizontal: 16, paddingTop: 20 },
   fieldLabel:        { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, marginBottom: 10 },

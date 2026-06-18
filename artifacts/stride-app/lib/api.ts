@@ -337,6 +337,21 @@ export const api = {
   // Messages
   getMessages: () => request<ApiMessage[]>("GET", "/messages"),
   sendMessage: (data: Partial<ApiMessage>) => request<ApiMessage>("POST", "/messages", data),
+  uploadAttachment: async (uri: string, name: string, mimeType: string): Promise<{ url: string; name: string; mimeType: string }> => {
+    const token = await getToken();
+    const form = new FormData();
+    form.append("file", { uri, name, type: mimeType } as unknown as Blob);
+    const resp = await fetch(`${getBaseUrl()}/messages/upload-attachment`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token ?? ""}` },
+      body: form,
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: "Upload failed" }));
+      throw new Error((err as { error: string }).error ?? `HTTP ${resp.status}`);
+    }
+    return resp.json() as Promise<{ url: string; name: string; mimeType: string }>;
+  },
 
   // Users (admin)
   getUsers: () => request<ApiUser[]>("GET", "/users"),
@@ -1338,6 +1353,11 @@ export interface ApiMessage {
   title: string;
   body: string;
   target?: string;
+  recipient_mode?: string;
+  recipient_data?: Record<string, unknown>;
+  attachments?: Array<{ name: string; url: string; mimeType: string }>;
+  urgent?: boolean;
+  signature_required?: boolean;
   created_at?: string;
   sender?: { id: number; name: string; role: string };
 }

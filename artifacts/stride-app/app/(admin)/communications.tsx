@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Linking,
   Modal,
@@ -38,6 +39,8 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+type ApiAttachmentItem = { name: string; url: string; mimeType: string };
+
 interface SentMessage {
   id: string;
   title: string;
@@ -48,7 +51,7 @@ interface SentMessage {
   type: string;
   urgent: boolean;
   signatureRequired: boolean;
-  attachments: string[];
+  attachments: ApiAttachmentItem[];
 }
 
 interface NotifReceipt {
@@ -252,7 +255,9 @@ export default function AdminCommunications() {
   const [recipientSel, setRecipientSel] = useState<RecipientSelection>({ mode: "all" });
   const [isUrgent, setIsUrgent] = useState(false);
   const [signatureRequired, setSignatureRequired] = useState(false);
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<ApiAttachmentItem[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
 
   // Recipient picker modal
   const [showRecipientPicker, setShowRecipientPicker] = useState(false);
@@ -281,37 +286,47 @@ export default function AdminCommunications() {
 
   const handleAttachment = async (type: AttachmentType) => {
     try {
+      let uri = ""; let name = ""; let mimeType = "";
+
       if (type === "image") {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) { Alert.alert("Permission Required", "Allow photo library access to attach images."); return; }
         const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
         if (!res.canceled && res.assets.length > 0) {
-          const name = res.assets[0].fileName || "image.jpg";
-          setAttachments(prev => [...prev, name]);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-        return;
+          const asset = res.assets[0];
+          uri = asset.uri; name = asset.fileName || "image.jpg"; mimeType = asset.mimeType || "image/jpeg";
+        } else return;
+      } else {
+        let mimeTypes: string[] = [];
+        if (type === "pdf")    mimeTypes = ["application/pdf"];
+        else if (type === "doc")   mimeTypes = ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+        else if (type === "excel") mimeTypes = ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
+        else if (type === "video") mimeTypes = ["video/*"];
+        else if (type === "audio") mimeTypes = ["audio/*"];
+
+        const res = await DocumentPicker.getDocumentAsync({
+          type: mimeTypes.length > 0 ? mimeTypes : undefined,
+          copyToCacheDirectory: true,
+        });
+        if (!res.canceled && res.assets.length > 0) {
+          const asset = res.assets[0];
+          uri = asset.uri; name = asset.name; mimeType = asset.mimeType || "application/octet-stream";
+        } else return;
       }
 
-      let mimeTypes: string[] = [];
-      if (type === "pdf")    mimeTypes = ["application/pdf"];
-      else if (type === "doc")   mimeTypes = ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-      else if (type === "excel") mimeTypes = ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
-      else if (type === "video") mimeTypes = ["video/*"];
-      else if (type === "audio") mimeTypes = ["audio/*"];
-
-      const res = await DocumentPicker.getDocumentAsync({
-        type: mimeTypes.length > 0 ? mimeTypes : undefined,
-        copyToCacheDirectory: false,
-      });
-      if (!res.canceled && res.assets.length > 0) {
-        setAttachments(prev => [...prev, res.assets[0].name]);
+      setUploading(true);
+      try {
+        const result = await api.uploadAttachment(uri, name, mimeType);
+        setAttachments(prev => [...prev, result]);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (err: unknown) {
+        Alert.alert("Upload failed", (err as Error).message || "Could not upload file. Please try again.");
+      } finally {
+        setUploading(false);
       }
     } catch {
       Alert.alert("Error", "Could not open file picker. Please try again.");
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   // ── Recipient picker ──────────────────────────────────────────────────────────
@@ -348,27 +363,43 @@ export default function AdminCommunications() {
 
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) { Alert.alert("Required", "Please fill in both Title and Message."); return; }
-    if (signatureRequired) {
-      await addDocument({ title, type: "communication", signed: false, required: true, sentBy: "admin", sentAt: new Date().toISOString().split("T")[0] });
+    setSending(true);
+    try {
+      if (signatureRequired) {
+        await addDocument({ title, type: "communication", signed: false, required: true, sentBy: "admin", sentAt: new Date().toISOString().split("T")[0] });
+      }
+      await api.sendMessage({
+        title:              isUrgent ? `🔴 ${title}` : title,
+        body:               message,
+        recipient_mode:     recipientSel.mode,
+        recipient_data:     recipientSel as unknown as Record<string, unknown>,
+        attachments,
+        urgent:             isUrgent,
+        signature_required: signatureRequired,
+      });
+      const count = getRecipientCount(recipientSel, userCounts);
+      const newMsg: SentMessage = {
+        id: Date.now().toString(),
+        title: isUrgent ? `🔴 ${title}` : title,
+        body: message,
+        date: new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "short" }),
+        recipients: count,
+        read: 0,
+        type: "communication",
+        urgent: isUrgent,
+        signatureRequired,
+        attachments,
+      };
+      setSentMessages(prev => [newMsg, ...prev]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowCompose(false);
+      resetCompose();
+      Alert.alert("Sent!", `Message delivered to ${getRecipientLabel(recipientSel, userCounts)}.`);
+    } catch (err: unknown) {
+      Alert.alert("Send failed", (err as Error).message || "Could not send message.");
+    } finally {
+      setSending(false);
     }
-    const count = getRecipientCount(recipientSel, userCounts);
-    const newMsg: SentMessage = {
-      id: Date.now().toString(),
-      title: isUrgent ? `🔴 ${title}` : title,
-      body: message,
-      date: new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "short" }),
-      recipients: count,
-      read: 0,
-      type: "communication",
-      urgent: isUrgent,
-      signatureRequired,
-      attachments,
-    };
-    setSentMessages(prev => [newMsg, ...prev]);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowCompose(false);
-    resetCompose();
-    Alert.alert("Sent!", `Message delivered to ${getRecipientLabel(recipientSel, userCounts)}.`);
   };
 
   const handleCopy = async (text: string) => {
@@ -377,26 +408,21 @@ export default function AdminCommunications() {
     Alert.alert("Copied", ok ? "Message copied to clipboard." : "Please select and copy the text manually.");
   };
 
-  const handleOpenAttachment = (a: string) => {
-    const urlMatch = a.match(/https?:\/\/\S+/);
-    if (urlMatch) {
-      Linking.openURL(urlMatch[0]).catch(() =>
-        Alert.alert("Cannot Open", "This link could not be opened on this device.")
-      );
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      return;
-    }
-    Alert.alert("File Attached", `"${a}" was attached when sent.\n\nLocal files are stored on the sender's device and cannot be previewed from here.`);
+  const handleOpenAttachment = (a: ApiAttachmentItem) => {
+    Linking.openURL(a.url).catch(() =>
+      Alert.alert("Cannot Open", "This file could not be opened on this device.")
+    );
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const attachmentIcon = (a: string): { icon: keyof typeof Ionicons.glyphMap; color: string } => {
-    if (a.startsWith("G Drive:"))   return { icon: "cloud-outline",         color: "#EA4335" };
-    if (a.startsWith("Dropbox:"))   return { icon: "cloud-upload-outline",  color: "#0061FE" };
-    if (/\.(jpg|jpeg|png|gif|webp)/i.test(a)) return { icon: "image-outline",   color: "#3B82F6" };
-    if (/\.(mp4|mov|avi)/i.test(a)) return { icon: "videocam-outline",      color: "#8B5CF6" };
-    if (/\.(mp3|wav|ogg)/i.test(a)) return { icon: "musical-note-outline",  color: "#F59E0B" };
-    if (/\.(xls|xlsx)/i.test(a))    return { icon: "grid-outline",          color: "#16A34A" };
-    if (/\.(doc|docx)/i.test(a))    return { icon: "document-text-outline", color: "#2563EB" };
+  const attachmentIcon = (a: ApiAttachmentItem): { icon: keyof typeof Ionicons.glyphMap; color: string } => {
+    const m = a.mimeType; const n = a.name;
+    if (m.startsWith("image/"))                                        return { icon: "image-outline",        color: "#3B82F6" };
+    if (m.startsWith("video/"))                                        return { icon: "videocam-outline",     color: "#8B5CF6" };
+    if (m.startsWith("audio/"))                                        return { icon: "musical-note-outline", color: "#F59E0B" };
+    if (m.includes("pdf"))                                             return { icon: "document-text-outline", color: "#EF4444" };
+    if (m.includes("spreadsheet") || /\.(xls|xlsx)/i.test(n))         return { icon: "grid-outline",          color: "#16A34A" };
+    if (m.includes("word")        || /\.(doc|docx)/i.test(n))         return { icon: "document-text-outline", color: "#2563EB" };
     return { icon: "document-attach-outline", color: "#EF4444" };
   };
 
@@ -987,17 +1013,26 @@ export default function AdminCommunications() {
                 </Pressable>
               ))}
             </View>
+            {uploading && (
+              <View style={[styles.attachedItem, { backgroundColor: colors.muted, marginTop: 4 }]}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.attachedItemText, { color: colors.mutedForeground }]}>Uploading...</Text>
+              </View>
+            )}
             {attachments.length > 0 && (
               <View style={[styles.attachedList, { backgroundColor: colors.muted }]}>
-                {attachments.map((a, i) => (
-                  <View key={i} style={styles.attachedItem}>
-                    <Ionicons name="document-attach-outline" size={14} color={colors.primary} />
-                    <Text style={[styles.attachedItemText, { color: colors.primary }]} numberOfLines={1}>{a}</Text>
-                    <Pressable onPress={() => setAttachments(prev => prev.filter((_, j) => j !== i))}>
-                      <Ionicons name="close-circle" size={16} color="#EF4444" />
-                    </Pressable>
-                  </View>
-                ))}
+                {attachments.map((a, i) => {
+                  const { icon, color } = attachmentIcon(a);
+                  return (
+                    <View key={i} style={styles.attachedItem}>
+                      <Ionicons name={icon} size={14} color={color} />
+                      <Text style={[styles.attachedItemText, { color: colors.primary }]} numberOfLines={1}>{a.name}</Text>
+                      <Pressable onPress={() => setAttachments(prev => prev.filter((_, j) => j !== i))}>
+                        <Ionicons name="close-circle" size={16} color="#EF4444" />
+                      </Pressable>
+                    </View>
+                  );
+                })}
               </View>
             )}
 
@@ -1006,9 +1041,15 @@ export default function AdminCommunications() {
               <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowCompose(false)}>
                 <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: isUrgent ? "#EF4444" : colors.primary }]} onPress={handleSend}>
-                <Ionicons name="send" size={16} color="#FFF" />
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Send</Text>
+              <Pressable
+                style={[styles.modalBtn, { flex: 1, backgroundColor: isUrgent ? "#EF4444" : colors.primary, opacity: (sending || uploading) ? 0.7 : 1 }]}
+                onPress={handleSend}
+                disabled={sending || uploading}
+              >
+                {sending
+                  ? <ActivityIndicator size="small" color="#FFF" />
+                  : <><Ionicons name="send" size={16} color="#FFF" /><Text style={[styles.modalBtnText, { color: "#FFF" }]}>Send</Text></>
+                }
               </Pressable>
             </View>
           </ScrollView>
@@ -1194,7 +1235,6 @@ export default function AdminCommunications() {
                       </View>
                       {showDetail.attachments.map((a, i) => {
                         const { icon, color } = attachmentIcon(a);
-                        const hasUrl = /https?:\/\//.test(a);
                         return (
                           <Pressable
                             key={i}
@@ -1207,12 +1247,8 @@ export default function AdminCommunications() {
                             <View style={[{ width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" }, { backgroundColor: `${color}20` }]}>
                               <Ionicons name={icon} size={16} color={color} />
                             </View>
-                            <Text style={[styles.attachedItemText, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>{a}</Text>
-                            <Ionicons
-                              name={hasUrl ? "open-outline" : "information-circle-outline"}
-                              size={16}
-                              color={hasUrl ? color : colors.mutedForeground}
-                            />
+                            <Text style={[styles.attachedItemText, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>{a.name}</Text>
+                            <Ionicons name="open-outline" size={16} color={color} />
                           </Pressable>
                         );
                       })}

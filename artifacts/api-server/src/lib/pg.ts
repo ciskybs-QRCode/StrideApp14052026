@@ -995,5 +995,14 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_et_qr     ON event_tickets(qr_code);
   `).catch(() => {});
 
+  await pool.query(`
+    ALTER TABLE IF EXISTS broadcast_messages
+      ADD COLUMN IF NOT EXISTS recipient_mode      TEXT    DEFAULT 'all',
+      ADD COLUMN IF NOT EXISTS recipient_data      JSONB   DEFAULT '{}'::jsonb,
+      ADD COLUMN IF NOT EXISTS attachments         JSONB   DEFAULT '[]'::jsonb,
+      ADD COLUMN IF NOT EXISTS urgent              BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS signature_required  BOOLEAN DEFAULT FALSE;
+  `).catch(() => {});
+
   initialized = true;
 }
