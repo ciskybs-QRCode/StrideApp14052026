@@ -31,16 +31,16 @@ const CATEGORIES = ["equipment", "insurance", "apparel", "accessories", "service
 type Cat = typeof CATEGORIES[number];
 
 const CAT_META: Record<Cat | string, { color: string; bg: string; label: string; icon: React.ComponentProps<typeof Ionicons>["name"] }> = {
-  equipment:   { color: "#D97706", bg: "#FEF3C7", label: "Equipment",   icon: "barbell-outline"  },
-  insurance:   { color: "#4F46E5", bg: "#EEF2FF", label: "Insurance",   icon: "shield-checkmark" },
-  apparel:     { color: "#059669", bg: "#ECFDF5", label: "Apparel",     icon: "shirt-outline"    },
-  accessories: { color: "#DC2626", bg: "#FEF2F2", label: "Accessories", icon: "bag-handle"       },
-  services:    { color: "#7C3AED", bg: "#F5F3FF", label: "Services",    icon: "sparkles"         },
+  equipment:   { color: "#1E3A8A", bg: "#EFF6FF", label: "Equipment",   icon: "barbell-outline"  },
+  insurance:   { color: "#1E3A8A", bg: "#DBEAFE", label: "Insurance",   icon: "shield-checkmark" },
+  apparel:     { color: "#1E3A8A", bg: "#EFF6FF", label: "Apparel",     icon: "shirt-outline"    },
+  accessories: { color: "#1E3A8A", bg: "#DBEAFE", label: "Accessories", icon: "bag-handle"       },
+  services:    { color: "#1E3A8A", bg: "#FEF9E7", label: "Services",    icon: "sparkles"         },
 };
 function catMeta(c: string) {
-  return CAT_META[c] ?? { color: "#6B7280", bg: "#F3F4F6", label: c, icon: "pricetag-outline" as const };
+  return CAT_META[c] ?? { color: "#1E3A8A", bg: "#EFF6FF", label: c, icon: "pricetag-outline" as const };
 }
-function fmtPrice(cents: number) { return `€${(cents / 100).toFixed(2)}`; }
+function fmtPrice(cents: number) { return (cents / 100).toFixed(2); }
 
 const LINK_ICONS: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string }[] = [
   { icon: "bag-handle-outline",   label: "Shop"      },
@@ -89,6 +89,7 @@ export default function AdminMarketplaceScreen() {
   const [fPrice,   setFPrice]   = useState("");
   const [fFee,     setFFee]     = useState("10");
   const [fImage,   setFImage]   = useState("");
+  const [fLabel,   setFLabel]   = useState("");
 
   // ── Shop Links tab state ──────────────────────────────────────────────────
   const [shopLinks,    setShopLinks]    = useState<ShopLink[]>([]);
@@ -132,7 +133,7 @@ export default function AdminMarketplaceScreen() {
 
   const resetProductForm = () => {
     setFTitle(""); setFDesc(""); setFCat("equipment");
-    setFPrice(""); setFFee("10"); setFImage("");
+    setFPrice(""); setFFee("10"); setFImage(""); setFLabel("");
     setEditTarget(null);
   };
 
@@ -140,7 +141,8 @@ export default function AdminMarketplaceScreen() {
   const openEditProduct = (p: MarketplaceProduct) => {
     setFTitle(p.title); setFDesc(p.description ?? ""); setFCat(p.category as Cat);
     setFPrice(String(p.price_cents / 100)); setFFee(String(p.platform_fee_pct));
-    setFImage(p.image_url ?? ""); setEditTarget(p); setShowAdd(true);
+    setFImage(p.image_url ?? ""); setFLabel(p.custom_label ?? "");
+    setEditTarget(p); setShowAdd(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -157,12 +159,14 @@ export default function AdminMarketplaceScreen() {
         await api.updateMarketplaceProduct(editTarget.id, {
           title: fTitle.trim(), description: fDesc.trim() || undefined, category: fCat,
           price_cents: priceCents, platform_fee_pct: feePct, image_url: fImage.trim() || undefined,
+          custom_label: fLabel.trim() || undefined,
         });
       } else {
         await api.createMarketplaceProduct({
           title: fTitle.trim(), description: fDesc.trim() || undefined, category: fCat,
           price_cents: priceCents, platform_fee_pct: feePct,
           image_url: fImage.trim() || undefined, org_id: orgId ?? null,
+          custom_label: fLabel.trim() || undefined,
         });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -237,7 +241,7 @@ export default function AdminMarketplaceScreen() {
       <ScreenHeader
         title="Marketplace"
         subtitle="Products & shop links"
-        onBack={() => router.push("/(admin)/members-hub")}
+        onBack={() => router.canGoBack() ? router.back() : router.push("/(admin)/stats" as never)}
         right={
           <Pressable onPress={() => tab === "products" ? void loadProducts() : void loadLinks()} hitSlop={12} style={{ padding: 6 }}>
             <Ionicons name="refresh" size={20} color="#FFF" />
@@ -392,23 +396,40 @@ export default function AdminMarketplaceScreen() {
               <FieldLabel colors={colors} label="Category" />
               <View style={S.catRow}>
                 {CATEGORIES.map(c => {
-                  const m = catMeta(c);
                   const active = fCat === c;
                   return (
-                    <Pressable key={c} style={[S.catChip, { backgroundColor: active ? m.color : colors.background, borderColor: active ? m.color : colors.border }]} onPress={() => setFCat(c)}>
-                      <Text style={[S.catChipText, { color: active ? "#FFF" : colors.foreground }]}>{m.label}</Text>
+                    <Pressable
+                      key={c}
+                      style={[S.catChip, {
+                        backgroundColor: active ? "#1E3A8A" : colors.background,
+                        borderColor: active ? "#1E3A8A" : colors.border,
+                      }]}
+                      onPress={() => setFCat(c)}
+                    >
+                      <Text style={[S.catChipText, { color: active ? "#FBBF24" : "#1E3A8A" }]}>
+                        {catMeta(c).label}
+                      </Text>
                     </Pressable>
                   );
                 })}
               </View>
 
+              <FieldLabel colors={colors} label="Custom Label (optional)" />
+              <TextInput
+                style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
+                value={fLabel}
+                onChangeText={setFLabel}
+                placeholder='e.g. "Starter Pack", "Level 1 Kit"…'
+                placeholderTextColor={colors.mutedForeground}
+              />
+
               <View style={S.twoCol}>
                 <View style={{ flex: 1 }}>
-                  <FieldLabel colors={colors} label="Price (€)" />
+                  <FieldLabel colors={colors} label="Price" />
                   <TextInput style={[S.input, { borderColor: colors.border, color: colors.foreground }]} value={fPrice} onChangeText={setFPrice} placeholder="49.99" placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <FieldLabel colors={colors} label="Platform Fee %" />
+                  <FieldLabel colors={colors} label="Stride Commission %" />
                   <TextInput style={[S.input, { borderColor: colors.border, color: colors.foreground }]} value={fFee} onChangeText={setFFee} placeholder="10" placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" />
                 </View>
               </View>
@@ -416,9 +437,9 @@ export default function AdminMarketplaceScreen() {
               {fPrice && !isNaN(parseFloat(fPrice)) && (
                 <View style={[S.feePreview, { backgroundColor: colors.background }]}>
                   <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
-                    Sale price: <Text style={{ fontWeight: "800", color: colors.foreground }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100))}</Text>
-                    {"  ·  "}Stride earns: <Text style={{ fontWeight: "800", color: "#D97706" }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (parseFloat(fFee) || 0) / 100))}</Text>
-                    {"  ·  "}You receive: <Text style={{ fontWeight: "800", color: "#059669" }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (1 - (parseFloat(fFee) || 0) / 100)))}</Text>
+                    {"Member pays: "}<Text style={{ fontWeight: "800", color: colors.foreground }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100))}</Text>
+                    {"\n"}{"Stride commission: "}<Text style={{ fontWeight: "800", color: "#D97706" }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (parseFloat(fFee) || 0) / 100))}</Text>
+                    {"\n"}{"Your association receives: "}<Text style={{ fontWeight: "800", color: "#059669" }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (1 - (parseFloat(fFee) || 0) / 100)))}</Text>
                   </Text>
                 </View>
               )}

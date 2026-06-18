@@ -977,12 +977,14 @@ export const api = {
     title: string; description?: string; category?: string;
     price_cents: number; currency?: string; platform_fee_pct?: number;
     image_url?: string; is_stride_verified?: boolean; org_id?: number | null;
+    custom_label?: string;
   }) =>
     request<MarketplaceProduct>("POST", "/marketplace/products", data),
 
   updateMarketplaceProduct: (id: string, data: Partial<{
     title: string; description: string; category: string; price_cents: number;
     platform_fee_pct: number; image_url: string; is_active: boolean; is_stride_verified: boolean;
+    custom_label: string;
   }>) =>
     request<MarketplaceProduct>("PATCH", `/marketplace/products/${id}`, data),
 
@@ -1088,6 +1090,7 @@ export interface MarketplaceProduct {
   image_url:         string | null;
   is_stride_verified: boolean;
   is_active:         boolean;
+  custom_label:      string | null;
   created_at:        string;
 }
 

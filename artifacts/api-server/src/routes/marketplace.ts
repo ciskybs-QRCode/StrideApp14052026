@@ -103,7 +103,7 @@ router.get("/marketplace/products", requireAuth, async (req: Request, res: Respo
   const { rows } = await pool.query(
     `SELECT id, org_id, title, description, category,
             price_cents, currency, platform_fee_pct,
-            image_url, is_stride_verified, is_active, created_at
+            image_url, is_stride_verified, is_active, custom_label, created_at
      FROM marketplace_products
      ${whereClause}
      ORDER BY is_stride_verified DESC, is_active DESC, org_id NULLS FIRST, created_at DESC`,
@@ -119,7 +119,7 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
 
   const {
     title, description, category, price_cents, currency,
-    platform_fee_pct, image_url, is_stride_verified, org_id,
+    platform_fee_pct, image_url, is_stride_verified, org_id, custom_label,
   } = req.body as {
     title:              string;
     description?:       string;
@@ -130,6 +130,7 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
     image_url?:         string;
     is_stride_verified?: boolean;
     org_id?:            number | null;
+    custom_label?:      string;
   };
 
   if (!title?.trim() || price_cents == null || price_cents < 0) {
@@ -142,8 +143,8 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
 
   const { rows } = await pool.query(
     `INSERT INTO marketplace_products
-       (org_id, title, description, category, price_cents, currency, platform_fee_pct, image_url, is_stride_verified, is_active)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false)
+       (org_id, title, description, category, price_cents, currency, platform_fee_pct, image_url, is_stride_verified, is_active, custom_label)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, $10)
      RETURNING *`,
     [
       resolvedOrgId,
@@ -155,6 +156,7 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
       platform_fee_pct ?? 10.0,
       image_url?.trim() ?? null,
       is_stride_verified ?? false,
+      custom_label?.trim() ?? null,
     ],
   );
 
@@ -164,7 +166,7 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
 // ── PATCH /marketplace/products/:id ──────────────────────────────────────────
 router.patch("/marketplace/products/:id", requireAuth, requireRole("admin", "super_admin"), async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { title, description, category, price_cents, platform_fee_pct, image_url, is_active, is_stride_verified } = req.body;
+  const { title, description, category, price_cents, platform_fee_pct, image_url, is_active, is_stride_verified, custom_label } = req.body;
 
   const { rows } = await pool.query(
     `UPDATE marketplace_products
@@ -175,10 +177,11 @@ router.patch("/marketplace/products/:id", requireAuth, requireRole("admin", "sup
          platform_fee_pct   = COALESCE($5, platform_fee_pct),
          image_url          = COALESCE($6, image_url),
          is_active          = COALESCE($7, is_active),
-         is_stride_verified = COALESCE($8, is_stride_verified)
-     WHERE id = $9
+         is_stride_verified = COALESCE($8, is_stride_verified),
+         custom_label       = COALESCE($9, custom_label)
+     WHERE id = $10
      RETURNING *`,
-    [title, description, category, price_cents, platform_fee_pct, image_url, is_active, is_stride_verified, id],
+    [title, description, category, price_cents, platform_fee_pct, image_url, is_active, is_stride_verified, custom_label, id],
   );
 
   if (rows.length === 0) {

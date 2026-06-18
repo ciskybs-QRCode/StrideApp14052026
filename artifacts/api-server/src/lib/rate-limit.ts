@@ -10,11 +10,11 @@ type AuthReq = Request & { user?: TokenPayload };
  * Falls back to IP if the request somehow reaches this before auth.
  */
 export const identityLimiter = rateLimit({
-  windowMs: 60 * 1000,   // 1 minute
+  windowMs: 60 * 1000,
   limit: 100,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  validate: { ip: false },
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     const user = (req as AuthReq).user;
     return user ? `uid:${user.id}:org:${user.orgId}` : (req.ip ?? "unknown");
@@ -31,7 +31,7 @@ export const importLimiter = rateLimit({
   limit: 10,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  validate: { ip: false },
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     const user = (req as AuthReq).user;
     return user ? `import:${user.id}:org:${user.orgId}` : (req.ip ?? "unknown");
@@ -52,7 +52,7 @@ export const globalApiLimiter = rateLimit({
   limit: 2000,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  validate: { ip: false },
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     const user = (req as AuthReq).user;
     return user ? `global:uid:${user.id}:org:${user.orgId}` : `global:ip:${req.ip ?? "unknown"}`;
@@ -70,7 +70,7 @@ export const qrScanLimiter = rateLimit({
   limit: 30,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  validate: { ip: false },
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     const user = (req as AuthReq).user;
     return user ? `qr:${user.id}:${user.orgId}` : `qr-ip:${req.ip ?? "unknown"}`;
@@ -87,7 +87,7 @@ export const authLimiter = rateLimit({
   limit: 10,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  validate: { ip: false },
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => `auth:${req.ip ?? "unknown"}`,
   message: { error: "Too many login attempts. Please wait 15 minutes and try again." },
 });
@@ -101,7 +101,7 @@ export const aiLimiter = rateLimit({
   limit: 10,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  validate: { ip: false },
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     const user = (req as AuthReq).user;
     return user ? `ai:${user.id}` : `ai:ip:${req.ip ?? "unknown"}`;
