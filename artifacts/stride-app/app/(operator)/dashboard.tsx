@@ -1486,21 +1486,6 @@ export default function OperatorDashboard() {
             <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
           </Pressable>
 
-          {/* 6. Join an Association */}
-          <Pressable
-            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => { router.push("/join-org" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          >
-            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EFF6FF" }]}>
-              <Ionicons name="person-add-outline" size={26} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Join an Association</Text>
-              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Find and join a new association</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-          </Pressable>
-
         </View>
 
         {/* ── Security Alerts Quick Access ── */}
@@ -1552,6 +1537,24 @@ export default function OperatorDashboard() {
             <Text style={[styles.notifTime, { color: colors.mutedForeground }]}>{log.time}</Text>
           </View>
         ))}
+
+        {/* ── Join an Association (bottom) ── */}
+        <View style={{ marginTop: 24, marginBottom: 8 }}>
+          <Pressable
+            style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => { router.push("/join-org" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <View style={[styles.qrCodeBtnIcon, { backgroundColor: "#EFF6FF" }]}>
+              <Ionicons name="person-add-outline" size={26} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Join an Association</Text>
+              <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Find and join a new association</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
+
       </ScrollView>
 
       {/* ══════════════════════════════════════════════════
