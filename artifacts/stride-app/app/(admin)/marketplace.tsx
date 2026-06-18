@@ -435,12 +435,20 @@ export default function AdminMarketplaceScreen() {
               </View>
 
               {fPrice && !isNaN(parseFloat(fPrice)) && (
-                <View style={[S.feePreview, { backgroundColor: colors.background }]}>
-                  <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
-                    {"Member pays: "}<Text style={{ fontWeight: "800", color: colors.foreground }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100))}</Text>
-                    {"\n"}{"Stride commission: "}<Text style={{ fontWeight: "800", color: "#D97706" }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (parseFloat(fFee) || 0) / 100))}</Text>
-                    {"\n"}{"Your association receives: "}<Text style={{ fontWeight: "800", color: "#059669" }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (1 - (parseFloat(fFee) || 0) / 100)))}</Text>
-                  </Text>
+                <View style={[S.feePreview, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Member pays</Text>
+                    <Text style={{ fontWeight: "800", color: colors.foreground, fontSize: 12 }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100))}</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Stride commission</Text>
+                    <Text style={{ fontWeight: "800", color: colors.foreground, fontSize: 12 }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (parseFloat(fFee) || 0) / 100))}</Text>
+                  </View>
+                  <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 6 }} />
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "700" }}>Your association receives</Text>
+                    <Text style={{ fontWeight: "900", color: "#1E3A8A", fontSize: 12 }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (1 - (parseFloat(fFee) || 0) / 100)))}</Text>
+                  </View>
                 </View>
               )}
 

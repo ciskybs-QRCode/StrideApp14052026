@@ -425,8 +425,8 @@ export default function AdminHome() {
         {/* ── KPI CARDS ── */}
         <View style={styles.kpiRow}>
           {[
-            { label: "Outstanding", value: pendingRevenue,  icon: "time-outline"    as const, color: "#F59E0B", bg: "#FEF3C7" },
-            { label: "Avg/Member",  value: avgPerStudent,  icon: "person-outline"  as const, color: "#3B82F6", bg: "#DBEAFE" },
+            { label: "Outstanding", value: `${cur}${pendingRevenue.toLocaleString()}`,  icon: "time-outline"    as const, color: "#F59E0B", bg: "#FEF3C7" },
+            { label: "Avg/Member",  value: `${cur}${avgPerStudent.toLocaleString()}`,  icon: "person-outline"  as const, color: "#3B82F6", bg: "#DBEAFE" },
             { label: "Renewal Rate",value: "87%",                icon: "refresh-outline" as const, color: "#10B981", bg: "#D1FAE5" },
             { label: "NPS Score",   value: "4.8★",               icon: "star-outline"    as const, color: "#7C3AED", bg: "#EDE9FE" },
           ].map(k => (
