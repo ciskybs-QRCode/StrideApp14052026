@@ -675,49 +675,30 @@ protection matters, this DPA shall prevail.
 //    For Associations to use with their own members
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const MEDIA_CONSENT_TEMPLATE = `[NOME ASSOCIAZIONE] — [ORGANISATION NAME]
-INFORMATIVA E MODULO DI CONSENSO PER IMMAGINI E MEDIA
+export const MEDIA_CONSENT_TEMPLATE = `[ORGANISATION NAME]
 MEDIA AND IMAGE CONSENT FORM
 
-Versione: 1.0 — Data: ___________
+Version: 1.0 — Date: ___________
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ISTRUZIONI PER L'ASSOCIAZIONE / INSTRUCTIONS FOR THE ORGANISATION:
-Questo è un modello. Inserire il nome dell'associazione, il logo, e le
-informazioni di contatto del responsabile del trattamento nei campi indicati
-con []. Questo documento deve essere adattato al proprio contesto specifico
-e verificato da un legale prima dell'utilizzo.
-
+INSTRUCTIONS FOR THE ORGANISATION:
 This is a template. Insert the organisation name, logo, and data controller
 contact details in the fields marked []. This document must be adapted to
 your specific context and reviewed by a legal professional before use.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-TITOLARE DEL TRATTAMENTO / DATA CONTROLLER
+DATA CONTROLLER
 
-[NOME ASSOCIAZIONE] con sede in [INDIRIZZO COMPLETO], C.F./P.IVA [NUMERO],
-nella persona del legale rappresentante pro tempore.
+[ORGANISATION NAME], registered at [FULL ADDRESS], Tax/VAT no. [NUMBER],
+represented by the legal representative pro tempore.
 
-Contatto per la privacy: [EMAIL PRIVACY ASSOCIAZIONE]
-Responsabile del Trattamento (se nominato): [NOME DPO]
+Privacy contact: [ORGANISATION PRIVACY EMAIL]
+Data Protection Officer (if appointed): [DPO NAME]
 
 
-1. FINALITÀ DEL TRATTAMENTO / PURPOSE OF PROCESSING
-
-L'Associazione raccoglie immagini fotografiche e video dei soci e dei
-partecipanti alle attività (inclusi i minori, previo consenso del genitore/
-tutore) per le seguenti finalità:
-
-(a) UTILIZZO INTERNO: documentazione delle attività a scopo organizzativo
-    interno, archivio storico dell'associazione, report per gli organi associativi.
-
-(b) COMUNICAZIONE ISTITUZIONALE: sito web ufficiale dell'associazione,
-    newsletter, materiali didattici e informativi, rapporti con enti pubblici.
-
-(c) COMUNICAZIONE PROMOZIONALE: profili social media ufficiali dell'associazione,
-    materiale promozionale, locandine, comunicati stampa.
+1. PURPOSE OF PROCESSING
 
 The Organisation collects photographs and video recordings of members and
 activity participants (including minors, subject to parental/guardian consent)
@@ -733,71 +714,43 @@ for the following purposes:
     materials, posters, press releases.
 
 
-2. BASE GIURIDICA / LEGAL BASIS
-
-Il trattamento si basa sul consenso esplicito dell'interessato (o del
-genitore/tutore per i minori) ai sensi dell'Art. 6(1)(a) e, per immagini
-di minori, dell'Art. 8 del Regolamento UE 2016/679 (GDPR).
+2. LEGAL BASIS
 
 Processing is based on the explicit consent of the data subject (or parent/
 guardian for minors) under GDPR Art. 6(1)(a) and, for minors, Art. 8.
 
 
-3. LIVELLI DI CONSENSO / CONSENT LEVELS
-
-Il consenso è strutturato in tre livelli. Il livello scelto viene registrato
-elettronicamente nell'app Stride con timestamp, indirizzo IP e firma digitale.
+3. CONSENT LEVELS
 
 Consent is structured at three levels, recorded electronically in the Stride
 app with timestamp, IP address, and digital signature.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-☐ OPZIONE A — NESSUN CONSENSO / NO CONSENT
-Rifiuto qualsiasi utilizzo di immagini che mi ritraggono (o che ritraggono
-il/la minore per cui esercito la responsabilità genitoriale).
-
+☐ OPTION A — NO CONSENT
 I refuse any use of images depicting me (or the minor for whom I hold
 parental responsibility).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-☐ OPZIONE B — USO INTERNO SOLTANTO / INTERNAL USE ONLY
-Acconsento all'utilizzo di immagini esclusivamente per finalità interne
-all'associazione (archivio, documentazione organizzativa interna).
-NON autorizzo la pubblicazione su siti web, social media, o materiali
-promozionali.
-
+☐ OPTION B — INTERNAL USE ONLY
 I consent to the use of images for internal organisational purposes only.
 I do NOT authorise publication on websites, social media, or promotional materials.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-☐ OPZIONE C — CONSENSO PIENO / FULL CONSENT
-Acconsento all'utilizzo di immagini per tutte le finalità indicate al
-punto 1 (utilizzo interno, comunicazione istituzionale e promozionale),
-inclusa la pubblicazione su sito web e canali social dell'associazione.
-
+☐ OPTION C — FULL CONSENT
 I consent to the use of images for all purposes listed in section 1
 (internal, institutional, and promotional), including publication on
 the organisation's website and social media channels.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
-4. CONSERVAZIONE / RETENTION
-
-Le immagini sono conservate per [NUMERO ANNI] anni dalla data di raccolta,
-o fino alla revoca del consenso. Al termine del periodo di conservazione,
-il materiale viene eliminato in modo sicuro.
+4. RETENTION
 
 Images are retained for [NUMBER OF YEARS] years from the date of collection,
 or until consent is withdrawn. After the retention period, material is
 securely deleted.
 
 
-5. COMUNICAZIONE A TERZI / THIRD-PARTY DISCLOSURE
-
-Le immagini non vengono cedute, vendute o comunicate a soggetti terzi
-per finalità commerciali o di profilazione. Possono essere condivise
-con enti pubblici o federazioni sportive nell'ambito di rendicontazioni
-istituzionali, previo consenso ove richiesto dalla legge.
+5. THIRD-PARTY DISCLOSURE
 
 Images are not sold or disclosed to third parties for commercial or
 profiling purposes. They may be shared with public bodies or sports
@@ -805,57 +758,37 @@ federations for institutional reporting, subject to consent where
 required by law.
 
 
-6. DIRITTI DELL'INTERESSATO / DATA SUBJECT RIGHTS
-
-In qualsiasi momento potete esercitare i diritti di: accesso, rettifica,
-cancellazione (revoca del consenso), limitazione del trattamento,
-opposizione, portabilità, contattando [EMAIL PRIVACY ASSOCIAZIONE].
-
-La revoca del consenso non pregiudica la liceità del trattamento
-effettuato prima della revoca.
+6. DATA SUBJECT RIGHTS
 
 You may exercise your rights of access, rectification, erasure (withdrawal
 of consent), restriction, objection, and portability at any time by
-contacting [EMAIL PRIVACY ASSOCIAZIONE].
+contacting [ORGANISATION PRIVACY EMAIL].
 
 Withdrawal of consent does not affect the lawfulness of processing
 conducted before withdrawal.
 
 
-7. DIRITTO DI RECLAMO / RIGHT TO LODGE A COMPLAINT
+7. RIGHT TO LODGE A COMPLAINT
 
-Avete diritto di proporre reclamo al Garante per la Protezione dei Dati
-Personali (www.garanteprivacy.it) o all'autorità di controllo competente
-nel vostro Paese di residenza.
-
-You have the right to lodge a complaint with the Garante per la Protezione
-dei Dati Personali (www.garanteprivacy.it) or the competent supervisory
-authority in your country of residence.
+You have the right to lodge a complaint with the competent data protection
+supervisory authority in your country of residence.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-DICHIARAZIONE DEL CONSENZIENTE / DECLARANT'S STATEMENT
-
-Dichiaro di aver letto e compreso la presente informativa e di esprimere
-il consenso indicato sopra liberamente e consapevolmente.
+DECLARANT'S STATEMENT
 
 I declare that I have read and understood this notice and that I give the
 indicated consent freely and knowingly.
 
-Nome e Cognome (genitore/tutore se minorenne):
 Full Name (parent/guardian if minor): _____________________________________
 
-In qualità di / As:
-☐ Socio adulto / Adult member
-☐ Genitore/Tutore del minore (nome del minore): ___________________________
+As:
+☐ Adult member
+☐ Parent/Guardian of minor (minor's name): _______________________________
 
-Firma digitale / Digital Signature: [registrata tramite Stride app / recorded via Stride app]
-Data / Date: [registrata automaticamente / recorded automatically]
+Digital Signature: [recorded via Stride app]
+Date: [recorded automatically]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NOTA: Questo documento è un modello fornito da Stride come strumento operativo.
-Stride non è responsabile della conformità legale del documento adattato
-dall'Associazione. Si raccomanda la revisione da parte di un consulente legale.
-
 NOTE: This document is a template provided by Stride as an operational tool.
 Stride is not responsible for the legal compliance of the document as adapted
 by the Organisation. Review by a legal professional is strongly recommended.`;
@@ -865,158 +798,152 @@ by the Organisation. Review by a legal professional is strongly recommended.`;
 //    For Associations to give to their own members (GDPR Art. 13)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const MEMBER_PRIVACY_TEMPLATE = `[NOME ASSOCIAZIONE] — [ORGANISATION NAME]
-INFORMATIVA SULLA PRIVACY PER I SOCI
+export const MEMBER_PRIVACY_TEMPLATE = `[ORGANISATION NAME]
 MEMBER PRIVACY NOTICE
-(Ai sensi dell'Art. 13 del Regolamento UE 2016/679 — GDPR)
+(Pursuant to Art. 13 of EU Regulation 2016/679 — GDPR)
 
-Versione: 1.0 — Data: ___________
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-ISTRUZIONI: Questo è un modello da personalizzare con i dati della vostra
-associazione. Fare revisionare da un legale o DPO prima dell'utilizzo.
+Version: 1.0 — Date: ___________
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. IDENTITÀ E DATI DI CONTATTO DEL TITOLARE
-
-Titolare del trattamento: [NOME ASSOCIAZIONE]
-Sede: [INDIRIZZO COMPLETO]
-Codice Fiscale / Partita IVA: [NUMERO]
-Rappresentante legale: [NOME E COGNOME]
-Responsabile della protezione dei dati (RPD/DPO): [SE NOMINATO]
-Email privacy: [EMAIL PRIVACY]
-Telefono: [NUMERO]
-
-
-2. DATI RACCOLTI E FINALITÀ DEL TRATTAMENTO
-
-L'Associazione raccoglie e tratta i dati personali indicati di seguito
-per le finalità e con le basi giuridiche specificate:
-
-DATI ANAGRAFICI E DI CONTATTO
-(nome, cognome, data di nascita, indirizzo, email, telefono, codice fiscale)
-Finalità: iscrizione e gestione del rapporto associativo
-Base giuridica: Art. 6(1)(b) — esecuzione del contratto associativo
-
-DATI DI SALUTE E SICUREZZA
-(allergie, farmaci, note mediche, consenso intervento di emergenza)
-Finalità: tutela della salute e sicurezza del socio durante le attività
-Base giuridica: Art. 9(2)(a) GDPR — consenso esplicito + Art. 9(2)(f) —
-accertamento, esercizio o difesa di un diritto in sede giudiziaria
-
-DATI DI PRESENZA E FREQUENZA
-(registrazioni di ingresso/uscita, frequenza alle lezioni)
-Finalità: gestione delle attività associative e rendicontazione
-Base giuridica: Art. 6(1)(b) — esecuzione del contratto associativo
-
-DATI DI PAGAMENTO
-(ricevute, storico pagamenti — dati carta non memorizzati dall'Associazione)
-Finalità: gestione economica e contabilità associativa
-Base giuridica: Art. 6(1)(b) contratto + Art. 6(1)(c) obbligo legale
-
-DATI DI FIRMA ELETTRONICA
-(firma digitale, timestamp, indirizzo IP, hash del documento)
-Finalità: prova del consenso e conformità normativa
-Base giuridica: Art. 6(1)(c) — obbligo legale
-
-IMMAGINI E MATERIALE MULTIMEDIALE (se consenso espresso)
-(fotografie e video relativi alle attività)
-Finalità: comunicazione istituzionale e promozionale (v. Modulo Media Consent)
-Base giuridica: Art. 6(1)(a) + Art. 9(2)(a) — consenso esplicito
-
-
-3. CATEGORIE PARTICOLARI DI DATI
-
-I dati di salute (allergie, farmaci, note mediche) costituiscono "categorie
-particolari" ai sensi dell'Art. 9 GDPR. Questi dati sono trattati su base
-del consenso esplicito del socio (o del genitore/tutore per i minori) e
-sono accessibili esclusivamente al personale autorizzato dell'Associazione
-per finalità di sicurezza durante le attività.
-
-
-4. STRUMENTI TECNOLOGICI UTILIZZATI — STRIDE
-
-L'Associazione utilizza la piattaforma Stride ([NOME ASSOCIAZIONE] utilizza
-Stride come strumento tecnologico). Stride è un fornitore di servizi di
-trattamento dati (Responsabile del Trattamento ai sensi dell'Art. 28 GDPR).
-Stride tratta i dati esclusivamente su istruzioni dell'Associazione e non
-accede ai vostri dati personali per propri scopi. Per l'informativa privacy
-di Stride: stride.app/privacy.
-
-
-5. COMUNICAZIONE A TERZI
-
-I vostri dati personali non vengono ceduti o venduti a terzi per finalità
-commerciali. Possono essere comunicati a:
-• Personale autorizzato dell'Associazione (operatori, istruttori, amministratori)
-• Fornitori di servizi tecnologici vincolati da DPA (incluso Stride)
-• Enti pubblici o autorità competenti quando richiesto per legge
-• Federazioni sportive o enti di appartenenza per obblighi di affiliazione
-
-
-6. TRASFERIMENTI INTERNAZIONALI
-
-I dati possono essere trasferiti a fornitori di servizi tecnologici con
-infrastrutture nell'EEA o in Paesi terzi dotati di garanzie adeguate
-(decisione di adeguatezza o Clausole Contrattuali Standard UE).
-
-
-7. PERIODO DI CONSERVAZIONE
-
-Dati anagrafici e associativi: per la durata del rapporto associativo
-più [X ANNI] anni per eventuali contestazioni.
-
-Dati contabili e fiscali: 10 anni (obbligo di legge).
-
-Dati di salute: per la durata dell'iscrizione; eliminati entro 30 giorni
-dalla cancellazione dell'iscrizione, salvo obbligo legale di conservazione.
-
-Immagini (con consenso): [NUMERO] anni, o fino alla revoca del consenso.
-
-Firma elettronica e audit log: 7 anni.
-
-
-8. DIRITTI DELL'INTERESSATO
-
-Ai sensi degli Artt. 15-22 GDPR, avete il diritto di:
-
-• ACCESSO (Art. 15): Ottenere conferma che siano trattati dati che vi
-  riguardano e riceverne copia.
-• RETTIFICA (Art. 16): Ottenere la rettifica di dati inesatti.
-• CANCELLAZIONE (Art. 17): Ottenere la cancellazione dei dati, nei casi
-  previsti (es. revoca del consenso), salvo obblighi di conservazione legale.
-• LIMITAZIONE (Art. 18): Ottenere la limitazione del trattamento in
-  determinati casi.
-• PORTABILITÀ (Art. 20): Ricevere i dati in formato strutturato e leggibile.
-• OPPOSIZIONE (Art. 21): Opporvi al trattamento per motivi legittimi.
-• REVOCA DEL CONSENSO: In qualsiasi momento, senza pregiudizio per la
-  liceità del trattamento precedente alla revoca.
-
-Per esercitare i vostri diritti: [EMAIL PRIVACY]
-Rispondiamo entro 30 giorni dalla ricezione della richiesta.
-
-
-9. DIRITTO DI RECLAMO
-
-Avete il diritto di proporre reclamo al Garante per la Protezione dei
-Dati Personali: www.garanteprivacy.it | Piazza Venezia 11, 00187 Roma.
-
-
-10. MODIFICHE ALLA PRESENTE INFORMATIVA
-
-Le modifiche materiali vengono comunicate con almeno 30 giorni di preavviso
-tramite email o notifica nell'app. La versione aggiornata è sempre disponibile
-presso la sede associativa e nell'app Stride (Documenti).
+INSTRUCTIONS: This is a template to be customised with your organisation's
+details. Have it reviewed by a legal professional or DPO before use.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NOTA: Questo documento è un modello fornito da Stride come supporto
-all'adempimento normativo. L'Associazione rimane responsabile della
-conformità legale del documento finale. Stride non fornisce consulenza
-legale. Si raccomanda la revisione da parte di un consulente legale o DPO.
+
+1. IDENTITY AND CONTACT DETAILS OF THE CONTROLLER
+
+Data Controller: [ORGANISATION NAME]
+Registered address: [FULL ADDRESS]
+Tax/VAT number: [NUMBER]
+Legal representative: [FULL NAME]
+Data Protection Officer (DPO): [IF APPOINTED]
+Privacy email: [PRIVACY EMAIL]
+Telephone: [NUMBER]
+
+
+2. DATA COLLECTED AND PURPOSES OF PROCESSING
+
+The Organisation collects and processes the personal data listed below
+for the purposes and on the legal bases specified:
+
+PERSONAL AND CONTACT DATA
+(name, surname, date of birth, address, email, phone, tax number)
+Purpose: membership registration and management of the membership relationship
+Legal basis: Art. 6(1)(b) — performance of the membership contract
+
+HEALTH AND SAFETY DATA
+(allergies, medications, medical notes, emergency intervention consent)
+Purpose: protection of member health and safety during activities
+Legal basis: Art. 9(2)(a) GDPR — explicit consent + Art. 9(2)(f) —
+establishment, exercise or defence of legal claims
+
+ATTENDANCE AND PARTICIPATION DATA
+(entry/exit records, lesson attendance)
+Purpose: management of association activities and reporting
+Legal basis: Art. 6(1)(b) — performance of the membership contract
+
+PAYMENT DATA
+(receipts, payment history — card data not stored by the Organisation)
+Purpose: financial management and association accounting
+Legal basis: Art. 6(1)(b) contract + Art. 6(1)(c) legal obligation
+
+ELECTRONIC SIGNATURE DATA
+(digital signature, timestamp, IP address, document hash)
+Purpose: proof of consent and regulatory compliance
+Legal basis: Art. 6(1)(c) — legal obligation
+
+IMAGES AND MULTIMEDIA MATERIAL (if consent given)
+(photographs and videos of activities)
+Purpose: institutional and promotional communications (see Media Consent Form)
+Legal basis: Art. 6(1)(a) + Art. 9(2)(a) — explicit consent
+
+
+3. SPECIAL CATEGORIES OF DATA
+
+Health data (allergies, medications, medical notes) constitute "special
+categories" under Art. 9 GDPR. This data is processed on the basis of
+explicit consent (or parental/guardian consent for minors) and is accessible
+only to authorised personnel for safety purposes during activities.
+
+
+4. TECHNOLOGY USED — STRIDE
+
+The Organisation uses the Stride platform as a data processing tool. Stride
+acts as a Data Processor under Art. 28 GDPR and processes data solely on the
+Organisation's instructions. Stride does not access your personal data for its
+own purposes. For Stride's privacy policy: stride.app/privacy.
+
+
+5. THIRD-PARTY DISCLOSURE
+
+Your personal data is not sold or disclosed to third parties for commercial
+purposes. It may be shared with:
+• Authorised organisation personnel (operators, instructors, administrators)
+• Technology service providers bound by a DPA (including Stride)
+• Public bodies or competent authorities when required by law
+• Sports federations or affiliated bodies for membership obligations
+
+
+6. INTERNATIONAL TRANSFERS
+
+Data may be transferred to technology service providers with infrastructure
+in the EEA or in third countries with adequate safeguards (adequacy decision
+or EU Standard Contractual Clauses).
+
+
+7. RETENTION PERIOD
+
+Personal and membership data: for the duration of membership plus [X YEARS]
+years for potential disputes.
+
+Accounting and tax data: 10 years (legal obligation).
+
+Health data: for the duration of membership; deleted within 30 days of
+membership cancellation, unless a legal obligation requires retention.
+
+Images (with consent): [NUMBER] years, or until consent is withdrawn.
+
+Electronic signature and audit log: 7 years.
+
+
+8. YOUR RIGHTS
+
+Under Arts. 15-22 GDPR, you have the right to:
+
+• ACCESS (Art. 15): Obtain confirmation that your data is being processed and receive a copy.
+• RECTIFICATION (Art. 16): Have inaccurate data corrected.
+• ERASURE (Art. 17): Have your data deleted where applicable (e.g. withdrawal of consent),
+  subject to legal retention obligations.
+• RESTRICTION (Art. 18): Obtain restriction of processing in certain cases.
+• PORTABILITY (Art. 20): Receive your data in a structured, machine-readable format.
+• OBJECTION (Art. 21): Object to processing on legitimate grounds.
+• WITHDRAWAL OF CONSENT: At any time, without prejudice to the lawfulness of
+  processing prior to withdrawal.
+
+To exercise your rights: [PRIVACY EMAIL]
+We respond within 30 days of receipt.
+
+
+9. RIGHT TO LODGE A COMPLAINT
+
+You have the right to lodge a complaint with the competent data protection
+supervisory authority in your country of residence.
+
+
+10. CHANGES TO THIS NOTICE
+
+Material changes will be communicated with at least 30 days' notice via email
+or in-app notification. The current version is always available at the
+organisation's premises and in the Stride app (Documents).
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-© [NOME ASSOCIAZIONE]. Tutti i diritti riservati.`;
+NOTE: This document is a template provided by Stride as a compliance support
+tool. The Organisation remains responsible for the legal compliance of the
+final document. Stride does not provide legal advice. Review by a legal
+professional or DPO is strongly recommended.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+© [ORGANISATION NAME]. All rights reserved.`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Document index (used by the download endpoint)
@@ -1055,14 +982,14 @@ export const LEGAL_DOCS: Record<string, LegalDocMeta> = {
   "media-consent": {
     id: "media-consent",
     title: "Media Consent Form Template",
-    subtitle: "Modello Consenso Media (per i vostri Soci)",
+    subtitle: "Media Consent Form (Template for your members)",
     version: DOC_VERSION,
     text: MEDIA_CONSENT_TEMPLATE,
   },
   "member-privacy": {
     id: "member-privacy",
     title: "Member Privacy Notice Template",
-    subtitle: "Modello Informativa Privacy Soci",
+    subtitle: "Member Privacy Notice Template (GDPR Art. 13)",
     version: DOC_VERSION,
     text: MEMBER_PRIVACY_TEMPLATE,
   },

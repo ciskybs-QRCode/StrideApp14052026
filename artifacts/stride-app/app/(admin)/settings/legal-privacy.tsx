@@ -82,6 +82,12 @@ function linkBrand(url: string): { label: string; icon: keyof typeof Ionicons.gl
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+const STRIDE_DOC_ID_MAP: Record<string, string> = {
+  ld1: "terms",
+  ld2: "privacy",
+  ld3: "dpa",
+};
+
 export default function LegalPrivacyPage() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
@@ -1082,7 +1088,8 @@ export default function LegalPrivacyPage() {
                         onPress={() => {
                           const raw = process.env.EXPO_PUBLIC_DOMAIN ?? "";
                           const domain = raw.startsWith("http") ? raw : `https://${raw}`;
-                          Linking.openURL(`${domain}/api/legal/view/${doc.id}`);
+                          const backendId = STRIDE_DOC_ID_MAP[doc.id] ?? doc.id;
+                          Linking.openURL(`${domain}/api/legal/view/${backendId}`);
                         }}
                       >
                         <Ionicons name="open-outline" size={18} color="#FFF" />
