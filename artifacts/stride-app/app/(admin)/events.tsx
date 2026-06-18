@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useRouter } from "expo-router";
 import {
   listEvents, getEvent, createEvent, updateEvent, deleteEvent,
   addEventDate, deleteEventDate, addEventTicketType,
@@ -397,6 +398,7 @@ function CreateEventModal({ visible, onClose, onCreated }: {
 export default function AdminEventsScreen() {
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
+  const router  = useRouter();
 
   const [events, setEvents]       = useState<StrideEvent[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -425,10 +427,18 @@ export default function AdminEventsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <View style={[styles.topBar, { paddingTop: insets.top + 12, backgroundColor: "#1E3A8A" }]}>
-        <View>
-          <Text style={styles.topBarEyebrow}>ADMINISTRATION</Text>
-          <Text style={styles.topBarTitle}>Events</Text>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 20) + 12, backgroundColor: "#1E3A8A" }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Pressable
+            onPress={() => router.canGoBack() ? router.back() : router.replace("/(admin)/stats" as never)}
+            hitSlop={12}
+          >
+            <Ionicons name="chevron-back" size={24} color="#FBBF24" />
+          </Pressable>
+          <View>
+            <Text style={styles.topBarEyebrow}>ADMINISTRATION</Text>
+            <Text style={styles.topBarTitle}>Events</Text>
+          </View>
         </View>
         <Pressable
           onPress={() => setShowCreate(true)}

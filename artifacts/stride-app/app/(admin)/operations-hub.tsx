@@ -89,19 +89,21 @@ export default function OperationsHub() {
           onPress={() => router.push("/(admin)/analytics" as never)}
         />
 
-        {marketplaceEnabled && (
-          <>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE</Text>
-            <HubCard
-              icon="storefront-outline"
-              title="Stride Marketplace"
-              description="Products, insurance and platform commission"
-              iconBg="#78350F"
-              iconColor="#D4AF37"
-              onPress={() => router.push("/(admin)/marketplace" as never)}
-            />
-          </>
-        )}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE & EVENTS</Text>
+        <HubCard
+          icon="storefront-outline"
+          title="Stride Marketplace"
+          description="Products, shop links and platform commission"
+          iconBg="#78350F"
+          iconColor="#D4AF37"
+          onPress={() => router.push("/(admin)/marketplace" as never)}
+        />
+        <HubCard
+          icon="ticket-outline"
+          title="Events & Tickets"
+          description="Create events, manage dates and ticket types"
+          onPress={() => router.push("/(admin)/events" as never)}
+        />
 
         {user?.role === "super_admin" && (
           <>

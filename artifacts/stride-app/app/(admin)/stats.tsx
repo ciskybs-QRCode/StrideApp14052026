@@ -356,14 +356,12 @@ export default function AdminHome() {
           <SOSButton onConfirm={openSOS} />
         </View>
 
-        {marketplaceEnabled && (
-          <HubCard
-            icon="storefront"
-            title="Stride Marketplace"
-            description="Products, insurance and platform commission"
-            onPress={() => { router.push("/(admin)/marketplace" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          />
-        )}
+        <HubCard
+          icon="storefront"
+          title="Stride Marketplace"
+          description="Products, shop links and platform commission"
+          onPress={() => { router.push("/(admin)/marketplace" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        />
         <HubCard
           icon="ticket-outline"
           title="Events & Tickets"
