@@ -17,11 +17,13 @@ jobs:
       SLACK_RETRY_NOTICE_CAP: ${{ vars.SLACK_RETRY_NOTICE_CAP || 5 }}
     steps:
       - name: Checkout full history
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Preflight — check Slack webhook secret
+        id: preflight
         uses: actions/github-script@v7
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -35,12 +37,13 @@ jobs:
                 'Slack notifications will be silently skipped for the entire run. ' +
                 'See docs/slack-alerts.md for setup instructions.';
               if (requireWebhook) {
-                core.setFailed(
+                const failMsg =
                   'REQUIRE_SLACK_WEBHOOK is true but SLACK_WEBHOOK_URL secret is not set. ' +
                   'Add the secret under Settings → Secrets and variables → Actions → Secrets, ' +
                   'or set REQUIRE_SLACK_WEBHOOK to false to downgrade this to a warning. ' +
-                  'See docs/slack-alerts.md for setup instructions.'
-                );
+                  'See docs/slack-alerts.md for setup instructions.';
+                core.setOutput('step_error', failMsg);
+                core.setFailed(failMsg);
               } else {
                 core.warning(message);
               }
@@ -60,7 +63,21 @@ jobs:
           BACKUP_BRANCH="backup/main-$(date -u +%Y%m%d-%H%M%S)"
           git fetch target main --depth=1 || true
           if git rev-parse FETCH_HEAD &>/dev/null; then
-            git push target "FETCH_HEAD:refs/heads/${BACKUP_BRANCH}"
+            set +e
+            BACKUP_OUTPUT=$(git push target "FETCH_HEAD:refs/heads/${BACKUP_BRANCH}" 2>&1)
+            BACKUP_EXIT=$?
+            set -e
+            if [ $BACKUP_EXIT -ne 0 ]; then
+              TRUNCATED="${BACKUP_OUTPUT:0:500}"
+              {
+                echo "push_error<<PUSH_EOF"
+                printf 'Backup branch creation failed:\n%s\n' "$TRUNCATED"
+                echo "PUSH_EOF"
+              } >> "$GITHUB_OUTPUT"
+              echo "Backup branch creation failed (exit ${BACKUP_EXIT}): ${BACKUP_OUTPUT}"
+              exit $BACKUP_EXIT
+            fi
+            echo "$BACKUP_OUTPUT"
             echo "Created backup branch ${BACKUP_BRANCH} on target"
             echo "backup_branch=${BACKUP_BRANCH}" >> "$GITHUB_OUTPUT"
           else
@@ -110,7 +127,21 @@ jobs:
           DELETED_LIST=""
           for BRANCH in $TO_DELETE; do
             echo "Deleting ${BRANCH}"
-            git push target --delete "$BRANCH"
+            set +e
+            DELETE_OUTPUT=$(git push target --delete "$BRANCH" 2>&1)
+            DELETE_EXIT=$?
+            set -e
+            if [ $DELETE_EXIT -ne 0 ]; then
+              TRUNCATED="${DELETE_OUTPUT:0:500}"
+              {
+                echo "step_error<<PRUNE_EOF"
+                printf 'Pruning branch %s failed:\n%s\n' "$BRANCH" "$TRUNCATED"
+                echo "PRUNE_EOF"
+              } >> "$GITHUB_OUTPUT"
+              echo "Prune failed for ${BRANCH} (exit ${DELETE_EXIT}): ${DELETE_OUTPUT}"
+              exit $DELETE_EXIT
+            fi
+            echo "$DELETE_OUTPUT"
             DELETED_LIST="${DELETED_LIST}${BRANCH},"
           done
 
@@ -129,80 +160,87 @@ jobs:
             //   Manually closed: label:sync-failure -label:auto-resolved is:closed
             // See docs/issue-filters.md for saved search URLs and audit guidance.
 
-            // Ensure the auto-resolved label exists; create it if not.
-            const AUTO_LABEL = 'auto-resolved';
             try {
-              await github.rest.issues.getLabel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                name: AUTO_LABEL,
-              });
-            } catch (err) {
-              if (err.status === 404) {
-                await github.rest.issues.createLabel({
+              // Ensure the auto-resolved label exists; create it if not.
+              const AUTO_LABEL = 'auto-resolved';
+              try {
+                await github.rest.issues.getLabel({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   name: AUTO_LABEL,
-                  color: '0e8a16',
-                  description: 'Issue was closed automatically by a successful workflow run',
                 });
-                console.log(`Created label "${AUTO_LABEL}"`);
-              } else {
-                throw err;
+              } catch (err) {
+                if (err.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: AUTO_LABEL,
+                    color: '0e8a16',
+                    description: 'Issue was closed automatically by a successful workflow run',
+                  });
+                  console.log(`Created label "${AUTO_LABEL}"`);
+                } else {
+                  throw err;
+                }
               }
-            }
 
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: 'sync-failure',
-              state: 'open',
-            });
-
-            const closed = [];
-
-            for (const issue of issues) {
-              // Tag the issue before closing so the label is visible in history.
-              await github.rest.issues.addLabels({
+              const { data: issues } = await github.rest.issues.listForRepo({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: issue.number,
-                labels: [AUTO_LABEL],
+                labels: 'sync-failure',
+                state: 'open',
               });
 
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: [
-                  '### ✅ Sync resolved',
-                  '',
-                  `The sync is healthy again as of run [#${context.runNumber}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
-                  '',
-                  `**Commit:** \`${context.sha.slice(0, 7)}\` · **Actor:** @${context.actor}`,
-                  '',
-                  '_Closing automatically — reopen if the problem recurs._',
-                ].join('\n'),
-              });
+              const closed = [];
 
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                state: 'closed',
-                state_reason: 'completed',
-              });
+              for (const issue of issues) {
+                // Tag the issue before closing so the label is visible in history.
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: [AUTO_LABEL],
+                });
 
-              console.log(`Closed issue #${issue.number}`);
-              closed.push({ number: issue.number, url: issue.html_url });
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: [
+                    '### ✅ Sync resolved',
+                    '',
+                    `The sync is healthy again as of run [#${context.runNumber}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
+                    '',
+                    `**Commit:** \`${context.sha.slice(0, 7)}\` · **Actor:** @${context.actor}`,
+                    '',
+                    '_Closing automatically — reopen if the problem recurs._',
+                  ].join('\n'),
+                });
+
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  state_reason: 'completed',
+                });
+
+                console.log(`Closed issue #${issue.number}`);
+                closed.push({ number: issue.number, url: issue.html_url });
+              }
+
+              if (issues.length === 0) {
+                console.log('No open sync-failure issues to close.');
+              }
+
+              core.setOutput('closed_count', closed.length);
+              core.setOutput('closed_json', JSON.stringify(closed));
+            } catch (err) {
+              // Capture the error message so "Notify on failure" can surface it.
+              const msg = `${err.message || String(err)}`.slice(0, 500);
+              core.setOutput('step_error', `Close sync-failure issues failed: ${msg}`);
+              core.setFailed(msg);
             }
-
-            if (issues.length === 0) {
-              console.log('No open sync-failure issues to close.');
-            }
-
-            core.setOutput('closed_count', closed.length);
-            core.setOutput('closed_json', JSON.stringify(closed));
 
       - name: Post bulk-resolve summary on oldest issue
         if: success() && fromJSON(steps.close_issues.outputs.closed_count) >= 2
@@ -372,6 +410,9 @@ jobs:
           SLACK_RETRY_NOTICE_CAP: ${{ env.SLACK_RETRY_NOTICE_CAP }}
           DELETED_BRANCHES: ${{ steps.prune.outputs.deleted_branches }}
           PUSH_ERROR: ${{ steps.push.outputs.push_error }}
+          PRUNE_ERROR: ${{ steps.prune.outputs.step_error }}
+          PREFLIGHT_ERROR: ${{ steps.preflight.outputs.step_error }}
+          CLOSE_ISSUES_ERROR: ${{ steps.close_issues.outputs.step_error }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -386,12 +427,42 @@ jobs:
             const shortSha = context.sha.slice(0, 7);
             const isRetry = issues.length > 0;
 
-            // ── Push error snippet ───────────────────────────────────────────
-            // Captured from the "Push to target repository" step's stderr.
+            // ── Step error snippet ───────────────────────────────────────────
+            // Pick the first non-empty error from any step that captures one.
+            // Priority: push (most common failure) → prune → close_issues → preflight.
             // Truncated to 300 chars so Slack messages stay readable.
-            const rawPushError = (process.env.PUSH_ERROR || '').trim();
-            const pushErrorSnippet = rawPushError
-              ? rawPushError.slice(0, 300) + (rawPushError.length > 300 ? '…' : '')
+            let rawStepError = (
+              process.env.PUSH_ERROR ||
+              process.env.PRUNE_ERROR ||
+              process.env.CLOSE_ISSUES_ERROR ||
+              process.env.PREFLIGHT_ERROR ||
+              ''
+            ).trim();
+
+            // ── Generic fallback via GitHub API ──────────────────────────────
+            // For steps that cannot capture their own output (e.g. actions/checkout),
+            // query the run's job steps to find the failed step name and surface it
+            // as a human-readable fallback when no specific error was captured above.
+            if (!rawStepError) {
+              try {
+                const { data: runData } = await github.rest.actions.listJobsForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: context.runId,
+                });
+                for (const job of runData.jobs) {
+                  const failedStep = (job.steps || []).find(s => s.conclusion === 'failure');
+                  if (failedStep) {
+                    rawStepError = `Step "${failedStep.name}" failed — see the run log for details.`;
+                    break;
+                  }
+                }
+              } catch (apiErr) {
+                console.log(`Could not query run steps for fallback error: ${apiErr.message}`);
+              }
+            }
+            const pushErrorSnippet = rawStepError
+              ? rawStepError.slice(0, 300) + (rawStepError.length > 300 ? '…' : '')
               : '';
             // Slack mrkdwn block (empty string when no error was captured)
             const errorBlock = pushErrorSnippet
@@ -399,7 +470,7 @@ jobs:
               : '';
             // Plain-text version for GitHub issue/comment (fenced code block)
             const errorMd = pushErrorSnippet
-              ? `\n\n**Push error:**\n\`\`\`\n${pushErrorSnippet}\n\`\`\``
+              ? `\n\n**Error:**\n\`\`\`\n${pushErrorSnippet}\n\`\`\``
               : '';
 
             // ── Helpers for Slack thread-ts storage in issue body ────────────
@@ -494,7 +565,7 @@ jobs:
                 `**Actor:** @${context.actor}`,
                 ...(pushErrorSnippet ? [
                   '',
-                  '## Push error',
+                  '## Error',
                   '```',
                   pushErrorSnippet,
                   '```',
@@ -848,6 +919,9 @@ jobs:
           PRUNE_OUTCOME: ${{ steps.prune.outcome }}
           CLOSE_ISSUES_OUTCOME: ${{ steps.close_issues.outcome }}
           PUSH_ERROR: ${{ steps.push.outputs.push_error }}
+          PRUNE_ERROR: ${{ steps.prune.outputs.step_error }}
+          PREFLIGHT_ERROR: ${{ steps.preflight.outputs.step_error }}
+          CLOSE_ISSUES_ERROR: ${{ steps.close_issues.outputs.step_error }}
           BACKUP_BRANCH: ${{ steps.push.outputs.backup_branch }}
           DELETED_BRANCHES: ${{ steps.prune.outputs.deleted_branches }}
           CLOSED_COUNT: ${{ steps.close_issues.outputs.closed_count }}
@@ -858,7 +932,14 @@ jobs:
             const pushOutcome    = process.env.PUSH_OUTCOME;
             const pruneOutcome   = process.env.PRUNE_OUTCOME;
             const closeOutcome   = process.env.CLOSE_ISSUES_OUTCOME;
-            const pushError      = (process.env.PUSH_ERROR || '').trim();
+            // Pick the first non-empty error across all steps that capture one.
+            const pushError      = (
+              process.env.PUSH_ERROR ||
+              process.env.PRUNE_ERROR ||
+              process.env.CLOSE_ISSUES_ERROR ||
+              process.env.PREFLIGHT_ERROR ||
+              ''
+            ).trim();
             const backupBranch   = (process.env.BACKUP_BRANCH || '').trim();
             const deletedRaw     = (process.env.DELETED_BRANCHES || '').trim();
             const closedCount    = parseInt(process.env.CLOSED_COUNT || '0', 10);
@@ -953,7 +1034,7 @@ jobs:
               }
 
               const errorSection = pushError
-                ? `\n\n### Push error\n\`\`\`\n${pushError.slice(0, 400)}${pushError.length > 400 ? '\n…(truncated)' : ''}\n\`\`\``
+                ? `\n\n### Error\n\`\`\`\n${pushError.slice(0, 400)}${pushError.length > 400 ? '\n…(truncated)' : ''}\n\`\`\``
                 : '';
 
               const fixSection = suggestedFix
