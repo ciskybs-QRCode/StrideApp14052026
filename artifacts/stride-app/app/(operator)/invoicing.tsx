@@ -1007,14 +1007,6 @@ export default function OperatorInvoicing() {
               </View>
             );
           })()}
-          <Pressable
-            style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 5, marginTop: 12 }}
-            onPress={() => router.push("/(operator)/availability-prefs" as never)}
-          >
-            <Ionicons name="settings-outline" size={13} color="rgba(255,255,255,0.65)" />
-            <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: "600" }}>Availability Preferences</Text>
-            <Ionicons name="chevron-forward" size={12} color="rgba(255,255,255,0.65)" />
-          </Pressable>
         </View>
 
         {/* ── Private Lesson Bookings ── */}

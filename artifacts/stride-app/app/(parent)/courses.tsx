@@ -417,6 +417,7 @@ export default function CoursesScreen() {
 
   // Local enrollments (added in-session without backend)
   const [localBookings, setLocalBookings] = useState<Booking[]>([]);
+  const [withdrawnIds, setWithdrawnIds] = useState<Set<string>>(new Set());
   const allBookings = [...bookings, ...localBookings];
 
   // Enroll modal state
@@ -428,9 +429,27 @@ export default function CoursesScreen() {
   const [waitlistLoading, setWaitlistLoading] = useState<string | null>(null);
 
   const course = courses.find(c => c.id === selectedCourse);
-  const isEnrolled = (courseId: string) => allBookings.some(b => b.courseId === courseId);
+  const isEnrolled = (courseId: string) => !withdrawnIds.has(courseId) && allBookings.some(b => b.courseId === courseId);
   const enrolledCourses = courses.filter(c => isEnrolled(c.id));
   const availableCourses = courses.filter(c => !isEnrolled(c.id));
+
+  const handleWithdraw = (c: (typeof courses)[0]) => {
+    Alert.alert(
+      "Ritira Iscrizione",
+      `Sei sicuro di voler ritirare l'iscrizione a "${c.name}"?\n\nContatta l'amministratore per eventuali rimborsi.`,
+      [
+        { text: "Annulla", style: "cancel" },
+        {
+          text: "Ritira", style: "destructive",
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            setWithdrawnIds(prev => new Set([...prev, c.id]));
+            setLocalBookings(prev => prev.filter(b => b.courseId !== c.id));
+          },
+        },
+      ]
+    );
+  };
 
   // Derived child name for enrolled courses
   const getParticipantForCourse = (courseId: string): string => {
@@ -697,6 +716,13 @@ export default function CoursesScreen() {
                         >
                           <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
                           <Text style={[styles.materialsBtnText, { color: colors.primary }]}>Details</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.materialsBtn, { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" }]}
+                          onPress={() => handleWithdraw(c)}
+                        >
+                          <Ionicons name="exit-outline" size={16} color="#DC2626" />
+                          <Text style={[styles.materialsBtnText, { color: "#DC2626" }]}>Ritira</Text>
                         </Pressable>
                       </View>
                     </View>

@@ -126,13 +126,6 @@ function PlanBreakdown({ metrics, onPlanPress }: { metrics: SuperAdminPlanMetric
             onPress={() => onPlanPress(tile.key)} />
         ))}
       </View>
-      <Pressable
-        style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10, backgroundColor: "#FFF", borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0", paddingVertical: 10, opacity: pressed ? 0.8 : 1 }]}
-        onPress={() => onPlanPress("all")}
-      >
-        <Ionicons name="grid-outline" size={14} color="#1E3A8A" />
-        <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A" }}>View All Associations</Text>
-      </Pressable>
     </View>
   );
 }

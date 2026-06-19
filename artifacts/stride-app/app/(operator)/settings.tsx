@@ -122,6 +122,23 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
+        {/* ── My Contract ── */}
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { tap(); router.navigate("/(operator)/contract" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
+            <Ionicons name="document-text-outline" size={26} color="#1E3A8A" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>My Contract</Text>
+            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
+              Employment agreement, rates and signature
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
+
         {/* ── Join an Association ── */}
         <Pressable
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
@@ -137,6 +154,23 @@ export default function OperatorSettingsScreen() {
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
+
+        {/* ── End of Contract ── */}
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: "#FEF2F2", opacity: pressed ? 0.88 : 1, borderWidth: 1, borderColor: "#FECACA" }]}
+          onPress={() => { tap(); router.navigate("/(operator)/resign" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#FEE2E2" }]}>
+            <Ionicons name="exit-outline" size={26} color="#DC2626" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: "#DC2626" }]}>Fine Contratto</Text>
+            <Text style={[styles.featureDesc, { color: "#B91C1C" }]}>
+              Avvia la procedura di fine contratto con preavviso
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#DC2626" />
         </Pressable>
 
         {/* ── My Workspace hub ── */}

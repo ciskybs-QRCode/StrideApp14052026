@@ -104,7 +104,7 @@ export default function OperatorContract() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="My Contract" onBack={() => router.push("/(operator)/invoicing" as never)} />
+      <ScreenHeader title="My Contract" onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}>

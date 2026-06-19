@@ -152,7 +152,10 @@ export default function OperatorTabLayout() {
         <Tabs.Screen name="notification-settings" options={{ href: null }} />
         <Tabs.Screen name="workspace"       options={{ href: null }} />
         <Tabs.Screen name="profile-edit"    options={{ href: null }} />
-        <Tabs.Screen name="ticket-scanner" options={{ href: null }} />
+        <Tabs.Screen name="ticket-scanner"    options={{ href: null }} />
+        <Tabs.Screen name="availability-prefs" options={{ href: null }} />
+        <Tabs.Screen name="contract"           options={{ href: null }} />
+        <Tabs.Screen name="resign"             options={{ href: null }} />
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />

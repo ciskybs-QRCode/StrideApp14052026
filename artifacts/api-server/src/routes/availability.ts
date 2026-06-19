@@ -139,4 +139,51 @@ router.patch("/availability/:id", requireAuth, requireRole("admin"), async (req,
   res.json(slot);
 });
 
+// POST /availability/resign — operator submits resignation with notice period
+router.post("/availability/resign", requireAuth, requireRole("operator"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const { notice_period } = req.body as { notice_period?: string };
+
+  const VALID = ["immediate", "1w", "2w", "3w", "4w"] as const;
+  if (!notice_period || !VALID.includes(notice_period as typeof VALID[number])) {
+    res.status(400).json({ error: "Invalid notice_period" });
+    return;
+  }
+
+  const penaltyWeeks = notice_period === "immediate" || notice_period === "1w" ? 2 : 0;
+
+  const { data: admins } = await supabase
+    .from("users")
+    .select("id, name")
+    .eq("organization_id", user.orgId)
+    .in("role", ["admin", "super_admin"]);
+
+  const { data: opUser } = await supabase
+    .from("users")
+    .select("name")
+    .eq("id", user.id)
+    .single();
+
+  const opName = opUser?.name ?? "An operator";
+  const noticeLabel = notice_period === "immediate" ? "immediately"
+    : notice_period === "1w" ? "1 week"
+    : notice_period === "2w" ? "2 weeks"
+    : notice_period === "3w" ? "3 weeks"
+    : "4 weeks";
+
+  if (admins && admins.length > 0) {
+    const notifRows = admins.map(a => ({
+      organization_id: user.orgId,
+      recipient_id:    a.id,
+      sender_id:       user.id,
+      type:            "operator_resigned",
+      title:           "Operator Resignation",
+      body:            `${opName} has submitted a resignation with ${noticeLabel} notice.${penaltyWeeks > 0 ? ` A ${penaltyWeeks}-week pay deduction applies.` : ""} AI is searching for a replacement.`,
+    }));
+    await supabase.from("notifications").insert(notifRows);
+  }
+
+  res.json({ success: true, message: "Resignation submitted", notice_period, penalty_weeks: penaltyWeeks });
+});
+
 export default router;

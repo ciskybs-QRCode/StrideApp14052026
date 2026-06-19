@@ -181,7 +181,7 @@ export default function OperatorCalendar() {
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
-  const [selectedDay, setSelectedDay]   = useState(0);
+  const [selectedDay, setSelectedDay]   = useState(() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; });
   const [view, setView]                 = useState<"week" | "list" | "month">("month");
   const [schedule, setSchedule]         = useState<LessonItem[][]>(INITIAL_SCHEDULE);
   const [showOptions, setShowOptions]   = useState<{ dayIdx: number; lessonIdx: number } | null>(null);
@@ -438,25 +438,6 @@ export default function OperatorCalendar() {
           </View>
         </View>
 
-        {/* ── Day strip ── */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-          {DAYS.map((day, idx) => {
-            const hasLessons = (schedule[idx]?.length ?? 0) > 0;
-            const active = selectedDay === idx;
-            return (
-              <Pressable
-                key={day}
-                style={[styles.dayBtn, active && { backgroundColor: colors.primary }]}
-                onPress={() => setSelectedDay(idx)}
-              >
-                <Text style={[styles.dayLabel, active && { color: "#FFF" }]}>{day}</Text>
-                {hasLessons && (
-                  <View style={[styles.dayDot, { backgroundColor: active ? colors.secondary : colors.primary }]} />
-                )}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
 
         {/* ── Lessons: list vs grid ── */}
         {view === "list" ? (

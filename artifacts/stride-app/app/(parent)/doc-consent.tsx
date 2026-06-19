@@ -131,7 +131,7 @@ export default function DocConsentScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Media Release" onBack={() => { if (router.canGoBack()) { router.back(); } else { router.navigate("/(parent)/documents" as never); } }} />
+      <ScreenHeader title="Media Release" onBack={() => router.back()} />
 
       <ScrollView
         style={{ flex: 1 }}

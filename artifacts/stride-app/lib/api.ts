@@ -3242,3 +3242,7 @@ export function getMyPromos(): Promise<{ promos: UserPromo[] }> {
 export function markPromoUsed(assignId: number): Promise<{ success: boolean }> {
   return request("POST", `/promo-codes/mine/${assignId}/mark-used`);
 }
+
+export function submitResignation(noticePeriod: string): Promise<{ success: boolean; message: string }> {
+  return request("POST", "/availability/resign", { notice_period: noticePeriod });
+}
