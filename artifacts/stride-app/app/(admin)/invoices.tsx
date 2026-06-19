@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -139,6 +140,11 @@ export default function AdminInvoicesScreen() {
   const [payrollData, setPayrollData]       = useState<ApiPayrollSummary | null>(null);
   const [payrollLoading, setPayrollLoading] = useState(false);
   const [payrollFilter, setPayrollFilter]   = useState<number | null>(null); // profile_id filter
+
+  // ── AI Deduction Editor state ──────────────────────────────────────────────
+  const [aiDedInstruction, setAiDedInstruction] = useState("");
+  const [aiDedLoading, setAiDedLoading]         = useState(false);
+  const [aiDedResult, setAiDedResult]           = useState<Array<{ label: string; rate: number }> | null>(null);
 
   // Animated values for card-removal (keyed by invoice id)
   const fadeAnims = useRef<Record<string, Animated.Value>>({});
@@ -711,6 +717,68 @@ export default function AdminInvoicesScreen() {
               </View>
             );
           })}
+        {/* ══ AI DEDUCTION EDITOR ══════════════════════════════════════════════ */}
+        <>
+          <View style={{ borderTopWidth: 1, borderTopColor: "#E5E7EB", marginTop: 24, paddingTop: 20 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="sparkles" size={15} color="#1E3A8A" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E3A8A" }}>AI Deduction Editor</Text>
+                <Text style={{ fontSize: 11, color: "#6B7280" }}>Natural language payroll adjustments</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 10, lineHeight: 18 }}>
+              Describe what to change: e.g. "Remove IVA and add 10% GST" or "Add INPS at 9.19% and remove SUPER".
+            </Text>
+            <TextInput
+              style={{ borderWidth: 1.5, borderColor: "#BFDBFE", borderRadius: 12, padding: 12, fontSize: 13, color: "#111827",
+                backgroundColor: "#F8FAFF", minHeight: 56 }}
+              placeholder="Type your deduction change instruction…"
+              value={aiDedInstruction}
+              onChangeText={setAiDedInstruction}
+              multiline
+            />
+            <Pressable
+              onPress={async () => {
+                if (!aiDedInstruction.trim()) return;
+                setAiDedLoading(true);
+                try {
+                  const currentDed: Array<{ label: string; rate: number }> = [];
+                  const result = await api.aiEditDeductions({ instruction: aiDedInstruction, current_deductions: currentDed });
+                  setAiDedResult(result.deductions);
+                } catch { /* show nothing */ }
+                finally { setAiDedLoading(false); }
+              }}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12,
+                paddingVertical: 12, marginTop: 10, backgroundColor: "#1E3A8A" }}>
+              {aiDedLoading ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="sparkles" size={15} color="#FBBF24" />}
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#FFF" }}>Apply AI Edit</Text>
+            </Pressable>
+
+            {aiDedResult && (
+              <View style={{ marginTop: 14 }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#1E3A8A", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+                  AI Suggested Deductions
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {aiDedResult.map((d, i) => (
+                    <View key={i} style={{ backgroundColor: "#FFFBEB", borderWidth: 1, borderColor: "#FDE68A", borderRadius: 10,
+                      paddingHorizontal: 12, paddingVertical: 8, alignItems: "center", minWidth: 80 }}>
+                      <Text style={{ fontSize: 10, fontWeight: "800", color: "#92400E", textTransform: "uppercase" }}>{d.label}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: "900", color: "#92400E" }}>{d.rate}%</Text>
+                    </View>
+                  ))}
+                </View>
+                <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 8, lineHeight: 16 }}>
+                  Apply these in Payroll Settings → Deductions. The AI suggestion is for reference only.
+                </Text>
+              </View>
+            )}
+          </View>
+        </>
+
         </>)}
       </ScrollView>
     </View>

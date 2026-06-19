@@ -1233,5 +1233,36 @@ export async function ensureTables(): Promise<void> {
       CHECK (cert_type IN ('medical','first_aid','medical_expiry','first_aid_expiry'));
   `).catch(() => {}); // ignore if constraint already correct
 
+  // ── Employment type + contractor fields on operator_profiles ──────────────────
+  await pool.query(`
+    ALTER TABLE operator_profiles
+      ADD COLUMN IF NOT EXISTS employment_type          TEXT NOT NULL DEFAULT 'contractor',
+      ADD COLUMN IF NOT EXISTS contractor_rate_cents    INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS contractor_billing_unit  TEXT NOT NULL DEFAULT 'hourly',
+      ADD COLUMN IF NOT EXISTS contractor_extra_chips   JSONB NOT NULL DEFAULT '[]',
+      ADD COLUMN IF NOT EXISTS primary_country          TEXT,
+      ADD COLUMN IF NOT EXISTS primary_city             TEXT;
+  `).catch(() => {});
+
+  // ── Employment contracts ───────────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS employment_contracts (
+      id                    SERIAL PRIMARY KEY,
+      operator_profile_id   INTEGER NOT NULL,
+      organization_id       INTEGER NOT NULL,
+      operator_user_id      INTEGER NOT NULL,
+      employment_type       TEXT NOT NULL,
+      contract_html         TEXT NOT NULL,
+      rate_summary          TEXT,
+      generated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      signed_at             TIMESTAMPTZ,
+      signature_ip          TEXT,
+      signature_device      TEXT,
+      UNIQUE (operator_profile_id, organization_id)
+    );
+    CREATE INDEX IF NOT EXISTS ec_op_idx ON employment_contracts (operator_profile_id);
+    CREATE INDEX IF NOT EXISTS ec_user_idx ON employment_contracts (operator_user_id, organization_id);
+  `).catch(() => {});
+
   initialized = true;
 }

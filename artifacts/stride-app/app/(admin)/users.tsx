@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Linking,
   Modal,
@@ -18,7 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { api, request, ApiChild, ApiOperatorProfile, ApiStudent } from "@/lib/api";
+import { api, request, ApiChild, ApiOperatorProfile, ApiStudent, type ApiEmploymentConfig } from "@/lib/api";
 import { useTerminology } from "@/context/TerminologyContext";
 
 // ── Full member profile (fetched on-demand for admin detail modal) ──────────
@@ -155,6 +156,17 @@ export default function AdminUsers() {
   const [fullProfile,    setFullProfile]    = useState<FullProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
+  // ── Employment / Wages-Contractor state ──────────────────────────────────────
+  const [empConfig,          setEmpConfig]          = useState<ApiEmploymentConfig | null>(null);
+  const [empSaving,          setEmpSaving]          = useState(false);
+  const [empType,            setEmpType]            = useState<"wages" | "contractor">("contractor");
+  const [contractorRate,     setContractorRate]     = useState("");
+  const [contractorBilling,  setContractorBilling]  = useState("hourly");
+  const [empCountry,         setEmpCountry]         = useState("");
+  const [empCity,            setEmpCity]            = useState("");
+  const [jurisdictionLoading,setJurisdictionLoading]= useState(false);
+  const [generatingContract, setGeneratingContract] = useState(false);
+
   // ── Data fetch ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -207,6 +219,21 @@ export default function AdminUsers() {
       }).catch(() => {});
     }
   }, [selected?.id, selected?.role]);
+
+  // Load employment config when an operator profile is loaded
+  useEffect(() => {
+    if (!operatorProfile) { setEmpConfig(null); return; }
+    api.getEmploymentConfig(operatorProfile.id)
+      .then(cfg => {
+        setEmpConfig(cfg);
+        setEmpType(cfg.employment_type ?? "contractor");
+        setContractorRate(cfg.contractor_rate_cents ? (cfg.contractor_rate_cents / 100).toFixed(2) : "");
+        setContractorBilling(cfg.contractor_billing_unit ?? "hourly");
+        setEmpCountry(cfg.primary_country ?? "");
+        setEmpCity(cfg.primary_city ?? "");
+      })
+      .catch(() => setEmpConfig(null));
+  }, [operatorProfile?.id]);
 
   // Full profile (phone + address + emergency contacts) for non-student users
   useEffect(() => {
@@ -278,6 +305,54 @@ export default function AdminUsers() {
   const handleSuspend    = (user: UserRecord) => setConfirmAction({ type: "suspend",    user });
   const handleReactivate = (user: UserRecord) => setConfirmAction({ type: "reactivate", user });
   const handleApprove    = (user: UserRecord) => setConfirmAction({ type: "approve",    user });
+
+  // ── Employment handlers ───────────────────────────────────────────────────────
+  const handleSaveEmployment = async () => {
+    if (!operatorProfile) return;
+    setEmpSaving(true);
+    try {
+      const cfg = await api.updateEmploymentConfig(operatorProfile.id, {
+        employment_type: empType,
+        contractor_rate_cents: Math.round(parseFloat(contractorRate || "0") * 100),
+        contractor_billing_unit: contractorBilling,
+        primary_country: empCountry.trim() || undefined,
+        primary_city: empCity.trim() || undefined,
+      });
+      setEmpConfig(cfg);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { Alert.alert("Save failed", "Could not save employment settings."); }
+    finally { setEmpSaving(false); }
+  };
+
+  const handleAiJurisdiction = async () => {
+    if (!empCountry.trim()) { Alert.alert("Enter the operator's primary residence country first."); return; }
+    setJurisdictionLoading(true);
+    try {
+      const result = await api.aiJurisdictionSuggestion({ country: empCountry, city: empCity || undefined, employment_type: empType });
+      const chips  = result.suggestions.map(s => ({ label: s.label, rate: String(s.rate) }));
+      const body   = result.suggestions.map(s => `• ${s.label}: ${s.rate}%${s.note ? ` — ${s.note}` : ""}`).join("\n");
+      Alert.alert(`AI Jurisdiction · ${empCountry}`, body + "\n\nApplied as info chips. Save to confirm.", [{ text: "OK" }]);
+      if (operatorProfile) {
+        await api.updateEmploymentConfig(operatorProfile.id, { contractor_extra_chips: chips });
+        const cfg = await api.getEmploymentConfig(operatorProfile.id);
+        setEmpConfig(cfg);
+      }
+    } catch { Alert.alert("AI lookup failed", "Check your internet connection and try again."); }
+    finally { setJurisdictionLoading(false); }
+  };
+
+  const handleGenerateContract = async () => {
+    if (!operatorProfile) return;
+    setGeneratingContract(true);
+    try {
+      await api.generateEmploymentContract(operatorProfile.id);
+      const cfg = await api.getEmploymentConfig(operatorProfile.id);
+      setEmpConfig(cfg);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Contract Generated", "The operator will see the contract in their Invoicing → Contract screen and must sign it digitally.");
+    } catch { Alert.alert("Generate failed", "Save employment settings first, then generate the contract."); }
+    finally { setGeneratingContract(false); }
+  };
 
   const executeConfirmAction = () => {
     if (!confirmAction) return;
@@ -700,6 +775,144 @@ export default function AdminUsers() {
                           </Text>
                         </View>
                       )}
+
+                      {/* ── Employment Type Section ── */}
+                      {operatorProfile && (
+                        <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, gap: 8 }}>
+                          <Text style={[styles.disciplinesSectionTitle, { color: colors.primary, marginBottom: 2 }]}>Employment Type</Text>
+
+                          {/* Toggle: On Wages / Contractor */}
+                          <View style={{ flexDirection: "row", gap: 8 }}>
+                            {(["wages", "contractor"] as const).map(t => (
+                              <Pressable key={t}
+                                onPress={() => { setEmpType(t); void Haptics.selectionAsync(); }}
+                                style={{ flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: "center", borderWidth: 2,
+                                  borderColor: empType === t ? colors.primary : colors.border,
+                                  backgroundColor: empType === t ? colors.primary : "transparent" }}>
+                                <Text style={{ fontSize: 12, fontWeight: "800", color: empType === t ? "#FFF" : colors.mutedForeground }}>
+                                  {t === "wages" ? "On Wages" : "Contractor"}
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </View>
+
+                          {/* Contractor rate + billing unit */}
+                          {empType === "contractor" && (
+                            <View style={{ gap: 8 }}>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: "700", minWidth: 34 }}>Rate</Text>
+                                <TextInput
+                                  style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                                    paddingHorizontal: 10, paddingVertical: 7, fontSize: 13, color: colors.foreground }}
+                                  placeholder="e.g. 45.00"
+                                  value={contractorRate}
+                                  onChangeText={setContractorRate}
+                                  keyboardType="decimal-pad"
+                                />
+                              </View>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -2 }}>
+                                <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 2 }}>
+                                  {(["hourly", "per_lesson", "daily", "weekly", "monthly"] as const).map(u => {
+                                    const lbl = u === "hourly" ? "/ hr" : u === "per_lesson" ? "/ lesson" : u === "daily" ? "/ day" : u === "weekly" ? "/ week" : "/ month";
+                                    return (
+                                      <Pressable key={u}
+                                        onPress={() => { setContractorBilling(u); void Haptics.selectionAsync(); }}
+                                        style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, borderWidth: 1,
+                                          backgroundColor: contractorBilling === u ? colors.primary : "transparent",
+                                          borderColor: contractorBilling === u ? colors.primary : colors.border }}>
+                                        <Text style={{ fontSize: 11, fontWeight: "700", color: contractorBilling === u ? "#FFF" : colors.foreground }}>{lbl}</Text>
+                                      </Pressable>
+                                    );
+                                  })}
+                                </View>
+                              </ScrollView>
+                              {empConfig?.contractor_extra_chips && empConfig.contractor_extra_chips.length > 0 && (
+                                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                                  {empConfig.contractor_extra_chips.map((chip, i) => (
+                                    <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EFF6FF",
+                                      borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{chip.label} {chip.rate}%</Text>
+                                    </View>
+                                  ))}
+                                  <Text style={{ fontSize: 10, color: colors.mutedForeground, alignSelf: "center" }}>info chips (from AI lookup)</Text>
+                                </View>
+                              )}
+                            </View>
+                          )}
+
+                          {/* Wages info */}
+                          {empType === "wages" && (
+                            <View style={{ backgroundColor: "#EFF6FF", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                              <Text style={{ fontSize: 11, color: colors.primary, lineHeight: 16 }}>
+                                On Wages: you handle employer-side deductions (PAYG/PAYE, super, etc.) for this operator. Use AI Jurisdiction to get the correct deductions for their location.
+                              </Text>
+                            </View>
+                          )}
+
+                          {/* Country / City */}
+                          <View style={{ flexDirection: "row", gap: 6 }}>
+                            <TextInput
+                              style={{ flex: 2, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                                paddingHorizontal: 10, paddingVertical: 7, fontSize: 12, color: colors.foreground }}
+                              placeholder="Residence country"
+                              value={empCountry}
+                              onChangeText={setEmpCountry}
+                            />
+                            <TextInput
+                              style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                                paddingHorizontal: 10, paddingVertical: 7, fontSize: 12, color: colors.foreground }}
+                              placeholder="City"
+                              value={empCity}
+                              onChangeText={setEmpCity}
+                            />
+                          </View>
+
+                          {/* Action buttons */}
+                          <Pressable onPress={() => { void handleAiJurisdiction(); }}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+                              borderRadius: 10, paddingVertical: 9, backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" }}>
+                            {jurisdictionLoading
+                              ? <ActivityIndicator size="small" color={colors.primary} />
+                              : <Ionicons name="globe-outline" size={14} color={colors.primary} />}
+                            <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>AI Jurisdiction Lookup</Text>
+                          </Pressable>
+
+                          <Pressable onPress={() => { void handleSaveEmployment(); }}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+                              borderRadius: 10, paddingVertical: 9, backgroundColor: colors.primary }}>
+                            {empSaving
+                              ? <ActivityIndicator size="small" color="#FFF" />
+                              : <Ionicons name="checkmark-circle-outline" size={14} color="#FFF" />}
+                            <Text style={{ fontSize: 12, fontWeight: "800", color: "#FFF" }}>Save Employment Settings</Text>
+                          </Pressable>
+
+                          <Pressable onPress={() => { void handleGenerateContract(); }}
+                            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+                              borderRadius: 10, paddingVertical: 9, backgroundColor: "#FFFBEB", borderWidth: 1, borderColor: "#FDE68A" }}>
+                            {generatingContract
+                              ? <ActivityIndicator size="small" color="#92400E" />
+                              : <Ionicons name="document-text-outline" size={14} color="#92400E" />}
+                            <Text style={{ fontSize: 12, fontWeight: "800", color: "#92400E" }}>
+                              {empConfig?.contract_generated_at ? "Regenerate Contract" : "Generate Contract"}
+                            </Text>
+                          </Pressable>
+
+                          {empConfig?.contract_generated_at && (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10,
+                              backgroundColor: empConfig.signed_at ? "#D1FAE5" : "#FEF9C3",
+                              borderWidth: 1, borderColor: empConfig.signed_at ? "#6EE7B7" : "#FDE68A" }}>
+                              <Ionicons name={empConfig.signed_at ? "checkmark-circle" : "time-outline"} size={14}
+                                color={empConfig.signed_at ? "#059669" : "#92400E"} />
+                              <Text style={{ fontSize: 12, fontWeight: "700", flex: 1, color: empConfig.signed_at ? "#059669" : "#92400E" }}>
+                                {empConfig.signed_at
+                                  ? `Signed ${new Date(empConfig.signed_at).toLocaleDateString()}`
+                                  : "Awaiting operator signature"}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+
                       <Text style={[styles.disciplinesSectionTitle, { color: colors.primary, marginTop: operatorProfile ? 10 : 0 }]}>Disciplines</Text>
                       {!operatorProfile ? (
                         <Text style={[styles.disciplinesEmpty, { color: colors.mutedForeground }]}>No operator profile yet</Text>

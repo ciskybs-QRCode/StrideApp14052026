@@ -9,6 +9,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -23,7 +24,8 @@ import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { useAuth } from "@/context/AuthContext";
 import { useSubstitution } from "@/context/SubstitutionContext";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiOperatorEarnings, type ApiEarningsYtd, type ApiPrivateLessonBooking, type PayrollDeduction } from "@/lib/api";
+import { api, type ApiOperatorEarnings, type ApiEarningsYtd, type ApiPrivateLessonBooking, type PayrollDeduction, type ApiEmploymentContract } from "@/lib/api";
+import { File, Paths } from "expo-file-system";
 import { supabase } from "@/lib/supabase";
 import {
   type PayoutFrequency,
@@ -479,6 +481,12 @@ export default function OperatorInvoicing() {
   const [updatingPLB, setUpdatingPLB]             = useState<number | null>(null);
   const [generateError, setGenerateError]         = useState<string | null>(null);
 
+  // ── Employment / Contractor CSV state ─────────────────────────────────────
+  const [myContract, setMyContract] = useState<Awaited<ReturnType<typeof api.getMyEmploymentContract>>>(null);
+  const [csvFrom,    setCsvFrom]    = useState("");
+  const [csvTo,      setCsvTo]      = useState("");
+  const [csvGenning, setCsvGenning] = useState(false);
+
   // ── Payment Details (bank fields, locale-aware) ───────────────────────────
   const bankFields = getBankFieldsForLocale();
   const [bankValues, setBankValues]   = useState<Record<string, string>>({});
@@ -636,6 +644,57 @@ export default function OperatorInvoicing() {
   useEffect(() => {
     api.getOperatorEarningsYtd(new Date().getFullYear()).then(setYtd).catch(() => {});
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    api.getMyEmploymentContract().then(setMyContract).catch(() => {});
+  }, []));
+
+  const handleContractorCsvExport = async () => {
+    if (!csvFrom.match(/^\d{4}-\d{2}$/) || !csvTo.match(/^\d{4}-\d{2}$/)) {
+      Alert.alert("Invalid dates", "Enter dates in YYYY-MM format, e.g. 2025-01");
+      return;
+    }
+    setCsvGenning(true);
+    try {
+      const months: string[] = [];
+      let cursor = new Date(`${csvFrom}-01T00:00:00`);
+      const end  = new Date(`${csvTo}-01T00:00:00`);
+      while (cursor <= end) {
+        months.push(cursor.toISOString().slice(0, 7));
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+      }
+      if (months.length > 24) { Alert.alert("Date range too large", "Maximum 24 months at a time."); return; }
+      const results = await Promise.allSettled(months.map(m => api.getOperatorEarnings(m)));
+      const rows: string[] = ["Period,Discipline,Lessons,Hours,Rate (€/h),Total (€)"];
+      for (const res of results) {
+        if (res.status !== "fulfilled") continue;
+        const data = res.value;
+        for (const d of data.disciplines) {
+          rows.push([
+            `"${data.month}"`,
+            `"${d.discipline_name}"`,
+            d.lesson_count,
+            d.total_hours.toFixed(2),
+            (d.hourly_rate_cents / 100).toFixed(2),
+            (d.earnings_cents / 100).toFixed(2),
+          ].join(","));
+        }
+      }
+      const csv   = rows.join("\n");
+      const fname = `contractor_earnings_${csvFrom}_${csvTo}.csv`;
+      const file  = new File(Paths.document, fname);
+      file.write(csv);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: "Export for accountant" });
+      } else {
+        Alert.alert("Sharing not available on this device");
+      }
+    } catch (e) {
+      Alert.alert("Export failed", String(e));
+    } finally {
+      setCsvGenning(false);
+    }
+  };
 
   const current  = earnings ?? { ...DEMO, month: selectedMonth };
 
@@ -1072,6 +1131,25 @@ export default function OperatorInvoicing() {
           </View>
         </ScrollView>
 
+        {/* ── Contract Signing Banner ── */}
+        {myContract && !myContract.signed_at && (
+          <Pressable
+            onPress={() => router.push("/(operator)/contract" as never)}
+            style={{ flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 14,
+              backgroundColor: "#FFFBEB", borderWidth: 1.5, borderColor: "#FBBF24" }}>
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="document-text-outline" size={20} color="#92400E" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#92400E" }}>Employment Contract Pending</Text>
+              <Text style={{ fontSize: 11, color: "#78350F", marginTop: 2, lineHeight: 16 }}>
+                Tap to review and sign your{myContract.employment_type === "contractor" ? " contractor service" : " employment"} agreement
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#92400E" />
+          </Pressable>
+        )}
+
         {/* ── Year-to-Date Stats ── */}
         {ytd && (
           <View style={{ backgroundColor: "#EFF6FF", borderRadius: 14, padding: 14, marginBottom: 14,
@@ -1101,6 +1179,65 @@ export default function OperatorInvoicing() {
                 </View>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* ── Contractor CSV Export ── */}
+        {myContract?.employment_type === "contractor" && (
+          <View style={{ borderRadius: 14, borderWidth: 1, borderColor: "#BFDBFE", backgroundColor: "#EFF6FF", padding: 14, marginBottom: 14 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <Ionicons name="download-outline" size={16} color={colors.primary} />
+              <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary }}>Contractor CSV Export</Text>
+              <Pressable onPress={() => router.push("/(operator)/contract" as never)}
+                style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>View Contract</Text>
+                <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+              </Pressable>
+            </View>
+            <Text style={{ fontSize: 11, color: "#1E40AF", marginBottom: 10, lineHeight: 16 }}>
+              Export your earnings to CSV for your accountant. Enter the month range (YYYY-MM).
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+              <TextInput
+                style={{ flex: 1, borderWidth: 1, borderColor: "#93C5FD", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
+                  fontSize: 12, backgroundColor: "#FFF", color: colors.foreground }}
+                placeholder="From (YYYY-MM)"
+                value={csvFrom}
+                onChangeText={setCsvFrom}
+              />
+              <TextInput
+                style={{ flex: 1, borderWidth: 1, borderColor: "#93C5FD", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
+                  fontSize: 12, backgroundColor: "#FFF", color: colors.foreground }}
+                placeholder="To (YYYY-MM)"
+                value={csvTo}
+                onChangeText={setCsvTo}
+              />
+            </View>
+            <Pressable onPress={() => { void handleContractorCsvExport(); }}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 10,
+                paddingVertical: 10, backgroundColor: colors.primary }}>
+              {csvGenning
+                ? <ActivityIndicator size="small" color="#FFF" />
+                : <Ionicons name="document-outline" size={15} color="#FBBF24" />}
+              <Text style={{ fontSize: 12, fontWeight: "800", color: "#FFF" }}>
+                {csvGenning ? "Generating…" : "Download CSV"}
+              </Text>
+            </Pressable>
+            {myContract.contractor_extra_chips && myContract.contractor_extra_chips.length > 0 && (
+              <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#BFDBFE" }}>
+                <Text style={{ fontSize: 10, color: "#1E40AF", marginBottom: 6, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Your obligations (info only)
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  {myContract.contractor_extra_chips.map((chip, i) => (
+                    <View key={i} style={{ backgroundColor: "#FFF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+                      borderWidth: 1, borderColor: "#BFDBFE" }}>
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{chip.label} {chip.rate}%</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         )}
 

@@ -686,6 +686,39 @@ export const api = {
   notifyWaitlistNewSlot: (data: { discipline_name: string; day_of_week?: number; start_time?: string }) =>
     request<{ notified: number }>("POST", "/waitlist/notify-new-slot", data),
 
+  // Employment / Wages-Contractor system
+  getEmploymentConfig: (profileId: number) =>
+    request<ApiEmploymentConfig>("GET", `/employment/${profileId}`),
+  updateEmploymentConfig: (profileId: number, data: {
+    employment_type?: "wages" | "contractor";
+    contractor_rate_cents?: number;
+    contractor_billing_unit?: string;
+    contractor_extra_chips?: Array<{ label: string; rate: string }>;
+    primary_country?: string;
+    primary_city?: string;
+  }) => request<ApiEmploymentConfig>("PUT", `/employment/${profileId}`, data),
+  generateEmploymentContract: (profileId: number) =>
+    request<{ ok: boolean; contract_html: string }>("POST", `/employment/${profileId}/generate-contract`),
+  getEmploymentContract: (profileId: number) =>
+    request<ApiEmploymentContract | null>("GET", `/employment/${profileId}/contract`),
+  signEmploymentContract: (profileId: number) =>
+    request<{ ok: boolean; signed_at: string }>("POST", `/employment/${profileId}/sign-contract`),
+  aiEditDeductions: (data: { instruction: string; current_deductions: Array<{ label: string; rate: number }> }) =>
+    request<{ deductions: Array<{ label: string; rate: number }> }>("POST", "/payroll/ai-deductions", data),
+  aiJurisdictionSuggestion: (data: { country: string; city?: string; employment_type?: string }) =>
+    request<{ country: string; city?: string; suggestions: Array<{ label: string; rate: number; note?: string }> }>(
+      "POST", "/payroll/ai-jurisdiction", data),
+  getMyEmploymentContract: () =>
+    request<(ApiEmploymentContract & {
+      employment_type: string;
+      contractor_rate_cents: number;
+      contractor_billing_unit: string;
+      contractor_extra_chips: Array<{ label: string; rate: string }>;
+      primary_country: string | null;
+    }) | null>("GET", "/employment/my-contract"),
+  signMyEmploymentContract: () =>
+    request<{ ok: boolean; signed_at: string }>("POST", "/employment/sign-my-contract"),
+
   // Operator availability prefs
   getOperatorPrefs: () =>
     request<ApiOperatorPrefs>("GET", "/operator-prefs"),
@@ -1545,6 +1578,38 @@ export interface ApiOperatorProfile {
   created_at: string;
   user?: { id: number; name: string; email: string };
   rates?: ApiDisciplineRate[];
+  employment_type?: "wages" | "contractor";
+  contractor_rate_cents?: number;
+  contractor_billing_unit?: string;
+  contractor_extra_chips?: Array<{ label: string; rate: string }>;
+  primary_country?: string;
+  primary_city?: string;
+}
+
+export interface ApiEmploymentConfig {
+  id: number;
+  employment_type: "wages" | "contractor";
+  contractor_rate_cents: number;
+  contractor_billing_unit: string;
+  contractor_extra_chips: Array<{ label: string; rate: string }>;
+  primary_country: string | null;
+  primary_city: string | null;
+  signed_at: string | null;
+  contract_generated_at: string | null;
+  rate_summary: string | null;
+}
+
+export interface ApiEmploymentContract {
+  id: number;
+  operator_profile_id: number;
+  organization_id: number;
+  operator_user_id: number;
+  employment_type: string;
+  contract_html: string;
+  rate_summary: string | null;
+  generated_at: string;
+  signed_at: string | null;
+  signature_ip: string | null;
 }
 
 export interface ApiAvailabilitySlot {
