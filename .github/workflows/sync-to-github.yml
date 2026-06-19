@@ -556,28 +556,89 @@ jobs:
               console.log(`Updated slack-retry-count to ${retryCount} in issue #${existingIssue.number}`);
             }
 
-            // retryCount > retryCap → already sent the cap-reached message; stay silent.
-            if (isRetry && retryCount > retryCap) {
-              console.log(
-                `Retry notice cap reached (${retryCap}). ` +
-                `This is retry #${retryCount} — Slack notification suppressed.`
-              );
-              return;
-            }
-
-            // retryCount === retryCap → send the final "going silent" notice.
-            const isFinalNotice = isRetry && retryCount === retryCap;
-
             // ── Pruning footer (appended when branches were pruned in this run) ─
-            // The pruning-notification step only fires on success(), so when the
-            // workflow fails after a successful prune we include the summary here
-            // instead of dropping it entirely.
+            // Computed before the cap-check early-return so the cap block can
+            // still send a lightweight pruning note when the full failure alert
+            // is suppressed — otherwise the pruning event would be silently lost.
             const deletedBranches = (process.env.DELETED_BRANCHES || '').split(',').filter(Boolean);
             const pruningFooter = deletedBranches.length > 0
               ? '\n:wastebasket: *Also pruned ' + deletedBranches.length +
                 ' backup branch(es) in this run:*\n' +
                 deletedBranches.map(b => `• \`${b}\``).join('\n')
               : '';
+
+            // retryCount > retryCap → already sent the cap-reached message; stay silent
+            // for the failure alert. But if branches were pruned, send a lightweight
+            // pruning-only note so operators don't miss the event.
+            if (isRetry && retryCount > retryCap) {
+              console.log(
+                `Retry notice cap reached (${retryCap}). ` +
+                `This is retry #${retryCount} — Slack failure notification suppressed.`
+              );
+
+              if (deletedBranches.length > 0) {
+                const botTokenEarly = process.env.SLACK_BOT_TOKEN;
+                const webhookUrlEarly = process.env.SLACK_WEBHOOK_URL;
+                const channelEarly = process.env.SLACK_ALERT_CHANNEL;
+                const pruningText =
+                  `:wastebasket: *${deletedBranches.length} backup branch(es) pruned* ` +
+                  `during a silent failure run (#${context.runNumber}) — ` +
+                  `<${runUrl}|view run>`;
+                const pruningMrkdwn =
+                  `:wastebasket: *${deletedBranches.length} backup branch(es) pruned* during a silent failure run\n` +
+                  `<${runUrl}|Run #${context.runNumber}> · Retry #${retryCount} (cap: ${retryCap})\n` +
+                  deletedBranches.map(b => `• \`${b}\``).join('\n');
+
+                if (botTokenEarly && channelEarly) {
+                  const threadTs = extractSlackTs(freshIssue.body);
+                  const pruningPayload = {
+                    channel: channelEarly,
+                    text: pruningText,
+                    blocks: [{ type: 'section', text: { type: 'mrkdwn', text: pruningMrkdwn } }],
+                    ...(threadTs ? { thread_ts: threadTs } : {}),
+                  };
+                  const res = await fetch('https://slack.com/api/chat.postMessage', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${botTokenEarly}`,
+                    },
+                    body: JSON.stringify(pruningPayload),
+                  });
+                  const result = await res.json();
+                  if (!result.ok) {
+                    core.warning(`Slack pruning note error (cap active): ${result.error}`);
+                  } else {
+                    console.log(
+                      `Sent pruning-only Slack note (cap active, ${threadTs ? 'thread reply' : 'new message'}), ts=${result.ts}`
+                    );
+                  }
+                } else if (webhookUrlEarly) {
+                  const pruningPayload = {
+                    text: pruningText,
+                    ...(channelEarly ? { channel: channelEarly } : {}),
+                    blocks: [{ type: 'section', text: { type: 'mrkdwn', text: pruningMrkdwn } }],
+                  };
+                  const res = await fetch(webhookUrlEarly, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pruningPayload),
+                  });
+                  if (!res.ok) {
+                    core.warning(`Slack pruning webhook returned ${res.status}: ${await res.text()}`);
+                  } else {
+                    console.log(`Sent pruning-only Slack note via webhook (cap active)`);
+                  }
+                } else {
+                  console.log(`Pruning occurred but Slack is not configured — skipping pruning note`);
+                }
+              }
+
+              return;
+            }
+
+            // retryCount === retryCap → send the final "going silent" notice.
+            const isFinalNotice = isRetry && retryCount === retryCap;
 
             // ── Slack notification (threaded when bot token is available) ────
             //
