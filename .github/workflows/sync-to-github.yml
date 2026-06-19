@@ -420,6 +420,25 @@ jobs:
               return body + '\n' + link;
             }
 
+            // ── Helpers for explicit retry counter in issue body ─────────────
+            // The counter is stored as an HTML comment so it is invisible in
+            // the rendered issue but easy to parse:
+            //   <!-- slack-retry-count: N -->
+            // Using an explicit marker instead of issue.comments makes the cap
+            // immune to unrelated human comments inflating the counter.
+            function extractRetryCount(body) {
+              const m = (body || '').match(/<!--\s*slack-retry-count:\s*(\d+)\s*-->/);
+              return m ? parseInt(m[1], 10) : 0;
+            }
+
+            function setRetryCount(body, count) {
+              const marker = `<!-- slack-retry-count: ${count} -->`;
+              if (/<!--\s*slack-retry-count:/.test(body)) {
+                return body.replace(/<!--\s*slack-retry-count:\s*\d+\s*-->/, marker);
+              }
+              return body + '\n' + marker;
+            }
+
             // ── GitHub issue de-duplication ──────────────────────────────────
             let existingIssue = null;
             if (isRetry) {
@@ -477,6 +496,9 @@ jobs:
                 '3. Re-run the failed workflow once the secret is updated',
                 '',
                 '_This issue was opened automatically by the Sync to GitHub workflow._',
+                // Invisible marker — tracks Slack retry notices independently of
+                // human comments so the cap cannot be triggered by comment noise.
+                '<!-- slack-retry-count: 0 -->',
               ].join('\n');
 
               const { data: issue } = await github.rest.issues.create({
@@ -490,11 +512,36 @@ jobs:
               console.log(`Created issue #${issue.number}: ${issue.html_url}`);
             }
 
+            // ── Fetch fresh issue body (needed for retry counter and Slack ts) ─
+            // Done here — before the cap check — so both the counter update
+            // and the Slack-ts read can share the same API call.
+            const { data: freshIssue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: existingIssue.number,
+            });
+
             // ── Retry-notice cap ─────────────────────────────────────────────
             // retryCount is 1-based: 1 = first retry notice, 2 = second, etc.
             // The first-failure alert (isRetry === false) is never subject to the cap.
+            // We use an explicit <!-- slack-retry-count: N --> marker in the issue
+            // body rather than issue.comments so unrelated human comments cannot
+            // inflate the counter and trigger the cap prematurely.
             const retryCap = parseInt(process.env.SLACK_RETRY_NOTICE_CAP, 10) || 5;
-            const retryCount = isRetry ? (existingIssue.comments + 1) : null;
+            const retryCount = isRetry ? (extractRetryCount(freshIssue.body) + 1) : null;
+
+            if (isRetry) {
+              // Write the incremented counter back to the issue body immediately
+              // so the cap is correct even if subsequent steps fail or are skipped.
+              const bodyWithCount = setRetryCount(freshIssue.body, retryCount);
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: bodyWithCount,
+              });
+              console.log(`Updated slack-retry-count to ${retryCount} in issue #${existingIssue.number}`);
+            }
 
             // retryCount > retryCap → already sent the cap-reached message; stay silent.
             if (isRetry && retryCount > retryCap) {
@@ -567,12 +614,8 @@ jobs:
               slackMrkdwn += errorBlock;
               slackMrkdwn += pruningFooter;
 
-              // Fetch the latest issue body to read the stored thread ts.
-              const { data: freshIssue } = await github.rest.issues.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: existingIssue.number,
-              });
+              // freshIssue was fetched earlier (before the cap check) and is
+              // reused here to avoid an extra API call.
               const threadTs = extractSlackTs(freshIssue.body);
 
               const apiPayload = {
