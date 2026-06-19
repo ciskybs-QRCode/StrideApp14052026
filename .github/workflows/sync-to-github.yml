@@ -62,8 +62,10 @@ jobs:
           if git rev-parse FETCH_HEAD &>/dev/null; then
             git push target "FETCH_HEAD:refs/heads/${BACKUP_BRANCH}"
             echo "Created backup branch ${BACKUP_BRANCH} on target"
+            echo "backup_branch=${BACKUP_BRANCH}" >> "$GITHUB_OUTPUT"
           else
             echo "Target main does not exist yet — skipping backup branch creation"
+            echo "backup_branch=" >> "$GITHUB_OUTPUT"
           fi
 
           # Temporarily disable errexit so we can capture the exit code and
@@ -837,4 +839,144 @@ jobs:
                   console.log(`Slack notified via webhook (${label}) — threading not available without SLACK_BOT_TOKEN`);
                 }
               }
+            }
+
+      - name: Write job summary
+        if: always()
+        env:
+          PUSH_OUTCOME: ${{ steps.push.outcome }}
+          PRUNE_OUTCOME: ${{ steps.prune.outcome }}
+          CLOSE_ISSUES_OUTCOME: ${{ steps.close_issues.outcome }}
+          PUSH_ERROR: ${{ steps.push.outputs.push_error }}
+          BACKUP_BRANCH: ${{ steps.push.outputs.backup_branch }}
+          DELETED_BRANCHES: ${{ steps.prune.outputs.deleted_branches }}
+          CLOSED_COUNT: ${{ steps.close_issues.outputs.closed_count }}
+          CLOSED_JSON: ${{ steps.close_issues.outputs.closed_json }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pushOutcome    = process.env.PUSH_OUTCOME;
+            const pruneOutcome   = process.env.PRUNE_OUTCOME;
+            const closeOutcome   = process.env.CLOSE_ISSUES_OUTCOME;
+            const pushError      = (process.env.PUSH_ERROR || '').trim();
+            const backupBranch   = (process.env.BACKUP_BRANCH || '').trim();
+            const deletedRaw     = (process.env.DELETED_BRANCHES || '').trim();
+            const closedCount    = parseInt(process.env.CLOSED_COUNT || '0', 10);
+            const closedJson     = process.env.CLOSED_JSON || '[]';
+            const runUrl         = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const targetRepoUrl  = 'https://github.com/ciskybs-QRCode/StrideApp14052026';
+            const shortSha       = context.sha.slice(0, 7);
+            const branch         = context.ref.replace('refs/heads/', '');
+            // The run is considered successful only when all key steps either
+            // succeeded or were intentionally skipped (e.g. prune/close_issues
+            // skip on failure, so 'skipped' there always means push already failed).
+            // Any 'failure' outcome among the tracked steps means the run failed.
+            const anyFailure = [pushOutcome, pruneOutcome, closeOutcome].includes('failure');
+            // If push itself was skipped the preflight step failed (push is never
+            // conditionally skipped in the happy path).
+            const preflight_failed = pushOutcome === 'skipped' || !pushOutcome;
+            const overallSuccess = !anyFailure && !preflight_failed;
+
+            if (overallSuccess) {
+              // ── Success card ──────────────────────────────────────────────────
+              const rows = [
+                ['Commit', `\`${shortSha}\` on \`${branch}\``],
+                ['Actor', `@${context.actor}`],
+                ['Run', `[#${context.runNumber}](${runUrl})`],
+                ['Backup branch', backupBranch ? `\`${backupBranch}\`` : '_none (target was empty)_'],
+                ['Issues auto-resolved', closedCount > 0 ? String(closedCount) : '_none open_'],
+              ];
+
+              if (deletedRaw) {
+                const deleted = deletedRaw.split(',').filter(Boolean);
+                rows.push(['Backup branches pruned', deleted.map(b => `\`${b}\``).join(', ')]);
+              }
+
+              const tableRows = rows
+                .map(([k, v]) => `| ${k} | ${v} |`)
+                .join('\n');
+
+              let closedSection = '';
+              if (closedCount > 0) {
+                try {
+                  const closed = JSON.parse(closedJson);
+                  const issueLinks = closed.map(i => `[#${i.number}](${i.url})`).join(', ');
+                  closedSection = `\n\n### Issues resolved\n${issueLinks}`;
+                } catch (_) {}
+              }
+
+              await core.summary
+                .addRaw([
+                  '## ✅ Sync to GitHub succeeded',
+                  '',
+                  '| Field | Value |',
+                  '|---|---|',
+                  tableRows,
+                  closedSection,
+                  '',
+                  `**[View target repository](${targetRepoUrl})** · [View run](${runUrl})`,
+                ].join('\n'))
+                .write();
+
+            } else {
+              // ── Failure card ──────────────────────────────────────────────────
+              // Determine which step was the first to fail so the card can name it.
+              let failedStep = 'Unknown step';
+              let suggestedFix = '';
+
+              if (pushOutcome === 'failure') {
+                failedStep = 'Push to target repository';
+                suggestedFix = [
+                  '1. Go to **Settings → Secrets → Actions** in this repository',
+                  '2. Check that `GITHUB_PAT` is set and has not expired (needs `repo` scope)',
+                  '3. Verify the target repo `ciskybs-QRCode/StrideApp14052026` exists and is accessible',
+                  '4. Re-run the workflow once the secret is updated',
+                ].join('\n');
+              } else if (pruneOutcome === 'failure') {
+                failedStep = 'Prune old backup branches on target';
+                suggestedFix = [
+                  '- The `GITHUB_PAT` may lack permission to delete branches on the target',
+                  '- Check that the PAT has `repo` scope and re-run',
+                ].join('\n');
+              } else if (closeOutcome === 'failure') {
+                failedStep = 'Close sync-failure issues on success';
+                suggestedFix = [
+                  '- The workflow `GITHUB_TOKEN` may lack `issues: write` permission',
+                  '- Check repository permissions under **Settings → Actions → General**',
+                ].join('\n');
+              } else if (pushOutcome === 'skipped' || pushOutcome === '' || !pushOutcome) {
+                failedStep = 'Preflight — check Slack webhook secret';
+                suggestedFix = [
+                  '- Set `REQUIRE_SLACK_WEBHOOK` to `false` if Slack is not required, or',
+                  '- Add the `SLACK_WEBHOOK_URL` secret under **Settings → Secrets → Actions**',
+                ].join('\n');
+              }
+
+              const errorSection = pushError
+                ? `\n\n### Push error\n\`\`\`\n${pushError.slice(0, 400)}${pushError.length > 400 ? '\n…(truncated)' : ''}\n\`\`\``
+                : '';
+
+              const fixSection = suggestedFix
+                ? `\n\n### Suggested fix\n${suggestedFix}`
+                : '';
+
+              const issueSearchUrl =
+                `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/issues?q=is%3Aopen+label%3Async-failure`;
+
+              await core.summary
+                .addRaw([
+                  '## ❌ Sync to GitHub failed',
+                  '',
+                  '| Field | Value |',
+                  '|---|---|',
+                  `| Commit | \`${shortSha}\` on \`${branch}\` |`,
+                  `| Actor | @${context.actor} |`,
+                  `| Run | [#${context.runNumber}](${runUrl}) |`,
+                  `| Failed step | ${failedStep} |`,
+                  errorSection,
+                  fixSection,
+                  '',
+                  `**[View open sync-failure issues](${issueSearchUrl})** · [View run](${runUrl})`,
+                ].join('\n'))
+                .write();
             }
