@@ -1,72 +1,211 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
+const stats = [
+  { label: 'Affidabilità docente', value: '94%', color: '#4ade80' },
+  { label: 'Copertura automatica', value: '100%', color: '#FBBF24' },
+  { label: 'Tempo risposta', value: '< 5 min', color: '#60a5fa' },
+];
+
 export function Scene5() {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase(1), 300),
-      setTimeout(() => setPhase(2), 1500),
-      setTimeout(() => setPhase(3), 2500),
+      setTimeout(() => setPhase(2), 1300),
+      setTimeout(() => setPhase(3), 2600),
+      setTimeout(() => setPhase(4), 4000),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
   return (
-    <motion.div 
-      className="absolute inset-0 bg-[#1E3A8A] flex flex-col items-center justify-center"
-      initial={{ opacity: 0, scale: 1.1 }}
+    <motion.div
+      className="absolute inset-0 flex items-center overflow-hidden"
+      style={{ background: '#0a0a12' }}
+      initial={{ opacity: 0, scale: 1.05 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, filter: 'blur(20px)' }}
+      exit={{ opacity: 0, filter: 'blur(16px)' }}
       transition={{ duration: 0.8 }}
     >
-      <motion.div 
-        className="absolute w-[80vw] h-[80vw] rounded-full bg-red-600/20 blur-[100px]"
-        animate={phase >= 2 ? { scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] } : { scale: 1, opacity: 0 }}
-        transition={{ duration: 2, repeat: Infinity }}
-      />
+      {/* Animated pulse rings */}
+      {phase >= 2 && (
+        <>
+          {[1, 1.8, 2.6].map((scale, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full border border-red-500/20"
+              style={{ width: '50vw', height: '50vw', right: '-8vw', top: '50%', marginTop: '-25vw' }}
+              animate={{ scale: [scale, scale + 0.8], opacity: [0.4, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.7, ease: 'easeOut' }}
+            />
+          ))}
+        </>
+      )}
 
-      <motion.div
-        className="relative z-10 text-center mb-12"
-        initial={{ opacity: 0, y: -30 }}
-        animate={phase >= 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: -30 }}
-        transition={{ duration: 0.8 }}
-      >
-        <div className="inline-block bg-red-500/20 text-red-300 px-6 py-2 rounded-full text-xl font-bold tracking-widest border border-red-500/30 mb-6 uppercase">
-          Emergency Pulse
-        </div>
-      </motion.div>
-
-      <div className="relative z-10 w-full max-w-4xl px-12 flex items-center justify-between">
+      {/* Left */}
+      <div className="relative z-10 flex flex-col justify-center px-[7vw] w-[58%] h-full">
         <motion.div
-          className="flex-1 text-left"
-          initial={{ opacity: 0, x: -40 }}
-          animate={phase >= 2 ? { opacity: 1, x: 0 } : { opacity: 0, x: -40 }}
-          transition={{ duration: 0.8, type: "spring" }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={phase >= 1 ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+          transition={{ duration: 0.5 }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.6vw',
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: '1vw',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: '#f87171',
+            border: '1px solid rgba(248,113,113,0.3)',
+            padding: '0.4vw 1.2vw',
+            borderRadius: '100px',
+            marginBottom: '2vw',
+          }}
         >
-          <h3 className="text-[3.5vw] font-bold text-white mb-4 leading-tight">
-            Crisis alerts.
-            <br/>Bypassing silent mode.
-          </h3>
+          🚨 Emergency Pulse · AI Orchestrator
         </motion.div>
 
-        <motion.div
-          className="w-48 h-48 rounded-full border-4 border-red-500 flex items-center justify-center relative"
-          initial={{ scale: 0, rotate: -90 }}
-          animate={phase >= 3 ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -90 }}
-          transition={{ type: "spring", stiffness: 150, damping: 15 }}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={phase >= 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.7 }}
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 800,
+            fontSize: '3.2vw',
+            color: '#ffffff',
+            lineHeight: 1.2,
+            marginBottom: '1.4vw',
+          }}
         >
-          <motion.div 
-            className="absolute inset-0 rounded-full border-4 border-red-500"
-            animate={{ scale: [1, 1.5], opacity: [1, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+          Emergenza?<br />
+          <span style={{ color: '#FBBF24' }}>L'associazione non si ferma.</span>
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={phase >= 2 ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.7 }}
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 400,
+            fontSize: '1.35vw',
+            color: 'rgba(255,255,255,0.6)',
+            lineHeight: 1.65,
+            marginBottom: '2.5vw',
+          }}
+        >
+          Allerta push critica che bypassa il silenzioso. AI che ottimizza<br />
+          la copertura docenti in 5 minuti. Cascata di sostituzione automatica.
+        </motion.p>
+
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: '2vw' }}>
+          {stats.map((s, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.5, delay: i * 0.15 }}
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '1vw',
+                padding: '1vw 1.5vw',
+                minWidth: '10vw',
+              }}
+            >
+              <div style={{
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 800,
+                fontSize: '2.2vw',
+                color: s.color,
+                lineHeight: 1,
+                marginBottom: '0.4vw',
+              }}>
+                {s.value}
+              </div>
+              <div style={{
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 500,
+                fontSize: '0.9vw',
+                color: 'rgba(255,255,255,0.45)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}>
+                {s.label}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right — SOS button */}
+      <div className="relative z-10 flex items-center justify-center w-[42%] h-full">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={phase >= 2 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {/* Outer pulse */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              width: '22vw',
+              height: '22vw',
+              borderRadius: '50%',
+              border: '2px solid rgba(239,68,68,0.3)',
+            }}
+            animate={{ scale: [1, 1.35], opacity: [0.5, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
           />
-          <svg className="w-20 h-20 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+          <motion.div
+            style={{
+              position: 'absolute',
+              width: '18vw',
+              height: '18vw',
+              borderRadius: '50%',
+              border: '2px solid rgba(239,68,68,0.2)',
+            }}
+            animate={{ scale: [1, 1.5], opacity: [0.4, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut', delay: 0.4 }}
+          />
+          {/* SOS button */}
+          <div style={{
+            width: '14vw',
+            height: '14vw',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at 35% 35%, #ef4444, #b91c1c)',
+            boxShadow: '0 0 40px rgba(239,68,68,0.5)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <span style={{ fontSize: '3vw', marginBottom: '0.3vw' }}>🚨</span>
+            <span style={{
+              fontFamily: "'Montserrat', sans-serif",
+              fontWeight: 900,
+              fontSize: '2.5vw',
+              color: 'white',
+              letterSpacing: '0.1em',
+            }}>SOS</span>
+          </div>
         </motion.div>
       </div>
+
+      <motion.div
+        className="absolute bottom-0 left-0 h-[3px]"
+        style={{ background: '#ef4444' }}
+        initial={{ width: '0%' }}
+        animate={{ width: '100%' }}
+        transition={{ duration: 7.5, ease: 'linear' }}
+      />
     </motion.div>
   );
 }
