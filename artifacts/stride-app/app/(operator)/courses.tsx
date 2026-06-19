@@ -328,9 +328,9 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
           <Text style={{ fontSize: 11, fontWeight: "800", color: "#1E3A8A" }}>{count}</Text>
         </View>
       </View>
-      {waitlist.slice(0, 4).map((entry, idx) => (
+      {waitlist.map((entry, idx) => (
         <View key={entry.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6,
-          borderBottomWidth: idx < Math.min(waitlist.length, 4) - 1 ? 1 : 0, borderBottomColor: colors.border }}>
+          borderBottomWidth: idx < waitlist.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
           <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
             <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>{idx + 1}</Text>
           </View>

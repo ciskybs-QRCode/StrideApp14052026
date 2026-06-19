@@ -261,16 +261,16 @@ export default function AppConfigurationPage() {
         <View style={[{ borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
           { backgroundColor: "rgba(251,191,36,0.08)", borderLeftWidth: 3, borderLeftColor: "#FBBF24" }]}>
           <Text style={{ fontSize: 12, color: "#92740A", lineHeight: 18 }}>
-            <Text style={{ fontWeight: "700" }}>Dependants</Text> are students who attend courses.{" "}
-            <Text style={{ fontWeight: "700" }}>Adult Members</Text> who only accompany a dependant do not need to provide their own certificate — enable their switch only if they also take courses.
+            <Text style={{ fontWeight: "700" }}>Dependants</Text> are enrolled participants (children or anyone registered under a member account).{" "}
+            <Text style={{ fontWeight: "700" }}>Adult Members</Text> who only accompany a dependant do not need to provide their own certificate — enable their switch only if they also participate in courses.
           </Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
             <SwitchRow
               icon="medkit-outline"
-              label="Medical Certificate — Dependants/Students"
-              description="Require enrolled dependants (students) to have a valid medical certificate on file. OFF by default."
+              label="Medical Certificate — Dependants"
+              description="Require enrolled dependants to have a valid medical certificate on file. OFF by default."
               value={settings.medical_cert_required ?? false}
               saving={isSaving("medical_cert_required")}
               onToggle={v => saveKey("medical_cert_required", v)}
