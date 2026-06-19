@@ -67,6 +67,7 @@ jobs:
             BACKUP_OUTPUT=$(git push target "FETCH_HEAD:refs/heads/${BACKUP_BRANCH}" 2>&1)
             BACKUP_EXIT=$?
             set -e
+            BACKUP_OUTPUT=$(printf '%s' "$BACKUP_OUTPUT" | sed "s/${{ secrets.GITHUB_PAT }}/[REDACTED]/g; s|https://x-access-token:[^@]*@|https://x-access-token:[REDACTED]@|g")
             if [ $BACKUP_EXIT -ne 0 ]; then
               TRUNCATED="${BACKUP_OUTPUT:0:500}"
               {
@@ -91,6 +92,7 @@ jobs:
           PUSH_OUTPUT=$(git push target main --force 2>&1)
           PUSH_EXIT=$?
           set -e
+          PUSH_OUTPUT=$(printf '%s' "$PUSH_OUTPUT" | sed "s/${{ secrets.GITHUB_PAT }}/[REDACTED]/g; s|https://x-access-token:[^@]*@|https://x-access-token:[REDACTED]@|g")
 
           if [ $PUSH_EXIT -ne 0 ]; then
             TRUNCATED="${PUSH_OUTPUT:0:500}"
