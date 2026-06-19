@@ -315,6 +315,13 @@ jobs:
             const webhookUrl = process.env.SLACK_WEBHOOK_URL;
             if (!webhookUrl) {
               core.warning('SLACK_WEBHOOK_URL is not set — skipping branch-pruning Slack notification');
+              await core.summary
+                .addRaw(
+                  '> ⚠️ **Slack summary skipped** — `SLACK_WEBHOOK_URL` is not configured. ' +
+                  'The branch-pruning notification was not sent to Slack. ' +
+                  'Set the secret under **Settings → Secrets and variables → Actions** to enable Slack alerts.'
+                )
+                .write();
               return;
             }
 
@@ -581,6 +588,13 @@ jobs:
 
             if (!botToken && !webhookUrl) {
               core.warning('Neither SLACK_BOT_TOKEN nor SLACK_WEBHOOK_URL is set — skipping Slack notification');
+              await core.summary
+                .addRaw(
+                  '> ⚠️ **Slack summary skipped** — neither `SLACK_BOT_TOKEN` nor `SLACK_WEBHOOK_URL` is configured. ' +
+                  'The failure alert was not sent to Slack. ' +
+                  'Set at least one secret under **Settings → Secrets and variables → Actions** to enable Slack alerts.'
+                )
+                .write();
             } else if (botToken && channel) {
               // ── Web API path (supports threading) ───────────────────────────
               let slackText;
