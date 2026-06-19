@@ -28,12 +28,14 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           REQUIRE_SLACK_WEBHOOK: ${{ vars.REQUIRE_SLACK_WEBHOOK }}
+          SLACK_ALERT_CHANNEL: ${{ vars.SLACK_ALERT_CHANNEL }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           REQUIRE_SLACK_BOT_TOKEN: ${{ vars.REQUIRE_SLACK_BOT_TOKEN }}
         with:
           script: |
+            const requireWebhook = process.env.REQUIRE_SLACK_WEBHOOK === 'true';
+
             if (!process.env.SLACK_WEBHOOK_URL) {
-              const requireWebhook = process.env.REQUIRE_SLACK_WEBHOOK === 'true';
               const message =
                 'SLACK_WEBHOOK_URL secret is not set. ' +
                 'Slack notifications will be silently skipped for the entire run. ' +
@@ -50,7 +52,54 @@ jobs:
                 core.warning(message);
               }
             } else {
-              console.log('SLACK_WEBHOOK_URL is configured — Slack notifications are active.');
+              // Live probe — send a canary POST to confirm the webhook URL is
+              // reachable and the token has not been rotated or revoked.
+              // A revoked webhook returns HTTP 403 or 404; an invalid URL returns
+              // a network error.  Both are caught and surfaced here rather than
+              // silently failing later when an actual alert is sent.
+              let probeOk = false;
+              let probeStatus = null;
+              let probeBody = '';
+              try {
+                const channel = process.env.SLACK_ALERT_CHANNEL;
+                const probePayload = {
+                  text: '⚙️ Preflight check — Slack webhook is reachable.',
+                  ...(channel ? { channel } : {}),
+                };
+                const resp = await fetch(process.env.SLACK_WEBHOOK_URL, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(probePayload),
+                });
+                probeStatus = resp.status;
+                probeBody = (await resp.text()).slice(0, 200);
+                probeOk = resp.ok;
+              } catch (err) {
+                probeBody = err.message;
+              }
+
+              if (probeOk) {
+                console.log('SLACK_WEBHOOK_URL probe succeeded — Slack notifications are active.');
+              } else {
+                const detail = probeStatus
+                  ? `HTTP ${probeStatus}: ${probeBody}`
+                  : `Network error: ${probeBody}`;
+                const warnMsg =
+                  `SLACK_WEBHOOK_URL probe failed (${detail}). ` +
+                  'The webhook URL may be revoked, rotated, or unreachable. ' +
+                  'See docs/slack-alerts.md for troubleshooting steps.';
+                if (requireWebhook) {
+                  const failMsg =
+                    `REQUIRE_SLACK_WEBHOOK is true but SLACK_WEBHOOK_URL probe failed (${detail}). ` +
+                    'Update the secret under Settings → Secrets and variables → Actions → Secrets, ' +
+                    'or set REQUIRE_SLACK_WEBHOOK to false to downgrade this to a warning. ' +
+                    'See docs/slack-alerts.md for setup instructions.';
+                  core.setOutput('step_error', failMsg);
+                  core.setFailed(failMsg);
+                } else {
+                  core.warning(warnMsg);
+                }
+              }
             }
 
             if (!process.env.SLACK_BOT_TOKEN) {

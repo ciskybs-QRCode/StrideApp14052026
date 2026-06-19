@@ -24,6 +24,17 @@ If a webhook URL is ever exposed or needs to be replaced:
 3. In GitHub, go to **Settings → Secrets and variables → Actions → Secrets**, edit `SLACK_WEBHOOK_URL`, and paste the new URL.
 4. The next workflow run will automatically use the new webhook.
 
+### Preflight probe
+
+Every workflow run sends a **live canary POST** to `SLACK_WEBHOOK_URL` during the preflight step to confirm the URL is reachable and the token has not been rotated or revoked. The probe message (`⚙️ Preflight check — Slack webhook is reachable.`) is delivered to the configured channel (or the webhook's default channel when `SLACK_ALERT_CHANNEL` is not set).
+
+| Probe result | `REQUIRE_SLACK_WEBHOOK` not set | `REQUIRE_SLACK_WEBHOOK=true` |
+|---|---|---|
+| HTTP 200 | Confirmed — run continues normally | Confirmed — run continues normally |
+| Non-200 / network error | Yellow warning annotation, run continues | Run fails immediately at the preflight step |
+
+This catches a rotated or revoked webhook at the very start of the run rather than silently dropping alert messages later. To suppress the canary message, route the probe to a low-traffic `#ci-health` channel via `SLACK_ALERT_CHANNEL`.
+
 ## Enforcing a hard failure when the webhook is missing
 
 By default, the preflight step emits a **warning** when `SLACK_WEBHOOK_URL` is absent and lets the rest of the run proceed. If your team requires Slack alerts to be active on every run, you can turn the missing-webhook warning into a **hard failure** by setting a repository variable:
