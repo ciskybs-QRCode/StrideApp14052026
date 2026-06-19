@@ -1144,6 +1144,32 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS waitlist_enabled           BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
 
+  // ── cert_grace_extensions — per-user admin-granted deadline extensions ──────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cert_grace_extensions (
+      id           SERIAL PRIMARY KEY,
+      user_id      INTEGER NOT NULL,
+      org_id       INTEGER NOT NULL,
+      admin_id     INTEGER NOT NULL,
+      extended_days INTEGER NOT NULL DEFAULT 0,
+      note         TEXT,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS cge_user_idx ON cert_grace_extensions (user_id, org_id);
+  `).catch(() => {});
+
+  // ── admin_settings — first aid org coverage threshold ───────────────────────
+  await pool.query(`
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS min_first_aid_operators INTEGER NOT NULL DEFAULT 1;
+  `).catch(() => {});
+
+  // ── course_waitlist — 'expired' status support ───────────────────────────────
+  await pool.query(`
+    ALTER TABLE course_waitlist DROP CONSTRAINT IF EXISTS course_waitlist_status_check;
+    ALTER TABLE course_waitlist ADD CONSTRAINT course_waitlist_status_check
+      CHECK (status IN ('waiting','offered','accepted','declined','expired'));
+  `).catch(() => {});
+
   // ── Operator first-aid certificates ────────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_first_aid_certs (

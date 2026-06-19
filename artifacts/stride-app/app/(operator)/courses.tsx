@@ -298,11 +298,15 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
   const [count, setCount] = useState(0);
   const [offerLoading, setOfferLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<import("@/lib/api").WaitlistAnalytics | null>(null);
 
   const reload = useCallback(() => {
     getWaitlist(courseId)
       .then(r => { setWaitlist(r.waitlist); setCount(r.count); })
       .catch(() => {});
+    import("@/lib/api").then(({ getWaitlistAnalytics }) =>
+      getWaitlistAnalytics(courseId).then(setAnalytics).catch(() => {}),
+    );
   }, [courseId]);
 
   useEffect(() => { reload(); }, [reload]);
@@ -371,6 +375,25 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
             <Text style={{ fontSize: 13, fontWeight: "700", color: "#FBBF24" }}>Offer Spot to Next</Text></>
           )}
         </Pressable>
+      )}
+
+      {/* ── Inline analytics ─────────────────────────────────────────────── */}
+      {analytics && analytics.total_joined > 0 && (
+        <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
+          flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+          {[
+            { label: "Accepted",  value: analytics.total_accepted,    color: "#166534" },
+            { label: "Declined",  value: analytics.total_declined,    color: "#991B1B" },
+            { label: "Refusal",   value: `${analytics.refusal_rate}%`, color: "#92400E" },
+            { label: "Avg wait",  value: analytics.avg_wait_days != null ? `${analytics.avg_wait_days}d` : "—", color: "#1E3A8A" },
+          ].map(stat => (
+            <View key={stat.label} style={{ backgroundColor: colors.background, borderRadius: 8,
+              paddingHorizontal: 10, paddingVertical: 5, alignItems: "center" }}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: stat.color }}>{stat.value}</Text>
+              <Text style={{ fontSize: 9, fontWeight: "600", color: colors.mutedForeground, marginTop: 1 }}>{stat.label.toUpperCase()}</Text>
+            </View>
+          ))}
+        </View>
       )}
     </View>
   );

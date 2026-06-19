@@ -76,6 +76,7 @@ async function checkReminders(): Promise<void> {
     sendScheduledCourseReminders(24 * 60, "24h"),
     sendScheduledCourseReminders(60,      "1h"),
     checkNoShowAlerts(),
+    checkWaitlistAutoPromote(),
   ]);
 }
 
@@ -598,11 +599,116 @@ async function checkCertReminders(): Promise<void> {
   }
 }
 
+// ── Waitlist auto-promote: cascade to next when offer expires ─────────────────
+async function checkWaitlistAutoPromote(): Promise<void> {
+  try {
+    const { rows: expired } = await pool.query<{
+      id: number; course_id: number; org_id: number; member_id: number;
+    }>(
+      `SELECT id, course_id, org_id, member_id FROM course_waitlist
+       WHERE status = 'offered' AND offer_expires_at < NOW()`,
+    );
+
+    for (const entry of expired) {
+      // Mark offer as expired, notify the member
+      await pool.query(`UPDATE course_waitlist SET status = 'expired' WHERE id = $1`, [entry.id]);
+      pool.query(
+        `INSERT INTO private_notifications (user_id, org_id, title, body, type, reference_id)
+         VALUES ($1,$2,'Waitlist offer expired','Your reserved spot was not accepted within 24 hours and has been released to the next person on the list.','waitlist_expired',$3)`,
+        [entry.member_id, entry.org_id, entry.course_id],
+      ).catch(() => {});
+
+      // Auto-promote the next waiting person
+      const { rows: next } = await pool.query<{ id: number; member_id: number }>(
+        `SELECT id, member_id FROM course_waitlist
+         WHERE course_id = $1 AND org_id = $2 AND status = 'waiting'
+         ORDER BY joined_at ASC LIMIT 1`,
+        [entry.course_id, entry.org_id],
+      );
+      if (next.length > 0) {
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await pool.query(
+          `UPDATE course_waitlist SET status = 'offered', offered_at = NOW(), offer_expires_at = $1 WHERE id = $2`,
+          [expiresAt, next[0]!.id],
+        );
+        pool.query(
+          `INSERT INTO private_notifications (user_id, org_id, title, body, type, reference_id)
+           VALUES ($1,$2,'A spot is available!','A spot opened in your waitlisted course. You have 24 hours to accept it. Open the app → Courses now.','waitlist_offer',$3)`,
+          [next[0]!.member_id, entry.org_id, entry.course_id],
+        ).catch(() => {});
+        logger.info({ courseId: entry.course_id, nextMemberId: next[0]!.member_id }, "waitlist auto-promoted");
+      }
+
+      // Notify remaining members of updated positions (up to 10)
+      const { rows: remaining } = await pool.query<{ member_id: number; new_pos: string }>(
+        `SELECT member_id, ROW_NUMBER() OVER (ORDER BY joined_at ASC) AS new_pos
+         FROM course_waitlist WHERE course_id = $1 AND org_id = $2 AND status = 'waiting'`,
+        [entry.course_id, entry.org_id],
+      );
+      for (const r of remaining.slice(0, 10)) {
+        pool.query(
+          `INSERT INTO private_notifications (user_id, org_id, title, body, type, reference_id)
+           VALUES ($1,$2,'Waitlist update',$3,'waitlist_position',$4)`,
+          [r.member_id, entry.org_id, `You moved up to position #${r.new_pos} on the waitlist.`, entry.course_id],
+        ).catch(() => {});
+      }
+    }
+  } catch (err) {
+    logger.error(err, "checkWaitlistAutoPromote error");
+  }
+}
+
+// ── Org first-aid coverage check ──────────────────────────────────────────────
+async function checkOrgFirstAidCoverage(): Promise<void> {
+  try {
+    const { rows: orgs } = await pool.query<{
+      organization_id: number; min_first_aid_operators: number;
+    }>(
+      `SELECT organization_id, COALESCE(min_first_aid_operators, 1) AS min_first_aid_operators
+       FROM admin_settings WHERE first_aid_cert_required = TRUE`,
+    );
+
+    for (const org of orgs) {
+      const { rows: valid } = await pool.query<{ cnt: string }>(
+        `SELECT COUNT(DISTINCT f.operator_id) AS cnt
+         FROM operator_first_aid_certs f
+         WHERE f.org_id = $1
+           AND f.status = 'approved'
+           AND (f.expiration_date IS NULL OR f.expiration_date > NOW())
+           AND f.id = (SELECT id FROM operator_first_aid_certs WHERE operator_id = f.operator_id ORDER BY uploaded_at DESC LIMIT 1)`,
+        [org.organization_id],
+      );
+      const validCount = Number(valid[0]?.cnt ?? 0);
+      if (validCount < org.min_first_aid_operators) {
+        // Notify all admins (insert once per day max — use DISTINCT check via notification body hash)
+        pool.query(
+          `INSERT INTO private_notifications (user_id, org_id, title, body, type)
+           SELECT u.id, om.organization_id,
+             'First Aid Coverage Alert',
+             'Only ' || $1 || ' of the required ' || $2 || ' operators have a valid First Aid certificate. Please follow up immediately.',
+             'org_first_aid_alert'
+           FROM users u
+           JOIN organization_members om ON om.user_id = u.id AND om.organization_id = $3
+           WHERE u.role IN ('admin','super_admin')`,
+          [validCount, org.min_first_aid_operators, org.organization_id],
+        ).catch(() => {});
+        logger.warn({ orgId: org.organization_id, validCount, required: org.min_first_aid_operators }, "org first-aid coverage below threshold");
+      }
+    }
+  } catch (err) {
+    logger.error(err, "checkOrgFirstAidCoverage error");
+  }
+}
+
 export function startCertReminderScheduler(): void {
   // Initial run after 60 s (let the server fully start first)
   setTimeout(() => {
     checkCertReminders().catch(() => {});
-    setInterval(() => checkCertReminders().catch(() => {}), CERT_CHECK_INTERVAL);
+    checkOrgFirstAidCoverage().catch(() => {});
+    setInterval(() => {
+      checkCertReminders().catch(() => {});
+      checkOrgFirstAidCoverage().catch(() => {});
+    }, CERT_CHECK_INTERVAL);
   }, 60_000);
 
   logger.info("cert reminder scheduler started (interval: 6 h)");

@@ -208,6 +208,7 @@ router.post("/waitlist/:courseId/accept", requireAuth, requireRole("parent"), as
 router.delete("/waitlist/:courseId/leave", requireAuth, requireRole("parent"), async (req, res) => {
   const user     = (req as AuthReq).user;
   const memberId = parseInt(user.id, 10);
+  const orgId    = user.orgId ?? 1;
   const courseId = parseInt(String(req.params["courseId"]), 10);
   if (isNaN(courseId)) { res.status(400).json({ error: "Invalid courseId" }); return; }
   try {
@@ -215,6 +216,19 @@ router.delete("/waitlist/:courseId/leave", requireAuth, requireRole("parent"), a
       `UPDATE course_waitlist SET status = 'declined' WHERE course_id = $1 AND member_id = $2 AND status IN ('waiting','offered')`,
       [courseId, memberId],
     );
+    // Notify remaining members of their new positions (up to 10)
+    const { rows: remaining } = await pool.query<{ member_id: number; new_pos: string }>(
+      `SELECT member_id, ROW_NUMBER() OVER (ORDER BY joined_at ASC) AS new_pos
+       FROM course_waitlist WHERE course_id = $1 AND org_id = $2 AND status IN ('waiting','offered')`,
+      [courseId, orgId],
+    );
+    for (const r of remaining.slice(0, 10)) {
+      pool.query(
+        `INSERT INTO private_notifications (user_id, org_id, title, body, type, reference_id)
+         VALUES ($1,$2,'Waitlist update',$3,'waitlist_position',$4)`,
+        [r.member_id, orgId, `You moved up to position #${r.new_pos} on the waitlist for this course.`, courseId],
+      ).catch(() => {});
+    }
     res.json({ ok: true });
   } catch (err) {
     req.log.error(err, "waitlist leave error");
@@ -246,6 +260,42 @@ router.get("/waitlist/ai-suggestion/:courseId", requireAuth, requireRole("admin"
   } catch (err) {
     req.log.error(err, "waitlist ai-suggestion error");
     res.status(500).json({ error: "Failed to compute suggestion" });
+  }
+});
+
+// ── GET /waitlist/analytics/:courseId ────────────────────────────────────────
+router.get("/waitlist/analytics/:courseId", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user     = (req as AuthReq).user;
+  const orgId    = user.orgId ?? 1;
+  const courseId = parseInt(String(req.params["courseId"]), 10);
+  if (isNaN(courseId)) { res.status(400).json({ error: "Invalid courseId" }); return; }
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         COUNT(*)                                             AS total_joined,
+         COUNT(*) FILTER (WHERE status = 'waiting')          AS currently_waiting,
+         COUNT(*) FILTER (WHERE status = 'offered')          AS currently_offered,
+         COUNT(*) FILTER (WHERE status = 'accepted')         AS total_accepted,
+         COUNT(*) FILTER (WHERE status IN ('declined','expired')) AS total_declined,
+         ROUND(AVG(EXTRACT(EPOCH FROM (NOW() - joined_at)) / 86400.0)::numeric, 1) AS avg_wait_days
+       FROM course_waitlist WHERE course_id = $1 AND org_id = $2`,
+      [courseId, orgId],
+    );
+    const r  = rows[0] as Record<string, string | null>;
+    const total    = Number(r["total_joined"]     ?? 0);
+    const declined = Number(r["total_declined"]   ?? 0);
+    res.json({
+      total_joined:      total,
+      currently_waiting: Number(r["currently_waiting"] ?? 0),
+      currently_offered: Number(r["currently_offered"] ?? 0),
+      total_accepted:    Number(r["total_accepted"]    ?? 0),
+      total_declined:    declined,
+      avg_wait_days:     r["avg_wait_days"] ? Number(r["avg_wait_days"]) : null,
+      refusal_rate:      total > 0 ? Math.round((declined / total) * 100) : 0,
+    });
+  } catch (err) {
+    req.log.error(err, "waitlist analytics error");
+    res.status(500).json({ error: "Failed to load analytics" });
   }
 });
 

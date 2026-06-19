@@ -89,6 +89,16 @@ export default function OperationsHub() {
           onPress={() => router.push("/(admin)/analytics" as never)}
         />
 
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>COMPLIANCE</Text>
+        <HubCard
+          icon="shield-checkmark-outline"
+          title="Certificate Status"
+          description="Medical & First Aid cert overview, approve flagged docs, grant deadline extensions"
+          iconBg="#1E3A8A"
+          iconColor="#FBBF24"
+          onPress={() => router.push("/(admin)/cert-overview" as never)}
+        />
+
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE & EVENTS</Text>
         <HubCard
           icon="storefront-outline"

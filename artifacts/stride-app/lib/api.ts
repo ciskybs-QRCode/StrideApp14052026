@@ -1740,6 +1740,7 @@ export interface ApiAdminSettings {
   first_aid_cert_required?: boolean;
   cert_grace_days?: number;
   cert_reminder_body?: string | null;
+  min_first_aid_operators?: number;
   updated_at?: string;
 }
 
@@ -2792,4 +2793,62 @@ export function notifyWaitlistSpot(courseId: number): Promise<{ ok: boolean; off
 }
 export function getWaitlistAiSuggestion(courseId: number): Promise<WaitlistAiSuggestion> {
   return request<WaitlistAiSuggestion>("GET", `/waitlist/ai-suggestion/${courseId}`);
+}
+export function getWaitlistAnalytics(courseId: number): Promise<WaitlistAnalytics> {
+  return request<WaitlistAnalytics>("GET", `/waitlist/analytics/${courseId}`);
+}
+
+// ── Cert overview & review types ──────────────────────────────────────────────
+export interface CertOverviewEntry {
+  user_id: number;
+  name: string;
+  email: string;
+  cert_id: number | null;
+  cert_status: "missing" | "valid" | "expiring" | "expired" | "pending_review";
+  expiry_date: string | null;
+  anomaly_reasons: string | null;
+  grace_extended_days: number;
+  days_until_deadline: number | null;
+}
+export interface FirstAidOverviewEntry {
+  user_id: number;
+  name: string;
+  email: string;
+  cert_id: number | null;
+  cert_status: "missing" | "valid" | "expiring" | "expired" | "pending_review";
+  expiry_date: string | null;
+  anomaly_reasons: string | null;
+}
+export interface OrgCoverage {
+  min_required: number;
+  valid_count: number;
+  below_threshold: boolean;
+}
+export interface CertOverview {
+  medical: CertOverviewEntry[];
+  first_aid: FirstAidOverviewEntry[];
+  org_coverage: OrgCoverage;
+}
+export interface WaitlistAnalytics {
+  total_joined: number;
+  currently_waiting: number;
+  currently_offered: number;
+  total_accepted: number;
+  total_declined: number;
+  avg_wait_days: number | null;
+  refusal_rate: number;
+}
+
+// ── Cert overview API functions ───────────────────────────────────────────────
+export function getCertOverview(): Promise<CertOverview> {
+  return request<CertOverview>("GET", "/documents/cert-overview");
+}
+export function extendCertGrace(userId: number, data: { days: number; note?: string }): Promise<{ ok: boolean; extended_days: number }> {
+  return request("POST", `/documents/extend-grace/${userId}`, data);
+}
+export function reviewMedicalCert(certId: number, action: "approve" | "reject", note?: string): Promise<{ ok: boolean; new_status: string }> {
+  return request("PATCH", `/documents/review-medical/${certId}`, { action, note });
+}
+export function reviewFirstAidCert(certId: number, action: "approve" | "reject", note?: string): Promise<{ ok: boolean; new_status: string }> {
+  return request("PATCH", `/documents/review-first-aid/${certId}`, { action, note });
 }
