@@ -185,8 +185,12 @@ function buildInvoiceHtml(opts: {
   schoolName: string;
   header: InvoiceHeader;
   filteredLog: DailyEntry[];
+  superCents?: number;
+  superRate?: number;
+  superIncluded?: boolean;
 }) {
-  const { operatorName, dateRangeLabel, totalHours, totalCents, schoolName, header, filteredLog } = opts;
+  const { operatorName, dateRangeLabel, totalHours, totalCents, schoolName, header, filteredLog,
+    superCents = 0, superRate = 0, superIncluded = false } = opts;
 
   const invoiceNum = `INV-${new Date().toISOString().slice(0, 7).replace("-", "")}-${String(Math.floor(Math.random() * 8000) + 1000)}`;
   const dateStr    = new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric" });
@@ -284,9 +288,29 @@ tbody td{padding:9px 12px;border-bottom:1px solid #E5E7EB;vertical-align:middle}
   <tbody>
     ${dailyRows}${emptyRow}
     <tr class="total-band">
-      <td colspan="2">GRAND TOTAL DUE · ${filteredLog.length} sessions · ${totalHours}h</td>
+      <td colspan="2">GROSS EARNINGS · ${filteredLog.length} sessions · ${totalHours}h</td>
       <td colspan="3" style="text-align:right">€${totalEur}</td>
     </tr>
+    ${superCents > 0 ? `
+    <tr style="background:#FFFBEB">
+      <td colspan="2" style="padding:10px 12px;color:#92400E;font-size:12px;font-weight:700">
+        Superannuation${superRate > 0 ? ` (${superRate.toFixed(1)}%)` : ""} · ${superIncluded ? "included in rate" : "employer contribution on top"}
+      </td>
+      <td colspan="3" style="text-align:right;padding:10px 12px;color:#92400E;font-weight:700">
+        ${superIncluded ? "-" : "+"}€${(superCents / 100).toFixed(2)}
+      </td>
+    </tr>
+    <tr style="background:#EFF6FF">
+      <td colspan="2" style="padding:12px;color:#1E3A8A;font-size:13px;font-weight:800">
+        ${superIncluded ? "NET DUE TO OPERATOR" : "TOTAL EMPLOYER COST (incl. super)"}
+      </td>
+      <td colspan="3" style="text-align:right;padding:12px;color:#1E3A8A;font-weight:800">
+        €${superIncluded
+          ? ((totalCents - superCents) / 100).toFixed(2)
+          : ((totalCents + superCents) / 100).toFixed(2)}
+      </td>
+    </tr>
+    ` : ""}
   </tbody>
 </table>
 ${header.notes.trim() ? `<div class="notes-box"><strong>Notes:</strong> ${header.notes}</div>` : ""}
@@ -695,6 +719,11 @@ export default function OperatorInvoicing() {
     setGenerateError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      const superRateVal = current.super_rate_percent ?? 0;
+      const superInclVal = current.super_included ?? false;
+      const filteredSuper = superRateVal > 0
+        ? Math.round(filteredTotalCents * (superRateVal / 100))
+        : 0;
       const html = buildInvoiceHtml({
         operatorName:   user?.name ?? "Operator",
         dateRangeLabel: dateRange.label,
@@ -703,6 +732,9 @@ export default function OperatorInvoicing() {
         schoolName,
         header:         invoiceHeader,
         filteredLog:    filteredDailyLog,
+        superCents:     filteredSuper,
+        superRate:      superRateVal,
+        superIncluded:  superInclVal,
       });
       if (Platform.OS === "web") {
         // window.print() is blocked inside sandboxed iframes — download an HTML file
@@ -861,9 +893,40 @@ export default function OperatorInvoicing() {
             <View style={styles.profileStatDivider} />
             <View style={styles.profileStat}>
               <Text style={styles.profileStatNumber}>{loading ? "—" : `€${totalEur}`}</Text>
-              <Text style={styles.profileStatLabel}>Due</Text>
+              <Text style={styles.profileStatLabel}>{(current.super_cents ?? 0) > 0 ? "Gross" : "Due"}</Text>
             </View>
           </View>
+          {!loading && (current.super_cents ?? 0) > 0 && (() => {
+            const superAmt   = Math.round(filteredTotalCents * ((current.super_rate_percent ?? 0) / 100));
+            const superIncl  = current.super_included ?? false;
+            const netAmt     = superIncl ? filteredTotalCents - superAmt : filteredTotalCents;
+            return (
+              <View style={{ flexDirection: "row", marginTop: 10, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, gap: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: "#FBBF24", fontSize: 11, fontWeight: "700" }}>SUPER ({(current.super_rate_percent ?? 0).toFixed(1)}%)</Text>
+                  <Text style={{ color: "#FFF", fontSize: 14, fontWeight: "800" }}>
+                    {superIncl ? "-" : "+"}€{(superAmt / 100).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: "#FBBF24", fontSize: 11, fontWeight: "700" }}>{superIncl ? "NET DUE" : "EMPLOYER COST"}</Text>
+                  <Text style={{ color: "#FFF", fontSize: 14, fontWeight: "800" }}>
+                    €{superIncl
+                      ? (netAmt / 100).toFixed(2)
+                      : ((filteredTotalCents + superAmt) / 100).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            );
+          })()}
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 5, marginTop: 12 }}
+            onPress={() => router.push("/(operator)/availability-prefs" as never)}
+          >
+            <Ionicons name="settings-outline" size={13} color="rgba(255,255,255,0.65)" />
+            <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: "600" }}>Availability Preferences</Text>
+            <Ionicons name="chevron-forward" size={12} color="rgba(255,255,255,0.65)" />
+          </Pressable>
         </View>
 
         {/* ── Private Lesson Bookings ── */}

@@ -832,6 +832,13 @@ export default function CoursesScreen() {
                 <Ionicons name="calendar" size={18} color="#FFF" />
                 <Text style={styles.bookPrivateBtnText}>BOOK PRIVATE LESSON</Text>
               </Pressable>
+              <Pressable
+                style={[styles.bookPrivateBtn, { backgroundColor: colors.muted, marginTop: 8 }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/my-private-lessons" as never); }}
+              >
+                <Ionicons name="list-outline" size={18} color={colors.primary} />
+                <Text style={[styles.bookPrivateBtnText, { color: colors.primary }]}>MY BOOKED LESSONS</Text>
+              </Pressable>
             </View>
 
             {/* Office Meeting Card */}

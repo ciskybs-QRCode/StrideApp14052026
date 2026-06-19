@@ -80,8 +80,25 @@ router.get(
         return;
       }
 
-      const operators = (rawOps ?? []) as { id: number; name: string; email: string }[];
+      let operators = (rawOps ?? []) as { id: number; name: string; email: string }[];
       if (operators.length === 0) { res.json([]); return; }
+
+      // ── 1b. Filter by operator availability prefs ──────────────────────────
+      const { rows: availPrefRows } = await pool.query<{
+        user_id: number;
+        available_for_substitution: boolean;
+      }>(
+        `SELECT user_id, available_for_substitution FROM operator_profiles
+         WHERE organization_id = $1 AND user_id = ANY($2::int[])`,
+        [orgId, operators.map(o => o.id)],
+      ).catch(() => ({ rows: [] as { user_id: number; available_for_substitution: boolean }[] }));
+      const unavailSet = new Set<number>(
+        availPrefRows.filter(p => !p.available_for_substitution).map(p => p.user_id),
+      );
+      if (unavailSet.size > 0) {
+        operators = operators.filter(o => !unavailSet.has(o.id));
+        if (operators.length === 0) { res.json([]); return; }
+      }
 
       // ── 2. Historical absence records (90-day window) ──────────────────────
       const since90 = new Date(classDate.getTime() - 90 * 24 * 60 * 60 * 1000)

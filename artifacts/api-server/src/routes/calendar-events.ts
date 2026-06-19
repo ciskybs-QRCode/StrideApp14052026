@@ -241,10 +241,22 @@ router.post("/admin/generate-roster", requireAuth, requireRole("admin"), async (
       .eq("status", "active")
       .limit(30);
 
-    const discList = (disciplines ?? []).map((d: Record<string,unknown>) => (d as {id:number;name:string}).name).join(", ");
-    const opList   = (operators ?? []).map((o: Record<string,unknown>) => {
+    // Fetch available venues/locations for venue awareness
+    const { data: locations } = await supabase
+      .from("locations")
+      .select("id, name, capacity")
+      .eq("organization_id", user.orgId)
+      .eq("active", true)
+      .limit(20);
+
+    const discList  = (disciplines  ?? []).map((d: Record<string,unknown>) => (d as {id:number;name:string}).name).join(", ");
+    const opList    = (operators    ?? []).map((o: Record<string,unknown>) => {
       const u = (o as {user?: {name?: string}}).user;
       return u?.name ?? "Unnamed";
+    }).join(", ");
+    const venueList = (locations ?? []).map((v: Record<string,unknown>) => {
+      const cap = (v as {capacity?: number}).capacity;
+      return cap ? `${String(v["name"])} (capacity ${cap})` : String(v["name"]);
     }).join(", ");
     const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const existing = (existingCourses ?? []).map((c: Record<string,unknown>) => {
@@ -253,12 +265,13 @@ router.post("/admin/generate-roster", requireAuth, requireRole("admin"), async (
     }).join("; ");
 
     const prompt = `You are a scheduling assistant for a sports/dance association.
-Generate a ${frequency === "biweekly" ? "bi-weekly" : "weekly"} lesson roster suggestion.
+Generate a ${frequency === "biweekly" ? "bi-weekly" : "weekly"} lesson roster suggestion with venue awareness.
 
 Available disciplines: ${discList || "General classes"}
 Available instructors: ${opList || "General staff"}
+Available venues: ${venueList || "Main Studio"}
 Currently scheduled: ${existing || "none"}
-Admin preferences: ${preferences || "balanced spread across the week, avoid clashes"}
+Admin preferences: ${preferences || "balanced spread across the week, avoid venue clashes"}
 
 Return ONLY a valid JSON array of course slot objects. Each object must have:
 - "discipline": discipline name (must match one from the list above)
@@ -267,9 +280,10 @@ Return ONLY a valid JSON array of course slot objects. Each object must have:
 - "endTime": "HH:MM" 24h
 - "skillLevel": "beginner"|"intermediate"|"advanced"|"open"
 - "weekInterval": ${frequency === "biweekly" ? 2 : 1}
+- "venue": venue name from the available venues list (avoid double-booking same venue at same time)
 - "notes": short rationale (max 40 chars)
 
-Suggest 4-8 slots. No duplicates of existing schedule. Return only the JSON array, no markdown.`;
+Suggest 4-8 slots. No duplicates of existing schedule. Distribute across venues to avoid clashes. Return only the JSON array, no markdown.`;
 
     // Use OpenAI if available, otherwise return a template roster
     let suggestions: unknown[];
@@ -286,7 +300,8 @@ Suggest 4-8 slots. No duplicates of existing schedule. Return only the JSON arra
       suggestions = JSON.parse(cleaned) as unknown[];
     } catch {
       // Fallback: template suggestions based on discipline list
-      const discArr = (disciplines ?? []) as {id: number; name: string}[];
+      const discArr  = (disciplines ?? []) as {id: number; name: string}[];
+      const venueArr = (locations   ?? []) as {name: string}[];
       const DAYS = [1, 3, 5, 2, 4];
       const TIMES: [string, string][] = [
         ["09:00", "10:00"], ["11:00", "12:00"], ["14:00", "15:00"],
@@ -299,6 +314,7 @@ Suggest 4-8 slots. No duplicates of existing schedule. Return only the JSON arra
         endTime:      TIMES[i % 5][1],
         skillLevel:   "open",
         weekInterval: frequency === "biweekly" ? 2 : 1,
+        venue:        venueArr[i % Math.max(venueArr.length, 1)]?.name ?? "Main Studio",
         notes:        `Auto-suggested ${d.name} slot`,
       }));
     }

@@ -37,11 +37,13 @@ import {
   deleteCalendarEvent,
   sendCalendarEventReminders,
   generateAIRoster,
+  reorganizeWaitlistWithAI,
   api,
   type ApiCalendarEvent,
   type ApiRosterSuggestion,
   type ApiScheduledCourse,
   type ApiDiscipline,
+  type WaitlistReorganizationSuggestion,
 } from "@/lib/api";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -136,12 +138,16 @@ export default function CalendarManagementScreen() {
   const [form,            setForm]            = useState(emptyForm());
   const [saving,          setSaving]          = useState(false);
 
-  // AI Roster
+  // AI Roster / Waitlist Reorganization
   const [showRosterModal, setShowRosterModal] = useState(false);
   const [rosterFreq,      setRosterFreq]      = useState<"weekly"|"biweekly">("weekly");
   const [rosterPrefs,     setRosterPrefs]     = useState("");
   const [generating,      setGenerating]      = useState(false);
   const [suggestions,     setSuggestions]     = useState<ApiRosterSuggestion[]>([]);
+  const [activeRosterTab, setActiveRosterTab] = useState<"roster" | "waitlist">("roster");
+  const [waitlistSugg,    setWaitlistSugg]    = useState<WaitlistReorganizationSuggestion[]>([]);
+  const [waitlistTotal,   setWaitlistTotal]   = useState(0);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
   const [accepted,        setAccepted]        = useState<Set<number>>(new Set());
   const [acceptingSugg,   setAcceptingSugg]   = useState<Set<number>>(new Set());
 
@@ -263,6 +269,18 @@ export default function CalendarManagementScreen() {
     } finally { setGenerating(false); }
   }
 
+  async function runWaitlistReorganize() {
+    setWaitlistLoading(true);
+    setWaitlistSugg([]);
+    try {
+      const res = await reorganizeWaitlistWithAI();
+      setWaitlistSugg(res.suggestions ?? []);
+      setWaitlistTotal(res.total_waitlisted ?? 0);
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "Reorganization analysis failed");
+    } finally { setWaitlistLoading(false); }
+  }
+
   async function acceptSuggestion(idx: number, sugg: ApiRosterSuggestion) {
     if (accepted.has(idx)) return;
     const disc = disciplines.find(d =>
@@ -275,13 +293,14 @@ export default function CalendarManagementScreen() {
     setAcceptingSugg(prev => new Set(prev).add(idx));
     try {
       await api.createScheduledCourse({
-        disciplineId: disc.id,
-        dayOfWeek:    sugg.dayOfWeek,
-        startTime:    sugg.startTime,
-        endTime:      sugg.endTime,
-        skillLevel:   sugg.skillLevel,
-        notes:        sugg.notes,
-        weekInterval: sugg.weekInterval ?? 1,
+        disciplineId:   disc.id,
+        dayOfWeek:      sugg.dayOfWeek,
+        startTime:      sugg.startTime,
+        endTime:        sugg.endTime,
+        skillLevel:     sugg.skillLevel,
+        notes:          sugg.notes,
+        weekInterval:   sugg.weekInterval ?? 1,
+        location_label: sugg.venue,
       });
       setAccepted(prev => new Set(prev).add(idx));
       await load();
@@ -737,14 +756,35 @@ export default function CalendarManagementScreen() {
             <View style={{ width: 50 }} />
           </View>
 
+          {/* ── Tab switcher ── */}
+          <View style={{ flexDirection: "row", gap: 0, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 }}>
+            {(["roster", "waitlist"] as const).map(tab => (
+              <Pressable
+                key={tab}
+                onPress={() => setActiveRosterTab(tab)}
+                style={{ flex: 1, paddingVertical: 9, alignItems: "center",
+                  borderBottomWidth: 2,
+                  borderBottomColor: activeRosterTab === tab ? "#1E3A8A" : "transparent" }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "700",
+                  color: activeRosterTab === tab ? "#1E3A8A" : colors.mutedForeground }}>
+                  {tab === "roster" ? "AI Roster" : "Waitlist Reorg"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
           <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }}>
+
+            {/* ══ ROSTER TAB ══ */}
+            {activeRosterTab === "roster" && (<>
             {/* Intro banner */}
             <View style={{ backgroundColor: "#1E3A8A15", borderRadius: 14, padding: 16, flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
               <Ionicons name="sparkles" size={22} color="#1E3A8A" />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A", marginBottom: 4 }}>AI-powered scheduling</Text>
                 <Text style={{ fontSize: 13, color: "#1E3A8A", lineHeight: 18 }}>
-                  The AI analyses your disciplines, available operators, and existing schedule to suggest an optimised lesson roster. Review each suggestion and accept what fits.
+                  The AI analyses your disciplines, operators, existing schedule, and available venues to suggest an optimised lesson roster with venue assignments.
                 </Text>
               </View>
             </View>
@@ -806,7 +846,6 @@ export default function CalendarManagementScreen() {
                 {suggestions.map((sugg, idx) => {
                   const isAccepted  = accepted.has(idx);
                   const isAccepting = acceptingSugg.has(idx);
-                  const info = eventTypeInfo("workshop");
                   const freqLabel = sugg.weekInterval === 2 ? "Bi-weekly" : sugg.weekInterval === 4 ? "Monthly" : "Weekly";
                   return (
                     <View key={idx} style={[styles.listCard,
@@ -820,8 +859,14 @@ export default function CalendarManagementScreen() {
                           {DOW_FULL[sugg.dayOfWeek]} · {sugg.startTime}–{sugg.endTime} · {freqLabel}
                         </Text>
                         <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-                          {sugg.skillLevel} {sugg.notes ? `· ${sugg.notes}` : ""}
+                          {sugg.skillLevel}{sugg.notes ? ` · ${sugg.notes}` : ""}
                         </Text>
+                        {sugg.venue && (
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 }}>
+                            <Ionicons name="location-outline" size={11} color="#6366F1" />
+                            <Text style={{ fontSize: 11, color: "#6366F1", fontWeight: "600" }}>{sugg.venue}</Text>
+                          </View>
+                        )}
                       </View>
                       <Pressable
                         onPress={() => void acceptSuggestion(idx, sugg)}
@@ -831,14 +876,12 @@ export default function CalendarManagementScreen() {
                       >
                         {isAccepting
                           ? <ActivityIndicator size="small" color="#FFF" />
-                          : <Text style={{ fontSize: 12, fontWeight: "700",
-                              color: isAccepted ? "#FFF" : "#FFF" }}>
+                          : <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>
                               {isAccepted ? "Added" : "Accept"}
                             </Text>}
                       </Pressable>
                     </View>
                   );
-                  void info;
                 })}
                 {accepted.size > 0 && accepted.size === suggestions.length && (
                   <View style={{ backgroundColor: "#10B98115", borderRadius: 12, padding: 14, alignItems: "center" }}>
@@ -853,6 +896,86 @@ export default function CalendarManagementScreen() {
                 )}
               </>
             )}
+            </>)}
+
+            {/* ══ WAITLIST REORG TAB ══ */}
+            {activeRosterTab === "waitlist" && (<>
+              {/* Banner */}
+              <View style={{ backgroundColor: "#FBBF2415", borderRadius: 14, padding: 16, flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
+                <Ionicons name="people" size={22} color="#D97706" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#D97706", marginBottom: 4 }}>AI Waitlist Optimiser</Text>
+                  <Text style={{ fontSize: 13, color: "#D97706", lineHeight: 18 }}>
+                    Analyses waitlist demand across all courses and recommends new session slots that would absorb the most students.
+                  </Text>
+                </View>
+              </View>
+
+              {waitlistTotal > 0 && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8,
+                  backgroundColor: colors.muted, borderRadius: 12, padding: 14 }}>
+                  <Ionicons name="alert-circle-outline" size={18} color={colors.mutedForeground} />
+                  <Text style={{ fontSize: 13, color: colors.foreground }}>
+                    <Text style={{ fontWeight: "800" }}>{waitlistTotal}</Text> students currently on waitlists
+                  </Text>
+                </View>
+              )}
+
+              {/* Analyse button */}
+              <Pressable
+                onPress={() => void runWaitlistReorganize()}
+                disabled={waitlistLoading}
+                style={{ backgroundColor: waitlistLoading ? colors.mutedForeground : "#FBBF24",
+                  borderRadius: 14, paddingVertical: 14, alignItems: "center",
+                  flexDirection: "row", justifyContent: "center", gap: 8 }}
+              >
+                {waitlistLoading
+                  ? <ActivityIndicator size="small" color="#1E3A8A" />
+                  : <Ionicons name="analytics-outline" size={16} color="#1E3A8A" />}
+                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E3A8A" }}>
+                  {waitlistLoading ? "Analysing…" : "Analyse & Suggest Slots"}
+                </Text>
+              </Pressable>
+
+              {/* Results */}
+              {waitlistSugg.length > 0 && (<>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                  {waitlistSugg.length} Recommended Slot{waitlistSugg.length !== 1 ? "s" : ""} — share with admin or create courses manually
+                </Text>
+                {waitlistSugg.map((s, i) => (
+                  <View key={i} style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <View style={{ gap: 4 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>{s.course_name}</Text>
+                      {s.discipline && (
+                        <Text style={{ fontSize: 11, color: "#6366F1", fontWeight: "600" }}>{s.discipline}</Text>
+                      )}
+                      <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                        {s.suggested_day} · {s.suggested_time} · cap {s.estimated_capacity}
+                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                        <View style={{ backgroundColor: "#10B98120", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: "#10B981" }}>
+                            ~{s.waitlist_absorbed} absorbed
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground, flex: 1 }}>{s.rationale}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </>)}
+
+              {waitlistSugg.length === 0 && !waitlistLoading && waitlistTotal === 0 && (
+                <View style={{ alignItems: "center", paddingVertical: 32, gap: 8 }}>
+                  <Ionicons name="checkmark-circle-outline" size={40} color={colors.mutedForeground} />
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>No active waitlists</Text>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center" }}>
+                    All courses have capacity for enrolled students.
+                  </Text>
+                </View>
+              )}
+            </>)}
+
           </ScrollView>
         </View>
       </Modal>

@@ -1144,6 +1144,46 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS waitlist_enabled           BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
 
+  // ── Superannuation columns on admin_settings ─────────────────────────────────
+  await pool.query(`
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS super_rate_percent   NUMERIC(5,2) NOT NULL DEFAULT 11.5;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS super_included        BOOLEAN      NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS super_is_fixed        BOOLEAN      NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS super_fixed_cents     INTEGER      NOT NULL DEFAULT 0;
+  `).catch(() => {});
+
+  // ── Operator availability prefs on operator_profiles ──────────────────────────
+  await pool.query(`
+    ALTER TABLE operator_profiles ADD COLUMN IF NOT EXISTS available_for_substitution    BOOLEAN      NOT NULL DEFAULT TRUE;
+    ALTER TABLE operator_profiles ADD COLUMN IF NOT EXISTS sub_min_hours                 NUMERIC(4,2);
+    ALTER TABLE operator_profiles ADD COLUMN IF NOT EXISTS available_for_private_lessons BOOLEAN      NOT NULL DEFAULT FALSE;
+    ALTER TABLE operator_profiles ADD COLUMN IF NOT EXISTS private_lesson_min_hours      NUMERIC(4,2);
+  `).catch(() => {});
+
+  // ── Private lesson policy columns on admin_settings ───────────────────────────
+  await pool.query(`
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS pl_reschedule_fee_pct      INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS pl_reschedule_window_hours  INTEGER NOT NULL DEFAULT 24;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS pl_cancel_fee_pct           INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS pl_cancel_window_hours      INTEGER NOT NULL DEFAULT 24;
+  `).catch(() => {});
+
+  // ── Operator absence course policy on admin_settings ─────────────────────────
+  await pool.query(`
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS absence_policy             TEXT NOT NULL DEFAULT 'substitute';
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS absence_postpone_minutes   INTEGER NOT NULL DEFAULT 60;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS absence_cancel_refund_type TEXT NOT NULL DEFAULT 'credit';
+  `).catch(() => {});
+
+  // ── Fee tracking columns on private_lesson_bookings ───────────────────────────
+  await pool.query(`
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancelled_at         TIMESTAMPTZ;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancel_fee_cents      INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS reschedule_fee_cents  INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS rescheduled_from_date DATE;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancel_reason         TEXT;
+  `).catch(() => {});
+
   // ── cert_grace_extensions — per-user admin-granted deadline extensions ──────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS cert_grace_extensions (

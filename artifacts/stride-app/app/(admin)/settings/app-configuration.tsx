@@ -73,6 +73,15 @@ export default function AppConfigurationPage() {
   const [certMsgSaved,  setCertMsgSaved]  = useState(false);
   const [savingCertMsg, setSavingCertMsg] = useState(false);
 
+  // ── Numeric field local state (save on blur) ──────────────────────────────
+  const [superRateStr,    setSuperRateStr]    = useState("11.5");
+  const [superFixedStr,   setSuperFixedStr]   = useState("0");
+  const [plCancelWinStr,  setPlCancelWinStr]  = useState("24");
+  const [plCancelFeeStr,  setPlCancelFeeStr]  = useState("0");
+  const [plReschedWinStr, setPlReschedWinStr] = useState("24");
+  const [plReschedFeeStr, setPlReschedFeeStr] = useState("0");
+  const [absPpMinStr,     setAbsPpMinStr]     = useState("60");
+
   const loadSettings = useCallback(async () => {
     try {
       const data = await api.getAdminSettings();
@@ -87,6 +96,18 @@ export default function AppConfigurationPage() {
   }, []);
 
   useEffect(() => { loadSettings(); }, [loadSettings]);
+
+  useEffect(() => {
+    if (!loading) {
+      setSuperRateStr(String(settings.super_rate_percent ?? 11.5));
+      setSuperFixedStr(String(settings.super_fixed_cents ?? 0));
+      setPlCancelWinStr(String(settings.pl_cancel_window_hours ?? 24));
+      setPlCancelFeeStr(String(settings.pl_cancel_fee_pct ?? 0));
+      setPlReschedWinStr(String(settings.pl_reschedule_window_hours ?? 24));
+      setPlReschedFeeStr(String(settings.pl_reschedule_fee_pct ?? 0));
+      setAbsPpMinStr(String(settings.absence_postpone_minutes ?? 60));
+    }
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setPrimaryInput(primaryRoleName);
@@ -421,6 +442,229 @@ export default function AppConfigurationPage() {
             </Text>
           </View>
         )}
+
+        {/* ── SUPERANNUATION ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>PAYROLL & SUPERANNUATION</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
+          <SwitchRow
+            icon="shield-checkmark-outline"
+            label="Superannuation Included in Rate"
+            description="When ON, super is deducted from the stated rate (operator nets less). When OFF, super is an additional employer cost on top of the rate."
+            value={settings.super_included ?? false}
+            saving={isSaving("super_included")}
+            onToggle={v => saveKey("super_included", v)}
+            colors={colors}
+          />
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingVertical: 14 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={[styles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                <Ionicons name="calculator-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: colors.foreground }]}>Superannuation Rate (%)</Text>
+                <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+                  {settings.super_is_fixed ? "Using fixed-per-hour amount (see below)." : `Applied as a percentage of gross earnings. Australia: 11.5%.`}
+                </Text>
+              </View>
+              <TextInput
+                style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, width: 70, textAlign: "right", marginTop: 0 }]}
+                value={superRateStr}
+                onChangeText={setSuperRateStr}
+                onBlur={() => saveKey("super_rate_percent", parseFloat(superRateStr) || 11.5)}
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+              />
+            </View>
+          </View>
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
+            <SwitchRow
+              icon="swap-vertical-outline"
+              label="Fixed Amount Per Hour"
+              description="When ON, use a fixed cents-per-hour amount instead of a percentage."
+              value={settings.super_is_fixed ?? false}
+              saving={isSaving("super_is_fixed")}
+              onToggle={v => saveKey("super_is_fixed", v)}
+              colors={colors}
+            />
+          </View>
+          {settings.super_is_fixed && (
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Ionicons name="cash-outline" size={18} color={colors.mutedForeground} />
+              <Text style={[styles.rowLabel, { flex: 1, color: colors.foreground }]}>Fixed super (cents per hour)</Text>
+              <TextInput
+                style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, width: 90, textAlign: "right", marginTop: 0 }]}
+                value={superFixedStr}
+                onChangeText={setSuperFixedStr}
+                onBlur={() => saveKey("super_fixed_cents", parseInt(superFixedStr) || 0)}
+                keyboardType="number-pad"
+                returnKeyType="done"
+              />
+            </View>
+          )}
+        </View>
+        <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.06)", borderLeftWidth: 3, borderLeftColor: colors.primary, marginBottom: 20 }]}>
+          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+          <Text style={[styles.infoText, { color: colors.primary, fontSize: 12 }]}>
+            Super is calculated automatically in each operator's payroll summary and shown as a separate line on their PDF invoices.
+          </Text>
+        </View>
+
+        {/* ── OPERATOR ABSENCE POLICY ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>OPERATOR ABSENCE POLICY</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
+          <View style={{ padding: 16 }}>
+            <Text style={[styles.rowLabel, { color: colors.foreground, marginBottom: 4 }]}>When an operator reports an absence:</Text>
+            <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 14 }]}>
+              Choose the default action for affected courses.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {(["substitute","postpone","cancel"] as const).map(option => (
+                <Pressable
+                  key={option}
+                  onPress={() => saveKey("absence_policy", option)}
+                  style={{
+                    flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center",
+                    backgroundColor: (settings.absence_policy ?? "substitute") === option ? colors.primary : colors.muted,
+                    borderWidth: 1,
+                    borderColor: (settings.absence_policy ?? "substitute") === option ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: "700",
+                    color: (settings.absence_policy ?? "substitute") === option ? "#FFF" : colors.mutedForeground,
+                    textTransform: "capitalize",
+                  }}>
+                    {option}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          {(settings.absence_policy ?? "substitute") === "postpone" && (
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Ionicons name="time-outline" size={18} color={colors.mutedForeground} />
+              <Text style={[styles.rowLabel, { flex: 1, color: colors.foreground }]}>Postpone by (minutes)</Text>
+              <TextInput
+                style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, width: 80, textAlign: "right", marginTop: 0 }]}
+                value={absPpMinStr}
+                onChangeText={setAbsPpMinStr}
+                onBlur={() => saveKey("absence_postpone_minutes", parseInt(absPpMinStr) || 60)}
+                keyboardType="number-pad"
+                returnKeyType="done"
+              />
+            </View>
+          )}
+          {(settings.absence_policy ?? "substitute") === "cancel" && (
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: 16 }}>
+              <Text style={[styles.rowLabel, { color: colors.foreground, marginBottom: 10 }]}>Refund method for cancelled lessons:</Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {(["credit","refund","none"] as const).map(opt => (
+                  <Pressable
+                    key={opt}
+                    onPress={() => saveKey("absence_cancel_refund_type", opt)}
+                    style={{
+                      flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center",
+                      backgroundColor: (settings.absence_cancel_refund_type ?? "credit") === opt ? colors.secondary : colors.muted,
+                      borderWidth: 1,
+                      borderColor: (settings.absence_cancel_refund_type ?? "credit") === opt ? colors.secondary : colors.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "700",
+                      color: (settings.absence_cancel_refund_type ?? "credit") === opt ? "#1E3A8A" : colors.mutedForeground,
+                      textTransform: "capitalize",
+                    }}>
+                      {opt}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+        <View style={[styles.infoBox, { backgroundColor: "rgba(251,191,36,0.08)", borderLeftWidth: 3, borderLeftColor: "#FBBF24", marginBottom: 20 }]}>
+          <Ionicons name="bulb-outline" size={16} color="#92740A" />
+          <Text style={[styles.infoText, { color: "#92740A", fontSize: 12 }]}>
+            <Text style={{ fontWeight: "700" }}>Substitute</Text>: triggers the AI substitute finder.{" "}
+            <Text style={{ fontWeight: "700" }}>Postpone</Text>: reschedules the class by the set minutes.{" "}
+            <Text style={{ fontWeight: "700" }}>Cancel</Text>: marks the session as cancelled and applies the selected refund method to enrolled members.
+          </Text>
+        </View>
+
+        {/* ── PRIVATE LESSON CANCELLATION & RESCHEDULE POLICY ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>PRIVATE LESSON POLICY</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
+          {/* Cancellation */}
+          <View style={{ padding: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <View style={[styles.rowIcon, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
+                <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
+              </View>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Cancellation Policy</Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Window (hours before)</Text>
+                <TextInput
+                  style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]}
+                  value={plCancelWinStr}
+                  onChangeText={setPlCancelWinStr}
+                  onBlur={() => saveKey("pl_cancel_window_hours", parseInt(plCancelWinStr) || 24)}
+                  keyboardType="number-pad"
+                  returnKeyType="done"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Late cancel fee (%)</Text>
+                <TextInput
+                  style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]}
+                  value={plCancelFeeStr}
+                  onChangeText={setPlCancelFeeStr}
+                  onBlur={() => saveKey("pl_cancel_fee_pct", parseInt(plCancelFeeStr) || 0)}
+                  keyboardType="number-pad"
+                  returnKeyType="done"
+                />
+              </View>
+            </View>
+          </View>
+          {/* Rescheduling */}
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <View style={[styles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+              </View>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Rescheduling Policy</Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Window (hours before)</Text>
+                <TextInput
+                  style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]}
+                  value={plReschedWinStr}
+                  onChangeText={setPlReschedWinStr}
+                  onBlur={() => saveKey("pl_reschedule_window_hours", parseInt(plReschedWinStr) || 24)}
+                  keyboardType="number-pad"
+                  returnKeyType="done"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Late reschedule fee (%)</Text>
+                <TextInput
+                  style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]}
+                  value={plReschedFeeStr}
+                  onChangeText={setPlReschedFeeStr}
+                  onBlur={() => saveKey("pl_reschedule_fee_pct", parseInt(plReschedFeeStr) || 0)}
+                  keyboardType="number-pad"
+                  returnKeyType="done"
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+        <View style={[styles.infoBox, { backgroundColor: "rgba(251,191,36,0.08)", borderLeftWidth: 3, borderLeftColor: "#FBBF24", marginBottom: 20 }]}>
+          <Ionicons name="information-circle-outline" size={16} color="#92740A" />
+          <Text style={[styles.infoText, { color: "#92740A", fontSize: 12 }]}>
+            Fees apply when a member cancels or reschedules within the defined window before the session. Set fee to 0 to disable late fees. Fees are shown to members as a warning before confirming.
+          </Text>
+        </View>
 
         <View style={[styles.infoBox, { backgroundColor: colors.card, marginTop: 4 }]}>
           <Ionicons name="information-circle-outline" size={18} color={colors.primary} />

@@ -602,6 +602,31 @@ export default function AdminInvoicesScreen() {
                     </View>
                   ))}
                 </View>
+                {/* Super breakdown (if configured) */}
+                {payrollData && (payrollData as unknown as { super_rate_percent?: number }).super_rate_percent != null && (() => {
+                  const superRate = (payrollData as unknown as { super_rate_percent?: number }).super_rate_percent ?? 0;
+                  const superIncl = (payrollData as unknown as { super_included?: boolean }).super_included ?? false;
+                  const superAmt  = Math.round(op.invoiced_cents * (superRate / 100));
+                  const empCost   = superIncl ? op.invoiced_cents : op.invoiced_cents + superAmt;
+                  const netOp     = superIncl ? op.invoiced_cents - superAmt : op.invoiced_cents;
+                  if (superAmt === 0) return null;
+                  return (
+                    <View style={{ flexDirection: "row", gap: 6, marginTop: 6 }}>
+                      <View style={{ flex: 1, borderRadius: 8, padding: 8, backgroundColor: "#FFFBEB", alignItems: "center", gap: 2, borderWidth: 1, borderColor: "#FDE68A" }}>
+                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#92400E", textTransform: "uppercase" }}>Super ({superRate.toFixed(1)}%)</Text>
+                        <Text style={{ fontSize: 13, fontWeight: "800", color: "#92400E" }}>
+                          {superIncl ? "-" : "+"}€{(superAmt / 100).toFixed(2)}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1, borderRadius: 8, padding: 8, backgroundColor: "#EFF6FF", alignItems: "center", gap: 2, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#1E3A8A", textTransform: "uppercase" }}>{superIncl ? "Net to Op" : "Emp Cost"}</Text>
+                        <Text style={{ fontSize: 13, fontWeight: "800", color: "#1E3A8A" }}>
+                          €{superIncl ? (netOp / 100).toFixed(2) : (empCost / 100).toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })()}
               </View>
             );
           })}

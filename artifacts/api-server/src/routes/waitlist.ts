@@ -299,6 +299,119 @@ router.get("/waitlist/analytics/:courseId", requireAuth, requireRole("admin", "o
   }
 });
 
+// ── POST /waitlist/ai-reorganize ──────────────────────────────────────────────
+// Analyses waitlist demand across all courses in the org and recommends new slots
+router.post("/waitlist/ai-reorganize", requireAuth, requireRole("admin"), async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  try {
+    // Aggregate waitlist demand per course
+    const { rows } = await pool.query(
+      `SELECT
+         cw.course_id,
+         c.name                                       AS course_name,
+         c.discipline                                  AS discipline,
+         COUNT(*) FILTER (WHERE cw.status IN ('waiting','offered')) AS waitlist_count,
+         ARRAY_AGG(DISTINCT unnested_day) FILTER (WHERE unnested_day IS NOT NULL) AS all_days,
+         ARRAY_AGG(DISTINCT unnested_time) FILTER (WHERE unnested_time IS NOT NULL) AS all_times
+       FROM course_waitlist cw
+       JOIN (
+         SELECT id, name, discipline FROM courses WHERE organization_id = $1
+         UNION ALL
+         SELECT sc.id, sc.name, d.name AS discipline
+           FROM scheduled_courses sc
+           JOIN disciplines d ON d.id = sc.discipline_id
+           WHERE sc.organization_id = $1
+       ) c ON c.id = cw.course_id
+       LEFT JOIN LATERAL unnest(cw.preferred_days)  AS unnested_day  ON TRUE
+       LEFT JOIN LATERAL unnest(cw.preferred_times) AS unnested_time ON TRUE
+       WHERE cw.org_id = $1 AND cw.status IN ('waiting','offered')
+       GROUP BY cw.course_id, c.name, c.discipline
+       HAVING COUNT(*) FILTER (WHERE cw.status IN ('waiting','offered')) > 0
+       ORDER BY waitlist_count DESC
+       LIMIT 15`,
+      [orgId],
+    );
+
+    const totalWaitlisted = (rows as Array<{ waitlist_count: string }>)
+      .reduce((s, r) => s + parseInt(r.waitlist_count, 10), 0);
+
+    if (rows.length === 0) {
+      res.json({ suggestions: [], total_waitlisted: 0, courses_analysed: 0 });
+      return;
+    }
+
+    // Build context for AI
+    const courseContext = (rows as Array<{
+      course_name: string; discipline: string | null;
+      waitlist_count: string; all_days: string[]; all_times: string[];
+    }>).map(r => ({
+      name:    r.course_name,
+      disc:    r.discipline ?? "General",
+      count:   parseInt(r.waitlist_count, 10),
+      top_day:  (r.all_days  ?? []).slice(0, 3).join(", ") || "any",
+      top_time: (r.all_times ?? []).slice(0, 3).join(", ") || "any",
+    }));
+
+    let suggestions: WaitlistSuggestion[];
+    try {
+      const { openai } = await import("@workspace/integrations-openai-ai-server");
+      const prompt = `You are a scheduling optimizer for a sports/dance school.
+The following courses have waitlists. Suggest new session slots that would absorb the most waitlisted students.
+
+Waitlisted courses:
+${courseContext.map(c => `- "${c.name}" (${c.disc}): ${c.count} waiting, preferred days: ${c.top_day}, preferred times: ${c.top_time}`).join("\n")}
+
+Return ONLY a valid JSON array. Each item must have:
+- "course_name": name of the course (from above)
+- "discipline": discipline of the course
+- "suggested_day": e.g. "Monday"
+- "suggested_time": e.g. "18:00"
+- "estimated_capacity": integer (how many new spots this slot could hold)
+- "waitlist_absorbed": integer (estimated students this new slot would satisfy)
+- "rationale": short explanation (max 60 chars)
+
+Suggest one new slot per course (only if waitlist_count > 0). Return only the JSON array, no markdown.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.5,
+        max_tokens: 700,
+      });
+      const raw     = completion.choices[0]?.message?.content?.trim() ?? "[]";
+      const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      suggestions   = JSON.parse(cleaned) as WaitlistSuggestion[];
+    } catch {
+      // Fallback: simple heuristic suggestions
+      suggestions = courseContext.slice(0, 5).map(c => ({
+        course_name:        c.name,
+        discipline:         c.disc,
+        suggested_day:      c.top_day.split(",")[0]?.trim()  ?? "Monday",
+        suggested_time:     c.top_time.split(",")[0]?.trim() ?? "18:00",
+        estimated_capacity: 15,
+        waitlist_absorbed:  Math.min(c.count, 12),
+        rationale:          `Top demand: ${c.count} students waiting`,
+      }));
+    }
+
+    res.json({ suggestions, total_waitlisted: totalWaitlisted, courses_analysed: rows.length });
+  } catch (err) {
+    req.log.error(err, "waitlist ai-reorganize error");
+    res.status(500).json({ error: "Failed to compute reorganization" });
+  }
+});
+
+interface WaitlistSuggestion {
+  course_name:        string;
+  discipline?:        string;
+  suggested_day:      string;
+  suggested_time:     string;
+  estimated_capacity: number;
+  waitlist_absorbed:  number;
+  rationale:          string;
+}
+
 // ── GET /waitlist/my-status/:courseId ─────────────────────────────────────────
 router.get("/waitlist/my-status/:courseId", requireAuth, async (req, res) => {
   const user     = (req as AuthReq).user;

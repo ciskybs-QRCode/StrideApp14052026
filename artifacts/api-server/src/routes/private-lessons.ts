@@ -336,21 +336,179 @@ router.patch("/private-lessons/bookings/:id", requireAuth, async (req, res) => {
   const user  = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
   const id    = parseInt(String(req.params.id));
-  const { status } = req.body as { status: string };
+  const { status, cancel_reason } = req.body as { status: string; cancel_reason?: string };
   if (!["confirmed", "completed", "cancelled"].includes(status)) {
     res.status(400).json({ error: "Invalid status" }); return;
   }
   try {
+    let cancel_fee_cents = 0;
+    if (status === "cancelled") {
+      // Calculate cancellation fee based on policy
+      const [{ rows: bkRows }, { rows: polRows }] = await Promise.all([
+        pool.query<{ preferred_date: string; preferred_time: string; member_price_cents: number }>(
+          `SELECT preferred_date, preferred_time, member_price_cents FROM private_lesson_bookings WHERE id=$1 AND organization_id=$2`,
+          [id, orgId],
+        ),
+        pool.query<{ pl_cancel_fee_pct: number; pl_cancel_window_hours: number }>(
+          `SELECT pl_cancel_fee_pct, pl_cancel_window_hours FROM admin_settings WHERE organization_id=$1`,
+          [orgId],
+        ),
+      ]);
+      const bk  = bkRows[0];
+      const pol = polRows[0];
+      if (bk && pol && pol.pl_cancel_fee_pct > 0 && bk.preferred_date && bk.preferred_time) {
+        const sessionMs    = new Date(`${bk.preferred_date}T${bk.preferred_time}`).getTime();
+        const hoursUntil   = (sessionMs - Date.now()) / (1000 * 3600);
+        if (hoursUntil >= 0 && hoursUntil < pol.pl_cancel_window_hours) {
+          cancel_fee_cents = Math.round(bk.member_price_cents * pol.pl_cancel_fee_pct / 100);
+        }
+      }
+    }
+
     const { rows } = await pool.query(
-      `UPDATE private_lesson_bookings SET status=$1, updated_at=NOW()
+      `UPDATE private_lesson_bookings SET
+         status=$1, updated_at=NOW(),
+         cancelled_at=CASE WHEN $1='cancelled' THEN NOW() ELSE cancelled_at END,
+         cancel_fee_cents=CASE WHEN $1='cancelled' THEN $4 ELSE cancel_fee_cents END,
+         cancel_reason=CASE WHEN $1='cancelled' THEN $5 ELSE cancel_reason END
        WHERE id=$2 AND organization_id=$3 RETURNING *`,
-      [status, id, orgId],
+      [status, id, orgId, cancel_fee_cents, cancel_reason ?? null],
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
-    res.json(rows[0]);
+    res.json({ ...rows[0], cancel_fee_cents });
   } catch (err) {
     req.log.error(err, "private-lessons PATCH booking");
     res.status(500).json({ error: "Failed to update" });
+  }
+});
+
+// ── GET /private-lessons/policy ───────────────────────────────────────────────
+router.get("/private-lessons/policy", requireAuth, async (req, res) => {
+  const orgId = ((req as AuthReq).user.orgId ?? 1);
+  try {
+    const { rows } = await pool.query<{
+      pl_reschedule_fee_pct:     number;
+      pl_reschedule_window_hours: number;
+      pl_cancel_fee_pct:         number;
+      pl_cancel_window_hours:    number;
+      absence_policy:            string;
+      absence_postpone_minutes:  number;
+      absence_cancel_refund_type: string;
+    }>(
+      `SELECT pl_reschedule_fee_pct, pl_reschedule_window_hours,
+              pl_cancel_fee_pct, pl_cancel_window_hours,
+              absence_policy, absence_postpone_minutes, absence_cancel_refund_type
+       FROM admin_settings WHERE organization_id=$1`,
+      [orgId],
+    );
+    res.json(rows[0] ?? {
+      pl_reschedule_fee_pct: 0, pl_reschedule_window_hours: 24,
+      pl_cancel_fee_pct: 0,     pl_cancel_window_hours: 24,
+      absence_policy: "substitute", absence_postpone_minutes: 60,
+      absence_cancel_refund_type: "credit",
+    });
+  } catch (err) {
+    req.log.error(err, "private-lessons GET policy");
+    res.status(500).json({ error: "Failed to load policy" });
+  }
+});
+
+// ── PUT /private-lessons/policy ───────────────────────────────────────────────
+router.put("/private-lessons/policy", requireAuth, requireRole("admin"), async (req, res) => {
+  const orgId = ((req as AuthReq).user.orgId ?? 1);
+  const {
+    pl_reschedule_fee_pct, pl_reschedule_window_hours,
+    pl_cancel_fee_pct,     pl_cancel_window_hours,
+    absence_policy, absence_postpone_minutes, absence_cancel_refund_type,
+  } = req.body as {
+    pl_reschedule_fee_pct?:      number;
+    pl_reschedule_window_hours?: number;
+    pl_cancel_fee_pct?:          number;
+    pl_cancel_window_hours?:     number;
+    absence_policy?:             string;
+    absence_postpone_minutes?:   number;
+    absence_cancel_refund_type?: string;
+  };
+  try {
+    await pool.query(
+      `INSERT INTO admin_settings (organization_id,
+         pl_reschedule_fee_pct, pl_reschedule_window_hours,
+         pl_cancel_fee_pct,     pl_cancel_window_hours,
+         absence_policy, absence_postpone_minutes, absence_cancel_refund_type)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (organization_id) DO UPDATE SET
+         pl_reschedule_fee_pct      = COALESCE($2, admin_settings.pl_reschedule_fee_pct),
+         pl_reschedule_window_hours = COALESCE($3, admin_settings.pl_reschedule_window_hours),
+         pl_cancel_fee_pct          = COALESCE($4, admin_settings.pl_cancel_fee_pct),
+         pl_cancel_window_hours     = COALESCE($5, admin_settings.pl_cancel_window_hours),
+         absence_policy             = COALESCE($6, admin_settings.absence_policy),
+         absence_postpone_minutes   = COALESCE($7, admin_settings.absence_postpone_minutes),
+         absence_cancel_refund_type = COALESCE($8, admin_settings.absence_cancel_refund_type),
+         updated_at = NOW()`,
+      [
+        orgId,
+        pl_reschedule_fee_pct ?? null, pl_reschedule_window_hours ?? null,
+        pl_cancel_fee_pct ?? null,     pl_cancel_window_hours ?? null,
+        absence_policy ?? null, absence_postpone_minutes ?? null, absence_cancel_refund_type ?? null,
+      ],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err, "private-lessons PUT policy");
+    res.status(500).json({ error: "Failed to save policy" });
+  }
+});
+
+// ── POST /private-lessons/bookings/:id/reschedule ─────────────────────────────
+router.post("/private-lessons/bookings/:id/reschedule", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  const id    = parseInt(String(req.params.id));
+  const { new_date, new_time } = req.body as { new_date: string; new_time: string };
+  if (!new_date || !new_time) {
+    res.status(400).json({ error: "new_date and new_time required" }); return;
+  }
+  try {
+    const [{ rows: bkRows }, { rows: polRows }] = await Promise.all([
+      pool.query<{ preferred_date: string; preferred_time: string; member_price_cents: number; status: string }>(
+        `SELECT preferred_date, preferred_time, member_price_cents, status FROM private_lesson_bookings WHERE id=$1 AND organization_id=$2`,
+        [id, orgId],
+      ),
+      pool.query<{ pl_reschedule_fee_pct: number; pl_reschedule_window_hours: number }>(
+        `SELECT pl_reschedule_fee_pct, pl_reschedule_window_hours FROM admin_settings WHERE organization_id=$1`,
+        [orgId],
+      ),
+    ]);
+    const bk = bkRows[0];
+    if (!bk) { res.status(404).json({ error: "Booking not found" }); return; }
+    if (!["booked", "confirmed"].includes(bk.status)) {
+      res.status(400).json({ error: "Only active bookings can be rescheduled" }); return;
+    }
+
+    const pol = polRows[0];
+    let reschedule_fee_cents = 0;
+    if (pol && pol.pl_reschedule_fee_pct > 0 && bk.preferred_date && bk.preferred_time) {
+      const sessionMs  = new Date(`${bk.preferred_date}T${bk.preferred_time}`).getTime();
+      const hoursUntil = (sessionMs - Date.now()) / (1000 * 3600);
+      if (hoursUntil >= 0 && hoursUntil < pol.pl_reschedule_window_hours) {
+        reschedule_fee_cents = Math.round(bk.member_price_cents * pol.pl_reschedule_fee_pct / 100);
+      }
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE private_lesson_bookings SET
+         preferred_date=$1, preferred_time=$2,
+         rescheduled_from_date=preferred_date,
+         reschedule_fee_cents=$3,
+         updated_at=NOW()
+       WHERE id=$4 AND organization_id=$5 RETURNING *`,
+      [new_date, new_time, reschedule_fee_cents, id, orgId],
+    );
+    req.log.info({ id, new_date, reschedule_fee_cents }, "private lesson rescheduled");
+    res.json({ ok: true, fee_cents: reschedule_fee_cents, new_date, new_time, booking: rows[0] });
+  } catch (err) {
+    req.log.error(err, "private-lessons reschedule");
+    res.status(500).json({ error: "Failed to reschedule" });
   }
 });
 

@@ -117,6 +117,21 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "first_aid_cert_required",
     "cert_grace_days",
     "cert_reminder_body",
+    "min_first_aid_operators",
+    // Superannuation
+    "super_rate_percent",
+    "super_included",
+    "super_is_fixed",
+    "super_fixed_cents",
+    // Private lesson cancellation/reschedule policy
+    "pl_reschedule_fee_pct",
+    "pl_reschedule_window_hours",
+    "pl_cancel_fee_pct",
+    "pl_cancel_window_hours",
+    // Operator absence policy
+    "absence_policy",
+    "absence_postpone_minutes",
+    "absence_cancel_refund_type",
   ];
 
   const setClauses: string[] = ["updated_at = NOW()"];

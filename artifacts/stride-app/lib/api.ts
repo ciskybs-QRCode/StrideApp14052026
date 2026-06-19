@@ -680,6 +680,24 @@ export const api = {
   getOperatorEarnings: (month?: string) =>
     request<ApiOperatorEarnings>("GET", month ? `/operator-earnings?month=${month}` : "/operator-earnings"),
 
+  // Operator availability prefs
+  getOperatorPrefs: () =>
+    request<ApiOperatorPrefs>("GET", "/operator-prefs"),
+  updateOperatorPrefs: (data: Partial<ApiOperatorPrefs>) =>
+    request<{ ok: boolean }>("PUT", "/operator-prefs", data),
+
+  // Private lesson policy (reschedule/cancel/absence)
+  getPrivateLessonPolicy: () =>
+    request<ApiPrivateLessonPolicy>("GET", "/private-lessons/policy"),
+  updatePrivateLessonPolicy: (data: Partial<ApiPrivateLessonPolicy>) =>
+    request<{ ok: boolean }>("PUT", "/private-lessons/policy", data),
+  reschedulePrivateLessonBooking: (id: number, data: { new_date: string; new_time: string }) =>
+    request<{ ok: boolean; fee_cents: number; new_date: string; new_time: string }>(
+      "POST", `/private-lessons/bookings/${id}/reschedule`, data),
+  cancelPrivateLessonWithReason: (id: number, cancel_reason?: string) =>
+    request<{ ok: boolean; cancel_fee_cents: number }>(
+      "PATCH", `/private-lessons/bookings/${id}`, { status: "cancelled", cancel_reason }),
+
   // Notifications
   getPrivateNotifications: async () => {
     if (await isDemoSession()) return DEMO_PRIVATE_NOTIFICATIONS;
@@ -823,6 +841,7 @@ export const api = {
     notes?: string;
     weekInterval?: number;
     evenWeekStart?: boolean;
+    location_label?: string;
   }) => request<ApiScheduledCourse>("POST", "/scheduled-courses", data),
   confirmScheduledCourse: (id: number) =>
     request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/confirm`, {}),
@@ -1583,6 +1602,29 @@ export interface ApiOperatorEarnings {
   total_lessons: number;
   total_hours: number;
   total_earnings_cents: number;
+  super_cents?: number;
+  super_rate_percent?: number;
+  super_included?: boolean;
+  super_is_fixed?: boolean;
+  net_to_operator_cents?: number;
+  org_total_cost_cents?: number;
+}
+
+export interface ApiOperatorPrefs {
+  available_for_substitution: boolean;
+  sub_min_hours: number | null;
+  available_for_private_lessons: boolean;
+  private_lesson_min_hours: number | null;
+}
+
+export interface ApiPrivateLessonPolicy {
+  pl_reschedule_fee_pct: number;
+  pl_reschedule_window_hours: number;
+  pl_cancel_fee_pct: number;
+  pl_cancel_window_hours: number;
+  absence_policy: string;
+  absence_postpone_minutes: number;
+  absence_cancel_refund_type: string;
 }
 
 export interface ApiPayrollSummary {
@@ -1741,6 +1783,20 @@ export interface ApiAdminSettings {
   cert_grace_days?: number;
   cert_reminder_body?: string | null;
   min_first_aid_operators?: number;
+  // Superannuation
+  super_rate_percent?: number;
+  super_included?: boolean;
+  super_is_fixed?: boolean;
+  super_fixed_cents?: number;
+  // Private lesson cancellation/reschedule policy
+  pl_reschedule_fee_pct?: number;
+  pl_reschedule_window_hours?: number;
+  pl_cancel_fee_pct?: number;
+  pl_cancel_window_hours?: number;
+  // Operator absence course policy
+  absence_policy?: string;
+  absence_postpone_minutes?: number;
+  absence_cancel_refund_type?: string;
   updated_at?: string;
 }
 
@@ -2474,7 +2530,18 @@ export interface ApiRosterSuggestion {
   endTime: string;
   skillLevel: "beginner" | "intermediate" | "advanced" | "open";
   weekInterval: 1 | 2 | 4;
+  venue?: string;
   notes?: string;
+}
+
+export interface WaitlistReorganizationSuggestion {
+  course_name: string;
+  discipline?: string;
+  suggested_day: string;
+  suggested_time: string;
+  estimated_capacity: number;
+  waitlist_absorbed: number;
+  rationale: string;
 }
 
 export async function getCalendarEvents(params?: { from?: string; to?: string }): Promise<ApiCalendarEvent[]> {
@@ -2503,6 +2570,14 @@ export async function generateAIRoster(params: {
   preferences?: string;
 }): Promise<{ suggestions: ApiRosterSuggestion[]; frequency: string }> {
   return request<{ suggestions: ApiRosterSuggestion[]; frequency: string }>("POST", "/admin/generate-roster", params);
+}
+
+export async function reorganizeWaitlistWithAI(): Promise<{
+  suggestions: WaitlistReorganizationSuggestion[];
+  total_waitlisted: number;
+  courses_analysed: number;
+}> {
+  return request("POST", "/waitlist/ai-reorganize", {});
 }
 
 export async function forgotPassword(email: string): Promise<{ ok: boolean }> {
