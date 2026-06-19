@@ -465,12 +465,18 @@ jobs:
                 console.log(`Removed "auto-resolved" label from issue #${existingIssue.number}`);
               }
 
-              // Add a comment to the existing open issue instead of spamming new ones
+              // Add a comment to the existing open issue instead of spamming new ones.
+              // When the auto-resolved label was just stripped, prepend a note explaining why.
+              const resolvedRevertNote = hasAutoResolved
+                ? `> ⚠️ **Auto-resolved status reverted** — the sync has failed again, so the \`auto-resolved\` label has been removed and this issue remains open.\n\n`
+                : '';
+
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: existingIssue.number,
-                body: `### New failure on run #${context.runNumber}\n\n` +
+                body: resolvedRevertNote +
+                      `### New failure on run #${context.runNumber}\n\n` +
                       `**Commit:** \`${shortSha}\` · **Actor:** @${context.actor}\n\n` +
                       `[View run](${runUrl})` +
                       errorMd,
