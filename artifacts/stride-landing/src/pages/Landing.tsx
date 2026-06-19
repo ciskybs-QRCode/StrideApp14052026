@@ -564,7 +564,7 @@ export default function Landing() {
             </p>
             <div className="inline-flex items-center gap-2 mt-5 bg-[#FBBF24]/15 border border-[#FBBF24]/40 rounded-full px-5 py-2">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-              <span className="text-[#92400E] text-sm font-bold">Un solo account per più associazioni — passa da una all'altra con un tap</span>
+              <span className="text-[#92400E] text-sm font-bold">One account for multiple associations — switch between them with a single tap</span>
             </div>
           </div>
 

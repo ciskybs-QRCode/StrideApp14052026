@@ -22,13 +22,13 @@ import { api, type ApiOperatorPrefs } from "@/lib/api";
 const WEEK_STORAGE_KEY = "operator_week_schedule";
 
 const WEEK_DAYS: { key: string; label: string }[] = [
-  { key: "mon", label: "Lun" },
-  { key: "tue", label: "Mar" },
-  { key: "wed", label: "Mer" },
-  { key: "thu", label: "Gio" },
-  { key: "fri", label: "Ven" },
-  { key: "sat", label: "Sab" },
-  { key: "dom", label: "Dom" },
+  { key: "mon", label: "Mon" },
+  { key: "tue", label: "Tue" },
+  { key: "wed", label: "Wed" },
+  { key: "thu", label: "Thu" },
+  { key: "fri", label: "Fri" },
+  { key: "sat", label: "Sat" },
+  { key: "sun", label: "Sun" },
 ];
 
 type DaySlot = { active: boolean; from: string; to: string };
@@ -84,7 +84,7 @@ export default function AvailabilityPrefsScreen() {
     setSaving(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const sub_min_hours          = subMinStr.trim() ? parseFloat(subMinStr) : null;
+      const sub_min_hours            = subMinStr.trim() ? parseFloat(subMinStr) : null;
       const private_lesson_min_hours = plMinStr.trim() ? parseFloat(plMinStr) : null;
       await Promise.all([
         api.updateOperatorPrefs({
@@ -96,9 +96,9 @@ export default function AvailabilityPrefsScreen() {
         AsyncStorage.setItem(WEEK_STORAGE_KEY, JSON.stringify(week)),
       ]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Salvato", "Le tue preferenze di disponibilità sono state aggiornate.");
+      Alert.alert("Saved", "Your availability preferences have been updated.");
     } catch {
-      Alert.alert("Errore", "Impossibile salvare le preferenze. Riprova.");
+      Alert.alert("Error", "Could not save preferences. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -107,7 +107,7 @@ export default function AvailabilityPrefsScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="La Mia Disponibilità" onBack={() => router.back()} />
+        <ScreenHeader title="My Availability" onBack={() => router.back()} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -117,31 +117,23 @@ export default function AvailabilityPrefsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="La Mia Disponibilità" onBack={() => router.back()} />
+      <ScreenHeader title="My Availability" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
 
-        {/* Info banner */}
-        <View style={[styles.infoBanner, { backgroundColor: "rgba(30,58,138,0.07)", borderLeftColor: colors.primary }]}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-          <Text style={[styles.infoBannerText, { color: colors.primary }]}>
-            Queste impostazioni controllano se appari nella lista AI per sostituzioni e se i membri possono prenotare lezioni private con te.
-          </Text>
-        </View>
-
-        {/* ── Sostituzione ── */}
-        <Text style={[styles.sectionLabel, { color: colors.primary }]}>SOSTITUZIONE</Text>
+        {/* ── Substitution ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>SUBSTITUTION</Text>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.switchRow}>
-            <View style={[styles.iconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+            <View style={[styles.iconBox, { backgroundColor: colors.muted }]}>
               <Ionicons name="swap-horizontal-outline" size={18} color={colors.primary} />
             </View>
             <View style={styles.rowText}>
-              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Disponibile per Sostituzioni</Text>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Available for Substitution</Text>
               <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
-                Quando attivo, puoi comparire nelle raccomandazioni AI quando un altro operatore è assente.
+                When on, you can appear in AI recommendations when another operator is absent.
               </Text>
             </View>
             <Switch
@@ -156,14 +148,14 @@ export default function AvailabilityPrefsScreen() {
             <View style={[styles.subRow, { borderTopColor: colors.border }]}>
               <Ionicons name="time-outline" size={16} color={colors.mutedForeground} />
               <Text style={[styles.subLabel, { color: colors.mutedForeground }]}>
-                Durata minima turno (ore)
+                Minimum shift duration (hours)
               </Text>
               <TextInput
                 style={[styles.numInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                 value={subMinStr}
                 onChangeText={setSubMinStr}
                 keyboardType="decimal-pad"
-                placeholder="Nessun min."
+                placeholder="No min."
                 placeholderTextColor={colors.mutedForeground}
                 returnKeyType="done"
               />
@@ -171,26 +163,17 @@ export default function AvailabilityPrefsScreen() {
           )}
         </View>
 
-        {prefs.available_for_substitution && (
-          <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.07)", borderLeftColor: colors.primary }]}>
-            <Ionicons name="bulb-outline" size={14} color={colors.primary} />
-            <Text style={[styles.infoBoxText, { color: colors.primary }]}>
-              Se impostato, apparirai come sostituto solo per turni più lunghi di questa durata.
-            </Text>
-          </View>
-        )}
-
-        {/* ── Lezioni Private ── */}
-        <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 8 }]}>LEZIONI PRIVATE</Text>
+        {/* ── Private Lessons ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 8 }]}>PRIVATE LESSONS</Text>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.switchRow}>
-            <View style={[styles.iconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+            <View style={[styles.iconBox, { backgroundColor: colors.muted }]}>
               <Ionicons name="person-outline" size={18} color={colors.primary} />
             </View>
             <View style={styles.rowText}>
-              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Accetta Prenotazioni Lezioni Private</Text>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Accept Private Lesson Bookings</Text>
               <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
-                Quando attivo, i membri possono richiedere lezioni private con te (in base alle tue fasce orarie).
+                When on, members can request private sessions with you based on your schedule below.
               </Text>
             </View>
             <Switch
@@ -205,14 +188,14 @@ export default function AvailabilityPrefsScreen() {
             <View style={[styles.subRow, { borderTopColor: colors.border }]}>
               <Ionicons name="time-outline" size={16} color={colors.mutedForeground} />
               <Text style={[styles.subLabel, { color: colors.mutedForeground }]}>
-                Durata minima sessione (ore)
+                Minimum session duration (hours)
               </Text>
               <TextInput
                 style={[styles.numInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                 value={plMinStr}
                 onChangeText={setPlMinStr}
                 keyboardType="decimal-pad"
-                placeholder="Nessun min."
+                placeholder="No min."
                 placeholderTextColor={colors.mutedForeground}
                 returnKeyType="done"
               />
@@ -220,16 +203,13 @@ export default function AvailabilityPrefsScreen() {
           )}
         </View>
 
-        {/* ── Orari Settimanali ── */}
-        <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 8 }]}>DISPONIBILITÀ SETTIMANALE</Text>
-        <View style={[styles.infoBanner, { backgroundColor: "rgba(30,58,138,0.07)", borderLeftColor: colors.primary, marginBottom: 12 }]}>
-          <Ionicons name="calendar-outline" size={15} color={colors.primary} />
-          <Text style={[styles.infoBannerText, { color: colors.primary }]}>
-            Seleziona i giorni e le fasce orarie in cui sei generalmente disponibile. L'AI utilizzerà questi dati per assegnarti sostituzioni e lezioni private.
-          </Text>
-        </View>
+        {/* ── Weekly Schedule ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 8 }]}>WEEKLY SCHEDULE</Text>
+        <Text style={[styles.sectionDesc, { color: colors.mutedForeground }]}>
+          Select the days and time ranges when you are generally available. The AI uses this data when assigning substitutions and private lessons.
+        </Text>
 
-        {/* Day grid */}
+        {/* Day selector */}
         <View style={styles.dayGrid}>
           {WEEK_DAYS.map(({ key, label }) => {
             const slot = week[key]!;
@@ -253,15 +233,12 @@ export default function AvailabilityPrefsScreen() {
           })}
         </View>
 
-        {/* Time slots for active days */}
+        {/* Time inputs for active days */}
         {WEEK_DAYS.filter(d => week[d.key]!.active).map(({ key, label }) => {
           const slot = week[key]!;
           return (
             <View key={key} style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
               <View style={styles.timeRow}>
-                <View style={[styles.iconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Ionicons name="calendar-outline" size={16} color={colors.primary} />
-                </View>
                 <Text style={[styles.timeDayLabel, { color: colors.foreground }]}>{label}</Text>
                 <View style={styles.timeInputsRow}>
                   <TextInput
@@ -290,15 +267,12 @@ export default function AvailabilityPrefsScreen() {
         })}
 
         {WEEK_DAYS.every(d => !week[d.key]!.active) && (
-          <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.05)", borderLeftColor: colors.border, marginTop: 0 }]}>
-            <Ionicons name="alert-circle-outline" size={14} color={colors.mutedForeground} />
-            <Text style={[styles.infoBoxText, { color: colors.mutedForeground }]}>
-              Tocca i giorni sopra per indicare quando sei disponibile.
-            </Text>
-          </View>
+          <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>
+            Tap the days above to set when you are available.
+          </Text>
         )}
 
-        {/* Save button */}
+        {/* Save */}
         <Pressable
           style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]}
           onPress={handleSave}
@@ -308,7 +282,7 @@ export default function AvailabilityPrefsScreen() {
             ? <ActivityIndicator color="#FFF" />
             : <>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#FFF" />
-                <Text style={styles.saveBtnText}>Salva Preferenze</Text>
+                <Text style={styles.saveBtnText}>Save Preferences</Text>
               </>
           }
         </Pressable>
@@ -319,18 +293,13 @@ export default function AvailabilityPrefsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll:    { padding: 16 },
-  infoBanner: {
-    flexDirection: "row", alignItems: "flex-start", gap: 10,
-    borderRadius: 12, borderLeftWidth: 3,
-    padding: 14, marginBottom: 20,
-  },
-  infoBannerText: { flex: 1, fontSize: 13, lineHeight: 19 },
+  container:    { flex: 1 },
+  scroll:       { padding: 16 },
   sectionLabel: {
     fontSize: 11, fontWeight: "800", letterSpacing: 1,
     marginBottom: 8, paddingHorizontal: 4,
   },
+  sectionDesc:  { fontSize: 13, lineHeight: 19, marginBottom: 14, paddingHorizontal: 4 },
   card: {
     borderRadius: 14, overflow: "hidden", marginBottom: 8,
     shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
@@ -358,12 +327,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 6,
     fontSize: 14, fontWeight: "600", textAlign: "right",
   },
-  infoBox: {
-    flexDirection: "row", alignItems: "flex-start", gap: 8,
-    borderLeftWidth: 3, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 20,
-  },
-  infoBoxText: { flex: 1, fontSize: 12, lineHeight: 17 },
   dayGrid: {
     flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16,
   },
@@ -382,11 +345,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 6,
     fontSize: 13, fontWeight: "600", textAlign: "center",
   },
-  timeSep: { fontSize: 14, fontWeight: "600" },
-  saveBtn: {
+  timeSep:   { fontSize: 14, fontWeight: "600" },
+  emptyHint: { fontSize: 13, textAlign: "center", marginBottom: 16, fontStyle: "italic" },
+  saveBtn:   {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, borderRadius: 14,
-    paddingVertical: 15, marginTop: 12,
+    gap: 8, borderRadius: 14, paddingVertical: 15, marginTop: 12,
   },
   saveBtnText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
 });

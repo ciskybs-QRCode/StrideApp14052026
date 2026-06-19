@@ -435,12 +435,12 @@ export default function CoursesScreen() {
 
   const handleWithdraw = (c: (typeof courses)[0]) => {
     Alert.alert(
-      "Ritira Iscrizione",
-      `Sei sicuro di voler ritirare l'iscrizione a "${c.name}"?\n\nContatta l'amministratore per eventuali rimborsi.`,
+      "Withdraw from Course",
+      `Are you sure you want to withdraw from "${c.name}"?\n\nContact the administrator regarding any refunds.`,
       [
-        { text: "Annulla", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         {
-          text: "Ritira", style: "destructive",
+          text: "Withdraw", style: "destructive",
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             setWithdrawnIds(prev => new Set([...prev, c.id]));
@@ -718,11 +718,11 @@ export default function CoursesScreen() {
                           <Text style={[styles.materialsBtnText, { color: colors.primary }]}>Details</Text>
                         </Pressable>
                         <Pressable
-                          style={[styles.materialsBtn, { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA" }]}
+                          style={[styles.materialsBtn, { backgroundColor: colors.muted, borderWidth: 1, borderColor: colors.border }]}
                           onPress={() => handleWithdraw(c)}
                         >
-                          <Ionicons name="exit-outline" size={16} color="#DC2626" />
-                          <Text style={[styles.materialsBtnText, { color: "#DC2626" }]}>Ritira</Text>
+                          <Ionicons name="exit-outline" size={16} color={colors.mutedForeground} />
+                          <Text style={[styles.materialsBtnText, { color: colors.mutedForeground }]}>Withdraw</Text>
                         </Pressable>
                       </View>
                     </View>

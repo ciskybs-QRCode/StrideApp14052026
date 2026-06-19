@@ -5,7 +5,6 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -25,58 +24,40 @@ interface NoticeOption {
   sublabel: string;
   penalty: boolean;
   penaltyDesc?: string;
-  icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
-  accent: string;
-  bg: string;
 }
 
 const OPTIONS: NoticeOption[] = [
   {
     key: "immediate",
-    label: "Immediatamente",
-    sublabel: "Efficace oggi",
+    label: "Immediately",
+    sublabel: "Effective today",
     penalty: true,
-    penaltyDesc: "Verranno detratte 2 settimane di compenso per coprire il sostituto.",
-    icon: "alert-circle-outline",
-    accent: "#DC2626",
-    bg: "#FEF2F2",
+    penaltyDesc: "2 weeks of pay will be deducted to cover the replacement cost.",
   },
   {
     key: "1w",
-    label: "1 settimana",
-    sublabel: "7 giorni di preavviso",
+    label: "1 week",
+    sublabel: "7 days notice",
     penalty: true,
-    penaltyDesc: "Verranno detratte 2 settimane di compenso per coprire il sostituto.",
-    icon: "time-outline",
-    accent: "#D97706",
-    bg: "#FFFBEB",
+    penaltyDesc: "2 weeks of pay will be deducted to cover the replacement cost.",
   },
   {
     key: "2w",
-    label: "2 settimane",
-    sublabel: "14 giorni di preavviso — nessuna penale",
+    label: "2 weeks",
+    sublabel: "14 days notice — no penalty",
     penalty: false,
-    icon: "checkmark-circle-outline",
-    accent: "#059669",
-    bg: "#ECFDF5",
   },
   {
     key: "3w",
-    label: "3 settimane",
-    sublabel: "21 giorni di preavviso — nessuna penale",
+    label: "3 weeks",
+    sublabel: "21 days notice — no penalty",
     penalty: false,
-    icon: "checkmark-circle-outline",
-    accent: "#059669",
-    bg: "#ECFDF5",
   },
   {
     key: "4w",
-    label: "4 settimane",
-    sublabel: "28 giorni di preavviso — nessuna penale",
+    label: "4 weeks",
+    sublabel: "28 days notice — no penalty",
     penalty: false,
-    icon: "checkmark-circle-outline",
-    accent: "#059669",
-    bg: "#ECFDF5",
   },
 ];
 
@@ -110,11 +91,10 @@ export default function ResignScreen() {
   const doResign = async () => {
     setConfirming(false);
     setSubmitting(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       await submitResignation(selected!);
     } catch {
-      // Graceful: even if route doesn't exist yet, show confirmation
+      // Graceful fallback — still show confirmation
     }
     setSubmitting(false);
     setDone(true);
@@ -124,23 +104,23 @@ export default function ResignScreen() {
   if (done) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Fine Contratto" onBack={() => router.back()} />
+        <ScreenHeader title="End of Contract" onBack={() => router.back()} />
         <View style={styles.doneCenter}>
-          <View style={[styles.doneIcon, { backgroundColor: "#ECFDF5" }]}>
-            <Ionicons name="checkmark-circle" size={56} color="#059669" />
+          <View style={[styles.doneIcon, { backgroundColor: colors.muted }]}>
+            <Ionicons name="checkmark-circle-outline" size={52} color={colors.primary} />
           </View>
-          <Text style={[styles.doneTitle, { color: colors.foreground }]}>Richiesta Inviata</Text>
+          <Text style={[styles.doneTitle, { color: colors.foreground }]}>Request Submitted</Text>
           <Text style={[styles.doneSub, { color: colors.mutedForeground }]}>
-            La tua richiesta di fine contratto è stata inviata all'amministratore.
-            {selectedOpt?.penalty
-              ? "\n\nL'AI inizierà subito la ricerca di un sostituto. Se non ne viene trovato nessuno, riceverai una notifica."
-              : "\n\nL'AI inizierà la ricerca di un sostituto nei prossimi giorni per garantire continuità alle lezioni."}
+            Your contract termination request has been sent to the administrator.
+            {"\n\n"}
+            The AI Roster Orchestrator will begin searching for a replacement to cover your classes.
+            You will be notified if no replacement is found.
           </Text>
           <Pressable
             style={[styles.doneBtn, { backgroundColor: colors.primary }]}
             onPress={() => router.back()}
           >
-            <Text style={styles.doneBtnText}>Chiudi</Text>
+            <Text style={styles.doneBtnText}>Close</Text>
           </Pressable>
         </View>
       </View>
@@ -149,21 +129,20 @@ export default function ResignScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Fine Contratto" onBack={() => router.back()} />
+      <ScreenHeader title="End of Contract" onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Warning banner */}
-        <View style={[styles.warnBanner, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
-          <Ionicons name="warning-outline" size={20} color="#DC2626" />
-          <Text style={[styles.warnText, { color: "#991B1B" }]}>
-            Stai per avviare la procedura di fine contratto. Questa azione è irreversibile una volta confermata.
+        <View style={[styles.infoBox, { backgroundColor: colors.muted, borderLeftColor: colors.primary }]}>
+          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+          <Text style={[styles.infoText, { color: colors.foreground }]}>
+            This action is irreversible once confirmed. The administrator will be notified and the AI will begin searching for a replacement.
           </Text>
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.primary }]}>SELEZIONA IL PREAVVISO</Text>
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>NOTICE PERIOD</Text>
 
         {OPTIONS.map(opt => (
           <Pressable
@@ -171,48 +150,40 @@ export default function ResignScreen() {
             style={[
               styles.optionCard,
               {
-                backgroundColor: selected === opt.key ? opt.bg : colors.card,
-                borderColor: selected === opt.key ? opt.accent : colors.border,
+                backgroundColor: colors.card,
+                borderColor: selected === opt.key ? colors.primary : colors.border,
                 borderWidth: selected === opt.key ? 2 : 1,
               },
             ]}
             onPress={() => handleSelect(opt.key)}
           >
-            <View style={[styles.optionIcon, { backgroundColor: selected === opt.key ? opt.bg : colors.muted }]}>
-              <Ionicons name={opt.icon} size={22} color={selected === opt.key ? opt.accent : colors.mutedForeground} />
-            </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.optionLabel, { color: selected === opt.key ? opt.accent : colors.foreground }]}>
-                {opt.label}
-              </Text>
+              <Text style={[styles.optionLabel, { color: colors.foreground }]}>{opt.label}</Text>
               <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>{opt.sublabel}</Text>
               {opt.penalty && selected === opt.key && (
-                <View style={[styles.penaltyBadge, { backgroundColor: "#FEE2E2" }]}>
-                  <Ionicons name="alert-circle-outline" size={12} color="#DC2626" />
-                  <Text style={[styles.penaltyText, { color: "#DC2626" }]}>{opt.penaltyDesc}</Text>
-                </View>
+                <Text style={[styles.penaltyText, { color: colors.mutedForeground }]}>
+                  ⚠ {opt.penaltyDesc}
+                </Text>
               )}
             </View>
-            {selected === opt.key && (
-              <Ionicons name="radio-button-on" size={22} color={opt.accent} />
-            )}
+            <Ionicons
+              name={selected === opt.key ? "radio-button-on" : "radio-button-off"}
+              size={20}
+              color={selected === opt.key ? colors.primary : colors.mutedForeground}
+            />
           </Pressable>
         ))}
 
-        {/* Info box */}
-        <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.06)", borderLeftColor: colors.primary }]}>
+        <View style={[styles.infoBox, { backgroundColor: colors.muted, borderLeftColor: colors.primary, marginTop: 8 }]}>
           <Ionicons name="sparkles-outline" size={15} color={colors.primary} />
-          <Text style={[styles.infoText, { color: colors.primary }]}>
-            All'invio della richiesta, l'AI Roster Orchestrator avvierà automaticamente la ricerca di un sostituto compatibile con i tuoi corsi. Se non trova nessuno, notificherà l'amministratore.
+          <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+            Upon submission the AI Roster Orchestrator will automatically search for a compatible replacement for your classes.
           </Text>
         </View>
 
         {selected && (
           <Pressable
-            style={[styles.submitBtn, {
-              backgroundColor: selectedOpt?.penalty ? "#DC2626" : colors.primary,
-              opacity: submitting ? 0.7 : 1,
-            }]}
+            style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.7 : 1 }]}
             onPress={handleSubmit}
             disabled={submitting}
           >
@@ -221,7 +192,7 @@ export default function ResignScreen() {
               : <>
                   <Ionicons name="exit-outline" size={18} color="#FFF" />
                   <Text style={styles.submitBtnText}>
-                    {selectedOpt?.penalty ? "Conferma con Penale" : "Invia Richiesta"}
+                    {selectedOpt?.penalty ? "Submit with Penalty" : "Submit Request"}
                   </Text>
                 </>
             }
@@ -233,26 +204,24 @@ export default function ResignScreen() {
       <Modal visible={confirming} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.modalIcon, { backgroundColor: "#FEE2E2" }]}>
-              <Ionicons name="warning" size={32} color="#DC2626" />
-            </View>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Conferma con Penale</Text>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Confirm Penalty</Text>
             <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
               {selectedOpt?.penaltyDesc}
-              {"\n\n"}Questa somma verrà detratta dal tuo prossimo cedolino per coprire le spese di sostituzione.
+              {"\n\n"}
+              This amount will be deducted from your next payslip to cover the replacement costs.
             </Text>
             <View style={styles.modalBtns}>
               <Pressable
                 style={[styles.modalBtnSec, { borderColor: colors.border }]}
                 onPress={() => setConfirming(false)}
               >
-                <Text style={[styles.modalBtnSecText, { color: colors.foreground }]}>Annulla</Text>
+                <Text style={[styles.modalBtnSecText, { color: colors.foreground }]}>Cancel</Text>
               </Pressable>
               <Pressable
-                style={[styles.modalBtnPri, { backgroundColor: "#DC2626" }]}
+                style={[styles.modalBtnPri, { backgroundColor: colors.primary }]}
                 onPress={doResign}
               >
-                <Text style={styles.modalBtnPriText}>Confermo</Text>
+                <Text style={styles.modalBtnPriText}>Confirm</Text>
               </Pressable>
             </View>
           </View>
@@ -265,45 +234,31 @@ export default function ResignScreen() {
 const styles = StyleSheet.create({
   container:   { flex: 1 },
   scroll:      { padding: 16 },
-  warnBanner:  {
+  infoBox:     {
     flexDirection: "row", alignItems: "flex-start", gap: 10,
-    borderRadius: 14, borderWidth: 1.5,
-    padding: 14, marginBottom: 20,
+    borderLeftWidth: 3, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 20,
   },
-  warnText:    { flex: 1, fontSize: 13, lineHeight: 19, fontWeight: "500" },
+  infoText:    { flex: 1, fontSize: 13, lineHeight: 19 },
   sectionLabel:{
     fontSize: 11, fontWeight: "800", letterSpacing: 1,
-    marginBottom: 10, paddingHorizontal: 4, color: "#1E3A8A",
+    marginBottom: 10, paddingHorizontal: 4,
   },
   optionCard:  {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
-    borderRadius: 14, padding: 14, marginBottom: 10,
-  },
-  optionIcon:  {
-    width: 44, height: 44, borderRadius: 12,
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
+    borderRadius: 14, padding: 16, marginBottom: 10,
   },
   optionLabel: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
   optionSub:   { fontSize: 12, lineHeight: 17 },
-  penaltyBadge:{
-    flexDirection: "row", alignItems: "flex-start", gap: 6,
-    borderRadius: 8, padding: 8, marginTop: 8,
-  },
-  penaltyText: { flex: 1, fontSize: 11, fontWeight: "600", lineHeight: 15 },
-  infoBox:     {
-    flexDirection: "row", alignItems: "flex-start", gap: 8,
-    borderLeftWidth: 3, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 20, marginTop: 4,
-  },
-  infoText:    { flex: 1, fontSize: 12, lineHeight: 18 },
+  penaltyText: { fontSize: 12, lineHeight: 17, marginTop: 6, fontStyle: "italic" },
   submitBtn:   {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, borderRadius: 14, paddingVertical: 15, marginTop: 4,
+    gap: 8, borderRadius: 14, paddingVertical: 15, marginTop: 8,
   },
   submitBtnText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
   doneCenter:  { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
   doneIcon:    {
-    width: 100, height: 100, borderRadius: 50,
+    width: 96, height: 96, borderRadius: 48,
     alignItems: "center", justifyContent: "center", marginBottom: 20,
   },
   doneTitle:   { fontSize: 22, fontWeight: "800", marginBottom: 10, textAlign: "center" },
@@ -311,14 +266,10 @@ const styles = StyleSheet.create({
   doneBtn:     { borderRadius: 14, paddingHorizontal: 40, paddingVertical: 14 },
   doneBtnText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
   modalOverlay:{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 },
-  modalCard:   { borderRadius: 24, padding: 24, width: "100%", maxWidth: 380, alignItems: "center" },
-  modalIcon:   {
-    width: 72, height: 72, borderRadius: 36,
-    alignItems: "center", justifyContent: "center", marginBottom: 16,
-  },
-  modalTitle:  { fontSize: 18, fontWeight: "800", marginBottom: 10, textAlign: "center" },
-  modalBody:   { fontSize: 14, lineHeight: 21, textAlign: "center", marginBottom: 20 },
-  modalBtns:   { flexDirection: "row", gap: 12, width: "100%" },
+  modalCard:   { borderRadius: 24, padding: 24, width: "100%", maxWidth: 380 },
+  modalTitle:  { fontSize: 18, fontWeight: "800", marginBottom: 10 },
+  modalBody:   { fontSize: 14, lineHeight: 21, marginBottom: 20 },
+  modalBtns:   { flexDirection: "row", gap: 12 },
   modalBtnSec: {
     flex: 1, borderWidth: 1.5, borderRadius: 12,
     paddingVertical: 13, alignItems: "center",
