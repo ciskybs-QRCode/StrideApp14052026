@@ -43,6 +43,29 @@ When `REQUIRE_SLACK_WEBHOOK` is `true` and `SLACK_WEBHOOK_URL` is not configured
 | `true` | ✅ yes | Normal run, Slack alerts active |
 | `true` | ❌ no | Run fails immediately at the preflight step |
 
+## Enforcing a hard failure when the bot token is missing
+
+`SLACK_BOT_TOKEN` enables **threaded** Slack notifications — replies that stay in the same Slack thread across retries rather than creating separate top-level messages. Without it, threading is silently skipped and every retry notice becomes an independent message.
+
+If your team relies on threading for incident tracking, you can turn the missing-token warning into a **hard failure** by setting a repository variable:
+
+| Variable | Where to set it | Values |
+|----------|----------------|--------|
+| `REQUIRE_SLACK_BOT_TOKEN` | **Settings → Secrets and variables → Actions → Variables** | `true` to fail the run; omit or set to anything else to keep the default warning behaviour |
+
+When `REQUIRE_SLACK_BOT_TOKEN` is `true` and `SLACK_BOT_TOKEN` is not configured, the preflight step calls `core.setFailed()` and the entire workflow stops immediately with a clear error message — no further steps run.
+
+**Mode summary:**
+
+| `REQUIRE_SLACK_BOT_TOKEN` | `SLACK_BOT_TOKEN` present | Behaviour |
+|--------------------------|--------------------------|-----------|
+| not set / `false` | ✅ yes | Normal run, threaded Slack alerts active |
+| not set / `false` | ❌ no | Yellow warning annotation, run continues without threading |
+| `true` | ✅ yes | Normal run, threaded Slack alerts active |
+| `true` | ❌ no | Run fails immediately at the preflight step |
+
+> **Note:** `REQUIRE_SLACK_BOT_TOKEN` and `REQUIRE_SLACK_WEBHOOK` are independent guards — you can set either or both. Setting `REQUIRE_SLACK_BOT_TOKEN` without also setting `REQUIRE_SLACK_WEBHOOK` enforces threading while still allowing runs where only a webhook (no threading) is configured.
+
 ## Changing the target channel
 
 By default, alerts go to whichever channel the webhook was created for. You can override this **without rotating the webhook** by setting a repository variable:

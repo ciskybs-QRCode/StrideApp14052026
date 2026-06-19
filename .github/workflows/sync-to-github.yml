@@ -28,6 +28,8 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           REQUIRE_SLACK_WEBHOOK: ${{ vars.REQUIRE_SLACK_WEBHOOK }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          REQUIRE_SLACK_BOT_TOKEN: ${{ vars.REQUIRE_SLACK_BOT_TOKEN }}
         with:
           script: |
             if (!process.env.SLACK_WEBHOOK_URL) {
@@ -49,6 +51,27 @@ jobs:
               }
             } else {
               console.log('SLACK_WEBHOOK_URL is configured — Slack notifications are active.');
+            }
+
+            if (!process.env.SLACK_BOT_TOKEN) {
+              const requireBotToken = process.env.REQUIRE_SLACK_BOT_TOKEN === 'true';
+              const message =
+                'SLACK_BOT_TOKEN secret is not set. ' +
+                'Threaded Slack notifications will be silently skipped for the entire run. ' +
+                'See docs/slack-alerts.md for setup instructions.';
+              if (requireBotToken) {
+                const failMsg =
+                  'REQUIRE_SLACK_BOT_TOKEN is true but SLACK_BOT_TOKEN secret is not set. ' +
+                  'Add the secret under Settings → Secrets and variables → Actions → Secrets, ' +
+                  'or set REQUIRE_SLACK_BOT_TOKEN to false to downgrade this to a warning. ' +
+                  'See docs/slack-alerts.md for setup instructions.';
+                core.setOutput('step_error', failMsg);
+                core.setFailed(failMsg);
+              } else {
+                core.warning(message);
+              }
+            } else {
+              console.log('SLACK_BOT_TOKEN is configured — threaded Slack notifications are active.');
             }
 
       - name: Push to target repository
