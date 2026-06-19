@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stride — Revisione Legale & Sicurezza</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; color: #1a1a2e; background: #f8f9ff; font-size: 14px; line-height: 1.7; }
+  .cover { background: #1E3A8A; color: white; padding: 60px 80px; min-height: 220px; }
+  .cover h1 { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
+  .cover .sub { font-size: 16px; opacity: 0.8; margin-bottom: 24px; }
+  .cover .meta { font-size: 12px; opacity: 0.6; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 16px; display: flex; gap: 40px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 60px; }
+  h2 { font-size: 22px; font-weight: 700; color: #1E3A8A; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #FBBF24; }
+  h3 { font-size: 15px; font-weight: 600; color: #1E3A8A; margin: 24px 0 8px; }
+  p { margin-bottom: 12px; color: #374151; }
+  ul, ol { margin: 8px 0 16px 24px; color: #374151; }
+  li { margin-bottom: 6px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 6px; }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-yellow { background: #fef3c7; color: #92400e; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .card { background: white; border-radius: 10px; padding: 24px; margin: 16px 0; border-left: 4px solid #1E3A8A; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .card-warn { border-left-color: #FBBF24; }
+  .card-ok { border-left-color: #10b981; }
+  .card-alert { border-left-color: #ef4444; }
+  .feature-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+  .feature-row:last-child { border-bottom: none; }
+  .feature-label { font-weight: 600; min-width: 200px; color: #1E3A8A; }
+  .section-intro { background: #eff6ff; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; color: #1e40af; font-size: 13px; }
+  .disclaimer { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px 20px; margin: 30px 0; font-size: 12px; color: #92400e; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { background: #1E3A8A; color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #f9fafb; }
+  .toc { background: white; border-radius: 10px; padding: 24px; margin: 30px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .toc h3 { margin-top: 0; color: #FBBF24; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin-bottom: 4px; color: #1E3A8A; font-weight: 500; }
+  @media print {
+    body { background: white; }
+    .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    h2 { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+    <div style="width:40px;height:40px;background:#FBBF24;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#1E3A8A;font-size:18px;">S</div>
+    <span style="font-size:22px;font-weight:700;">Stride</span>
+  </div>
+  <h1>Revisione Legale & Sicurezza</h1>
+  <p class="sub">Analisi delle protezioni legali, contrattuali e di sicurezza implementate nella piattaforma</p>
+  <div class="meta">
+    <span>Versione: 1.0</span>
+    <span>Data: Giugno 2026</span>
+    <span>Confidenziale — Solo uso interno</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="disclaimer">
+    ⚠️ <strong>Nota importante:</strong> Questo documento descrive le misure tecniche implementate. Non costituisce parere legale. Prima del lancio commerciale si raccomanda la revisione da parte di un avvocato specializzato in diritto del lavoro italiano e GDPR per la validità legale delle firme digitali e dei contratti di collaborazione.
+  </div>
+
+  <div class="toc">
+    <h3>Indice</h3>
+    <ol>
+      <li>Digital Legal Gate — Consensi Obbligatori</li>
+      <li>Contratti di Lavoro — Ciclo di Vita Digitale</li>
+      <li>Fine Rapporto — Dimissioni e Licenziamento</li>
+      <li>Responsabilità & Esonero di Responsabilità</li>
+      <li>Sicurezza Minori — Smart Pick-Up</li>
+      <li>GDPR & Privacy — Stato Implementativo</li>
+      <li>Audit Trail Crittografico</li>
+      <li>Emergenze — Protocolli di Sicurezza</li>
+      <li>Riepilogo: Cosa è Coperto / Cosa Richiede Attenzione</li>
+    </ol>
+  </div>
+
+  <h2>1. Digital Legal Gate — Consensi Obbligatori</h2>
+  <div class="section-intro">
+    Ogni genitore/membro viene bloccato all'accesso all'app fino a quando non ha completato l'intero ciclo di firma obbligatoria. Non è possibile bypassare questo gate.
+  </div>
+
+  <div class="card card-ok">
+    <h3>Come funziona il gate</h3>
+    <ul>
+      <li><strong>Scroll obbligatorio:</strong> L'utente deve scorrere fino in fondo al documento prima che si sblocchi la casella "Letto e Compreso"</li>
+      <li><strong>Firma obbligatoria:</strong> Il pad di firma si sblocca solo dopo aver letto il documento E selezionato un'opzione di consenso media</li>
+      <li><strong>Matrice di consenso media:</strong> 3 opzioni obbligatorie (Completo pubblico / Solo interno / Nessun consenso) — obbligatorie per legge per i minori</li>
+      <li><strong>Blocco sequenziale:</strong> Ogni documento della sequenza deve essere firmato in ordine — non è possibile saltare</li>
+    </ul>
+  </div>
+
+  <table>
+    <tr><th>Documento</th><th>Obbligatorio</th><th>Stato</th></tr>
+    <tr><td>Regolamento Associativo</td><td>Sì</td><td><span class="badge badge-green">Implementato</span></td></tr>
+    <tr><td>Consenso Trattamento Dati (GDPR Art. 13)</td><td>Sì</td><td><span class="badge badge-green">Implementato</span></td></tr>
+    <tr><td>Liberatoria Responsabilità Attività</td><td>Sì</td><td><span class="badge badge-green">Implementato</span></td></tr>
+    <tr><td>Consenso Media / Immagini</td><td>Sì (3 opzioni)</td><td><span class="badge badge-green">Implementato</span></td></tr>
+    <tr><td>Emergenza Medica / Allergie</td><td>Sì</td><td><span class="badge badge-green">Implementato</span></td></tr>
+  </table>
+
+  <h2>2. Contratti di Lavoro — Ciclo di Vita Digitale</h2>
+
+  <div class="card">
+    <h3>Tipologie di contratto supportate</h3>
+    <div class="feature-row">
+      <span class="feature-label">Collaborazione a Progetto</span>
+      <span>Tariffa oraria concordata, regime fiscale specificato, clausole di riservatezza</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Dipendente (Wages)</span>
+      <span>Stipendio mensile, livello inquadramento, CCNL di riferimento</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Firma Digitale</span>
+      <span>Firma a dito su pad, acquisizione IP, device fingerprint, timestamp UTC</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Export PDF</span>
+      <span>Contratto completo esportabile in PDF firmato tramite expo-print</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Hash di integrità</span>
+      <span>SHA-256 del blob firma + ID utente + timestamp — record immutabile</span>
+    </div>
+  </div>
+
+  <div class="card card-warn">
+    <h3>⚠️ Punti da verificare con un avvocato</h3>
+    <ul>
+      <li>La firma digitale a dito (senza certificato qualificato) ha valore legale in Italia come <strong>firma elettronica semplice</strong> (non avanzata né qualificata). Sufficiente per contratti di collaborazione, ma verificare per contratti da dipendente.</li>
+      <li>Verificare che il contratto PDF includa tutte le clausole obbligatorie ex D.Lgs. 81/2015 (Jobs Act) per i collaboratori.</li>
+      <li>La generazione automatica del contratto tramite AI richiede revisione umana prima della firma — implementare un flag "approvato dall'admin" prima della presentazione al collaboratore.</li>
+    </ul>
+  </div>
+
+  <h2>3. Fine Rapporto — Dimissioni e Licenziamento</h2>
+
+  <div class="card card-ok">
+    <h3>Flusso Dimissioni (Operatore → resign.tsx)</h3>
+    <ul>
+      <li><strong>Periodi di preavviso offerti:</strong> Immediato / 1 settimana / 2 settimane / 1 mese / Data concordata</li>
+      <li><strong>Penale automatica:</strong> Per dimissioni immediate, il sistema calcola e mostra la penale salariale da trattenere per copertura costo sostituto</li>
+      <li><strong>Conferma esplicita:</strong> Modal di conferma con riepilogo penale prima dell'invio</li>
+      <li><strong>Cascata automatica:</strong> Al submit, il sistema attiva l'AI Roster Orchestrator per trovare un sostituto nella stessa fascia oraria</li>
+      <li><strong>Notifica admin:</strong> L'admin riceve notifica push immediata con riepilogo dimissioni</li>
+    </ul>
+  </div>
+
+  <div class="card card-warn">
+    <h3>Licenziamento (Admin → users.tsx)</h3>
+    <ul>
+      <li>L'admin può modificare il ruolo/stato dell'operatore dalla schermata utenti</li>
+      <li>La disattivazione dell'account blocca immediatamente l'accesso all'app</li>
+      <li><strong>⚠️ Da implementare:</strong> Un flusso formale di licenziamento con: motivazione documentata, preavviso legale, record audit. Attualmente la disattivazione è amministrativa ma non genera un documento formale di licenziamento.</li>
+      <li>Si raccomanda di aggiungere un wizard "Termina Rapporto" lato admin con step: motivazione → preavviso → documentazione → disattivazione account.</li>
+    </ul>
+  </div>
+
+  <h2>4. Responsabilità & Esonero</h2>
+
+  <div class="card card-ok">
+    <h3>Liberatorie implementate</h3>
+    <ul>
+      <li>Liberatoria per attività fisiche (danza, acrobatica) nel ciclo di firma obbligatoria</li>
+      <li>Consenso informato per eventuali attività a rischio specifico</li>
+      <li>"Zero Liability" clause nella scheda contratto operatori</li>
+      <li>Ogni firma è registrata con IP + device + timestamp + hash SHA-256</li>
+    </ul>
+  </div>
+
+  <div class="card card-warn">
+    <h3>⚠️ Raccomandazioni</h3>
+    <ul>
+      <li>Fare redigere le liberatorie da un avvocato — i template generici non coprono tutte le specificità delle attività danzistiche in Italia</li>
+      <li>Aggiungere una clausola esplicita di esonero per la piattaforma tecnologica (Stride) rispetto alle decisioni operative dell'associazione</li>
+      <li>Per i minori: la firma del genitore/tutore è sufficiente, ma verificare l'età minima per il consenso autonomo (14 anni per GDPR)</li>
+    </ul>
+  </div>
+
+  <h2>5. Sicurezza Minori — Smart Pick-Up</h2>
+
+  <div class="card card-ok">
+    <h3>Funzionalità di protezione implementate</h3>
+    <div class="feature-row">
+      <span class="feature-label">QR Pass firmato</span>
+      <span>Ogni ritiro genera un QR univoco con JWT firmato — non riproducibile</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Token monouso</span>
+      <span>Il genitore può emettere token che si invalidano dopo il primo scan</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Finestra temporale</span>
+      <span>Il ritiro è autorizzato solo entro una fascia oraria specificata dal genitore</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Firma + GPS al ritiro</span>
+      <span>Chi ritira firma digitalmente + viene acquisita la posizione GPS al momento del ritiro</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Audit immutabile</span>
+      <span>Ogni ritiro genera un record con hash SHA-256 che lega firma, bambino e timestamp</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Override con motivazione</span>
+      <span>L'operatore può fare override solo inserendo motivazione — registrata nell'audit log</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Guardian Circle</span>
+      <span>Il genitore gestisce una lista di persone autorizzate al ritiro, revocabile in tempo reale</span>
+    </div>
+    <div class="feature-row">
+      <span class="feature-label">Blacklist</span>
+      <span>L'admin può bloccare persone specifiche dall'accesso alla struttura</span>
+    </div>
+  </div>
+
+  <h2>6. GDPR & Privacy — Stato Implementativo</h2>
+
+  <table>
+    <tr><th>Requisito GDPR</th><th>Stato</th><th>Note</th></tr>
+    <tr><td>Art. 13 — Informativa al momento della raccolta</td><td><span class="badge badge-green">OK</span></td><td>Nel gate di firma obbligatoria</td></tr>
+    <tr><td>Art. 6 — Base giuridica del trattamento</td><td><span class="badge badge-green">OK</span></td><td>Consenso esplicito per ogni categoria</td></tr>
+    <tr><td>Art. 7 — Consenso specifico e revocabile</td><td><span class="badge badge-green">OK</span></td><td>Matrice consensi con opzioni granulari</td></tr>
+    <tr><td>Art. 17 — Diritto all'oblio</td><td><span class="badge badge-yellow">Parziale</span></td><td>Policy prevede cancellazione entro 30gg — da automatizzare</td></tr>
+    <tr><td>Art. 20 — Portabilità dei dati</td><td><span class="badge badge-yellow">Parziale</span></td><td>PDF esportabili manualmente — da aggiungere export automatizzato</td></tr>
+    <tr><td>Art. 25 — Privacy by design</td><td><span class="badge badge-green">OK</span></td><td>Isolamento tenant, UUID anonimi per wearable</td></tr>
+    <tr><td>Art. 32 — Misure di sicurezza</td><td><span class="badge badge-green">OK</span></td><td>AES-256 at rest, TLS 1.3 in transit, JWT firmati</td></tr>
+    <tr><td>Art. 33 — Notifica violazione dati</td><td><span class="badge badge-red">Da fare</span></td><td>Nessun processo automatizzato di data breach notification</td></tr>
+    <tr><td>Nomina DPO</td><td><span class="badge badge-yellow">Da valutare</span></td><td>Obbligatorio se si trattano dati di minori su larga scala</td></tr>
+    <tr><td>Registro trattamenti (Art. 30)</td><td><span class="badge badge-red">Da fare</span></td><td>Documento esterno da redigere</td></tr>
+  </table>
+
+  <h2>7. Audit Trail Crittografico</h2>
+
+  <div class="card card-ok">
+    <h3>Ogni operazione sensibile genera un record immutabile che include:</h3>
+    <ul>
+      <li><strong>Firma digitale:</strong> SVG path della firma a dito serializzato</li>
+      <li><strong>Hash SHA-256:</strong> Impronta crittografica del record (firma + ID + timestamp)</li>
+      <li><strong>IP address:</strong> Indirizzo IP del dispositivo al momento dell'azione</li>
+      <li><strong>Device fingerprint:</strong> Identificativo del dispositivo mobile</li>
+      <li><strong>Timestamp UTC:</strong> Momento esatto dell'azione in UTC</li>
+      <li><strong>Coordinate GPS:</strong> Per operazioni di ritiro minore</li>
+    </ul>
+    <p style="margin-top:12px;"><strong>Cosa viene auditato:</strong> Firme documenti legali · Firme contratto operatori · Ritiro minori · Override QR · Pagamenti · Modifiche blacklist · Accessi admin</p>
+  </div>
+
+  <h2>8. Emergenze — Protocolli di Sicurezza</h2>
+
+  <div class="card card-ok">
+    <h3>Emergency Pulse (Allarme Struttura)</h3>
+    <ul>
+      <li>Attivabile da operatori e admin con un bottone SOS dedicato</li>
+      <li>La notifica push bypassa la modalità silenziosa sui telefoni dei genitori (iOS Critical Alert)</li>
+      <li>Ogni genitore deve confermare attivamente di aver ricevuto l'allarme — watchdog 60 secondi</li>
+      <li>Protocolli DRSABCD integrati per emergenze mediche (operatori)</li>
+      <li>Registro storico di tutte le emergenze attivate</li>
+    </ul>
+  </div>
+
+  <h2>9. Riepilogo: Coperto / Da Fare</h2>
+
+  <table>
+    <tr><th>Area</th><th>Stato</th><th>Priorità</th></tr>
+    <tr><td>Consensi obbligatori genitori</td><td><span class="badge badge-green">Coperto</span></td><td>—</td></tr>
+    <tr><td>Audit trail crittografico firme</td><td><span class="badge badge-green">Coperto</span></td><td>—</td></tr>
+    <tr><td>Protezione ritiro minori (QR + firma + GPS)</td><td><span class="badge badge-green">Coperto</span></td><td>—</td></tr>
+    <tr><td>Dimissioni operatore documentate</td><td><span class="badge badge-green">Coperto</span></td><td>—</td></tr>
+    <tr><td>GDPR Art. 13/6/7/25/32</td><td><span class="badge badge-green">Coperto</span></td><td>—</td></tr>
+    <tr><td>Flusso formale di licenziamento admin</td><td><span class="badge badge-yellow">Parziale</span></td><td>Alta</td></tr>
+    <tr><td>GDPR Art. 17 (diritto all'oblio automatizzato)</td><td><span class="badge badge-yellow">Parziale</span></td><td>Media</td></tr>
+    <tr><td>Registro trattamenti (Art. 30)</td><td><span class="badge badge-red">Da fare</span></td><td>Alta (pre-lancio)</td></tr>
+    <tr><td>Procedura data breach notification</td><td><span class="badge badge-red">Da fare</span></td><td>Alta (pre-lancio)</td></tr>
+    <tr><td>Validazione legale firme digitali (Italia)</td><td><span class="badge badge-red">Revisione legale</span></td><td>Alta (pre-lancio)</td></tr>
+    <tr><td>DPO nomination (se dati minori &gt;500 soggetti)</td><td><span class="badge badge-yellow">Da valutare</span></td><td>Media</td></tr>
+  </table>
+
+</div>
+</body>
+</html>
