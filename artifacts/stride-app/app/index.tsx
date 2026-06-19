@@ -13,10 +13,17 @@ export default function Index() {
   const [sysLoading, setSysLoading] = useState(true);
 
   useEffect(() => {
+    let settled = false;
+    const clear = () => { if (!settled) { settled = true; setSysLoading(false); } };
+    const safetyTimer = setTimeout(() => {
+      setSysStatus(s => s ?? { configured: true, userCount: 1 } as never);
+      clear();
+    }, 4000);
     api.systemStatus()
       .then(s => setSysStatus(s))
       .catch(() => setSysStatus({ configured: true, userCount: 1, orgName: null } as never))
-      .finally(() => setSysLoading(false));
+      .finally(() => { clearTimeout(safetyTimer); clear(); });
+    return () => clearTimeout(safetyTimer);
   }, []);
 
   useEffect(() => {

@@ -1211,6 +1211,17 @@ export async function ensureTables(): Promise<void> {
       CHECK (status IN ('waiting','offered','accepted','declined','expired'));
   `).catch(() => {});
 
+  // ── course_waitlist — defensive column additions (backfill migration) ────────
+  await pool.query(`ALTER TABLE course_waitlist ADD COLUMN IF NOT EXISTS org_id           INTEGER NOT NULL DEFAULT 1`).catch(() => {});
+  await pool.query(`ALTER TABLE course_waitlist ADD COLUMN IF NOT EXISTS member_id        INTEGER`).catch(() => {});
+  await pool.query(`ALTER TABLE course_waitlist ADD COLUMN IF NOT EXISTS dependent_id     INTEGER`).catch(() => {});
+  await pool.query(`ALTER TABLE course_waitlist ADD COLUMN IF NOT EXISTS preferred_days   JSONB   NOT NULL DEFAULT '[]'::jsonb`).catch(() => {});
+  await pool.query(`ALTER TABLE course_waitlist ADD COLUMN IF NOT EXISTS preferred_times  JSONB   NOT NULL DEFAULT '[]'::jsonb`).catch(() => {});
+  await pool.query(`ALTER TABLE course_waitlist ADD COLUMN IF NOT EXISTS offered_at       TIMESTAMPTZ`).catch(() => {});
+  await pool.query(`ALTER TABLE course_waitlist ADD COLUMN IF NOT EXISTS offer_expires_at TIMESTAMPTZ`).catch(() => {});
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_cwl_org    ON course_waitlist(org_id)`).catch(() => {});
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_cwl_member ON course_waitlist(member_id)`).catch(() => {});
+
   // ── Operator first-aid certificates ────────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_first_aid_certs (

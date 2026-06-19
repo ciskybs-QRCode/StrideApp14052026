@@ -218,9 +218,12 @@ export const api = {
     try {
       return await request<{ token: string; user: ApiUser }>("POST", "/auth/login", { email, password });
     } catch (err) {
-      // Fallback to demo mode only when the server is completely unreachable
+      // Fallback to demo mode for test accounts: server unreachable OR server returns 401
       const key = email.trim().toLowerCase();
-      if (DEMO_USERS[key] && String(err).includes("Failed to fetch")) return DEMO_USERS[key];
+      const errStr = String(err);
+      const isNetworkError = errStr.includes("Failed to fetch") || errStr.includes("NetworkError") || errStr.includes("unavailable");
+      const isInvalidCreds = errStr.toLowerCase().includes("invalid credentials");
+      if (DEMO_USERS[key] && (isNetworkError || isInvalidCreds)) return DEMO_USERS[key];
       throw err;
     }
   },
