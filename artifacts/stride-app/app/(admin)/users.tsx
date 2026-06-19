@@ -19,7 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { api, request, ApiChild, ApiOperatorProfile, ApiStudent, type ApiEmploymentConfig } from "@/lib/api";
+import { api, request, ApiChild, ApiOperatorProfile, ApiStudent, type ApiEmploymentConfig, type ApiContractResearch, type ApiAccountantParse } from "@/lib/api";
 import { useTerminology } from "@/context/TerminologyContext";
 
 // ── Full member profile (fetched on-demand for admin detail modal) ──────────
@@ -160,12 +160,22 @@ export default function AdminUsers() {
   const [empConfig,          setEmpConfig]          = useState<ApiEmploymentConfig | null>(null);
   const [empSaving,          setEmpSaving]          = useState(false);
   const [empType,            setEmpType]            = useState<"wages" | "contractor">("contractor");
+  const [empSubType,         setEmpSubType]         = useState<"on_call" | "part_time" | "full_time" | "casual">("full_time");
   const [contractorRate,     setContractorRate]     = useState("");
   const [contractorBilling,  setContractorBilling]  = useState("hourly");
   const [empCountry,         setEmpCountry]         = useState("");
   const [empCity,            setEmpCity]            = useState("");
   const [jurisdictionLoading,setJurisdictionLoading]= useState(false);
   const [generatingContract, setGeneratingContract] = useState(false);
+  const [researchResult,     setResearchResult]     = useState<ApiContractResearch | null>(null);
+  const [researchLoading,    setResearchLoading]    = useState(false);
+  const [showAccountantModal,setShowAccountantModal]= useState(false);
+  const [accountantEmail,    setAccountantEmail]    = useState("");
+  const [accountantSubject,  setAccountantSubject]  = useState("");
+  const [accountantBody,     setAccountantBody]     = useState("");
+  const [accountantReplyText,setAccountantReplyText]= useState("");
+  const [parsingReply,       setParsingReply]       = useState(false);
+  const [parseResult,        setParseResult]        = useState<ApiAccountantParse | null>(null);
 
   // ── Data fetch ───────────────────────────────────────────────────────────────
 
@@ -222,15 +232,18 @@ export default function AdminUsers() {
 
   // Load employment config when an operator profile is loaded
   useEffect(() => {
-    if (!operatorProfile) { setEmpConfig(null); return; }
+    if (!operatorProfile) { setEmpConfig(null); setResearchResult(null); setParseResult(null); return; }
     api.getEmploymentConfig(operatorProfile.id)
       .then(cfg => {
         setEmpConfig(cfg);
         setEmpType(cfg.employment_type ?? "contractor");
+        setEmpSubType(cfg.employment_sub_type ?? "full_time");
         setContractorRate(cfg.contractor_rate_cents ? (cfg.contractor_rate_cents / 100).toFixed(2) : "");
         setContractorBilling(cfg.contractor_billing_unit ?? "hourly");
         setEmpCountry(cfg.primary_country ?? "");
         setEmpCity(cfg.primary_city ?? "");
+        setResearchResult(null);
+        setParseResult(null);
       })
       .catch(() => setEmpConfig(null));
   }, [operatorProfile?.id]);
@@ -313,6 +326,7 @@ export default function AdminUsers() {
     try {
       const cfg = await api.updateEmploymentConfig(operatorProfile.id, {
         employment_type: empType,
+        employment_sub_type: empType === "wages" ? empSubType : null,
         contractor_rate_cents: Math.round(parseFloat(contractorRate || "0") * 100),
         contractor_billing_unit: contractorBilling,
         primary_country: empCountry.trim() || undefined,
@@ -322,6 +336,74 @@ export default function AdminUsers() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch { Alert.alert("Save failed", "Could not save employment settings."); }
     finally { setEmpSaving(false); }
+  };
+
+  const handleResearchContract = async () => {
+    if (!empCountry.trim()) { Alert.alert("Enter the operator's primary residence country first."); return; }
+    setResearchLoading(true);
+    setResearchResult(null);
+    try {
+      const result = await api.aiResearchContract({
+        country: empCountry,
+        city: empCity || undefined,
+        employment_sub_type: empSubType,
+        org_name: selected?.name,
+      });
+      setResearchResult(result);
+      const opName = selected?.name ?? "this operator";
+      const subLabel = empSubType === "on_call" ? "On-Call" : empSubType === "part_time" ? "Part Time" : empSubType === "full_time" ? "Full Time" : "Casual";
+      const subj = `Employment Contract Review Request — ${opName}`;
+      const body = [
+        `Dear [Accountant Name],`,
+        ``,
+        `We are engaging ${opName} at our association (${subLabel}, On Wages) in ${empCountry}${empCity ? `, ${empCity}` : ""} and would appreciate your professional review.`,
+        ``,
+        `AI Research Summary:`,
+        result.summary,
+        ``,
+        `Required documents flagged: ${(result.required_ids ?? []).map(r => r.label).join(", ") || "see attachment"}`,
+        `Leave entitlements identified: ${(result.leave_entitlements ?? []).map(l => l.days_per_year ? `${l.label} (${l.days_per_year} days/yr)` : l.label).join(", ") || "see attachment"}`,
+        `Tax obligations: ${(result.tax_obligations ?? []).map(t => `${t.label} ${t.rate}%`).join(", ") || "see attachment"}`,
+        ``,
+        `We kindly ask you to review:`,
+        `1. Whether this engagement is legally compliant in our jurisdiction.`,
+        `2. Which deductions to include or exclude and at what rates.`,
+        `3. Leave entitlements, overtime clauses, and public holiday rules.`,
+        `4. Any other obligations (INPS, INAIL, TFR, Superannuation, GST, etc.).`,
+        ``,
+        `Please reply with your recommendations — we will paste your response directly into our payroll configuration assistant.`,
+        ``,
+        `Kind regards,`,
+        `[Admin Name]`,
+        `[Association Name]`,
+      ].join("\n");
+      setAccountantSubject(subj);
+      setAccountantBody(body);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { Alert.alert("AI Research failed", "Check internet connection and try again."); }
+    finally { setResearchLoading(false); }
+  };
+
+  const handleParseAccountantReply = async () => {
+    if (!accountantReplyText.trim()) { Alert.alert("Paste the accountant's email reply first."); return; }
+    setParsingReply(true);
+    setParseResult(null);
+    try {
+      const result = await api.aiParseAccountantReply({
+        email_text: accountantReplyText,
+        country: empCountry || undefined,
+        employment_sub_type: empSubType,
+      });
+      setParseResult(result);
+      if (result.deductions?.length > 0 && operatorProfile) {
+        const chips = result.deductions.map(d => ({ label: d.label, rate: String(d.rate) }));
+        await api.updateEmploymentConfig(operatorProfile.id, { contractor_extra_chips: chips });
+        const cfg = await api.getEmploymentConfig(operatorProfile.id);
+        setEmpConfig(cfg);
+      }
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { Alert.alert("Parsing failed", "Check internet connection and try again."); }
+    finally { setParsingReply(false); }
   };
 
   const handleAiJurisdiction = async () => {
@@ -840,12 +922,200 @@ export default function AdminUsers() {
                             </View>
                           )}
 
-                          {/* Wages info */}
+                          {/* Wages: sub-type selector + AI research */}
                           {empType === "wages" && (
-                            <View style={{ backgroundColor: "#EFF6FF", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
-                              <Text style={{ fontSize: 11, color: colors.primary, lineHeight: 16 }}>
-                                On Wages: you handle employer-side deductions (PAYG/PAYE, super, etc.) for this operator. Use AI Jurisdiction to get the correct deductions for their location.
-                              </Text>
+                            <View style={{ gap: 8 }}>
+                              {/* Sub-type selector */}
+                              <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>ENGAGEMENT TYPE</Text>
+                              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                                {(["on_call", "part_time", "full_time", "casual"] as const).map(sub => {
+                                  const lbl = sub === "on_call" ? "On Call" : sub === "part_time" ? "Part Time" : sub === "full_time" ? "Full Time" : "Casual";
+                                  return (
+                                    <Pressable key={sub}
+                                      onPress={() => { setEmpSubType(sub); setResearchResult(null); void Haptics.selectionAsync(); }}
+                                      style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1.5,
+                                        backgroundColor: empSubType === sub ? colors.primary : "transparent",
+                                        borderColor: empSubType === sub ? colors.primary : colors.border }}>
+                                      <Text style={{ fontSize: 11, fontWeight: "800", color: empSubType === sub ? "#FFF" : colors.foreground }}>{lbl}</Text>
+                                    </Pressable>
+                                  );
+                                })}
+                              </View>
+
+                              {/* AI Research Contract button */}
+                              <Pressable onPress={() => { void handleResearchContract(); }}
+                                style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+                                  borderRadius: 10, paddingVertical: 9,
+                                  backgroundColor: researchResult ? "#D1FAE5" : "#EFF6FF",
+                                  borderWidth: 1, borderColor: researchResult ? "#6EE7B7" : "#BFDBFE" }}>
+                                {researchLoading
+                                  ? <ActivityIndicator size="small" color={colors.primary} />
+                                  : <Ionicons name={researchResult ? "checkmark-circle" : "search-outline"} size={14} color={researchResult ? "#059669" : colors.primary} />}
+                                <Text style={{ fontSize: 12, fontWeight: "800", color: researchResult ? "#059669" : colors.primary }}>
+                                  {researchResult ? "Research Complete — Tap to Refresh" : "AI Research Contract Requirements"}
+                                </Text>
+                              </Pressable>
+
+                              {/* Research results */}
+                              {researchResult && (
+                                <View style={{ gap: 6 }}>
+                                  {/* Summary */}
+                                  <View style={{ backgroundColor: "#EFF6FF", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                                    <Text style={{ fontSize: 11, color: colors.primary, lineHeight: 16, fontStyle: "italic" }}>
+                                      {researchResult.summary}
+                                    </Text>
+                                  </View>
+
+                                  {/* Required IDs */}
+                                  {researchResult.required_ids?.length > 0 && (
+                                    <View style={{ gap: 4 }}>
+                                      <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground }}>REQUIRED DOCUMENTS</Text>
+                                      {researchResult.required_ids.map((item, i) => (
+                                        <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 6,
+                                          backgroundColor: item.mandatory ? "#FEF3C7" : "#F9FAFB",
+                                          borderRadius: 6, padding: 7, borderWidth: 1,
+                                          borderColor: item.mandatory ? "#FDE68A" : colors.border }}>
+                                          <Ionicons name={item.mandatory ? "alert-circle" : "document-outline"} size={12}
+                                            color={item.mandatory ? "#92400E" : colors.mutedForeground} style={{ marginTop: 1 }} />
+                                          <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 11, fontWeight: "700", color: item.mandatory ? "#92400E" : colors.foreground }}>{item.label}</Text>
+                                            <Text style={{ fontSize: 10, color: colors.mutedForeground, lineHeight: 14 }}>{item.note}</Text>
+                                          </View>
+                                        </View>
+                                      ))}
+                                    </View>
+                                  )}
+
+                                  {/* Leave entitlements */}
+                                  {researchResult.leave_entitlements?.length > 0 && (
+                                    <View style={{ gap: 4 }}>
+                                      <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground }}>LEAVE ENTITLEMENTS</Text>
+                                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                                        {researchResult.leave_entitlements.map((l, i) => (
+                                          <View key={i} style={{ backgroundColor: "#EFF6FF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5,
+                                            borderWidth: 1, borderColor: "#BFDBFE" }}>
+                                            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>
+                                              {l.label}{l.days_per_year ? ` · ${l.days_per_year}d/yr` : ""}
+                                            </Text>
+                                            <Text style={{ fontSize: 9, color: colors.mutedForeground }}>{l.note}</Text>
+                                          </View>
+                                        ))}
+                                      </View>
+                                    </View>
+                                  )}
+
+                                  {/* Overtime rules */}
+                                  {researchResult.overtime_rules?.length > 0 && (
+                                    <View style={{ gap: 4 }}>
+                                      <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground }}>OVERTIME RULES</Text>
+                                      {researchResult.overtime_rules.map((o, i) => (
+                                        <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 8,
+                                          backgroundColor: "#F9FAFB", borderRadius: 6, padding: 7, borderWidth: 1, borderColor: colors.border }}>
+                                          <View style={{ backgroundColor: colors.primary, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                            <Text style={{ fontSize: 10, fontWeight: "800", color: "#FFF" }}>{o.multiplier}x</Text>
+                                          </View>
+                                          <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 11, fontWeight: "600", color: colors.foreground }}>{o.threshold}</Text>
+                                            <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{o.note}</Text>
+                                          </View>
+                                        </View>
+                                      ))}
+                                    </View>
+                                  )}
+
+                                  {/* Tax obligations */}
+                                  {researchResult.tax_obligations?.length > 0 && (
+                                    <View style={{ gap: 4 }}>
+                                      <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground }}>TAX OBLIGATIONS</Text>
+                                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                                        {researchResult.tax_obligations.map((t, i) => (
+                                          <View key={i} style={{ backgroundColor: "#F5F3FF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5,
+                                            borderWidth: 1, borderColor: "#DDD6FE" }}>
+                                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#5B21B6" }}>{t.label} {t.rate}%</Text>
+                                            <Text style={{ fontSize: 9, color: "#7C3AED" }}>{t.payer} · {t.note}</Text>
+                                          </View>
+                                        ))}
+                                      </View>
+                                    </View>
+                                  )}
+
+                                  {/* Contract references */}
+                                  {researchResult.contract_references?.length > 0 && (
+                                    <View style={{ gap: 4 }}>
+                                      <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground }}>REFERENCE CONTRACTS</Text>
+                                      {researchResult.contract_references.map((ref, i) => (
+                                        <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 6,
+                                          backgroundColor: "#FFFBEB", borderRadius: 6, padding: 7, borderWidth: 1, borderColor: "#FDE68A" }}>
+                                          <Ionicons name="library-outline" size={12} color="#92400E" />
+                                          <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#92400E" }}>{ref.name}</Text>
+                                            <Text style={{ fontSize: 10, color: "#B45309" }}>{ref.source} · {ref.note}</Text>
+                                          </View>
+                                        </View>
+                                      ))}
+                                    </View>
+                                  )}
+
+                                  {/* Legal disclaimer */}
+                                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 6,
+                                    backgroundColor: "#FEF9C3", borderRadius: 6, padding: 8, borderWidth: 1, borderColor: "#FDE68A" }}>
+                                    <Ionicons name="warning-outline" size={12} color="#92400E" style={{ marginTop: 1 }} />
+                                    <Text style={{ fontSize: 10, color: "#92400E", flex: 1, lineHeight: 14 }}>
+                                      AI research is a starting point only. Always verify with a licensed accountant or employment lawyer before finalising any contract.
+                                    </Text>
+                                  </View>
+
+                                  {/* Send to Accountant */}
+                                  <Pressable onPress={() => setShowAccountantModal(true)}
+                                    style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+                                      borderRadius: 10, paddingVertical: 9, backgroundColor: colors.primary }}>
+                                    <Ionicons name="mail-outline" size={14} color="#FFF" />
+                                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#FFF" }}>Send to Accountant for Review</Text>
+                                  </Pressable>
+                                </View>
+                              )}
+
+                              {/* Parse accountant reply section */}
+                              <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, gap: 6, marginTop: 2 }}>
+                                <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground }}>PASTE ACCOUNTANT REPLY</Text>
+                                <TextInput
+                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                                    paddingHorizontal: 10, paddingVertical: 8, fontSize: 11, color: colors.foreground,
+                                    minHeight: 70, textAlignVertical: "top" }}
+                                  placeholder="Paste the accountant's reply email here..."
+                                  multiline
+                                  value={accountantReplyText}
+                                  onChangeText={setAccountantReplyText}
+                                />
+                                <Pressable onPress={() => { void handleParseAccountantReply(); }}
+                                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+                                    borderRadius: 10, paddingVertical: 8, backgroundColor: "#FFFBEB", borderWidth: 1, borderColor: "#FDE68A" }}>
+                                  {parsingReply
+                                    ? <ActivityIndicator size="small" color="#92400E" />
+                                    : <Ionicons name="sparkles-outline" size={13} color="#92400E" />}
+                                  <Text style={{ fontSize: 12, fontWeight: "800", color: "#92400E" }}>Apply Accountant Reply to Payroll</Text>
+                                </Pressable>
+                                {parseResult && (
+                                  <View style={{ gap: 5 }}>
+                                    <View style={{ backgroundColor: "#D1FAE5", borderRadius: 8, padding: 9, borderWidth: 1, borderColor: "#6EE7B7" }}>
+                                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#059669", marginBottom: 3 }}>Accountant Guidance Applied</Text>
+                                      <Text style={{ fontSize: 11, color: "#065F46", lineHeight: 15 }}>{parseResult.summary}</Text>
+                                    </View>
+                                    {parseResult.special_notes?.map((note, i) => (
+                                      <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 5,
+                                        backgroundColor: "#FEF3C7", borderRadius: 6, padding: 7, borderWidth: 1, borderColor: "#FDE68A" }}>
+                                        <Ionicons name="alert-circle-outline" size={12} color="#92400E" style={{ marginTop: 1 }} />
+                                        <Text style={{ fontSize: 10, color: "#92400E", flex: 1, lineHeight: 14 }}>{note}</Text>
+                                      </View>
+                                    ))}
+                                    {parseResult.required_ids_confirmed?.length > 0 && (
+                                      <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
+                                        IDs confirmed: {parseResult.required_ids_confirmed.join(", ")}
+                                      </Text>
+                                    )}
+                                  </View>
+                                )}
+                              </View>
                             </View>
                           )}
 
@@ -1056,6 +1326,71 @@ export default function AdminUsers() {
             </Pressable>
           </View>
         </Pressable>
+      </Modal>
+
+      {/* Send to Accountant Modal */}
+      <Modal visible={showAccountantModal} transparent animationType="slide" onRequestClose={() => setShowAccountantModal(false)}>
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: "90%" }}>
+            <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: "center", marginBottom: 16 }} />
+            <Text style={{ fontSize: 16, fontWeight: "800", color: colors.primary, marginBottom: 4 }}>Send to Accountant</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 14, lineHeight: 17 }}>
+              Review and edit the email below, then open it in your mail app. The accountant's reply can be pasted into the "Parse Accountant Reply" field.
+            </Text>
+
+            <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, marginBottom: 4 }}>ACCOUNTANT EMAIL ADDRESS</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: colors.foreground, marginBottom: 10 }}
+              placeholder="accountant@firm.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={accountantEmail}
+              onChangeText={setAccountantEmail}
+            />
+
+            <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, marginBottom: 4 }}>SUBJECT</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: colors.foreground, marginBottom: 10 }}
+              value={accountantSubject}
+              onChangeText={setAccountantSubject}
+            />
+
+            <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, marginBottom: 4 }}>EMAIL BODY (EDITABLE)</Text>
+            <ScrollView style={{ maxHeight: 200 }}>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                  paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: colors.foreground,
+                  minHeight: 160, textAlignVertical: "top" }}
+                multiline
+                value={accountantBody}
+                onChangeText={setAccountantBody}
+              />
+            </ScrollView>
+
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
+              <Pressable onPress={() => setShowAccountantModal(false)}
+                style={{ flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: "center",
+                  borderWidth: 1, borderColor: colors.border, backgroundColor: colors.muted }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.mutedForeground }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  const subject = encodeURIComponent(accountantSubject);
+                  const body    = encodeURIComponent(accountantBody);
+                  const to      = encodeURIComponent(accountantEmail);
+                  void Linking.openURL(`mailto:${to}?subject=${subject}&body=${body}`);
+                  setShowAccountantModal(false);
+                }}
+                style={{ flex: 2, borderRadius: 10, paddingVertical: 11, alignItems: "center",
+                  backgroundColor: colors.primary, flexDirection: "row", justifyContent: "center", gap: 6 }}>
+                <Ionicons name="mail-outline" size={15} color="#FFF" />
+                <Text style={{ fontSize: 13, fontWeight: "800", color: "#FFF" }}>Open in Mail App</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* Guardian Contact Modal */}

@@ -6,9 +6,11 @@ description: Employment type, contractor rates, digital contracts, AI jurisdicti
 # Stride Wages vs Contractor Payroll System
 
 ## Architecture
-- `employment_type` ("wages" | "contractor"), `contractor_rate_cents`, `contractor_billing_unit`, `contractor_extra_chips` (JSONB), `primary_country`, `primary_city` added to `operator_profiles` (pg.ts migrations)
+- `employment_type` ("wages" | "contractor"), `employment_sub_type` ("on_call"|"part_time"|"full_time"|"casual"), `contractor_rate_cents`, `contractor_billing_unit`, `contractor_extra_chips` (JSONB), `primary_country`, `primary_city` on `operator_profiles`
 - `employment_contracts` table: `id`, `operator_profile_id`, `organization_id`, `operator_user_id`, `employment_type`, `contract_html`, `rate_summary`, `generated_at`, `signed_at`, `signature_ip`, `signature_device`
-- 14 routes in `employment.ts`, registered as `/employment/*` and `/payroll/*` prefixes in `index.ts`
+- 16 routes in `employment.ts`: includes `POST /employment/ai-research` and `POST /employment/ai-parse-accountant`
+- `ApiContractResearch` and `ApiAccountantParse` types in api.ts; `aiResearchContract()` and `aiParseAccountantReply()` functions
+- "Accountant Review" template added to `QUICK_TEMPLATES` in communications.tsx
 
 ## Key gotchas
 

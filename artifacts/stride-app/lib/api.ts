@@ -691,6 +691,7 @@ export const api = {
     request<ApiEmploymentConfig>("GET", `/employment/${profileId}`),
   updateEmploymentConfig: (profileId: number, data: {
     employment_type?: "wages" | "contractor";
+    employment_sub_type?: "on_call" | "part_time" | "full_time" | "casual" | null;
     contractor_rate_cents?: number;
     contractor_billing_unit?: string;
     contractor_extra_chips?: Array<{ label: string; rate: string }>;
@@ -718,6 +719,10 @@ export const api = {
     }) | null>("GET", "/employment/my-contract"),
   signMyEmploymentContract: () =>
     request<{ ok: boolean; signed_at: string }>("POST", "/employment/sign-my-contract"),
+  aiResearchContract: (data: { country: string; city?: string; employment_sub_type?: string; org_name?: string }) =>
+    request<ApiContractResearch>("POST", "/employment/ai-research", data),
+  aiParseAccountantReply: (data: { email_text: string; country?: string; employment_sub_type?: string }) =>
+    request<ApiAccountantParse>("POST", "/employment/ai-parse-accountant", data),
 
   // Operator availability prefs
   getOperatorPrefs: () =>
@@ -1589,6 +1594,7 @@ export interface ApiOperatorProfile {
 export interface ApiEmploymentConfig {
   id: number;
   employment_type: "wages" | "contractor";
+  employment_sub_type: "on_call" | "part_time" | "full_time" | "casual" | null;
   contractor_rate_cents: number;
   contractor_billing_unit: string;
   contractor_extra_chips: Array<{ label: string; rate: string }>;
@@ -1597,6 +1603,23 @@ export interface ApiEmploymentConfig {
   signed_at: string | null;
   contract_generated_at: string | null;
   rate_summary: string | null;
+}
+
+export interface ApiContractResearch {
+  required_ids: Array<{ label: string; note: string; mandatory: boolean }>;
+  leave_entitlements: Array<{ label: string; days_per_year?: number; note: string }>;
+  overtime_rules: Array<{ threshold: string; multiplier: number; note: string }>;
+  tax_obligations: Array<{ label: string; rate: number; payer: string; note: string }>;
+  contract_references: Array<{ name: string; source: string; note: string }>;
+  summary: string;
+}
+
+export interface ApiAccountantParse {
+  deductions: Array<{ label: string; rate: number; note: string }>;
+  required_ids_confirmed: string[];
+  leave_adjustments: Array<{ label: string; days_per_year: number; note: string }>;
+  special_notes: string[];
+  summary: string;
 }
 
 export interface ApiEmploymentContract {

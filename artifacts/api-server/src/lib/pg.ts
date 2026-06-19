@@ -1243,6 +1243,10 @@ export async function ensureTables(): Promise<void> {
       ADD COLUMN IF NOT EXISTS primary_country          TEXT,
       ADD COLUMN IF NOT EXISTS primary_city             TEXT;
   `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE operator_profiles
+      ADD COLUMN IF NOT EXISTS employment_sub_type TEXT;
+  `).catch(() => {});
 
   // ── Employment contracts ───────────────────────────────────────────────────────
   await pool.query(`

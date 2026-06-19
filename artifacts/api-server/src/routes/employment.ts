@@ -34,10 +34,11 @@ router.put("/employment/:profileId", requireAuth, requireRole("admin"), async (r
   const profileId = parseInt(String(req.params["profileId"]), 10);
   if (isNaN(profileId)) { res.status(400).json({ error: "Invalid profileId" }); return; }
   const {
-    employment_type, contractor_rate_cents, contractor_billing_unit,
+    employment_type, employment_sub_type, contractor_rate_cents, contractor_billing_unit,
     contractor_extra_chips, primary_country, primary_city,
   } = req.body as {
     employment_type?: "wages" | "contractor";
+    employment_sub_type?: "on_call" | "part_time" | "full_time" | "casual" | null;
     contractor_rate_cents?: number;
     contractor_billing_unit?: string;
     contractor_extra_chips?: Array<{ label: string; rate: string }>;
@@ -52,7 +53,8 @@ router.put("/employment/:profileId", requireAuth, requireRole("admin"), async (r
            contractor_billing_unit = COALESCE($3, contractor_billing_unit),
            contractor_extra_chips  = COALESCE($4::jsonb, contractor_extra_chips),
            primary_country         = COALESCE($5, primary_country),
-           primary_city            = COALESCE($6, primary_city)
+           primary_city            = COALESCE($6, primary_city),
+           employment_sub_type     = COALESCE($9, employment_sub_type)
        WHERE id = $7 AND organization_id = $8
        RETURNING *`,
       [
@@ -64,6 +66,7 @@ router.put("/employment/:profileId", requireAuth, requireRole("admin"), async (r
         primary_city ?? null,
         profileId,
         user.orgId ?? 1,
+        employment_sub_type ?? null,
       ],
     );
     if (!rows.length) { res.status(404).json({ error: "Profile not found" }); return; }
@@ -312,6 +315,118 @@ router.post("/employment/sign-my-contract", requireAuth, requireRole("operator")
   } catch (err) {
     req.log.error(err, "sign-my-contract error");
     res.status(500).json({ error: "Failed to sign contract" });
+  }
+});
+
+// ── POST /employment/ai-research ──────────────────────────────────────────────
+// AI researches jurisdiction requirements, leave entitlements, overtime, templates.
+router.post("/employment/ai-research", requireAuth, requireRole("admin"), async (req, res) => {
+  const { country, city, employment_sub_type, org_name } = req.body as {
+    country: string; city?: string;
+    employment_sub_type?: string; org_name?: string;
+  };
+  if (!country?.trim()) { res.status(400).json({ error: "country is required" }); return; }
+  const subLabel = employment_sub_type === "on_call" ? "On-Call"
+    : employment_sub_type === "part_time" ? "Part Time"
+    : employment_sub_type === "full_time" ? "Full Time"
+    : employment_sub_type === "casual"    ? "Casual"
+    : "Full Time";
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 1200,
+      messages: [
+        {
+          role: "system",
+          content: `You are an employment law and payroll compliance specialist for the performing arts / dance school industry.
+Given a country, city, and employment sub-type, return a JSON object with these fields:
+{
+  "required_ids": [{ "label": string, "note": string, "mandatory": boolean }],
+  "leave_entitlements": [{ "label": string, "days_per_year"?: number, "note": string }],
+  "overtime_rules": [{ "threshold": string, "multiplier": number, "note": string }],
+  "tax_obligations": [{ "label": string, "rate": number, "payer": "employer"|"employee"|"both", "note": string }],
+  "contract_references": [{ "name": string, "source": "government"|"industry"|"union", "note": string }],
+  "summary": string
+}
+Rules:
+- required_ids: personal identifiers the employer MUST collect (e.g. Tax File Number for Australia, Codice Fiscale for Italy, NIN for UK).
+- leave_entitlements: statutory minimums only (annual, sick, public holidays, parental if applicable). Include days_per_year where fixed.
+- overtime_rules: list the main thresholds and multipliers (e.g. after 38h/week, 1.5x; after 12h/day, 2.0x).
+- tax_obligations: list all employer and employee-side statutory deductions with typical rates.
+- contract_references: name real government/union/industry standard contract templates or award agreements (e.g. CCNL Spettacolo, Fair Work Modern Awards, UK National Minimum Wage legislation).
+- summary: 2–3 sentence plain-English overview of the key compliance points for this engagement type.
+Be accurate, jurisdiction-specific, and use official names. Return ONLY the JSON object, no markdown, no explanation.`,
+        },
+        {
+          role: "user",
+          content: `Country: ${country}${city ? `, ${city}` : ""}
+Employment sub-type: ${subLabel}
+Organisation type: dance school / performing arts association${org_name ? ` (${org_name})` : ""}
+Research employment requirements:`,
+        },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content?.trim() ?? "{}";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) { res.status(500).json({ error: "AI returned unexpected format" }); return; }
+    const result = JSON.parse(match[0]) as Record<string, unknown>;
+    res.json(result);
+  } catch (err) {
+    req.log.error(err, "ai-research error");
+    res.status(500).json({ error: "AI research failed" });
+  }
+});
+
+// ── POST /employment/ai-parse-accountant ──────────────────────────────────────
+// Paste accountant reply email → AI extracts payroll configuration.
+router.post("/employment/ai-parse-accountant", requireAuth, requireRole("admin"), async (req, res) => {
+  const { email_text, country, employment_sub_type } = req.body as {
+    email_text: string; country?: string; employment_sub_type?: string;
+  };
+  if (!email_text?.trim()) { res.status(400).json({ error: "email_text is required" }); return; }
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 800,
+      messages: [
+        {
+          role: "system",
+          content: `You are a payroll configuration assistant. The user will paste a reply email from their accountant.
+Extract the key payroll configuration items and return ONLY a valid JSON object:
+{
+  "deductions": [{ "label": string, "rate": number, "note": string }],
+  "required_ids_confirmed": [string],
+  "leave_adjustments": [{ "label": string, "days_per_year": number, "note": string }],
+  "special_notes": [string],
+  "summary": string
+}
+- deductions: tax rates and contributions confirmed by the accountant (with rates as numbers).
+- required_ids_confirmed: personal identifiers the accountant confirmed are needed.
+- leave_adjustments: any leave entitlement clarifications from the accountant.
+- special_notes: any important legal or compliance warnings.
+- summary: 1–2 sentence plain-English digest of what the accountant recommended.
+Return ONLY the JSON object. If the email doesn't contain relevant payroll information, return empty arrays and a helpful summary note.`,
+        },
+        {
+          role: "user",
+          content: `Country context: ${country ?? "unknown"}
+Employment type: ${employment_sub_type ?? "wages"}
+Accountant email:
+---
+${email_text.slice(0, 3000)}
+---
+Extract payroll configuration:`,
+        },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content?.trim() ?? "{}";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) { res.status(500).json({ error: "AI returned unexpected format" }); return; }
+    const result = JSON.parse(match[0]) as Record<string, unknown>;
+    res.json(result);
+  } catch (err) {
+    req.log.error(err, "ai-parse-accountant error");
+    res.status(500).json({ error: "AI parsing failed" });
   }
 });
 
