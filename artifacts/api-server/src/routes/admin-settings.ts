@@ -118,11 +118,12 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "cert_grace_days",
     "cert_reminder_body",
     "min_first_aid_operators",
-    // Superannuation
+    // Superannuation / Payroll deductions
     "super_rate_percent",
     "super_included",
     "super_is_fixed",
     "super_fixed_cents",
+    "payroll_deductions",
     // Private lesson cancellation/reschedule policy
     "pl_reschedule_fee_pct",
     "pl_reschedule_window_hours",

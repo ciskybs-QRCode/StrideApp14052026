@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
-import { api } from "@/lib/api";
+import { api, type PayrollDeduction } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import type { ApiAdminSettings } from "@/lib/api";
 
@@ -73,8 +73,11 @@ export default function AppConfigurationPage() {
   const [certMsgSaved,  setCertMsgSaved]  = useState(false);
   const [savingCertMsg, setSavingCertMsg] = useState(false);
 
+  // ── Payroll deductions (multi-row editor) ────────────────────────────────
+  const [payrollDeductions, setPayrollDeductions] = useState<Array<{label: string; rate: string}>>([]);
+  const [savingDeductions, setSavingDeductions]   = useState(false);
+
   // ── Numeric field local state (save on blur) ──────────────────────────────
-  const [superRateStr,    setSuperRateStr]    = useState("11.5");
   const [superFixedStr,   setSuperFixedStr]   = useState("0");
   const [plCancelWinStr,  setPlCancelWinStr]  = useState("24");
   const [plCancelFeeStr,  setPlCancelFeeStr]  = useState("0");
@@ -99,7 +102,8 @@ export default function AppConfigurationPage() {
 
   useEffect(() => {
     if (!loading) {
-      setSuperRateStr(String(settings.super_rate_percent ?? 11.5));
+      const deductions = settings.payroll_deductions ?? [];
+      setPayrollDeductions(deductions.map(d => ({ label: d.label, rate: String(d.rate) })));
       setSuperFixedStr(String(settings.super_fixed_cents ?? 0));
       setPlCancelWinStr(String(settings.pl_cancel_window_hours ?? 24));
       setPlCancelFeeStr(String(settings.pl_cancel_fee_pct ?? 0));
@@ -113,6 +117,45 @@ export default function AppConfigurationPage() {
     setPrimaryInput(primaryRoleName);
     setSecondaryInput(secondaryRoleName);
   }, [primaryRoleName, secondaryRoleName]);
+
+  // ── Payroll deductions helpers ───────────────────────────────────────────
+  const saveDeductions = useCallback(async (rows: Array<{label: string; rate: string}>) => {
+    setSavingDeductions(true);
+    const parsed: PayrollDeduction[] = rows
+      .filter(r => r.label.trim().length > 0)
+      .map(r => ({ label: r.label.trim(), rate: parseFloat(r.rate) || 0 }));
+    try {
+      await api.updateAdminSettings({ payroll_deductions: parsed, organization_id: settings.organization_id ?? 1 } as Partial<ApiAdminSettings>);
+      setSettings(prev => ({ ...prev, payroll_deductions: parsed }));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not save deductions.");
+    }
+    setSavingDeductions(false);
+  }, [settings.organization_id]);
+
+  const updateDeductionField = useCallback((
+    idx: number,
+    field: "label" | "rate",
+    value: string,
+  ) => {
+    setPayrollDeductions(prev => {
+      const next = prev.map((d, i) => i === idx ? { ...d, [field]: value } : d);
+      return next;
+    });
+  }, []);
+
+  const removeDeduction = useCallback((idx: number) => {
+    setPayrollDeductions(prev => {
+      const next = prev.filter((_, i) => i !== idx);
+      void saveDeductions(next);
+      return next;
+    });
+  }, [saveDeductions]);
+
+  const addDeduction = useCallback(() => {
+    setPayrollDeductions(prev => [...prev, { label: "", rate: "0" }]);
+  }, []);
 
   const saveKey = useCallback(async (key: keyof ApiAdminSettings, value: unknown) => {
     setSaving(key);
@@ -455,26 +498,101 @@ export default function AppConfigurationPage() {
             onToggle={v => saveKey("super_included", v)}
             colors={colors}
           />
-          <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingVertical: 14 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          {/* ── Multi-deduction editor ── */}
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <View style={[styles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
                 <Ionicons name="calculator-outline" size={18} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.rowLabel, { color: colors.foreground }]}>Superannuation Rate (%)</Text>
+                <Text style={[styles.rowLabel, { color: colors.foreground }]}>Payroll Deductions</Text>
                 <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
-                  {settings.super_is_fixed ? "Using fixed-per-hour amount (see below)." : `Applied as a percentage of gross earnings. Australia: 11.5%.`}
+                  Add all applicable contributions: IVA, INPS, INAIL, GST, VAT, super, etc. Each is applied as % of gross.
                 </Text>
               </View>
-              <TextInput
-                style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, width: 70, textAlign: "right", marginTop: 0 }]}
-                value={superRateStr}
-                onChangeText={setSuperRateStr}
-                onBlur={() => saveKey("super_rate_percent", parseFloat(superRateStr) || 11.5)}
-                keyboardType="decimal-pad"
-                returnKeyType="done"
-              />
+              {savingDeductions && <ActivityIndicator size="small" color={colors.primary} />}
             </View>
+
+            {/* Header row */}
+            {payrollDeductions.length > 0 && (
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 6, paddingHorizontal: 2 }}>
+                <Text style={{ flex: 1, fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                  Label (chip)
+                </Text>
+                <Text style={{ width: 60, fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.8, textAlign: "right" }}>
+                  %
+                </Text>
+                <View style={{ width: 32 }} />
+              </View>
+            )}
+
+            {/* Deduction rows */}
+            {payrollDeductions.map((ded, idx) => (
+              <View key={idx} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                {/* Chip label input */}
+                <TextInput
+                  style={{
+                    flex: 1, borderRadius: 20, borderWidth: 1.5, borderColor: colors.primary,
+                    backgroundColor: colors.primary + "18",
+                    paddingHorizontal: 14, paddingVertical: 7,
+                    fontSize: 13, fontWeight: "700", color: colors.primary,
+                    textAlign: "center",
+                  }}
+                  value={ded.label}
+                  onChangeText={v => updateDeductionField(idx, "label", v)}
+                  onBlur={() => void saveDeductions(payrollDeductions)}
+                  placeholder="IVA"
+                  placeholderTextColor={colors.primary + "80"}
+                  autoCapitalize="characters"
+                  returnKeyType="next"
+                />
+                {/* Rate input */}
+                <TextInput
+                  style={[styles.termInput, {
+                    borderColor: colors.border, color: colors.foreground,
+                    width: 60, textAlign: "right", marginTop: 0,
+                  }]}
+                  value={ded.rate}
+                  onChangeText={v => updateDeductionField(idx, "rate", v)}
+                  onBlur={() => void saveDeductions(payrollDeductions)}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                  placeholder="0"
+                />
+                {/* Remove */}
+                <Pressable
+                  onPress={() => removeDeduction(idx)}
+                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#FEE2E2",
+                    alignItems: "center", justifyContent: "center" }}
+                >
+                  <Ionicons name="remove" size={18} color="#EF4444" />
+                </Pressable>
+              </View>
+            ))}
+
+            {/* Add deduction button */}
+            <Pressable
+              onPress={addDeduction}
+              style={{ flexDirection: "row", alignItems: "center", gap: 8,
+                borderRadius: 12, borderWidth: 1.5, borderColor: colors.primary,
+                borderStyle: "dashed", paddingVertical: 10, paddingHorizontal: 14,
+                marginTop: 4, alignSelf: "flex-start" }}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+              <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>Add deduction</Text>
+            </Pressable>
+
+            {payrollDeductions.length > 0 && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10,
+                backgroundColor: colors.muted, borderRadius: 10, padding: 10 }}>
+                <Ionicons name="information-circle-outline" size={14} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                  Total deduction: <Text style={{ fontWeight: "800" }}>
+                    {payrollDeductions.reduce((s, d) => s + (parseFloat(d.rate) || 0), 0).toFixed(2)}%
+                  </Text> of gross
+                </Text>
+              </View>
+            )}
           </View>
           <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
             <SwitchRow
@@ -505,7 +623,7 @@ export default function AppConfigurationPage() {
         <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.06)", borderLeftWidth: 3, borderLeftColor: colors.primary, marginBottom: 20 }]}>
           <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={[styles.infoText, { color: colors.primary, fontSize: 12 }]}>
-            Super is calculated automatically in each operator's payroll summary and shown as a separate line on their PDF invoices.
+            Each deduction is calculated automatically from gross earnings and shown as a separate labelled line on operator payslips and PDF invoices.
           </Text>
         </View>
 

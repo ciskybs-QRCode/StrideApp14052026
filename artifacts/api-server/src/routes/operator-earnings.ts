@@ -93,26 +93,54 @@ router.get("/operator-earnings", requireAuth, requireRole("operator", "admin"), 
   const totalEarnings = disciplines.reduce((s, d) => s + d.earnings_cents, 0);
   const totalHoursAll = Math.round(disciplines.reduce((s, d) => s + d.total_hours, 0) * 10) / 10;
 
-  // ── Super calculation ──────────────────────────────────────────────────────
+  // ── Payroll deductions calculation ────────────────────────────────────────
   const { rows: sRows } = await pool.query<{
     super_rate_percent: string;
     super_included: boolean;
     super_is_fixed: boolean;
     super_fixed_cents: number;
+    payroll_deductions: unknown;
   }>(
-    `SELECT super_rate_percent, super_included, super_is_fixed, super_fixed_cents
+    `SELECT super_rate_percent, super_included, super_is_fixed, super_fixed_cents, payroll_deductions
      FROM admin_settings WHERE organization_id = $1`,
     [user.orgId ?? 1],
-  ).catch(() => ({ rows: [] as { super_rate_percent: string; super_included: boolean; super_is_fixed: boolean; super_fixed_cents: number }[] }));
-  const sp          = sRows[0];
-  const superRate   = sp ? parseFloat(String(sp.super_rate_percent)) : 11.5;
-  let   super_cents = 0;
-  if (sp && totalEarnings > 0) {
+  ).catch(() => ({ rows: [] as { super_rate_percent: string; super_included: boolean; super_is_fixed: boolean; super_fixed_cents: number; payroll_deductions: unknown }[] }));
+  const sp = sRows[0];
+
+  // Parse payroll_deductions (JSONB array of {label, rate})
+  let rawDeductions: Array<{ label: string; rate: number }> = [];
+  try {
+    const raw = sp?.payroll_deductions;
+    if (Array.isArray(raw)) rawDeductions = raw as Array<{ label: string; rate: number }>;
+    else if (typeof raw === "string" && raw.length > 2) rawDeductions = JSON.parse(raw) as Array<{ label: string; rate: number }>;
+  } catch { rawDeductions = []; }
+
+  let super_cents = 0;
+  let deductions_breakdown: Array<{ label: string; rate: number; amount_cents: number }> = [];
+
+  if (rawDeductions.length > 0 && totalEarnings > 0) {
+    // New multi-deduction mode
+    deductions_breakdown = rawDeductions.map(d => ({
+      label:        d.label,
+      rate:         d.rate,
+      amount_cents: Math.round(totalEarnings * (d.rate / 100)),
+    }));
+    super_cents = deductions_breakdown.reduce((s, d) => s + d.amount_cents, 0);
+  } else if (sp && totalEarnings > 0) {
+    // Backward-compat: single super_rate_percent
+    const superRate = parseFloat(String(sp.super_rate_percent)) || 0;
     super_cents = sp.super_is_fixed
       ? Math.round(Number(sp.super_fixed_cents) * totalHoursAll)
       : Math.round(totalEarnings * (superRate / 100));
+    if (superRate > 0) {
+      deductions_breakdown = [{ label: "SUPER", rate: superRate, amount_cents: super_cents }];
+    }
   }
+
   const super_included = sp?.super_included ?? false;
+  const superRate      = rawDeductions.length > 0
+    ? rawDeductions.reduce((s, d) => s + d.rate, 0)
+    : parseFloat(String(sp?.super_rate_percent ?? 0));
 
   res.json({
     month,
@@ -124,6 +152,7 @@ router.get("/operator-earnings", requireAuth, requireRole("operator", "admin"), 
     super_rate_percent:    superRate,
     super_included,
     super_is_fixed:        sp?.super_is_fixed ?? false,
+    deductions_breakdown,
     net_to_operator_cents: super_included ? totalEarnings - super_cents : totalEarnings,
     org_total_cost_cents:  super_included ? totalEarnings : totalEarnings + super_cents,
   });

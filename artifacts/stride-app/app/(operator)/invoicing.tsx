@@ -23,7 +23,7 @@ import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { useAuth } from "@/context/AuthContext";
 import { useSubstitution } from "@/context/SubstitutionContext";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiOperatorEarnings, type ApiPrivateLessonBooking } from "@/lib/api";
+import { api, type ApiOperatorEarnings, type ApiPrivateLessonBooking, type PayrollDeduction } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import {
   type PayoutFrequency,
@@ -897,24 +897,37 @@ export default function OperatorInvoicing() {
             </View>
           </View>
           {!loading && (current.super_cents ?? 0) > 0 && (() => {
-            const superAmt   = Math.round(filteredTotalCents * ((current.super_rate_percent ?? 0) / 100));
+            const breakdown: Array<PayrollDeduction & { amount_cents: number }> =
+              (current.deductions_breakdown ?? []).length > 0
+                ? current.deductions_breakdown!
+                : [{ label: "SUPER", rate: current.super_rate_percent ?? 0, amount_cents: Math.round(filteredTotalCents * ((current.super_rate_percent ?? 0) / 100)) }];
             const superIncl  = current.super_included ?? false;
-            const netAmt     = superIncl ? filteredTotalCents - superAmt : filteredTotalCents;
+            const totalDeductCents = breakdown.reduce((s, d) => s + d.amount_cents, 0);
+            const netAmt     = superIncl ? filteredTotalCents - totalDeductCents : filteredTotalCents;
             return (
-              <View style={{ flexDirection: "row", marginTop: 10, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, gap: 16 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: "#FBBF24", fontSize: 11, fontWeight: "700" }}>SUPER ({(current.super_rate_percent ?? 0).toFixed(1)}%)</Text>
-                  <Text style={{ color: "#FFF", fontSize: 14, fontWeight: "800" }}>
-                    {superIncl ? "-" : "+"}€{(superAmt / 100).toFixed(2)}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: "#FBBF24", fontSize: 11, fontWeight: "700" }}>{superIncl ? "NET DUE" : "EMPLOYER COST"}</Text>
-                  <Text style={{ color: "#FFF", fontSize: 14, fontWeight: "800" }}>
-                    €{superIncl
-                      ? (netAmt / 100).toFixed(2)
-                      : ((filteredTotalCents + superAmt) / 100).toFixed(2)}
-                  </Text>
+              <View style={{ marginTop: 10, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, gap: 8 }}>
+                {/* Individual deduction lines */}
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {breakdown.map((d, i) => (
+                    <View key={i} style={{ minWidth: 80, flex: 1 }}>
+                      <Text style={{ color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>
+                        {d.label} ({d.rate.toFixed(1)}%)
+                      </Text>
+                      <Text style={{ color: "#FFF", fontSize: 13, fontWeight: "800" }}>
+                        {superIncl ? "-" : "+"}€{(d.amount_cents / 100).toFixed(2)}
+                      </Text>
+                    </View>
+                  ))}
+                  <View style={{ minWidth: 80, flex: 1 }}>
+                    <Text style={{ color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>
+                      {superIncl ? "NET DUE" : "EMPLOYER COST"}
+                    </Text>
+                    <Text style={{ color: "#FFF", fontSize: 13, fontWeight: "800" }}>
+                      €{superIncl
+                        ? (netAmt / 100).toFixed(2)
+                        : ((filteredTotalCents + totalDeductCents) / 100).toFixed(2)}
+                    </Text>
+                  </View>
                 </View>
               </View>
             );

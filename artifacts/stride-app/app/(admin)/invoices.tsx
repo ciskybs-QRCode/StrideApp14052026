@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
-import { api, getToken, type ApiPayrollSummary } from "@/lib/api";
+import { api, getToken, type ApiPayrollSummary, type PayrollDeduction } from "@/lib/api";
 import { useUnread } from "@/context/UnreadContext";
 import { supabase } from "@/lib/supabase";
 import {
@@ -602,27 +602,50 @@ export default function AdminInvoicesScreen() {
                     </View>
                   ))}
                 </View>
-                {/* Super breakdown (if configured) */}
-                {payrollData && (payrollData as unknown as { super_rate_percent?: number }).super_rate_percent != null && (() => {
-                  const superRate = (payrollData as unknown as { super_rate_percent?: number }).super_rate_percent ?? 0;
-                  const superIncl = (payrollData as unknown as { super_included?: boolean }).super_included ?? false;
-                  const superAmt  = Math.round(op.invoiced_cents * (superRate / 100));
-                  const empCost   = superIncl ? op.invoiced_cents : op.invoiced_cents + superAmt;
-                  const netOp     = superIncl ? op.invoiced_cents - superAmt : op.invoiced_cents;
-                  if (superAmt === 0) return null;
+                {/* Payroll deductions breakdown (multi-deduction) */}
+                {payrollData && (() => {
+                  const pd = payrollData as unknown as {
+                    super_rate_percent?: number;
+                    super_included?: boolean;
+                    deductions_breakdown?: Array<PayrollDeduction & { amount_cents: number }>;
+                  };
+                  const superIncl = pd.super_included ?? false;
+                  // Use new multi-deduction breakdown if available, else fall back to super_rate_percent
+                  const breakdown: Array<PayrollDeduction & { amount_cents: number }> =
+                    (pd.deductions_breakdown ?? []).length > 0
+                      ? pd.deductions_breakdown!
+                      : (pd.super_rate_percent && pd.super_rate_percent > 0)
+                        ? [{ label: "SUPER", rate: pd.super_rate_percent, amount_cents: Math.round(op.invoiced_cents * (pd.super_rate_percent / 100)) }]
+                        : [];
+                  if (breakdown.length === 0) return null;
+                  const totalDeductCents = breakdown.reduce((s, d) => s + d.amount_cents, 0);
+                  const empCost = superIncl ? op.invoiced_cents : op.invoiced_cents + totalDeductCents;
+                  const netOp   = superIncl ? op.invoiced_cents - totalDeductCents : op.invoiced_cents;
                   return (
-                    <View style={{ flexDirection: "row", gap: 6, marginTop: 6 }}>
-                      <View style={{ flex: 1, borderRadius: 8, padding: 8, backgroundColor: "#FFFBEB", alignItems: "center", gap: 2, borderWidth: 1, borderColor: "#FDE68A" }}>
-                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#92400E", textTransform: "uppercase" }}>Super ({superRate.toFixed(1)}%)</Text>
-                        <Text style={{ fontSize: 13, fontWeight: "800", color: "#92400E" }}>
-                          {superIncl ? "-" : "+"}€{(superAmt / 100).toFixed(2)}
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1, borderRadius: 8, padding: 8, backgroundColor: "#EFF6FF", alignItems: "center", gap: 2, borderWidth: 1, borderColor: "#BFDBFE" }}>
-                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#1E3A8A", textTransform: "uppercase" }}>{superIncl ? "Net to Op" : "Emp Cost"}</Text>
-                        <Text style={{ fontSize: 13, fontWeight: "800", color: "#1E3A8A" }}>
-                          €{superIncl ? (netOp / 100).toFixed(2) : (empCost / 100).toFixed(2)}
-                        </Text>
+                    <View style={{ marginTop: 6, gap: 4 }}>
+                      {/* Per-deduction chips */}
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                        {breakdown.map((d, i) => (
+                          <View key={i} style={{ borderRadius: 8, padding: 8, backgroundColor: "#FFFBEB",
+                            alignItems: "center", gap: 2, borderWidth: 1, borderColor: "#FDE68A", minWidth: 72, flex: 1 }}>
+                            <Text style={{ fontSize: 9, fontWeight: "800", color: "#92400E", textTransform: "uppercase" }}>
+                              {d.label} ({d.rate.toFixed(1)}%)
+                            </Text>
+                            <Text style={{ fontSize: 12, fontWeight: "800", color: "#92400E" }}>
+                              {superIncl ? "-" : "+"}€{(d.amount_cents / 100).toFixed(2)}
+                            </Text>
+                          </View>
+                        ))}
+                        {/* Net / employer cost */}
+                        <View style={{ borderRadius: 8, padding: 8, backgroundColor: "#EFF6FF",
+                          alignItems: "center", gap: 2, borderWidth: 1, borderColor: "#BFDBFE", minWidth: 72, flex: 1 }}>
+                          <Text style={{ fontSize: 9, fontWeight: "800", color: "#1E3A8A", textTransform: "uppercase" }}>
+                            {superIncl ? "Net to Op" : "Emp Cost"}
+                          </Text>
+                          <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A" }}>
+                            €{superIncl ? (netOp / 100).toFixed(2) : (empCost / 100).toFixed(2)}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   );

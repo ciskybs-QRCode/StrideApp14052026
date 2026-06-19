@@ -1150,6 +1150,7 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS super_included        BOOLEAN      NOT NULL DEFAULT FALSE;
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS super_is_fixed        BOOLEAN      NOT NULL DEFAULT FALSE;
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS super_fixed_cents     INTEGER      NOT NULL DEFAULT 0;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS payroll_deductions    JSONB        NOT NULL DEFAULT '[]';
   `).catch(() => {});
 
   // ── Operator availability prefs on operator_profiles ──────────────────────────

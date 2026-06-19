@@ -1588,6 +1588,11 @@ export interface ApiPrivateBooking {
   operator?: { id: number; name: string };
 }
 
+export interface PayrollDeduction {
+  label: string;
+  rate: number;
+}
+
 export interface ApiOperatorEarnings {
   month: string;
   disciplines: Array<{
@@ -1608,6 +1613,7 @@ export interface ApiOperatorEarnings {
   super_is_fixed?: boolean;
   net_to_operator_cents?: number;
   org_total_cost_cents?: number;
+  deductions_breakdown?: Array<PayrollDeduction & { amount_cents: number }>;
 }
 
 export interface ApiOperatorPrefs {
@@ -1783,11 +1789,12 @@ export interface ApiAdminSettings {
   cert_grace_days?: number;
   cert_reminder_body?: string | null;
   min_first_aid_operators?: number;
-  // Superannuation
+  // Superannuation / Payroll deductions
   super_rate_percent?: number;
   super_included?: boolean;
   super_is_fixed?: boolean;
   super_fixed_cents?: number;
+  payroll_deductions?: PayrollDeduction[];
   // Private lesson cancellation/reschedule policy
   pl_reschedule_fee_pct?: number;
   pl_reschedule_window_hours?: number;
