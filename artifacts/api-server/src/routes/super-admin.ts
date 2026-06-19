@@ -1233,8 +1233,9 @@ router.get("/org/plan-features", requireAuth, async (req, res) => {
   const user  = (req as AuthReq).user;
   const orgId = user.orgId ?? 0;
   if (user.role === "super_admin") {
-    // super_admin always gets academy access
-    res.json({ plan_tier: "academy", is_free_grant: false, grant_ends: null, features: PLAN_FEATURES["academy"] });
+    // super_admin always gets full premium access — no gates
+    const premiumFeatures = PLAN_FEATURES["premium"] ?? PLAN_FEATURES["academy"];
+    res.json({ plan_tier: "premium", is_free_grant: true, grant_ends: null, features: premiumFeatures });
     return;
   }
   if (!orgId) { res.json({ plan_tier: "studio", is_free_grant: false, grant_ends: null, features: PLAN_FEATURES["studio"] }); return; }

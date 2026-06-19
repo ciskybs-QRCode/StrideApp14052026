@@ -57,7 +57,7 @@ export const globalApiLimiter = rateLimit({
     const user = (req as AuthReq).user;
     return user ? `global:uid:${user.id}:org:${user.orgId}` : `global:ip:${req.ip ?? "unknown"}`;
   },
-  skip: (req) => req.path === "/api/healthz",
+  skip: (req) => req.path === "/api/healthz" || (req as AuthReq).user?.role === "super_admin",
   message: { error: "Too many requests from this IP. Please try again later." },
 });
 
@@ -95,6 +95,7 @@ export const authLimiter = rateLimit({
 /**
  * AI endpoint limiter — applied to all OpenAI/GPT-backed routes.
  * 10 calls per minute per user prevents runaway AI cost and quota exhaustion.
+ * super_admin is always exempt.
  */
 export const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -102,6 +103,7 @@ export const aiLimiter = rateLimit({
   standardHeaders: "draft-8",
   legacyHeaders: false,
   validate: { keyGeneratorIpFallback: false },
+  skip: (req) => (req as AuthReq).user?.role === "super_admin",
   keyGenerator: (req) => {
     const user = (req as AuthReq).user;
     return user ? `ai:${user.id}` : `ai:ip:${req.ip ?? "unknown"}`;
