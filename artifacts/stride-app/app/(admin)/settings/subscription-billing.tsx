@@ -190,29 +190,41 @@ export default function SubscriptionBillingScreen() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <Text style={s.planName}>
-                    {plan?.plan_tier === "studio"  ? "🥉 Studio"  :
-                     plan?.plan_tier === "company" ? "🥈 Company" :
-                     plan?.plan_tier === "academy" ? "🥇 Academy" : "Studio"}
+                    {(plan?.plan_tier === "core"    || plan?.plan_tier === "studio")  ? "🥉 Core"    :
+                     (plan?.plan_tier === "plus"    || plan?.plan_tier === "company") ? "🥈 Plus"    :
+                     (plan?.plan_tier === "premium" || plan?.plan_tier === "academy") ? "🥇 Premium" : "🥉 Core"}
                   </Text>
                   <View style={s.planBadge}>
                     <Text style={s.planBadgeText}>
-                      {plan?.plan_tier?.toUpperCase() ?? "STUDIO"}
+                      {(plan?.plan_tier === "studio"  ? "CORE"    :
+                        plan?.plan_tier === "company" ? "PLUS"    :
+                        plan?.plan_tier === "academy" ? "PREMIUM" :
+                        plan?.plan_tier?.toUpperCase()) ?? "CORE"}
                     </Text>
                   </View>
                 </View>
                 <Text style={s.planMeta}>
-                  {plan?.plan_tier === "studio"  ? "≤35 QR · ≤3 operators" :
-                   plan?.plan_tier === "company" ? "≤100 QR · ≤10 operators" :
+                  {(plan?.plan_tier === "core"    || plan?.plan_tier === "studio")  ? "≤35 QR · ≤3 operators"   :
+                   (plan?.plan_tier === "plus"    || plan?.plan_tier === "company") ? "≤100 QR · ≤10 operators" :
                    "Unlimited QR · Unlimited operators"}
                 </Text>
               </View>
-              <Pressable
-                style={s.changePlanBtn}
-                onPress={() => router.push("/(admin)/settings/change-plan" as never)}
-              >
-                <Ionicons name="swap-horizontal-outline" size={15} color={NAVY} />
-                <Text style={s.changePlanBtnText}>Change Plan</Text>
-              </Pressable>
+              <View style={{ gap: 6 }}>
+                <Pressable
+                  style={s.changePlanBtn}
+                  onPress={() => router.push("/(admin)/settings/change-plan" as never)}
+                >
+                  <Ionicons name="swap-horizontal-outline" size={15} color={NAVY} />
+                  <Text style={s.changePlanBtnText}>Change Plan</Text>
+                </Pressable>
+                <Pressable
+                  style={[s.changePlanBtn, { borderColor: "#C7D2FE" }]}
+                  onPress={() => router.push("/(admin)/settings/plan-features" as never)}
+                >
+                  <Ionicons name="grid-outline" size={14} color={NAVY} />
+                  <Text style={s.changePlanBtnText}>Compare Features</Text>
+                </Pressable>
+              </View>
             </>
           )}
         </View>

@@ -1315,6 +1315,63 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS upa_active   ON user_promo_assignments(user_id, is_used) WHERE is_used = false;
   `).catch(() => {});
 
+  // ── Plan free trial periods (2 months free on first signup, no card needed) ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS plan_trial_periods (
+      id           SERIAL PRIMARY KEY,
+      org_id       INTEGER NOT NULL UNIQUE,
+      plan_tier    TEXT    NOT NULL DEFAULT 'core',
+      start_date   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      end_date     TIMESTAMPTZ NOT NULL,
+      status       TEXT    NOT NULL DEFAULT 'active',
+      reminder_7d_sent_at TIMESTAMPTZ,
+      reminder_3d_sent_at TIMESTAMPTZ,
+      reminder_1d_sent_at TIMESTAMPTZ,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS ptp_org_idx    ON plan_trial_periods(org_id);
+    CREATE INDEX IF NOT EXISTS ptp_status_idx ON plan_trial_periods(status, end_date);
+  `).catch(() => {});
+
+  // ── Plan upgrade trials (2 months free at next tier after 3 paid months) ─────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS plan_upgrade_trials (
+      id                   SERIAL PRIMARY KEY,
+      org_id               INTEGER NOT NULL,
+      from_tier            TEXT    NOT NULL,
+      to_tier              TEXT    NOT NULL,
+      activation_token     TEXT    UNIQUE,
+      offer_sent_at        TIMESTAMPTZ,
+      activated_at         TIMESTAMPTZ,
+      start_date           TIMESTAMPTZ,
+      end_date             TIMESTAMPTZ,
+      status               TEXT    NOT NULL DEFAULT 'offer_sent',
+      reminder_15d_sent_at TIMESTAMPTZ,
+      reminder_7d_sent_at  TIMESTAMPTZ,
+      reminder_3d_sent_at  TIMESTAMPTZ,
+      reminder_1d_sent_at  TIMESTAMPTZ,
+      confirmed_upgrade     BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at           TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS put_org_idx    ON plan_upgrade_trials(org_id);
+    CREATE INDEX IF NOT EXISTS put_status_idx ON plan_upgrade_trials(status, end_date);
+    CREATE INDEX IF NOT EXISTS put_token_idx  ON plan_upgrade_trials(activation_token) WHERE activation_token IS NOT NULL;
+  `).catch(() => {});
+
+  // ── Consecutive paid months tracker ──────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_paid_months (
+      id               SERIAL PRIMARY KEY,
+      org_id           INTEGER NOT NULL,
+      billing_month    DATE    NOT NULL,
+      plan_tier        TEXT    NOT NULL,
+      amount_cents     INTEGER NOT NULL DEFAULT 0,
+      created_at       TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (org_id, billing_month)
+    );
+    CREATE INDEX IF NOT EXISTS opm_org_idx ON org_paid_months(org_id, billing_month DESC);
+  `).catch(() => {});
+
   // ── Accountant payment orders ─────────────────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS accountant_payment_orders (

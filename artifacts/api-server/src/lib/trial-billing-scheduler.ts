@@ -16,7 +16,7 @@ import {
   buildTrialReminderEmail,
   sendTransactionalEmail,
 } from "../services/emailService.js";
-import { getPlatformStripeKey } from "./pg.js";
+import { getPlatformStripeKey, pool } from "./pg.js";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -60,10 +60,98 @@ interface AdminUser {
 export function startTrialBillingScheduler(): void {
   setTimeout(() => {
     void checkTrialReminders();
-    setInterval(() => { void checkTrialReminders(); }, CHECK_INTERVAL_MS);
+    void checkUpgradeOffers();
+    setInterval(() => {
+      void checkTrialReminders();
+      void checkUpgradeOffers();
+    }, CHECK_INTERVAL_MS);
   }, INITIAL_DELAY_MS);
 
   logger.info("Trial billing scheduler started (checks every 30 min)");
+}
+
+// ── Upgrade offer after 3 consecutive paid months ─────────────────────────────
+
+const UPGRADE_MAP: Record<string, string> = {
+  core: "plus", plus: "premium",
+  // legacy aliases
+  studio: "plus", company: "premium",
+};
+
+async function checkUpgradeOffers(): Promise<void> {
+  // Find orgs with >= 3 consecutive paid months but no upgrade trial yet
+  const { rows: candidates } = await pool.query<{
+    org_id: number; plan_tier: string; paid_months: number;
+  }>(
+    `SELECT opm.org_id, opm.plan_tier, opm.paid_months
+     FROM org_paid_months opm
+     WHERE opm.paid_months >= 3
+       AND opm.plan_tier != 'premium'
+       AND opm.plan_tier != 'academy'
+       AND NOT EXISTS (
+         SELECT 1 FROM plan_upgrade_trials put
+         WHERE put.org_id = opm.org_id
+           AND put.status IN ('offer_sent','active','confirmed','declined')
+       )`,
+  );
+  if (!candidates.length) return;
+
+  for (const row of candidates) {
+    await sendUpgradeOffer(row.org_id, row.plan_tier);
+  }
+}
+
+async function sendUpgradeOffer(orgId: number, fromTier: string): Promise<void> {
+  const toTier = UPGRADE_MAP[fromTier];
+  if (!toTier) return;
+
+  // Look up org admin
+  const { data: admin } = await supabase
+    .from("users").select("name, email").eq("organization_id", orgId)
+    .in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
+  const adminUser = admin as { name: string | null; email: string } | null;
+  if (!adminUser?.email) return;
+
+  const { data: org } = await supabase
+    .from("organizations").select("name").eq("id", orgId).maybeSingle();
+  const orgName = (org as { name: string } | null)?.name ?? "Your organisation";
+
+  // Generate activation token
+  const token = Buffer.from(`${orgId}-${toTier}-${Date.now()}`).toString("base64url");
+
+  // Insert upgrade trial row
+  await pool.query(
+    `INSERT INTO plan_upgrade_trials
+       (org_id, from_tier, to_tier, status, activation_token, offer_sent_at, created_at)
+     VALUES ($1, $2, $3, 'offer_sent', $4, NOW(), NOW())
+     ON CONFLICT DO NOTHING`,
+    [orgId, fromTier, toTier, token],
+  );
+
+  const PLAN_PRICES_EUR: Record<string, number> = { core: 49, plus: 99, premium: 199, studio: 49, company: 99, academy: 199 };
+  const PLAN_NAMES: Record<string, string> = { core: "Core", plus: "Plus", premium: "Premium", studio: "Core", company: "Plus", academy: "Premium" };
+
+  const rawDomain = process.env["REPLIT_DEV_DOMAIN"] ?? process.env["REPLIT_DOMAINS"]?.split(",")[0] ?? "localhost";
+  const activationUrl = `https://${rawDomain}/api/billing/activate-upgrade-trial/${token}`;
+
+  const { buildUpgradeTrialEmail, sendTransactionalEmail } = await import("../services/emailService.js");
+  const { html, text, subject } = buildUpgradeTrialEmail({
+    adminName:     (adminUser.name ?? "Admin").split(" ")[0] ?? "Admin",
+    orgName,
+    fromPlan:      PLAN_NAMES[fromTier] ?? fromTier,
+    toPlan:        PLAN_NAMES[toTier]   ?? toTier,
+    fromPriceEur:  PLAN_PRICES_EUR[fromTier] ?? 49,
+    toPriceEur:    PLAN_PRICES_EUR[toTier]   ?? 99,
+    trialDays:     60,
+    activationUrl,
+  });
+
+  try {
+    await sendTransactionalEmail({ to: adminUser.email, subject, html, text });
+    logger.info({ orgId, fromTier, toTier }, "upgrade offer email sent");
+  } catch (err) {
+    logger.error({ orgId, err }, "failed to send upgrade offer email");
+  }
 }
 
 // ── Core check ────────────────────────────────────────────────────────────────

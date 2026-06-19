@@ -553,3 +553,104 @@ export function buildRoleAssignmentEmail(p: RoleAssignmentEmailParams): { html: 
 
   return { html, text, subject };
 }
+
+// ── Upgrade Trial Offer Email ─────────────────────────────────────────────────
+
+interface UpgradeTrialEmailParams {
+  adminName:      string;
+  orgName:        string;
+  fromPlan:       string;   // e.g. "Core"
+  toPlan:         string;   // e.g. "Plus"
+  fromPriceEur:   number;   // e.g. 49
+  toPriceEur:     number;   // e.g. 99
+  trialDays:      number;   // 60
+  activationUrl:  string;
+}
+
+export function buildUpgradeTrialEmail(p: UpgradeTrialEmailParams): {
+  html: string; text: string; subject: string;
+} {
+  const subject = `🎁 You've unlocked a free ${p.toPlan} trial — ${p.orgName}`;
+  const diffEur = p.toPriceEur - p.fromPriceEur;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F3F4F6;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+        <!-- Header -->
+        <tr><td style="background:#1E3A8A;padding:36px 32px;text-align:center;">
+          <div style="font-size:40px;margin-bottom:10px;">🎁</div>
+          <h1 style="margin:0;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">
+            You've earned a free ${p.toPlan} trial
+          </h1>
+          <p style="margin:10px 0 0;font-size:14px;color:#93C5FD;">
+            ${p.trialDays} days at no extra cost — because you've been with us for 3+ months
+          </p>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:32px;">
+          <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
+            Hi <strong>${p.adminName}</strong>,
+          </p>
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">
+            You've been a valued <strong>${p.orgName}</strong> subscriber on the <strong>${p.fromPlan}</strong> plan for 3 consecutive months.
+            As a thank-you, we're giving you a <strong>${p.trialDays}-day free trial</strong> of <strong>${p.toPlan}</strong> —
+            no charge until the trial ends.
+          </p>
+
+          <!-- Plan comparison -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border-radius:12px;overflow:hidden;border:1px solid #E5E7EB;">
+            <tr style="background:#F9FAFB;">
+              <td style="padding:12px 16px;font-size:12px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:0.8px;">Plan</td>
+              <td style="padding:12px 16px;font-size:12px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:0.8px;">Monthly</td>
+            </tr>
+            <tr style="background:#ffffff;">
+              <td style="padding:14px 16px;font-size:14px;color:#6B7280;">🥉 ${p.fromPlan} (current)</td>
+              <td style="padding:14px 16px;font-size:14px;font-weight:700;color:#6B7280;">€${p.fromPriceEur}/mo</td>
+            </tr>
+            <tr style="background:#EFF6FF;">
+              <td style="padding:14px 16px;font-size:14px;font-weight:800;color:#1E3A8A;">🥈 ${p.toPlan} (trial)</td>
+              <td style="padding:14px 16px;font-size:14px;font-weight:800;color:#1E3A8A;">€${p.toPriceEur}/mo after trial</td>
+            </tr>
+          </table>
+
+          <p style="margin:0 0 24px;font-size:13px;color:#6B7280;line-height:1.6;">
+            If you love ${p.toPlan}, confirm the upgrade at the end of the trial and you'll pay
+            just <strong>€${diffEur}/mo more</strong> than your current plan.
+            If you prefer to stay on ${p.fromPlan}, simply decline — you'll never be charged for the trial.
+          </p>
+
+          <!-- CTA -->
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${p.activationUrl}"
+              style="display:inline-block;background:#FBBF24;color:#1E3A8A;font-size:15px;font-weight:900;padding:14px 32px;border-radius:12px;text-decoration:none;letter-spacing:0.2px;">
+              Activate My Free ${p.toPlan} Trial
+            </a>
+            <p style="margin:10px 0 0;font-size:11px;color:#9CA3AF;">No credit card charged during the ${p.trialDays}-day trial</p>
+          </div>
+
+          <p style="margin:0;font-size:12px;color:#9CA3AF;text-align:center;line-height:1.5;">
+            This offer expires in 14 days. If you have questions, contact us at
+            <a href="mailto:support@stride.app" style="color:#1E3A8A;">support@stride.app</a>.
+          </p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:20px;text-align:center;background:#F9FAFB;">
+          <p style="margin:0;font-size:11px;color:#9CA3AF;">Powered by Stride &middot; Association Management Platform</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `${subject}\n\nHi ${p.adminName},\n\nYou've been on the ${p.fromPlan} plan for 3+ months. As a thank-you, enjoy a ${p.trialDays}-day free trial of ${p.toPlan} — no charge until it ends.\n\nActivate here: ${p.activationUrl}\n\nIf you love ${p.toPlan}, upgrade for just €${diffEur}/mo more. If not, simply decline — no charge.\n\nPowered by Stride`;
+
+  return { html, text, subject };
+}

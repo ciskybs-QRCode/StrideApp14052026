@@ -22,7 +22,7 @@ const RED  = "#DC2626";
 // ── Tier definitions ──────────────────────────────────────────────────────────
 
 const TIERS: Array<{
-  key: "studio" | "company" | "academy";
+  key: "core" | "plus" | "premium";
   emoji: string;
   name: string;
   price: string;
@@ -31,16 +31,15 @@ const TIERS: Array<{
   opLimit: string;
   badge?: string;
   features: string[];
-  featuresPlus: string[];
   color: string;
   headerBg: string;
   headerText: string;
 }> = [
   {
-    key: "studio",
-    emoji: "🥉",
-    name: "Studio",
-    price: "$49/mo",
+    key: "core",
+    emoji: "⚡",
+    name: "Core",
+    price: "€49/mo",
     priceNum: 49,
     qrLimit: "Up to 35 active QR codes",
     opLimit: "Up to 3 operators",
@@ -49,19 +48,20 @@ const TIERS: Array<{
     headerText: NAVY,
     features: [
       "QR check-in / check-out",
+      "Smart Pick-Up with QR Guardian",
+      "Emergency SOS broadcast",
       "Attendance logging & reports",
       "Digital document signing",
       "Broadcast messaging",
       "Member portal (parent + child)",
       "Email support",
     ],
-    featuresPlus: [],
   },
   {
-    key: "company",
-    emoji: "🥈",
-    name: "Company",
-    price: "$99/mo",
+    key: "plus",
+    emoji: "🚀",
+    name: "Plus",
+    price: "€99/mo",
     priceNum: 99,
     qrLimit: "Up to 100 active QR codes",
     opLimit: "Up to 10 operators",
@@ -70,21 +70,20 @@ const TIERS: Array<{
     headerBg: NAVY,
     headerText: "#FFF",
     features: [
-      "Everything in Studio",
-      "Smart Pick-Up + QR Guardian",
-      "Emergency SOS broadcast",
+      "Everything in Core",
       "Payroll (wages + contractor)",
-      "Course booking + marketplace",
+      "Course booking + waitlist",
+      "Marketplace",
       "Event ticketing",
+      "AI document analysis",
       "Chat support (24h)",
     ],
-    featuresPlus: [],
   },
   {
-    key: "academy",
-    emoji: "🥇",
-    name: "Academy",
-    price: "$199/mo",
+    key: "premium",
+    emoji: "👑",
+    name: "Premium",
+    price: "€199/mo",
     priceNum: 199,
     qrLimit: "Unlimited QR codes",
     opLimit: "Unlimited operators",
@@ -92,18 +91,29 @@ const TIERS: Array<{
     headerBg: "#0F172A",
     headerText: "#FFF",
     features: [
-      "Everything in Company",
+      "Everything in Plus",
       "Full AI suite (6 AI features)",
       "BLE proximity auto check-in",
       "White-label branding",
       "Global Pricing Engine",
+      "Multi-association network",
       "API access",
       "Priority support (4h SLA)",
       "Dedicated onboarding",
     ],
-    featuresPlus: [],
   },
 ];
+
+// legacy tier key mapping (old stored values → new key for comparison)
+const LEGACY: Record<string, "core" | "plus" | "premium"> = {
+  studio:  "core",
+  company: "plus",
+  academy: "premium",
+};
+
+function normaliseTier(t: string): "core" | "plus" | "premium" {
+  return (LEGACY[t] ?? t) as "core" | "plus" | "premium";
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -130,12 +140,13 @@ export default function ChangePlanScreen() {
 
   const handleChangePlan = useCallback(async (tier: string, tierName: string, tierPriceNum: number) => {
     if (!plan) return;
-    const currentPrice = TIERS.find(t => t.key === plan.plan_tier)?.priceNum ?? 0;
+    const currentNorm = normaliseTier(plan.plan_tier);
+    const currentPrice = TIERS.find(t => t.key === currentNorm)?.priceNum ?? 0;
     const isDowngrade  = tierPriceNum < currentPrice;
     const isUpgrade    = tierPriceNum > currentPrice;
 
     const msg = isDowngrade
-      ? `Downgrade to ${tierName}?\n\nYour plan changes at the start of the next billing cycle. Some features will no longer be available. Make sure your usage fits the new limits.`
+      ? `Downgrade to ${tierName}?\n\nYour plan changes at the start of the next billing cycle. You keep all current features until then — no cuts mid-period, no refunds for unused days.`
       : isUpgrade
         ? `Upgrade to ${tierName}?\n\nYour plan changes immediately. You will be charged the new rate from your next billing date.`
         : "You are already on this plan.";
@@ -164,10 +175,10 @@ export default function ChangePlanScreen() {
                 [{ text: "OK", onPress: () => router.back() }],
               );
             } catch (e) {
-              const msg = (e as Error).message;
-              setError(msg);
+              const errMsg = (e as Error).message;
+              setError(errMsg);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert("Plan Change Failed", msg);
+              Alert.alert("Plan Change Failed", errMsg);
             } finally { setSaving(null); }
           },
         },
@@ -192,7 +203,7 @@ export default function ChangePlanScreen() {
             {/* Current usage */}
             {plan && (
               <View style={s.usageCard}>
-                <Text style={s.usageTitle}>Current Usage</Text>
+                <Text style={s.usageTitle}>CURRENT USAGE</Text>
                 <View style={s.usageRow}>
                   <Text style={s.usageLabel}>Active QR codes</Text>
                   <Text style={s.usageValue}>{plan.current_qr}</Text>
@@ -216,17 +227,20 @@ export default function ChangePlanScreen() {
 
             {/* Plan cards */}
             {TIERS.map(tier => {
-              const isCurrent    = plan?.plan_tier === tier.key;
-              const currentPrice = TIERS.find(t => t.key === plan?.plan_tier)?.priceNum ?? 0;
+              const currentNorm  = normaliseTier(plan?.plan_tier ?? "core");
+              const isCurrent    = currentNorm === tier.key;
+              const currentPrice = TIERS.find(t => t.key === currentNorm)?.priceNum ?? 0;
               const isDowngrade  = tier.priceNum < currentPrice;
               const isUpgrade    = tier.priceNum > currentPrice;
               const isSaving     = saving === tier.key;
 
-              // Check if downgrade is possible given usage
-              const lim        = plan?.limits[tier.key];
-              const qrBlocked  = lim?.qr !== null && (plan?.current_qr ?? 0) > (lim?.qr ?? Infinity);
-              const opBlocked  = lim?.ops !== null && (plan?.current_operators ?? 0) > (lim?.ops ?? Infinity);
-              const blocked    = qrBlocked || opBlocked;
+              // Downgrade block check against limits
+              const lim       = plan?.limits[tier.key] ?? plan?.limits[
+                tier.key === "core" ? "studio" : tier.key === "plus" ? "company" : "academy"
+              ];
+              const qrBlocked = lim?.qr !== null && (plan?.current_qr ?? 0) > (lim?.qr ?? Infinity);
+              const opBlocked = lim?.ops !== null && (plan?.current_operators ?? 0) > (lim?.ops ?? Infinity);
+              const blocked   = qrBlocked || opBlocked;
 
               return (
                 <View
@@ -241,7 +255,7 @@ export default function ChangePlanScreen() {
                       </View>
                     )}
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                      <Text style={[s.tierEmoji]}>{tier.emoji}</Text>
+                      <Text style={s.tierEmoji}>{tier.emoji}</Text>
                       <Text style={[s.tierName, { color: tier.headerText }]}>{tier.name}</Text>
                       {isCurrent && (
                         <View style={s.currentPill}>
@@ -249,10 +263,10 @@ export default function ChangePlanScreen() {
                         </View>
                       )}
                     </View>
-                    <Text style={[s.tierPrice, { color: isCurrent || tier.key !== "studio" ? tier.headerText : NAVY }]}>
+                    <Text style={[s.tierPrice, { color: tier.key !== "core" ? tier.headerText : NAVY }]}>
                       {tier.price}
                     </Text>
-                    <Text style={[s.tierLimit, { color: tier.key === "studio" ? "#6B7280" : "rgba(255,255,255,0.6)" }]}>
+                    <Text style={[s.tierLimit, { color: tier.key === "core" ? "#6B7280" : "rgba(255,255,255,0.6)" }]}>
                       {tier.qrLimit} · {tier.opLimit}
                     </Text>
                   </View>
@@ -266,7 +280,6 @@ export default function ChangePlanScreen() {
                       </View>
                     ))}
 
-                    {/* Usage warning if blocked */}
                     {blocked && isDowngrade && (
                       <View style={s.blockedBanner}>
                         <Ionicons name="warning-outline" size={13} color="#92400E" />
@@ -278,7 +291,6 @@ export default function ChangePlanScreen() {
                       </View>
                     )}
 
-                    {/* CTA */}
                     {!isCurrent && (
                       <Pressable
                         style={({ pressed }) => [
@@ -316,14 +328,14 @@ export default function ChangePlanScreen() {
               );
             })}
 
-            {/* Billing note */}
+            {/* Billing notes */}
             <View style={s.noteCard}>
               <Ionicons name="information-circle-outline" size={16} color={NAVY} />
               <View style={{ flex: 1 }}>
                 <Text style={s.noteTitle}>Billing notes</Text>
                 <Text style={s.noteBody}>
-                  Upgrades take effect immediately. Downgrades apply at the start of your next billing cycle — you keep the current plan's features until then.
-                  Contact billing support if you need to discuss annual pricing.
+                  Upgrades take effect immediately. Downgrades apply at the start of your next billing cycle — you keep all current features until the cycle ends. No prorated refunds are issued.{"\n\n"}
+                  After 3 consecutive months of payment you may receive an exclusive offer to try the next plan tier for free for 2 months, with no commitment required.
                 </Text>
               </View>
             </View>

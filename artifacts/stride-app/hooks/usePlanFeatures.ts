@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { getOrgPlanFeatures, type PlanFeatures } from "@/lib/api";
 
-const STUDIO_FALLBACK: PlanFeatures = {
-  plan_tier: "studio",
+const CORE_FALLBACK: PlanFeatures = {
+  plan_tier: "core",
   is_free_grant: false,
   grant_ends: null,
   features: {
     qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-    smart_pickup: false, emergency_sos: false, payroll: false, courses: false,
-    marketplace: false, events: false, ai_suite: false, ble_proximity: false,
-    white_label: false, global_pricing: false, api_access: false,
+    smart_pickup: true, emergency_sos: true,
+    payroll: false, courses: false, marketplace: false, events: false,
+    ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false,
   },
 };
 
@@ -18,7 +18,7 @@ let _cachedAt = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export function usePlanFeatures() {
-  const [data,    setData]    = useState<PlanFeatures>(_cached ?? STUDIO_FALLBACK);
+  const [data,    setData]    = useState<PlanFeatures>(_cached ?? CORE_FALLBACK);
   const [loading, setLoading] = useState(!_cached);
 
   useEffect(() => {
@@ -56,7 +56,11 @@ export function invalidatePlanFeaturesCache() {
 }
 
 export const PLAN_DISPLAY: Record<string, { name: string; emoji: string; color: string; bg: string }> = {
-  studio:  { name: "Studio",  emoji: "🥉", color: "#1E3A8A", bg: "#EFF6FF" },
-  company: { name: "Company", emoji: "🥈", color: "#1E3A8A", bg: "#DBEAFE" },
-  academy: { name: "Academy", emoji: "🥇", color: "#0F172A", bg: "#1E3A8A" },
+  core:    { name: "Core",    emoji: "⚡", color: "#1E3A8A", bg: "#EFF6FF" },
+  plus:    { name: "Plus",    emoji: "🚀", color: "#1E3A8A", bg: "#DBEAFE" },
+  premium: { name: "Premium", emoji: "👑", color: "#0F172A", bg: "#1E3A8A" },
+  // legacy aliases
+  studio:  { name: "Core",    emoji: "⚡", color: "#1E3A8A", bg: "#EFF6FF" },
+  company: { name: "Plus",    emoji: "🚀", color: "#1E3A8A", bg: "#DBEAFE" },
+  academy: { name: "Premium", emoji: "👑", color: "#0F172A", bg: "#1E3A8A" },
 };

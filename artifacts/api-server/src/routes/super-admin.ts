@@ -928,25 +928,26 @@ router.get("/super-admin/metrics-plan", requireAuth, requireOwnerOrSuperAdmin, a
     const grantMap = new Map<number, string>((grantRows.rows as Array<{ org_id: number; plan_tier: string }>).map(r => [r.org_id, r.plan_tier]));
 
     const now = new Date();
-    let trialing = 0, active = 0, expired = 0, studio = 0, company = 0, academy = 0, granted = 0;
+    let trialing = 0, active = 0, expired = 0, core = 0, plus = 0, premium = 0, granted = 0;
     for (const org of orgs) {
       const status = org.subscription_status ?? "trialing";
       const hasGrant = grantMap.has(org.id);
       if (hasGrant) granted++;
       if (status === "active" || hasGrant) {
         active++;
-        const tier = grantMap.get(org.id) ?? planMap.get(org.id) ?? "studio";
-        if (tier === "studio")  studio++;
-        else if (tier === "company") company++;
-        else if (tier === "academy") academy++;
-        else studio++;
+        const raw = grantMap.get(org.id) ?? planMap.get(org.id) ?? "core";
+        const tier = raw === "studio" ? "core" : raw === "company" ? "plus" : raw === "academy" ? "premium" : raw;
+        if (tier === "core")    core++;
+        else if (tier === "plus")    plus++;
+        else if (tier === "premium") premium++;
+        else core++;
       } else if (status === "expired" || (org.trial_ends_at && new Date(org.trial_ends_at) <= now)) {
         expired++;
       } else {
         trialing++;
       }
     }
-    res.json({ total: orgs.length, trialing, active, expired, granted, by_plan: { studio, company, academy } });
+    res.json({ total: orgs.length, trialing, active, expired, granted, by_plan: { core, plus, premium } });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -1031,8 +1032,8 @@ router.patch("/super-admin/orgs/:id/plan-tier", requireAuth, requireOwnerOrSuper
   const orgId = parseInt(String(req.params["id"]), 10);
   if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org id" }); return; }
   const { tier } = req.body as { tier?: string };
-  if (!tier || !["studio", "company", "academy"].includes(tier)) {
-    res.status(400).json({ error: "tier must be studio | company | academy" }); return;
+  if (!tier || !["core", "plus", "premium", "studio", "company", "academy"].includes(tier)) {
+    res.status(400).json({ error: "tier must be core | plus | premium" }); return;
   }
   try {
     await pool.query(
@@ -1076,8 +1077,8 @@ router.post("/super-admin/orgs/:id/access-grants", requireAuth, requireOwnerOrSu
   const { plan_tier, start_date, end_date, reason } = req.body as {
     plan_tier?: string; start_date?: string; end_date?: string | null; reason?: string;
   };
-  if (!plan_tier || !["studio", "company", "academy"].includes(plan_tier)) {
-    res.status(400).json({ error: "plan_tier must be studio | company | academy" }); return;
+  if (!plan_tier || !["core", "plus", "premium", "studio", "company", "academy"].includes(plan_tier)) {
+    res.status(400).json({ error: "plan_tier must be core | plus | premium" }); return;
   }
   await ensureTables();
   try {
@@ -1262,26 +1263,36 @@ router.get("/org/plan-features", requireAuth, async (req, res) => {
   }
 });
 
-// ── Feature flags per plan tier ───────────────────────────────────────────────
+// ── Feature flags per plan tier (Core/Plus/Premium) ──────────────────────────
 const PLAN_FEATURES: Record<string, Record<string, boolean>> = {
-  studio: {
+  core: {
     qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-    smart_pickup: false, emergency_sos: false, payroll: false, courses: false,
-    marketplace: false, events: false, ai_suite: false, ble_proximity: false,
-    white_label: false, global_pricing: false, api_access: false,
+    smart_pickup: true, emergency_sos: true,
+    payroll: false, courses: false, marketplace: false, events: false,
+    ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false,
   },
-  company: {
+  plus: {
     qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
     smart_pickup: true, emergency_sos: true, payroll: true, courses: true,
-    marketplace: true, events: true, ai_suite: false, ble_proximity: false,
-    white_label: false, global_pricing: false, api_access: false,
+    marketplace: true, events: true,
+    ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false,
   },
-  academy: {
+  premium: {
     qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
     smart_pickup: true, emergency_sos: true, payroll: true, courses: true,
     marketplace: true, events: true, ai_suite: true, ble_proximity: true,
     white_label: true, global_pricing: true, api_access: true,
   },
+  // legacy aliases so old stored values still resolve
+  studio:  { qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
+             smart_pickup: true, emergency_sos: true, payroll: false, courses: false, marketplace: false,
+             events: false, ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false },
+  company: { qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
+             smart_pickup: true, emergency_sos: true, payroll: true, courses: true, marketplace: true,
+             events: true, ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false },
+  academy: { qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
+             smart_pickup: true, emergency_sos: true, payroll: true, courses: true, marketplace: true,
+             events: true, ai_suite: true, ble_proximity: true, white_label: true, global_pricing: true, api_access: true },
 };
 
 export default router;

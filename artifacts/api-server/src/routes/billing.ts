@@ -677,18 +677,25 @@ router.patch("/billing/branding", requireAuth, requireRole("admin"), async (req,
 // ── Shared plan helpers ───────────────────────────────────────────────────────
 
 export const PLAN_LIMITS: Record<string, { qr: number | null; ops: number | null }> = {
-  studio:  { qr: 35,  ops: 3   },
-  company: { qr: 100, ops: 10  },
-  academy: { qr: null, ops: null },
+  core:    { qr: 35,   ops: 3    },
+  plus:    { qr: 100,  ops: 10   },
+  premium: { qr: null, ops: null },
 };
 
-/** Read org plan tier from local pg (org_plan_settings). Falls back to 'studio'. */
+/** Flat monthly price in EUR cents per tier. */
+export const PLAN_PRICES: Record<string, number> = {
+  core:    4900,
+  plus:    9900,
+  premium: 19900,
+};
+
+/** Read org plan tier from local pg (org_plan_settings). Falls back to 'core'. */
 export async function getOrgPlanTier(orgId: number): Promise<string> {
   const { rows } = await pool.query(
     `SELECT plan_tier FROM org_plan_settings WHERE org_id = $1`,
     [orgId],
   );
-  return (rows[0] as { plan_tier?: string } | undefined)?.plan_tier ?? "studio";
+  return (rows[0] as { plan_tier?: string } | undefined)?.plan_tier ?? "core";
 }
 
 /** Upsert org plan tier in local pg. */
@@ -741,9 +748,9 @@ router.get("/billing/plan", requireAuth, requireRole("admin", "super_admin"), as
 router.patch("/billing/plan", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
   const orgId = (req as AuthReq).user.orgId ?? 1;
   const { tier } = req.body as { tier?: string };
-  const VALID = ["studio", "company", "academy"];
+  const VALID = ["core", "plus", "premium"];
   if (!tier || !VALID.includes(tier)) {
-    res.status(400).json({ error: "tier must be studio | company | academy" }); return;
+    res.status(400).json({ error: "tier must be core | plus | premium" }); return;
   }
   try {
     const lim = PLAN_LIMITS[tier];
@@ -767,6 +774,147 @@ router.patch("/billing/plan", requireAuth, requireRole("admin", "super_admin"), 
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
+});
+
+// ── POST /billing/start-free-trial ───────────────────────────────────────────
+// Start a 2-month free trial for the org (no payment data required).
+router.post("/billing/start-free-trial", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  const { plan_tier } = req.body as { plan_tier?: string };
+  const VALID = ["core", "plus", "premium"];
+  const tier = VALID.includes(plan_tier ?? "") ? (plan_tier as string) : "core";
+  try {
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 2);
+    await pool.query(
+      `INSERT INTO plan_trial_periods (org_id, plan_tier, start_date, end_date, status)
+       VALUES ($1, $2, NOW(), $3, 'active')
+       ON CONFLICT (org_id) DO NOTHING`,
+      [orgId, tier, endDate.toISOString()],
+    );
+    // Also set the plan tier
+    await setOrgPlanTier(orgId, tier);
+    const daysRemaining = Math.ceil((endDate.getTime() - Date.now()) / 86_400_000);
+    res.json({ ok: true, end_date: endDate.toISOString(), days_remaining: daysRemaining });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── GET /billing/upgrade-trial-status ─────────────────────────────────────────
+router.get("/billing/upgrade-trial-status", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  try {
+    const { rows } = await pool.query<{
+      id: number; from_tier: string; to_tier: string; status: string;
+      start_date: string | null; end_date: string | null;
+      confirmed_upgrade: boolean; offer_sent_at: string | null;
+    }>(
+      `SELECT id, from_tier, to_tier, status, start_date, end_date, confirmed_upgrade, offer_sent_at
+       FROM plan_upgrade_trials WHERE org_id = $1
+       ORDER BY created_at DESC LIMIT 1`,
+      [orgId],
+    );
+    if (!rows.length) {
+      res.json({ offer_pending: false, trial_active: false, from_tier: null, to_tier: null,
+                 days_remaining: null, end_date: null, price_difference_cents: null,
+                 confirmed_upgrade: false, id: null });
+      return;
+    }
+    const row = rows[0]!;
+    const isActive  = row.status === "active" && row.end_date !== null && new Date(row.end_date) > new Date();
+    const daysLeft  = row.end_date
+      ? Math.max(0, Math.ceil((new Date(row.end_date).getTime() - Date.now()) / 86_400_000))
+      : null;
+    const fromPrice = PLAN_PRICES[row.from_tier] ?? 4900;
+    const toPrice   = PLAN_PRICES[row.to_tier]   ?? 9900;
+    res.json({
+      offer_pending:           row.status === "offer_sent",
+      trial_active:            isActive,
+      from_tier:               row.from_tier,
+      to_tier:                 row.to_tier,
+      days_remaining:          daysLeft,
+      end_date:                row.end_date,
+      price_difference_cents:  toPrice - fromPrice,
+      confirmed_upgrade:       row.confirmed_upgrade,
+      id:                      row.id,
+    });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── POST /billing/activate-upgrade-trial/:token ───────────────────────────────
+// Public route — called from email link; activates the 2-month upgrade trial.
+router.post("/billing/activate-upgrade-trial/:token", async (req, res) => {
+  const { token } = req.params as { token: string };
+  try {
+    const { rows } = await pool.query<{ id: number; org_id: number; to_tier: string; status: string }>(
+      `SELECT id, org_id, to_tier, status FROM plan_upgrade_trials WHERE activation_token = $1 LIMIT 1`,
+      [token],
+    );
+    if (!rows.length) { res.status(404).json({ error: "Invalid or expired token" }); return; }
+    const row = rows[0]!;
+    if (row.status !== "offer_sent") { res.json({ ok: true, message: "Trial already activated" }); return; }
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 2);
+    await pool.query(
+      `UPDATE plan_upgrade_trials
+       SET status = 'active', activated_at = NOW(), start_date = NOW(), end_date = $1 WHERE id = $2`,
+      [endDate.toISOString(), row.id],
+    );
+    // Bump the org's plan tier to the trial tier
+    await setOrgPlanTier(row.org_id, row.to_tier);
+    const daysRemaining = Math.ceil((endDate.getTime() - Date.now()) / 86_400_000);
+    res.json({ ok: true, end_date: endDate.toISOString(), days_remaining: daysRemaining });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── POST /billing/confirm-upgrade-trial ───────────────────────────────────────
+// Admin confirms they want to keep the upgraded plan (will be charged at next cycle).
+router.post("/billing/confirm-upgrade-trial", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  try {
+    const { rows } = await pool.query<{ id: number; to_tier: string }>(
+      `SELECT id, to_tier FROM plan_upgrade_trials WHERE org_id = $1 AND status = 'active' LIMIT 1`,
+      [orgId],
+    );
+    if (!rows.length) { res.status(404).json({ error: "No active upgrade trial found" }); return; }
+    const row = rows[0]!;
+    await pool.query(`UPDATE plan_upgrade_trials SET confirmed_upgrade = true, status = 'confirmed' WHERE id = $1`, [row.id]);
+    await setOrgPlanTier(orgId, row.to_tier);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── POST /billing/decline-upgrade-trial ───────────────────────────────────────
+// Admin declines — revert to the original plan at trial end (or immediately).
+router.post("/billing/decline-upgrade-trial", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  try {
+    const { rows } = await pool.query<{ id: number; from_tier: string }>(
+      `SELECT id, from_tier FROM plan_upgrade_trials WHERE org_id = $1 AND status IN ('active','offer_sent') LIMIT 1`,
+      [orgId],
+    );
+    if (!rows.length) { res.status(404).json({ error: "No active upgrade trial found" }); return; }
+    const row = rows[0]!;
+    await pool.query(`UPDATE plan_upgrade_trials SET status = 'declined' WHERE id = $1`, [row.id]);
+    // Revert plan tier to the original
+    await setOrgPlanTier(orgId, row.from_tier);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── GET /billing/plan-prices ───────────────────────────────────────────────────
+// Public-ish — returns flat monthly prices per tier.
+router.get("/billing/plan-prices", async (_req, res) => {
+  res.json(PLAN_PRICES);
 });
 
 export default router;

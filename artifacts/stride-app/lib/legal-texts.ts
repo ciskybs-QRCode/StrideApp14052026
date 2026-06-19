@@ -69,6 +69,32 @@ accounts that were active at billing time.
 4.4 Stride may suspend access on 7 days' notice for non-payment. Data is
 retained for 30 days during suspension; access is restored upon payment.
 
+4.5 PLAN TIERS. Stride offers three flat-rate monthly plans: Core (€49/mo),
+Plus (€99/mo), and Premium (€199/mo). Each tier's included features are
+described in full on the pricing page. Stride reserves the right to adjust
+pricing with 30 days' written notice.
+
+4.6 FREE TRIAL. New organisations receive a 2-month free trial on their chosen
+plan. No payment method is required during the trial period. At the end of the
+trial, continued access requires a valid payment method. Free trials are
+non-renewable and non-transferable.
+
+4.7 UPGRADE TRIAL. After 3 consecutive months of active paid subscription,
+Stride may offer an Upgrade Trial — a 2-month free evaluation of the next
+higher plan tier. The administrator must click the activation link in the offer
+email to accept. Declining the offer, or taking no action before the trial end
+date, automatically reverts the account to the original plan tier. A confirmed
+upgrade takes effect at the next billing cycle. Only one Upgrade Trial may be
+granted per plan transition.
+
+4.8 DOWNGRADE POLICY. Plan downgrades take effect at the start of the next
+billing cycle. No prorated refund is issued for the remaining days of the
+current paid period.
+
+4.9 NO REFUNDS. All subscription fees are non-refundable once charged. Access
+to the subscribed plan's features continues until the end of the paid period,
+regardless of earlier cancellation.
+
 5. DATA OWNERSHIP AND PROCESSING RELATIONSHIP
 
 5.1 PROCESSOR / CONTROLLER. Member Data belongs to the Organisation. The

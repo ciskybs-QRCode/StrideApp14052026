@@ -905,27 +905,27 @@ export default function Landing() {
             <span className="inline-flex items-center gap-2 bg-[#1E3A8A]/8 border border-[#1E3A8A]/20 rounded-full px-4 py-1.5 mb-5">
               <span className="text-[#1E3A8A] text-xs font-bold tracking-wider uppercase">Transparent Pricing</span>
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">One plan for every studio size</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">Simple pricing for every size</h2>
             <p className="text-slate-500 text-lg max-w-xl mx-auto">
-              No platform cuts. No per-seat surprises. Start free for 30 days — upgrade only when you're ready.
+              Flat monthly rate. No platform cuts. 2-month free trial — no card required.
             </p>
           </div>
 
           {/* Three plan cards */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
-            {/* Studio */}
+            {/* Core */}
             <div className="bg-white border-2 border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
               <div className="bg-slate-50 px-6 py-6">
-                <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">🥉 Studio</p>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">🥉 Core</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-slate-900">$49</span>
+                  <span className="text-4xl font-black text-slate-900">€49</span>
                   <span className="text-sm pb-1.5 text-slate-400">/mo</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">Up to 35 members · 3 operators</p>
               </div>
               <div className="px-6 py-5 flex-1 flex flex-col">
                 <ul className="space-y-2 mb-5 text-sm text-slate-600 flex-1">
-                  {["QR check-in / check-out", "Attendance logs & reports", "Digital document signing", "Broadcast messaging", "Member portal"].map(f => (
+                  {["QR check-in / check-out", "Smart Pick-Up + QR Guardian", "Emergency SOS broadcast", "Attendance logs & reports", "Digital document signing"].map(f => (
                     <li key={f} className="flex items-center gap-2"><IcoCheck />{f}</li>
                   ))}
                 </ul>
@@ -936,22 +936,22 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Company — most popular */}
+            {/* Plus — most popular */}
             <div className="relative bg-white border-2 border-[#1E3A8A] rounded-2xl overflow-hidden shadow-xl shadow-[#1E3A8A]/15 flex flex-col scale-[1.03]">
               <div className="absolute top-4 right-4 bg-[#D4AF37] text-[#0A192F] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
                 ★ Most Popular
               </div>
               <div className="bg-[#1E3A8A] px-6 py-6">
-                <p className="text-xs font-black uppercase tracking-widest text-blue-300 mb-1">🥈 Company</p>
+                <p className="text-xs font-black uppercase tracking-widest text-blue-300 mb-1">🥈 Plus</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-white">$99</span>
+                  <span className="text-4xl font-black text-white">€99</span>
                   <span className="text-sm pb-1.5 text-blue-200">/mo</span>
                 </div>
                 <p className="text-xs text-blue-200 mt-2">Up to 100 members · 10 operators</p>
               </div>
               <div className="px-6 py-5 flex-1 flex flex-col">
                 <ul className="space-y-2 mb-5 text-sm text-slate-600 flex-1">
-                  {["Everything in Studio", "Smart Pick-Up + QR Guardian", "Emergency SOS broadcast", "Payroll (wages + contractor)", "Course booking + marketplace"].map(f => (
+                  {["Everything in Core", "Payroll (wages + contractor)", "Course booking + marketplace", "Event ticketing", "Advanced messaging"].map(f => (
                     <li key={f} className="flex items-center gap-2"><IcoCheck />{f}</li>
                   ))}
                 </ul>
@@ -962,19 +962,19 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Academy */}
+            {/* Premium */}
             <div className="bg-white border-2 border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col">
               <div className="bg-slate-900 px-6 py-6">
-                <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">🥇 Academy</p>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">🥇 Premium</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-white">$199</span>
+                  <span className="text-4xl font-black text-white">€199</span>
                   <span className="text-sm pb-1.5 text-slate-400">/mo</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">Unlimited members · Unlimited operators</p>
               </div>
               <div className="px-6 py-5 flex-1 flex flex-col">
                 <ul className="space-y-2 mb-5 text-sm text-slate-600 flex-1">
-                  {["Everything in Company", "Full AI suite (6 AI features)", "BLE proximity auto check-in", "Event ticketing (shows, recitals)", "White-label branding + API access"].map(f => (
+                  {["Everything in Plus", "Full AI suite (6 AI features)", "BLE proximity auto check-in", "White-label branding + API access", "Global Pricing Engine"].map(f => (
                     <li key={f} className="flex items-center gap-2"><IcoCheck gold />{f}</li>
                   ))}
                 </ul>

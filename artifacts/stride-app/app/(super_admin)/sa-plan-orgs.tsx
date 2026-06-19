@@ -22,9 +22,9 @@ const RED  = "#DC2626";
 const TABS: Array<{ key: string; label: string; color: string }> = [
   { key: "all",     label: "All",     color: "#6B7280" },
   { key: "trial",   label: "Trial",   color: "#D97706" },
-  { key: "studio",  label: "Studio",  color: NAVY      },
-  { key: "company", label: "Company", color: "#2563EB" },
-  { key: "academy", label: "Academy", color: "#7C3AED" },
+  { key: "core",    label: "Core",    color: NAVY      },
+  { key: "plus",    label: "Plus",    color: "#2563EB" },
+  { key: "premium", label: "Premium", color: "#7C3AED" },
   { key: "expired", label: "Expired", color: RED       },
 ];
 
@@ -37,9 +37,13 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
 };
 
 const PLAN_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  studio:  { label: "Studio",  color: NAVY,     bg: "#EFF6FF" },
-  company: { label: "Company", color: "#2563EB", bg: "#DBEAFE" },
-  academy: { label: "Academy", color: "#7C3AED", bg: "#F5F3FF" },
+  core:    { label: "Core",    color: NAVY,     bg: "#EFF6FF" },
+  plus:    { label: "Plus",    color: "#2563EB", bg: "#DBEAFE" },
+  premium: { label: "Premium", color: "#7C3AED", bg: "#F5F3FF" },
+  // legacy aliases
+  studio:  { label: "Core",    color: NAVY,     bg: "#EFF6FF" },
+  company: { label: "Plus",    color: "#2563EB", bg: "#DBEAFE" },
+  academy: { label: "Premium", color: "#7C3AED", bg: "#F5F3FF" },
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -125,9 +129,9 @@ function MiniStats({ metrics }: { metrics: SuperAdminPlanMetrics | null }) {
   const items = [
     { label: "Total", value: metrics.total, color: "#6B7280" },
     { label: "Trial", value: metrics.trialing, color: "#D97706" },
-    { label: "Studio", value: metrics.by_plan.studio, color: NAVY },
-    { label: "Company", value: metrics.by_plan.company, color: "#2563EB" },
-    { label: "Academy", value: metrics.by_plan.academy, color: "#7C3AED" },
+    { label: "Core",    value: metrics.by_plan.core,    color: NAVY      },
+    { label: "Plus",    value: metrics.by_plan.plus,    color: "#2563EB" },
+    { label: "Premium", value: metrics.by_plan.premium, color: "#7C3AED" },
     { label: "Free", value: metrics.granted, color: "#059669" },
     { label: "Expired", value: metrics.expired, color: RED },
   ];

@@ -26,9 +26,9 @@ function fmtDate(d: string | null) {
 }
 
 const PLAN_TIERS = [
-  { key: "studio",  label: "🥉 Studio",  desc: "Up to 35 QR, 3 operators" },
-  { key: "company", label: "🥈 Company", desc: "Up to 100 QR, 10 operators" },
-  { key: "academy", label: "🥇 Academy", desc: "Unlimited + full AI suite" },
+  { key: "core",    label: "⚡ Core",    desc: "Up to 35 QR, 3 operators" },
+  { key: "plus",    label: "🚀 Plus",    desc: "Up to 100 QR, 10 operators" },
+  { key: "premium", label: "👑 Premium", desc: "Unlimited + full AI suite" },
 ];
 
 const DURATION_UNITS = ["days", "weeks", "months", "years"] as const;

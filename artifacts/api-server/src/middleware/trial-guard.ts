@@ -25,6 +25,36 @@ async function checkActiveGrant(orgId: number): Promise<boolean> {
   }
 }
 
+async function checkFreeTrial(orgId: number): Promise<boolean> {
+  try {
+    const { pool } = await import("../lib/pg.js");
+    const { rows } = await pool.query(
+      `SELECT 1 FROM plan_trial_periods
+       WHERE org_id = $1 AND status = 'active' AND end_date > NOW()
+       LIMIT 1`,
+      [orgId],
+    );
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function checkUpgradeTrial(orgId: number): Promise<boolean> {
+  try {
+    const { pool } = await import("../lib/pg.js");
+    const { rows } = await pool.query(
+      `SELECT 1 FROM plan_upgrade_trials
+       WHERE org_id = $1 AND status = 'active' AND end_date > NOW()
+       LIMIT 1`,
+      [orgId],
+    );
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 async function fetchOrgBillingInfo(orgId: number): Promise<Omit<OrgBillingInfo, "cachedAt">> {
   const hit = _cache.get(orgId);
   if (hit && Date.now() - hit.cachedAt < CACHE_TTL_MS) {
@@ -83,10 +113,18 @@ export async function trialGuard(req: Request, res: Response, next: NextFunction
   const hasGrant = await checkActiveGrant(orgId);
   if (hasGrant) { next(); return; }
 
+  // Check if org is within a 2-month free trial (plan_trial_periods)
+  const inFreeTrial = await checkFreeTrial(orgId);
+  if (inFreeTrial) { next(); return; }
+
+  // Check if org is within an upgrade trial (plan_upgrade_trials)
+  const inUpgradeTrial = await checkUpgradeTrial(orgId);
+  if (inUpgradeTrial) { next(); return; }
+
   if (trialEndsAt && new Date() > new Date(trialEndsAt)) {
     res.status(402).json({
       error: "trial_expired",
-      message: "Trial period concluded. Contact platform administration.",
+      message: "Trial period concluded. Please set up billing to continue.",
     });
     return;
   }

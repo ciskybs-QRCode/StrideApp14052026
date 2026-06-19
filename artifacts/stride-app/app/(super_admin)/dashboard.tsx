@@ -103,9 +103,9 @@ function PlanBreakdown({ metrics, onPlanPress }: { metrics: SuperAdminPlanMetric
   if (!metrics) return null;
   const tiles = [
     { key: "trial",   label: "TRIAL",   value: metrics.trialing,        accent: "#D97706", bg: "#FFFBEB" },
-    { key: "studio",  label: "STUDIO",  value: metrics.by_plan.studio,  accent: "#1E3A8A", bg: "#EFF6FF" },
-    { key: "company", label: "COMPANY", value: metrics.by_plan.company, accent: "#2563EB", bg: "#DBEAFE" },
-    { key: "academy", label: "ACADEMY", value: metrics.by_plan.academy, accent: "#7C3AED", bg: "#F5F3FF" },
+    { key: "core",    label: "CORE",    value: metrics.by_plan.core,    accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "plus",    label: "PLUS",    value: metrics.by_plan.plus,    accent: "#2563EB", bg: "#DBEAFE" },
+    { key: "premium", label: "PREMIUM", value: metrics.by_plan.premium, accent: "#7C3AED", bg: "#F5F3FF" },
   ];
   return (
     <View style={{ marginBottom: 14 }}>

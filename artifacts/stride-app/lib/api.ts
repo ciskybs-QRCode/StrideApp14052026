@@ -3044,17 +3044,54 @@ export function reviewFirstAidCert(certId: number, action: "approve" | "reject",
 // ── Billing plan ──────────────────────────────────────────────────────────────
 
 export interface BillingPlan {
-  plan_tier: "studio" | "company" | "academy";
+  plan_tier: "core" | "plus" | "premium" | "studio" | "company" | "academy";
+  stored_tier: string;
   subscription_status: string;
   current_qr: number;
   current_operators: number;
   limits: Record<string, { qr: number | null; ops: number | null }>;
+  active_grant: { plan_tier: string; end_date: string | null } | null;
 }
 export function getBillingPlan(): Promise<BillingPlan> {
   return request<BillingPlan>("GET", "/billing/plan");
 }
 export function changeBillingPlan(tier: string): Promise<{ success: boolean; plan_tier: string }> {
   return request("PATCH", "/billing/plan", { tier });
+}
+
+export interface FreeTrial {
+  plan_tier: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  days_remaining: number;
+}
+export function startFreeTrial(planTier: string): Promise<{ ok: boolean; end_date: string; days_remaining: number }> {
+  return request("POST", "/billing/start-free-trial", { plan_tier: planTier });
+}
+
+export interface UpgradeTrialStatus {
+  offer_pending: boolean;
+  trial_active: boolean;
+  from_tier: string | null;
+  to_tier: string | null;
+  days_remaining: number | null;
+  end_date: string | null;
+  price_difference_cents: number | null;
+  confirmed_upgrade: boolean;
+  id: number | null;
+}
+export function getUpgradeTrialStatus(): Promise<UpgradeTrialStatus> {
+  return request<UpgradeTrialStatus>("GET", "/billing/upgrade-trial-status");
+}
+export function activateUpgradeTrial(token: string): Promise<{ ok: boolean; end_date: string }> {
+  return request("POST", `/billing/activate-upgrade-trial/${token}`, {});
+}
+export function confirmUpgradeTrial(): Promise<{ ok: boolean }> {
+  return request("POST", "/billing/confirm-upgrade-trial", {});
+}
+export function declineUpgradeTrial(): Promise<{ ok: boolean }> {
+  return request("POST", "/billing/decline-upgrade-trial", {});
 }
 
 // ── Accountant payment orders ─────────────────────────────────────────────────
@@ -3116,7 +3153,7 @@ export function cancelAccountantOrder(id: number): Promise<{ order: AccountantPa
 // ── Plan features ─────────────────────────────────────────────────────────────
 
 export interface PlanFeatures {
-  plan_tier: "studio" | "company" | "academy";
+  plan_tier: "core" | "plus" | "premium" | "studio" | "company" | "academy";
   is_free_grant: boolean;
   grant_ends: string | null;
   features: {
@@ -3136,7 +3173,7 @@ export function getOrgPlanFeatures(): Promise<PlanFeatures> {
 
 export interface SuperAdminPlanMetrics {
   total: number; trialing: number; active: number; expired: number; granted: number;
-  by_plan: { studio: number; company: number; academy: number };
+  by_plan: { core: number; plus: number; premium: number };
 }
 export function getSuperAdminPlanMetrics(): Promise<SuperAdminPlanMetrics> {
   return request<SuperAdminPlanMetrics>("GET", "/super-admin/metrics-plan");

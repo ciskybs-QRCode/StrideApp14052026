@@ -3,88 +3,88 @@ import { PageShell } from "../components/PageShell";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Plan    = "studio" | "company" | "academy";
+type Plan    = "core" | "plus" | "premium";
 type Billing = "monthly" | "annual";
 
 // ── Pricing data ──────────────────────────────────────────────────────────────
 
 const PRICES: Record<Plan, { monthly: number; annual: number; qr: string; operators: string }> = {
-  studio:  { monthly: 49,  annual: 490,  qr: "Up to 35",  operators: "3" },
-  company: { monthly: 99,  annual: 990,  qr: "Up to 100", operators: "10" },
-  academy: { monthly: 199, annual: 1990, qr: "Unlimited",  operators: "Unlimited" },
+  core:    { monthly: 49,  annual: 490,  qr: "Up to 35",  operators: "3" },
+  plus:    { monthly: 99,  annual: 990,  qr: "Up to 100", operators: "10" },
+  premium: { monthly: 199, annual: 1990, qr: "Unlimited",  operators: "Unlimited" },
 };
 
 // ── Feature comparison table ──────────────────────────────────────────────────
 
 type CellVal = boolean | string;
-interface FeatureRow { label: string; studio: CellVal; company: CellVal; academy: CellVal }
+interface FeatureRow { label: string; core: CellVal; plus: CellVal; premium: CellVal }
 interface FeatureGroup { group: string; rows: FeatureRow[] }
 
 const FEATURES: FeatureGroup[] = [
   {
     group: "Members & Access",
     rows: [
-      { label: "Active QR codes (members + dependants)", studio: "Up to 35", company: "Up to 100", academy: "Unlimited" },
-      { label: "Operator accounts",                       studio: "3",        company: "10",        academy: "Unlimited" },
-      { label: "Member portal (parent + dependant view)", studio: true,       company: true,        academy: true },
-      { label: "30-day free trial · no card required",    studio: true,       company: true,        academy: true },
+      { label: "Active QR codes (members + dependants)", core: "Up to 35", plus: "Up to 100", premium: "Unlimited" },
+      { label: "Operator accounts",                       core: "3",        plus: "10",        premium: "Unlimited" },
+      { label: "Member portal (parent + dependant view)", core: true,       plus: true,        premium: true },
+      { label: "2-month free trial · no card required",   core: true,       plus: true,        premium: true },
     ],
   },
   {
     group: "Safety & Check-in",
     rows: [
-      { label: "QR code check-in / check-out",                           studio: true,  company: true,  academy: true  },
-      { label: "Attendance logging & reports",                            studio: true,  company: true,  academy: true  },
-      { label: "Digital document signing (consent, waivers)",             studio: true,  company: true,  academy: true  },
-      { label: "Smart Pick-Up (authorized guardian QR)",                  studio: false, company: true,  academy: true  },
-      { label: "QR Guardian (time windows, single-use codes)",            studio: false, company: true,  academy: true  },
-      { label: "Emergency SOS + crisis broadcast to all members",         studio: false, company: true,  academy: true  },
-      { label: "BLE proximity auto check-in (no QR scan needed)",         studio: false, company: false, academy: true  },
+      { label: "QR code check-in / check-out",                           core: true,  plus: true,  premium: true  },
+      { label: "Attendance logging & reports",                            core: true,  plus: true,  premium: true  },
+      { label: "Digital document signing (consent, waivers)",             core: true,  plus: true,  premium: true  },
+      { label: "Smart Pick-Up (authorized guardian QR)",                  core: true,  plus: true,  premium: true  },
+      { label: "QR Guardian (time windows, single-use codes)",            core: true,  plus: true,  premium: true  },
+      { label: "Emergency SOS + crisis broadcast to all members",         core: true,  plus: true,  premium: true  },
+      { label: "BLE proximity auto check-in (no QR scan needed)",         core: false, plus: false, premium: true  },
     ],
   },
   {
     group: "Operations",
     rows: [
-      { label: "Broadcast messaging",                                     studio: true,  company: true,  academy: true  },
-      { label: "Advanced messaging (attachments, read receipts)",         studio: false, company: true,  academy: true  },
-      { label: "Course booking + waitlist management",                    studio: false, company: true,  academy: true  },
-      { label: "Event ticketing (shows, recitals, competitions)",         studio: false, company: false, academy: true  },
-      { label: "Certificate tracking (medical, first aid + reminders)",   studio: false, company: true,  academy: true  },
-      { label: "Operator scheduling + auto substitution (cascade)",       studio: false, company: true,  academy: true  },
-      { label: "Multi-association (join with invite code)",               studio: false, company: true,  academy: true  },
+      { label: "Broadcast messaging",                                     core: true,  plus: true,  premium: true  },
+      { label: "Advanced messaging (attachments, read receipts)",         core: false, plus: true,  premium: true  },
+      { label: "Course booking + waitlist management",                    core: false, plus: true,  premium: true  },
+      { label: "Event ticketing (shows, recitals, competitions)",         core: false, plus: false, premium: true  },
+      { label: "Certificate tracking (medical, first aid + reminders)",   core: false, plus: true,  premium: true  },
+      { label: "Operator scheduling + auto substitution (cascade)",       core: false, plus: true,  premium: true  },
+      { label: "Multi-association (join with invite code)",               core: false, plus: true,  premium: true  },
     ],
   },
   {
     group: "Finance & Payroll",
     rows: [
-      { label: "Stripe payments (memberships, lessons, fees)",            studio: false, company: true,  academy: true  },
-      { label: "Marketplace (products, merchandise)",                     studio: false, company: true,  academy: true  },
-      { label: "Contractor payroll + invoice PDF generation",             studio: false, company: true,  academy: true  },
-      { label: "On-Wages payroll (leave, overtime, public holidays)",     studio: false, company: false, academy: true  },
-      { label: "Digital employment contracts (AI-generated, signed)",     studio: false, company: false, academy: true  },
-      { label: "Accountant payroll flow (scheduled authorized payments)", studio: false, company: false, academy: true  },
+      { label: "Stripe payments (memberships, lessons, fees)",            core: false, plus: true,  premium: true  },
+      { label: "Marketplace (products, merchandise)",                     core: false, plus: true,  premium: true  },
+      { label: "Contractor payroll + invoice PDF generation",             core: false, plus: true,  premium: true  },
+      { label: "On-Wages payroll (leave, overtime, public holidays)",     core: false, plus: false, premium: true  },
+      { label: "Digital employment contracts (AI-generated, signed)",     core: false, plus: false, premium: true  },
+      { label: "Accountant payroll flow (scheduled authorized payments)", core: false, plus: false, premium: true  },
     ],
   },
   {
     group: "AI Features",
     rows: [
-      { label: "AI medical certificate analysis (upload + auto-flag)",   studio: false, company: true,  academy: true  },
-      { label: "AI Copilot (document & policy assistant)",               studio: false, company: false, academy: true  },
-      { label: "AI Roster Optimizer + rescue cascade",                   studio: false, company: false, academy: true  },
-      { label: "AI Jurisdiction & Contract Research (per country)",      studio: false, company: false, academy: true  },
-      { label: "AI Deduction Editor (natural language payroll config)",  studio: false, company: false, academy: true  },
-      { label: "AI Accountant Reply Parser (email → payroll config)",    studio: false, company: false, academy: true  },
+      { label: "AI medical certificate analysis (upload + auto-flag)",   core: false, plus: true,  premium: true  },
+      { label: "AI Copilot (document & policy assistant)",               core: false, plus: false, premium: true  },
+      { label: "AI Roster Optimizer + rescue cascade",                   core: false, plus: false, premium: true  },
+      { label: "AI Jurisdiction & Contract Research (per country)",      core: false, plus: false, premium: true  },
+      { label: "AI Deduction Editor (natural language payroll config)",  core: false, plus: false, premium: true  },
+      { label: "AI Accountant Reply Parser (email → payroll config)",    core: false, plus: false, premium: true  },
     ],
   },
   {
     group: "Platform & Support",
     rows: [
-      { label: "Analytics & reports",                                     studio: "Basic",   company: "Advanced", academy: "Custom" },
-      { label: "White-label branding (logo, colors, name)",               studio: false,     company: false,      academy: true  },
-      { label: "Global Pricing Engine (regional member rates)",           studio: false,     company: false,      academy: true  },
-      { label: "API access (third-party integrations)",                   studio: false,     company: false,      academy: true  },
-      { label: "Support",                                                  studio: "Email",   company: "Chat · 24h", academy: "Priority · 4h SLA" },
-      { label: "Dedicated onboarding session",                            studio: false,     company: false,      academy: true  },
+      { label: "Analytics & reports",                                     core: "Basic",   plus: "Advanced", premium: "Custom" },
+      { label: "White-label branding (logo, colors, name)",               core: false,     plus: false,      premium: true  },
+      { label: "Global Pricing Engine (regional member rates)",           core: false,     plus: false,      premium: true  },
+      { label: "API access (third-party integrations)",                   core: false,     plus: false,      premium: true  },
+      { label: "Support",                                                  core: "Email",   plus: "Chat · 24h", premium: "Priority · 4h SLA" },
+      { label: "Dedicated onboarding session",                            core: false,     plus: false,      premium: true  },
     ],
   },
 ];
@@ -185,21 +185,21 @@ export default function PricingPage() {
     cta: string; ctaStyle: string; href: string;
   }> = [
     {
-      key: "studio", name: "Studio", emoji: "🥉", badge: null,
+      key: "core", name: "Core", emoji: "🥉", badge: null,
       desc: "Perfect for small studios taking their first step into digital management.",
       scale: "", ring: "border-slate-200",
       headerBg: "bg-slate-50", nameColor: "text-slate-400", priceColor: "text-slate-900", subColor: "text-slate-400",
       cta: "Start Free Trial", ctaStyle: "bg-[#1E3A8A] text-white hover:bg-[#1e3070]", href: "/landing/register",
     },
     {
-      key: "company", name: "Company", emoji: "🥈", badge: "★ Most Popular",
+      key: "plus", name: "Plus", emoji: "🥈", badge: "★ Most Popular",
       desc: "The complete platform for growing dance studios and performing arts schools.",
       scale: "scale-[1.03]", ring: "border-[#1E3A8A] shadow-xl shadow-[#1E3A8A]/15",
       headerBg: "bg-[#1E3A8A]", nameColor: "text-blue-300", priceColor: "text-white", subColor: "text-blue-200",
       cta: "Get Started", ctaStyle: "bg-[#D4AF37] text-[#0A192F] hover:bg-[#e8c44b] font-black", href: "/landing/register",
     },
     {
-      key: "academy", name: "Academy", emoji: "🥇", badge: null,
+      key: "premium", name: "Premium", emoji: "🥇", badge: null,
       desc: "Full AI suite for large academies, multi-site organisations, and national associations.",
       scale: "", ring: "border-slate-800",
       headerBg: "bg-slate-900", nameColor: "text-slate-400", priceColor: "text-white", subColor: "text-slate-400",
@@ -333,9 +333,9 @@ export default function PricingPage() {
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-4 px-5 text-sm font-black text-slate-600 bg-slate-50 w-[46%]">Feature</th>
-                  <th className="text-center py-4 px-3 text-sm font-black text-slate-600 bg-slate-50 w-[18%]">🥉 Studio</th>
-                  <th className="text-center py-4 px-3 text-sm font-black text-[#1E3A8A] bg-blue-50 w-[18%]">🥈 Company</th>
-                  <th className="text-center py-4 px-3 text-sm font-black text-slate-700 bg-slate-50 w-[18%]">🥇 Academy</th>
+                  <th className="text-center py-4 px-3 text-sm font-black text-slate-600 bg-slate-50 w-[18%]">🥉 Core</th>
+                  <th className="text-center py-4 px-3 text-sm font-black text-[#1E3A8A] bg-blue-50 w-[18%]">🥈 Plus</th>
+                  <th className="text-center py-4 px-3 text-sm font-black text-slate-700 bg-slate-50 w-[18%]">🥇 Premium</th>
                 </tr>
               </thead>
               <tbody>
@@ -354,20 +354,20 @@ export default function PricingPage() {
                       <tr key={row.label}
                         className={`border-b border-slate-100 ${ri % 2 === 0 ? "bg-white" : "bg-slate-50/50"}`}>
                         <td className="py-3 px-5 text-sm text-slate-700">{row.label}</td>
-                        {(["studio", "company", "academy"] as Plan[]).map((plan) => {
+                        {(["core", "plus", "premium"] as Plan[]).map((plan) => {
                           const val = row[plan];
-                          const isCompany = plan === "company";
-                          const isAcademy = plan === "academy";
+                          const isPlus    = plan === "plus";
+                          const isPremium = plan === "premium";
                           return (
                             <td key={plan}
-                              className={`py-3 px-3 text-center ${isCompany ? "bg-blue-50/60" : ""}`}>
+                              className={`py-3 px-3 text-center ${isPlus ? "bg-blue-50/60" : ""}`}>
                               {val === true
                                 ? <span className="inline-flex justify-center">
-                                    <IcoCheck gold={isAcademy} />
+                                    <IcoCheck gold={isPremium} />
                                   </span>
                                 : val === false
                                   ? <span className="inline-flex justify-center"><IcoDash /></span>
-                                  : <span className={`text-xs font-bold ${isCompany ? "text-[#1E3A8A]" : isAcademy ? "text-[#D4AF37]" : "text-slate-500"}`}>
+                                  : <span className={`text-xs font-bold ${isPlus ? "text-[#1E3A8A]" : isPremium ? "text-[#D4AF37]" : "text-slate-500"}`}>
                                       {val}
                                     </span>}
                             </td>
@@ -382,24 +382,24 @@ export default function PricingPage() {
               <tfoot>
                 <tr className="bg-slate-50 border-t-2 border-slate-200">
                   <td className="py-4 px-5 text-sm font-black text-slate-700">Monthly price (USD)</td>
-                  {(["studio", "company", "academy"] as Plan[]).map(plan => (
-                    <td key={plan} className={`py-4 px-3 text-center font-black text-lg ${plan === "company" ? "text-[#1E3A8A] bg-blue-50/60" : plan === "academy" ? "text-[#D4AF37]" : "text-slate-700"}`}>
-                      ${PRICES[plan].monthly}/mo
+                  {(["core", "plus", "premium"] as Plan[]).map(plan => (
+                    <td key={plan} className={`py-4 px-3 text-center font-black text-lg ${plan === "plus" ? "text-[#1E3A8A] bg-blue-50/60" : plan === "premium" ? "text-[#D4AF37]" : "text-slate-700"}`}>
+                      €{PRICES[plan].monthly}/mo
                     </td>
                   ))}
                 </tr>
                 <tr className="bg-slate-50">
-                  <td className="py-3 px-5 text-xs text-slate-400">Annual price — 2 months free (USD)</td>
-                  {(["studio", "company", "academy"] as Plan[]).map(plan => (
-                    <td key={plan} className={`py-3 px-3 text-center text-xs font-bold text-emerald-600 ${plan === "company" ? "bg-blue-50/60" : ""}`}>
-                      ${PRICES[plan].annual}/yr
+                  <td className="py-3 px-5 text-xs text-slate-400">Annual price — 2 months free (EUR)</td>
+                  {(["core", "plus", "premium"] as Plan[]).map(plan => (
+                    <td key={plan} className={`py-3 px-3 text-center text-xs font-bold text-emerald-600 ${plan === "plus" ? "bg-blue-50/60" : ""}`}>
+                      €{PRICES[plan].annual}/yr
                     </td>
                   ))}
                 </tr>
                 <tr className="bg-slate-50">
                   <td className="py-4 px-5" />
                   {plans.map(plan => (
-                    <td key={plan.key} className={`py-4 px-3 ${plan.key === "company" ? "bg-blue-50/60" : ""}`}>
+                    <td key={plan.key} className={`py-4 px-3 ${plan.key === "plus" ? "bg-blue-50/60" : ""}`}>
                       <a href={plan.href}
                         className={`block text-center text-xs font-black py-2.5 rounded-xl no-underline transition-colors ${plan.ctaStyle}`}>
                         {plan.cta}
