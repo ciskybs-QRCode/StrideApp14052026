@@ -674,4 +674,83 @@ router.patch("/billing/branding", requireAuth, requireRole("admin"), async (req,
   }
 });
 
+// ── GET /billing/plan ─────────────────────────────────────────────────────────
+router.get("/billing/plan", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  try {
+    const { data } = await supabase
+      .from("organizations")
+      .select("id, name, plan_tier, subscription_status")
+      .eq("id", orgId)
+      .single();
+    // Current QR/member count for limit checking
+    const { data: members } = await supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .in("role", ["parent", "member"]);
+    const { data: children } = await supabase
+      .from("user_children")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId);
+    const { data: operators } = await supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .in("role", ["operator"]);
+    const qrTotal  = (members?.length ?? 0) + (children?.length ?? 0);
+    const opCount  = operators?.length ?? 0;
+    const LIMITS: Record<string, { qr: number | null; ops: number | null }> = {
+      studio:  { qr: 35,  ops: 3  },
+      company: { qr: 100, ops: 10 },
+      academy: { qr: null, ops: null },
+    };
+    res.json({
+      plan_tier: data?.plan_tier ?? "studio",
+      subscription_status: data?.subscription_status ?? "trialing",
+      current_qr: qrTotal,
+      current_operators: opCount,
+      limits: LIMITS,
+    });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── PATCH /billing/plan ───────────────────────────────────────────────────────
+router.patch("/billing/plan", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  const orgId = (req as AuthReq).user.orgId ?? 1;
+  const { tier } = req.body as { tier?: string };
+  const VALID = ["studio", "company", "academy"];
+  if (!tier || !VALID.includes(tier)) {
+    res.status(400).json({ error: "tier must be studio | company | academy" }); return;
+  }
+  try {
+    // Check if current usage fits the new tier
+    const LIMITS: Record<string, { qr: number | null; ops: number | null }> = {
+      studio:  { qr: 35,  ops: 3  },
+      company: { qr: 100, ops: 10 },
+      academy: { qr: null, ops: null },
+    };
+    const lim = LIMITS[tier];
+    if (lim.qr !== null || lim.ops !== null) {
+      const { data: members } = await supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["parent", "member"]);
+      const { data: children } = await supabase.from("user_children").select("id", { count: "exact", head: true }).eq("organization_id", orgId);
+      const { data: operators } = await supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["operator"]);
+      const qrTotal = (members?.length ?? 0) + (children?.length ?? 0);
+      const opCount = operators?.length ?? 0;
+      if (lim.qr !== null && qrTotal > lim.qr) {
+        res.status(422).json({ error: `Cannot downgrade: you have ${qrTotal} active QR codes but ${tier} allows max ${lim.qr}. Remove members first.`, current_qr: qrTotal, limit_qr: lim.qr }); return;
+      }
+      if (lim.ops !== null && opCount > lim.ops) {
+        res.status(422).json({ error: `Cannot downgrade: you have ${opCount} operators but ${tier} allows max ${lim.ops}. Remove operators first.`, current_operators: opCount, limit_operators: lim.ops }); return;
+      }
+    }
+    await supabase.from("organizations").update({ plan_tier: tier }).eq("id", orgId);
+    res.json({ success: true, plan_tier: tier });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 export default router;

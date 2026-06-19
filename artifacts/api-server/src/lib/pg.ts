@@ -1268,5 +1268,49 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ec_user_idx ON employment_contracts (operator_user_id, organization_id);
   `).catch(() => {});
 
+  // ── Plan tier on organizations ────────────────────────────────────────────────
+  await pool.query(`
+    ALTER TABLE IF EXISTS organizations
+      ADD COLUMN IF NOT EXISTS plan_tier TEXT NOT NULL DEFAULT 'studio';
+  `).catch(() => {});
+
+  // ── Accountant payment orders ─────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS accountant_payment_orders (
+      id               SERIAL PRIMARY KEY,
+      org_id           INTEGER NOT NULL,
+      created_by       INTEGER,
+      payee_name       TEXT NOT NULL,
+      payee_type       TEXT NOT NULL DEFAULT 'accountant',
+      description      TEXT,
+      amount_cents     INTEGER NOT NULL,
+      currency         TEXT NOT NULL DEFAULT 'EUR',
+      due_date         DATE NOT NULL,
+      status           TEXT NOT NULL DEFAULT 'pending_auth',
+      authorized_by    INTEGER,
+      authorized_at    TIMESTAMPTZ,
+      paid_at          TIMESTAMPTZ,
+      payment_notes    TEXT,
+      failure_reason   TEXT,
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS apo_org_idx    ON accountant_payment_orders(org_id);
+    CREATE INDEX IF NOT EXISTS apo_status_idx ON accountant_payment_orders(org_id, status);
+    CREATE INDEX IF NOT EXISTS apo_due_idx    ON accountant_payment_orders(due_date) WHERE status NOT IN ('paid','cancelled');
+  `).catch(() => {});
+
+  // ── Payment execution log ─────────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS payment_execution_log (
+      id           SERIAL PRIMARY KEY,
+      order_id     INTEGER NOT NULL REFERENCES accountant_payment_orders(id) ON DELETE CASCADE,
+      attempted_at TIMESTAMPTZ DEFAULT NOW(),
+      status       TEXT NOT NULL,
+      error_msg    TEXT,
+      executed_by  INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS pel_order_idx ON payment_execution_log(order_id);
+  `).catch(() => {});
+
   initialized = true;
 }

@@ -3040,3 +3040,75 @@ export function reviewMedicalCert(certId: number, action: "approve" | "reject", 
 export function reviewFirstAidCert(certId: number, action: "approve" | "reject", note?: string): Promise<{ ok: boolean; new_status: string }> {
   return request("PATCH", `/documents/review-first-aid/${certId}`, { action, note });
 }
+
+// ── Billing plan ──────────────────────────────────────────────────────────────
+
+export interface BillingPlan {
+  plan_tier: "studio" | "company" | "academy";
+  subscription_status: string;
+  current_qr: number;
+  current_operators: number;
+  limits: Record<string, { qr: number | null; ops: number | null }>;
+}
+export function getBillingPlan(): Promise<BillingPlan> {
+  return request<BillingPlan>("GET", "/billing/plan");
+}
+export function changeBillingPlan(tier: string): Promise<{ success: boolean; plan_tier: string }> {
+  return request("PATCH", "/billing/plan", { tier });
+}
+
+// ── Accountant payment orders ─────────────────────────────────────────────────
+
+export interface AccountantPaymentOrder {
+  id: number;
+  org_id: number;
+  created_by: number | null;
+  created_by_name: string | null;
+  payee_name: string;
+  payee_type: "government" | "accountant" | "operator" | "other";
+  description: string | null;
+  amount_cents: number;
+  currency: string;
+  due_date: string;
+  status: "pending_auth" | "authorized" | "paid" | "failed" | "cancelled";
+  authorized_by: number | null;
+  authorized_by_name: string | null;
+  authorized_at: string | null;
+  paid_at: string | null;
+  payment_notes: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  execution_log: Array<{ id: number; attempted_at: string; status: string; error_msg: string | null }> | null;
+}
+
+export interface ParsedObligation {
+  payee_name: string;
+  payee_type: "government" | "accountant" | "operator" | "other";
+  description: string | null;
+  amount_cents: number;
+  currency: string;
+  due_date: string;
+  notes: string | null;
+}
+
+export function parseAccountantEmail(emailText: string): Promise<{ obligations: ParsedObligation[] }> {
+  return request("POST", "/payroll/accountant/parse-email", { emailText });
+}
+export function createAccountantOrders(obligations: ParsedObligation[]): Promise<{ created: number; orders: AccountantPaymentOrder[] }> {
+  return request("POST", "/payroll/accountant/orders", { obligations });
+}
+export function getAccountantOrders(): Promise<{ orders: AccountantPaymentOrder[] }> {
+  return request<{ orders: AccountantPaymentOrder[] }>("GET", "/payroll/accountant/orders");
+}
+export function authorizeAccountantOrder(id: number): Promise<{ order: AccountantPaymentOrder }> {
+  return request("PATCH", `/payroll/accountant/orders/${id}/authorize`);
+}
+export function markAccountantOrderPaid(id: number, notes?: string): Promise<{ order: AccountantPaymentOrder }> {
+  return request("PATCH", `/payroll/accountant/orders/${id}/mark-paid`, { notes });
+}
+export function markAccountantOrderFailed(id: number, reason?: string): Promise<{ order: AccountantPaymentOrder }> {
+  return request("PATCH", `/payroll/accountant/orders/${id}/mark-failed`, { reason });
+}
+export function cancelAccountantOrder(id: number): Promise<{ order: AccountantPaymentOrder }> {
+  return request("PATCH", `/payroll/accountant/orders/${id}/cancel`);
+}

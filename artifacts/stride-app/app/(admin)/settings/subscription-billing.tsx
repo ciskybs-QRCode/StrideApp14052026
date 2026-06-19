@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useBillingStatus } from "@/hooks/useBillingStatus";
-import { createCheckoutSession } from "@/lib/api";
+import { createCheckoutSession, getBillingPlan, type BillingPlan } from "@/lib/api";
 import { BILLING_TIERS } from "@/lib/billingEngine";
 
 const NAVY = "#1E3A8A";
@@ -78,8 +78,10 @@ export default function SubscriptionBillingScreen() {
   const { user } = useAuth();
   const { status, loading, error, refresh, isSuspended } = useBillingStatus();
 
-  const [launching, setLaunching] = useState(false);
-  const [launchErr, setLaunchErr] = useState<string | null>(null);
+  const [launching,    setLaunching]    = useState(false);
+  const [launchErr,    setLaunchErr]    = useState<string | null>(null);
+  const [plan,         setPlan]         = useState<BillingPlan | null>(null);
+  const [planLoading,  setPlanLoading]  = useState(true);
 
   const subStatus     = status?.subscriptionStatus ?? "trialing";
   const currency      = status?.currency ?? "EUR";
@@ -109,9 +111,14 @@ export default function SubscriptionBillingScreen() {
     t => qrTotal >= t.from && (t.to === null || qrTotal <= t.to),
   ) ?? BILLING_TIERS[0];
 
+  useEffect(() => {
+    getBillingPlan().then(p => setPlan(p)).catch(() => {}).finally(() => setPlanLoading(false));
+  }, []);
+
   const onRefresh = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await refresh();
+    getBillingPlan().then(p => setPlan(p)).catch(() => {});
   }, [refresh]);
 
   const handleSubscribe = useCallback(async () => {
@@ -172,6 +179,43 @@ export default function SubscriptionBillingScreen() {
             </View>
           </View>
         )}
+
+        {/* ── CURRENT PLAN ── */}
+        <Text style={s.sectionLabel}>YOUR PLAN</Text>
+        <View style={s.planCard}>
+          {planLoading ? (
+            <ActivityIndicator size="small" color={NAVY} />
+          ) : (
+            <>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={s.planName}>
+                    {plan?.plan_tier === "studio"  ? "🥉 Studio"  :
+                     plan?.plan_tier === "company" ? "🥈 Company" :
+                     plan?.plan_tier === "academy" ? "🥇 Academy" : "Studio"}
+                  </Text>
+                  <View style={s.planBadge}>
+                    <Text style={s.planBadgeText}>
+                      {plan?.plan_tier?.toUpperCase() ?? "STUDIO"}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={s.planMeta}>
+                  {plan?.plan_tier === "studio"  ? "≤35 QR · ≤3 operators" :
+                   plan?.plan_tier === "company" ? "≤100 QR · ≤10 operators" :
+                   "Unlimited QR · Unlimited operators"}
+                </Text>
+              </View>
+              <Pressable
+                style={s.changePlanBtn}
+                onPress={() => router.push("/(admin)/settings/change-plan" as never)}
+              >
+                <Ionicons name="swap-horizontal-outline" size={15} color={NAVY} />
+                <Text style={s.changePlanBtnText}>Change Plan</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
 
         {/* ── THIS MONTH'S BILL ── */}
         <Text style={s.sectionLabel}>THIS MONTH'S INVOICE</Text>
@@ -381,6 +425,19 @@ const s = StyleSheet.create({
     backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 4,
     borderWidth: 1, borderColor: "#E2E8F0",
   },
+
+  // Plan card
+  planCard: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 4,
+    borderWidth: 1.5, borderColor: NAVY,
+  },
+  planName:       { fontSize: 16, fontWeight: "900", color: NAVY },
+  planBadge:      { backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
+  planBadgeText:  { fontSize: 9, fontWeight: "900", color: NAVY },
+  planMeta:       { fontSize: 11, color: "#6B7280", marginTop: 3 },
+  changePlanBtn:  { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#EFF6FF", borderRadius: 12, paddingVertical: 9, paddingHorizontal: 14 },
+  changePlanBtnText: { fontSize: 13, fontWeight: "800", color: NAVY },
 
   // Danger / warning banners
   dangerBanner: {

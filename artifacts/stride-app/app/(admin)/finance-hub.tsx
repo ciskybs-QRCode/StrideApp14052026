@@ -90,6 +90,16 @@ export default function FinanceHub() {
             onPress={() => router.push("/(admin)/marketplace" as never)}
           />
         )}
+
+        <Text style={[styles.sectionLabel, { color: "#9CA3AF" }]}>PAYROLL FLOWS</Text>
+        <HubCard
+          icon="receipt-outline"
+          title="Accountant Payments"
+          description="Parse accountant emails, authorize and track scheduled payments"
+          iconBg="#FFFBEB"
+          iconColor="#D97706"
+          onPress={() => router.push("/(admin)/accountant-payments" as never)}
+        />
       </ScrollView>
     </View>
   );
