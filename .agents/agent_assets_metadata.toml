@@ -12,6 +12,18 @@ uri = "file://artifacts/stride-app/assets/images/splash.png"
 type = "image"
 title = "stride splash background"
 
+[[generated]]
+id = "kZkfHS8X0D8XgPawmDAsh"
+uri = "file://artifacts/mockup-sandbox/public/images/chaos.png"
+type = "image"
+title = "Paper forms corporate chaos"
+
+[[generated]]
+id = "vONcg7UJHxov4ddzonYQS"
+uri = "file://artifacts/mockup-sandbox/public/images/tech-gold.png"
+type = "image"
+title = "Navy gold tech background"
+
 [[outputs]]
 id = "TJn4qgherjwUXrohlCYhP"
 uri = "file://docs/stride-documenti.zip"
