@@ -214,7 +214,7 @@ jobs:
             const siblings = closed.slice(0, closed.length - 1);
 
             const siblingLines = siblings
-              .map(i => `- #${i.number}`)
+              .map(i => `- [#${i.number}](${i.url})`)
               .join('\n');
 
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
