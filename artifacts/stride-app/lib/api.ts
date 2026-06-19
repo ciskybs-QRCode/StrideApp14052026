@@ -680,6 +680,12 @@ export const api = {
   getOperatorEarnings: (month?: string) =>
     request<ApiOperatorEarnings>("GET", month ? `/operator-earnings?month=${month}` : "/operator-earnings"),
 
+  getOperatorEarningsYtd: (year?: number) =>
+    request<ApiEarningsYtd>("GET", `/operator-earnings/ytd${year ? `?year=${year}` : ""}`),
+
+  notifyWaitlistNewSlot: (data: { discipline_name: string; day_of_week?: number; start_time?: string }) =>
+    request<{ notified: number }>("POST", "/waitlist/notify-new-slot", data),
+
   // Operator availability prefs
   getOperatorPrefs: () =>
     request<ApiOperatorPrefs>("GET", "/operator-prefs"),
@@ -1614,6 +1620,18 @@ export interface ApiOperatorEarnings {
   net_to_operator_cents?: number;
   org_total_cost_cents?: number;
   deductions_breakdown?: Array<PayrollDeduction & { amount_cents: number }>;
+}
+
+export interface ApiEarningsYtd {
+  year: number;
+  total_earnings_cents: number;
+  total_hours: number;
+  total_lessons: number;
+  total_deductions_cents: number;
+  net_cents: number;
+  super_included: boolean;
+  deductions_breakdown: Array<{ label: string; rate: number; amount_cents: number }>;
+  by_month: Array<{ month: string; cents: number }>;
 }
 
 export interface ApiOperatorPrefs {

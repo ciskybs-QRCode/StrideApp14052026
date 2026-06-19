@@ -436,4 +436,54 @@ router.get("/waitlist/my-status/:courseId", requireAuth, async (req, res) => {
   }
 });
 
+// ── POST /waitlist/notify-new-slot ────────────────────────────────────────────
+// Called after a new course is accepted from AI suggestions.
+// Finds waitlisted students for the discipline + sends push notifications.
+router.post("/waitlist/notify-new-slot", requireAuth, requireRole("admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const { discipline_name, day_of_week, start_time } = req.body as {
+    discipline_name?: string; day_of_week?: number; start_time?: string;
+  };
+  if (!discipline_name) { res.json({ notified: 0 }); return; }
+
+  try {
+    const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    const dayLabel = day_of_week != null ? dayNames[day_of_week] ?? "" : "";
+    const timeLabel = start_time ? start_time.slice(0, 5) : "";
+
+    // Find waitlisted members for any course matching this discipline
+    const { rows: waitlisted } = await pool.query<{ user_id: number; member_name: string }>(
+      `SELECT DISTINCT cw.member_id, m.full_name AS member_name,
+              u.id AS user_id
+       FROM course_waitlist cw
+       JOIN members m ON m.id = cw.member_id
+       JOIN users u ON u.id = m.user_id
+       JOIN scheduled_courses sc ON sc.id = cw.course_id
+       JOIN disciplines d ON d.id = sc.discipline_id
+       WHERE sc.organization_id = $1
+         AND LOWER(d.name) = LOWER($2)
+         AND cw.status = 'waiting'`,
+      [user.orgId ?? 1, discipline_name],
+    ).catch(() => ({ rows: [] as { user_id: number; member_name: string }[] }));
+
+    let notified = 0;
+    const msg = `A new ${discipline_name} class opened${dayLabel ? ` on ${dayLabel}` : ""}${timeLabel ? ` at ${timeLabel}` : ""}. Check the booking screen!`;
+
+    for (const w of waitlisted) {
+      await pool.query(
+        `INSERT INTO notifications (organization_id, user_id, type, title, body, read, created_at)
+         VALUES ($1, $2, 'workshop_created', $3, $4, false, NOW())
+         ON CONFLICT DO NOTHING`,
+        [user.orgId ?? 1, w.user_id, "New Class Available — Waitlist Priority", msg],
+      ).catch(() => {});
+      notified++;
+    }
+
+    res.json({ notified });
+  } catch (err) {
+    req.log.error(err, "waitlist notify-new-slot error");
+    res.status(500).json({ error: "Failed to notify" });
+  }
+});
+
 export default router;

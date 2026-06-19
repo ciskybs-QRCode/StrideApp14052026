@@ -158,6 +158,77 @@ router.get("/operator-earnings", requireAuth, requireRole("operator", "admin"), 
   });
 });
 
+// ── GET /operator-earnings/ytd?year=YYYY ─────────────────────────────────────
+// Year-to-date aggregated earnings for the current operator
+router.get("/operator-earnings/ytd", requireAuth, requireRole("operator", "admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const year = parseInt((req.query.year as string) || String(new Date().getFullYear()), 10);
+  const startDate = `${year}-01-01`;
+  const endDate   = `${year}-12-31`;
+
+  try {
+    const { data: bookings } = await supabase
+      .from("private_bookings")
+      .select("*, discipline:disciplines!discipline_id(id,name)")
+      .eq("organization_id", user.orgId)
+      .eq("operator_user_id", user.id)
+      .eq("status", "completed")
+      .gte("slot_date", startDate)
+      .lte("slot_date", endDate);
+
+    let total_earnings_cents = 0;
+    let total_minutes        = 0;
+    let total_lessons        = 0;
+    const byMonth: Record<string, number> = {};
+
+    for (const b of (bookings ?? [])) {
+      const [sh, sm] = (b.start_time as string).split(":").map(Number);
+      const [eh, em] = (b.end_time   as string).split(":").map(Number);
+      const mins = (eh * 60 + em) - (sh * 60 + sm);
+      total_minutes        += mins;
+      total_earnings_cents += (b.earnings_cents as number) ?? 0;
+      total_lessons++;
+      const mon = (b.slot_date as string).slice(0, 7);
+      byMonth[mon] = (byMonth[mon] ?? 0) + ((b.earnings_cents as number) ?? 0);
+    }
+
+    const total_hours = Math.round((total_minutes / 60) * 10) / 10;
+
+    // Deductions
+    const { rows: sRows } = await pool.query<{ payroll_deductions: unknown; super_rate_percent: string; super_included: boolean }>(
+      `SELECT payroll_deductions, super_rate_percent, super_included FROM admin_settings WHERE organization_id = $1`,
+      [user.orgId ?? 1],
+    ).catch(() => ({ rows: [] as { payroll_deductions: unknown; super_rate_percent: string; super_included: boolean }[] }));
+    const sp = sRows[0];
+    let rawDed: Array<{ label: string; rate: number }> = [];
+    try {
+      const r = sp?.payroll_deductions;
+      if (Array.isArray(r)) rawDed = r as Array<{ label: string; rate: number }>;
+      else if (typeof r === "string" && r.length > 2) rawDed = JSON.parse(r) as Array<{ label: string; rate: number }>;
+    } catch { rawDed = []; }
+    const totalDedRate = rawDed.length > 0
+      ? rawDed.reduce((s, d) => s + d.rate, 0)
+      : parseFloat(String(sp?.super_rate_percent ?? 0));
+    const total_deductions_cents = Math.round(total_earnings_cents * (totalDedRate / 100));
+    const super_included         = sp?.super_included ?? false;
+    const net_cents = super_included ? total_earnings_cents - total_deductions_cents : total_earnings_cents;
+    const deductions_breakdown = rawDed.map(d => ({
+      label: d.label, rate: d.rate,
+      amount_cents: Math.round(total_earnings_cents * (d.rate / 100)),
+    }));
+
+    res.json({
+      year, total_earnings_cents, total_hours, total_lessons,
+      total_deductions_cents, net_cents, super_included,
+      deductions_breakdown,
+      by_month: Object.entries(byMonth).sort(([a],[b]) => a.localeCompare(b)).map(([month, cents]) => ({ month, cents })),
+    });
+  } catch (err) {
+    req.log.error(err, "ytd earnings error");
+    res.status(500).json({ error: "Failed to compute YTD earnings" });
+  }
+});
+
 // ── GET /operator-bank-details ────────────────────────────────────────────────
 router.get("/operator-bank-details", requireAuth, requireRole("operator", "admin"), async (req, res) => {
   const user = (req as AuthReq).user;

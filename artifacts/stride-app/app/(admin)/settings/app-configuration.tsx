@@ -570,6 +570,52 @@ export default function AppConfigurationPage() {
               </View>
             ))}
 
+            {/* Country presets */}
+            <View style={{ marginBottom: 10, marginTop: 4 }}>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground,
+                textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>
+                Quick presets
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  {([
+                    { flag: "🇮🇹", name: "Italia", deductions: [
+                      { label: "IVA",   rate: "22" }, { label: "INPS", rate: "33" }, { label: "INAIL", rate: "3.38" },
+                    ]},
+                    { flag: "🇦🇺", name: "Australia", deductions: [
+                      { label: "SUPER", rate: "11.5" },
+                    ]},
+                    { flag: "🇬🇧", name: "UK", deductions: [
+                      { label: "NIC",  rate: "13.8" }, { label: "PAYE", rate: "20" },
+                    ]},
+                    { flag: "🇩🇪", name: "Germany", deductions: [
+                      { label: "HEALTH",  rate: "7.3" }, { label: "PENSION", rate: "9.3" }, { label: "CARE", rate: "1.8" },
+                    ]},
+                    { flag: "🇫🇷", name: "France", deductions: [
+                      { label: "CSG",    rate: "9.2" }, { label: "URSSAF", rate: "17.2" },
+                    ]},
+                  ] as const).map(preset => (
+                    <Pressable
+                      key={preset.name}
+                      onPress={() => {
+                        const rows = preset.deductions.map(d => ({ label: d.label, rate: d.rate }));
+                        setPayrollDeductions(rows);
+                        void saveDeductions(rows);
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 4,
+                        backgroundColor: colors.muted, borderRadius: 20,
+                        paddingHorizontal: 10, paddingVertical: 6,
+                        borderWidth: 1, borderColor: colors.border }}
+                    >
+                      <Text style={{ fontSize: 13 }}>{preset.flag}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.foreground }}>{preset.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+
             {/* Add deduction button */}
             <Pressable
               onPress={addDeduction}

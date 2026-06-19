@@ -50,6 +50,41 @@ const STATUS_META: Record<string, { label: string; bg: string; text: string; ico
   rejected: { label: "Rejected", bg: "#FEE2E2", text: "#991B1B", icon: "close-circle" },
 };
 
+function generatePayrollCsv(data: ApiPayrollSummary, month: string): string {
+  const header = ["Month", "Operator", "Email", "Type", "Discipline", "Rate (€/h)", "Invoiced (€)", "Paid (€)", "Pending (€)", "Invoices"].join(",");
+  const rows: string[] = [];
+  for (const op of data.operators) {
+    for (const disc of op.disciplines) {
+      rows.push([
+        month,
+        `"${op.name}"`,
+        `"${op.email}"`,
+        op.profile_type,
+        `"${disc.discipline_name}"`,
+        (disc.hourly_rate_cents / 100).toFixed(2),
+        (op.invoiced_cents / 100).toFixed(2),
+        (op.paid_cents / 100).toFixed(2),
+        (op.pending_cents / 100).toFixed(2),
+        op.invoice_count,
+      ].join(","));
+    }
+    if (op.disciplines.length === 0) {
+      rows.push([
+        month,
+        `"${op.name}"`,
+        `"${op.email}"`,
+        op.profile_type,
+        "—", "0",
+        (op.invoiced_cents / 100).toFixed(2),
+        (op.paid_cents / 100).toFixed(2),
+        (op.pending_cents / 100).toFixed(2),
+        op.invoice_count,
+      ].join(","));
+    }
+  }
+  return [header, ...rows].join("\n");
+}
+
 function fmtPeriod(period: string) {
   const [y, m] = period.split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString("en-AU", { month: "long", year: "numeric" });
@@ -493,18 +528,41 @@ export default function AdminInvoicesScreen() {
             </View>
           )}
 
-          {/* AI Ask button */}
-          <Pressable onPress={() => { askAI(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
-            style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF",
-              borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16,
-              borderWidth: 1, borderColor: "#C7D2FE" }}>
-            <Ionicons name="sparkles" size={18} color="#6366F1" />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: "700", color: "#4338CA" }}>Ask AI about payroll</Text>
-              <Text style={{ fontSize: 11, color: "#6366F1" }}>Analyse costs and get recommendations →</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={15} color="#6366F1" />
-          </Pressable>
+          {/* AI Ask + CSV Export row */}
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+            <Pressable onPress={() => { askAI(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+              style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF",
+                borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
+                borderWidth: 1, borderColor: "#C7D2FE" }}>
+              <Ionicons name="sparkles" size={18} color="#6366F1" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#4338CA" }}>Ask AI</Text>
+                <Text style={{ fontSize: 11, color: "#6366F1" }}>Payroll analysis →</Text>
+              </View>
+            </Pressable>
+            {payrollData && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  const csv = generatePayrollCsv(payrollData, payrollMonth);
+                  if (Platform.OS === "web") {
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                    const url  = URL.createObjectURL(blob);
+                    const a    = document.createElement("a");
+                    a.href     = url;
+                    a.download = `payroll-${payrollMonth}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }
+                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 6,
+                  backgroundColor: "#F0FDF4", borderRadius: 12, paddingHorizontal: 14,
+                  paddingVertical: 12, borderWidth: 1, borderColor: "#BBF7D0" }}>
+                <Ionicons name="download-outline" size={18} color="#059669" />
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#059669" }}>CSV</Text>
+              </Pressable>
+            )}
+          </View>
 
           {/* Operator filter pills */}
           {payrollData && payrollData.operators.length > 1 && (

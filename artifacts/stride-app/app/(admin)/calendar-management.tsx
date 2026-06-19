@@ -292,7 +292,7 @@ export default function CalendarManagementScreen() {
     }
     setAcceptingSugg(prev => new Set(prev).add(idx));
     try {
-      await api.createScheduledCourse({
+      const result = await api.createScheduledCourse({
         disciplineId:   disc.id,
         dayOfWeek:      sugg.dayOfWeek,
         startTime:      sugg.startTime,
@@ -304,6 +304,17 @@ export default function CalendarManagementScreen() {
       });
       setAccepted(prev => new Set(prev).add(idx));
       await load();
+      // Venue conflict warning (non-blocking — course was still created)
+      const venueWarn = (result as unknown as Record<string, unknown>)?.venue_conflict_warning;
+      if (venueWarn) {
+        Alert.alert("⚠️ Venue Conflict Detected", String(venueWarn), [{ text: "Noted" }]);
+      }
+      // Notify waitlisted students for this discipline
+      api.notifyWaitlistNewSlot({
+        discipline_name: sugg.discipline,
+        day_of_week:     sugg.dayOfWeek,
+        start_time:      sugg.startTime,
+      }).catch(() => {});
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed to create course");
     } finally {

@@ -94,16 +94,43 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
   const {
     disciplineId, operatorProfileId, dayOfWeek,
     startTime, endTime, ageMin, ageMax, skillLevel, notes, weekInterval, evenWeekStart,
+    location_label,
   } = req.body as {
     disciplineId: number; operatorProfileId?: number; dayOfWeek: number;
     startTime: string; endTime: string; ageMin?: number; ageMax?: number;
     skillLevel?: string; notes?: string;
-    weekInterval?: number; evenWeekStart?: boolean;
+    weekInterval?: number; evenWeekStart?: boolean; location_label?: string;
   };
 
   if (!disciplineId || dayOfWeek == null || !startTime || !endTime) {
     res.status(400).json({ error: "disciplineId, dayOfWeek, startTime, endTime are required" });
     return;
+  }
+
+  // ── Venue conflict pre-check ───────────────────────────────────────────────
+  let venue_conflict_warning: string | null = null;
+  if (location_label?.trim()) {
+    const { data: existing } = await supabase
+      .from("scheduled_courses")
+      .select("id, start_time, end_time, discipline_id, discipline:disciplines!discipline_id(name)")
+      .eq("organization_id", user.orgId)
+      .eq("day_of_week", dayOfWeek)
+      .eq("location_label", location_label.trim())
+      .not("status", "in", "(cancelled,declined)");
+
+    const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const newStart = toMins(startTime);
+    const newEnd   = toMins(endTime);
+    const conflicts = (existing ?? []).filter(c => {
+      const cs = toMins(String(c.start_time).slice(0, 5));
+      const ce = toMins(String(c.end_time).slice(0, 5));
+      return cs < newEnd && ce > newStart; // overlap
+    });
+    if (conflicts.length > 0) {
+      const clash = conflicts[0];
+      const discName = (clash.discipline as { name?: string } | null)?.name ?? "another course";
+      venue_conflict_warning = `"${location_label}" is already booked by ${discName} at ${String(clash.start_time).slice(0,5)}–${String(clash.end_time).slice(0,5)} on this day.`;
+    }
   }
 
   const { data, error } = await supabase
@@ -123,6 +150,7 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
       week_interval:       weekInterval ?? 1,
       even_week_start:     evenWeekStart ?? true,
       created_by_admin_id: user.id,
+      location_label:      location_label?.trim() ?? null,
     })
     .select()
     .single();
@@ -157,7 +185,7 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
     }
   }
 
-  res.status(201).json(data);
+  res.status(201).json({ ...data, venue_conflict_warning });
 });
 
 // ── POST /scheduled-courses/:id/confirm ──────────────────────────────────────

@@ -23,7 +23,7 @@ import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { useAuth } from "@/context/AuthContext";
 import { useSubstitution } from "@/context/SubstitutionContext";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiOperatorEarnings, type ApiPrivateLessonBooking, type PayrollDeduction } from "@/lib/api";
+import { api, type ApiOperatorEarnings, type ApiEarningsYtd, type ApiPrivateLessonBooking, type PayrollDeduction } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import {
   type PayoutFrequency,
@@ -188,9 +188,10 @@ function buildInvoiceHtml(opts: {
   superCents?: number;
   superRate?: number;
   superIncluded?: boolean;
+  deductionsBreakdown?: Array<{label: string; rate: number; amount_cents: number}>;
 }) {
   const { operatorName, dateRangeLabel, totalHours, totalCents, schoolName, header, filteredLog,
-    superCents = 0, superRate = 0, superIncluded = false } = opts;
+    superCents = 0, superRate = 0, superIncluded = false, deductionsBreakdown } = opts;
 
   const invoiceNum = `INV-${new Date().toISOString().slice(0, 7).replace("-", "")}-${String(Math.floor(Math.random() * 8000) + 1000)}`;
   const dateStr    = new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric" });
@@ -291,26 +292,31 @@ tbody td{padding:9px 12px;border-bottom:1px solid #E5E7EB;vertical-align:middle}
       <td colspan="2">GROSS EARNINGS · ${filteredLog.length} sessions · ${totalHours}h</td>
       <td colspan="3" style="text-align:right">€${totalEur}</td>
     </tr>
-    ${superCents > 0 ? `
+    ${superCents > 0 ? (() => {
+      // Multi-deduction breakdown if available, else single super row
+      const breakdown = (deductionsBreakdown ?? []).length > 0 ? deductionsBreakdown! : [{ label: "Superannuation", rate: superRate, amount_cents: superCents }];
+      const totalDeduct = breakdown.reduce((s, d) => s + d.amount_cents, 0);
+      const deductRows = breakdown.map(d => `
     <tr style="background:#FFFBEB">
-      <td colspan="2" style="padding:10px 12px;color:#92400E;font-size:12px;font-weight:700">
-        Superannuation${superRate > 0 ? ` (${superRate.toFixed(1)}%)` : ""} · ${superIncluded ? "included in rate" : "employer contribution on top"}
+      <td colspan="2" style="padding:9px 12px;color:#92400E;font-size:12px;font-weight:700">
+        ${d.label}${d.rate > 0 ? ` (${d.rate.toFixed(1)}%)` : ""} · ${superIncluded ? "deducted from rate" : "employer contribution on top"}
       </td>
-      <td colspan="3" style="text-align:right;padding:10px 12px;color:#92400E;font-weight:700">
-        ${superIncluded ? "-" : "+"}€${(superCents / 100).toFixed(2)}
+      <td colspan="3" style="text-align:right;padding:9px 12px;color:#92400E;font-weight:700">
+        ${superIncluded ? "-" : "+"}€${(d.amount_cents / 100).toFixed(2)}
       </td>
-    </tr>
+    </tr>`).join("");
+      return `${deductRows}
     <tr style="background:#EFF6FF">
       <td colspan="2" style="padding:12px;color:#1E3A8A;font-size:13px;font-weight:800">
-        ${superIncluded ? "NET DUE TO OPERATOR" : "TOTAL EMPLOYER COST (incl. super)"}
+        ${superIncluded ? "NET DUE TO OPERATOR" : "TOTAL EMPLOYER COST (incl. contributions)"}
       </td>
       <td colspan="3" style="text-align:right;padding:12px;color:#1E3A8A;font-weight:800">
         €${superIncluded
-          ? ((totalCents - superCents) / 100).toFixed(2)
-          : ((totalCents + superCents) / 100).toFixed(2)}
+          ? ((totalCents - totalDeduct) / 100).toFixed(2)
+          : ((totalCents + totalDeduct) / 100).toFixed(2)}
       </td>
-    </tr>
-    ` : ""}
+    </tr>`;
+    })() : ""}
   </tbody>
 </table>
 ${header.notes.trim() ? `<div class="notes-box"><strong>Notes:</strong> ${header.notes}</div>` : ""}
@@ -444,6 +450,7 @@ export default function OperatorInvoicing() {
   // Core payroll state
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[0].key);
   const [earnings, setEarnings]           = useState<ApiOperatorEarnings | null>(null);
+  const [ytd, setYtd]                     = useState<ApiEarningsYtd | null>(null);
   const [loading, setLoading]             = useState(false);
   const [generating, setGenerating]       = useState(false);
   const [submitting, setSubmitting]       = useState(false);
@@ -626,6 +633,10 @@ export default function OperatorInvoicing() {
 
   useEffect(() => { loadEarnings(selectedMonth); }, [selectedMonth, loadEarnings]);
 
+  useEffect(() => {
+    api.getOperatorEarningsYtd(new Date().getFullYear()).then(setYtd).catch(() => {});
+  }, []);
+
   const current  = earnings ?? { ...DEMO, month: selectedMonth };
 
   // ── Daily log + date-range filtering ────────────────────────────────────
@@ -719,22 +730,27 @@ export default function OperatorInvoicing() {
     setGenerateError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const superRateVal = current.super_rate_percent ?? 0;
-      const superInclVal = current.super_included ?? false;
-      const filteredSuper = superRateVal > 0
-        ? Math.round(filteredTotalCents * (superRateVal / 100))
-        : 0;
+      const superInclVal  = current.super_included ?? false;
+      const breakdown     = (current.deductions_breakdown ?? []);
+      const filteredSuper = breakdown.length > 0
+        ? breakdown.reduce((s, d) => s + Math.round(filteredTotalCents * (d.rate / 100)), 0)
+        : Math.round(filteredTotalCents * ((current.super_rate_percent ?? 0) / 100));
+      const scaledBreakdown = breakdown.map(d => ({
+        label: d.label, rate: d.rate,
+        amount_cents: Math.round(filteredTotalCents * (d.rate / 100)),
+      }));
       const html = buildInvoiceHtml({
-        operatorName:   user?.name ?? "Operator",
-        dateRangeLabel: dateRange.label,
-        totalHours:     filteredTotalHours,
-        totalCents:     filteredTotalCents,
+        operatorName:         user?.name ?? "Operator",
+        dateRangeLabel:       dateRange.label,
+        totalHours:           filteredTotalHours,
+        totalCents:           filteredTotalCents,
         schoolName,
-        header:         invoiceHeader,
-        filteredLog:    filteredDailyLog,
-        superCents:     filteredSuper,
-        superRate:      superRateVal,
-        superIncluded:  superInclVal,
+        header:               invoiceHeader,
+        filteredLog:          filteredDailyLog,
+        superCents:           filteredSuper,
+        superRate:            current.super_rate_percent ?? 0,
+        superIncluded:        superInclVal,
+        deductionsBreakdown:  scaledBreakdown,
       });
       if (Platform.OS === "web") {
         // window.print() is blocked inside sandboxed iframes — download an HTML file
@@ -1055,6 +1071,38 @@ export default function OperatorInvoicing() {
             ))}
           </View>
         </ScrollView>
+
+        {/* ── Year-to-Date Stats ── */}
+        {ytd && (
+          <View style={{ backgroundColor: "#EFF6FF", borderRadius: 14, padding: 14, marginBottom: 14,
+            borderWidth: 1, borderColor: "#BFDBFE" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <Ionicons name="trending-up" size={15} color={colors.primary} />
+              <Text style={{ fontSize: 11, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                {ytd.year} Year to Date
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {[
+                { label: "Gross", val: `€${(ytd.total_earnings_cents / 100).toFixed(0)}` },
+                { label: "Deductions", val: `€${(ytd.total_deductions_cents / 100).toFixed(0)}` },
+                { label: ytd.super_included ? "Net" : "Net",
+                  val: `€${(ytd.net_cents / 100).toFixed(0)}` },
+                { label: "Hours", val: `${ytd.total_hours}h` },
+              ].map(t => (
+                <View key={t.label} style={{ flex: 1, alignItems: "center", backgroundColor: "#FFF",
+                  borderRadius: 10, paddingVertical: 8, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                  <Text style={{ fontSize: 9, fontWeight: "700", color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    {t.label}
+                  </Text>
+                  <Text style={{ fontSize: 14, fontWeight: "900", color: colors.primary, marginTop: 2 }}>
+                    {t.val}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* ── Payout frequency chip (read-only display, set by Admin) ── */}
         <View style={[styles.frequencyBadge, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
