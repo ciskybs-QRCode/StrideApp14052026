@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stride — Mappa Chirurgica dell'App</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; color: #1a1a2e; background: #f8f9ff; font-size: 13.5px; line-height: 1.6; }
+  .cover { background: #1E3A8A; color: white; padding: 60px 80px; }
+  .cover h1 { font-size: 34px; font-weight: 700; margin-bottom: 8px; }
+  .cover .sub { font-size: 15px; opacity: 0.8; margin-bottom: 24px; }
+  .cover .meta { font-size: 12px; opacity: 0.6; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 16px; display: flex; gap: 40px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 60px; }
+  h2 { font-size: 20px; font-weight: 700; color: #1E3A8A; margin: 44px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #FBBF24; }
+  h3 { font-size: 14px; font-weight: 700; color: #1E3A8A; margin: 22px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  h4 { font-size: 13px; font-weight: 600; color: #374151; margin: 14px 0 6px; }
+  p { margin-bottom: 10px; color: #374151; }
+  .role-section { margin: 30px 0; }
+  .role-header { display: flex; align-items: center; gap: 12px; background: #1E3A8A; color: white; padding: 16px 20px; border-radius: 10px 10px 0 0; }
+  .role-header .icon { width: 36px; height: 36px; background: #FBBF24; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .role-header h3 { color: white; margin: 0; font-size: 16px; text-transform: none; letter-spacing: 0; }
+  .role-header .role-desc { color: rgba(255,255,255,0.7); font-size: 12px; margin: 2px 0 0; }
+  .role-body { background: white; border-radius: 0 0 10px 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .screen-group { margin: 16px 0; }
+  .screen-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #f3f4f6; }
+  .screen { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f9fafb; }
+  .screen:last-child { border-bottom: none; }
+  .screen-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #1E3A8A; min-width: 180px; font-weight: 600; }
+  .screen-desc { color: #4b5563; font-size: 12.5px; flex: 1; }
+  .screen-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .tag-auto { background: #d1fae5; color: #065f46; }
+  .tag-push { background: #ede9fe; color: #5b21b6; }
+  .tag-pay { background: #fef3c7; color: #92400e; }
+  .tag-legal { background: #fee2e2; color: #991b1b; }
+  .tag-ai { background: #dbeafe; color: #1e40af; }
+  .tag-ble { background: #f3f4f6; color: #374151; }
+  .can-cannot { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  .can-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; }
+  .cannot-box { background: #fff7f7; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; }
+  .can-box h4 { color: #15803d; margin-top: 0; }
+  .cannot-box h4 { color: #b91c1c; margin-top: 0; }
+  .can-box ul, .cannot-box ul { margin-left: 16px; }
+  .can-box li, .cannot-box li { font-size: 12.5px; margin-bottom: 4px; }
+  .auto-section { background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 16px 0; }
+  .auto-section h3 { color: #0369a1; margin-top: 0; }
+  .auto-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+  .auto-trigger { font-size: 11px; background: #0ea5e9; color: white; padding: 2px 8px; border-radius: 10px; white-space: nowrap; margin-top: 2px; }
+  .auto-desc { font-size: 12.5px; color: #374151; }
+  .tree { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #0f172a; color: #e2e8f0; padding: 24px; border-radius: 10px; margin: 16px 0; line-height: 1.8; overflow-x: auto; }
+  .tree .folder { color: #FBBF24; }
+  .tree .screen-t { color: #93c5fd; }
+  .tree .comment { color: #64748b; }
+  .tree .auto-t { color: #86efac; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 24px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12.5px; }
+  th { background: #1E3A8A; color: white; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 12px; }
+  td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #f9fafb; }
+  .check { color: #16a34a; font-weight: 700; }
+  .cross { color: #dc2626; font-weight: 700; }
+  .partial { color: #d97706; font-weight: 700; }
+  @media print {
+    body { background: white; font-size: 11px; }
+    .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    th, .role-header, .tree { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .role-section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+    <div style="width:40px;height:40px;background:#FBBF24;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#1E3A8A;font-size:18px;">S</div>
+    <span style="font-size:22px;font-weight:700;">Stride</span>
+  </div>
+  <h1>Mappa Chirurgica dell'App</h1>
+  <p class="sub">Struttura completa per ruolo — schermate, permessi, automazioni, link e logiche nascoste</p>
+  <div class="meta">
+    <span>Versione: 1.0</span>
+    <span>Data: Giugno 2026</span>
+    <span>Documento interno — Non distribuire</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border:1px solid #86efac;"></div> AUTOMATICO</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border:1px solid #c4b5fd;"></div> NOTIFICA PUSH</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border:1px solid #fcd34d;"></div> PAGAMENTO</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border:1px solid #fca5a5;"></div> LEGALE</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#dbeafe;border:1px solid #93c5fd;"></div> AI</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6;border:1px solid #d1d5db;"></div> BLE/Hardware</div>
+  </div>
+
+  <!-- ALBERO GENERALE -->
+  <h2>Albero di Navigazione Generale</h2>
+  <div class="tree">
+    <span class="comment">// Stride — Struttura di routing (expo-router file-based)</span><br><br>
+    <span class="folder">app/</span><br>
+    &nbsp;&nbsp;├── <span class="screen-t">index.tsx</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Router root → detects role → redirect</span><br>
+    &nbsp;&nbsp;├── <span class="screen-t">login.tsx</span><br>
+    &nbsp;&nbsp;├── <span class="screen-t">forgot-password.tsx</span><br>
+    &nbsp;&nbsp;├── <span class="screen-t">reset-password.tsx</span><br>
+    &nbsp;&nbsp;├── <span class="screen-t">pioneer.tsx</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Wizard primo-setup piattaforma</span><br>
+    &nbsp;&nbsp;├── <span class="screen-t">join-org.tsx</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Invito associazione</span><br>
+    &nbsp;&nbsp;├── <span class="folder">(parent)/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Ruolo: genitore/membro</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">_layout.tsx</span> &nbsp;&nbsp;&nbsp;<span class="comment">// ← Legal Gate obbligatorio qui</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">home.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">children.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">courses.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">cart.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">wallet.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">documents.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">doc-consent.tsx</span> &nbsp;<span class="comment">// Consenso media</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">doc-sign.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">doc-view.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">alerts.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">pickup-audit.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">book-lesson.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">private-lesson-book.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">checkout.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">guardian-circle.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">marketplace.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;└── <span class="screen-t">my-associations.tsx</span><br>
+    &nbsp;&nbsp;│<br>
+    &nbsp;&nbsp;├── <span class="folder">(operator)/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Ruolo: istruttore/collaboratore</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">_layout.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">dashboard.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">calendar.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">students.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">student-detail.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">invoicing.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">contract.tsx</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Firma contratto</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">resign.tsx</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Dimissioni formali</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">availability-prefs.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">workspace.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">emergency-pulse.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">settings.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;└── <span class="screen-t">ticket-scanner.tsx</span><br>
+    &nbsp;&nbsp;│<br>
+    &nbsp;&nbsp;├── <span class="folder">(admin)/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Ruolo: admin associazione</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="folder">Hub Screens (5 hub visibili in tab bar)</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">stats.tsx</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Home admin</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">operations-hub.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">members-hub.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="screen-t">finance-hub.tsx</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;└── <span class="screen-t">settings/ (hub)</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="folder">Operations (href:null — navigazione da hub)</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── activity · lessons · disciplines · calendar-management<br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="auto-t">smart-roster</span> &nbsp;<span class="comment">// AI roster generation</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="auto-t">copilot</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// AI natural language query</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── beacons · analytics · events<br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="folder">Members</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── users · invites · blacklist · communications<br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;└── pdf-badges · alerts<br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;├── <span class="folder">Finance</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;├── invoices · reimbursements · billing<br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;│ &nbsp;&nbsp;└── stripe-connect · fee-settings · regional-pricing · promo-codes<br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;└── <span class="folder">Settings</span><br>
+    &nbsp;&nbsp;│ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── app-configuration · legal-privacy · app-customization · governance<br>
+    &nbsp;&nbsp;│<br>
+    &nbsp;&nbsp;└── <span class="folder">(super_admin)/</span> &nbsp;&nbsp;&nbsp;<span class="comment">// Ruolo: super admin piattaforma</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="screen-t">tenants.tsx</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="screen-t">associations.tsx</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="screen-t">user-admin.tsx</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="screen-t">sa-payments.tsx</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="screen-t">sa-settings.tsx</span>
+  </div>
+
+  <!-- MEMBRO/GENITORE -->
+  <div class="role-section">
+    <div class="role-header">
+      <div class="icon">👤</div>
+      <div>
+        <h3>Membro / Genitore</h3>
+        <div class="role-desc">Gestisce i figli, le iscrizioni ai corsi, i pagamenti e la sicurezza del ritiro</div>
+      </div>
+    </div>
+    <div class="role-body">
+      <div class="can-cannot">
+        <div class="can-box">
+          <h4>✅ Può fare</h4>
+          <ul>
+            <li>Iscrivere i figli ai corsi</li>
+            <li>Pagare le rette con carta/Apple Pay</li>
+            <li>Gestire il Guardian Circle (chi può ritirare i figli)</li>
+            <li>Emettere QR token monouso per il ritiro</li>
+            <li>Vedere lo storico ritiri con audit trail</li>
+            <li>Firmare documenti legali / liberatorie</li>
+            <li>Segnalare assenza figlio</li>
+            <li>Attivare SOS struttura</li>
+            <li>Ricevere allarmi emergenza (bypass silent mode)</li>
+            <li>Gestire la privacy delle foto del figlio</li>
+            <li>Prenotare lezioni private</li>
+            <li>Cambiare associazione (multi-org)</li>
+          </ul>
+        </div>
+        <div class="cannot-box">
+          <h4>❌ Non può fare</h4>
+          <ul>
+            <li>Accedere alla lista altri genitori/soci</li>
+            <li>Modificare i dati del corso</li>
+            <li>Approvare pagamenti o fatture</li>
+            <li>Accedere alle info mediche di altri studenti</li>
+            <li>Scannerizzare QR di altri</li>
+            <li>Modificare le impostazioni dell'associazione</li>
+            <li>Vedere dati di fatturazione operatori</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="screen-group">
+        <div class="screen-group-title">Tab Bar (visibile)</div>
+        <div class="screen"><span class="screen-name">home.tsx</span><div><div class="screen-desc">QR Pass personale, Prossima attività, SOS, Avvisi sicurezza, Link social</div><div class="screen-tags"><span class="tag tag-push">PUSH</span><span class="tag tag-legal">SOS</span></div></div></div>
+        <div class="screen"><span class="screen-name">children.tsx</span><div><div class="screen-desc">Lista dipendenti iscritti, aggiunta figli, promozione ad autonomo</div></div></div>
+        <div class="screen"><span class="screen-name">courses.tsx</span><div><div class="screen-desc">Catalogo corsi, iscrizione/disiscrizione, ritiro iscrizione</div><div class="screen-tags"><span class="tag tag-pay">PAGAMENTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">cart.tsx</span><div><div class="screen-desc">Carrello con gestione multi-associazione, link a checkout</div><div class="screen-tags"><span class="tag tag-pay">PAGAMENTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">documents.tsx</span><div><div class="screen-desc">Documenti da firmare, firmati, consensi media, privacy</div><div class="screen-tags"><span class="tag tag-legal">LEGALE</span></div></div></div>
+      </div>
+
+      <div class="screen-group">
+        <div class="screen-group-title">Schermate nascoste (navigazione da tab)</div>
+        <div class="screen"><span class="screen-name">guardian-circle.tsx</span><div><div class="screen-desc">Gestione persone autorizzate al ritiro — token monouso, finestre temporali, giorni specifici</div><div class="screen-tags"><span class="tag tag-legal">SICUREZZA</span></div></div></div>
+        <div class="screen"><span class="screen-name">pickup-audit.tsx</span><div><div class="screen-desc">Log immutabile di tutti i ritiri con firma + GPS + hash SHA-256</div><div class="screen-tags"><span class="tag tag-legal">AUDIT</span></div></div></div>
+        <div class="screen"><span class="screen-name">doc-consent.tsx</span><div><div class="screen-desc">Firma consenso media con 3 livelli — sblocca solo dopo scroll completo</div><div class="screen-tags"><span class="tag tag-legal">LEGALE</span></div></div></div>
+        <div class="screen"><span class="screen-name">checkout.tsx</span><div><div class="screen-desc">Stripe checkout — rileva automaticamente se multi-associazione → batch checkout</div><div class="screen-tags"><span class="tag tag-pay">STRIPE</span><span class="tag tag-auto">AUTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">alerts.tsx</span><div><div class="screen-desc">Centro risposta allarmi — conferma ricezione emergenza</div><div class="screen-tags"><span class="tag tag-push">PUSH</span></div></div></div>
+        <div class="screen"><span class="screen-name">marketplace.tsx</span><div><div class="screen-desc">Acquisto prodotti/servizi dell'associazione — (in shadow mode, attivabile)</div><div class="screen-tags"><span class="tag tag-pay">PAGAMENTO</span></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPERATORE -->
+  <div class="role-section">
+    <div class="role-header">
+      <div class="icon">🎓</div>
+      <div>
+        <h3>Operatore / Istruttore</h3>
+        <div class="role-desc">Gestisce le presenze, le proprie classi, la fatturazione e il rapporto contrattuale</div>
+      </div>
+    </div>
+    <div class="role-body">
+      <div class="can-cannot">
+        <div class="can-box">
+          <h4>✅ Può fare</h4>
+          <ul>
+            <li>Scannerizzare QR di check-in studenti</li>
+            <li>Avviare sessione aula e fare appello</li>
+            <li>Gestire le presenze della propria classe</li>
+            <li>Vedere le info mediche/emergenza degli studenti</li>
+            <li>Attivare SOS con protocolli DRSABCD</li>
+            <li>Gestire l'Emergency Pulse per allarmi struttura</li>
+            <li>Inviare fattura mensile automatizzata</li>
+            <li>Firmare il contratto di collaborazione</li>
+            <li>Inviare dimissioni formali con preavviso</li>
+            <li>Dichiarare disponibilità settimanale</li>
+            <li>Scansionare ticket eventi</li>
+            <li>Comunicare assenza (→ cascata automatica sostituto)</li>
+          </ul>
+        </div>
+        <div class="cannot-box">
+          <h4>❌ Non può fare</h4>
+          <ul>
+            <li>Vedere le rette/pagamenti dei genitori</li>
+            <li>Modificare i dati dei corsi</li>
+            <li>Approvare le proprie fatture</li>
+            <li>Accedere alle schede di altri operatori</li>
+            <li>Modificare le impostazioni dell'associazione</li>
+            <li>Vedere i dati di altri istruttori</li>
+            <li>Gestire beacons o hardware</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="screen-group">
+        <div class="screen-group-title">Tab Bar</div>
+        <div class="screen"><span class="screen-name">dashboard.tsx</span><div><div class="screen-desc">Overview giornaliero, scanner QR, SOS, inbox notifiche, banner Rescue Cascade attivo</div><div class="screen-tags"><span class="tag tag-push">PUSH</span><span class="tag tag-auto">AUTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">calendar.tsx</span><div><div class="screen-desc">Calendario lezioni personali, dettaglio sessione</div></div></div>
+        <div class="screen"><span class="screen-name">students.tsx</span><div><div class="screen-desc">Lista studenti dei propri corsi con stato presenza</div></div></div>
+        <div class="screen"><span class="screen-name">settings.tsx</span><div><div class="screen-desc">Profilo, My Contract, Disponibilità, End of Contract, Notifiche</div></div></div>
+      </div>
+
+      <div class="screen-group">
+        <div class="screen-group-title">Schermate nascoste</div>
+        <div class="screen"><span class="screen-name">student-detail.tsx</span><div><div class="screen-desc">Scheda completa studente: info mediche, contatti emergenza, allergie</div><div class="screen-tags"><span class="tag tag-legal">PRIVACY</span></div></div></div>
+        <div class="screen"><span class="screen-name">invoicing.tsx</span><div><div class="screen-desc">Riepilogo ore lavorate → genera fattura → invia per approvazione admin</div><div class="screen-tags"><span class="tag tag-pay">PAGAMENTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">contract.tsx</span><div><div class="screen-desc">Visualizza contratto, firma digitale, export PDF, IP + device registrati</div><div class="screen-tags"><span class="tag tag-legal">LEGALE</span></div></div></div>
+        <div class="screen"><span class="screen-name">resign.tsx</span><div><div class="screen-desc">Dimissioni formali: 5 periodi di preavviso, calcolo penale, conferma, notifica admin + AI cascata</div><div class="screen-tags"><span class="tag tag-legal">LEGALE</span><span class="tag tag-auto">AUTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">availability-prefs.tsx</span><div><div class="screen-desc">Disponibilità settimanale per roster annuale (Lun-Dom, AM/PM/Eve)</div></div></div>
+        <div class="screen"><span class="screen-name">emergency-pulse.tsx</span><div><div class="screen-desc">Pannello gestione allarme attivo — conferme genitori in tempo reale</div><div class="screen-tags"><span class="tag tag-push">PUSH</span><span class="tag tag-auto">AUTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">workspace.tsx</span><div><div class="screen-desc">Strumenti sessione: appello, note classe, timer sessione</div></div></div>
+        <div class="screen"><span class="screen-name">ticket-scanner.tsx</span><div><div class="screen-desc">Scanner QR per eventi — verifica validità ticket in tempo reale</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="role-section">
+    <div class="role-header">
+      <div class="icon">⚙️</div>
+      <div>
+        <h3>Admin Associazione</h3>
+        <div class="role-desc">Gestione completa: operazioni, soci, finanza e configurazione</div>
+      </div>
+    </div>
+    <div class="role-body">
+      <div class="can-cannot">
+        <div class="can-box">
+          <h4>✅ Può fare</h4>
+          <ul>
+            <li>Gestire tutti i corsi, discipline, orari</li>
+            <li>Approvare e pagare fatture operatori via Stripe</li>
+            <li>Gestire tutti i soci e i loro ruoli</li>
+            <li>Bannare persone dalla struttura (blacklist)</li>
+            <li>Inviare comunicazioni broadcast a ruoli specifici</li>
+            <li>Configurare prezzi, sconti, codici promo</li>
+            <li>Generare badge PDF</li>
+            <li>Gestire il roster annuale con AI</li>
+            <li>Accedere ai dati di analytics completi</li>
+            <li>Configurare beacons BLE per check-in automatico</li>
+            <li>Creare e gestire eventi con biglietteria</li>
+            <li>Configurare il white-label dell'app</li>
+            <li>Gestire i codici invito per nuovi soci</li>
+            <li>Configurare prezzi regionali</li>
+          </ul>
+        </div>
+        <div class="cannot-box">
+          <h4>❌ Non può fare</h4>
+          <ul>
+            <li>Accedere ai dati di altre associazioni</li>
+            <li>Modificare i piani di abbonamento Stride</li>
+            <li>Accedere al pannello super admin</li>
+            <li>Modificare le feature flag globali della piattaforma</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="screen-group">
+        <div class="screen-group-title">Operations Hub → schermate</div>
+        <div class="screen"><span class="screen-name">activity.tsx</span><div><div class="screen-desc">Pianificatore attività — crea/modifica lezioni e eventi</div></div></div>
+        <div class="screen"><span class="screen-name">smart-roster.tsx</span><div><div class="screen-desc">Generazione roster annuale con AI — abbina operatori a slot orari per disponibilità</div><div class="screen-tags"><span class="tag tag-ai">AI</span><span class="tag tag-auto">AUTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">copilot.tsx</span><div><div class="screen-desc">Query dati in linguaggio naturale — "quanti studenti ci sono nel corso di hip hop?"</div><div class="screen-tags"><span class="tag tag-ai">AI</span></div></div></div>
+        <div class="screen"><span class="screen-name">beacons.tsx</span><div><div class="screen-desc">Gestione hardware BLE — zone (ingresso/aula/uscita), assegnazione ai bambini</div><div class="screen-tags"><span class="tag tag-ble">BLE</span><span class="tag tag-auto">AUTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">analytics.tsx</span><div><div class="screen-desc">KPI avanzati: occupancy, revenue trend, retention rate, no-show rate</div></div></div>
+        <div class="screen"><span class="screen-name">events.tsx</span><div><div class="screen-desc">Creazione eventi con date, tipi biglietto, biglietti gratuiti per soci</div><div class="screen-tags"><span class="tag tag-pay">PAGAMENTO</span></div></div></div>
+      </div>
+
+      <div class="screen-group">
+        <div class="screen-group-title">Members Hub → schermate</div>
+        <div class="screen"><span class="screen-name">users.tsx</span><div><div class="screen-desc">Directory soci — cambio ruolo, configurazione contratto, AI contract gen, promozione autonomo</div><div class="screen-tags"><span class="tag tag-ai">AI</span><span class="tag tag-legal">LEGALE</span></div></div></div>
+        <div class="screen"><span class="screen-name">alerts.tsx</span><div><div class="screen-desc">Centro sicurezza — allarmi attivi, storico incidenti</div><div class="screen-tags"><span class="tag tag-push">PUSH</span></div></div></div>
+        <div class="screen"><span class="screen-name">blacklist.tsx</span><div><div class="screen-desc">Gestione accessi bloccati — aggiunta/rimozione persone</div></div></div>
+        <div class="screen"><span class="screen-name">communications.tsx</span><div><div class="screen-desc">Broadcast push/email per corso o ruolo</div><div class="screen-tags"><span class="tag tag-push">PUSH</span></div></div></div>
+        <div class="screen"><span class="screen-name">pdf-badges.tsx</span><div><div class="screen-desc">Generazione badge con QR, foto, nome per stampa</div></div></div>
+        <div class="screen"><span class="screen-name">invites.tsx</span><div><div class="screen-desc">Codici invito monouso o multi-uso per onboarding nuovi soci</div></div></div>
+      </div>
+
+      <div class="screen-group">
+        <div class="screen-group-title">Finance Hub → schermate</div>
+        <div class="screen"><span class="screen-name">invoices.tsx</span><div><div class="screen-desc">Lista fatture operatori in attesa — approva → Stripe payout automatico</div><div class="screen-tags"><span class="tag tag-pay">STRIPE</span><span class="tag tag-auto">AUTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">reimbursements.tsx</span><div><div class="screen-desc">Richieste rimborso spese operatori — approva/rifiuta</div><div class="screen-tags"><span class="tag tag-pay">PAGAMENTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">billing.tsx</span><div><div class="screen-desc">Abbonamento Stride — piano attivo, fatture Stride</div></div></div>
+        <div class="screen"><span class="screen-name">regional-pricing.tsx</span><div><div class="screen-desc">Prezzi per area geografica (es. tariffe diverse Nord/Sud Italia)</div></div></div>
+        <div class="screen"><span class="screen-name">fee-settings.tsx</span><div><div class="screen-desc">Configura prezzi corsi, iscrizioni, depositi</div></div></div>
+        <div class="screen"><span class="screen-name">promo-codes.tsx</span><div><div class="screen-desc">Gestione codici sconto per corsi ed eventi</div></div></div>
+        <div class="screen"><span class="screen-name">stripe-connect.tsx</span><div><div class="screen-desc">Configurazione Stripe per pagamenti diretti ai soci</div><div class="screen-tags"><span class="tag tag-pay">STRIPE</span></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPER ADMIN -->
+  <div class="role-section">
+    <div class="role-header">
+      <div class="icon">🔑</div>
+      <div>
+        <h3>Super Admin (Stride)</h3>
+        <div class="role-desc">Controllo globale della piattaforma multi-tenant</div>
+      </div>
+    </div>
+    <div class="role-body">
+      <div class="screen-group">
+        <div class="screen-group-title">Schermate esclusive</div>
+        <div class="screen"><span class="screen-name">tenants.tsx</span><div><div class="screen-desc">Lista di tutte le associazioni attive — dati, stato, abbonamento</div></div></div>
+        <div class="screen"><span class="screen-name">associations.tsx</span><div><div class="screen-desc">Controlli platform-wide — attiva/disattiva associazione, trial, blocco</div></div></div>
+        <div class="screen"><span class="screen-name">user-admin.tsx</span><div><div class="screen-desc">Gestione utenti globale — ricerca cross-tenant, reset password, ruoli</div></div></div>
+        <div class="screen"><span class="screen-name">sa-payments.tsx</span><div><div class="screen-desc">Revenue share tracking — commissioni Stripe per associazione</div><div class="screen-tags"><span class="tag tag-pay">PAGAMENTO</span></div></div></div>
+        <div class="screen"><span class="screen-name">sa-settings.tsx</span><div><div class="screen-desc">Feature flag globali — attiva/disattiva moduli per singola associazione o globalmente</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTOMAZIONI -->
+  <h2>Automazioni — Cosa fa l'app senza input umano</h2>
+  <div class="auto-section">
+    <div class="auto-item">
+      <span class="auto-trigger">TRIGGER: SOS premuto</span>
+      <span class="auto-desc">→ Notifica push con bypass silent mode a <strong>tutti i genitori</strong> → Watchdog 60s → Re-notifica chi non ha confermato → Log incidente</span>
+    </div>
+    <div class="auto-item">
+      <span class="auto-trigger">TRIGGER: Operatore assente</span>
+      <span class="auto-desc">→ Cascata sostituto: contatta operatori disponibili in ordine di affinità → Prima risposta "sì" vince → Admin notificato → Genitori avvisati se nessun sostituto trovato entro 5 minuti</span>
+    </div>
+    <div class="auto-item">
+      <span class="auto-trigger">TRIGGER: Operatore si dimette</span>
+      <span class="auto-desc">→ AI Roster Orchestrator attivato per trovare sostituto permanente → Admin notificato → Accesso app disattivato alla data di fine preavviso</span>
+    </div>
+    <div class="auto-item">
+      <span class="auto-trigger">TRIGGER: Bambino non ritirato (orario)</span>
+      <span class="auto-desc">→ Notifica push al genitore → Escalation all'operatore → Log no-show</span>
+    </div>
+    <div class="auto-item">
+      <span class="auto-trigger">TRIGGER: Beacon BLE rilevato</span>
+      <span class="auto-desc">→ Check-in automatico del bambino senza scan manuale → Transizione zona (ingresso → aula → uscita) tracciata → Genitore notificato di entrata/uscita sicura</span>
+    </div>
+    <div class="auto-item">
+      <span class="auto-trigger">TRIGGER: Fattura operatore inviata</span>
+      <span class="auto-desc">→ Admin notificato per approvazione → Approvazione → Stripe payout automatico al conto operatore</span>
+    </div>
+    <div class="auto-item">
+      <span class="auto-trigger">TRIGGER: Documento non firmato (promemoria)</span>
+      <span class="auto-desc">→ Promemoria push periodico finché tutti i documenti non sono firmati → Legal gate blocca l'accesso</span>
+    </div>
+    <div class="auto-item">
+      <span class="auto-trigger">TRIGGER: Smart Roster (admin attiva)</span>
+      <span class="auto-desc">→ AI raccoglie disponibilità operatori → Genera piano orario ottimizzato per l'anno → Admin approva e pubblica</span>
+    </div>
+  </div>
+
+  <!-- MATRICE PERMESSI -->
+  <h2>Matrice Permessi per Funzione</h2>
+  <table>
+    <tr><th>Funzione</th><th>Membro</th><th>Operatore</th><th>Admin</th><th>Super Admin</th></tr>
+    <tr><td>Check-in QR studenti</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Ritiro minori (Guardian QR)</td><td class="check">✓</td><td class="partial">scan</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Attivare SOS</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Gestire Emergency Pulse</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Firmare documenti legali</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Inviare fattura</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+    <tr><td>Approvare fattura + payout</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Iscrivere figlio a corso</td><td class="check">✓</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Gestire corsi/orari</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>AI Copilot / Smart Roster</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Broadcast comunicazioni</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td></tr>
+    <tr><td>Configurare beacons BLE</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td></tr>
+    <tr><td>Gestire tenant/associazioni</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+    <tr><td>Feature flag piattaforma</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+    <tr><td>Vedere dati altre associazioni</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+  </table>
+
+</div>
+</body>
+</html>

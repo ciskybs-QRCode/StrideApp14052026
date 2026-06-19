@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "mMw8ugwwzrQphWgIaqbd8"
@@ -12,3 +11,9 @@ id = "Lt5o7KZnMtzmLL7sD-z7X"
 uri = "file://artifacts/stride-app/assets/images/splash.png"
 type = "image"
 title = "stride splash background"
+
+[[outputs]]
+id = "TJn4qgherjwUXrohlCYhP"
+uri = "file://docs/stride-documenti.zip"
+type = "unspecified"
+title = "Stride — 3 Documenti (Legal, Mappa App, Feature Tiers)"
