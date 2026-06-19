@@ -3159,6 +3159,7 @@ export interface PlanFeatures {
   features: {
     qr_checkin: boolean; attendance: boolean; documents: boolean; messaging: boolean;
     member_portal: boolean; smart_pickup: boolean; emergency_sos: boolean;
+    no_show_alert: boolean;
     payroll: boolean; courses: boolean; marketplace: boolean; events: boolean;
     ai_suite: boolean; ble_proximity: boolean; white_label: boolean;
     global_pricing: boolean; api_access: boolean;

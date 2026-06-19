@@ -1267,31 +1267,31 @@ router.get("/org/plan-features", requireAuth, async (req, res) => {
 const PLAN_FEATURES: Record<string, Record<string, boolean>> = {
   core: {
     qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-    smart_pickup: true, emergency_sos: true,
+    smart_pickup: true, emergency_sos: true, no_show_alert: true,
     payroll: false, courses: false, marketplace: false, events: false,
     ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false,
   },
   plus: {
     qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-    smart_pickup: true, emergency_sos: true, payroll: true, courses: true,
+    smart_pickup: true, emergency_sos: true, no_show_alert: true, payroll: true, courses: true,
     marketplace: true, events: true,
     ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false,
   },
   premium: {
     qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-    smart_pickup: true, emergency_sos: true, payroll: true, courses: true,
+    smart_pickup: true, emergency_sos: true, no_show_alert: true, payroll: true, courses: true,
     marketplace: true, events: true, ai_suite: true, ble_proximity: true,
     white_label: true, global_pricing: true, api_access: true,
   },
   // legacy aliases so old stored values still resolve
   studio:  { qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-             smart_pickup: true, emergency_sos: true, payroll: false, courses: false, marketplace: false,
+             smart_pickup: true, emergency_sos: true, no_show_alert: true, payroll: false, courses: false, marketplace: false,
              events: false, ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false },
   company: { qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-             smart_pickup: true, emergency_sos: true, payroll: true, courses: true, marketplace: true,
+             smart_pickup: true, emergency_sos: true, no_show_alert: true, payroll: true, courses: true, marketplace: true,
              events: true, ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false },
   academy: { qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-             smart_pickup: true, emergency_sos: true, payroll: true, courses: true, marketplace: true,
+             smart_pickup: true, emergency_sos: true, no_show_alert: true, payroll: true, courses: true, marketplace: true,
              events: true, ai_suite: true, ble_proximity: true, white_label: true, global_pricing: true, api_access: true },
 };
 

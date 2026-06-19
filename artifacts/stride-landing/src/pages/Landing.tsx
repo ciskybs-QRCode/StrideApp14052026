@@ -244,9 +244,50 @@ const STATS = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+// ── Currency detection + live rates ──────────────────────────────────────────
+
+const USD_PRICES = { core: 49, plus: 99, premium: 199 };
+const SYM: Record<string, string> = {
+  USD: "$", EUR: "€", GBP: "£", AUD: "A$", CAD: "CA$", CHF: "CHF ", JPY: "¥",
+};
+
+function fmtPrice(usd: number, currency: string, rates: Record<string, number>): string {
+  const sym = SYM[currency] ?? (currency + " ");
+  if (currency === "USD" || !rates[currency]) return `$${usd}`;
+  const local = Math.round(usd * rates[currency]);
+  return `${sym}${local.toLocaleString()}`;
+}
+
 export default function Landing() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [openFaq,  setOpenFaq]  = useState<number | null>(null);
+  const [menuOpen,  setMenuOpen]  = useState(false);
+  const [openFaq,   setOpenFaq]   = useState<number | null>(null);
+  const [currency,  setCurrency]  = useState("USD");
+  const [rates,     setRates]     = useState<Record<string, number>>({});
+
+  // 1. IP geolocation → currency (no permission required)
+  useEffect(() => {
+    fetch("https://ipapi.co/json/")
+      .then(r => r.json())
+      .then((d: { currency?: string }) => { if (d.currency) setCurrency(d.currency); })
+      .catch(() => {
+        // Fallback: timezone-based detection
+        try {
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+          if (tz.startsWith("Europe/London"))  { setCurrency("GBP"); return; }
+          if (tz.startsWith("Europe/"))        { setCurrency("EUR"); return; }
+          if (tz.startsWith("Australia/"))     { setCurrency("AUD"); return; }
+          if (tz.startsWith("America/"))       { setCurrency("USD"); return; }
+        } catch { /* keep USD */ }
+      });
+  }, []);
+
+  // 2. Fetch live exchange rates (USD base)
+  useEffect(() => {
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then(r => r.json())
+      .then((d: { rates?: Record<string, number> }) => { if (d.rates) setRates(d.rates); })
+      .catch(() => { /* keep empty — will show USD */ });
+  }, []);
 
   const navLinks = [
     ["#for-schools",     "For Schools"],
@@ -918,14 +959,14 @@ export default function Landing() {
               <div className="bg-slate-50 px-6 py-6">
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">🥉 Core</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-slate-900">€49</span>
+                  <span className="text-4xl font-black text-slate-900">{fmtPrice(USD_PRICES.core, currency, rates)}</span>
                   <span className="text-sm pb-1.5 text-slate-400">/mo</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">Up to 35 members · 3 operators</p>
               </div>
               <div className="px-6 py-5 flex-1 flex flex-col">
                 <ul className="space-y-2 mb-5 text-sm text-slate-600 flex-1">
-                  {["QR check-in / check-out", "Smart Pick-Up + QR Guardian", "Emergency SOS broadcast", "Attendance logs & reports", "Digital document signing"].map(f => (
+                  {["QR check-in / check-out", "Absent-Without-Notice Safety Alert", "Smart Pick-Up + QR Guardian", "Emergency SOS broadcast", "Attendance logs & reports", "Digital document signing"].map(f => (
                     <li key={f} className="flex items-center gap-2"><IcoCheck />{f}</li>
                   ))}
                 </ul>
@@ -944,7 +985,7 @@ export default function Landing() {
               <div className="bg-[#1E3A8A] px-6 py-6">
                 <p className="text-xs font-black uppercase tracking-widest text-blue-300 mb-1">🥈 Plus</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-white">€99</span>
+                  <span className="text-4xl font-black text-white">{fmtPrice(USD_PRICES.plus, currency, rates)}</span>
                   <span className="text-sm pb-1.5 text-blue-200">/mo</span>
                 </div>
                 <p className="text-xs text-blue-200 mt-2">Up to 100 members · 10 operators</p>
@@ -967,7 +1008,7 @@ export default function Landing() {
               <div className="bg-slate-900 px-6 py-6">
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">🥇 Premium</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-white">€199</span>
+                  <span className="text-4xl font-black text-white">{fmtPrice(USD_PRICES.premium, currency, rates)}</span>
                   <span className="text-sm pb-1.5 text-slate-400">/mo</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">Unlimited members · Unlimited operators</p>
@@ -989,9 +1030,11 @@ export default function Landing() {
           {/* Currency note + full comparison link */}
           <div className="text-center space-y-3">
             <p className="text-xs text-slate-400">
-              All prices in USD · Live currency estimates available on the{" "}
+              {currency !== "USD"
+                ? <>Prices shown in <strong className="text-slate-600">{currency}</strong> — estimated from live rates. All charges billed in USD. </>
+                : "Prices in USD · "}
+              Annual plans save 2 months (≈17% off) · Live local currency on the{" "}
               <a href="/pricing" className="text-[#1E3A8A] font-semibold hover:underline">full pricing page</a>.
-              · Annual plans save 2 months (≈17% off).
             </p>
             <a href="/pricing"
               className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 font-bold text-sm px-6 py-3 rounded-xl hover:bg-slate-200 transition-colors no-underline">

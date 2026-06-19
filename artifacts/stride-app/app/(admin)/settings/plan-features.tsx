@@ -25,9 +25,10 @@ const FEATURE_GROUPS: Array<{
   {
     group: "Security & Access",
     rows: [
-      { label: "QR Check-in / Check-out",          key: "qr_checkin" },
+      { label: "QR Check-in / Check-out",           key: "qr_checkin" },
       { label: "Smart Pick-Up + QR Guardian",       key: "smart_pickup" },
       { label: "Emergency SOS Broadcast",           key: "emergency_sos" },
+      { label: "Absent-Without-Notice Alert",        key: "no_show_alert" },
       { label: "BLE Proximity Auto Check-in",       key: "ble_proximity" },
     ],
   },
@@ -63,19 +64,19 @@ const FEATURE_GROUPS: Array<{
 // Features per tier
 const TIER_FEATURES: Record<string, Record<string, boolean>> = {
   core: {
-    qr_checkin: true, smart_pickup: true, emergency_sos: true, ble_proximity: false,
+    qr_checkin: true, smart_pickup: true, emergency_sos: true, no_show_alert: true, ble_proximity: false,
     attendance: true, member_portal: true, documents: true, messaging: true,
     payroll: false, courses: false, events: false, marketplace: false,
     ai_suite: false, global_pricing: false, white_label: false, api_access: false,
   },
   plus: {
-    qr_checkin: true, smart_pickup: true, emergency_sos: true, ble_proximity: false,
+    qr_checkin: true, smart_pickup: true, emergency_sos: true, no_show_alert: true, ble_proximity: false,
     attendance: true, member_portal: true, documents: true, messaging: true,
     payroll: true, courses: true, events: true, marketplace: true,
     ai_suite: false, global_pricing: false, white_label: false, api_access: false,
   },
   premium: {
-    qr_checkin: true, smart_pickup: true, emergency_sos: true, ble_proximity: true,
+    qr_checkin: true, smart_pickup: true, emergency_sos: true, no_show_alert: true, ble_proximity: true,
     attendance: true, member_portal: true, documents: true, messaging: true,
     payroll: true, courses: true, events: true, marketplace: true,
     ai_suite: true, global_pricing: true, white_label: true, api_access: true,

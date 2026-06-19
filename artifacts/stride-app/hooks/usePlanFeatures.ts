@@ -7,7 +7,7 @@ const CORE_FALLBACK: PlanFeatures = {
   grant_ends: null,
   features: {
     qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
-    smart_pickup: true, emergency_sos: true,
+    smart_pickup: true, emergency_sos: true, no_show_alert: true,
     payroll: false, courses: false, marketplace: false, events: false,
     ai_suite: false, ble_proximity: false, white_label: false, global_pricing: false, api_access: false,
   },

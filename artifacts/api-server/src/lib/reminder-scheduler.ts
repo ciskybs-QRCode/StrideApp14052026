@@ -324,14 +324,14 @@ async function sendScheduledCourseReminders(
 }
 
 // ── Part C: No-Show Safety Alert (10 min after session start) ─────────────────
-// Fires a safety alert to the parent ONLY when a child's status is still
-// strictly "absent" (no attendance record at all) 10 minutes after class start.
-// If any attendance record (QR or manual) exists, the alert is suppressed.
+// Fires an urgent safety alert to the PARENT, all OPERATORS, and all ADMINS
+// of the org when a child's QR has not been scanned 10 minutes after class start.
+// Automatically disarmed if any attendance record (QR or manual) exists.
 
 const NO_SHOW_WINDOW_MINUTES = 10;
 
 async function checkNoShowAlerts(): Promise<void> {
-  const now     = new Date();
+  const now      = new Date();
   const todayStr = now.toISOString().substring(0, 10);
   const dayOfWeek = now.getDay();
 
@@ -352,6 +352,8 @@ async function checkNoShowAlerts(): Promise<void> {
   if (error || !courses?.length) return;
 
   for (const course of courses) {
+    const orgId = course.organization_id as number;
+
     // Get active enrollments for this course
     const { data: enrollments } = await supabase
       .from("enrollments")
@@ -363,7 +365,15 @@ async function checkNoShowAlerts(): Promise<void> {
 
     const discName = (course as Record<string,unknown>).disciplines as { name: string } | null;
     const className = discName?.name ?? (course.name as string) ?? "Class";
-    const timeStr = (course.start_time as string).slice(0, 5);
+    const timeStr   = (course.start_time as string).slice(0, 5);
+
+    // Fetch all operators + admins for this org (notify them once per course, not per child)
+    const { data: staff } = await supabase
+      .from("users")
+      .select("id, role")
+      .eq("organization_id", orgId)
+      .in("role", ["operator", "admin", "super_admin"]);
+    const staffIds: number[] = (staff ?? []).map((u) => (u as { id: number }).id);
 
     for (const enroll of enrollments) {
       const child = (enroll as Record<string,unknown>).child as {
@@ -374,40 +384,47 @@ async function checkNoShowAlerts(): Promise<void> {
       // Check if the child has ANY attendance record today (QR or manual)
       const { data: attendanceRows } = await supabase
         .from("attendance_records")
-        .select("id, check_in_method")
+        .select("id")
         .eq("child_id", child.id)
         .gte("attended_at", `${todayStr}T00:00:00Z`)
         .lte("attended_at", `${todayStr}T23:59:59Z`)
         .limit(1);
 
-      // ▶ DISARM: child has checked in (any method) — skip alert
+      // ▶ DISARM: child has checked in — skip alert
       if (attendanceRows?.length) continue;
 
-      // Check we haven't already sent a no-show alert for this child + course today
+      // Dedup: skip if we already sent a no-show alert for this child+course today
       const { data: existing } = await supabase
         .from("private_notifications")
         .select("id")
-        .eq("recipient_id", child.parent_id)
+        .eq("organization_id", orgId)
         .eq("type", "no_show_alert")
-        .ilike("body", `%${todayStr}%course:${course.id}%`)
+        .ilike("body", `%ref:${todayStr}|course:${course.id}|child:${child.id}%`)
         .limit(1);
 
       if (existing?.length) continue;
 
-      // Fire the safety alert
-      const { error: insertErr } = await supabase.from("private_notifications").insert({
-        organization_id: course.organization_id,
-        recipient_id:    child.parent_id,
+      const refTag  = `ref:${todayStr}|course:${course.id}|child:${child.id}`;
+      const bodyParent = `⚠️ ${child.first_name} non ha effettuato il check-in per ${className} (${timeStr}). Conferma la sua posizione. ${refTag}`;
+      const bodyStaff  = `⚠️ ${child.first_name} ${child.last_name} non risulta presente a ${className} (${timeStr}). Nessun QR registrato. ${refTag}`;
+
+      // Build batch insert: parent + all staff
+      const recipientIds = [child.parent_id, ...staffIds.filter(id => id !== child.parent_id)];
+      const rows = recipientIds.map((recipientId) => ({
+        organization_id: orgId,
+        recipient_id:    recipientId,
         type:            "no_show_alert",
-        title:           `⚠️ Absence Alert — ${child.first_name} ${child.last_name}`,
-        body:            `${child.first_name} has not checked in for ${className} (${timeStr}). Please confirm their whereabouts. ref:${todayStr}|course:${course.id}`,
+        title:           `🚨 Assenza senza avviso — ${child.first_name} ${child.last_name}`,
+        body:            recipientId === child.parent_id ? bodyParent : bodyStaff,
         read:            false,
-      });
+      }));
+
+      const { error: insertErr } = await supabase.from("private_notifications").insert(rows);
 
       if (!insertErr) {
         logger.info(
-          { childId: child.id, courseId: course.id, parentId: child.parent_id },
-          "no-show safety alert sent"
+          { childId: child.id, courseId: course.id, orgId, recipients: recipientIds.length },
+          "no-show safety alert sent to parent + staff"
         );
       }
     }

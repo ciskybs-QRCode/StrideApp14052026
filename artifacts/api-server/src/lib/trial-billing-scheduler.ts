@@ -16,7 +16,7 @@ import {
   buildTrialReminderEmail,
   sendTransactionalEmail,
 } from "../services/emailService.js";
-import { getPlatformStripeKey, pool } from "./pg.js";
+import { getPlatformStripeKey, pool, ensureTables } from "./pg.js";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -79,25 +79,32 @@ const UPGRADE_MAP: Record<string, string> = {
 };
 
 async function checkUpgradeOffers(): Promise<void> {
-  // Find orgs with >= 3 consecutive paid months but no upgrade trial yet
-  const { rows: candidates } = await pool.query<{
-    org_id: number; plan_tier: string; paid_months: number;
-  }>(
-    `SELECT opm.org_id, opm.plan_tier, opm.paid_months
-     FROM org_paid_months opm
-     WHERE opm.paid_months >= 3
-       AND opm.plan_tier != 'premium'
-       AND opm.plan_tier != 'academy'
-       AND NOT EXISTS (
-         SELECT 1 FROM plan_upgrade_trials put
-         WHERE put.org_id = opm.org_id
-           AND put.status IN ('offer_sent','active','confirmed','declined')
-       )`,
-  );
-  if (!candidates.length) return;
+  try {
+    // Ensure pg tables exist (scheduler starts before route handlers call ensureTables)
+    await ensureTables();
 
-  for (const row of candidates) {
-    await sendUpgradeOffer(row.org_id, row.plan_tier);
+    // Find orgs with >= 3 paid billing months but no upgrade trial yet
+    const { rows: candidates } = await pool.query<{
+      org_id: number; plan_tier: string; paid_months: number;
+    }>(
+      `SELECT opm.org_id, opm.plan_tier, COUNT(*) AS paid_months
+       FROM org_paid_months opm
+       WHERE opm.plan_tier NOT IN ('premium', 'academy')
+         AND NOT EXISTS (
+           SELECT 1 FROM plan_upgrade_trials put
+           WHERE put.org_id = opm.org_id
+             AND put.status IN ('offer_sent','active','confirmed','declined')
+         )
+       GROUP BY opm.org_id, opm.plan_tier
+       HAVING COUNT(*) >= 3`,
+    );
+    if (!candidates.length) return;
+
+    for (const row of candidates) {
+      await sendUpgradeOffer(row.org_id, row.plan_tier);
+    }
+  } catch (err) {
+    logger.warn({ err }, "checkUpgradeOffers: skipped (tables may not exist yet)");
   }
 }
 
