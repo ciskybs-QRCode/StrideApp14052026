@@ -1,4 +1,4 @@
-[![Sync to GitHub](../../actions/workflows/sync-to-github.yml/badge.svg)](../../actions/workflows/sync-to-github.yml)
+[![Sync to GitHub](../../actions/workflows/sync-to-github.yml/badge.svg?branch=main)](../../actions/workflows/sync-to-github.yml?query=branch%3Amain)
 
 # Stride — Replit Source Repository
 
