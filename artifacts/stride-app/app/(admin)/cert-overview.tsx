@@ -129,7 +129,7 @@ export default function CertOverviewPage() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Certificate Status" onBack={() => router.back()} />
+      <ScreenHeader title="Certificate Status" onBack={() => router.navigate("/(admin)/operations-hub" as never)} />
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator size="large" color="#1E3A8A" /></View>

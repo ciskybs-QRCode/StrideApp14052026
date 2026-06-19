@@ -304,7 +304,7 @@ export default function AccountantPaymentsScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Accountant Payments" subtitle="Managed payroll flow" onBack={() => router.back()} />
+      <ScreenHeader title="Accountant Payments" subtitle="Managed payroll flow" onBack={() => router.navigate("/(admin)/finance-hub" as never)} />
 
       {/* Tab bar */}
       <View style={s.tabBar}>
