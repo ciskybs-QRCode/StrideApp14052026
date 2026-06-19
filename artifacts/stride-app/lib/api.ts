@@ -3112,3 +3112,92 @@ export function markAccountantOrderFailed(id: number, reason?: string): Promise<
 export function cancelAccountantOrder(id: number): Promise<{ order: AccountantPaymentOrder }> {
   return request("PATCH", `/payroll/accountant/orders/${id}/cancel`);
 }
+
+// ── Plan features ─────────────────────────────────────────────────────────────
+
+export interface PlanFeatures {
+  plan_tier: "studio" | "company" | "academy";
+  is_free_grant: boolean;
+  grant_ends: string | null;
+  features: {
+    qr_checkin: boolean; attendance: boolean; documents: boolean; messaging: boolean;
+    member_portal: boolean; smart_pickup: boolean; emergency_sos: boolean;
+    payroll: boolean; courses: boolean; marketplace: boolean; events: boolean;
+    ai_suite: boolean; ble_proximity: boolean; white_label: boolean;
+    global_pricing: boolean; api_access: boolean;
+    [key: string]: boolean;
+  };
+}
+export function getOrgPlanFeatures(): Promise<PlanFeatures> {
+  return request<PlanFeatures>("GET", "/org/plan-features");
+}
+
+// ── Super admin org management ────────────────────────────────────────────────
+
+export interface SuperAdminPlanMetrics {
+  total: number; trialing: number; active: number; expired: number; granted: number;
+  by_plan: { studio: number; company: number; academy: number };
+}
+export function getSuperAdminPlanMetrics(): Promise<SuperAdminPlanMetrics> {
+  return request<SuperAdminPlanMetrics>("GET", "/super-admin/metrics-plan");
+}
+
+export interface SuperAdminOrg {
+  id: number; name: string; subscription_status: string; raw_status: string;
+  plan_tier: string; trial_ends_at: string | null; created_at: string | null;
+  currency: string; country: string | null; admin_email: string | null;
+  active_grant: { plan_tier: string; end_date: string | null } | null;
+}
+export function getSuperAdminOrgsV2(opts?: { tier?: string; search?: string }): Promise<{ count: number; orgs: SuperAdminOrg[] }> {
+  const params = new URLSearchParams();
+  if (opts?.tier)   params.set("tier",   opts.tier);
+  if (opts?.search) params.set("search", opts.search);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return request<{ count: number; orgs: SuperAdminOrg[] }>("GET", `/super-admin/associations-v2${qs}`);
+}
+
+export function setOrgPlanTierSA(orgId: number, tier: string): Promise<{ success: boolean; plan_tier: string }> {
+  return request("PATCH", `/super-admin/orgs/${orgId}/plan-tier`, { tier });
+}
+
+export interface OrgAccessGrant {
+  id: number; org_id: number; granted_by: number | null; granted_by_name: string | null;
+  plan_tier: string; start_date: string; end_date: string | null;
+  reason: string | null; is_active: boolean; created_at: string;
+}
+export function getOrgAccessGrants(orgId: number): Promise<{ grants: OrgAccessGrant[] }> {
+  return request<{ grants: OrgAccessGrant[] }>("GET", `/super-admin/orgs/${orgId}/access-grants`);
+}
+export function createOrgAccessGrant(orgId: number, data: {
+  plan_tier: string; start_date?: string; end_date?: string | null; reason?: string;
+}): Promise<{ grant: OrgAccessGrant }> {
+  return request("POST", `/super-admin/orgs/${orgId}/access-grants`, data);
+}
+export function updateOrgAccessGrant(orgId: number, grantId: number, data: {
+  is_active?: boolean; end_date?: string | null; plan_tier?: string; reason?: string;
+}): Promise<{ grant: OrgAccessGrant }> {
+  return request("PATCH", `/super-admin/orgs/${orgId}/access-grants/${grantId}`, data);
+}
+
+export function sendPromoToOrg(orgId: number, data: {
+  discount_type: "percent" | "amount" | "free";
+  discount_value?: number;
+  valid_days?: number;
+  message?: string;
+  target_user_id?: number;
+}): Promise<{ success: boolean; code: string; sent_to: number }> {
+  return request("POST", `/super-admin/orgs/${orgId}/send-promo`, data);
+}
+
+// ── User promo assignments (auto-apply) ───────────────────────────────────────
+
+export interface UserPromo {
+  id: number; promo_code: string; discount_type: "percent" | "amount" | "free";
+  discount_value: number; message: string | null; valid_until: string | null; created_at: string;
+}
+export function getMyPromos(): Promise<{ promos: UserPromo[] }> {
+  return request<{ promos: UserPromo[] }>("GET", "/promo-codes/mine");
+}
+export function markPromoUsed(assignId: number): Promise<{ success: boolean }> {
+  return request("POST", `/promo-codes/mine/${assignId}/mark-used`);
+}

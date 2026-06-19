@@ -7,7 +7,10 @@ import {
   ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { useAuth } from "@/context/AuthContext";
-import { getPlatformMetrics, type PlatformMetrics } from "@/lib/api";
+import {
+  getPlatformMetrics, getSuperAdminPlanMetrics,
+  type PlatformMetrics, type SuperAdminPlanMetrics,
+} from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
@@ -22,6 +25,13 @@ type MenuCard = {
 };
 
 const MENU_CARDS: MenuCard[] = [
+  {
+    id: "orgs",
+    icon: "layers-outline",
+    title: "Association CRM",
+    subtitle: "Browse & manage all orgs by plan tier",
+    route: "/(super_admin)/sa-plan-orgs",
+  },
   {
     id: "payments",
     icon: "card-outline",
@@ -66,6 +76,66 @@ const MY_ASSOC_CARD: MenuCard = {
   subtitle: "Open your own organisation and manage it as Admin",
   route: "/(super_admin)/create-association",
 };
+
+// ── Plan tier breakdown grid ──────────────────────────────────────────────────
+
+type PlanTileProps = { label: string; value: number; accent: string; bg: string; onPress: () => void };
+
+function PlanTile({ label, value, accent, bg, onPress }: PlanTileProps) {
+  return (
+    <Pressable
+      style={({ pressed }) => [pt.card, { backgroundColor: bg, opacity: pressed ? 0.85 : 1 }]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
+      <Text style={[pt.value, { color: accent }]}>{value}</Text>
+      <Text style={[pt.label, { color: accent }]}>{label}</Text>
+    </Pressable>
+  );
+}
+const pt = StyleSheet.create({
+  card:  { flex: 1, borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1.5, borderColor: "transparent" },
+  value: { fontSize: 26, fontWeight: "900", lineHeight: 30, marginBottom: 4 },
+  label: { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, textAlign: "center" },
+});
+
+function PlanBreakdown({ metrics, onPlanPress }: { metrics: SuperAdminPlanMetrics | null; onPlanPress: (tier: string) => void }) {
+  if (!metrics) return null;
+  const tiles = [
+    { key: "trial",   label: "TRIAL",   value: metrics.trialing,        accent: "#D97706", bg: "#FFFBEB" },
+    { key: "studio",  label: "STUDIO",  value: metrics.by_plan.studio,  accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "company", label: "COMPANY", value: metrics.by_plan.company, accent: "#2563EB", bg: "#DBEAFE" },
+    { key: "academy", label: "ACADEMY", value: metrics.by_plan.academy, accent: "#7C3AED", bg: "#F5F3FF" },
+  ];
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name="layers-outline" size={16} color="#7C3AED" />
+        </View>
+        <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#7C3AED" }}>PLAN BREAKDOWN</Text>
+        {metrics.granted > 0 && (
+          <View style={{ marginLeft: "auto", backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+            <Text style={{ fontSize: 10, fontWeight: "800", color: "#059669" }}>🎁 {metrics.granted} free</Text>
+          </View>
+        )}
+      </View>
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        {tiles.map(tile => (
+          <PlanTile key={tile.key} label={tile.label} value={tile.value} accent={tile.accent} bg={tile.bg}
+            onPress={() => onPlanPress(tile.key)} />
+        ))}
+      </View>
+      <Pressable
+        style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10, backgroundColor: "#FFF", borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0", paddingVertical: 10, opacity: pressed ? 0.8 : 1 }]}
+        onPress={() => onPlanPress("all")}
+      >
+        <Ionicons name="grid-outline" size={14} color="#1E3A8A" />
+        <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A" }}>View All Associations</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 // ── Metric grid (2-col wrap + full-width churned card) ────────────────────────
 
@@ -200,14 +270,17 @@ export default function SuperAdminDashboard() {
   const { user } = useAuth();
   const router   = useRouter();
 
-  const [metrics,    setMetrics]    = useState<PlatformMetrics | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [metrics,      setMetrics]      = useState<PlatformMetrics | null>(null);
+  const [planMetrics,  setPlanMetrics]  = useState<SuperAdminPlanMetrics | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
 
   const loadMetrics = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      setMetrics(await getPlatformMetrics());
+      const [m, pm] = await Promise.all([getPlatformMetrics(), getSuperAdminPlanMetrics()]);
+      setMetrics(m);
+      setPlanMetrics(pm);
     } catch {
       // metric grid remains hidden on failure
     } finally {
@@ -254,6 +327,18 @@ export default function SuperAdminDashboard() {
           {/* Statistics sub-header + metric cards */}
           <StatsHeader />
           <MetricGrid metrics={metrics} />
+
+          {/* Plan tier breakdown — tappable tiles */}
+          <PlanBreakdown
+            metrics={planMetrics}
+            onPlanPress={(tier) => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push({
+                pathname: "/(super_admin)/sa-plan-orgs",
+                params: { initialTab: tier },
+              } as never);
+            }}
+          />
 
           {/* My Association — gold-bordered CTA */}
           <Text style={styles.sectionLabel}>MY ASSOCIATION</Text>

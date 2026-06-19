@@ -674,43 +674,63 @@ router.patch("/billing/branding", requireAuth, requireRole("admin"), async (req,
   }
 });
 
+// ── Shared plan helpers ───────────────────────────────────────────────────────
+
+export const PLAN_LIMITS: Record<string, { qr: number | null; ops: number | null }> = {
+  studio:  { qr: 35,  ops: 3   },
+  company: { qr: 100, ops: 10  },
+  academy: { qr: null, ops: null },
+};
+
+/** Read org plan tier from local pg (org_plan_settings). Falls back to 'studio'. */
+export async function getOrgPlanTier(orgId: number): Promise<string> {
+  const { rows } = await pool.query(
+    `SELECT plan_tier FROM org_plan_settings WHERE org_id = $1`,
+    [orgId],
+  );
+  return (rows[0] as { plan_tier?: string } | undefined)?.plan_tier ?? "studio";
+}
+
+/** Upsert org plan tier in local pg. */
+export async function setOrgPlanTier(orgId: number, tier: string): Promise<void> {
+  await pool.query(
+    `INSERT INTO org_plan_settings (org_id, plan_tier, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (org_id) DO UPDATE SET plan_tier = $2, updated_at = NOW()`,
+    [orgId, tier],
+  );
+}
+
 // ── GET /billing/plan ─────────────────────────────────────────────────────────
 router.get("/billing/plan", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
   const orgId = (req as AuthReq).user.orgId ?? 1;
   try {
-    const { data } = await supabase
-      .from("organizations")
-      .select("id, name, plan_tier, subscription_status")
-      .eq("id", orgId)
-      .single();
-    // Current QR/member count for limit checking
-    const { data: members } = await supabase
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .in("role", ["parent", "member"]);
-    const { data: children } = await supabase
-      .from("user_children")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", orgId);
-    const { data: operators } = await supabase
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .in("role", ["operator"]);
-    const qrTotal  = (members?.length ?? 0) + (children?.length ?? 0);
-    const opCount  = operators?.length ?? 0;
-    const LIMITS: Record<string, { qr: number | null; ops: number | null }> = {
-      studio:  { qr: 35,  ops: 3  },
-      company: { qr: 100, ops: 10 },
-      academy: { qr: null, ops: null },
-    };
+    const [planTier, subResult, membersResult, childrenResult, opsResult, grantResult] = await Promise.all([
+      getOrgPlanTier(orgId),
+      supabase.from("organizations").select("subscription_status").eq("id", orgId).single(),
+      supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["parent", "member"]),
+      supabase.from("user_children").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
+      supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["operator"]),
+      pool.query(
+        `SELECT plan_tier, end_date FROM org_access_grants
+         WHERE org_id = $1 AND is_active = true AND start_date <= NOW()
+           AND (end_date IS NULL OR end_date > NOW())
+         ORDER BY created_at DESC LIMIT 1`,
+        [orgId],
+      ),
+    ]);
+    const activeGrant = (grantResult.rows[0] as { plan_tier?: string; end_date?: string } | undefined);
+    const effectiveTier = activeGrant?.plan_tier ?? planTier;
+    const qrTotal = (membersResult.data?.length ?? 0) + (childrenResult.data?.length ?? 0);
+    const opCount = opsResult.data?.length ?? 0;
     res.json({
-      plan_tier: data?.plan_tier ?? "studio",
-      subscription_status: data?.subscription_status ?? "trialing",
+      plan_tier: effectiveTier,
+      stored_tier: planTier,
+      subscription_status: (subResult.data as { subscription_status?: string } | null)?.subscription_status ?? "trialing",
       current_qr: qrTotal,
       current_operators: opCount,
-      limits: LIMITS,
+      limits: PLAN_LIMITS,
+      active_grant: activeGrant ? { plan_tier: activeGrant.plan_tier, end_date: activeGrant.end_date ?? null } : null,
     });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -726,19 +746,15 @@ router.patch("/billing/plan", requireAuth, requireRole("admin", "super_admin"), 
     res.status(400).json({ error: "tier must be studio | company | academy" }); return;
   }
   try {
-    // Check if current usage fits the new tier
-    const LIMITS: Record<string, { qr: number | null; ops: number | null }> = {
-      studio:  { qr: 35,  ops: 3  },
-      company: { qr: 100, ops: 10 },
-      academy: { qr: null, ops: null },
-    };
-    const lim = LIMITS[tier];
+    const lim = PLAN_LIMITS[tier];
     if (lim.qr !== null || lim.ops !== null) {
-      const { data: members } = await supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["parent", "member"]);
-      const { data: children } = await supabase.from("user_children").select("id", { count: "exact", head: true }).eq("organization_id", orgId);
-      const { data: operators } = await supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["operator"]);
-      const qrTotal = (members?.length ?? 0) + (children?.length ?? 0);
-      const opCount = operators?.length ?? 0;
+      const [membersResult, childrenResult, opsResult] = await Promise.all([
+        supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["parent", "member"]),
+        supabase.from("user_children").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
+        supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["operator"]),
+      ]);
+      const qrTotal = (membersResult.data?.length ?? 0) + (childrenResult.data?.length ?? 0);
+      const opCount = opsResult.data?.length ?? 0;
       if (lim.qr !== null && qrTotal > lim.qr) {
         res.status(422).json({ error: `Cannot downgrade: you have ${qrTotal} active QR codes but ${tier} allows max ${lim.qr}. Remove members first.`, current_qr: qrTotal, limit_qr: lim.qr }); return;
       }
@@ -746,7 +762,7 @@ router.patch("/billing/plan", requireAuth, requireRole("admin", "super_admin"), 
         res.status(422).json({ error: `Cannot downgrade: you have ${opCount} operators but ${tier} allows max ${lim.ops}. Remove operators first.`, current_operators: opCount, limit_operators: lim.ops }); return;
       }
     }
-    await supabase.from("organizations").update({ plan_tier: tier }).eq("id", orgId);
+    await setOrgPlanTier(orgId, tier);
     res.json({ success: true, plan_tier: tier });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

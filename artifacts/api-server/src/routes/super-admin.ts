@@ -908,4 +908,380 @@ router.get("/super-admin/platform-broadcasts/:id/report", requireAuth, requireOw
   res.json({ message: msgs[0], stats: { total, read, emailSent, pushSent, inAppSent }, recipients });
 });
 
+// ── GET /super-admin/metrics-plan ─────────────────────────────────────────────
+// Extended metrics with plan tier breakdown (reads pg org_plan_settings)
+router.get("/super-admin/metrics-plan", requireAuth, requireOwnerOrSuperAdmin, async (_req, res) => {
+  try {
+    await ensureTables();
+    const [orgsResult, planRows, grantRows] = await Promise.all([
+      sa.from("organizations").select("id, subscription_status, trial_ends_at, name"),
+      pool.query(`SELECT org_id, plan_tier FROM org_plan_settings`),
+      pool.query(
+        `SELECT DISTINCT ON (org_id) org_id, plan_tier
+         FROM org_access_grants
+         WHERE is_active = true AND start_date <= NOW() AND (end_date IS NULL OR end_date > NOW())
+         ORDER BY org_id, created_at DESC`,
+      ),
+    ]);
+    const orgs = (orgsResult.data ?? []) as Array<{ id: number; subscription_status?: string; trial_ends_at?: string; name?: string }>;
+    const planMap  = new Map<number, string>((planRows.rows as Array<{ org_id: number; plan_tier: string }>).map(r => [r.org_id, r.plan_tier]));
+    const grantMap = new Map<number, string>((grantRows.rows as Array<{ org_id: number; plan_tier: string }>).map(r => [r.org_id, r.plan_tier]));
+
+    const now = new Date();
+    let trialing = 0, active = 0, expired = 0, studio = 0, company = 0, academy = 0, granted = 0;
+    for (const org of orgs) {
+      const status = org.subscription_status ?? "trialing";
+      const hasGrant = grantMap.has(org.id);
+      if (hasGrant) granted++;
+      if (status === "active" || hasGrant) {
+        active++;
+        const tier = grantMap.get(org.id) ?? planMap.get(org.id) ?? "studio";
+        if (tier === "studio")  studio++;
+        else if (tier === "company") company++;
+        else if (tier === "academy") academy++;
+        else studio++;
+      } else if (status === "expired" || (org.trial_ends_at && new Date(org.trial_ends_at) <= now)) {
+        expired++;
+      } else {
+        trialing++;
+      }
+    }
+    res.json({ total: orgs.length, trialing, active, expired, granted, by_plan: { studio, company, academy } });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── GET /super-admin/associations-v2 ──────────────────────────────────────────
+// Associations list with plan tier, search and filter support
+router.get("/super-admin/associations-v2", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const { tier, search } = req.query as { tier?: string; search?: string };
+  try {
+    let query = sa.from("organizations").select(
+      "id, name, subscription_status, trial_ends_at, trial_starts_at, created_at, currency, country",
+    );
+    if (search?.trim()) query = query.ilike("name", `%${search.trim()}%`);
+    const { data, error } = await query.order("id", { ascending: false }).limit(200);
+    if (error) { res.status(500).json({ error: error.message }); return; }
+
+    const orgs = (data ?? []) as Array<{ id: number; name: string; subscription_status?: string; trial_ends_at?: string; created_at?: string; currency?: string; country?: string }>;
+    const orgIds = orgs.map(o => o.id);
+    const [planRows, grantRows, adminRows] = orgIds.length > 0 ? await Promise.all([
+      pool.query(`SELECT org_id, plan_tier FROM org_plan_settings WHERE org_id = ANY($1)`, [orgIds]),
+      pool.query(
+        `SELECT DISTINCT ON (org_id) org_id, plan_tier, end_date
+         FROM org_access_grants
+         WHERE org_id = ANY($1) AND is_active = true AND start_date <= NOW() AND (end_date IS NULL OR end_date > NOW())
+         ORDER BY org_id, created_at DESC`,
+        [orgIds],
+      ),
+      sa.from("users").select("organization_id, email").in("organization_id", orgIds).in("role", ["admin"]).limit(500),
+    ]) : [{ rows: [] }, { rows: [] }, { data: [] }];
+
+    const planMap   = new Map<number, string>((planRows.rows as Array<{ org_id: number; plan_tier: string }>).map(r => [r.org_id, r.plan_tier]));
+    const grantMap  = new Map<number, { plan_tier: string; end_date: string | null }>(
+      (grantRows.rows as Array<{ org_id: number; plan_tier: string; end_date: string | null }>).map(r => [r.org_id, { plan_tier: r.plan_tier, end_date: r.end_date }]),
+    );
+    const adminEmails = new Map<number, string>(
+      ((adminRows as { data?: Array<{ organization_id: number; email?: string }> }).data ?? []).map(u => [u.organization_id, u.email ?? ""]),
+    );
+
+    const now = new Date();
+    let result = orgs.map(org => {
+      const grant = grantMap.get(org.id);
+      const effectiveTier = grant?.plan_tier ?? planMap.get(org.id) ?? "studio";
+      const status = org.subscription_status ?? "trialing";
+      const isExpired = status === "expired" || (org.trial_ends_at && new Date(org.trial_ends_at) <= now);
+      const effectiveStatus = grant ? "granted" : isExpired ? "expired" : status;
+      return {
+        id: org.id,
+        name: org.name,
+        subscription_status: effectiveStatus,
+        raw_status: status,
+        plan_tier: effectiveTier,
+        trial_ends_at: org.trial_ends_at ?? null,
+        created_at: org.created_at ?? null,
+        currency: org.currency ?? "EUR",
+        country: org.country ?? null,
+        admin_email: adminEmails.get(org.id) ?? null,
+        active_grant: grant ?? null,
+      };
+    });
+
+    // Filter by tier if requested
+    if (tier && tier !== "all") {
+      if (tier === "trial") {
+        result = result.filter(o => o.subscription_status === "trialing");
+      } else if (tier === "expired") {
+        result = result.filter(o => o.subscription_status === "expired");
+      } else {
+        result = result.filter(o => o.plan_tier === tier && o.subscription_status !== "trialing" && o.subscription_status !== "expired");
+      }
+    }
+
+    res.json({ count: result.length, orgs: result });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── PATCH /super-admin/orgs/:id/plan-tier ─────────────────────────────────────
+// Override plan tier for any org (super_admin only)
+router.patch("/super-admin/orgs/:id/plan-tier", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const orgId = parseInt(String(req.params["id"]), 10);
+  if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org id" }); return; }
+  const { tier } = req.body as { tier?: string };
+  if (!tier || !["studio", "company", "academy"].includes(tier)) {
+    res.status(400).json({ error: "tier must be studio | company | academy" }); return;
+  }
+  try {
+    await pool.query(
+      `INSERT INTO org_plan_settings (org_id, plan_tier, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (org_id) DO UPDATE SET plan_tier = $2, updated_at = NOW()`,
+      [orgId, tier],
+    );
+    try { await sa.from("platform_events").insert({ event_type: "plan_override", title: `Plan overridden for org #${orgId}: ${tier}`, description: `Super admin set plan tier to "${tier}"`, payload: { orgId, tier } }); } catch { /* non-critical */ }
+    res.json({ success: true, org_id: orgId, plan_tier: tier });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── GET /super-admin/orgs/:id/access-grants ───────────────────────────────────
+router.get("/super-admin/orgs/:id/access-grants", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const orgId = parseInt(String(req.params["id"]), 10);
+  if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org id" }); return; }
+  await ensureTables();
+  try {
+    const { rows } = await pool.query(
+      `SELECT g.*, u.name AS granted_by_name
+       FROM org_access_grants g
+       LEFT JOIN users u ON u.id = g.granted_by
+       WHERE g.org_id = $1
+       ORDER BY g.created_at DESC`,
+      [orgId],
+    );
+    res.json({ grants: rows });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── POST /super-admin/orgs/:id/access-grants ──────────────────────────────────
+router.post("/super-admin/orgs/:id/access-grants", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = parseInt(String(req.params["id"]), 10);
+  if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org id" }); return; }
+  const { plan_tier, start_date, end_date, reason } = req.body as {
+    plan_tier?: string; start_date?: string; end_date?: string | null; reason?: string;
+  };
+  if (!plan_tier || !["studio", "company", "academy"].includes(plan_tier)) {
+    res.status(400).json({ error: "plan_tier must be studio | company | academy" }); return;
+  }
+  await ensureTables();
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO org_access_grants (org_id, granted_by, plan_tier, start_date, end_date, reason)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [orgId, Number(user.id), plan_tier, start_date ?? new Date().toISOString(), end_date ?? null, reason ?? null],
+    );
+    invalidateTrialCache(orgId);
+    try { await sa.from("platform_events").insert({ event_type: "access_grant", title: `Free access granted to org #${orgId} (${plan_tier})`, description: `Start: ${start_date ?? "now"} | End: ${end_date ?? "indefinite"} | Reason: ${reason ?? "none"}`, payload: { orgId, plan_tier, start_date, end_date, reason } }); } catch { /* non-critical */ }
+    // Notify org admins
+    try {
+      await pool.query(
+        `INSERT INTO notifications (user_id, org_id, type, title, body, data)
+         SELECT u.id, $1, 'admin_broadcast',
+                '🎉 Free Access Activated',
+                $2, $3::jsonb
+         FROM users u
+         WHERE u.organization_id = $1 AND u.role IN ('admin','super_admin')`,
+        [
+          orgId,
+          `Your organisation has been granted free ${plan_tier} access${end_date ? ` until ${new Date(end_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}` : " indefinitely"} by the platform team.`,
+          JSON.stringify({ type: "access_grant", plan_tier, end_date }),
+        ],
+      );
+    } catch { /* non-critical */ }
+    res.status(201).json({ grant: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── PATCH /super-admin/orgs/:id/access-grants/:grantId ────────────────────────
+router.patch("/super-admin/orgs/:id/access-grants/:grantId", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const orgId    = parseInt(String(req.params["id"]), 10);
+  const grantId  = parseInt(String(req.params["grantId"]), 10);
+  if (isNaN(orgId) || isNaN(grantId)) { res.status(400).json({ error: "Invalid ids" }); return; }
+  const { is_active, end_date, plan_tier, reason } = req.body as {
+    is_active?: boolean; end_date?: string | null; plan_tier?: string; reason?: string;
+  };
+  await ensureTables();
+  try {
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    let i = 1;
+    if (is_active !== undefined) { sets.push(`is_active = $${i++}`); vals.push(is_active); }
+    if (end_date  !== undefined) { sets.push(`end_date  = $${i++}`); vals.push(end_date ?? null); }
+    if (plan_tier !== undefined) { sets.push(`plan_tier = $${i++}`); vals.push(plan_tier); }
+    if (reason    !== undefined) { sets.push(`reason    = $${i++}`); vals.push(reason); }
+    if (!sets.length) { res.status(400).json({ error: "No fields to update" }); return; }
+    vals.push(grantId, orgId);
+    const { rows } = await pool.query(
+      `UPDATE org_access_grants SET ${sets.join(", ")} WHERE id = $${i++} AND org_id = $${i} RETURNING *`,
+      vals,
+    );
+    if (!rows[0]) { res.status(404).json({ error: "Grant not found" }); return; }
+    invalidateTrialCache(orgId);
+    res.json({ grant: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── POST /super-admin/orgs/:id/send-promo ─────────────────────────────────────
+// Send a promo code to all users in an org (auto-applies at checkout)
+router.post("/super-admin/orgs/:id/send-promo", requireAuth, requireOwnerOrSuperAdmin, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = parseInt(String(req.params["id"]), 10);
+  if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org id" }); return; }
+  const { discount_type, discount_value, valid_days, message, target_user_id } = req.body as {
+    discount_type?: "percent" | "amount" | "free";
+    discount_value?: number;
+    valid_days?: number;
+    message?: string;
+    target_user_id?: number;
+  };
+  if (!discount_type || !["percent", "amount", "free"].includes(discount_type)) {
+    res.status(400).json({ error: "discount_type must be percent | amount | free" }); return;
+  }
+  await ensureTables();
+  try {
+    const code  = `SA-${orgId}-${Date.now().toString(36).toUpperCase()}`;
+    const validUntil = valid_days ? new Date(Date.now() + valid_days * 86_400_000).toISOString() : null;
+    const dval = discount_type === "free" ? 100 : (discount_value ?? 10);
+
+    // Get all active users in the org (or a specific user)
+    const { data: users } = await sa.from("users").select("id, email, name, expo_push_token")
+      .eq("organization_id", orgId)
+      .in("role", target_user_id ? [] : ["parent", "member", "admin"])
+      .then(r => target_user_id ? sa.from("users").select("id, email, name, expo_push_token").eq("id", target_user_id) : r);
+
+    const targetUsers = (users ?? []) as Array<{ id: number; email?: string; name?: string; expo_push_token?: string }>;
+
+    // Batch insert promo assignments
+    for (const u of targetUsers) {
+      await pool.query(
+        `INSERT INTO user_promo_assignments (org_id, user_id, promo_code, discount_type, discount_value, message, valid_until)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [orgId, u.id, code, discount_type, dval, message ?? null, validUntil],
+      );
+    }
+
+    // In-app notification to all targets
+    const notifBody = discount_type === "free"
+      ? `You received a Free Session promo code (${code})! It will be applied automatically at checkout.`
+      : discount_type === "percent"
+        ? `You received a ${dval}% discount promo code (${code})! Applied automatically at your next payment.`
+        : `You received a €${dval / 100} discount promo code (${code})! Applied automatically at your next payment.`;
+
+    await pool.query(
+      `INSERT INTO notifications (user_id, org_id, type, title, body, data)
+       SELECT id, $1, 'promo_received',
+              '🎁 You have a promo!',
+              $2,
+              $3::jsonb
+       FROM users WHERE organization_id = $1 AND id = ANY($4)`,
+      [
+        orgId,
+        notifBody,
+        JSON.stringify({ type: "promo", code, discount_type, discount_value: dval, valid_until: validUntil }),
+        targetUsers.map(u => u.id),
+      ],
+    ).catch(() => {});
+
+    // Push notification via Expo for users with push tokens
+    const pushTokens = targetUsers.map(u => u.expo_push_token).filter(Boolean) as string[];
+    if (pushTokens.length > 0) {
+      const messages = pushTokens
+        .filter(t => Expo.isExpoPushToken(t))
+        .map(to => ({
+          to, sound: "default" as const,
+          title: "🎁 Promo code received!",
+          body: notifBody,
+          data: { type: "promo", code },
+        }));
+      await expoClient.sendPushNotificationsAsync(messages).catch(() => {});
+    }
+
+    try { await sa.from("platform_events").insert({ event_type: "promo_sent", title: `Promo sent to org #${orgId}: ${code}`, description: `${discount_type} ${dval} to ${targetUsers.length} user(s). Valid: ${valid_days ? `${valid_days} days` : "unlimited"}`, payload: { orgId, code, discount_type, dval, targetCount: targetUsers.length } }); } catch { /* non-critical */ }
+
+    res.json({ success: true, code, sent_to: targetUsers.length });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── GET /org/plan-features ────────────────────────────────────────────────────
+// Returns effective plan tier + feature flags for the current org
+// (public for all auth roles — used by the mobile app for feature gating)
+router.get("/org/plan-features", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 0;
+  if (user.role === "super_admin") {
+    // super_admin always gets academy access
+    res.json({ plan_tier: "academy", is_free_grant: false, grant_ends: null, features: PLAN_FEATURES["academy"] });
+    return;
+  }
+  if (!orgId) { res.json({ plan_tier: "studio", is_free_grant: false, grant_ends: null, features: PLAN_FEATURES["studio"] }); return; }
+  try {
+    await ensureTables();
+    const [planRow, grantRow] = await Promise.all([
+      pool.query(`SELECT plan_tier FROM org_plan_settings WHERE org_id = $1`, [orgId]),
+      pool.query(
+        `SELECT plan_tier, end_date FROM org_access_grants
+         WHERE org_id = $1 AND is_active = true AND start_date <= NOW() AND (end_date IS NULL OR end_date > NOW())
+         ORDER BY created_at DESC LIMIT 1`,
+        [orgId],
+      ),
+    ]);
+    const grantRow0 = grantRow.rows[0] as { plan_tier?: string; end_date?: string } | undefined;
+    const storedTier = (planRow.rows[0] as { plan_tier?: string } | undefined)?.plan_tier ?? "studio";
+    const effectiveTier = grantRow0?.plan_tier ?? storedTier;
+    res.json({
+      plan_tier: effectiveTier,
+      is_free_grant: !!grantRow0,
+      grant_ends: grantRow0?.end_date ?? null,
+      features: PLAN_FEATURES[effectiveTier] ?? PLAN_FEATURES["studio"],
+    });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── Feature flags per plan tier ───────────────────────────────────────────────
+const PLAN_FEATURES: Record<string, Record<string, boolean>> = {
+  studio: {
+    qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
+    smart_pickup: false, emergency_sos: false, payroll: false, courses: false,
+    marketplace: false, events: false, ai_suite: false, ble_proximity: false,
+    white_label: false, global_pricing: false, api_access: false,
+  },
+  company: {
+    qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
+    smart_pickup: true, emergency_sos: true, payroll: true, courses: true,
+    marketplace: true, events: true, ai_suite: false, ble_proximity: false,
+    white_label: false, global_pricing: false, api_access: false,
+  },
+  academy: {
+    qr_checkin: true, attendance: true, documents: true, messaging: true, member_portal: true,
+    smart_pickup: true, emergency_sos: true, payroll: true, courses: true,
+    marketplace: true, events: true, ai_suite: true, ble_proximity: true,
+    white_label: true, global_pricing: true, api_access: true,
+  },
+};
+
 export default router;

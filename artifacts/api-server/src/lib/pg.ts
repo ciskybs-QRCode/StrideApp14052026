@@ -1268,10 +1268,51 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ec_user_idx ON employment_contracts (operator_user_id, organization_id);
   `).catch(() => {});
 
-  // ── Plan tier on organizations ────────────────────────────────────────────────
+  // ── Org plan settings (plan tier in local pg, not Supabase) ──────────────────
   await pool.query(`
-    ALTER TABLE IF EXISTS organizations
-      ADD COLUMN IF NOT EXISTS plan_tier TEXT NOT NULL DEFAULT 'studio';
+    CREATE TABLE IF NOT EXISTS org_plan_settings (
+      org_id      INTEGER PRIMARY KEY,
+      plan_tier   TEXT    NOT NULL DEFAULT 'studio',
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `).catch(() => {});
+
+  // ── Org access grants (super_admin grants free/custom access to any org) ─────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_access_grants (
+      id          SERIAL PRIMARY KEY,
+      org_id      INTEGER NOT NULL,
+      granted_by  INTEGER,
+      plan_tier   TEXT    NOT NULL DEFAULT 'academy',
+      start_date  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      end_date    TIMESTAMPTZ,
+      reason      TEXT,
+      is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS oag_org_idx    ON org_access_grants(org_id);
+    CREATE INDEX IF NOT EXISTS oag_active_idx ON org_access_grants(org_id, is_active);
+  `).catch(() => {});
+
+  // ── User promo assignments (auto-push promo codes to org members) ─────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_promo_assignments (
+      id              SERIAL PRIMARY KEY,
+      org_id          INTEGER NOT NULL,
+      user_id         INTEGER,
+      promo_code      TEXT    NOT NULL,
+      discount_type   TEXT    NOT NULL DEFAULT 'percent',
+      discount_value  INTEGER NOT NULL DEFAULT 10,
+      message         TEXT,
+      valid_until     TIMESTAMPTZ,
+      is_used         BOOLEAN NOT NULL DEFAULT FALSE,
+      used_at         TIMESTAMPTZ,
+      created_at      TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS upa_org_idx  ON user_promo_assignments(org_id);
+    CREATE INDEX IF NOT EXISTS upa_user_idx ON user_promo_assignments(user_id);
+    CREATE INDEX IF NOT EXISTS upa_code_idx ON user_promo_assignments(promo_code);
+    CREATE INDEX IF NOT EXISTS upa_active   ON user_promo_assignments(user_id, is_used) WHERE is_used = false;
   `).catch(() => {});
 
   // ── Accountant payment orders ─────────────────────────────────────────────────

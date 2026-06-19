@@ -8,6 +8,23 @@ type OrgBillingInfo = { trialEndsAt: string | null; subscriptionStatus: string; 
 const _cache = new Map<number, OrgBillingInfo>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+async function checkActiveGrant(orgId: number): Promise<boolean> {
+  try {
+    const { pool } = await import("../lib/pg.js");
+    const { rows } = await pool.query(
+      `SELECT 1 FROM org_access_grants
+       WHERE org_id = $1 AND is_active = true
+         AND start_date <= NOW()
+         AND (end_date IS NULL OR end_date > NOW())
+       LIMIT 1`,
+      [orgId],
+    );
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 async function fetchOrgBillingInfo(orgId: number): Promise<Omit<OrgBillingInfo, "cachedAt">> {
   const hit = _cache.get(orgId);
   if (hit && Date.now() - hit.cachedAt < CACHE_TTL_MS) {
@@ -24,7 +41,7 @@ async function fetchOrgBillingInfo(orgId: number): Promise<Omit<OrgBillingInfo, 
       .eq("id", orgId)
       .maybeSingle();
     const row = data as { trial_ends_at?: string; subscription_status?: string } | null;
-    const trialEndsAt       = row?.trial_ends_at       ?? null;
+    const trialEndsAt        = row?.trial_ends_at       ?? null;
     const subscriptionStatus = row?.subscription_status ?? "trialing";
     _cache.set(orgId, { trialEndsAt, subscriptionStatus, cachedAt: Date.now() });
     return { trialEndsAt, subscriptionStatus };
@@ -33,7 +50,7 @@ async function fetchOrgBillingInfo(orgId: number): Promise<Omit<OrgBillingInfo, 
   }
 }
 
-/** Call after extending a trial to flush the 5-min cache entry. */
+/** Call after extending a trial or granting access to flush the cache. */
 export function invalidateTrialCache(orgId: number): void {
   _cache.delete(orgId);
 }
@@ -51,6 +68,7 @@ export async function trialGuard(req: Request, res: Response, next: NextFunction
     next(); return; // requireAuth downstream handles invalid tokens
   }
 
+  // super_admin always passes through regardless of their org billing status
   if (payload.role === "super_admin") { next(); return; }
 
   const orgId = payload.orgId;
@@ -58,8 +76,12 @@ export async function trialGuard(req: Request, res: Response, next: NextFunction
 
   const { trialEndsAt, subscriptionStatus } = await fetchOrgBillingInfo(orgId);
 
-  // Active subscribers always pass through, even after trial date
+  // Active Stripe subscribers always pass through
   if (subscriptionStatus === "active") { next(); return; }
+
+  // Check if super_admin granted a free access window
+  const hasGrant = await checkActiveGrant(orgId);
+  if (hasGrant) { next(); return; }
 
   if (trialEndsAt && new Date() > new Date(trialEndsAt)) {
     res.status(402).json({
