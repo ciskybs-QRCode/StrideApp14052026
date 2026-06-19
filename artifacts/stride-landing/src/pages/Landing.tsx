@@ -207,22 +207,6 @@ const FAQS = [
   },
 ];
 
-// ── Pricing helpers ───────────────────────────────────────────────────────────
-
-type CurrencyKey = "AUD" | "EUR" | "USD";
-
-const FX:  Record<CurrencyKey, number> = { AUD: 1, EUR: 0.60, USD: 0.65 };
-const SYM: Record<CurrencyKey, string> = { AUD: "A$", EUR: "\u20AC", USD: "$" };
-
-function calcBill(qr: number, fx: number): number {
-  if (qr <= 0) return 0;
-  let t = 0, r = qr;
-  if (r > 0) { const u = Math.min(r, 100); t += u * 1.20 * fx; r -= u; }
-  if (r > 0) { const u = Math.min(r, 200); t += u * 1.05 * fx; r -= u; }
-  if (r > 0) { t += r * 0.90 * fx; }
-  return Math.round(t * 100) / 100;
-}
-
 // ── Inline icons ──────────────────────────────────────────────────────────────
 
 const IcoArrow = () => (
@@ -230,8 +214,8 @@ const IcoArrow = () => (
     <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
 );
-const IcoCheck = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IcoCheck = ({ gold }: { gold?: boolean } = {}) => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={gold ? "#D4AF37" : "currentColor"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
@@ -262,16 +246,7 @@ const STATS = [
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [qrCodes,  setQrCodes]  = useState(50);
-  const [currency, setCurrency] = useState<CurrencyKey>("AUD");
   const [openFaq,  setOpenFaq]  = useState<number | null>(null);
-
-  const sym   = SYM[currency];
-  const fx    = FX[currency];
-  const total = calcBill(qrCodes, fx).toFixed(2);
-  const perQR = qrCodes > 0 ? (calcBill(qrCodes, fx) / qrCodes).toFixed(3) : "0.000";
-  const flat  = (qrCodes * 1.20 * fx).toFixed(2);
-  const saved = qrCodes > 100 ? Math.max(0, parseFloat(flat) - calcBill(qrCodes, fx)).toFixed(2) : null;
 
   const navLinks = [
     ["#for-schools",     "For Schools"],
@@ -925,89 +900,103 @@ export default function Landing() {
 
       {/* ── PRICING ────────────────────────────────────────────────────────── */}
       <section id="pricing" className="py-24 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <span className="inline-flex items-center gap-2 bg-[#1E3A8A]/8 border border-[#1E3A8A]/20 rounded-full px-4 py-1.5 mb-5">
               <span className="text-[#1E3A8A] text-xs font-bold tracking-wider uppercase">Transparent Pricing</span>
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">Pay Per QR Code. Nothing Else.</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">One plan for every studio size</h2>
             <p className="text-slate-500 text-lg max-w-xl mx-auto">
-              No flat fees, no platform cuts on member payments, no hidden charges. Volume discounts apply automatically.
+              No platform cuts. No per-seat surprises. Start free for 30 days — upgrade only when you're ready.
             </p>
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8">
-            {/* Currency */}
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm font-bold text-slate-700">Currency</p>
-              <div className="flex rounded-lg overflow-hidden border border-slate-200">
-                {(["AUD", "EUR", "USD"] as CurrencyKey[]).map(c => (
-                  <button key={c} onClick={() => setCurrency(c)}
-                    className={`px-4 py-1.5 text-xs font-bold transition-colors ${currency === c ? "bg-[#1E3A8A] text-white" : "bg-white text-slate-500 hover:bg-slate-50"}`}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Slider */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-slate-700">
-                  Active QR codes: <span className="text-[#1E3A8A]">{qrCodes}</span>
-                </p>
-                <p className="text-xs text-slate-400">members + operators + kiosks</p>
-              </div>
-              <input type="range" min={10} max={500} step={5} value={qrCodes}
-                onChange={e => setQrCodes(Number(e.target.value))}
-                className="w-full accent-[#1E3A8A]" />
-              <div className="flex justify-between text-xs text-slate-400 mt-1">
-                <span>10</span><span>100</span><span>300</span><span>500</span>
-              </div>
-            </div>
-
-            {/* Result */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-              <div className="bg-white rounded-xl p-5 text-center border border-slate-200">
-                <p className="text-3xl font-black text-[#1E3A8A]">{sym}{total}</p>
-                <p className="text-xs text-slate-500 mt-1">per month</p>
-              </div>
-              <div className="bg-white rounded-xl p-5 text-center border border-slate-200">
-                <p className="text-3xl font-black text-slate-700">{sym}{perQR}</p>
-                <p className="text-xs text-slate-500 mt-1">per QR / month</p>
-              </div>
-              <div className="bg-white rounded-xl p-5 text-center border border-slate-200">
-                {saved ? (
-                  <>
-                    <p className="text-3xl font-black text-emerald-600">{sym}{saved}</p>
-                    <p className="text-xs text-slate-500 mt-1">volume saving</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-3xl font-black text-slate-400">--</p>
-                    <p className="text-xs text-slate-500 mt-1">no discount yet</p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm mb-6">
-              {[
-                ["First 100 QRs", `${sym}${(1.20 * fx).toFixed(2)} each`],
-                ["101\u2013300 QRs", `${sym}${(1.05 * fx).toFixed(2)} each`],
-                ["301+ QRs",      `${sym}${(0.90 * fx).toFixed(2)} each`],
-              ].map(([tier, price]) => (
-                <div key={tier} className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-3">
-                  <span className="text-emerald-500"><IcoCheck /></span>
-                  <span className="text-slate-700 font-medium">{tier}</span>
-                  <span className="ml-auto text-[#1E3A8A] font-bold">{price}</span>
+          {/* Three plan cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
+            {/* Studio */}
+            <div className="bg-white border-2 border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+              <div className="bg-slate-50 px-6 py-6">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">🥉 Studio</p>
+                <div className="flex items-end gap-1 mb-1">
+                  <span className="text-4xl font-black text-slate-900">$49</span>
+                  <span className="text-sm pb-1.5 text-slate-400">/mo</span>
                 </div>
-              ))}
+                <p className="text-xs text-slate-500 mt-2">Up to 35 members · 3 operators</p>
+              </div>
+              <div className="px-6 py-5 flex-1 flex flex-col">
+                <ul className="space-y-2 mb-5 text-sm text-slate-600 flex-1">
+                  {["QR check-in / check-out", "Attendance logs & reports", "Digital document signing", "Broadcast messaging", "Member portal"].map(f => (
+                    <li key={f} className="flex items-center gap-2"><IcoCheck />{f}</li>
+                  ))}
+                </ul>
+                <a href="/landing/register"
+                  className="block text-center bg-[#1E3A8A] text-white font-bold text-sm py-3 rounded-xl hover:bg-[#1e3070] transition-colors no-underline">
+                  Start Free Trial
+                </a>
+              </div>
             </div>
 
-            <p className="text-xs text-slate-400 text-center">
-              Authorised pick-up contacts are always free. 30-day free trial with no credit card required.
+            {/* Company — most popular */}
+            <div className="relative bg-white border-2 border-[#1E3A8A] rounded-2xl overflow-hidden shadow-xl shadow-[#1E3A8A]/15 flex flex-col scale-[1.03]">
+              <div className="absolute top-4 right-4 bg-[#D4AF37] text-[#0A192F] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                ★ Most Popular
+              </div>
+              <div className="bg-[#1E3A8A] px-6 py-6">
+                <p className="text-xs font-black uppercase tracking-widest text-blue-300 mb-1">🥈 Company</p>
+                <div className="flex items-end gap-1 mb-1">
+                  <span className="text-4xl font-black text-white">$99</span>
+                  <span className="text-sm pb-1.5 text-blue-200">/mo</span>
+                </div>
+                <p className="text-xs text-blue-200 mt-2">Up to 100 members · 10 operators</p>
+              </div>
+              <div className="px-6 py-5 flex-1 flex flex-col">
+                <ul className="space-y-2 mb-5 text-sm text-slate-600 flex-1">
+                  {["Everything in Studio", "Smart Pick-Up + QR Guardian", "Emergency SOS broadcast", "Payroll (wages + contractor)", "Course booking + marketplace"].map(f => (
+                    <li key={f} className="flex items-center gap-2"><IcoCheck />{f}</li>
+                  ))}
+                </ul>
+                <a href="/landing/register"
+                  className="block text-center bg-[#D4AF37] text-[#0A192F] font-black text-sm py-3 rounded-xl hover:bg-[#e8c44b] transition-colors no-underline">
+                  Get Started
+                </a>
+              </div>
+            </div>
+
+            {/* Academy */}
+            <div className="bg-white border-2 border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+              <div className="bg-slate-900 px-6 py-6">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">🥇 Academy</p>
+                <div className="flex items-end gap-1 mb-1">
+                  <span className="text-4xl font-black text-white">$199</span>
+                  <span className="text-sm pb-1.5 text-slate-400">/mo</span>
+                </div>
+                <p className="text-xs text-slate-400 mt-2">Unlimited members · Unlimited operators</p>
+              </div>
+              <div className="px-6 py-5 flex-1 flex flex-col">
+                <ul className="space-y-2 mb-5 text-sm text-slate-600 flex-1">
+                  {["Everything in Company", "Full AI suite (6 AI features)", "BLE proximity auto check-in", "Event ticketing (shows, recitals)", "White-label branding + API access"].map(f => (
+                    <li key={f} className="flex items-center gap-2"><IcoCheck gold />{f}</li>
+                  ))}
+                </ul>
+                <a href="/landing/register"
+                  className="block text-center bg-[#1E3A8A] text-white font-bold text-sm py-3 rounded-xl hover:bg-[#1e3070] transition-colors no-underline">
+                  Get Started
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Currency note + full comparison link */}
+          <div className="text-center space-y-3">
+            <p className="text-xs text-slate-400">
+              All prices in USD · Live currency estimates available on the{" "}
+              <a href="/pricing" className="text-[#1E3A8A] font-semibold hover:underline">full pricing page</a>.
+              · Annual plans save 2 months (≈17% off).
             </p>
+            <a href="/pricing"
+              className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 font-bold text-sm px-6 py-3 rounded-xl hover:bg-slate-200 transition-colors no-underline">
+              See full feature comparison &amp; local pricing <IcoArrow />
+            </a>
           </div>
         </div>
       </section>
