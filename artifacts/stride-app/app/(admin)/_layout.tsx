@@ -333,6 +333,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="account"         options={{ href: null }} />
       <Tabs.Screen name="profile-edit"    options={{ href: null }} />
       <Tabs.Screen name="events"              options={{ href: null }} />
+      <Tabs.Screen name="fee-events"          options={{ href: null }} />
       <Tabs.Screen name="cert-overview"       options={{ href: null }} />
       <Tabs.Screen name="accountant-payments" options={{ href: null }} />
     </Tabs>
