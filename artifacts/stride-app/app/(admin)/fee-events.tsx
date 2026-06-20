@@ -912,6 +912,17 @@ export default function FeeEventsScreen() {
         onBack={() => router.replace("/(admin)/operations-hub")}
       />
 
+      {/* ── Toolbar: always-visible create button ── */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.border }}>
+        <Pressable
+          onPress={openCreate}
+          style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: NAVY, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 }}
+        >
+          <Ionicons name="add-circle-outline" size={18} color={GOLD} />
+          <Text style={{ color: GOLD, fontWeight: "700", fontSize: 14 }}>New Event</Text>
+        </Pressable>
+      </View>
+
       {loading ? (
         <ActivityIndicator color={NAVY} style={{ marginTop: 40 }} />
       ) : (
@@ -925,7 +936,7 @@ export default function FeeEventsScreen() {
               <Ionicons name="cash-outline" size={48} color={colors.mutedForeground} />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No Fee Events</Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Create your first one-off payment event to get started.
+                Tap "New Event" above to create your first payment event.
               </Text>
             </View>
           }
@@ -1038,6 +1049,7 @@ const fabStyles = StyleSheet.create({
     position: "absolute", right: 20, flexDirection: "row", alignItems: "center",
     borderRadius: 28, paddingHorizontal: 20, paddingVertical: 14, gap: 8,
     shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 8,
+    zIndex: 100,
   },
   fabText: { color: GOLD, fontWeight: "700", fontSize: 15 },
 });
