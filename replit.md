@@ -19,8 +19,9 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ## Artifacts
 
 ### Stride App (artifacts/stride-app)
-Italian-language mobile app (Expo) for dance school management.
-- **Brand**: Navy Blue (#1E3A8A) + Goldenrod (#FBBF24)
+English-language mobile app (Expo) for worldwide dance school management. UI is English only — never Italian.
+- **Brand**: Navy Blue (#1E3A8A) + Gold (#FBBF24) — ONLY these two colors categorically
+- **Currency**: multi-currency (EUR/USD/GBP/CHF per org via Regional Pricing — no hardcoded currency)
 - **Auth Roles**: parent → /(parent)/home, operator → /(operator)/dashboard, admin → /(admin)/setup
 - **Test credentials**: genitore@test.com, operatore@test.com, admin@test.com (any password)
 - **Storage**: AsyncStorage only (no backend)
