@@ -365,8 +365,10 @@ router.get("/events/:id", requireAuth, async (req: Request, res: Response) => {
 router.post("/events", requireAuth, requireRole("admin"), async (req: Request, res: Response) => {
   const user = (req as AuthReq).user;
   const { title, description, location, category = "general",
+          is_active = false,
           banner_url, address, website_url, online_event } = req.body as {
     title: string; description?: string; location?: string; category?: string;
+    is_active?: boolean;
     banner_url?: string; address?: string; website_url?: string; online_event?: boolean;
   };
   if (!title?.trim()) { res.status(400).json({ error: "title is required" }); return; }
@@ -374,8 +376,9 @@ router.post("/events", requireAuth, requireRole("admin"), async (req: Request, r
     const { rows } = await pool.query(
       `INSERT INTO events (org_id, title, description, location, category, created_by, is_active,
                            banner_url, address, website_url, online_event)
-       VALUES ($1,$2,$3,$4,$5,$6, false,$7,$8,$9,$10) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [user.orgId, title.trim(), description ?? null, location ?? null, category, user.id,
+       is_active,
        banner_url ?? null, address ?? null, website_url ?? null, online_event ?? false],
     );
     res.status(201).json(rows[0]);

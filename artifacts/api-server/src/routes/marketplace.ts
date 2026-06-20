@@ -119,7 +119,7 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
 
   const {
     title, description, category, price_cents, currency,
-    platform_fee_pct, image_url, is_stride_verified, org_id, custom_label,
+    platform_fee_pct, image_url, is_stride_verified, is_active = false, org_id, custom_label,
   } = req.body as {
     title:              string;
     description?:       string;
@@ -129,6 +129,7 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
     platform_fee_pct?:  number;
     image_url?:         string;
     is_stride_verified?: boolean;
+    is_active?:         boolean;
     org_id?:            number | null;
     custom_label?:      string;
   };
@@ -144,7 +145,7 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
   const { rows } = await pool.query(
     `INSERT INTO marketplace_products
        (org_id, title, description, category, price_cents, currency, platform_fee_pct, image_url, is_stride_verified, is_active, custom_label)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, $10)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
     [
       resolvedOrgId,
@@ -156,6 +157,7 @@ router.post("/marketplace/products", requireAuth, requireRole("admin", "super_ad
       platform_fee_pct ?? 10.0,
       image_url?.trim() ?? null,
       is_stride_verified ?? false,
+      is_active,
       custom_label?.trim() ?? null,
     ],
   );
