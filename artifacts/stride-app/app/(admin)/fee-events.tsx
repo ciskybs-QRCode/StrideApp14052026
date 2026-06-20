@@ -9,6 +9,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -19,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { useAppData } from "@/context/AppDataContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { request } from "@/lib/api";
 
@@ -75,15 +77,21 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", GBP: "�
 const currSym = (c: string) => CURRENCY_SYMBOLS[c] ?? c;
 const fmtMoney = (cents: number, c: string) => `${currSym(c)}${(cents / 100).toFixed(2)}`;
 
-const CURRENCIES = ["EUR", "USD", "GBP", "CHF"];
+// region_code → ISO currency code (from regional pricing)
+const REGION_TO_CURRENCY: Record<string, string> = {
+  EU: "EUR", US: "USD", GB: "GBP", CH: "CHF",
+  AU: "AUD", CA: "CAD", JP: "JPY", SG: "SGD",
+};
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 // ── audience options ──────────────────────────────────────────────────────────
 
 const AUDIENCE_OPTIONS = [
-  { key: "all",       label: "Whole association (smart filter)", icon: "people-outline" },
-  { key: "parents",   label: "Members & dependents only",        icon: "people-circle-outline" },
-  { key: "operators", label: "Operators only",                  icon: "build-outline" },
-  { key: "course",    label: "By course",                       icon: "book-outline" },
+  { key: "all",            label: "Whole association",       icon: "people-outline",        subLabel: "All members & operators" },
+  { key: "parents",        label: "Members & dependents",   icon: "people-circle-outline", subLabel: "Parents and their dependents" },
+  { key: "specific_operators", label: "Specific operators", icon: "build-outline",         subLabel: "Pick individual operators" },
+  { key: "specific_courses",   label: "By course",          icon: "book-outline",          subLabel: "Members enrolled in selected courses" },
 ] as const;
 
 // ── StatusBadge ───────────────────────────────────────────────────────────────
@@ -112,43 +120,106 @@ function StatsPill({ icon, value, color }: { icon: string; value: number; color:
   );
 }
 
-// ── DateInput — simple text-based date picker ─────────────────────────────────
+// ── CalendarPicker — modal-based calendar for date selection ──────────────────
 
-function DateInput({ label, value, onChange, colors }: {
+function CalendarPicker({ label, value, onChange, colors, insets }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   colors: ReturnType<typeof useColors>;
+  insets: { bottom: number };
 }) {
-  const [raw, setRaw] = useState(value);
+  const [open, setOpen] = useState(false);
+  const today = new Date();
+  const initYear  = value ? parseInt(value.slice(0, 4)) : today.getFullYear();
+  const initMonth = value ? parseInt(value.slice(5, 7)) - 1 : today.getMonth();
+  const [calYear,  setCalYear]  = useState(initYear);
+  const [calMonth, setCalMonth] = useState(initMonth);
 
-  useEffect(() => setRaw(value), [value]);
+  const displayDate = value
+    ? (() => { const [y,m,d] = value.split("-").map(Number); return `${MONTH_NAMES[m-1].slice(0,3)} ${d}, ${y}`; })()
+    : "Select date";
 
-  const fmt = (v: string) => {
-    const digits = v.replace(/\D/g, "").slice(0, 8);
-    let out = digits;
-    if (digits.length > 4) out = digits.slice(0, 4) + "-" + digits.slice(4);
-    if (digits.length > 6) out = out.slice(0, 7) + "-" + digits.slice(6);
-    return out;
-  };
+  function buildGrid() {
+    const first = new Date(calYear, calMonth, 1);
+    const last  = new Date(calYear, calMonth + 1, 0);
+    const startDow = (first.getDay() + 6) % 7; // Mon=0
+    const cells: (Date | null)[] = [];
+    for (let i = 0; i < startDow; i++) cells.push(null);
+    for (let d = 1; d <= last.getDate(); d++) cells.push(new Date(calYear, calMonth, d));
+    while (cells.length % 7 !== 0) cells.push(null);
+    const weeks: (Date | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+    return weeks;
+  }
+
+  function isoOf(d: Date) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
 
   return (
     <View style={{ marginBottom: 12 }}>
-      <Text style={[formStyles.label, { color: colors.mutedForeground }]}>{label}</Text>
-      <TextInput
-        style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor={colors.mutedForeground}
-        value={raw}
-        keyboardType="numeric"
-        onChangeText={v => {
-          const f = fmt(v);
-          setRaw(f);
-          if (/^\d{4}-\d{2}-\d{2}$/.test(f)) onChange(f);
-        }}
-        onBlur={() => { if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) onChange(raw); }}
-        maxLength={10}
-      />
+      {label ? <Text style={[formStyles.label, { color: colors.mutedForeground }]}>{label}</Text> : null}
+      <Pressable
+        onPress={() => { setCalYear(initYear); setCalMonth(initMonth); setOpen(true); }}
+        style={[formStyles.input, { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+          borderColor: value ? NAVY : colors.border, backgroundColor: colors.card }]}
+      >
+        <Text style={{ color: value ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>{displayDate}</Text>
+        <Ionicons name="calendar-outline" size={16} color={NAVY} />
+      </Pressable>
+
+      <Modal visible={open} animationType="slide" transparent onRequestClose={() => setOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: insets.bottom + 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 }}>
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: "800", color: NAVY }}>Select Date</Text>
+              <Pressable onPress={() => setOpen(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, marginBottom: 8 }}>
+              <Pressable onPress={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); } else setCalMonth(m => m-1); }} style={{ padding: 8 }}>
+                <Ionicons name="chevron-back" size={22} color={NAVY} />
+              </Pressable>
+              <Text style={{ flex: 1, textAlign: "center", fontSize: 15, fontWeight: "800", color: colors.foreground }}>
+                {MONTH_NAMES[calMonth]} {calYear}
+              </Text>
+              <Pressable onPress={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y+1); } else setCalMonth(m => m+1); }} style={{ padding: 8 }}>
+                <Ionicons name="chevron-forward" size={22} color={NAVY} />
+              </Pressable>
+            </View>
+            <View style={{ flexDirection: "row", paddingHorizontal: 16, marginBottom: 4 }}>
+              {["Mo","Tu","We","Th","Fr","Sa","Su"].map(d => (
+                <Text key={d} style={{ flex: 1, textAlign: "center", fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>{d}</Text>
+              ))}
+            </View>
+            <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+              {buildGrid().map((week, wi) => (
+                <View key={wi} style={{ flexDirection: "row" }}>
+                  {week.map((day, di) => {
+                    const iso = day ? isoOf(day) : "";
+                    const selected = iso === value;
+                    return (
+                      <Pressable key={di} style={{ flex: 1, alignItems: "center", paddingVertical: 6 }}
+                        onPress={() => { if (day) { onChange(iso); setOpen(false); } }}
+                      >
+                        {day ? (
+                          <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
+                            backgroundColor: selected ? NAVY : "transparent" }}>
+                            <Text style={{ fontSize: 13, fontWeight: selected ? "700" : "400",
+                              color: selected ? "#fff" : colors.foreground }}>{day.getDate()}</Text>
+                          </View>
+                        ) : <View style={{ width: 34, height: 34 }} />}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -160,6 +231,7 @@ export default function FeeEventsScreen() {
   const colors   = useColors();
   const insets   = useSafeAreaInsets();
   const { user } = useAuth();
+  const { courses } = useAppData();
 
   const [events, setEvents]     = useState<FeeEvent[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -169,18 +241,27 @@ export default function FeeEventsScreen() {
   const [stats, setStats]       = useState<StatsData | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
 
+  // org currency — resolved from admin settings, no hardcoding
+  const [orgCurrency, setOrgCurrency] = useState("EUR");
+
+  // operators list for audience sub-selection
+  const [operators, setOperators] = useState<{ id: number; name: string }[]>([]);
+
   // form state
-  const [title, setTitle]           = useState("");
-  const [desc, setDesc]             = useState("");
-  const [currency, setCurrency]     = useState("EUR");
-  const [payType, setPayType]       = useState<"single" | "installments">("single");
-  const [dueDate, setDueDate]       = useState("");
+  const [title, setTitle]             = useState("");
+  const [desc, setDesc]               = useState("");
+  const [payType, setPayType]         = useState<"single" | "installments">("single");
+  const [dueDate, setDueDate]         = useState("");
   const [freeTickets, setFreeTickets] = useState(0);
-  const [audience, setAudience]     = useState("all");
-  const [lineItems, setLineItems]   = useState<LineItem[]>([]);
+  const [audience, setAudience]       = useState("all");
+  const [selectedOperatorIds, setSelectedOperatorIds] = useState<number[]>([]);
+  const [selectedCourseIds, setSelectedCourseIds]     = useState<string[]>([]);
+  const [lineItems, setLineItems]     = useState<LineItem[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
-  const [saving, setSaving]         = useState(false);
-  const [publishing, setPublishing] = useState(false);
+  const [saving, setSaving]           = useState(false);
+  const [publishing, setPublishing]   = useState(false);
+  const [sendEmail, setSendEmail]     = useState(true);
+  const [sendInApp, setSendInApp]     = useState(true);
 
   // AI email state
   const [emailDraft, setEmailDraft] = useState<{ subject: string; body: string; html: string } | null>(null);
@@ -204,12 +285,30 @@ export default function FeeEventsScreen() {
 
   useEffect(() => { void fetch(); }, [fetch]);
 
+  // Fetch org currency and operators on mount
+  useEffect(() => {
+    request<{ region_code?: string }>("/api/admin-settings", "GET")
+      .then(s => {
+        if (s.region_code) {
+          const iso = REGION_TO_CURRENCY[s.region_code.toUpperCase()] ?? "EUR";
+          setOrgCurrency(iso);
+        }
+      }).catch(() => {});
+
+    request<{ id: number; name: string; role: string }[]>("/api/users", "GET")
+      .then(users => {
+        setOperators(users.filter(u => u.role === "operator").map(u => ({ id: u.id, name: u.name })));
+      }).catch(() => {});
+  }, []);
+
   // ── form helpers ─────────────────────────────────────────────────────────────
 
   function resetForm() {
-    setTitle(""); setDesc(""); setCurrency("EUR"); setPayType("single");
+    setTitle(""); setDesc(""); setPayType("single");
     setDueDate(""); setFreeTickets(0); setAudience("all");
+    setSelectedOperatorIds([]); setSelectedCourseIds([]);
     setLineItems([]); setInstallments([]);
+    setSendEmail(true); setSendInApp(true);
     setEmailDraft(null); setEditId(null);
   }
 
@@ -220,7 +319,6 @@ export default function FeeEventsScreen() {
       const detail = await request<FeeEvent>(`/api/fee-events/${ev.id}`, "GET");
       setTitle(detail.title);
       setDesc(detail.description ?? "");
-      setCurrency(detail.currency);
       setPayType(detail.payment_type);
       setDueDate(detail.due_date ?? "");
       setFreeTickets(detail.free_tickets_per_member);
@@ -249,7 +347,7 @@ export default function FeeEventsScreen() {
         title: title.trim(), description: desc || undefined,
         payment_type: payType,
         total_amount_cents: totalCents,
-        currency,
+        currency: orgCurrency,
         due_date: payType === "single" ? (dueDate || undefined) : undefined,
         free_tickets_per_member: freeTickets,
         recipient_mode: audience,
@@ -634,20 +732,13 @@ export default function FeeEventsScreen() {
                 multiline
               />
 
-              <Text style={[formStyles.label, { color: colors.mutedForeground }]}>CURRENCY</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                {CURRENCIES.map(c => (
-                  <Pressable
-                    key={c}
-                    style={[chipStyles.chip, { borderColor: currency === c ? NAVY : colors.border, backgroundColor: currency === c ? NAVY : colors.card }]}
-                    onPress={() => setCurrency(c)}
-                  >
-                    <Text style={{ color: currency === c ? "#fff" : colors.foreground, fontWeight: "600", fontSize: 13 }}>
-                      {c} {currSym(c)}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
+              {/* org currency badge — informational only */}
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 8 }}>
+                <Ionicons name="cash-outline" size={14} color={NAVY} />
+                <Text style={{ fontSize: 13, color: NAVY, fontWeight: "600" }}>
+                  Currency: {orgCurrency} ({currSym(orgCurrency)}) — set by org regional pricing
+                </Text>
+              </View>
 
               <View style={formStyles.sectionRow}>
                 <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>COST BREAKDOWN</Text>
@@ -673,7 +764,7 @@ export default function FeeEventsScreen() {
                     onChangeText={v => updateLineItem(i, "description", v)}
                   />
                   <View style={lineStyles.amtRow}>
-                    <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
+                    <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(orgCurrency)}</Text>
                     <TextInput
                       style={[lineStyles.amtInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
                       placeholder="0.00"
@@ -692,7 +783,7 @@ export default function FeeEventsScreen() {
               {lineItems.length > 0 && (
                 <View style={[lineStyles.total, { borderTopColor: colors.border }]}>
                   <Text style={[lineStyles.totalLabel, { color: colors.mutedForeground }]}>Total</Text>
-                  <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, currency)}</Text>
+                  <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, orgCurrency)}</Text>
                 </View>
               )}
 
@@ -700,7 +791,7 @@ export default function FeeEventsScreen() {
                 <View style={{ marginBottom: 16 }}>
                   <Text style={[formStyles.label, { color: colors.mutedForeground }]}>TOTAL AMOUNT *</Text>
                   <View style={lineStyles.amtRow}>
-                    <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
+                    <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(orgCurrency)}</Text>
                     <TextInput
                       style={[lineStyles.amtInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
                       placeholder="0.00"
@@ -744,7 +835,7 @@ export default function FeeEventsScreen() {
               </View>
 
               {payType === "single" && (
-                <DateInput label="DUE DATE" value={dueDate} onChange={setDueDate} colors={colors} />
+                <CalendarPicker label="DUE DATE" value={dueDate} onChange={setDueDate} colors={colors} insets={insets} />
               )}
 
               {payType === "installments" && (
@@ -778,7 +869,7 @@ export default function FeeEventsScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={[formStyles.label, { color: colors.mutedForeground }]}>AMOUNT</Text>
                           <View style={lineStyles.amtRow}>
-                            <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
+                            <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(orgCurrency)}</Text>
                             <TextInput
                               style={[lineStyles.amtInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                               placeholder="0.00"
@@ -790,7 +881,7 @@ export default function FeeEventsScreen() {
                           </View>
                         </View>
                         <View style={{ flex: 1 }}>
-                          <DateInput label="DUE DATE" value={ins.due_date} onChange={v => updateInstallment(i, "due_date", v)} colors={colors} />
+                          <CalendarPicker label="DUE DATE" value={ins.due_date} onChange={v => updateInstallment(i, "due_date", v)} colors={colors} insets={insets} />
                         </View>
                       </View>
                     </View>
@@ -798,7 +889,7 @@ export default function FeeEventsScreen() {
                   {installments.length > 0 && (
                     <View style={[lineStyles.total, { borderTopColor: colors.border }]}>
                       <Text style={[lineStyles.totalLabel, { color: colors.mutedForeground }]}>Total (all installments)</Text>
-                      <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, currency)}</Text>
+                      <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, orgCurrency)}</Text>
                     </View>
                   )}
                 </>
@@ -811,18 +902,122 @@ export default function FeeEventsScreen() {
                   style={[audienceStyles.row, { borderColor: audience === opt.key ? NAVY : colors.border, backgroundColor: audience === opt.key ? NAVY + "12" : colors.card }]}
                   onPress={() => setAudience(opt.key)}
                 >
-                  <Ionicons name={opt.icon as "people-outline"} size={18} color={audience === opt.key ? NAVY : colors.mutedForeground} />
-                  <Text style={[audienceStyles.label, { color: audience === opt.key ? NAVY : colors.foreground }]}>{opt.label}</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Ionicons name={opt.icon as "people-outline"} size={18} color={audience === opt.key ? NAVY : colors.mutedForeground} />
+                      <Text style={[audienceStyles.label, { color: audience === opt.key ? NAVY : colors.foreground }]}>{opt.label}</Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2, marginLeft: 26 }}>{opt.subLabel}</Text>
+                  </View>
                   {audience === opt.key && <Ionicons name="checkmark-circle" size={18} color={NAVY} />}
                 </Pressable>
               ))}
+
+              {/* Operator sub-selector */}
+              {audience === "specific_operators" && (
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={[formStyles.label, { color: colors.mutedForeground }]}>SELECT OPERATORS</Text>
+                  {operators.length === 0 ? (
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, fontStyle: "italic" }}>No operators found</Text>
+                  ) : operators.map(op => {
+                    const sel = selectedOperatorIds.includes(op.id);
+                    return (
+                      <Pressable key={op.id}
+                        style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 12,
+                          borderRadius: 8, borderWidth: 1, borderColor: sel ? NAVY : colors.border,
+                          backgroundColor: sel ? NAVY + "0F" : colors.card, marginBottom: 6 }}
+                        onPress={() => setSelectedOperatorIds(prev => sel ? prev.filter(x => x !== op.id) : [...prev, op.id])}
+                      >
+                        <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+                          borderColor: sel ? NAVY : colors.border, backgroundColor: sel ? NAVY : "transparent",
+                          alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                          {sel && <Ionicons name="checkmark" size={12} color="#fff" />}
+                        </View>
+                        <Text style={{ fontSize: 14, color: sel ? NAVY : colors.foreground, fontWeight: sel ? "600" : "400", flex: 1 }}>
+                          {op.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                  {selectedOperatorIds.length > 0 && (
+                    <Text style={{ fontSize: 12, color: NAVY, fontWeight: "600", marginTop: 4 }}>
+                      {selectedOperatorIds.length} operator{selectedOperatorIds.length > 1 ? "s" : ""} selected
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {/* Course sub-selector */}
+              {audience === "specific_courses" && (
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={[formStyles.label, { color: colors.mutedForeground }]}>SELECT COURSES</Text>
+                  {courses.length === 0 ? (
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, fontStyle: "italic" }}>No courses available</Text>
+                  ) : courses.map(course => {
+                    const sel = selectedCourseIds.includes(course.id);
+                    return (
+                      <Pressable key={course.id}
+                        style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 12,
+                          borderRadius: 8, borderWidth: 1, borderColor: sel ? NAVY : colors.border,
+                          backgroundColor: sel ? NAVY + "0F" : colors.card, marginBottom: 6 }}
+                        onPress={() => setSelectedCourseIds(prev => sel ? prev.filter(x => x !== course.id) : [...prev, course.id])}
+                      >
+                        <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+                          borderColor: sel ? NAVY : colors.border, backgroundColor: sel ? NAVY : "transparent",
+                          alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                          {sel && <Ionicons name="checkmark" size={12} color="#fff" />}
+                        </View>
+                        <Text style={{ fontSize: 14, color: sel ? NAVY : colors.foreground, fontWeight: sel ? "600" : "400", flex: 1 }}>
+                          {course.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                  {selectedCourseIds.length > 0 && (
+                    <Text style={{ fontSize: 12, color: NAVY, fontWeight: "600", marginTop: 4 }}>
+                      {selectedCourseIds.length} course{selectedCourseIds.length > 1 ? "s" : ""} selected
+                    </Text>
+                  )}
+                </View>
+              )}
+
               {audience === "all" && (
-                <View style={[formStyles.infoBox, { backgroundColor: NAVY + "0F", borderLeftColor: NAVY }]}>
+                <View style={[formStyles.infoBox, { backgroundColor: NAVY + "0F", borderLeftColor: NAVY, marginBottom: 12 }]}>
                   <Text style={{ fontSize: 12, color: NAVY }}>
-                    Operators who also have registered dependants will receive this notification automatically.
+                    Sent to all members and operators. Operators with registered dependants receive it automatically.
                   </Text>
                 </View>
               )}
+
+              {/* ── DELIVERY ─────────────────────────────────────────────── */}
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>DELIVERY</Text>
+              <View style={{ borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, overflow: "hidden", marginBottom: 16 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                  paddingVertical: 12, paddingHorizontal: 14,
+                  borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <Ionicons name="mail-outline" size={18} color={NAVY} />
+                    <View>
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Email</Text>
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Branded AI-generated email</Text>
+                    </View>
+                  </View>
+                  <Switch value={sendEmail} onValueChange={setSendEmail}
+                    trackColor={{ false: "#CBD5E1", true: GOLD }} thumbColor={NAVY} />
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                  paddingVertical: 12, paddingHorizontal: 14 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <Ionicons name="notifications-outline" size={18} color={NAVY} />
+                    <View>
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>In-App Notification</Text>
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Push + inbox notification</Text>
+                    </View>
+                  </View>
+                  <Switch value={sendInApp} onValueChange={setSendInApp}
+                    trackColor={{ false: "#CBD5E1", true: GOLD }} thumbColor={NAVY} />
+                </View>
+              </View>
 
               <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>EMAIL COMMUNICATION</Text>
               <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
