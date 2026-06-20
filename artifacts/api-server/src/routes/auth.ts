@@ -818,18 +818,20 @@ router.post("/auth/forgot-password", authLimiter, async (req, res) => {
     if (resendKey) {
       // ── Resend API (preferred — no SMTP config needed) ──────────────────────
       try {
-        const fromAddr = process.env["SMTP_FROM"] ?? "Stride <no-reply@stride.app>";
+        const fromAddr = process.env["RESEND_FROM_EMAIL"] ?? process.env["SMTP_FROM"] ?? "Stride <no-reply@stride.app>";
         const resp = await fetch("https://api.resend.com/emails", {
           method:  "POST",
           headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
           body:    JSON.stringify({ from: fromAddr, to: user.email, subject: "Your Stride Password Reset Code", html: htmlBody, text: textBody }),
         });
         if (!resp.ok) {
-          const err = await resp.text().catch(() => resp.status.toString());
-          console.error("[forgot-password] Resend error:", err);
+          const detail = await resp.text().catch(() => resp.status.toString());
+          req.log.error({ detail }, "[forgot-password] Resend error");
+        } else {
+          req.log.info({ to: normalised }, "[forgot-password] Reset code sent via Resend");
         }
       } catch (emailErr) {
-        console.error("[forgot-password] Resend send failed:", emailErr);
+        req.log.error({ err: emailErr }, "[forgot-password] Resend send failed");
       }
     } else if (smtpHost) {
       // ── Nodemailer SMTP fallback ─────────────────────────────────────────────
@@ -848,14 +850,15 @@ router.post("/auth/forgot-password", authLimiter, async (req, res) => {
           text:    textBody,
           html:    htmlBody,
         });
+        req.log.info({ to: normalised }, "[forgot-password] Reset code sent via SMTP");
       } catch (emailErr) {
-        console.error("[forgot-password] SMTP send failed:", emailErr);
+        req.log.error({ err: emailErr }, "[forgot-password] SMTP send failed");
       }
     } else {
-      console.info(`[forgot-password] *** No email provider configured. Reset token for ${normalised}: ${token} (expires ${expiresAt.toISOString()}) ***`);
+      req.log.warn({ to: normalised, expiresAt }, "[forgot-password] No email provider — RESEND_API_KEY or SMTP_HOST required");
     }
   } catch (err) {
-    console.error("[forgot-password] Error:", err);
+    req.log.error({ err }, "[forgot-password] Error");
   }
 });
 
