@@ -760,15 +760,15 @@ export default function CoursesScreen() {
                         <View style={[styles.pricePill, { backgroundColor: c.dropInPrice === 0 ? "#DCFCE7" : colors.muted }]}>
                           <Text style={[styles.pricePillLabel, { color: c.dropInPrice === 0 ? "#16A34A" : colors.mutedForeground }]}>Single</Text>
                           <Text style={[styles.pricePillAmount, { color: c.dropInPrice === 0 ? "#16A34A" : colors.foreground }]}>
-                            {c.dropInPrice === 0 ? "Free" : `€${c.dropInPrice}`}
+                            {c.dropInPrice === 0 ? "Free" : `${c.currency ?? ""}${c.dropInPrice}`}
                           </Text>
                         </View>
                       )}
                       {c.fixedBlockEnabled && (
                         <View style={[styles.pricePill, { backgroundColor: c.fixedBlockPrice === 0 ? "#DCFCE7" : colors.secondary }]}>
-                          <Text style={[styles.pricePillLabel, { color: c.fixedBlockPrice === 0 ? "#16A34A" : colors.primary }]}>Package ×{c.fixedBlockLessons}</Text>
+                          <Text style={[styles.pricePillLabel, { color: c.fixedBlockPrice === 0 ? "#16A34A" : colors.primary }]}>Pack ×{c.fixedBlockLessons}</Text>
                           <Text style={[styles.pricePillAmount, { color: c.fixedBlockPrice === 0 ? "#16A34A" : colors.primary }]}>
-                            {c.fixedBlockPrice === 0 ? "Free" : `€${c.fixedBlockPrice}`}
+                            {c.fixedBlockPrice === 0 ? "Free" : `${c.currency ?? ""}${c.fixedBlockPrice}`}
                           </Text>
                         </View>
                       )}
@@ -1013,7 +1013,7 @@ export default function CoursesScreen() {
                       <Text style={[styles.participantName, { color: colors.foreground }]}>Single Lesson</Text>
                       <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginTop: 2 }]}>One lesson, no commitment</Text>
                     </View>
-                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.dropInPrice}</Text>
+                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.dropInPrice}</Text>
                   </Pressable>
                 )}
                 {enrollCourse?.fixedBlockEnabled && (
@@ -1033,11 +1033,11 @@ export default function CoursesScreen() {
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.participantName, { color: colors.foreground }]}>
-                        Full Package · {enrollCourse.fixedBlockLessons} lessons
+                        Lesson Pack · {enrollCourse.fixedBlockLessons} sessions
                       </Text>
-                      <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>15% discount included</Text>
+                      <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>Discounted bundle</Text>
                     </View>
-                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>€{enrollCourse.fixedBlockPrice}</Text>
+                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.fixedBlockPrice}</Text>
                   </Pressable>
                 )}
               </View>

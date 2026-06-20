@@ -57,6 +57,7 @@ export interface Course {
   price: number;
   description: string;
   hasPrivate: boolean;
+  currency?: string;           // currency symbol, e.g. "€" or "$"
   dropInEnabled: boolean;
   dropInPrice: number;
   fixedBlockEnabled: boolean;
@@ -225,8 +226,14 @@ function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
   };
 }
 
+const CURRENCY_SYMBOL_MAP: Record<string, string> = {
+  EUR: "€", USD: "$", GBP: "£", CHF: "CHF ", AUD: "A$", CAD: "C$", JPY: "¥", BRL: "R$",
+};
+
 function mapCourse(c: ApiCourse): Course {
   const basePrice = c.price ?? 20;
+  const currencyCode = (c as unknown as { currency?: string }).currency ?? "EUR";
+  const currencySymbol = CURRENCY_SYMBOL_MAP[currencyCode] ?? currencyCode;
   return {
     id: String(c.id),
     name: c.name,
@@ -241,6 +248,7 @@ function mapCourse(c: ApiCourse): Course {
     price: basePrice,
     description: c.description ?? "",
     hasPrivate: true,
+    currency: currencySymbol,
     dropInEnabled: true,
     dropInPrice: basePrice,
     fixedBlockEnabled: basePrice > 0,

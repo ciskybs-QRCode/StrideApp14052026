@@ -64,6 +64,18 @@ const ROOMS_KEY            = "stride_association_rooms";
 interface ScheduleSlot { day: string; startTime: string; }
 
 interface EnrollmentConfig {
+  // ── Capacity & Access ──
+  waitlistEnabled: boolean;      // auto-add to waitlist when full
+  memberOnly: boolean;           // require active membership to enrol
+  requireApproval: boolean;      // admin must approve each enrolment request
+  // ── Registration window ──
+  enrolmentOpenDate: string;     // YYYY-MM-DD, empty = open now
+  enrolmentCloseDate: string;    // YYYY-MM-DD, empty = no deadline
+  // ── Currency ──
+  currencyCode: string;          // e.g. "EUR", "USD" — empty = org default
+  // ── Pricing plans ──
+  trialEnabled: boolean;
+  trialSessions: number;         // number of free trial sessions
   dropIn: boolean;
   dropInPrice: number;
   fixedBlock: boolean;
@@ -71,8 +83,10 @@ interface EnrollmentConfig {
   fixedBlockPrice: number;
   monthly: boolean;
   monthlyPrice: number;
-  monthlyEndDate: string;   // YYYY-MM-DD
-  monthlyPayDay: number;    // 1-28, day of month payment is collected
+  monthlyEndDate: string;        // YYYY-MM-DD
+  monthlyPayDay: number;         // 1-28, day of month payment is collected
+  annual: boolean;
+  annualPrice: number;
 }
 
 interface Activity {
@@ -170,6 +184,18 @@ const DAYS_SHORT  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAY_HEADS_SHORT = ["M","T","W","T","F","S","S"];
 
+const CURRENCIES: { code: string; symbol: string; label: string }[] = [
+  { code: "EUR", symbol: "€",   label: "EUR" },
+  { code: "USD", symbol: "$",   label: "USD" },
+  { code: "GBP", symbol: "£",   label: "GBP" },
+  { code: "CHF", symbol: "CHF", label: "CHF" },
+  { code: "AUD", symbol: "A$",  label: "AUD" },
+  { code: "CAD", symbol: "C$",  label: "CAD" },
+  { code: "JPY", symbol: "¥",   label: "JPY" },
+  { code: "BRL", symbol: "R$",  label: "BRL" },
+];
+const getCurrencySymbol = (code: string) => CURRENCIES.find(c => c.code === code)?.symbol ?? code;
+
 // ── Calendar helpers ───────────────────────────────────────────────────────────
 
 function getAdminCalMatrix(year: number, month: number): (Date | null)[][] {
@@ -238,7 +264,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t1", teacherName: "Emma Wilson",
     duration: 60, capacity: 15, enrolled: 11, status: "active",
-    enrollment: { dropIn: true, dropInPrice: 25, fixedBlock: true, fixedBlockLessons: 10, fixedBlockPrice: 200, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1 },
+    enrollment: { waitlistEnabled: true, memberOnly: false, requireApproval: false, enrolmentOpenDate: "", enrolmentCloseDate: "", currencyCode: "EUR", trialEnabled: false, trialSessions: 1, dropIn: true, dropInPrice: 25, fixedBlock: true, fixedBlockLessons: 10, fixedBlockPrice: 200, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1, annual: false, annualPrice: 0 },
     color: "#1E3A8A",
   },
   {
@@ -248,7 +274,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     campusId: "c1", campusName: "Main Studio", room: "Studio B",
     teacherId: "t2", teacherName: "Louis Ford",
     duration: 90, capacity: 20, enrolled: 14, status: "active",
-    enrollment: { dropIn: true, dropInPrice: 35, fixedBlock: false, fixedBlockLessons: 8, fixedBlockPrice: 240, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1 },
+    enrollment: { waitlistEnabled: true, memberOnly: false, requireApproval: false, enrolmentOpenDate: "", enrolmentCloseDate: "", currencyCode: "EUR", trialEnabled: false, trialSessions: 1, dropIn: true, dropInPrice: 35, fixedBlock: false, fixedBlockLessons: 8, fixedBlockPrice: 240, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1, annual: false, annualPrice: 0 },
     color: "#D97706",
   },
   {
@@ -258,7 +284,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     campusId: "c2", campusName: "East Wing Studio", room: "Meeting Room",
     teacherId: "t3", teacherName: "Anna Parker",
     duration: 60, capacity: 10, enrolled: 6, status: "active",
-    enrollment: { dropIn: false, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 0, fixedBlockPrice: 0, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1 },
+    enrollment: { waitlistEnabled: false, memberOnly: false, requireApproval: false, enrolmentOpenDate: "", enrolmentCloseDate: "", currencyCode: "EUR", trialEnabled: false, trialSessions: 1, dropIn: false, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 0, fixedBlockPrice: 0, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1, annual: false, annualPrice: 0 },
     color: "#0D9488",
   },
   {
@@ -268,7 +294,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t4", teacherName: "Mark Parker",
     duration: 45, capacity: 25, enrolled: 18, status: "draft",
-    enrollment: { dropIn: true, dropInPrice: 20, fixedBlock: true, fixedBlockLessons: 5, fixedBlockPrice: 80, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1 },
+    enrollment: { waitlistEnabled: true, memberOnly: false, requireApproval: true, enrolmentOpenDate: "", enrolmentCloseDate: "", currencyCode: "EUR", trialEnabled: true, trialSessions: 1, dropIn: true, dropInPrice: 20, fixedBlock: true, fixedBlockLessons: 5, fixedBlockPrice: 80, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1, annual: false, annualPrice: 0 },
     color: "#7C3AED",
   },
 ];
@@ -291,7 +317,16 @@ const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
   teacherId: "t1", teacherName: "",
   duration: 60, customDurationH: 0, customDurationM: 0,
   capacity: 15, status: "active",
-  enrollment: { dropIn: true, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1 },
+  enrollment: {
+    waitlistEnabled: true, memberOnly: false, requireApproval: false,
+    enrolmentOpenDate: "", enrolmentCloseDate: "",
+    currencyCode: "EUR",
+    trialEnabled: false, trialSessions: 1,
+    dropIn: true, dropInPrice: 0,
+    fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0,
+    monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1,
+    annual: false, annualPrice: 0,
+  },
   keyInstructions: "", alarmCode: "", doorPin: "", devicePin: "",
 });
 
@@ -551,6 +586,14 @@ export default function ActivityScreen() {
   // ── Monthly pay-day picker ──
   const [showMonthlyPayDayPicker, setShowMonthlyPayDayPicker] = useState(false);
 
+  // ── Enrolment open/close date pickers ──
+  const [showEnrolOpenPicker,   setShowEnrolOpenPicker]   = useState(false);
+  const [enrolOpenCalYear,      setEnrolOpenCalYear]      = useState(new Date().getFullYear());
+  const [enrolOpenCalMonth,     setEnrolOpenCalMonth]     = useState(new Date().getMonth());
+  const [showEnrolClosePicker,  setShowEnrolClosePicker]  = useState(false);
+  const [enrolCloseCalYear,     setEnrolCloseCalYear]     = useState(new Date().getFullYear());
+  const [enrolCloseCalMonth,    setEnrolCloseCalMonth]    = useState(new Date().getMonth());
+
   // ── Admin time picker ──
   const [showAdminTimePicker, setShowAdminTimePicker] = useState(false);
   const [adminTimeHour,       setAdminTimeHour]       = useState(9);
@@ -617,7 +660,7 @@ export default function ActivityScreen() {
       capacity: p.capacity,
       enrolled: 0,
       status: "active",
-      enrollment: { dropIn: true, dropInPrice: 25, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1 },
+      enrollment: { waitlistEnabled: true, memberOnly: false, requireApproval: false, enrolmentOpenDate: "", enrolmentCloseDate: "", currencyCode: "EUR", trialEnabled: false, trialSessions: 1, dropIn: true, dropInPrice: 25, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1, annual: false, annualPrice: 0 },
       color: "#D97706",
       keyInstructions: "", alarmCode: "", doorPin: "", devicePin: "",
     };
@@ -2279,37 +2322,181 @@ export default function ActivityScreen() {
               </View>
             )}
 
-            {/* ─── SECTION: CAPACITY ─── */}
-            {renderSectionHeader("CAPACITY")}
-            {renderRow("Max places",
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border }]}
-                placeholder="e.g. 15"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="numeric"
-                value={String(draft.capacity)}
-                onChangeText={v => setDraft(d => ({ ...d, capacity: Number(v) || 0 }))}
-              />
-            )}
-
-            {/* ─── SECTION: ENROLLMENT PRICING ─── */}
+            {/* ─── SECTION: ENROLMENT & PRICING ─── */}
             {renderSectionHeader("ENROLMENT & PRICING")}
+
+            {/* ── Sub-header: Capacity & Access ── */}
+            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.8, marginBottom: 6, marginLeft: 2 }}>CAPACITY & ACCESS</Text>
+            <View style={[styles.enrollCard, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 12 }]}>
+              {/* Max places */}
+              <View style={[styles.enrollRow, { paddingVertical: 12 }]}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Max places</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>0 = unlimited</Text>
+                </View>
+                <TextInput
+                  style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                  keyboardType="numeric" placeholder="15" placeholderTextColor={colors.mutedForeground}
+                  value={draft.capacity > 0 ? String(draft.capacity) : ""}
+                  onChangeText={v => setDraft(d => ({ ...d, capacity: Number(v) || 0 }))}
+                />
+              </View>
+              <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+              {/* Waitlist */}
+              <View style={styles.enrollRow}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Waitlist</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Auto-add members when full</Text>
+                </View>
+                <Switch value={draft.enrollment.waitlistEnabled}
+                  onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, waitlistEnabled: v } }))}
+                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }} thumbColor="#FBBF24" />
+              </View>
+              <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+              {/* Members only */}
+              <View style={styles.enrollRow}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Members only</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Require active membership</Text>
+                </View>
+                <Switch value={draft.enrollment.memberOnly}
+                  onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, memberOnly: v } }))}
+                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }} thumbColor="#FBBF24" />
+              </View>
+              <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+              {/* Require approval */}
+              <View style={styles.enrollRow}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Require approval</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Admin must approve each request</Text>
+                </View>
+                <Switch value={draft.enrollment.requireApproval}
+                  onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, requireApproval: v } }))}
+                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }} thumbColor="#FBBF24" />
+              </View>
+            </View>
+
+            {/* ── Sub-header: Registration Window ── */}
+            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.8, marginBottom: 6, marginLeft: 2 }}>REGISTRATION WINDOW</Text>
+            <View style={[styles.enrollCard, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 12 }]}>
+              {/* Enrolment opens */}
+              <Pressable style={[styles.enrollRow, { paddingVertical: 12 }]}
+                onPress={() => {
+                  if (draft.enrollment.enrolmentOpenDate) {
+                    const [y, mo] = draft.enrollment.enrolmentOpenDate.split("-").map(Number);
+                    setEnrolOpenCalYear(y); setEnrolOpenCalMonth(mo - 1);
+                  }
+                  setShowEnrolOpenPicker(true);
+                }}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Registration opens</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Empty = open immediately</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  {draft.enrollment.enrolmentOpenDate ? (
+                    <Pressable onPress={e => { e.stopPropagation(); setDraft(d => ({ ...d, enrollment: { ...d.enrollment, enrolmentOpenDate: "" } })); }}>
+                      <Ionicons name="close-circle" size={16} color="#EF4444" />
+                    </Pressable>
+                  ) : null}
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.enrolmentOpenDate ? "#1E3A8A" : colors.mutedForeground }}>
+                    {draft.enrollment.enrolmentOpenDate
+                      ? (() => { const [y,mo,d] = draft.enrollment.enrolmentOpenDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}`; })()
+                      : "Now"}
+                  </Text>
+                  <Ionicons name="calendar-outline" size={16} color="#1E3A8A" />
+                </View>
+              </Pressable>
+              <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+              {/* Enrolment closes */}
+              <Pressable style={[styles.enrollRow, { paddingVertical: 12 }]}
+                onPress={() => {
+                  if (draft.enrollment.enrolmentCloseDate) {
+                    const [y, mo] = draft.enrollment.enrolmentCloseDate.split("-").map(Number);
+                    setEnrolCloseCalYear(y); setEnrolCloseCalMonth(mo - 1);
+                  }
+                  setShowEnrolClosePicker(true);
+                }}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Registration closes</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Empty = no deadline</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  {draft.enrollment.enrolmentCloseDate ? (
+                    <Pressable onPress={e => { e.stopPropagation(); setDraft(d => ({ ...d, enrollment: { ...d.enrollment, enrolmentCloseDate: "" } })); }}>
+                      <Ionicons name="close-circle" size={16} color="#EF4444" />
+                    </Pressable>
+                  ) : null}
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.enrolmentCloseDate ? "#1E3A8A" : colors.mutedForeground }}>
+                    {draft.enrollment.enrolmentCloseDate
+                      ? (() => { const [y,mo,d] = draft.enrollment.enrolmentCloseDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}`; })()
+                      : "No deadline"}
+                  </Text>
+                  <Ionicons name="calendar-outline" size={16} color="#1E3A8A" />
+                </View>
+              </Pressable>
+            </View>
+
+            {/* ── Sub-header: Currency ── */}
+            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.8, marginBottom: 6, marginLeft: 2 }}>CURRENCY</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
+                {CURRENCIES.map(c => {
+                  const sel = draft.enrollment.currencyCode === c.code;
+                  return (
+                    <Pressable key={c.code}
+                      onPress={() => { setDraft(d => ({ ...d, enrollment: { ...d.enrollment, currencyCode: c.code } })); Haptics.selectionAsync(); }}
+                      style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5,
+                        backgroundColor: sel ? "#1E3A8A" : colors.card,
+                        borderColor: sel ? "#1E3A8A" : colors.border }}>
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: sel ? "#FBBF24" : colors.foreground }}>
+                        {c.symbol} {c.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* ── Sub-header: Pricing Plans ── */}
+            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.8, marginBottom: 6, marginLeft: 2 }}>PRICING PLANS</Text>
             <View style={[styles.enrollCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {/* ── Free Trial ── */}
+              <View style={styles.enrollRow}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Free trial</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>First N sessions at no charge</Text>
+                </View>
+                <Switch value={draft.enrollment.trialEnabled}
+                  onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, trialEnabled: v } }))}
+                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }} thumbColor="#FBBF24" />
+              </View>
+              {draft.enrollment.trialEnabled && (
+                <View style={styles.enrollPriceRow}>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Trial sessions</Text>
+                  <TextInput
+                    style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                    keyboardType="numeric" placeholder="1" placeholderTextColor={colors.mutedForeground}
+                    value={draft.enrollment.trialSessions > 0 ? String(draft.enrollment.trialSessions) : ""}
+                    onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, trialSessions: Number(v) || 1 } }))}
+                  />
+                </View>
+              )}
+
+              <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+
+              {/* ── Drop-in / Single session ── */}
               <View style={styles.enrollRow}>
                 <View style={styles.enrollLeft}>
                   <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Single lesson (drop-in)</Text>
                   <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Pay per session</Text>
                 </View>
-                <Switch
-                  value={draft.enrollment.dropIn}
+                <Switch value={draft.enrollment.dropIn}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, dropIn: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }}
-                  thumbColor="#FBBF24"
-                />
+                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }} thumbColor="#FBBF24" />
               </View>
               {draft.enrollment.dropIn && (
                 <View style={styles.enrollPriceRow}>
-                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Price per session (€)</Text>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Price ({getCurrencySymbol(draft.enrollment.currencyCode)})</Text>
                   <TextInput
                     style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                     keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
@@ -2318,29 +2505,29 @@ export default function ActivityScreen() {
                   />
                 </View>
               )}
+
               <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+
+              {/* ── Lesson Pack ── */}
               <View style={styles.enrollRow}>
                 <View style={styles.enrollLeft}>
                   <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Lesson pack</Text>
-                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Block subscription</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Block of sessions, discounted</Text>
                 </View>
-                <Switch
-                  value={draft.enrollment.fixedBlock}
+                <Switch value={draft.enrollment.fixedBlock}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, fixedBlock: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }}
-                  thumbColor="#FBBF24"
-                />
+                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }} thumbColor="#FBBF24" />
               </View>
               {draft.enrollment.fixedBlock && (
                 <View style={styles.enrollPriceRow}>
-                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Lessons in pack</Text>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Sessions in pack</Text>
                   <TextInput
                     style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                     keyboardType="numeric" placeholder="10" placeholderTextColor={colors.mutedForeground}
                     value={draft.enrollment.fixedBlockLessons > 0 ? String(draft.enrollment.fixedBlockLessons) : ""}
                     onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, fixedBlockLessons: Number(v) || 0 } }))}
                   />
-                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Pack price (€)</Text>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Pack price ({getCurrencySymbol(draft.enrollment.currencyCode)})</Text>
                   <TextInput
                     style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                     keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
@@ -2350,25 +2537,22 @@ export default function ActivityScreen() {
                 </View>
               )}
 
-              {/* ── Monthly subscription ── */}
               <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+
+              {/* ── Monthly Subscription ── */}
               <View style={styles.enrollRow}>
                 <View style={styles.enrollLeft}>
                   <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Monthly subscription</Text>
-                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Pay once a month until a chosen end date</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Recurring monthly billing</Text>
                 </View>
-                <Switch
-                  value={draft.enrollment.monthly}
+                <Switch value={draft.enrollment.monthly}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthly: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }}
-                  thumbColor="#FBBF24"
-                />
+                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }} thumbColor="#FBBF24" />
               </View>
               {draft.enrollment.monthly && (
-                <View style={{ paddingHorizontal: 16, paddingBottom: 12, gap: 0 }}>
-                  {/* Monthly amount */}
+                <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.border }}>
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Monthly amount (€)</Text>
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Monthly amount ({getCurrencySymbol(draft.enrollment.currencyCode)})</Text>
                     <TextInput
                       style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, textAlign: "right", minWidth: 60 }}
                       keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
@@ -2376,39 +2560,56 @@ export default function ActivityScreen() {
                       onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthlyPrice: Number(v) || 0 } }))}
                     />
                   </View>
-
-                  {/* End date row */}
                   <Pressable
                     style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.border }}
                     onPress={() => {
                       if (draft.enrollment.monthlyEndDate) {
                         const [y, mo] = draft.enrollment.monthlyEndDate.split("-").map(Number);
-                        setMonthlyEndCalYear(y);
-                        setMonthlyEndCalMonth(mo - 1);
+                        setMonthlyEndCalYear(y); setMonthlyEndCalMonth(mo - 1);
                       }
                       setShowMonthlyEndPicker(true);
-                    }}
-                  >
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>End date</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.monthlyEndDate ? "#1E3A8A" : colors.mutedForeground }} numberOfLines={1} adjustsFontSizeToFit>
+                    }}>
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Subscription end date</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.monthlyEndDate ? "#1E3A8A" : colors.mutedForeground }}>
                       {draft.enrollment.monthlyEndDate
                         ? (() => { const [y,mo,d] = draft.enrollment.monthlyEndDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}, ${y}`; })()
                         : "Select"}
                     </Text>
                     <Ionicons name="calendar-outline" size={16} color="#1E3A8A" style={{ marginLeft: 6 }} />
                   </Pressable>
-
-                  {/* Payment day row */}
                   <Pressable
                     style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10 }}
-                    onPress={() => setShowMonthlyPayDayPicker(true)}
-                  >
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Payment day (default: 1st)</Text>
+                    onPress={() => setShowMonthlyPayDayPicker(true)}>
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Billing day each month</Text>
                     <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A" }}>
-                      {`${draft.enrollment.monthlyPayDay}${["th","st","nd","rd"][draft.enrollment.monthlyPayDay <= 3 ? draft.enrollment.monthlyPayDay : 0]} of each month`}
+                      {`${draft.enrollment.monthlyPayDay}${["th","st","nd","rd"][draft.enrollment.monthlyPayDay <= 3 ? draft.enrollment.monthlyPayDay : 0]}`}
                     </Text>
                     <Ionicons name="chevron-forward" size={16} color="#1E3A8A" style={{ marginLeft: 6 }} />
                   </Pressable>
+                </View>
+              )}
+
+              <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+
+              {/* ── Annual Subscription ── */}
+              <View style={styles.enrollRow}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Annual subscription</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>One payment for the full year</Text>
+                </View>
+                <Switch value={draft.enrollment.annual}
+                  onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, annual: v } }))}
+                  trackColor={{ false: "#CBD5E1", true: "#1E3A8A" }} thumbColor="#FBBF24" />
+              </View>
+              {draft.enrollment.annual && (
+                <View style={styles.enrollPriceRow}>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Annual price ({getCurrencySymbol(draft.enrollment.currencyCode)})</Text>
+                  <TextInput
+                    style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                    keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
+                    value={draft.enrollment.annualPrice > 0 ? String(draft.enrollment.annualPrice) : ""}
+                    onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, annualPrice: Number(v) || 0 } }))}
+                  />
                 </View>
               )}
             </View>
@@ -3405,6 +3606,102 @@ export default function ActivityScreen() {
                     ))}
                   </View>
                   <Pressable onPress={() => setShowMonthlyEndPicker(false)} style={{ marginTop: 16, backgroundColor: "#1E3A8A", borderRadius: 12, paddingVertical: 13, alignItems: "center" }}>
+                    <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Done</Text>
+                  </Pressable>
+                </Pressable>
+              </Pressable>
+            </View>
+          )}
+
+          {/* ── Enrolment Open Date Overlay ── */}
+          {showEnrolOpenPicker && (
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }}>
+              <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setShowEnrolOpenPicker(false)}>
+                <Pressable onPress={e => e.stopPropagation()} style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <Text style={{ fontSize: 17, fontWeight: "800", color: "#1E3A8A" }}>Registration Opens</Text>
+                    {draft.enrollment.enrolmentOpenDate ? (
+                      <Pressable onPress={() => { setDraft(d => ({ ...d, enrollment: { ...d.enrollment, enrolmentOpenDate: "" } })); setShowEnrolOpenPicker(false); }}>
+                        <Text style={{ fontSize: 13, color: "#EF4444", fontWeight: "600" }}>Clear</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <Pressable onPress={() => { if (enrolOpenCalMonth === 0) { setEnrolOpenCalMonth(11); setEnrolOpenCalYear(y => y - 1); } else setEnrolOpenCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
+                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                    </Pressable>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[enrolOpenCalMonth]} {enrolOpenCalYear}</Text>
+                    <Pressable onPress={() => { if (enrolOpenCalMonth === 11) { setEnrolOpenCalMonth(0); setEnrolOpenCalYear(y => y + 1); } else setEnrolOpenCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
+                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                    </Pressable>
+                  </View>
+                  <View style={{ flexDirection: "row", marginBottom: 6 }}>
+                    {DAY_HEADS_SHORT.map((h, i) => <View key={i} style={{ flex: 1, alignItems: "center" }}><Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>{h}</Text></View>)}
+                  </View>
+                  <View style={{ borderRadius: 14, overflow: "hidden", backgroundColor: colors.card, padding: 4 }}>
+                    {getAdminCalMatrix(enrolOpenCalYear, enrolOpenCalMonth).map((week, wi) => (
+                      <View key={wi} style={{ flexDirection: "row" }}>
+                        {week.map((date, di) => {
+                          if (!date) return <View key={di} style={{ flex: 1, aspectRatio: 1 }} />;
+                          const iso = toIso(date); const sel = draft.enrollment.enrolmentOpenDate === iso;
+                          const now = new Date(); const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                          return <Pressable key={di} style={{ flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: 10, margin: 1, backgroundColor: sel ? "#1E3A8A" : isToday ? "#1E3A8A18" : "transparent" }}
+                            onPress={() => { Haptics.selectionAsync(); setDraft(d => ({ ...d, enrollment: { ...d.enrollment, enrolmentOpenDate: iso } })); setShowEnrolOpenPicker(false); }}>
+                            <Text style={{ fontSize: 14, fontWeight: sel || isToday ? "700" : "400", color: sel ? "#FFF" : isToday ? "#1E3A8A" : colors.foreground }}>{date.getDate()}</Text>
+                          </Pressable>;
+                        })}
+                      </View>
+                    ))}
+                  </View>
+                  <Pressable onPress={() => setShowEnrolOpenPicker(false)} style={{ marginTop: 16, backgroundColor: "#1E3A8A", borderRadius: 12, paddingVertical: 13, alignItems: "center" }}>
+                    <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Done</Text>
+                  </Pressable>
+                </Pressable>
+              </Pressable>
+            </View>
+          )}
+
+          {/* ── Enrolment Close Date Overlay ── */}
+          {showEnrolClosePicker && (
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }}>
+              <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setShowEnrolClosePicker(false)}>
+                <Pressable onPress={e => e.stopPropagation()} style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <Text style={{ fontSize: 17, fontWeight: "800", color: "#1E3A8A" }}>Registration Closes</Text>
+                    {draft.enrollment.enrolmentCloseDate ? (
+                      <Pressable onPress={() => { setDraft(d => ({ ...d, enrollment: { ...d.enrollment, enrolmentCloseDate: "" } })); setShowEnrolClosePicker(false); }}>
+                        <Text style={{ fontSize: 13, color: "#EF4444", fontWeight: "600" }}>Clear</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <Pressable onPress={() => { if (enrolCloseCalMonth === 0) { setEnrolCloseCalMonth(11); setEnrolCloseCalYear(y => y - 1); } else setEnrolCloseCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
+                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                    </Pressable>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[enrolCloseCalMonth]} {enrolCloseCalYear}</Text>
+                    <Pressable onPress={() => { if (enrolCloseCalMonth === 11) { setEnrolCloseCalMonth(0); setEnrolCloseCalYear(y => y + 1); } else setEnrolCloseCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
+                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                    </Pressable>
+                  </View>
+                  <View style={{ flexDirection: "row", marginBottom: 6 }}>
+                    {DAY_HEADS_SHORT.map((h, i) => <View key={i} style={{ flex: 1, alignItems: "center" }}><Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>{h}</Text></View>)}
+                  </View>
+                  <View style={{ borderRadius: 14, overflow: "hidden", backgroundColor: colors.card, padding: 4 }}>
+                    {getAdminCalMatrix(enrolCloseCalYear, enrolCloseCalMonth).map((week, wi) => (
+                      <View key={wi} style={{ flexDirection: "row" }}>
+                        {week.map((date, di) => {
+                          if (!date) return <View key={di} style={{ flex: 1, aspectRatio: 1 }} />;
+                          const iso = toIso(date); const sel = draft.enrollment.enrolmentCloseDate === iso;
+                          const now = new Date(); const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                          return <Pressable key={di} style={{ flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: 10, margin: 1, backgroundColor: sel ? "#1E3A8A" : isToday ? "#1E3A8A18" : "transparent" }}
+                            onPress={() => { Haptics.selectionAsync(); setDraft(d => ({ ...d, enrollment: { ...d.enrollment, enrolmentCloseDate: iso } })); setShowEnrolClosePicker(false); }}>
+                            <Text style={{ fontSize: 14, fontWeight: sel || isToday ? "700" : "400", color: sel ? "#FFF" : isToday ? "#1E3A8A" : colors.foreground }}>{date.getDate()}</Text>
+                          </Pressable>;
+                        })}
+                      </View>
+                    ))}
+                  </View>
+                  <Pressable onPress={() => setShowEnrolClosePicker(false)} style={{ marginTop: 16, backgroundColor: "#1E3A8A", borderRadius: 12, paddingVertical: 13, alignItems: "center" }}>
                     <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Done</Text>
                   </Pressable>
                 </Pressable>
