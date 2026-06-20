@@ -118,6 +118,20 @@ function RoleSheet({ open, onClose, availableRoles, activeRole, onSwitch, colors
   );
 }
 
+// ── Role display priority (highest access → top) ─────────────────────────────
+
+const ROLE_ORDER: Record<UserRole, number> = {
+  super_admin: 0,
+  admin:       1,
+  operator:    2,
+  parent:      3,   // "Member" in the UI
+  kiosk:       4,
+};
+
+function sortRoles(roles: UserRole[]): UserRole[] {
+  return [...roles].sort((a, b) => (ROLE_ORDER[a] ?? 99) - (ROLE_ORDER[b] ?? 99));
+}
+
 // ── Shared hook ───────────────────────────────────────────────────────────────
 
 function useRoleSwitcher() {
@@ -125,10 +139,11 @@ function useRoleSwitcher() {
   const colors = useColors();
   const [open, setOpen] = useState(false);
 
-  const availableRoles: UserRole[] =
+  const availableRoles: UserRole[] = sortRoles(
     allRoles.length > 0
       ? allRoles.map(r => r.role).filter((v, i, a) => a.indexOf(v) === i)
-      : (user?.roles ?? []);
+      : (user?.roles ?? [])
+  );
 
   const activeRole: UserRole = user?.activeRole ?? user?.role ?? "parent";
   const current = ROLE_META[activeRole];
