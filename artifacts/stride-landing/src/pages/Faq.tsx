@@ -7,7 +7,7 @@ const categories = [
     icon: "🚀",
     items: [
       {
-        q: "How do I set up Stride for my school?",
+        q: "How do I set up Stride for my association?",
         a: "Register your account at /register. After verifying your email you'll be guided through the Pioneer Wizard — a 4-step setup that configures your organisation name, branding, billing, and creates your first admin account. The whole process takes under 10 minutes.",
       },
       {
@@ -34,7 +34,7 @@ const categories = [
       },
       {
         q: "What happens if an unauthorised person tries to pick up a dependant member?",
-        a: "The kiosk shows a 'Denied' screen with red alert colour. The operator's dashboard displays an SOS alert with the dependant's name and a prompt to follow the school's emergency protocol. The event is logged with a timestamp and is available in the security audit log.",
+        a: "The kiosk shows a 'Denied' screen with red alert colour. The operator's dashboard displays an SOS alert with the dependant's name and a prompt to follow the association's emergency protocol. The event is logged with a timestamp and is available in the security audit log.",
       },
       {
         q: "Can members add and remove guardians themselves?",
@@ -42,7 +42,7 @@ const categories = [
       },
       {
         q: "Are signatures legally binding?",
-        a: "Pickup signatures are captured with device IP, timestamp, and a SHA-256 integrity hash. They are not qualified electronic signatures under eIDAS, but they provide a strong audit trail suitable for most school safeguarding policies.",
+        a: "Pickup signatures are captured with device IP, timestamp, and a SHA-256 integrity hash. They are not qualified electronic signatures under eIDAS, but they provide a strong audit trail suitable for most association safeguarding policies.",
       },
     ],
   },
@@ -104,7 +104,7 @@ const categories = [
       },
       {
         q: "What is BLE proximity check-in?",
-        a: "Bluetooth Low Energy (BLE) beacons placed at your entrance detect a child's device automatically as they arrive, triggering a check-in without needing to scan a QR code. Beacons are configured in Admin → Beacons.",
+        a: "Bluetooth Low Energy (BLE) beacons placed at your entrance detect a member's device automatically as they arrive, triggering a check-in without needing to scan a QR code. Beacons are configured in Admin → Beacons.",
       },
       {
         q: "Is there an API for custom integrations?",
@@ -190,7 +190,7 @@ export default function Faq() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <a href="/contact" className="no-underline flex items-center gap-4 bg-[#1E3A8A] rounded-2xl p-6 text-white hover:bg-[#1e3070] transition-colors group">
             <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
               </svg>
             </div>

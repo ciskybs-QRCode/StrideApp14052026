@@ -32,7 +32,7 @@ const COMPARISON = [
 
 // ── Feature data ──────────────────────────────────────────────────────────────
 
-const SCHOOL_FEATURES = [
+const ASSOC_FEATURES = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -55,7 +55,7 @@ const SCHOOL_FEATURES = [
     ),
     tag: "Dependant Safety",
     title: "Smart Pick-Up Control",
-    desc: "Define exactly who can collect each dependant. Unauthorised pickup attempts trigger an immediate alert to school staff.",
+    desc: "Define exactly who can collect each dependant. Unauthorised pickup attempts trigger an immediate alert to association operators.",
     accent: "bg-indigo-600 text-white",
   },
   {
@@ -83,7 +83,7 @@ const SCHOOL_FEATURES = [
   },
 ];
 
-const PARENT_FEATURES = [
+const MEMBER_FEATURES = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -91,7 +91,7 @@ const PARENT_FEATURES = [
       </svg>
     ),
     title: "Real-Time Check-In Alerts",
-    desc: "A push notification the moment your child scans in — with the name of the staff member who acknowledged them.",
+    desc: "A push notification the moment your dependent member scans in — with the name of the operator who acknowledged them.",
   },
   {
     icon: (
@@ -100,7 +100,7 @@ const PARENT_FEATURES = [
       </svg>
     ),
     title: "Authorised Pickup Control",
-    desc: "Add or revoke pickup contacts from your phone, anytime. Every change is logged — no school can release your child without your approval.",
+    desc: "Add or revoke pickup contacts from your phone, anytime. Every change is logged — no-one can release your dependent member without your approval.",
   },
   {
     icon: (
@@ -109,20 +109,20 @@ const PARENT_FEATURES = [
       </svg>
     ),
     title: "Emergency Pulse Alerts",
-    desc: "Schools broadcast emergency alerts to all member phones simultaneously. One-tap acknowledgment confirms receipt — bypasses silent mode.",
+    desc: "Associations broadcast emergency alerts to all member phones simultaneously. One-tap acknowledgment confirms receipt — bypasses silent mode.",
   },
 ];
 
 const HOW_STEPS = [
   {
     n: "01",
-    title: "School signs up in minutes",
-    desc: "Register your school, configure your class schedule, and invite your operators — all in one setup flow. No IT team required.",
+    title: "Association signs up in minutes",
+    desc: "Register your association, configure your schedule, and invite your operators — all in one setup flow. No IT team required.",
   },
   {
     n: "02",
     title: "Members sign documents on their phones",
-    desc: "Families receive an invite link, review all consent documents, and sign digitally before their first session.",
+    desc: "Members receive an invite link, review all consent documents, and sign digitally before their first session.",
   },
   {
     n: "03",
@@ -160,7 +160,7 @@ const PRIVACY_PILLARS = [
   {
     title: "The 'Local-Only' Rule",
     badge: "Zero PII",
-    desc: "Wearable UUIDs are randomly generated anonymous identifiers. They contain NO child name or personal info — only the secure portal can link them.",
+    desc: "Wearable UUIDs are randomly generated anonymous identifiers. They contain NO member name or personal info — only the secure portal can link them.",
     badgeColor: "bg-violet-50 text-violet-700 border-violet-200",
     iconColor: "text-violet-600",
     icon: (
@@ -170,7 +170,7 @@ const PRIVACY_PILLARS = [
     ),
   },
   {
-    title: "Full Parental Control",
+    title: "Full Member Control",
     badge: "Transparent",
     desc: "View all recorded logs, disable proximity tracking at any time, and request a full data audit export — always, no questions asked.",
     badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
@@ -199,7 +199,7 @@ const FAQS = [
   },
   {
     q: "Is my members' data private and secure?",
-    a: "Each school's data is in a fully isolated tenant environment. Cross-tenant access is architecturally impossible. All traffic is encrypted in transit (TLS 1.3) and at rest (AES-256).",
+    a: "Each association's data is in a fully isolated tenant environment. Cross-tenant access is architecturally impossible. All traffic is encrypted in transit (TLS 1.3) and at rest (AES-256).",
   },
   {
     q: "Can I manage multiple venues or class types?",
@@ -215,7 +215,7 @@ const IcoArrow = () => (
   </svg>
 );
 const IcoCheck = ({ gold }: { gold?: boolean } = {}) => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={gold ? "#D4AF37" : "currentColor"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={gold ? "#FBBF24" : "currentColor"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
@@ -229,14 +229,14 @@ const IcoChevron = ({ open }: { open: boolean }) => (
 const Logo = () => (
   <svg height="28" width="28" viewBox="0 0 36 36" fill="none">
     <rect width="36" height="36" rx="9" fill="#1E3A8A" />
-    <path d="M9 18h18M18 10l8 8-8 8" stroke="#D4AF37" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9 18h18M18 10l8 8-8 8" stroke="#FBBF24" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 // ── Stat counters ─────────────────────────────────────────────────────────────
 
 const STATS = [
-  { n: "500+",  label: "Schools Onboarded" },
+  { n: "500+",  label: "Associations Onboarded" },
   { n: "12k+",  label: "Active Members" },
   { n: "99.9%", label: "Platform Uptime" },
   { n: "0%",    label: "Commission on Trials" },
@@ -290,7 +290,7 @@ export default function Landing() {
   }, []);
 
   const navLinks = [
-    ["#for-schools",     "For Schools"],
+    ["#for-associations", "For Associations"],
     ["#emergency-pulse", "Emergency Pulse"],
     ["#for-members",     "For Members"],
     ["#pricing",         "Pricing"],
@@ -317,7 +317,7 @@ export default function Landing() {
               </a>
             ))}
             <a href="/landing/register"
-              className="bg-[#D4AF37] text-[#0A192F] text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-[#e8c44b] transition-colors no-underline">
+              className="bg-[#FBBF24] text-[#0A192F] text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-[#fcd34d] transition-colors no-underline">
               Get Started Free
             </a>
           </div>
@@ -339,7 +339,7 @@ export default function Landing() {
                 onClick={() => setMenuOpen(false)}>{label}</a>
             ))}
             <a href="/landing/register"
-              className="bg-[#D4AF37] text-[#0A192F] text-sm font-bold px-5 py-3 rounded-lg text-center no-underline"
+              className="bg-[#FBBF24] text-[#0A192F] text-sm font-bold px-5 py-3 rounded-lg text-center no-underline"
               onClick={() => setMenuOpen(false)}>
               Get Started Free — 30-Day Trial
             </a>
@@ -368,7 +368,7 @@ export default function Landing() {
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.2rem] font-black leading-[1.1] text-slate-900 mb-6">
               The Safety Platform for{" "}
-              <span className="text-[#1E3A8A]">Dance Schools &amp; Activity Centres.</span>
+              <span className="text-[#1E3A8A]">Associations &amp; Activity Organisations.</span>
             </h1>
 
             <p className="text-lg text-slate-600 leading-relaxed mb-6 max-w-xl mx-auto lg:mx-0">
@@ -385,7 +385,7 @@ export default function Landing() {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-5">
               <a href="/landing/register"
-                className="inline-flex items-center justify-center gap-2 bg-[#D4AF37] text-[#0A192F] font-black px-8 py-4 rounded-xl text-base hover:bg-[#e8c44b] transition-colors shadow-md shadow-amber-100 no-underline">
+                className="inline-flex items-center justify-center gap-2 bg-[#FBBF24] text-[#0A192F] font-black px-8 py-4 rounded-xl text-base hover:bg-[#fcd34d] transition-colors shadow-md shadow-amber-100 no-underline">
                 Start Free Trial <IcoArrow />
               </a>
               <a href="#for-schools"
@@ -402,13 +402,13 @@ export default function Landing() {
               {/* Card header */}
               <div className="bg-[#1E3A8A] px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                 </div>
                 <div>
                   <p className="text-white text-sm font-bold">Stride Kiosk — Live</p>
-                  <p className="text-blue-300 text-xs">Sofia's Dance Academy</p>
+                  <p className="text-blue-300 text-xs">City Sports Club</p>
                 </div>
                 <span className="ml-auto flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />Live
@@ -417,11 +417,11 @@ export default function Landing() {
               {/* Attendance list */}
               <div className="px-5 py-4 space-y-2.5">
                 {[
-                  ["Sofia R.",  "Checked in",  true],
-                  ["Marco B.",  "Checked in",  true],
-                  ["Anna K.",   "Pending",      false],
-                  ["Luca M.",   "Checked in",  true],
-                  ["Giulia F.", "Absent",       false],
+                  ["Alex T.",   "Checked in",  true],
+                  ["Sam K.",    "Checked in",  true],
+                  ["Jordan L.", "Pending",      false],
+                  ["Chris M.",  "Checked in",  true],
+                  ["Riley P.",  "Absent",       false],
                 ].map(([name, status, ok]) => (
                   <div key={name as string} className="flex items-center gap-3 bg-slate-50 rounded-xl px-3.5 py-2.5 border border-slate-100">
                     <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center text-[11px] font-black ${ok ? "bg-emerald-100 text-emerald-700" : "bg-amber-50 text-amber-600"}`}>
@@ -438,14 +438,14 @@ export default function Landing() {
               {/* Card footer */}
               <div className="border-t border-slate-100 px-5 py-3 flex items-center justify-between">
                 <span className="text-xs text-slate-500">4 / 5 checked in</span>
-                <span className="bg-[#D4AF37]/15 text-[#9a7d00] text-xs font-bold px-3 py-1 rounded-full border border-[#D4AF37]/30">QR Active</span>
+                <span className="bg-[#FBBF24]/15 text-[#9a7d00] text-xs font-bold px-3 py-1 rounded-full border border-[#FBBF24]/30">QR Active</span>
               </div>
             </div>
 
             {/* Social proof below card */}
             <div className="mt-4 grid grid-cols-3 gap-3">
               {[
-                { n: "500+",  label: "Schools" },
+                { n: "500+",  label: "Orgs" },
                 { n: "12k+",  label: "Members" },
                 { n: "99.9%", label: "Uptime" },
               ].map(({ n, label }) => (
@@ -464,7 +464,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {STATS.map(({ n, label }) => (
             <div key={label}>
-              <div className="text-3xl font-black text-[#D4AF37]">{n}</div>
+              <div className="text-3xl font-black text-[#FBBF24]">{n}</div>
               <div className="text-sm text-blue-200 mt-1">{label}</div>
             </div>
           ))}
@@ -501,9 +501,9 @@ export default function Landing() {
                       Traditional Paper
                     </span>
                   </th>
-                  <th className="text-left font-bold text-[13px] uppercase tracking-wider text-[#D4AF37]">
+                  <th className="text-left font-bold text-[13px] uppercase tracking-wider text-[#FBBF24]">
                     <span className="inline-flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5 text-[#D4AF37]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 text-[#FBBF24]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       Stride Digital
@@ -549,12 +549,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FOR SCHOOLS ────────────────────────────────────────────────────── */}
-      <section id="for-schools" className="bg-white py-24">
+      {/* ── FOR ASSOCIATIONS ──────────────────────────────────────────────── */}
+      <section id="for-associations" className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
             <span className="inline-flex items-center gap-2 bg-[#1E3A8A]/8 border border-[#1E3A8A]/20 rounded-full px-4 py-1.5 mb-5">
-              <span className="text-[#1E3A8A] text-xs font-bold tracking-wider uppercase">For Schools &amp; Academies</span>
+              <span className="text-[#1E3A8A] text-xs font-bold tracking-wider uppercase">For Associations &amp; Organisations</span>
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">
               Everything You Need to Run Safely
@@ -569,7 +569,7 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {SCHOOL_FEATURES.map(({ icon, tag, title, desc, accent }) => (
+            {ASSOC_FEATURES.map(({ icon, tag, title, desc, accent }) => (
               <div key={title} className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-[#1E3A8A]/30 hover:shadow-md transition-all">
                 <div className={`w-10 h-10 rounded-xl ${accent} flex items-center justify-center mb-4`}>
                   {icon}
@@ -584,7 +584,7 @@ export default function Landing() {
           <div className="mt-10 text-center">
             <a href="/landing/register"
               className="inline-flex items-center gap-2 bg-[#1E3A8A] text-white font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-[#152d6e] transition-colors no-underline">
-              Register Your School <IcoArrow />
+              Register Your Association <IcoArrow />
             </a>
           </div>
         </div>
@@ -645,7 +645,7 @@ export default function Landing() {
                     <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                     <span className="text-white text-xs font-black tracking-widest uppercase">Emergency Active</span>
                   </div>
-                  <p className="text-red-100 text-xs">Main Campus &middot; Sofia's Dance Academy</p>
+                  <p className="text-red-100 text-xs">Main Campus &middot; City Sports Club</p>
                 </div>
                 {/* Status grid */}
                 <div className="p-5">
@@ -697,7 +697,7 @@ export default function Landing() {
               </p>
 
               <div className="space-y-6">
-                {PARENT_FEATURES.map(({ icon, title, desc }) => (
+                {MEMBER_FEATURES.map(({ icon, title, desc }) => (
                   <div key={title} className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-xl bg-[#1E3A8A]/8 border border-[#1E3A8A]/15 text-[#1E3A8A] flex items-center justify-center flex-shrink-0">
                       {icon}
@@ -712,7 +712,7 @@ export default function Landing() {
 
               <div className="mt-8">
                 <a href="/landing/register"
-                  className="inline-flex items-center gap-2 bg-[#D4AF37] text-[#0A192F] font-black px-7 py-3.5 rounded-xl text-sm hover:bg-[#e8c44b] transition-colors no-underline shadow-md shadow-amber-100">
+                  className="inline-flex items-center gap-2 bg-[#FBBF24] text-[#0A192F] font-black px-7 py-3.5 rounded-xl text-sm hover:bg-[#fcd34d] transition-colors no-underline shadow-md shadow-amber-100">
                   Join as a Member <IcoArrow />
                 </a>
               </div>
@@ -723,19 +723,19 @@ export default function Landing() {
               <div className="bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden">
                 <div className="bg-[#1E3A8A] px-5 py-4 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                   </div>
                   <div>
                     <p className="text-white font-bold text-sm">Member Portal</p>
-                    <p className="text-blue-300 text-xs">Sofia's School &mdash; Live</p>
+                    <p className="text-blue-300 text-xs">City Sports Club &mdash; Live</p>
                   </div>
                   <span className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
                 <div className="px-5 py-4 space-y-3">
                   {[
-                    { label: "Sofia checked in",          time: "3:01 PM",   color: "bg-emerald-400" },
+                    { label: "Alex checked in",           time: "3:01 PM",   color: "bg-emerald-400" },
                     { label: "Pickup: Mum (authorised)",  time: "5:30 PM",   color: "bg-blue-400" },
                     { label: "Waiver signed",             time: "Yesterday", color: "bg-violet-400" },
                   ].map(({ label, time, color }) => (
@@ -746,12 +746,12 @@ export default function Landing() {
                     </div>
                   ))}
                   <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                     </svg>
                     <div>
                       <p className="text-amber-700 text-xs font-bold">Emergency Pulse Active</p>
-                      <p className="text-amber-600 text-xs">Tap to acknowledge school alert</p>
+                      <p className="text-amber-600 text-xs">Tap to acknowledge association alert</p>
                     </div>
                   </div>
                 </div>
@@ -770,8 +770,8 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
           {HOW_STEPS.map(({ n, title, desc }) => (
             <div key={n} className="bg-white/8 border border-white/15 rounded-2xl p-8">
-              <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center mb-5">
-                <span className="text-[#D4AF37] font-black text-lg">{n}</span>
+              <div className="w-12 h-12 rounded-xl bg-[#FBBF24]/20 border border-[#FBBF24]/40 flex items-center justify-center mb-5">
+                <span className="text-[#FBBF24] font-black text-lg">{n}</span>
               </div>
               <h3 className="text-white font-black text-xl mb-3">{title}</h3>
               <p className="text-blue-200 text-sm leading-relaxed">{desc}</p>
@@ -780,7 +780,7 @@ export default function Landing() {
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-10 text-center">
           <a href="/landing/register"
-            className="inline-flex items-center gap-2 bg-[#D4AF37] text-[#0A192F] font-black px-8 py-4 rounded-xl text-sm hover:bg-[#e8c44b] transition-colors no-underline shadow-md">
+            className="inline-flex items-center gap-2 bg-[#FBBF24] text-[#0A192F] font-black px-8 py-4 rounded-xl text-sm hover:bg-[#fcd34d] transition-colors no-underline shadow-md">
             Start Your Free Trial <IcoArrow />
           </a>
         </div>
@@ -803,7 +803,7 @@ export default function Landing() {
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">Privacy by Design</h2>
             <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-              How we protect your data — and your child's.
+              How we protect your data — and your members'.
             </p>
           </div>
 
@@ -983,7 +983,7 @@ export default function Landing() {
 
             {/* Plus — most popular */}
             <div className="relative bg-white border-2 border-[#1E3A8A] rounded-2xl overflow-hidden shadow-xl shadow-[#1E3A8A]/15 flex flex-col scale-[1.03]">
-              <div className="absolute top-4 right-4 bg-[#D4AF37] text-[#0A192F] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+              <div className="absolute top-4 right-4 bg-[#FBBF24] text-[#0A192F] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
                 ★ Most Popular
               </div>
               <div className="bg-[#1E3A8A] px-6 py-6">
@@ -1001,7 +1001,7 @@ export default function Landing() {
                   ))}
                 </ul>
                 <a href="/landing/register"
-                  className="block text-center bg-[#D4AF37] text-[#0A192F] font-black text-sm py-3 rounded-xl hover:bg-[#e8c44b] transition-colors no-underline">
+                  className="block text-center bg-[#FBBF24] text-[#0A192F] font-black text-sm py-3 rounded-xl hover:bg-[#fcd34d] transition-colors no-underline">
                   Get Started
                 </a>
               </div>
@@ -1079,9 +1079,9 @@ export default function Landing() {
       {/* ── FINAL CTA ──────────────────────────────────────────────────────── */}
       <section className="py-24 bg-[#1E3A8A]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-[#D4AF37]/15 border border-[#D4AF37]/30 rounded-full px-4 py-1.5 mb-6">
-            <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse" />
-            <span className="text-[#D4AF37] text-xs font-bold tracking-wider uppercase">Join 500+ Schools on Stride</span>
+          <div className="inline-flex items-center gap-2 bg-[#FBBF24]/15 border border-[#FBBF24]/30 rounded-full px-4 py-1.5 mb-6">
+            <span className="w-2 h-2 rounded-full bg-[#FBBF24] animate-pulse" />
+            <span className="text-[#FBBF24] text-xs font-bold tracking-wider uppercase">Join 500+ Schools on Stride</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-white mb-5">
             Your Free Trial Starts the Moment You Sign Up
@@ -1091,7 +1091,7 @@ export default function Landing() {
             Set up your school, invite your operators, and run your first safe session today.
           </p>
           <a href="/landing/register"
-            className="inline-flex items-center gap-2.5 bg-[#D4AF37] text-[#0A192F] font-black text-lg px-10 py-5 rounded-2xl hover:bg-[#e8c44b] transition-colors shadow-xl shadow-[#D4AF37]/20 no-underline">
+            className="inline-flex items-center gap-2.5 bg-[#FBBF24] text-[#0A192F] font-black text-lg px-10 py-5 rounded-2xl hover:bg-[#fcd34d] transition-colors shadow-xl shadow-[#FBBF24]/20 no-underline">
             Start Free Trial &mdash; No Card Required <IcoArrow />
           </a>
           <p className="mt-5 text-blue-400 text-sm">

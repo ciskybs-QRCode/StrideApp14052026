@@ -26,7 +26,7 @@ const FEATURES: FeatureGroup[] = [
     rows: [
       { label: "Active QR codes (members + dependants)", core: "Up to 35", plus: "Up to 100", premium: "Unlimited" },
       { label: "Operator accounts",                       core: "3",        plus: "10",        premium: "Unlimited" },
-      { label: "Member portal (parent + dependant view)", core: true,       plus: true,        premium: true },
+      { label: "Member portal (member + dependent view)", core: true,       plus: true,        premium: true },
       { label: "2-month free trial · no card required",   core: true,       plus: true,        premium: true },
     ],
   },
@@ -48,7 +48,7 @@ const FEATURES: FeatureGroup[] = [
       { label: "Broadcast messaging",                                     core: true,  plus: true,  premium: true  },
       { label: "Advanced messaging (attachments, read receipts)",         core: false, plus: true,  premium: true  },
       { label: "Course booking + waitlist management",                    core: false, plus: true,  premium: true  },
-      { label: "Event ticketing (shows, recitals, competitions)",         core: false, plus: false, premium: true  },
+      { label: "Event ticketing (shows, performances, competitions)",      core: false, plus: false, premium: true  },
       { label: "Certificate tracking (medical, first aid + reminders)",   core: false, plus: true,  premium: true  },
       { label: "Operator scheduling + auto substitution (cascade)",       core: false, plus: true,  premium: true  },
       { label: "Multi-association (join with invite code)",               core: false, plus: true,  premium: true  },
@@ -118,7 +118,7 @@ function detectCurrency(): string {
 
 const IcoCheck = ({ gold }: { gold?: boolean }) => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-    stroke={gold ? "#D4AF37" : "#059669"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    stroke={gold ? "#FBBF24" : "#059669"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
@@ -146,8 +146,8 @@ const FAQS = [
     a: "You can export all your data in CSV or JSON at any time. We retain it for 90 days after cancellation, then permanently delete it." },
   { q: "Does the QR code limit include operators?",
     a: "The member limit covers active member and dependant profiles (each with a QR code). Operators are separate and counted against the operator limit for your plan." },
-  { q: "Is AI usage included in the Academy plan?",
-    a: "Yes. All AI features in Academy are included in the subscription — no extra AI usage fees. Calls are pooled and the fair-use allowance is sufficient for any normal-sized association." },
+  { q: "Is AI usage included in the Premium plan?",
+    a: "Yes. All AI features in Premium are included in the subscription — no extra AI usage fees. Calls are pooled and the fair-use allowance is sufficient for any normal-sized association." },
   { q: "Can I try before I buy?",
     a: "Every plan starts with a 30-day free trial. No credit card required. You get full access to the features of your chosen tier during the trial." },
 ];
@@ -186,17 +186,17 @@ export default function PricingPage() {
   }> = [
     {
       key: "core", name: "Core", emoji: "🥉", badge: null,
-      desc: "Perfect for small studios taking their first step into digital management.",
+      desc: "Perfect for small associations taking their first step into digital management.",
       scale: "", ring: "border-slate-200",
       headerBg: "bg-slate-50", nameColor: "text-slate-400", priceColor: "text-slate-900", subColor: "text-slate-400",
       cta: "Start Free Trial", ctaStyle: "bg-[#1E3A8A] text-white hover:bg-[#1e3070]", href: "/landing/register",
     },
     {
       key: "plus", name: "Plus", emoji: "🥈", badge: "★ Most Popular",
-      desc: "The complete platform for growing dance studios and performing arts schools.",
+      desc: "The complete platform for growing associations and multi-site organisations.",
       scale: "scale-[1.03]", ring: "border-[#1E3A8A] shadow-xl shadow-[#1E3A8A]/15",
       headerBg: "bg-[#1E3A8A]", nameColor: "text-blue-300", priceColor: "text-white", subColor: "text-blue-200",
-      cta: "Get Started", ctaStyle: "bg-[#D4AF37] text-[#0A192F] hover:bg-[#e8c44b] font-black", href: "/landing/register",
+      cta: "Get Started", ctaStyle: "bg-[#FBBF24] text-[#0A192F] hover:bg-[#fcd34d] font-black", href: "/landing/register",
     },
     {
       key: "premium", name: "Premium", emoji: "🥇", badge: null,
@@ -281,7 +281,7 @@ export default function PricingPage() {
               <div key={plan.key}
                 className={`relative bg-white border-2 ${plan.ring} rounded-2xl overflow-hidden flex flex-col shadow-sm ${plan.scale}`}>
                 {plan.badge && (
-                  <div className="absolute top-4 right-4 bg-[#D4AF37] text-[#0A192F] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  <div className="absolute top-4 right-4 bg-[#FBBF24] text-[#0A192F] text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
                     {plan.badge}
                   </div>
                 )}
@@ -367,7 +367,7 @@ export default function PricingPage() {
                                   </span>
                                 : val === false
                                   ? <span className="inline-flex justify-center"><IcoDash /></span>
-                                  : <span className={`text-xs font-bold ${isPlus ? "text-[#1E3A8A]" : isPremium ? "text-[#D4AF37]" : "text-slate-500"}`}>
+                                  : <span className={`text-xs font-bold ${isPlus ? "text-[#1E3A8A]" : isPremium ? "text-[#FBBF24]" : "text-slate-500"}`}>
                                       {val}
                                     </span>}
                             </td>
@@ -383,16 +383,16 @@ export default function PricingPage() {
                 <tr className="bg-slate-50 border-t-2 border-slate-200">
                   <td className="py-4 px-5 text-sm font-black text-slate-700">Monthly price (USD)</td>
                   {(["core", "plus", "premium"] as Plan[]).map(plan => (
-                    <td key={plan} className={`py-4 px-3 text-center font-black text-lg ${plan === "plus" ? "text-[#1E3A8A] bg-blue-50/60" : plan === "premium" ? "text-[#D4AF37]" : "text-slate-700"}`}>
-                      €{PRICES[plan].monthly}/mo
+                    <td key={plan} className={`py-4 px-3 text-center font-black text-lg ${plan === "plus" ? "text-[#1E3A8A] bg-blue-50/60" : plan === "premium" ? "text-[#FBBF24]" : "text-slate-700"}`}>
+                      ${PRICES[plan].monthly}/mo
                     </td>
                   ))}
                 </tr>
                 <tr className="bg-slate-50">
-                  <td className="py-3 px-5 text-xs text-slate-400">Annual price — 2 months free (EUR)</td>
+                  <td className="py-3 px-5 text-xs text-slate-400">Annual price — 2 months free (USD)</td>
                   {(["core", "plus", "premium"] as Plan[]).map(plan => (
                     <td key={plan} className={`py-3 px-3 text-center text-xs font-bold text-emerald-600 ${plan === "plus" ? "bg-blue-50/60" : ""}`}>
-                      €{PRICES[plan].annual}/yr
+                      ${PRICES[plan].annual}/yr
                     </td>
                   ))}
                 </tr>
@@ -422,7 +422,7 @@ export default function PricingPage() {
             </p>
           </div>
           <a href="/contact"
-            className="flex-shrink-0 bg-[#D4AF37] text-[#0A192F] font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#e8c44b] transition-colors no-underline whitespace-nowrap">
+            className="flex-shrink-0 bg-[#FBBF24] text-[#0A192F] font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#fcd34d] transition-colors no-underline whitespace-nowrap">
             Talk to sales
           </a>
         </div>

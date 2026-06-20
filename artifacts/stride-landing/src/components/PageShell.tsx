@@ -13,7 +13,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
   return (
     <div
       className={`min-h-screen flex flex-col ${dark ? "bg-[#0a1225]" : "bg-[#F8FAFC]"}`}
-      style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
+      style={{ fontFamily: "'Montserrat', system-ui, -apple-system, sans-serif" }}
     >
       {/* ── Nav ── */}
       <nav className={`sticky top-0 z-50 border-b shadow-sm ${navBg}`}>
@@ -21,7 +21,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
           <a href="/" className="flex items-center gap-2.5 no-underline">
             <svg height="26" width="26" viewBox="0 0 36 36" fill="none">
               <rect width="36" height="36" rx="9" fill="#1E3A8A" />
-              <path d="M9 18h18M18 10l8 8-8 8" stroke={dark ? "#D4AF37" : "white"} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M9 18h18M18 10l8 8-8 8" stroke={dark ? "#FBBF24" : "white"} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span className={`text-base font-bold tracking-wide ${logoTxt}`}>Stride</span>
           </a>
@@ -30,7 +30,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
             <a href="/pricing" className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>Pricing</a>
             <a href="/faq"     className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>FAQ</a>
             <a href="/contact" className={`text-sm font-medium transition-colors ${linkTxt}`}>Support</a>
-            <a href="/landing/register" className="bg-[#D4AF37] text-[#0A192F] text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-[#e8c44b] transition-colors no-underline">
+            <a href="/landing/register" className="bg-[#FBBF24] text-[#0A192F] text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-[#fcd34d] transition-colors no-underline">
               Get Started
             </a>
           </div>
@@ -58,7 +58,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
               <span className="font-semibold text-white text-sm">Stride</span>
             </a>
             <p className="text-blue-400 text-xs leading-relaxed">
-              Activity management for the modern school.
+              Association management platform.
             </p>
           </div>
 

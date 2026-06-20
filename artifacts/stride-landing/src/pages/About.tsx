@@ -3,26 +3,26 @@ import { PageShell } from "../components/PageShell";
 const values = [
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
         <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
       </svg>
     ),
-    title: "Family First",
-    desc: "Every feature is built with parents, children, and instructors in mind. Safety, transparency, and trust are non-negotiable.",
+    title: "Members First",
+    desc: "Every feature is built with members, dependent members, and operators in mind. Safety, transparency, and trust are non-negotiable.",
   },
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
       </svg>
     ),
     title: "Technology That Works",
-    desc: "No complicated setup. Stride is intuitive for operators running a small studio and powerful enough for a multi-site academy.",
+    desc: "No complicated setup. Stride is intuitive for operators running a small association and powerful enough for a multi-site organisation.",
   },
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
     ),
@@ -31,18 +31,18 @@ const values = [
   },
   {
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
       </svg>
     ),
     title: "Continuous Improvement",
-    desc: "We ship updates weekly. Every feature request from operators and parents goes into our backlog — you shape the roadmap.",
+    desc: "We ship updates weekly. Every feature request from operators and members goes into our backlog — you shape the roadmap.",
   },
 ];
 
 const timeline = [
   { year: "2022", event: "Stride founded by a team of engineers with direct experience running sports academies" },
-  { year: "2023", event: "First 20 pilot schools onboarded. QR check-in, Smart Pick-Up, and digital signing launched" },
+  { year: "2023", event: "First 20 pilot associations onboarded. QR check-in, Smart Pick-Up, and digital signing launched" },
   { year: "2024", event: "Multi-tenant architecture, Stripe Connect, and Emergency Pulse rolled out to 150+ organisations" },
   { year: "2025", event: "BLE proximity check-in, AI medical certificate analysis, and marketplace launched" },
   { year: "2026", event: "Global expansion — available in 12 countries across Europe, Australia, and North America" },
@@ -65,17 +65,17 @@ export default function About() {
             Built by operators,<br />for operators
           </h1>
           <p className="text-slate-500 text-base max-w-2xl mx-auto leading-relaxed">
-            Stride was born out of frustration. Our founders ran dance academies and sports clubs and couldn't find software that handled the real complexity of managing children, parents, payments, and staff in one place. So we built it ourselves.
+            Stride was born out of frustration. Our founders ran sports associations and activity organisations and couldn't find software that handled the real complexity of managing members, payments, and staff in one place. So we built it ourselves.
           </p>
         </div>
 
         {/* ── Mission banner ── */}
         <div className="bg-[#1E3A8A] rounded-3xl p-8 sm:p-10 mb-16 text-white text-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 20%, #D4AF37 0%, transparent 60%)" }} />
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 20%, #FBBF24 0%, transparent 60%)" }} />
           <div className="relative z-10">
-            <p className="text-[#D4AF37] text-xs font-bold uppercase tracking-widest mb-3">Our Mission</p>
+            <p className="text-[#FBBF24] text-xs font-bold uppercase tracking-widest mb-3">Our Mission</p>
             <p className="text-2xl sm:text-3xl font-black leading-snug max-w-2xl mx-auto">
-              "To give every activity centre — from a two-room dance studio to a 10-site academy — the same operational power as a Fortune 500 company."
+              "To give every association — from a single-venue organisation to a 10-site network — the same operational power as a Fortune 500 company."
             </p>
           </div>
         </div>
@@ -107,7 +107,7 @@ export default function About() {
               {timeline.map((item, i) => (
                 <div key={i} className="relative">
                   <div className="absolute -left-10 top-1 w-9 h-9 rounded-full bg-[#1E3A8A] flex items-center justify-center shadow">
-                    <span className="text-[#D4AF37] text-[10px] font-black">{item.year.slice(2)}</span>
+                    <span className="text-[#FBBF24] text-[10px] font-black">{item.year.slice(2)}</span>
                   </div>
                   <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                     <span className="text-[#1E3A8A] text-xs font-black uppercase tracking-wider">{item.year}</span>
@@ -123,7 +123,7 @@ export default function About() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-16">
           {[
             { value: "500+", label: "Organisations" },
-            { value: "120k+", label: "Students managed" },
+            { value: "120k+", label: "Members managed" },
             { value: "12", label: "Countries" },
             { value: "99.9%", label: "Uptime SLA" },
           ].map(s => (
