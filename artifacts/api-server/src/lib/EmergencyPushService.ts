@@ -366,7 +366,7 @@ export class EmergencyPushService {
       const { rows: adminRows } = await pool.query<{ phone: string; name: string }>(
         `SELECT u.phone, u.name
          FROM users u
-         JOIN organization_members om ON om.user_id = u.id
+         JOIN organization_members om ON om.user_id = u.id::text
          WHERE om.organization_id = $1
            AND om.role IN ('admin', 'super_admin')
            AND u.phone IS NOT NULL AND u.phone <> ''
@@ -416,7 +416,7 @@ export class EmergencyPushService {
       const { rows: adminRows } = await pool.query<{ email: string; name: string }>(
         `SELECT u.email, u.name
          FROM users u
-         JOIN organization_members om ON om.user_id = u.id
+         JOIN organization_members om ON om.user_id = u.id::text
          WHERE om.organization_id = $1
            AND om.role IN ('admin', 'super_admin')
            AND u.email IS NOT NULL AND u.email <> ''
