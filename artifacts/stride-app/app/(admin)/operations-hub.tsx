@@ -104,6 +104,14 @@ export default function OperationsHub() {
           description="Create events, manage dates and ticket types"
           onPress={() => router.push("/(admin)/events" as never)}
         />
+        <HubCard
+          icon="cash-outline"
+          title="Fee Events"
+          description="One-off payment events with line items, installments and AI email"
+          iconBg="#1E3A8A"
+          iconColor="#FBBF24"
+          onPress={() => router.push("/(admin)/fee-events" as never)}
+        />
 
         {user?.role === "super_admin" && (
           <>

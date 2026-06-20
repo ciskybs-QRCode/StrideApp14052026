@@ -66,11 +66,60 @@ function maskIBAN(iban: string): string {
   return `${iban.slice(0, 4)} •••• •••• ${iban.slice(-4)}`;
 }
 
+// ── Fee event types ───────────────────────────────────────────────────────────
+
+interface MyFeeEvent {
+  id: number;
+  title: string;
+  description: string | null;
+  payment_type: "single" | "installments";
+  total_amount_cents: number;
+  currency: string;
+  due_date: string | null;
+  free_tickets_per_member: number;
+  payment_status: string;
+  read_at: string | null;
+  published_at: string | null;
+  installments: { installment_num: number; label: string | null; amount_cents: number; due_date: string }[];
+  line_items: { description: string; amount_cents: number }[];
+}
+
+const CURRENCY_SYMS: Record<string, string> = { EUR: "€", USD: "$", GBP: "£", CHF: "CHF " };
+const fmtFee = (cents: number, c: string) => `${CURRENCY_SYMS[c] ?? c}${(cents / 100).toFixed(2)}`;
+
 export default function WalletScreen() {
   const { payments, bookings, courses } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  // ── Pending fees state ───────────────────────────────────────────────────────
+  const [pendingFees, setPendingFees]       = useState<MyFeeEvent[]>([]);
+  const [feesLoading, setFeesLoading]       = useState(false);
+  const [expandedFee, setExpandedFee]       = useState<number | null>(null);
+
+  useEffect(() => {
+    setFeesLoading(true);
+    import("@/lib/api").then(api =>
+      api.getMyFeeEvents().then(data => {
+        const mapped: MyFeeEvent[] = data.map(f => ({
+          ...f,
+          installments: (f.installments ?? []) as MyFeeEvent["installments"],
+          line_items:   (f.line_items ?? []) as MyFeeEvent["line_items"],
+          payment_status: f.payment_status ?? "pending",
+          read_at:        f.read_at ?? null,
+          published_at:   f.published_at ?? null,
+        }));
+        setPendingFees(mapped.filter(f => f.payment_status !== "paid"));
+        setFeesLoading(false);
+      }).catch(() => setFeesLoading(false))
+    ).catch(() => setFeesLoading(false));
+  }, []);
+
+  const markRead = (id: number) => {
+    import("@/lib/api").then(api => api.markFeeEventRead(id)).catch(() => {});
+    setPendingFees(prev => prev.map(f => f.id === id ? { ...f, read_at: new Date().toISOString() } : f));
+  };
 
   // ── Bank details state ───────────────────────────────────────────────────────
   const [bankDetails, setBankDetails]       = useState<BankDetails | null>(null);
@@ -174,6 +223,112 @@ export default function WalletScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Wallet</Text>
+
+        {/* ── Pending Fee Events ── */}
+        {(feesLoading || pendingFees.length > 0) && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Pending Fees</Text>
+            {feesLoading ? (
+              <ActivityIndicator color="#1E3A8A" style={{ marginVertical: 10 }} />
+            ) : pendingFees.map(fee => (
+              <View
+                key={fee.id}
+                style={[feeStyles.card, { backgroundColor: colors.card, borderColor: fee.read_at ? colors.border : "#1E3A8A", borderWidth: fee.read_at ? StyleSheet.hairlineWidth : 1.5 }]}
+              >
+                {!fee.read_at && (
+                  <View style={feeStyles.unreadDot} />
+                )}
+                <Pressable
+                  onPress={() => {
+                    setExpandedFee(expandedFee === fee.id ? null : fee.id);
+                    if (!fee.read_at) markRead(fee.id);
+                  }}
+                >
+                  <View style={feeStyles.header}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[feeStyles.title, { color: colors.foreground }]}>{fee.title}</Text>
+                      <Text style={[feeStyles.amount, { color: "#1E3A8A" }]}>
+                        {fmtFee(fee.total_amount_cents, fee.currency)}
+                        {fee.payment_type === "installments" ? "  (installments)" : ""}
+                      </Text>
+                    </View>
+                    <View style={[feeStyles.statusBadge, { backgroundColor: fee.payment_status === "paid" ? "#22c55e22" : "#EF444422", borderColor: fee.payment_status === "paid" ? "#22c55e" : "#ef4444" }]}>
+                      <Text style={[feeStyles.statusText, { color: fee.payment_status === "paid" ? "#22c55e" : "#ef4444" }]}>
+                        {fee.payment_status.toUpperCase()}
+                      </Text>
+                    </View>
+                    <Ionicons name={expandedFee === fee.id ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
+                  </View>
+                </Pressable>
+
+                {expandedFee === fee.id && (
+                  <View style={feeStyles.expanded}>
+                    {fee.description ? (
+                      <Text style={[feeStyles.desc, { color: colors.mutedForeground }]}>{fee.description}</Text>
+                    ) : null}
+
+                    {fee.line_items.length > 0 && (
+                      <View style={[feeStyles.table, { borderColor: colors.border }]}>
+                        {fee.line_items.map((li, i) => (
+                          <View key={i} style={[feeStyles.tableRow, { borderBottomColor: colors.border, borderBottomWidth: i < fee.line_items.length - 1 ? StyleSheet.hairlineWidth : 0 }]}>
+                            <Text style={[feeStyles.tableDesc, { color: colors.foreground }]}>{li.description}</Text>
+                            <Text style={[feeStyles.tableAmt, { color: "#1E3A8A" }]}>{fmtFee(li.amount_cents, fee.currency)}</Text>
+                          </View>
+                        ))}
+                        <View style={[feeStyles.tableRow, { borderTopColor: colors.border, borderTopWidth: 1 }]}>
+                          <Text style={[feeStyles.tableDesc, { color: colors.foreground, fontWeight: "700" }]}>Total</Text>
+                          <Text style={[feeStyles.tableAmt, { color: "#1E3A8A", fontWeight: "800" }]}>{fmtFee(fee.total_amount_cents, fee.currency)}</Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {fee.payment_type === "single" && fee.due_date && (
+                      <Text style={[feeStyles.dueNote, { color: colors.mutedForeground }]}>
+                        📅 Payment due by: <Text style={{ fontWeight: "700", color: colors.foreground }}>{fee.due_date}</Text>
+                      </Text>
+                    )}
+
+                    {fee.payment_type === "installments" && fee.installments.length > 0 && (
+                      <View style={{ marginTop: 10 }}>
+                        <Text style={[feeStyles.instTitle, { color: colors.foreground }]}>Payment Schedule</Text>
+                        {fee.installments.map((ins, i) => (
+                          <View key={i} style={[feeStyles.instRow, { borderBottomColor: colors.border }]}>
+                            <Text style={[feeStyles.instLabel, { color: colors.foreground }]}>
+                              {ins.label ?? `Installment ${ins.installment_num}`}
+                            </Text>
+                            <Text style={[feeStyles.instDate, { color: colors.mutedForeground }]}>{ins.due_date}</Text>
+                            <Text style={[feeStyles.instAmt, { color: "#1E3A8A" }]}>{fmtFee(ins.amount_cents, fee.currency)}</Text>
+                          </View>
+                        ))}
+                        <Text style={[feeStyles.dueNote, { color: colors.mutedForeground, marginTop: 6 }]}>
+                          Each installment will appear in your cart on its due date. Removing a payment may affect your participation.
+                        </Text>
+                      </View>
+                    )}
+
+                    {fee.free_tickets_per_member > 0 && (
+                      <View style={[feeStyles.ticketNote, { backgroundColor: "#FEF9EE", borderLeftColor: "#FBBF24" }]}>
+                        <Text style={{ color: "#92400e", fontSize: 13 }}>
+                          🎟 {fee.free_tickets_per_member} complimentary ticket{fee.free_tickets_per_member > 1 ? "s" : ""} included upon payment.
+                        </Text>
+                      </View>
+                    )}
+
+                    {fee.payment_status !== "paid" && (
+                      <Pressable
+                        style={[feeStyles.payBtn, { backgroundColor: "#1E3A8A" }]}
+                        onPress={() => router.push("/(parent)/cart" as never)}
+                      >
+                        <Ionicons name="card-outline" size={16} color="#FBBF24" />
+                        <Text style={feeStyles.payBtnText}>Go to Cart & Pay</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                )}
+              </View>
+            ))}
+          </>
+        )}
 
         {/* ── Payment Method ── */}
         <View style={[styles.paymentMethodCard, { backgroundColor: colors.primary }]}>
@@ -622,4 +777,29 @@ const styles = StyleSheet.create({
   formatToggle:    { flexDirection: "row", borderRadius: 12, padding: 4, marginBottom: 4 },
   formatTab:       { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 9 },
   formatTabText:   { fontSize: 11, fontWeight: "700" },
+});
+
+const feeStyles = StyleSheet.create({
+  card:        { borderRadius: 12, padding: 14, marginBottom: 12, position: "relative" },
+  unreadDot:   { position: "absolute", top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: "#1E3A8A" },
+  header:      { flexDirection: "row", alignItems: "center" },
+  title:       { fontSize: 15, fontWeight: "700", marginBottom: 3 },
+  amount:      { fontSize: 16, fontWeight: "800" },
+  statusBadge: { borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
+  statusText:  { fontSize: 10, fontWeight: "700", letterSpacing: 0.8 },
+  expanded:    { marginTop: 12 },
+  desc:        { fontSize: 13, lineHeight: 19, marginBottom: 10 },
+  table:       { borderWidth: 1, borderRadius: 8, overflow: "hidden", marginBottom: 10 },
+  tableRow:    { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8 },
+  tableDesc:   { flex: 1, fontSize: 13 },
+  tableAmt:    { fontSize: 13, fontWeight: "700" },
+  dueNote:     { fontSize: 12, lineHeight: 18, marginBottom: 8 },
+  instTitle:   { fontSize: 12, fontWeight: "700", letterSpacing: 0.8, marginBottom: 6 },
+  instRow:     { flexDirection: "row", alignItems: "center", paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth },
+  instLabel:   { flex: 1, fontSize: 13 },
+  instDate:    { fontSize: 12, marginRight: 10 },
+  instAmt:     { fontSize: 13, fontWeight: "700" },
+  ticketNote:  { borderLeftWidth: 3, borderRadius: 6, padding: 10, marginBottom: 10, marginTop: 6 },
+  payBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 10, paddingVertical: 12, gap: 8, marginTop: 10 },
+  payBtnText:  { color: "#FBBF24", fontWeight: "700", fontSize: 14 },
 });

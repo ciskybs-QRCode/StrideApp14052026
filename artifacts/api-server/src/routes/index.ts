@@ -63,6 +63,7 @@ import presetMessagesRouter    from "./preset-messages.js";
 import waitlistRouter          from "./waitlist.js";
 import employmentRouter        from "./employment.js";
 import accountantPaymentsRouter from "./accountant-payments.js";
+import feeEventsRouter from "./fee-events.js";
 
 const router: IRouter = Router();
 
@@ -130,5 +131,6 @@ router.use(presetMessagesRouter);
 router.use(waitlistRouter);
 router.use(employmentRouter);
 router.use(accountantPaymentsRouter);
+router.use(feeEventsRouter);
 
 export default router;

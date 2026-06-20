@@ -1421,5 +1421,64 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS pel_order_idx ON payment_execution_log(order_id);
   `).catch(() => {});
 
+  // ── Fee Events (admin-created one-off payment events, e.g. year-end gala fee) ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS fee_events (
+      id                      SERIAL PRIMARY KEY,
+      organization_id         INTEGER NOT NULL,
+      title                   TEXT NOT NULL,
+      description             TEXT,
+      status                  TEXT NOT NULL DEFAULT 'draft',
+      payment_type            TEXT NOT NULL DEFAULT 'single',
+      total_amount_cents      INTEGER NOT NULL DEFAULT 0,
+      currency                TEXT NOT NULL DEFAULT 'EUR',
+      due_date                DATE,
+      free_tickets_per_member INTEGER NOT NULL DEFAULT 0,
+      recipient_mode          TEXT NOT NULL DEFAULT 'all',
+      recipient_data          JSONB NOT NULL DEFAULT '{}',
+      broadcast_message_id    INTEGER,
+      created_by_admin_id     INTEGER NOT NULL,
+      published_at            TIMESTAMPTZ,
+      created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS fee_events_org_idx    ON fee_events(organization_id);
+    CREATE INDEX IF NOT EXISTS fee_events_status_idx ON fee_events(organization_id, status);
+
+    CREATE TABLE IF NOT EXISTS fee_event_line_items (
+      id            SERIAL PRIMARY KEY,
+      fee_event_id  INTEGER NOT NULL REFERENCES fee_events(id) ON DELETE CASCADE,
+      description   TEXT NOT NULL,
+      amount_cents  INTEGER NOT NULL DEFAULT 0,
+      sort_order    INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS feli_event_idx ON fee_event_line_items(fee_event_id);
+
+    CREATE TABLE IF NOT EXISTS fee_event_installments (
+      id              SERIAL PRIMARY KEY,
+      fee_event_id    INTEGER NOT NULL REFERENCES fee_events(id) ON DELETE CASCADE,
+      installment_num INTEGER NOT NULL,
+      label           TEXT,
+      amount_cents    INTEGER NOT NULL,
+      due_date        DATE NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS fein_event_idx ON fee_event_installments(fee_event_id);
+
+    CREATE TABLE IF NOT EXISTS fee_event_recipients (
+      id              SERIAL PRIMARY KEY,
+      fee_event_id    INTEGER NOT NULL REFERENCES fee_events(id) ON DELETE CASCADE,
+      user_id         INTEGER NOT NULL,
+      member_name     TEXT NOT NULL DEFAULT '',
+      notification_id INTEGER,
+      delivered_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      read_at         TIMESTAMPTZ,
+      skipped_at      TIMESTAMPTZ,
+      payment_status  TEXT NOT NULL DEFAULT 'pending',
+      paid_at         TIMESTAMPTZ,
+      UNIQUE (fee_event_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS fere_event_idx ON fee_event_recipients(fee_event_id);
+    CREATE INDEX IF NOT EXISTS fere_user_idx  ON fee_event_recipients(user_id);
+  `).catch(() => {});
+
   initialized = true;
 }

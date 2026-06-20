@@ -3261,3 +3261,101 @@ export function markPromoUsed(assignId: number): Promise<{ success: boolean }> {
 export function submitResignation(noticePeriod: string): Promise<{ success: boolean; message: string }> {
   return request("POST", "/availability/resign", { notice_period: noticePeriod });
 }
+
+// ── Fee Events ────────────────────────────────────────────────────────────────
+
+export interface ApiFeeEventLineItem {
+  id: number;
+  description: string;
+  amount_cents: number;
+  sort_order: number;
+}
+
+export interface ApiFeeEventInstallment {
+  id: number;
+  installment_num: number;
+  label: string | null;
+  amount_cents: number;
+  due_date: string;
+}
+
+export interface ApiFeeEvent {
+  id: number;
+  title: string;
+  description: string | null;
+  status: "draft" | "active" | "archived";
+  payment_type: "single" | "installments";
+  total_amount_cents: number;
+  currency: string;
+  due_date: string | null;
+  free_tickets_per_member: number;
+  recipient_mode: string;
+  recipient_data: Record<string, unknown>;
+  published_at: string | null;
+  created_at: string;
+  line_item_count?: number;
+  total_recipients?: number;
+  read_count?: number;
+  skipped_count?: number;
+  paid_count?: number;
+  line_items?: ApiFeeEventLineItem[];
+  installments?: ApiFeeEventInstallment[];
+  payment_status?: string;
+  read_at?: string | null;
+  delivered_at?: string;
+}
+
+export function getFeeEvents(): Promise<ApiFeeEvent[]> {
+  return request("GET", "/fee-events");
+}
+
+export function getMyFeeEvents(): Promise<ApiFeeEvent[]> {
+  return request("GET", "/fee-events/my-fees");
+}
+
+export function getFeeEvent(id: number): Promise<ApiFeeEvent> {
+  return request("GET", `/fee-events/${id}`);
+}
+
+export function createFeeEvent(data: {
+  title: string; description?: string; payment_type?: string;
+  total_amount_cents?: number; currency?: string; due_date?: string;
+  free_tickets_per_member?: number; recipient_mode?: string;
+  recipient_data?: Record<string, unknown>;
+  line_items?: { description: string; amount_cents: number }[];
+  installments?: { label?: string; amount_cents: number; due_date: string }[];
+}): Promise<{ id: number }> {
+  return request("POST", "/fee-events", data);
+}
+
+export function updateFeeEvent(id: number, data: Parameters<typeof createFeeEvent>[0]): Promise<{ ok: boolean }> {
+  return request("PATCH", `/fee-events/${id}`, data);
+}
+
+export function deleteFeeEvent(id: number): Promise<{ ok: boolean }> {
+  return request("DELETE", `/fee-events/${id}`);
+}
+
+export function generateFeeEventEmail(id: number): Promise<{ subject: string; body: string; html: string }> {
+  return request("POST", `/fee-events/${id}/generate-email`, {});
+}
+
+export function publishFeeEvent(id: number, emailDraft?: { email_subject?: string; email_body?: string; email_html?: string }): Promise<{ ok: boolean; recipientCount: number }> {
+  return request("POST", `/fee-events/${id}/publish`, emailDraft ?? {});
+}
+
+export function getFeeEventStats(id: number): Promise<{
+  event: { id: number; title: string };
+  stats: { total: number; read: number; skipped: number; pending: number; paid: number };
+  recipients: { user_id: number; member_name: string; delivered_at: string; read_at: string | null; skipped_at: string | null; payment_status: string; paid_at: string | null }[];
+}> {
+  return request("GET", `/fee-events/${id}/stats`);
+}
+
+export function markFeeEventRead(id: number): Promise<{ ok: boolean }> {
+  return request("POST", `/fee-events/${id}/mark-read`, {});
+}
+
+export function markFeeEventPaid(id: number): Promise<{ ok: boolean }> {
+  return request("POST", `/fee-events/${id}/mark-paid`, {});
+}
