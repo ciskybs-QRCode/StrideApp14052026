@@ -1,211 +1,107 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const stats = [
-  { label: 'Affidabilità docente', value: '94%', color: '#4ade80' },
-  { label: 'Copertura automatica', value: '100%', color: '#FBBF24' },
-  { label: 'Tempo risposta', value: '< 5 min', color: '#60a5fa' },
-];
-
 export function Scene5() {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 300),
-      setTimeout(() => setPhase(2), 1300),
-      setTimeout(() => setPhase(3), 2600),
-      setTimeout(() => setPhase(4), 4000),
+      setTimeout(() => setPhase(1), 500),
+      setTimeout(() => setPhase(2), 1500),
+      setTimeout(() => setPhase(3), 2500),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
   return (
     <motion.div
-      className="absolute inset-0 flex items-center overflow-hidden"
-      style={{ background: '#0a0a12' }}
-      initial={{ opacity: 0, scale: 1.05 }}
+      className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden"
+      style={{ background: '#0F172A' }}
+      initial={{ opacity: 0, scale: 1.1 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, filter: 'blur(16px)' }}
+      exit={{ opacity: 0, filter: 'blur(10px)' }}
       transition={{ duration: 0.8 }}
     >
-      {/* Animated pulse rings */}
-      {phase >= 2 && (
-        <>
-          {[1, 1.8, 2.6].map((scale, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full border border-red-500/20"
-              style={{ width: '50vw', height: '50vw', right: '-8vw', top: '50%', marginTop: '-25vw' }}
-              animate={{ scale: [scale, scale + 0.8], opacity: [0.4, 0] }}
-              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.7, ease: 'easeOut' }}
-            />
-          ))}
-        </>
-      )}
+      <motion.h2
+        className="text-[3.5vw] font-bold text-white mb-12 text-center"
+        initial={{ opacity: 0, y: -30 }}
+        animate={phase >= 1 ? { opacity: 1, y: 0 } : {}}
+      >
+        Admins see the <span className="text-[#FBBF24]">whole picture.</span>
+      </motion.h2>
 
-      {/* Left */}
-      <div className="relative z-10 flex flex-col justify-center px-[7vw] w-[58%] h-full">
+      <div className="flex gap-8 w-full max-w-[80vw] justify-center">
+        {/* Stat 1 */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={phase >= 1 ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-          transition={{ duration: 0.5 }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.6vw',
-            fontFamily: "'Montserrat', sans-serif",
-            fontWeight: 700,
-            fontSize: '1vw',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            color: '#f87171',
-            border: '1px solid rgba(248,113,113,0.3)',
-            padding: '0.4vw 1.2vw',
-            borderRadius: '100px',
-            marginBottom: '2vw',
-          }}
+          className="bg-[#1E3A8A]/40 border border-[#1E3A8A] p-8 rounded-3xl w-1/3 text-center"
+          initial={{ opacity: 0, y: 50 }}
+          animate={phase >= 2 ? { opacity: 1, y: 0 } : {}}
+          transition={{ type: 'spring', delay: 0 }}
         >
-          🚨 Emergency Pulse · AI Orchestrator
+          <div className="text-[1.5vw] text-white/70 mb-2">Active Students</div>
+          <motion.div
+            className="text-[4vw] font-black text-white"
+            initial={{ opacity: 0 }}
+            animate={phase >= 2 ? { opacity: 1 } : {}}
+          >
+            485
+          </motion.div>
         </motion.div>
 
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={phase >= 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.7 }}
-          style={{
-            fontFamily: "'Montserrat', sans-serif",
-            fontWeight: 800,
-            fontSize: '3.2vw',
-            color: '#ffffff',
-            lineHeight: 1.2,
-            marginBottom: '1.4vw',
-          }}
+        {/* Stat 2 */}
+        <motion.div
+          className="bg-[#1E3A8A]/40 border border-[#1E3A8A] p-8 rounded-3xl w-1/3 text-center"
+          initial={{ opacity: 0, y: 50 }}
+          animate={phase >= 2 ? { opacity: 1, y: 0 } : {}}
+          transition={{ type: 'spring', delay: 0.2 }}
         >
-          Emergenza?<br />
-          <span style={{ color: '#FBBF24' }}>L'associazione non si ferma.</span>
-        </motion.h2>
+          <div className="text-[1.5vw] text-white/70 mb-2">Monthly Revenue</div>
+          <motion.div
+            className="text-[4vw] font-black text-[#4ade80]"
+            initial={{ opacity: 0 }}
+            animate={phase >= 2 ? { opacity: 1 } : {}}
+          >
+            €12,840
+          </motion.div>
+        </motion.div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={phase >= 2 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.7 }}
-          style={{
-            fontFamily: "'Montserrat', sans-serif",
-            fontWeight: 400,
-            fontSize: '1.35vw',
-            color: 'rgba(255,255,255,0.6)',
-            lineHeight: 1.65,
-            marginBottom: '2.5vw',
-          }}
+        {/* Stat 3 */}
+        <motion.div
+          className="bg-[#1E3A8A]/40 border border-[#1E3A8A] p-8 rounded-3xl w-1/3 text-center"
+          initial={{ opacity: 0, y: 50 }}
+          animate={phase >= 2 ? { opacity: 1, y: 0 } : {}}
+          transition={{ type: 'spring', delay: 0.4 }}
         >
-          Allerta push critica che bypassa il silenzioso. AI che ottimizza<br />
-          la copertura docenti in 5 minuti. Cascata di sostituzione automatica.
-        </motion.p>
-
-        {/* Stats */}
-        <div style={{ display: 'flex', gap: '2vw' }}>
-          {stats.map((s, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '1vw',
-                padding: '1vw 1.5vw',
-                minWidth: '10vw',
-              }}
-            >
-              <div style={{
-                fontFamily: "'Montserrat', sans-serif",
-                fontWeight: 800,
-                fontSize: '2.2vw',
-                color: s.color,
-                lineHeight: 1,
-                marginBottom: '0.4vw',
-              }}>
-                {s.value}
-              </div>
-              <div style={{
-                fontFamily: "'Montserrat', sans-serif",
-                fontWeight: 500,
-                fontSize: '0.9vw',
-                color: 'rgba(255,255,255,0.45)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-              }}>
-                {s.label}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+          <div className="text-[1.5vw] text-white/70 mb-2">Avg Attendance</div>
+          <motion.div
+            className="text-[4vw] font-black text-[#FBBF24]"
+            initial={{ opacity: 0 }}
+            animate={phase >= 2 ? { opacity: 1 } : {}}
+          >
+            87%
+          </motion.div>
+        </motion.div>
       </div>
 
-      {/* Right — SOS button */}
-      <div className="relative z-10 flex items-center justify-center w-[42%] h-full">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={phase >= 2 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          {/* Outer pulse */}
-          <motion.div
-            style={{
-              position: 'absolute',
-              width: '22vw',
-              height: '22vw',
-              borderRadius: '50%',
-              border: '2px solid rgba(239,68,68,0.3)',
-            }}
-            animate={{ scale: [1, 1.35], opacity: [0.5, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
-          />
-          <motion.div
-            style={{
-              position: 'absolute',
-              width: '18vw',
-              height: '18vw',
-              borderRadius: '50%',
-              border: '2px solid rgba(239,68,68,0.2)',
-            }}
-            animate={{ scale: [1, 1.5], opacity: [0.4, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut', delay: 0.4 }}
-          />
-          {/* SOS button */}
-          <div style={{
-            width: '14vw',
-            height: '14vw',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle at 35% 35%, #ef4444, #b91c1c)',
-            boxShadow: '0 0 40px rgba(239,68,68,0.5)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <span style={{ fontSize: '3vw', marginBottom: '0.3vw' }}>🚨</span>
-            <span style={{
-              fontFamily: "'Montserrat', sans-serif",
-              fontWeight: 900,
-              fontSize: '2.5vw',
-              color: 'white',
-              letterSpacing: '0.1em',
-            }}>SOS</span>
+      {/* Progress Bars */}
+      <div className="w-full max-w-[60vw] mt-12 space-y-6">
+        {['Ballet Basics', 'Hip Hop Adv', 'Contemporary'].map((course, i) => (
+          <div key={course}>
+            <div className="flex justify-between text-white mb-2 text-[1.2vw]">
+              <span>{course}</span>
+              <span>{85 - i * 10}%</span>
+            </div>
+            <div className="h-4 bg-gray-800 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-[#FBBF24]"
+                initial={{ width: 0 }}
+                animate={phase >= 3 ? { width: `${85 - i * 10}%` } : {}}
+                transition={{ duration: 1, delay: i * 0.2, ease: "easeOut" }}
+              />
+            </div>
           </div>
-        </motion.div>
+        ))}
       </div>
-
-      <motion.div
-        className="absolute bottom-0 left-0 h-[3px]"
-        style={{ background: '#ef4444' }}
-        initial={{ width: '0%' }}
-        animate={{ width: '100%' }}
-        transition={{ duration: 7.5, ease: 'linear' }}
-      />
     </motion.div>
   );
 }

@@ -24,6 +24,12 @@ uri = "file://artifacts/mockup-sandbox/public/images/tech-gold.png"
 type = "image"
 title = "Navy gold tech background"
 
+[[generated]]
+id = "6QIBmTufyjjI7YtLL6L2G"
+uri = "file://artifacts/stride-pitch-deck/public/hero-bg.png"
+type = "image"
+title = "pitch deck hero background"
+
 [[outputs]]
 id = "TJn4qgherjwUXrohlCYhP"
 uri = "file://docs/stride-documenti.zip"

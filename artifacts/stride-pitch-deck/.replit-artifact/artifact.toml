@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/stride-pitch-deck/"
+title = "Stride — Pitch Deck"
+version = "1.0.0"
+id = "artifacts/stride-pitch-deck"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/stride-pitch-deck/" ]
+localPort = 26187
+
+[services.development]
+run = "pnpm --filter @workspace/stride-pitch-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/stride-pitch-deck", "run", "build" ]
+publicDir = "artifacts/stride-pitch-deck/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26187"
+BASE_PATH = "/stride-pitch-deck/"

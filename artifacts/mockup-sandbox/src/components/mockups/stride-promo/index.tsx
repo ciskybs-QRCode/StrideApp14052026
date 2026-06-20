@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video/hooks';
 import { Scene1 } from './scenes/Scene1';
 import { Scene2 } from './scenes/Scene2';
@@ -10,13 +10,13 @@ import { Scene6 } from './scenes/Scene6';
 import { Scene7 } from './scenes/Scene7';
 
 const SCENE_DURATIONS = {
-  opening: 7000,
-  problem: 5500,
-  reveal: 5500,
-  smartpickup: 6500,
-  emergency: 7500,
-  contracts: 6500,
-  closing: 6500,
+  chaos: 7000,
+  reveal: 9000,
+  parent: 12000,
+  operator: 10000,
+  admin: 10000,
+  features: 7000,
+  closing: 5000,
 };
 
 export default function StridePromoVideo() {
@@ -25,7 +25,7 @@ export default function StridePromoVideo() {
   useEffect(() => {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap';
+    link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap';
     document.head.appendChild(link);
     return () => { document.head.removeChild(link); };
   }, []);
@@ -37,17 +37,26 @@ export default function StridePromoVideo() {
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
-        background: '#0d1f4a',
+        background: '#0B1120', // Very dark navy base
         fontFamily: "'Montserrat', sans-serif",
       }}
     >
-      <AnimatePresence mode="sync">
-        {currentScene === 0 && <Scene1 key="opening" />}
-        {currentScene === 1 && <Scene2 key="problem" />}
-        {currentScene === 2 && <Scene3 key="reveal" />}
-        {currentScene === 3 && <Scene4 key="smartpickup" />}
-        {currentScene === 4 && <Scene5 key="emergency" />}
-        {currentScene === 5 && <Scene6 key="contracts" />}
+      {/* Persistent global background texture */}
+      <div className="absolute inset-0 pointer-events-none opacity-20"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(30,58,138,0.4) 0%, transparent 60%)'
+        }}
+      />
+      
+      {/* Global persistent elements could go here if needed */}
+
+      <AnimatePresence mode="popLayout">
+        {currentScene === 0 && <Scene1 key="chaos" />}
+        {currentScene === 1 && <Scene2 key="reveal" />}
+        {currentScene === 2 && <Scene3 key="parent" />}
+        {currentScene === 3 && <Scene4 key="operator" />}
+        {currentScene === 4 && <Scene5 key="admin" />}
+        {currentScene === 5 && <Scene6 key="features" />}
         {currentScene === 6 && <Scene7 key="closing" />}
       </AnimatePresence>
     </div>

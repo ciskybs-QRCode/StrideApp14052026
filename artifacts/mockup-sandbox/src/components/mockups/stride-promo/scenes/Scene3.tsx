@@ -6,123 +6,88 @@ export function Scene3() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 300),
-      setTimeout(() => setPhase(2), 1200),
-      setTimeout(() => setPhase(3), 2400),
+      setTimeout(() => setPhase(1), 800),
+      setTimeout(() => setPhase(2), 2000),
+      setTimeout(() => setPhase(3), 3500),
+      setTimeout(() => setPhase(4), 5000),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden"
-      style={{ background: '#1E3A8A' }}
-      initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
-      animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
-      exit={{ opacity: 0, scale: 1.04 }}
-      transition={{ duration: 0.85, ease: [0.76, 0, 0.24, 1] }}
+      className="absolute inset-0 flex items-center justify-between px-[10vw] overflow-hidden"
+      style={{ background: '#0F172A' }}
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.8 }}
     >
-      {/* Radial gold glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at 60% 40%, rgba(251,191,36,0.14) 0%, transparent 65%)' }}
-      />
+      {/* Background glow */}
+      <div className="absolute top-1/2 left-1/4 w-[40vw] h-[40vw] bg-[#1E3A8A] rounded-full blur-[100px] opacity-40 transform -translate-y-1/2" />
 
-      {/* Diagonal accent lines */}
-      {[...Array(5)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute"
-          style={{
-            width: '200%',
-            height: '1px',
-            background: 'rgba(251,191,36,0.12)',
-            top: `${15 + i * 18}%`,
-            left: '-50%',
-            transform: 'rotate(-12deg)',
-          }}
+      {/* Left Text */}
+      <div className="z-10 w-[40%]">
+        <motion.h2
+          className="text-[4vw] font-bold text-white leading-tight mb-6"
+          initial={{ opacity: 0, y: 30 }}
+          animate={phase >= 1 ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8 }}
+        >
+          Parents stay informed.<br />
+          <span className="text-[#FBBF24]">Always.</span>
+        </motion.h2>
+        <motion.p
+          className="text-[1.5vw] text-white/70"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 + i * 0.1 }}
-        />
-      ))}
+          animate={phase >= 2 ? { opacity: 1 } : {}}
+          transition={{ duration: 0.8 }}
+        >
+          Schedules, payments, and events right in their pocket.
+        </motion.p>
+      </div>
 
-      {/* Logo large reveal */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.6, y: 30 }}
-        animate={phase >= 1 ? { opacity: 1, scale: 1, y: 0 } : { opacity: 0, scale: 0.6, y: 30 }}
-        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-        className="mb-[2vw]"
-      >
-        <img
-          src={`${import.meta.env.BASE_URL}stride-logo.png`}
-          alt="Stride"
-          style={{
-            height: '12vw',
-            objectFit: 'contain',
-            filter: 'brightness(0) invert(1) drop-shadow(0 0 30px rgba(251,191,36,0.5))',
-          }}
-        />
-      </motion.div>
+      {/* Right Phone Mockup */}
+      <div className="z-10 w-[40%] relative h-[80vh] flex items-center justify-center">
+        <motion.div
+          className="relative w-[22vw] h-[45vw] bg-white rounded-[3vw] border-[8px] border-gray-800 shadow-2xl overflow-hidden"
+          initial={{ opacity: 0, y: 100, rotate: 10 }}
+          animate={phase >= 1 ? { opacity: 1, y: 0, rotate: 0 } : {}}
+          transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+        >
+          {/* Phone Header */}
+          <div className="h-[15%] bg-[#1E3A8A] p-6 text-white flex flex-col justify-end">
+            <div className="text-[1.2vw] font-medium opacity-80">Welcome back</div>
+            <div className="text-[1.8vw] font-bold">Emma Conti</div>
+          </div>
 
-      {/* Gold divider */}
-      <motion.div
-        initial={{ scaleX: 0 }}
-        animate={phase >= 2 ? { scaleX: 1 } : { scaleX: 0 }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
-        style={{
-          width: '8vw',
-          height: '3px',
-          background: '#FBBF24',
-          transformOrigin: 'center',
-          marginBottom: '1.8vw',
-        }}
-      />
+          {/* Phone Content */}
+          <div className="p-6 bg-gray-50 h-full">
+            {/* Course Card */}
+            <motion.div
+              className="bg-white p-5 rounded-2xl shadow-sm mb-4 border-l-4 border-[#1E3A8A]"
+              initial={{ opacity: 0, x: 50 }}
+              animate={phase >= 3 ? { opacity: 1, x: 0 } : {}}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+            >
+              <div className="text-[1.4vw] font-bold text-gray-800">Ballet Baby</div>
+              <div className="text-[1vw] text-gray-500">Today, 16:00 - Room A</div>
+            </motion.div>
 
-      {/* Tagline */}
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={phase >= 2 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ duration: 0.8 }}
-        style={{
-          fontFamily: "'Montserrat', sans-serif",
-          fontWeight: 700,
-          fontSize: '2.2vw',
-          color: '#FBBF24',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          textAlign: 'center',
-        }}
-      >
-        Every Move. Managed.
-      </motion.p>
-
-      {/* Description */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 1 }}
-        style={{
-          fontFamily: "'Montserrat', sans-serif",
-          fontWeight: 400,
-          fontSize: '1.4vw',
-          color: 'rgba(255,255,255,0.55)',
-          marginTop: '1.5vw',
-          letterSpacing: '0.04em',
-          textAlign: 'center',
-          maxWidth: '50vw',
-        }}
-      >
-        Un ecosistema completo per la gestione di associazioni multi-sede in Italia e in Europa.
-      </motion.p>
-
-      <motion.div
-        className="absolute bottom-0 left-0 h-[3px]"
-        style={{ background: '#FBBF24' }}
-        initial={{ width: '0%' }}
-        animate={{ width: '100%' }}
-        transition={{ duration: 5.5, ease: 'linear' }}
-      />
+            {/* Event Card */}
+            <motion.div
+              className="bg-[#FBBF24] p-5 rounded-2xl shadow-sm text-gray-900"
+              initial={{ opacity: 0, y: 50 }}
+              animate={phase >= 4 ? { opacity: 1, y: 0 } : {}}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+            >
+              <div className="text-[1.2vw] font-semibold mb-1">Upcoming Event</div>
+              <div className="text-[1.6vw] font-bold">End of Year Show</div>
+              <div className="text-[1vw] mt-2 opacity-80">June 15th · Main Theater</div>
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }

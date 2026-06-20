@@ -1,0 +1,82 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567801",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1Cover.tsx",
+    "title": "Cover",
+    "description": "Stride platform intro — dance school management",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567802",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2Problem.tsx",
+    "title": "The Problem",
+    "description": "Managing a dance school is still manual — WhatsApp, spreadsheets, paper forms",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567803",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3Solution.tsx",
+    "title": "Our Solution",
+    "description": "Stride brings together attendance, payments, communications and analytics",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567804",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4Roles.tsx",
+    "title": "Three Roles",
+    "description": "Built for every person in the school — parents, operators, admins",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567805",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5Features.tsx",
+    "title": "Platform Features",
+    "description": "Six core capabilities — QR, Smart Pick-Up, payments, emergency, analytics, compliance",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567806",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide6Stats.tsx",
+    "title": "Market Opportunity",
+    "description": "40k+ dance schools in Europe with no purpose-built software",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567807",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide7HowItWorks.tsx",
+    "title": "How It Works",
+    "description": "Four-step onboarding — setup, members, daily operations, insights",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567808",
+    "position": 8,
+    "filepath": "src/pages/slides/Slide8Pricing.tsx",
+    "title": "Business Model",
+    "description": "SaaS subscription — Core €49, Plus €99, Premium €199",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567809",
+    "position": 9,
+    "filepath": "src/pages/slides/Slide9Traction.tsx",
+    "title": "Where We Are",
+    "description": "Platform built and ready — roadmap for the next 12 months",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567810",
+    "position": 10,
+    "filepath": "src/pages/slides/Slide10Closing.tsx",
+    "title": "Get Started",
+    "description": "Closing slide — stride.app, 6 months free trial",
+    "speakerNotes": ""
+  }
+]
