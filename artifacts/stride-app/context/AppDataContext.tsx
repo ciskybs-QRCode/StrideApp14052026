@@ -9,7 +9,8 @@ import type {
   ApiDocument, ApiPayment, ApiStudent, ApiLesson,
 } from "../lib/api";
 
-const LEGAL_DOCS_KEY = "stride_legal_docs_v2";
+const LEGAL_DOCS_KEY      = "stride_legal_docs_v2";
+const MEDIA_CONSENT_KEY   = "stride_media_consent_v1";
 
 export interface Child {
   id: string;
@@ -398,6 +399,16 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     }).catch(() => {});
   }, [user?.id]);
 
+  // Hydrate media consent from AsyncStorage (per-user, survives restarts)
+  useEffect(() => {
+    if (!user?.id) return;
+    AsyncStorage.getItem(`${MEDIA_CONSENT_KEY}:${user.id}`).then(val => {
+      if (val === "full" || val === "internal" || val === "none") {
+        setMediaConsentState(val);
+      }
+    }).catch(() => {});
+  }, [user?.id]);
+
   useEffect(() => {
     if (!user) return;
     const cacheKey = `${user.id}:${user.role}`;
@@ -772,6 +783,9 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
 
   const setMediaConsent = async (consent: "full" | "internal" | "none") => {
     setMediaConsentState(consent);
+    if (user?.id) {
+      AsyncStorage.setItem(`${MEDIA_CONSENT_KEY}:${user.id}`, consent).catch(() => {});
+    }
   };
 
   return (
