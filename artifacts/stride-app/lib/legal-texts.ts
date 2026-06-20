@@ -420,3 +420,84 @@ governed by D.Lgs. 196/2003 (Codice Privacy) as amended.
 
 In case of conflict between this DPA and the Terms of Service on data
 protection matters, this DPA shall prevail.`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. SUB-PROCESSOR LIST (summary for mobile display)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const SUB_PROCESSOR_LIST = `STRIDE — SUB-PROCESSOR LIST
+Version 1.0 · Last updated: June 2025
+(Pursuant to GDPR Art. 28(2))
+
+───────────────────────────────────────────
+
+INFRASTRUCTURE & DATABASE
+• Supabase, Inc. — database, storage (EU region)
+  supabase.com/privacy
+
+• Replit, Inc. — cloud hosting
+  replit.com/privacy
+
+PAYMENT PROCESSING
+• Stripe, Inc. — payments, billing (PCI-DSS L1)
+  stripe.com/privacy
+
+COMMUNICATIONS
+• Resend, Inc. — transactional email
+  resend.com/legal/privacy-policy
+
+• Twilio, Inc. — SMS / emergency alerts
+  twilio.com/en-us/legal/privacy
+
+ARTIFICIAL INTELLIGENCE
+• OpenAI, L.L.C. — AI features (anonymised data only)
+  openai.com/policies/privacy-policy
+
+MOBILE PUSH NOTIFICATIONS
+• Expo Application Services — push notifications
+  expo.dev/privacy
+
+───────────────────────────────────────────
+
+Stride will notify you 30 days in advance of any sub-processor
+change. Objections: legal@stride.app
+
+Full list: stride.app/subprocessors`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. ACCEPTABLE USE POLICY (summary for mobile display)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const ACCEPTABLE_USE_POLICY = `STRIDE — ACCEPTABLE USE POLICY
+Version 1.0 · Last updated: June 2025
+
+───────────────────────────────────────────
+
+PERMITTED USE
+The Platform is provided solely for lawful management of sports
+associations, dance schools, and similar membership organisations.
+
+PROHIBITED ACTIVITIES
+
+You must NOT:
+• Violate any applicable law or regulation;
+• Send spam or unsolicited commercial messages;
+• Harass, abuse, or threaten any individual;
+• Attempt unauthorised access to Stride systems or other Organisations;
+• Enter personal data of individuals who have not consented;
+• Enter minor data without valid parental/guardian consent;
+• Resell or sublicense access to the Platform;
+• Use the Platform to process data for any third-party organisation.
+
+CHILDREN'S DATA
+Minor data may only be processed with documented parental consent
+and for the legitimate purpose of your Organisation.
+
+VIOLATIONS
+Stride may suspend or terminate access without notice for material
+breach of this Policy. Termination for cause carries no refund.
+
+REPORTING ABUSE
+support@stride.app
+
+Full policy: stride.app/legal`;

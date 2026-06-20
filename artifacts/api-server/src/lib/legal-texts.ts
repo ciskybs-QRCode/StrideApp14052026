@@ -381,10 +381,16 @@ Stride shares data only with authorised sub-processors necessary to provide
 the Services. A current list is maintained at stride.app/subprocessors.
 
 Key sub-processors include:
-• Supabase (database infrastructure — EU region)
-• Stripe (payment processing — PCI-DSS Level 1)
-• Expo / React Native ecosystem (mobile push notifications)
-• Email delivery service (transactional emails)
+• Supabase, Inc. (database infrastructure — EU region) — supabase.com/privacy
+• Stripe, Inc. (payment processing — PCI-DSS Level 1) — stripe.com/privacy
+• Resend, Inc. (transactional email delivery) — resend.com/legal/privacy-policy
+• Twilio, Inc. (SMS / voice communications) — twilio.com/en-us/legal/privacy
+• OpenAI, L.L.C. (AI-powered features, pseudonymised data only) — openai.com/policies/privacy-policy
+• Expo / Expo Application Services (mobile push notifications) — expo.dev/privacy
+• Replit, Inc. (cloud infrastructure hosting) — replit.com/privacy
+
+A complete, current sub-processor list is maintained at stride.app/subprocessors and
+within the app under Admin → Settings → Legal & Privacy.
 
 We do not sell, rent, lease, or trade personal data with any third party
 for marketing, advertising, or any commercial purpose whatsoever.
@@ -946,6 +952,246 @@ professional or DPO is strongly recommended.
 © [ORGANISATION NAME]. All rights reserved.`;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 6. SUB-PROCESSOR LIST
+//    GDPR Art. 28(2) — public disclosure of third-party processors
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const SUB_PROCESSOR_LIST = `STRIDE PLATFORM
+SUB-PROCESSOR LIST
+(Pursuant to GDPR Art. 28(2))
+
+Version ${DOC_VERSION} — Last updated: ${LAST_UPDATED}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${COMPANY_NAME} ("Stride") uses the following sub-processors to provide the
+Platform. Each sub-processor has been assessed for GDPR compliance and is
+bound by appropriate data processing terms. Stride remains fully responsible
+for the acts and omissions of its sub-processors.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. INFRASTRUCTURE & DATABASE
+
+Supabase, Inc.
+  Purpose:  Primary database, real-time subscriptions, file storage
+  Data:     All Member Data, Organisation data, user accounts
+  Location: European Economic Area (eu-central-1 region)
+  Transfer: Standard Contractual Clauses (EU SCCs)
+  DPA:      supabase.com/privacy
+  Website:  supabase.com
+
+Replit, Inc.
+  Purpose:  Cloud server hosting and application runtime
+  Data:     Application logs, request metadata (no persistent Member Data)
+  Location: United States
+  Transfer: Standard Contractual Clauses (EU SCCs)
+  DPA:      replit.com/privacy
+  Website:  replit.com
+
+
+2. PAYMENT PROCESSING
+
+Stripe, Inc.
+  Purpose:  Payment card processing, subscription billing, payouts
+  Data:     Billing name, email, last 4 digits of card, Stripe token
+            (Stride does NOT store full card numbers — PCI-DSS compliant)
+  Location: United States / EU region where available
+  Transfer: Standard Contractual Clauses (EU SCCs) + Stripe DPA
+  DPA:      stripe.com/privacy
+  Website:  stripe.com
+  Cert:     PCI-DSS Level 1 Service Provider
+
+
+3. COMMUNICATIONS
+
+Resend, Inc.
+  Purpose:  Transactional email delivery (notifications, receipts, alerts)
+  Data:     Recipient email address, name, message content
+  Location: United States
+  Transfer: Standard Contractual Clauses (EU SCCs)
+  DPA:      resend.com/legal/privacy-policy
+  Website:  resend.com
+
+Twilio, Inc.
+  Purpose:  SMS notifications, emergency alerts, voice (optional)
+  Data:     Recipient phone number, message content
+  Location: United States / EU region where available
+  Transfer: Standard Contractual Clauses (EU SCCs) + Twilio DPA
+  DPA:      twilio.com/en-us/legal/privacy
+  Website:  twilio.com
+
+
+4. ARTIFICIAL INTELLIGENCE
+
+OpenAI, L.L.C.
+  Purpose:  AI-powered features (roster optimisation, document analysis,
+            copilot assistant, emergency assessment)
+  Data:     Pseudonymised operational data only — names and contact details
+            are NOT sent to OpenAI. Inputs are limited to anonymised
+            identifiers and statistical patterns.
+  Location: United States
+  Transfer: Standard Contractual Clauses (EU SCCs) + OpenAI DPA
+  DPA:      openai.com/policies/privacy-policy
+  Website:  openai.com
+
+
+5. MOBILE PUSH NOTIFICATIONS
+
+Expo Application Services (Expo, Inc.)
+  Purpose:  Push notification delivery to iOS and Android devices
+  Data:     Device push token, notification title and body
+  Location: United States
+  Transfer: Standard Contractual Clauses (EU SCCs)
+  DPA:      expo.dev/privacy
+  Website:  expo.dev
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CHANGES TO THIS LIST
+
+Stride will provide 30 days' advance notice of any addition or replacement
+of sub-processors via in-app notification and email to the Organisation
+Administrator. If you object to any change, you may terminate the Agreement
+as described in Section 10 of the Terms of Service.
+
+Objections may be submitted to: ${LEGAL_EMAIL}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+© ${COMPANY_NAME}. All rights reserved.`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. ACCEPTABLE USE POLICY (AUP)
+//    Protects Stride if an Organisation misuses the platform
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const ACCEPTABLE_USE_POLICY = `STRIDE PLATFORM
+ACCEPTABLE USE POLICY
+
+Version ${DOC_VERSION} — Last updated: ${LAST_UPDATED}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This Acceptable Use Policy ("AUP") governs use of the Stride platform by
+Administrators, Operators, and all users acting on behalf of a subscribing
+Organisation. By activating your account you agree to this AUP.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. PERMITTED USE
+
+The Platform is provided solely for lawful management of sports associations,
+dance schools, and similar membership organisations. Permitted uses include:
+
+• Registering and managing members, students, and guardians
+• Scheduling classes, events, and sessions
+• Processing membership fees and lesson payments
+• Sending operational communications to enrolled members
+• Generating attendance and financial reports for internal use
+• Storing and signing association-related documents
+
+
+2. PROHIBITED ACTIVITIES
+
+You must not use the Platform, directly or through automated means, to:
+
+2.1 ILLEGAL ACTIVITIES
+(a) Violate any applicable law or regulation, including data protection,
+    consumer protection, anti-spam, and anti-money laundering laws;
+(b) Process payments, personal data, or transactions on behalf of any
+    organisation other than the registered Organisation;
+(c) Engage in any activity that constitutes fraud, forgery, or misrepresentation.
+
+2.2 HARMFUL COMMUNICATIONS
+(a) Send unsolicited commercial messages (spam) to any person;
+(b) Use the Platform's messaging or notification features for marketing
+    unrelated to your Organisation's services;
+(c) Harass, abuse, threaten, or intimidate any individual through the Platform;
+(d) Send communications that are defamatory, obscene, or discriminatory.
+
+2.3 SECURITY AND INTEGRITY
+(a) Attempt to gain unauthorised access to Stride's systems, data, or
+    accounts of other Organisations;
+(b) Introduce malware, viruses, or any code designed to disrupt or damage
+    the Platform or third-party systems;
+(c) Conduct vulnerability scanning, penetration testing, or load testing
+    without prior written approval from Stride;
+(d) Circumvent, disable, or interfere with security features of the Platform.
+
+2.4 DATA MISUSE
+(a) Enter personal data of individuals who have not consented to being
+    managed through the Platform, except as permitted by applicable law;
+(b) Use Member Data extracted from the Platform for any purpose other than
+    legitimate administration of your Organisation;
+(c) Share, sell, or transfer Member Data to any third party without a
+    lawful basis and appropriate safeguards;
+(d) Enter data on behalf of minors without valid parental or guardian consent.
+
+2.5 PLATFORM ABUSE
+(a) Create multiple Organisation accounts to circumvent subscription limits
+    or trial restrictions;
+(b) Resell, sublicense, or commercialise access to the Platform without
+    Stride's express written authorisation;
+(c) Scrape, crawl, or extract data from the Platform by automated means
+    other than through Stride's published APIs;
+(d) Reverse-engineer, decompile, or derive source code from the Platform.
+
+
+3. CHILDREN'S DATA
+
+The Platform may be used to manage data of minors (under 18) only:
+(a) With documented parental or guardian consent on file;
+(b) For the legitimate sporting or educational purpose of the Organisation;
+(c) With appropriate access controls ensuring only authorised staff
+    can view minor data;
+(d) In compliance with GDPR Art. 8 and any applicable national age
+    requirements.
+
+You must maintain records of consent and make them available to Stride
+upon request.
+
+
+4. REPORTING ABUSE
+
+If you become aware of any use of the Platform that violates this AUP —
+by your own users, staff, or a third party — you must notify Stride
+promptly at ${SUPPORT_EMAIL}.
+
+Stride may investigate any report and take appropriate action.
+
+
+5. CONSEQUENCES OF VIOLATION
+
+Stride reserves the right to, without prior notice:
+(a) Suspend or terminate access for any user or Organisation found to be
+    in material breach of this AUP;
+(b) Remove or restrict access to any content that violates this AUP;
+(c) Report unlawful activity to relevant authorities;
+(d) Seek damages, injunctive relief, or other remedies as permitted by law.
+
+Termination for cause does not entitle the Organisation to any refund
+of prepaid fees.
+
+
+6. ENFORCEMENT AND CHANGES
+
+Stride may update this AUP at any time by posting a revised version and
+providing 30 days' advance notice via in-app notification and email.
+Continued use of the Platform after the effective date constitutes acceptance.
+
+The current version is always available at stride.app/legal and within
+the app under Admin → Settings → Legal & Privacy.
+
+
+7. CONTACT
+
+Questions about this AUP: ${SUPPORT_EMAIL}
+Legal notices: ${LEGAL_EMAIL}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+© ${COMPANY_NAME}. All rights reserved.`;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Document index (used by the download endpoint)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -992,6 +1238,20 @@ export const LEGAL_DOCS: Record<string, LegalDocMeta> = {
     subtitle: "Member Privacy Notice Template (GDPR Art. 13)",
     version: DOC_VERSION,
     text: MEMBER_PRIVACY_TEMPLATE,
+  },
+  "subprocessors": {
+    id: "subprocessors",
+    title: "Sub-Processor List",
+    subtitle: "Lista Sub-Processori (GDPR Art. 28)",
+    version: DOC_VERSION,
+    text: SUB_PROCESSOR_LIST,
+  },
+  "aup": {
+    id: "aup",
+    title: "Acceptable Use Policy",
+    subtitle: "Politica di Utilizzo Accettabile",
+    version: DOC_VERSION,
+    text: ACCEPTABLE_USE_POLICY,
   },
 };
 

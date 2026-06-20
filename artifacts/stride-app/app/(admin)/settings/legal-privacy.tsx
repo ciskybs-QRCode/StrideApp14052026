@@ -551,11 +551,13 @@ export default function LegalPrivacyPage() {
             </Text>
           </View>
           {[
-            { id: "terms",          icon: "document-text-outline" as const, label: "Terms of Service",              sub: "Platform agreement · v1.0" },
-            { id: "privacy",        icon: "shield-checkmark-outline" as const, label: "Privacy Policy",             sub: "GDPR Art. 13 notice · v1.0" },
-            { id: "dpa",            icon: "lock-closed-outline" as const, label: "Data Processing Agreement",       sub: "GDPR Art. 28 DPA · v1.0" },
-            { id: "media-consent",  icon: "camera-outline" as const, label: "Media Consent Form (Template)",        sub: "For your members · customisable" },
-            { id: "member-privacy", icon: "people-outline" as const, label: "Member Privacy Notice (Template)",     sub: "GDPR Art. 13 for members · customisable" },
+            { id: "terms",          icon: "document-text-outline" as const,    label: "Terms of Service",                   sub: "Platform agreement · v1.0" },
+            { id: "privacy",        icon: "shield-checkmark-outline" as const,  label: "Privacy Policy",                      sub: "GDPR Art. 13 notice · v1.0" },
+            { id: "dpa",            icon: "lock-closed-outline" as const,        label: "Data Processing Agreement",           sub: "GDPR Art. 28 DPA · v1.0" },
+            { id: "subprocessors",  icon: "git-network-outline" as const,        label: "Sub-Processor List",                  sub: "GDPR Art. 28(2) · Resend, Twilio, Stripe…" },
+            { id: "aup",            icon: "shield-outline" as const,             label: "Acceptable Use Policy",               sub: "Anti-spam & anti-fraud · v1.0" },
+            { id: "media-consent",  icon: "camera-outline" as const,             label: "Media Consent Form (Template)",       sub: "For your members · customisable" },
+            { id: "member-privacy", icon: "people-outline" as const,             label: "Member Privacy Notice (Template)",    sub: "GDPR Art. 13 for members · customisable" },
           ].map((d, i, arr) => (
             <Pressable
               key={d.id}
