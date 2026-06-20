@@ -1480,5 +1480,68 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS fere_user_idx  ON fee_event_recipients(user_id);
   `).catch(() => {});
 
+  // ── Association Expenses ──────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS association_expenses (
+      id                    SERIAL PRIMARY KEY,
+      organization_id       INTEGER NOT NULL,
+      title                 TEXT NOT NULL,
+      category              TEXT NOT NULL DEFAULT 'general',
+      recipient_name        TEXT,
+      recipient_iban        TEXT,
+      recipient_bic         TEXT,
+      recipient_stripe_link TEXT,
+      amount_cents          INTEGER NOT NULL DEFAULT 0,
+      currency              TEXT NOT NULL DEFAULT 'EUR',
+      is_recurring          BOOLEAN NOT NULL DEFAULT FALSE,
+      recurrence_interval   TEXT CHECK (recurrence_interval IN ('weekly','monthly','annual','custom')),
+      recurrence_day        INTEGER,
+      next_due_date         DATE,
+      last_paid_date        DATE,
+      payment_method        TEXT CHECK (payment_method IN ('bank','stripe','cash','check','other')),
+      auto_pay              BOOLEAN NOT NULL DEFAULT FALSE,
+      reminder_type         TEXT CHECK (reminder_type IN ('email','in_app','both','none')) DEFAULT 'in_app',
+      notes                 TEXT,
+      status                TEXT NOT NULL DEFAULT 'active',
+      created_by_admin_id   INTEGER NOT NULL DEFAULT 0,
+      created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS assoc_expenses_org_idx    ON association_expenses(organization_id);
+    CREATE INDEX IF NOT EXISTS assoc_expenses_status_idx ON association_expenses(organization_id, status);
+
+    CREATE TABLE IF NOT EXISTS expense_payments (
+      id              SERIAL PRIMARY KEY,
+      expense_id      INTEGER NOT NULL REFERENCES association_expenses(id) ON DELETE CASCADE,
+      organization_id INTEGER NOT NULL,
+      paid_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      amount_cents    INTEGER NOT NULL DEFAULT 0,
+      currency        TEXT NOT NULL DEFAULT 'EUR',
+      reference       TEXT,
+      notes           TEXT,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS exp_payments_expense_idx ON expense_payments(expense_id);
+    CREATE INDEX IF NOT EXISTS exp_payments_org_idx     ON expense_payments(organization_id);
+
+    CREATE TABLE IF NOT EXISTS volunteer_reimbursements (
+      id                  SERIAL PRIMARY KEY,
+      operator_user_id    INTEGER NOT NULL,
+      organization_id     INTEGER NOT NULL,
+      amount_cents        INTEGER NOT NULL DEFAULT 0,
+      currency            TEXT NOT NULL DEFAULT 'EUR',
+      reason              TEXT,
+      is_recurring        BOOLEAN NOT NULL DEFAULT FALSE,
+      recurrence_interval TEXT CHECK (recurrence_interval IN ('weekly','monthly','annual')),
+      bank_holder_name    TEXT,
+      bank_iban           TEXT,
+      bank_bic            TEXT,
+      stripe_link         TEXT,
+      status              TEXT NOT NULL DEFAULT 'active',
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS vol_reimb_org_idx  ON volunteer_reimbursements(organization_id);
+    CREATE INDEX IF NOT EXISTS vol_reimb_user_idx ON volunteer_reimbursements(operator_user_id);
+  `).catch(() => {});
+
   initialized = true;
 }

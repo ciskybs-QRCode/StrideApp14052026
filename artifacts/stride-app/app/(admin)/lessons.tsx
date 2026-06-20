@@ -53,6 +53,16 @@ export default function AdminLessonsScreen() {
   const [selectedDiscs, setSelectedDiscs]       = useState<Set<number>>(new Set());
   /** disciplineId → hourly rate string in dollars */
   const [profileRates, setProfileRates]         = useState<Record<number, string>>({});
+  // ── Volunteer reimbursement/donation fields ───────────────────────────────
+  const [volReimburse,          setVolReimburse]          = useState(false);
+  const [volReimburseAmount,    setVolReimburseAmount]    = useState("");
+  const [volReimburseReason,    setVolReimburseReason]    = useState("");
+  const [volReimburseRecurring, setVolReimburseRecurring] = useState(false);
+  const [volReimburseFreq,      setVolReimburseFreq]      = useState<"weekly"|"monthly"|"annual">("monthly");
+  const [volBankHolder,         setVolBankHolder]         = useState("");
+  const [volBankIban,           setVolBankIban]           = useState("");
+  const [volBankBic,            setVolBankBic]            = useState("");
+  const [volStripeLink,         setVolStripeLink]         = useState("");
 
   // ── Availability review ───────────────────────────────────────────────────────
   const [reviewSlot, setReviewSlot]   = useState<ApiAvailabilitySlot | null>(null);
@@ -187,6 +197,15 @@ export default function AdminLessonsScreen() {
     setSelectedDiscs(new Set());
     setProfileRates({});
     setEditingProfile(null);
+    setVolReimburse(false);
+    setVolReimburseAmount("");
+    setVolReimburseReason("");
+    setVolReimburseRecurring(false);
+    setVolReimburseFreq("monthly");
+    setVolBankHolder("");
+    setVolBankIban("");
+    setVolBankBic("");
+    setVolStripeLink("");
   };
 
   const openNewProfile = () => {
@@ -1371,6 +1390,152 @@ export default function AdminLessonsScreen() {
                   </Pressable>
                 </View>
 
+                {/* ── Volunteer Reimbursement / Donation (shown only for volunteers) ── */}
+                {isVolunteer && (
+                  <View style={{ marginTop: 16 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                      borderWidth: 1, borderColor: colors.border, borderRadius: 10,
+                      padding: 14, backgroundColor: colors.card, marginBottom: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>
+                          Reimbursement / Donation
+                        </Text>
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
+                          Register a recurring or one-off payment to this volunteer
+                        </Text>
+                      </View>
+                      <Switch
+                        value={volReimburse}
+                        onValueChange={v => { setVolReimburse(v); }}
+                        trackColor={{ false: "#CBD5E1", true: "#FBBF24" }}
+                        thumbColor="#1E3A8A"
+                      />
+                    </View>
+
+                    {volReimburse && (
+                      <View style={{ gap: 10 }}>
+                        {/* Amount */}
+                        <View>
+                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>AMOUNT</Text>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <Text style={{ color: colors.mutedForeground, fontSize: 15, fontWeight: "700" }}>€</Text>
+                            <TextInput
+                              style={[styles.fieldInput, { flex: 1, borderColor: colors.border,
+                                backgroundColor: colors.muted, color: colors.foreground }]}
+                              value={volReimburseAmount}
+                              onChangeText={setVolReimburseAmount}
+                              placeholder="0.00"
+                              placeholderTextColor={colors.mutedForeground}
+                              keyboardType="decimal-pad"
+                            />
+                          </View>
+                        </View>
+
+                        {/* Reason */}
+                        <View>
+                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>REASON / PURPOSE</Text>
+                          <TextInput
+                            style={[styles.fieldInput, { borderColor: colors.border,
+                              backgroundColor: colors.muted, color: colors.foreground }]}
+                            value={volReimburseReason}
+                            onChangeText={setVolReimburseReason}
+                            placeholder="e.g. Travel expenses, monthly donation…"
+                            placeholderTextColor={colors.mutedForeground}
+                          />
+                        </View>
+
+                        {/* Recurring toggle */}
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                          borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12,
+                          backgroundColor: colors.card }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Recurring</Text>
+                            <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Repeat on a regular schedule</Text>
+                          </View>
+                          <Switch
+                            value={volReimburseRecurring}
+                            onValueChange={setVolReimburseRecurring}
+                            trackColor={{ false: "#CBD5E1", true: "#FBBF24" }}
+                            thumbColor="#1E3A8A"
+                          />
+                        </View>
+
+                        {volReimburseRecurring && (
+                          <View style={{ flexDirection: "row", gap: 6 }}>
+                            {(["weekly","monthly","annual"] as const).map(f => (
+                              <Pressable key={f}
+                                style={{ flex: 1, borderWidth: 1.5, borderRadius: 8, paddingVertical: 8,
+                                  alignItems: "center",
+                                  borderColor: volReimburseFreq === f ? "#1E3A8A" : colors.border,
+                                  backgroundColor: volReimburseFreq === f ? "#1E3A8A" : colors.card }}
+                                onPress={() => setVolReimburseFreq(f)}>
+                                <Text style={{ fontSize: 12, fontWeight: "700",
+                                  color: volReimburseFreq === f ? "#fff" : colors.foreground,
+                                  textTransform: "capitalize" }}>{f}</Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        )}
+
+                        {/* Bank details section */}
+                        <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 4 }]}>
+                          PAYMENT DETAILS
+                        </Text>
+                        <View>
+                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>ACCOUNT HOLDER NAME</Text>
+                          <TextInput
+                            style={[styles.fieldInput, { borderColor: colors.border,
+                              backgroundColor: colors.muted, color: colors.foreground }]}
+                            value={volBankHolder}
+                            onChangeText={setVolBankHolder}
+                            placeholder="Full name on bank account"
+                            placeholderTextColor={colors.mutedForeground}
+                          />
+                        </View>
+                        <View>
+                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>IBAN</Text>
+                          <TextInput
+                            style={[styles.fieldInput, { borderColor: colors.border,
+                              backgroundColor: colors.muted, color: colors.foreground }]}
+                            value={volBankIban}
+                            onChangeText={setVolBankIban}
+                            placeholder="e.g. GB29 NWBK 6016 1331 9268 19"
+                            placeholderTextColor={colors.mutedForeground}
+                            autoCapitalize="characters"
+                          />
+                        </View>
+                        <View>
+                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>BIC / SWIFT</Text>
+                          <TextInput
+                            style={[styles.fieldInput, { borderColor: colors.border,
+                              backgroundColor: colors.muted, color: colors.foreground }]}
+                            value={volBankBic}
+                            onChangeText={setVolBankBic}
+                            placeholder="e.g. NWBKGB2L"
+                            placeholderTextColor={colors.mutedForeground}
+                            autoCapitalize="characters"
+                          />
+                        </View>
+                        <View>
+                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+                            STRIPE PAYMENT LINK (optional)
+                          </Text>
+                          <TextInput
+                            style={[styles.fieldInput, { borderColor: colors.border,
+                              backgroundColor: colors.muted, color: colors.foreground }]}
+                            value={volStripeLink}
+                            onChangeText={setVolStripeLink}
+                            placeholder="https://buy.stripe.com/…"
+                            placeholderTextColor={colors.mutedForeground}
+                            autoCapitalize="none"
+                            keyboardType="url"
+                          />
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
+
                 {/* ── Step 3: Discipline checkboxes ── */}
                 <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
                   Disciplines Taught
@@ -1799,6 +1964,7 @@ const styles = StyleSheet.create({
   // Field labels
   fieldLabel:         { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 },
   fieldHint:          { fontSize: 12, lineHeight: 16, marginBottom: 10, marginTop: -4 },
+  fieldInput:         { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginBottom: 0 },
 
   // User picker
   pickerContainer:    { borderWidth: 1.5, borderRadius: 14, padding: 6, marginBottom: 20 },

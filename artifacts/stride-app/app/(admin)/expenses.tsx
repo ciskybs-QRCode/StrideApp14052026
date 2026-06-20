@@ -1,0 +1,774 @@
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useColors } from "@/hooks/useColors";
+import { ScreenHeader } from "@/components/ScreenHeader";
+import { request } from "@/lib/api";
+import * as Haptics from "expo-haptics";
+
+const NAVY = "#1E3A8A";
+const GOLD = "#FBBF24";
+const GREEN = "#22c55e";
+const RED   = "#ef4444";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface ExpensePayment {
+  id: number;
+  paid_at: string;
+  amount_cents: number;
+  currency: string;
+  reference: string | null;
+  notes: string | null;
+}
+
+interface Expense {
+  id: number;
+  title: string;
+  category: string;
+  recipient_name: string | null;
+  recipient_iban: string | null;
+  recipient_bic: string | null;
+  recipient_stripe_link: string | null;
+  amount_cents: number;
+  currency: string;
+  is_recurring: boolean;
+  recurrence_interval: string | null;
+  recurrence_day: number | null;
+  next_due_date: string | null;
+  last_paid_date: string | null;
+  payment_method: string | null;
+  auto_pay: boolean;
+  reminder_type: string | null;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  payments: ExpensePayment[];
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const CATEGORIES = [
+  { key: "venue",       label: "Venue Rental",     icon: "business-outline" },
+  { key: "staff",       label: "Operator Payment",  icon: "person-outline" },
+  { key: "volunteer",   label: "Volunteer Reimb.",  icon: "heart-outline" },
+  { key: "equipment",   label: "Equipment",         icon: "cube-outline" },
+  { key: "utilities",   label: "Utilities",         icon: "flash-outline" },
+  { key: "insurance",   label: "Insurance",         icon: "shield-outline" },
+  { key: "marketing",   label: "Marketing",         icon: "megaphone-outline" },
+  { key: "transport",   label: "Transport",         icon: "car-outline" },
+  { key: "software",    label: "Software / Tools",  icon: "laptop-outline" },
+  { key: "legal",       label: "Legal / Admin",     icon: "document-text-outline" },
+  { key: "general",     label: "General",           icon: "ellipsis-horizontal-outline" },
+];
+
+const PAYMENT_METHODS = [
+  { key: "bank",   label: "Bank Transfer" },
+  { key: "stripe", label: "Stripe" },
+  { key: "cash",   label: "Cash" },
+  { key: "check",  label: "Check" },
+  { key: "other",  label: "Other" },
+];
+
+const RECURRENCE_OPTIONS = [
+  { key: "weekly",  label: "Weekly" },
+  { key: "monthly", label: "Monthly" },
+  { key: "annual",  label: "Annual" },
+  { key: "custom",  label: "Custom" },
+];
+
+const REMINDER_OPTIONS = [
+  { key: "none",   label: "None" },
+  { key: "email",  label: "Email" },
+  { key: "in_app", label: "In-App Bell" },
+  { key: "both",   label: "Email + Bell" },
+];
+
+const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", GBP: "£", CHF: "CHF " };
+const currSym = (c: string) => CURRENCY_SYMBOLS[c] ?? c;
+const fmtMoney = (cents: number, c: string) => `${currSym(c)}${(cents / 100).toFixed(2)}`;
+
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// ── Category badge ────────────────────────────────────────────────────────────
+
+function CatBadge({ cat }: { cat: string }) {
+  const found = CATEGORIES.find(c => c.key === cat);
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 4,
+      backgroundColor: NAVY + "12", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+      <Ionicons name={(found?.icon ?? "ellipsis-horizontal-outline") as "cash-outline"} size={11} color={NAVY} />
+      <Text style={{ fontSize: 10, fontWeight: "700", color: NAVY }}>{found?.label ?? cat}</Text>
+    </View>
+  );
+}
+
+// ── Main Screen ───────────────────────────────────────────────────────────────
+
+export default function ExpensesScreen() {
+  const router  = useRouter();
+  const colors  = useColors();
+  const insets  = useSafeAreaInsets();
+
+  const [expenses, setExpenses]   = useState<Expense[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [showForm, setShowForm]   = useState(false);
+  const [editId, setEditId]       = useState<number | null>(null);
+  const [filterCat, setFilterCat] = useState<string | null>(null);
+
+  // ── Form state ──────────────────────────────────────────────────────────────
+  const [fTitle,       setFTitle]       = useState("");
+  const [fCat,         setFCat]         = useState("general");
+  const [fRecipient,   setFRecipient]   = useState("");
+  const [fIban,        setFIban]        = useState("");
+  const [fBic,         setFBic]         = useState("");
+  const [fStripe,      setFStripe]      = useState("");
+  const [fAmount,      setFAmount]      = useState("");
+  const [fCurrency,    setFCurrency]    = useState("EUR");
+  const [fRecurring,   setFRecurring]   = useState(false);
+  const [fInterval,    setFInterval]    = useState("monthly");
+  const [fDay,         setFDay]         = useState("1");
+  const [fNextDue,     setFNextDue]     = useState("");
+  const [fMethod,      setFMethod]      = useState("bank");
+  const [fAutoPay,     setFAutoPay]     = useState(false);
+  const [fReminder,    setFReminder]    = useState("in_app");
+  const [fNotes,       setFNotes]       = useState("");
+  const [saving,       setSaving]       = useState(false);
+
+  // ── Pay modal ──────────────────────────────────────────────────────────────
+  const [showPay,    setShowPay]    = useState(false);
+  const [payExpId,   setPayExpId]   = useState<number | null>(null);
+  const [payAmount,  setPayAmount]  = useState("");
+  const [payRef,     setPayRef]     = useState("");
+  const [payNotes,   setPayNotes]   = useState("");
+  const [payLoading, setPayLoading] = useState(false);
+
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // ── Load ───────────────────────────────────────────────────────────────────
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await request<Expense[]>("/api/expenses", "GET");
+      setExpenses(data);
+    } catch {
+      Alert.alert("Error", "Could not load expenses");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function resetForm() {
+    setFTitle(""); setFCat("general"); setFRecipient(""); setFIban(""); setFBic("");
+    setFStripe(""); setFAmount(""); setFCurrency("EUR"); setFRecurring(false);
+    setFInterval("monthly"); setFDay("1"); setFNextDue(""); setFMethod("bank");
+    setFAutoPay(false); setFReminder("in_app"); setFNotes("");
+    setEditId(null);
+  }
+
+  function openCreate() { resetForm(); setShowForm(true); }
+
+  function openEdit(e: Expense) {
+    setFTitle(e.title);
+    setFCat(e.category);
+    setFRecipient(e.recipient_name ?? "");
+    setFIban(e.recipient_iban ?? "");
+    setFBic(e.recipient_bic ?? "");
+    setFStripe(e.recipient_stripe_link ?? "");
+    setFAmount(e.amount_cents > 0 ? (e.amount_cents / 100).toFixed(2) : "");
+    setFCurrency(e.currency);
+    setFRecurring(e.is_recurring);
+    setFInterval(e.recurrence_interval ?? "monthly");
+    setFDay(String(e.recurrence_day ?? 1));
+    setFNextDue(e.next_due_date ? e.next_due_date.slice(0, 10) : "");
+    setFMethod(e.payment_method ?? "bank");
+    setFAutoPay(e.auto_pay);
+    setFReminder(e.reminder_type ?? "in_app");
+    setFNotes(e.notes ?? "");
+    setEditId(e.id);
+    setShowForm(true);
+  }
+
+  async function saveExpense() {
+    if (!fTitle.trim()) { Alert.alert("Title required"); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        title:                fTitle.trim(),
+        category:             fCat,
+        recipient_name:       fRecipient || undefined,
+        recipient_iban:       fIban || undefined,
+        recipient_bic:        fBic || undefined,
+        recipient_stripe_link: fStripe || undefined,
+        amount_cents:         Math.round(parseFloat(fAmount || "0") * 100),
+        currency:             fCurrency,
+        is_recurring:         fRecurring,
+        recurrence_interval:  fRecurring ? fInterval : undefined,
+        recurrence_day:       fRecurring ? parseInt(fDay) : undefined,
+        next_due_date:        fNextDue || undefined,
+        payment_method:       fMethod,
+        auto_pay:             fAutoPay,
+        reminder_type:        fReminder,
+        notes:                fNotes || undefined,
+      };
+      if (editId) {
+        await request(`/api/expenses/${editId}`, "PATCH", payload);
+      } else {
+        await request("/api/expenses", "POST", payload);
+      }
+      setShowForm(false);
+      resetForm();
+      void load();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not save expense");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function archiveExpense(id: number) {
+    Alert.alert("Archive Expense", "This will remove it from the active list but keep it in records.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Archive", style: "destructive",
+        onPress: async () => {
+          try {
+            await request(`/api/expenses/${id}`, "DELETE");
+            void load();
+          } catch {
+            Alert.alert("Error", "Could not archive");
+          }
+        },
+      },
+    ]);
+  }
+
+  function openPay(e: Expense) {
+    setPayExpId(e.id);
+    setPayAmount((e.amount_cents / 100).toFixed(2));
+    setPayRef(""); setPayNotes("");
+    setShowPay(true);
+  }
+
+  async function logPayment() {
+    if (!payExpId) return;
+    setPayLoading(true);
+    try {
+      const exp = expenses.find(e => e.id === payExpId);
+      await request(`/api/expenses/${payExpId}/pay`, "POST", {
+        amount_cents: Math.round(parseFloat(payAmount || "0") * 100),
+        currency:     exp?.currency ?? "EUR",
+        reference:    payRef || undefined,
+        notes:        payNotes || undefined,
+      });
+      setShowPay(false);
+      void load();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not log payment");
+    } finally {
+      setPayLoading(false);
+    }
+  }
+
+  async function exportCSV() {
+    setExportLoading(true);
+    try {
+      const url = `/api/expenses/export.csv`;
+      await Share.share({ message: `Export your expenses at: ${url}`, url });
+    } catch {
+      Alert.alert("Export", "Could not share export link. Access /api/expenses/export.csv from your browser.");
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
+  // ── Filtered list ──────────────────────────────────────────────────────────
+  const displayed = filterCat ? expenses.filter(e => e.category === filterCat) : expenses;
+  const totalMonthly = expenses.filter(e => e.is_recurring && e.recurrence_interval === "monthly")
+    .reduce((s, e) => s + e.amount_cents, 0);
+  const totalAll = expenses.reduce((s, e) => s + e.amount_cents, 0);
+
+  // ── Form section label ─────────────────────────────────────────────────────
+  function SLabel({ label }: { label: string }) {
+    return <Text style={[S.sLabel, { color: colors.mutedForeground }]}>{label}</Text>;
+  }
+  function SInput({ label, value, onChange, placeholder, multiline, keyboardType }: {
+    label?: string; value: string; onChange: (v: string) => void;
+    placeholder?: string; multiline?: boolean; keyboardType?: "default" | "decimal-pad" | "url";
+  }) {
+    return (
+      <View style={{ marginBottom: 12 }}>
+        {label ? <Text style={[S.fLabel, { color: colors.mutedForeground }]}>{label}</Text> : null}
+        <TextInput
+          style={[S.input, { borderColor: colors.border, color: colors.foreground,
+            backgroundColor: colors.card, minHeight: multiline ? 72 : undefined,
+            textAlignVertical: multiline ? "top" : undefined, paddingTop: multiline ? 10 : undefined }]}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mutedForeground}
+          multiline={multiline}
+          keyboardType={keyboardType}
+          autoCapitalize="none"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[S.root, { backgroundColor: colors.background }]}>
+      <ScreenHeader
+        title="Association Expenses"
+        subtitle="Outgoing payments & recurring costs"
+        onBack={() => router.replace("/(admin)/finance-hub" as never)}
+      />
+
+      {/* ── Top stats bar ── */}
+      <View style={[S.statsBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <View style={S.statCell}>
+          <Text style={[S.statVal, { color: NAVY }]}>{expenses.length}</Text>
+          <Text style={[S.statLabel, { color: colors.mutedForeground }]}>Total</Text>
+        </View>
+        <View style={[S.statDivider, { backgroundColor: colors.border }]} />
+        <View style={S.statCell}>
+          <Text style={[S.statVal, { color: NAVY }]}>{expenses.filter(e => e.is_recurring).length}</Text>
+          <Text style={[S.statLabel, { color: colors.mutedForeground }]}>Recurring</Text>
+        </View>
+        <View style={[S.statDivider, { backgroundColor: colors.border }]} />
+        <View style={S.statCell}>
+          <Text style={[S.statVal, { color: NAVY }]} numberOfLines={1}>
+            {fmtMoney(totalMonthly, "EUR")}/mo
+          </Text>
+          <Text style={[S.statLabel, { color: colors.mutedForeground }]}>Monthly cost</Text>
+        </View>
+      </View>
+
+      {/* ── Category filter chips ── */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}
+        style={{ maxHeight: 48 }} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8, gap: 6, flexDirection: "row" }}>
+        <Pressable
+          style={[S.filterChip, { borderColor: filterCat === null ? NAVY : colors.border,
+            backgroundColor: filterCat === null ? NAVY : colors.card }]}
+          onPress={() => setFilterCat(null)}
+        >
+          <Text style={{ fontSize: 11, fontWeight: "700", color: filterCat === null ? "#fff" : colors.foreground }}>All</Text>
+        </Pressable>
+        {CATEGORIES.map(c => (
+          <Pressable key={c.key}
+            style={[S.filterChip, { borderColor: filterCat === c.key ? NAVY : colors.border,
+              backgroundColor: filterCat === c.key ? NAVY : colors.card }]}
+            onPress={() => setFilterCat(prev => prev === c.key ? null : c.key)}
+          >
+            <Ionicons name={c.icon as "cash-outline"} size={11} color={filterCat === c.key ? "#fff" : colors.mutedForeground} />
+            <Text style={{ fontSize: 11, fontWeight: "700", color: filterCat === c.key ? "#fff" : colors.foreground }}>{c.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {/* ── Action toolbar ── */}
+      <View style={[S.toolbar, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity style={[S.toolBtn, { backgroundColor: NAVY }]} onPress={openCreate}>
+          <Ionicons name="add" size={16} color={GOLD} />
+          <Text style={[S.toolBtnText, { color: GOLD }]}>Add Expense</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[S.toolBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: NAVY }]}
+          onPress={() => void exportCSV()} disabled={exportLoading}>
+          {exportLoading
+            ? <ActivityIndicator size="small" color={NAVY} />
+            : <><Ionicons name="download-outline" size={16} color={NAVY} />
+               <Text style={[S.toolBtnText, { color: NAVY }]}>Export CSV</Text></>
+          }
+        </TouchableOpacity>
+      </View>
+
+      {/* ── List ── */}
+      {loading ? (
+        <ActivityIndicator color={NAVY} style={{ marginTop: 60 }} />
+      ) : displayed.length === 0 ? (
+        <View style={S.empty}>
+          <Ionicons name="file-tray-outline" size={48} color={colors.mutedForeground} />
+          <Text style={[S.emptyTitle, { color: colors.foreground }]}>No expenses yet</Text>
+          <Text style={[S.emptyHint, { color: colors.mutedForeground }]}>
+            Track all outgoing payments, recurring costs, venue rentals, and supplier invoices.
+          </Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: insets.bottom + 100 }}>
+          {displayed.map(exp => (
+            <View key={exp.id} style={[S.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={S.cardHeader}>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <Text style={[S.cardTitle, { color: colors.foreground }]} numberOfLines={1}>{exp.title}</Text>
+                    {exp.is_recurring && (
+                      <View style={[S.recurBadge]}>
+                        <Ionicons name="repeat" size={10} color={GOLD} />
+                        <Text style={S.recurText}>{exp.recurrence_interval}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <CatBadge cat={exp.category} />
+                    {exp.recipient_name ? (
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground }} numberOfLines={1}>→ {exp.recipient_name}</Text>
+                    ) : null}
+                  </View>
+                </View>
+                <View style={{ alignItems: "flex-end", gap: 4 }}>
+                  <Text style={[S.cardAmount, { color: NAVY }]}>{fmtMoney(exp.amount_cents, exp.currency)}</Text>
+                  {exp.next_due_date ? (
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground }}>Due {fmtDate(exp.next_due_date)}</Text>
+                  ) : null}
+                </View>
+              </View>
+
+              {/* Meta row */}
+              <View style={[S.metaRow, { borderTopColor: colors.border }]}>
+                {exp.payment_method ? (
+                  <View style={S.metaChip}>
+                    <Ionicons name="card-outline" size={11} color={colors.mutedForeground} />
+                    <Text style={[S.metaText, { color: colors.mutedForeground }]}>
+                      {PAYMENT_METHODS.find(m => m.key === exp.payment_method)?.label ?? exp.payment_method}
+                    </Text>
+                  </View>
+                ) : null}
+                {exp.auto_pay && (
+                  <View style={S.metaChip}>
+                    <Ionicons name="checkmark-circle-outline" size={11} color={GREEN} />
+                    <Text style={[S.metaText, { color: GREEN }]}>Auto-pay</Text>
+                  </View>
+                )}
+                {exp.reminder_type && exp.reminder_type !== "none" && (
+                  <View style={S.metaChip}>
+                    <Ionicons name="notifications-outline" size={11} color={colors.mutedForeground} />
+                    <Text style={[S.metaText, { color: colors.mutedForeground }]}>
+                      {REMINDER_OPTIONS.find(r => r.key === exp.reminder_type)?.label}
+                    </Text>
+                  </View>
+                )}
+                {exp.last_paid_date && (
+                  <View style={S.metaChip}>
+                    <Ionicons name="checkmark-done-outline" size={11} color={GREEN} />
+                    <Text style={[S.metaText, { color: GREEN }]}>Paid {fmtDate(exp.last_paid_date)}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Actions */}
+              <View style={S.cardActions}>
+                <Pressable style={[S.actionBtn, { borderColor: NAVY }]} onPress={() => openEdit(exp)}>
+                  <Ionicons name="pencil-outline" size={13} color={NAVY} />
+                  <Text style={[S.actionText, { color: NAVY }]}>Edit</Text>
+                </Pressable>
+                <Pressable style={[S.actionBtn, { borderColor: GREEN }]} onPress={() => openPay(exp)}>
+                  <Ionicons name="cash-outline" size={13} color={GREEN} />
+                  <Text style={[S.actionText, { color: GREEN }]}>Log Payment</Text>
+                </Pressable>
+                <Pressable style={[S.actionBtn, { borderColor: RED }]} onPress={() => void archiveExpense(exp.id)}>
+                  <Ionicons name="archive-outline" size={13} color={RED} />
+                  <Text style={[S.actionText, { color: RED }]}>Archive</Text>
+                </Pressable>
+              </View>
+
+              {/* Recent payments */}
+              {exp.payments.length > 0 && (
+                <View style={[S.paymentsBox, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
+                  <Text style={[S.paymentsTitle, { color: colors.mutedForeground }]}>RECENT PAYMENTS</Text>
+                  {exp.payments.slice(0, 3).map(p => (
+                    <View key={p.id} style={S.payRow}>
+                      <Text style={{ fontSize: 12, color: colors.foreground }}>{fmtDate(p.paid_at)}</Text>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: GREEN }}>{fmtMoney(p.amount_cents, p.currency)}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* ── LOG PAYMENT MODAL ── */}
+      <Modal visible={showPay} animationType="slide" transparent onRequestClose={() => setShowPay(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+            paddingBottom: insets.bottom + 20, paddingTop: 20, paddingHorizontal: 20 }}>
+            <Text style={[S.modalTitle, { color: colors.foreground }]}>Log Payment</Text>
+            <SInput label="AMOUNT PAID" value={payAmount} onChange={setPayAmount} placeholder="0.00" keyboardType="decimal-pad" />
+            <SInput label="REFERENCE / TRANSACTION ID" value={payRef} onChange={setPayRef} placeholder="Bank ref, receipt number…" />
+            <SInput label="NOTES" value={payNotes} onChange={setPayNotes} placeholder="Optional notes" multiline />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <Pressable style={[S.btn, { flex: 1, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }]}
+                onPress={() => setShowPay(false)}>
+                <Text style={{ color: colors.foreground, fontWeight: "600" }}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[S.btn, { flex: 1, backgroundColor: GREEN, opacity: payLoading ? 0.6 : 1 }]}
+                onPress={() => void logPayment()} disabled={payLoading}>
+                {payLoading ? <ActivityIndicator size="small" color="#fff" /> : (
+                  <Text style={{ color: "#fff", fontWeight: "700" }}>Confirm Payment</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── FORM MODAL ── */}
+      <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={[S.formRoot, { backgroundColor: colors.background }]}>
+            <View style={[S.formHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[S.formHeaderTitle, { color: colors.foreground }]}>
+                {editId ? "Edit Expense" : "New Expense"}
+              </Text>
+              <Pressable onPress={() => { setShowForm(false); resetForm(); }} style={{ padding: 4 }}>
+                <Ionicons name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <ScrollView keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 60 }}>
+
+              {/* BASIC INFO */}
+              <SLabel label="BASIC INFO" />
+              <SInput label="TITLE *" value={fTitle} onChange={setFTitle} placeholder="e.g. Theatre Hall Rent" />
+              <SInput label="NOTES / DESCRIPTION" value={fNotes} onChange={setFNotes}
+                placeholder="Additional context for accountant review" multiline />
+
+              {/* CATEGORY */}
+              <SLabel label="CATEGORY" />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  {CATEGORIES.map(c => (
+                    <Pressable key={c.key}
+                      style={[S.catChip, { borderColor: fCat === c.key ? NAVY : colors.border,
+                        backgroundColor: fCat === c.key ? NAVY : colors.card }]}
+                      onPress={() => setFCat(c.key)}
+                    >
+                      <Ionicons name={c.icon as "cash-outline"} size={13} color={fCat === c.key ? GOLD : colors.mutedForeground} />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: fCat === c.key ? "#fff" : colors.foreground }}>
+                        {c.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* AMOUNT */}
+              <SLabel label="AMOUNT" />
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+                <View style={{ flex: 2 }}>
+                  <Text style={[S.fLabel, { color: colors.mutedForeground }]}>AMOUNT</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text style={{ color: colors.mutedForeground, marginRight: 6 }}>{currSym(fCurrency)}</Text>
+                    <TextInput
+                      style={[S.input, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                      value={fAmount} onChangeText={setFAmount} placeholder="0.00"
+                      placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" />
+                  </View>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[S.fLabel, { color: colors.mutedForeground }]}>CURRENCY</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={{ flexDirection: "row", gap: 4 }}>
+                      {["EUR","USD","GBP","CHF"].map(c => (
+                        <Pressable key={c}
+                          style={[S.currChip, { borderColor: fCurrency === c ? NAVY : colors.border,
+                            backgroundColor: fCurrency === c ? NAVY : colors.card }]}
+                          onPress={() => setFCurrency(c)}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: fCurrency === c ? "#fff" : colors.foreground }}>
+                            {c}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              </View>
+
+              {/* RECIPIENT */}
+              <SLabel label="RECIPIENT" />
+              <SInput label="RECIPIENT NAME" value={fRecipient} onChange={setFRecipient} placeholder="Company / person name" />
+              <SInput label="BANK ACCOUNT HOLDER" value={fIban ? fRecipient : ""} onChange={() => {}} placeholder="" />
+              <SInput label="IBAN" value={fIban} onChange={setFIban} placeholder="e.g. GB29 NWBK 6016 1331 9268 19" />
+              <SInput label="BIC / SWIFT" value={fBic} onChange={setFBic} placeholder="e.g. NWBKGB2L" />
+              <SInput label="STRIPE PAYMENT LINK (optional)" value={fStripe} onChange={setFStripe}
+                placeholder="https://buy.stripe.com/…" keyboardType="url" />
+
+              {/* PAYMENT METHOD */}
+              <SLabel label="PAYMENT METHOD" />
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+                {PAYMENT_METHODS.map(m => (
+                  <Pressable key={m.key}
+                    style={[S.catChip, { borderColor: fMethod === m.key ? NAVY : colors.border,
+                      backgroundColor: fMethod === m.key ? NAVY : colors.card }]}
+                    onPress={() => setFMethod(m.key)}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: fMethod === m.key ? "#fff" : colors.foreground }}>
+                      {m.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* RECURRING */}
+              <SLabel label="RECURRING" />
+              <View style={[S.switchRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Recurring Expense</Text>
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Repeat on a schedule</Text>
+                </View>
+                <Switch value={fRecurring} onValueChange={setFRecurring}
+                  trackColor={{ false: "#CBD5E1", true: GOLD }} thumbColor={NAVY} />
+              </View>
+
+              {fRecurring && (
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={[S.fLabel, { color: colors.mutedForeground }]}>FREQUENCY</Text>
+                  <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                    {RECURRENCE_OPTIONS.map(o => (
+                      <Pressable key={o.key}
+                        style={[S.catChip, { borderColor: fInterval === o.key ? NAVY : colors.border,
+                          backgroundColor: fInterval === o.key ? NAVY : colors.card }]}
+                        onPress={() => setFInterval(o.key)}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: fInterval === o.key ? "#fff" : colors.foreground }}>
+                          {o.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {(fInterval === "monthly" || fInterval === "annual") && (
+                    <SInput label="DAY OF MONTH (1–28)" value={fDay} onChange={setFDay}
+                      placeholder="e.g. 1" keyboardType="decimal-pad" />
+                  )}
+                  <SInput label="NEXT DUE DATE (YYYY-MM-DD)" value={fNextDue} onChange={setFNextDue}
+                    placeholder="2026-07-01" />
+                </View>
+              )}
+
+              {/* AUTO-PAY & REMINDER */}
+              <SLabel label="EXECUTION" />
+              <View style={[S.switchRow, { borderColor: colors.border, backgroundColor: colors.card, marginBottom: 8 }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Auto-Pay</Text>
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Process automatically from linked account</Text>
+                </View>
+                <Switch value={fAutoPay} onValueChange={setFAutoPay}
+                  trackColor={{ false: "#CBD5E1", true: GOLD }} thumbColor={NAVY} />
+              </View>
+
+              {!fAutoPay && (
+                <>
+                  <Text style={[S.fLabel, { color: colors.mutedForeground }]}>REMINDER CHANNEL</Text>
+                  <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                    {REMINDER_OPTIONS.map(r => (
+                      <Pressable key={r.key}
+                        style={[S.catChip, { borderColor: fReminder === r.key ? NAVY : colors.border,
+                          backgroundColor: fReminder === r.key ? NAVY : colors.card }]}
+                        onPress={() => setFReminder(r.key)}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: fReminder === r.key ? "#fff" : colors.foreground }}>
+                          {r.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              )}
+
+              {/* SAVE */}
+              <View style={{ height: 16 }} />
+              <Pressable style={[S.btn, { backgroundColor: NAVY, opacity: saving ? 0.6 : 1 }]}
+                onPress={() => void saveExpense()} disabled={saving}>
+                {saving ? <ActivityIndicator size="small" color="#fff" /> : (
+                  <>
+                    <Ionicons name="save-outline" size={16} color={GOLD} />
+                    <Text style={{ color: GOLD, fontWeight: "700", fontSize: 15 }}>
+                      {editId ? "Save Changes" : "Create Expense"}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
+
+const S = StyleSheet.create({
+  root:          { flex: 1 },
+  statsBar:      { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 12 },
+  statCell:      { flex: 1, alignItems: "center" },
+  statVal:       { fontSize: 20, fontWeight: "800" },
+  statLabel:     { fontSize: 10, fontWeight: "600", marginTop: 2 },
+  statDivider:   { width: StyleSheet.hairlineWidth },
+  filterChip:    { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderRadius: 8,
+                   paddingHorizontal: 10, paddingVertical: 5 },
+  toolbar:       { flexDirection: "row", gap: 10, paddingHorizontal: 14, paddingVertical: 10,
+                   borderBottomWidth: StyleSheet.hairlineWidth },
+  toolBtn:       { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8,
+                   borderRadius: 8 },
+  toolBtnText:   { fontSize: 13, fontWeight: "700" },
+  empty:         { alignItems: "center", marginTop: 80, paddingHorizontal: 40, gap: 10 },
+  emptyTitle:    { fontSize: 18, fontWeight: "700" },
+  emptyHint:     { fontSize: 13, textAlign: "center", lineHeight: 19, color: "#94a3b8" },
+  card:          { borderRadius: 12, borderWidth: 1, marginBottom: 12, overflow: "hidden" },
+  cardHeader:    { flexDirection: "row", padding: 14, gap: 10 },
+  cardTitle:     { fontSize: 15, fontWeight: "700", flex: 1 },
+  cardAmount:    { fontSize: 17, fontWeight: "800" },
+  recurBadge:    { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: GOLD + "22",
+                   borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  recurText:     { fontSize: 9, fontWeight: "700", color: "#92400e" },
+  metaRow:       { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 14, paddingBottom: 10,
+                   borderTopWidth: StyleSheet.hairlineWidth },
+  metaChip:      { flexDirection: "row", alignItems: "center", gap: 3 },
+  metaText:      { fontSize: 11 },
+  cardActions:   { flexDirection: "row", gap: 6, paddingHorizontal: 14, paddingBottom: 12 },
+  actionBtn:     { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+                   gap: 4, borderWidth: 1, borderRadius: 7, paddingVertical: 7 },
+  actionText:    { fontSize: 11, fontWeight: "700" },
+  paymentsBox:   { borderTopWidth: StyleSheet.hairlineWidth, padding: 12 },
+  paymentsTitle: { fontSize: 10, fontWeight: "700", letterSpacing: 1, marginBottom: 6 },
+  payRow:        { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
+  modalTitle:    { fontSize: 18, fontWeight: "700", marginBottom: 16 },
+  formRoot:      { flex: 1 },
+  formHeader:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+                   paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  formHeaderTitle: { fontSize: 18, fontWeight: "700" },
+  sLabel:        { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, marginBottom: 10, marginTop: 8 },
+  fLabel:        { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, marginBottom: 6 },
+  input:         { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  catChip:       { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderRadius: 8,
+                   paddingHorizontal: 10, paddingVertical: 7 },
+  currChip:      { borderWidth: 1, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 6 },
+  switchRow:     { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 10,
+                   padding: 14, marginBottom: 12 },
+  btn:           { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+                   borderRadius: 12, paddingVertical: 14 },
+});

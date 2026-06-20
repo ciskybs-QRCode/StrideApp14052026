@@ -64,6 +64,7 @@ import waitlistRouter          from "./waitlist.js";
 import employmentRouter        from "./employment.js";
 import accountantPaymentsRouter from "./accountant-payments.js";
 import feeEventsRouter from "./fee-events.js";
+import expensesRouter from "./expenses.js";
 
 const router: IRouter = Router();
 
@@ -132,5 +133,6 @@ router.use(waitlistRouter);
 router.use(employmentRouter);
 router.use(accountantPaymentsRouter);
 router.use(feeEventsRouter);
+router.use(expensesRouter);
 
 export default router;

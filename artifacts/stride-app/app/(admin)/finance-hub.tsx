@@ -33,6 +33,14 @@ export default function FinanceHub() {
       >
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>INVOICING</Text>
         <HubCard
+          icon="file-tray-full-outline"
+          title="Association Expenses"
+          description="Manage all outgoing payments, recurring costs and supplier records"
+          iconBg="#EFF6FF"
+          iconColor="#1E3A8A"
+          onPress={() => router.push("/(admin)/expenses" as never)}
+        />
+        <HubCard
           icon="receipt-outline"
           title="Invoices"
           description="Generate, send and track member invoices"
