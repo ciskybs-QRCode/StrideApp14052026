@@ -166,10 +166,7 @@ const labelCls  = "block text-sm font-semibold text-slate-700 mb-2";
 // ── Logo ──────────────────────────────────────────────────────────────────────
 
 const Logo = () => (
-  <svg height="28" width="28" viewBox="0 0 36 36" fill="none">
-    <rect width="36" height="36" rx="9" fill="#1E3A8A" />
-    <path d="M9 18h18M18 10l8 8-8 8" stroke="#D4AF37" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+  <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 44, width: "auto", display: "block" }} />
 );
 
 // ── Legal accordion ───────────────────────────────────────────────────────────
@@ -373,9 +370,8 @@ export default function Register() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <a href="/" className="inline-flex items-center gap-2 no-underline mb-6">
+          <a href="/" className="inline-flex items-center no-underline mb-6">
             <Logo />
-            <span className="text-[#1E3A8A] font-bold text-lg tracking-wide">Stride Platform</span>
           </a>
           <h1 className="text-3xl font-black text-slate-900 mb-2">Register Your Association</h1>
           <p className="text-slate-500 text-sm">
