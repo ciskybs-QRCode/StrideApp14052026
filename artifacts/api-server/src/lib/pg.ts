@@ -1140,6 +1140,7 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS member_alerts_enabled      BOOLEAN NOT NULL DEFAULT TRUE;
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS payment_reminders_enabled  BOOLEAN NOT NULL DEFAULT FALSE;
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS attendance_reports_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS kiosk_exit_pin             TEXT    NOT NULL DEFAULT '4321';
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS waitlist_alerts_enabled    BOOLEAN NOT NULL DEFAULT TRUE;
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS waitlist_enabled           BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
@@ -1178,11 +1179,23 @@ export async function ensureTables(): Promise<void> {
 
   // ── Fee tracking columns on private_lesson_bookings ───────────────────────────
   await pool.query(`
-    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancelled_at         TIMESTAMPTZ;
-    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancel_fee_cents      INTEGER NOT NULL DEFAULT 0;
-    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS reschedule_fee_cents  INTEGER NOT NULL DEFAULT 0;
-    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS rescheduled_from_date DATE;
-    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancel_reason         TEXT;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS operator_user_id       INTEGER;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS parent_user_id         INTEGER;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancelled_at           TIMESTAMPTZ;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancel_fee_cents       INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS reschedule_fee_cents   INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS rescheduled_from_date  DATE;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS cancel_reason          TEXT;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS status                 TEXT NOT NULL DEFAULT 'pending_payment';
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS preferred_date         DATE;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS preferred_time         TIME;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS duration_minutes       INTEGER NOT NULL DEFAULT 60;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS discipline_name        TEXT;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS member_price_cents     INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS operator_payout_cents  INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS checkout_session_id    TEXT;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS payroll_credited       BOOLEAN DEFAULT false;
+    ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS notes                  TEXT;
   `).catch(() => {});
 
   // ── cert_grace_extensions — per-user admin-granted deadline extensions ──────
@@ -1221,6 +1234,12 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE course_waitlist ADD COLUMN IF NOT EXISTS offer_expires_at TIMESTAMPTZ`).catch(() => {});
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_cwl_org    ON course_waitlist(org_id)`).catch(() => {});
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_cwl_member ON course_waitlist(member_id)`).catch(() => {});
+
+  // ── Backfill missing blacklist columns (table predates schema additions) ────
+  await pool.query(`ALTER TABLE blacklist ADD COLUMN IF NOT EXISTS phone_number TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE blacklist ADD COLUMN IF NOT EXISTS first_name   TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE blacklist ADD COLUMN IF NOT EXISTS last_name    TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE blacklist ADD COLUMN IF NOT EXISTS reason       TEXT`).catch(() => {});
 
   // ── Operator first-aid certificates ────────────────────────────────────────
   await pool.query(`

@@ -16,13 +16,31 @@ type AuthReq = Request & { user: TokenPayload };
 
 router.get("/students", requireAuth, requireRole("admin", "operator"), async (req, res) => {
   const user = (req as AuthReq).user;
-  const { data, error } = await supabase
-    .from("children")
-    .select("*, parent:users!parent_id(id,name,phone), enrollments(course_id, status, course:courses(id,name))")
+
+  // members table = student/child profiles; organization_id scopes to the org.
+  // Avoid parent join — PostgREST schema cache may not reflect the FK.
+  const { data: members, error: membErr } = await supabase
+    .from("members")
+    .select("*")
     .eq("organization_id", user.orgId)
-    .order("first_name");
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json(data ?? []);
+    .order("full_name");
+  if (membErr) { res.status(500).json({ error: membErr.message }); return; }
+
+  // Shape to ApiStudent
+  const result = (members ?? []).map((m: Record<string, unknown>) => ({
+    id:                m.id,
+    name:              m.full_name ?? `${String(m.first_name ?? "")} ${String(m.last_name ?? "")}`.trim(),
+    first_name:        m.first_name ?? null,
+    last_name:         m.last_name  ?? null,
+    gold_stars:        (m.gold_stars as number) ?? 0,
+    allergies:         (m.allergies as string)  ?? "",
+    medications:       (m.medications as string) ?? "",
+    ambulance_consent: m.ambulance_consent ?? false,
+    media_consent:     m.media_consent ?? null,
+    parent:            null,
+    enrollments:       [],
+  }));
+  res.json(result);
 });
 
 router.get("/attendance", requireAuth, requireRole("admin", "operator"), async (req, res) => {

@@ -53,35 +53,35 @@ router.get("/operator-earnings", requireAuth, requireRole("operator", "admin"), 
   const lastDay   = new Date(year, mon, 0).getDate();
   const endDate   = `${year}-${String(mon).padStart(2, "0")}-${lastDay}`;
 
-  const { data: bookings, error } = await supabase
-    .from("private_bookings")
-    .select("*, discipline:disciplines!discipline_id(id,name)")
-    .eq("organization_id", user.orgId)
-    .eq("operator_user_id", user.id)
-    .eq("status", "completed")
-    .gte("slot_date", startDate)
-    .lte("slot_date", endDate);
+  // private_lesson_bookings lives in Replit PostgreSQL pool.
+  // Actual columns: preferred_date, duration_minutes, discipline_name, operator_payout_cents
+  type PlbRow = {
+    preferred_date: string; duration_minutes: number;
+    discipline_name: string; operator_payout_cents: number;
+  };
+  const { rows: bookings } = await pool.query<PlbRow>(
+    `SELECT preferred_date, duration_minutes, discipline_name, operator_payout_cents
+     FROM private_lesson_bookings
+     WHERE organization_id = $1 AND operator_user_id = $2
+       AND status = 'completed' AND preferred_date BETWEEN $3 AND $4`,
+    [user.orgId ?? 1, user.id, startDate, endDate],
+  ).catch(() => ({ rows: [] as PlbRow[] }));
 
-  if (error) { res.status(500).json({ error: error.message }); return; }
-
-  type DiscMap = Record<number, {
+  type DiscMap = Record<string, {
     discipline_id: number; discipline_name: string; lesson_count: number;
     total_minutes: number; total_hours: number; earnings_cents: number; hourly_rate_cents: number;
   }>;
   const disciplineMap: DiscMap = {};
 
-  for (const b of (bookings ?? [])) {
-    const [sh, sm] = (b.start_time as string).split(":").map(Number);
-    const [eh, em] = (b.end_time as string).split(":").map(Number);
-    const minutes  = (eh * 60 + em) - (sh * 60 + sm);
-    const dId      = b.discipline_id as number;
-    const dName    = (b.discipline as { id: number; name: string } | null)?.name ?? "Unknown";
-    if (!disciplineMap[dId]) {
-      disciplineMap[dId] = { discipline_id: dId, discipline_name: dName, lesson_count: 0, total_minutes: 0, total_hours: 0, earnings_cents: 0, hourly_rate_cents: 0 };
+  for (const b of bookings) {
+    const minutes = b.duration_minutes ?? 60;
+    const key     = b.discipline_name ?? "Unknown";
+    if (!disciplineMap[key]) {
+      disciplineMap[key] = { discipline_id: 0, discipline_name: key, lesson_count: 0, total_minutes: 0, total_hours: 0, earnings_cents: 0, hourly_rate_cents: 0 };
     }
-    disciplineMap[dId].lesson_count++;
-    disciplineMap[dId].total_minutes    += minutes;
-    disciplineMap[dId].earnings_cents   += (b.earnings_cents as number) ?? 0;
+    disciplineMap[key].lesson_count++;
+    disciplineMap[key].total_minutes    += minutes;
+    disciplineMap[key].earnings_cents   += b.operator_payout_cents ?? 0;
   }
 
   const disciplines = Object.values(disciplineMap).map(d => {
@@ -167,29 +167,27 @@ router.get("/operator-earnings/ytd", requireAuth, requireRole("operator", "admin
   const endDate   = `${year}-12-31`;
 
   try {
-    const { data: bookings } = await supabase
-      .from("private_bookings")
-      .select("*, discipline:disciplines!discipline_id(id,name)")
-      .eq("organization_id", user.orgId)
-      .eq("operator_user_id", user.id)
-      .eq("status", "completed")
-      .gte("slot_date", startDate)
-      .lte("slot_date", endDate);
+    type YtdRow = { preferred_date: string; duration_minutes: number; operator_payout_cents: number };
+    const { rows: bookings } = await pool.query<YtdRow>(
+      `SELECT preferred_date, duration_minutes, operator_payout_cents
+       FROM private_lesson_bookings
+       WHERE organization_id = $1 AND operator_user_id = $2
+         AND status = 'completed' AND preferred_date BETWEEN $3 AND $4`,
+      [user.orgId ?? 1, user.id, startDate, endDate],
+    );
 
     let total_earnings_cents = 0;
     let total_minutes        = 0;
     let total_lessons        = 0;
     const byMonth: Record<string, number> = {};
 
-    for (const b of (bookings ?? [])) {
-      const [sh, sm] = (b.start_time as string).split(":").map(Number);
-      const [eh, em] = (b.end_time   as string).split(":").map(Number);
-      const mins = (eh * 60 + em) - (sh * 60 + sm);
+    for (const b of bookings) {
+      const mins = b.duration_minutes ?? 60;
       total_minutes        += mins;
-      total_earnings_cents += (b.earnings_cents as number) ?? 0;
+      total_earnings_cents += b.operator_payout_cents ?? 0;
       total_lessons++;
-      const mon = (b.slot_date as string).slice(0, 7);
-      byMonth[mon] = (byMonth[mon] ?? 0) + ((b.earnings_cents as number) ?? 0);
+      const mon = b.preferred_date.slice(0, 7);
+      byMonth[mon] = (byMonth[mon] ?? 0) + (b.operator_payout_cents ?? 0);
     }
 
     const total_hours = Math.round((total_minutes / 60) * 10) / 10;

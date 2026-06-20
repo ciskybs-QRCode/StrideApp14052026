@@ -147,49 +147,59 @@ async function sendRemindersForWindow(
   const loDate = lo.toISOString().substring(0, 10);
   const hiDate = hi.toISOString().substring(0, 10);
 
-  const { data: bookings, error } = await supabase
-    .from("bookings")
-    .select(`id, organization_id, parent_id, slot_date, start_time, location, disciplines ( name )`)
-    .eq("status", "paid")
-    .gte("slot_date", loDate)
-    .lte("slot_date", hiDate);
-
-  if (error) {
-    logger.warn({ err: error, tag }, "reminder: booking fetch failed");
+  // private_lesson_bookings lives in Replit PostgreSQL pool (not Supabase)
+  type PlbReminderRow = {
+    id: number; organization_id: number; parent_user_id: number;
+    preferred_date: string; preferred_time: string | null; discipline_name: string;
+  };
+  let bookings: PlbReminderRow[];
+  try {
+    const { rows } = await pool.query<PlbReminderRow>(
+      `SELECT id, organization_id, parent_user_id, preferred_date, preferred_time, discipline_name
+       FROM private_lesson_bookings
+       WHERE status = 'confirmed'
+         AND preferred_date BETWEEN $1 AND $2`,
+      [loDate, hiDate],
+    );
+    bookings = rows;
+  } catch (err) {
+    logger.warn({ err, tag }, "reminder: booking fetch failed");
     return;
   }
-  if (!bookings?.length) return;
+  if (!bookings.length) return;
 
   for (const b of bookings) {
-    const lessonStart = new Date(`${String(b.slot_date)}T${String(b.start_time)}Z`);
+    const dateStr  = String(b.preferred_date).substring(0, 10);
+    const timeStr  = String(b.preferred_time ?? "00:00").slice(0, 5);
+    const lessonStart = new Date(`${dateStr}T${timeStr}:00Z`);
     if (lessonStart < lo || lessonStart > hi) continue;
+
+    const disciplineName = b.discipline_name ?? "lesson";
+    const parentId       = b.parent_user_id;
+    if (!parentId) continue;
+
+    const label = tag === "24h" ? "24 hours" : "1 hour";
+
+    if (!await isLessonRemindersEnabledForOrg(b.organization_id as number)) continue;
+    if (!await isLessonReminderEnabledForUser(parentId)) continue;
 
     const { data: existing } = await supabase
       .from("notifications")
       .select("id")
-      .eq("booking_id", b.id)
+      .eq("recipient_id", parentId)
       .eq("type", "lesson_reminder")
       .ilike("title", `%${tag === "24h" ? "24 hour" : "1 hour"}%`)
+      .gte("created_at", dateStr)
       .limit(1);
 
     if (existing?.length) continue;
 
-    const discipline = (b as Record<string, unknown>).disciplines as { name: string } | null;
-    const disciplineName = discipline?.name ?? "lesson";
-    const timeStr = String(b.start_time).slice(0, 5);
-    const label = tag === "24h" ? "24 hours" : "1 hour";
-
-    // Skip if org or user has lesson reminders disabled
-    if (!await isLessonRemindersEnabledForOrg(b.organization_id as number)) continue;
-    if (!await isLessonReminderEnabledForUser(b.parent_id as number)) continue;
-
     const { error: insertErr } = await supabase.from("notifications").insert({
       organization_id: b.organization_id,
-      recipient_id:    b.parent_id,
+      recipient_id:    parentId,
       type:            "lesson_reminder",
       title:           `${disciplineName} in ${label}`,
-      body:            `Your ${disciplineName} starts at ${timeStr} · ${String(b.location || "see schedule")}`,
-      booking_id:      b.id,
+      body:            `Your ${disciplineName} starts at ${timeStr} — see schedule for details`,
     });
 
     if (insertErr) {
