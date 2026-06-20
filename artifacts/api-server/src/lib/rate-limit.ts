@@ -78,9 +78,17 @@ export const qrScanLimiter = rateLimit({
   message: { error: "Too many scan requests. Please slow down." },
 });
 
+const DEV_EMAILS = new Set([
+  "ciskybs@gmail.com",
+  "genitore@test.com",
+  "operatore@test.com",
+  "admin@test.com",
+]);
+
 /**
  * Auth limiter — applied to login and register endpoints.
  * 10 attempts per 15-minute window per IP — prevents credential stuffing.
+ * Dev/test accounts are always exempt so they can never be locked out.
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -89,6 +97,10 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => `auth:${req.ip ?? "unknown"}`,
+  skip: (req) => {
+    const email = (req.body as { email?: string })?.email?.toLowerCase().trim() ?? "";
+    return DEV_EMAILS.has(email);
+  },
   message: { error: "Too many login attempts. Please wait 15 minutes and try again." },
 });
 
