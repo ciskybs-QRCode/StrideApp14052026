@@ -451,457 +451,6 @@ export default function FeeEventsScreen() {
     </View>
   );
 
-  // ── STATS MODAL ───────────────────────────────────────────────────────────────
-
-  const StatsModal = () => (
-    <Modal visible={statsId !== null} animationType="slide" presentationStyle="pageSheet">
-      <View style={[modalStyles.container, { backgroundColor: colors.background }]}>
-        <View style={modalStyles.handle} />
-        <View style={modalStyles.header}>
-          <Text style={[modalStyles.title, { color: colors.foreground }]}>
-            {stats?.event?.title ?? "Statistics"}
-          </Text>
-          <Pressable onPress={() => { setStatsId(null); setStats(null); }}>
-            <Ionicons name="close" size={24} color={colors.foreground} />
-          </Pressable>
-        </View>
-
-        {statsLoading ? (
-          <ActivityIndicator color={NAVY} style={{ marginTop: 40 }} />
-        ) : stats ? (
-          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
-            <View style={statsStyles.pillRow}>
-              {[
-                { label: "Total",   value: stats.stats.total,   color: colors.foreground },
-                { label: "Read",    value: stats.stats.read,    color: GREEN },
-                { label: "Skipped", value: stats.stats.skipped, color: "#f59e0b" },
-                { label: "Pending", value: stats.stats.pending, color: colors.mutedForeground },
-                { label: "Paid",    value: stats.stats.paid,    color: NAVY },
-              ].map(p => (
-                <View key={p.label} style={[statsStyles.pill, { backgroundColor: p.color + "18" }]}>
-                  <Text style={[statsStyles.pillVal, { color: p.color }]}>{p.value}</Text>
-                  <Text style={[statsStyles.pillLabel, { color: p.color }]}>{p.label}</Text>
-                </View>
-              ))}
-            </View>
-
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 20 }]}>Recipients</Text>
-            {stats.recipients.map(r => (
-              <View key={r.user_id} style={[statsStyles.row, { borderBottomColor: colors.border }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[statsStyles.name, { color: colors.foreground }]}>{r.member_name}</Text>
-                  <Text style={[statsStyles.sub, { color: colors.mutedForeground }]}>
-                    {r.read_at ? `Read ${new Date(r.read_at).toLocaleDateString()}` :
-                      r.skipped_at ? "Skipped" : "Not opened"}
-                  </Text>
-                </View>
-                <View>
-                  <Text style={[
-                    statsStyles.payStatus,
-                    { color: r.payment_status === "paid" ? GREEN : r.payment_status === "partial" ? GOLD : RED },
-                  ]}>
-                    {r.payment_status.toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        ) : null}
-      </View>
-    </Modal>
-  );
-
-  // ── EMAIL PREVIEW MODAL ───────────────────────────────────────────────────────
-
-  const EmailPreviewModal = () => (
-    <Modal visible={showEmailPreview} animationType="slide" presentationStyle="pageSheet">
-      <View style={[modalStyles.container, { backgroundColor: colors.background }]}>
-        <View style={modalStyles.handle} />
-        <View style={modalStyles.header}>
-          <Text style={[modalStyles.title, { color: colors.foreground }]}>Email Draft</Text>
-          <Pressable onPress={() => setShowEmailPreview(false)}>
-            <Ionicons name="close" size={24} color={colors.foreground} />
-          </Pressable>
-        </View>
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
-          <Text style={[formStyles.label, { color: colors.mutedForeground }]}>SUBJECT</Text>
-          <TextInput
-            style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, marginBottom: 16 }]}
-            value={emailDraft?.subject ?? ""}
-            onChangeText={v => setEmailDraft(prev => prev ? { ...prev, subject: v } : null)}
-            placeholderTextColor={colors.mutedForeground}
-          />
-          <Text style={[formStyles.label, { color: colors.mutedForeground }]}>BODY (plain text — editable)</Text>
-          <TextInput
-            style={[
-              formStyles.input,
-              { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card,
-                minHeight: 200, textAlignVertical: "top", paddingTop: 12 },
-            ]}
-            value={emailDraft?.body ?? ""}
-            onChangeText={v => setEmailDraft(prev => prev ? { ...prev, body: v } : null)}
-            multiline
-            placeholderTextColor={colors.mutedForeground}
-          />
-          <View style={{ marginTop: 8, padding: 12, borderRadius: 8, backgroundColor: "#FEF9EE", borderLeftWidth: 3, borderLeftColor: GOLD }}>
-            <Text style={{ fontSize: 12, color: "#92400e" }}>
-              The HTML version is automatically generated from the body. You can edit the plain text above — it will be sent in the final email.
-            </Text>
-          </View>
-          <View style={{ height: 24 }} />
-          <Pressable
-            style={[btnStyles.gold, { opacity: publishing ? 0.6 : 1 }]}
-            onPress={() => {
-              setShowEmailPreview(false);
-              if (editId) void publishEvent(editId);
-            }}
-          >
-            <Ionicons name="send-outline" size={16} color={NAVY} />
-            <Text style={btnStyles.goldText}>Publish & Send</Text>
-          </Pressable>
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-
-  // ── CREATE / EDIT FORM MODAL ──────────────────────────────────────────────────
-
-  const FormModal = () => (
-    <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={[modalStyles.container, { backgroundColor: colors.background }]}>
-          <View style={modalStyles.handle} />
-          <View style={modalStyles.header}>
-            <Text style={[modalStyles.title, { color: colors.foreground }]}>
-              {editId ? "Edit Event" : "Create Fee Event"}
-            </Text>
-            <Pressable onPress={() => { setShowForm(false); resetForm(); }}>
-              <Ionicons name="close" size={24} color={colors.foreground} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 60 }}
-          >
-            {/* ── BASICS ─────────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>DETAILS</Text>
-
-            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>TITLE *</Text>
-            <TextInput
-              style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-              placeholder="e.g. Year-End Gala Fee"
-              placeholderTextColor={colors.mutedForeground}
-              value={title}
-              onChangeText={setTitle}
-            />
-
-            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>DESCRIPTION</Text>
-            <TextInput
-              style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, minHeight: 80, textAlignVertical: "top", paddingTop: 10 }]}
-              placeholder="What does this fee cover? Members will see this in the notification."
-              placeholderTextColor={colors.mutedForeground}
-              value={desc}
-              onChangeText={setDesc}
-              multiline
-            />
-
-            {/* ── CURRENCY ────────────────────────────────────────────────── */}
-            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>CURRENCY</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-              {CURRENCIES.map(c => (
-                <Pressable
-                  key={c}
-                  style={[chipStyles.chip, { borderColor: currency === c ? NAVY : colors.border, backgroundColor: currency === c ? NAVY : colors.card }]}
-                  onPress={() => setCurrency(c)}
-                >
-                  <Text style={{ color: currency === c ? "#fff" : colors.foreground, fontWeight: "600", fontSize: 13 }}>
-                    {c} {currSym(c)}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-
-            {/* ── LINE ITEMS ──────────────────────────────────────────────── */}
-            <View style={formStyles.sectionRow}>
-              <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>COST BREAKDOWN</Text>
-              <Pressable style={[btnStyles.small, { borderColor: NAVY }]} onPress={addLineItem}>
-                <Ionicons name="add-outline" size={14} color={NAVY} />
-                <Text style={[btnStyles.smallText, { color: NAVY }]}>Add Row</Text>
-              </Pressable>
-            </View>
-
-            {lineItems.length === 0 && (
-              <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
-                Add rows to break down the fee (e.g. "Performance costume", "Venue hire"). Leave empty to use a single total amount.
-              </Text>
-            )}
-
-            {lineItems.map((li, i) => (
-              <View key={i} style={lineStyles.row}>
-                <TextInput
-                  style={[lineStyles.descInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                  placeholder="Item description"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={li.description}
-                  onChangeText={v => updateLineItem(i, "description", v)}
-                />
-                <View style={lineStyles.amtRow}>
-                  <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
-                  <TextInput
-                    style={[lineStyles.amtInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                    placeholder="0.00"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="decimal-pad"
-                    value={li.amount_cents > 0 ? (li.amount_cents / 100).toFixed(2) : ""}
-                    onChangeText={v => updateLineItem(i, "amount_cents", Math.round(parseFloat(v || "0") * 100))}
-                  />
-                </View>
-                <Pressable onPress={() => removeLineItem(i)} style={{ marginLeft: 6 }}>
-                  <Ionicons name="close-circle" size={20} color={RED} />
-                </Pressable>
-              </View>
-            ))}
-
-            {lineItems.length > 0 && (
-              <View style={[lineStyles.total, { borderTopColor: colors.border }]}>
-                <Text style={[lineStyles.totalLabel, { color: colors.mutedForeground }]}>Total</Text>
-                <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, currency)}</Text>
-              </View>
-            )}
-
-            {lineItems.length === 0 && (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={[formStyles.label, { color: colors.mutedForeground }]}>TOTAL AMOUNT *</Text>
-                <View style={lineStyles.amtRow}>
-                  <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
-                  <TextInput
-                    style={[lineStyles.amtInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                    placeholder="0.00"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-              </View>
-            )}
-
-            {/* ── FREE TICKETS ────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>TICKETS</Text>
-            <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
-              If this event has associated tickets, set how many complimentary tickets each member receives upon payment.
-            </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
-              <Pressable
-                style={[chipStyles.counter, { borderColor: colors.border }]}
-                onPress={() => setFreeTickets(p => Math.max(0, p - 1))}
-              >
-                <Ionicons name="remove" size={16} color={colors.foreground} />
-              </Pressable>
-              <Text style={[chipStyles.counterVal, { color: colors.foreground }]}>{freeTickets}</Text>
-              <Pressable
-                style={[chipStyles.counter, { borderColor: colors.border }]}
-                onPress={() => setFreeTickets(p => p + 1)}
-              >
-                <Ionicons name="add" size={16} color={colors.foreground} />
-              </Pressable>
-              <Text style={[formStyles.hint, { color: colors.mutedForeground, marginLeft: 10, flex: 1 }]}>
-                {freeTickets === 0 ? "No complimentary tickets" : `${freeTickets} free ticket${freeTickets > 1 ? "s" : ""} per member`}
-              </Text>
-            </View>
-
-            {/* ── PAYMENT TYPE ────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>PAYMENT</Text>
-
-            <View style={{ flexDirection: "row", marginBottom: 16, gap: 8 }}>
-              {[
-                { key: "single" as const,       label: "Single Payment" },
-                { key: "installments" as const,  label: "Installments" },
-              ].map(opt => (
-                <Pressable
-                  key={opt.key}
-                  style={[chipStyles.chip, { flex: 1, justifyContent: "center", borderColor: payType === opt.key ? NAVY : colors.border, backgroundColor: payType === opt.key ? NAVY : colors.card }]}
-                  onPress={() => setPayType(opt.key)}
-                >
-                  <Text style={{ color: payType === opt.key ? "#fff" : colors.foreground, fontWeight: "600", fontSize: 13, textAlign: "center" }}>
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {payType === "single" && (
-              <DateInput label="DUE DATE" value={dueDate} onChange={setDueDate} colors={colors} />
-            )}
-
-            {payType === "installments" && (
-              <>
-                <View style={formStyles.sectionRow}>
-                  <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
-                    Each installment is added to the member's cart on its due date.
-                  </Text>
-                  <Pressable style={[btnStyles.small, { borderColor: NAVY }]} onPress={addInstallment}>
-                    <Ionicons name="add-outline" size={14} color={NAVY} />
-                    <Text style={[btnStyles.smallText, { color: NAVY }]}>Add</Text>
-                  </Pressable>
-                </View>
-                {installments.map((ins, i) => (
-                  <View key={i} style={[instStyles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <Text style={[instStyles.num, { color: NAVY }]}>#{i + 1}</Text>
-                      <Pressable onPress={() => removeInstallment(i)}>
-                        <Ionicons name="close-circle" size={18} color={RED} />
-                      </Pressable>
-                    </View>
-                    <Text style={[formStyles.label, { color: colors.mutedForeground }]}>LABEL</Text>
-                    <TextInput
-                      style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 8 }]}
-                      placeholder={`Installment ${i + 1}`}
-                      placeholderTextColor={colors.mutedForeground}
-                      value={ins.label}
-                      onChangeText={v => updateInstallment(i, "label", v)}
-                    />
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[formStyles.label, { color: colors.mutedForeground }]}>AMOUNT</Text>
-                        <View style={lineStyles.amtRow}>
-                          <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
-                          <TextInput
-                            style={[lineStyles.amtInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                            placeholder="0.00"
-                            placeholderTextColor={colors.mutedForeground}
-                            keyboardType="decimal-pad"
-                            value={ins.amount_cents > 0 ? (ins.amount_cents / 100).toFixed(2) : ""}
-                            onChangeText={v => updateInstallment(i, "amount_cents", Math.round(parseFloat(v || "0") * 100))}
-                          />
-                        </View>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <DateInput label="DUE DATE" value={ins.due_date} onChange={v => updateInstallment(i, "due_date", v)} colors={colors} />
-                      </View>
-                    </View>
-                  </View>
-                ))}
-                {installments.length > 0 && (
-                  <View style={[lineStyles.total, { borderTopColor: colors.border }]}>
-                    <Text style={[lineStyles.totalLabel, { color: colors.mutedForeground }]}>Total (all installments)</Text>
-                    <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, currency)}</Text>
-                  </View>
-                )}
-              </>
-            )}
-
-            {/* ── AUDIENCE ────────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>AUDIENCE</Text>
-            {AUDIENCE_OPTIONS.map(opt => (
-              <Pressable
-                key={opt.key}
-                style={[audienceStyles.row, { borderColor: audience === opt.key ? NAVY : colors.border, backgroundColor: audience === opt.key ? NAVY + "12" : colors.card }]}
-                onPress={() => setAudience(opt.key)}
-              >
-                <Ionicons name={opt.icon as "people-outline"} size={18} color={audience === opt.key ? NAVY : colors.mutedForeground} />
-                <Text style={[audienceStyles.label, { color: audience === opt.key ? NAVY : colors.foreground }]}>{opt.label}</Text>
-                {audience === opt.key && <Ionicons name="checkmark-circle" size={18} color={NAVY} />}
-              </Pressable>
-            ))}
-            {audience === "all" && (
-              <View style={[formStyles.infoBox, { backgroundColor: NAVY + "0F", borderLeftColor: NAVY }]}>
-                <Text style={{ fontSize: 12, color: NAVY }}>
-                  Operators who also have registered dependants will receive this notification automatically.
-                </Text>
-              </View>
-            )}
-
-            {/* ── AI EMAIL ────────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>EMAIL COMMUNICATION</Text>
-            <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
-              Our AI will draft a branded email with all the fee details, payment schedule, and ticket info.
-            </Text>
-
-            {!editId && (
-              <View style={[formStyles.infoBox, { backgroundColor: "#FEF3C7", borderLeftColor: GOLD }]}>
-                <Text style={{ fontSize: 12, color: "#92400e" }}>
-                  Save the draft first, then generate the email before publishing.
-                </Text>
-              </View>
-            )}
-
-            {editId && !emailDraft && (
-              <Pressable
-                style={[btnStyles.outline, { borderColor: GOLD, opacity: genLoading ? 0.6 : 1 }]}
-                onPress={generateEmail}
-                disabled={genLoading}
-              >
-                {genLoading ? (
-                  <ActivityIndicator size="small" color={GOLD} />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles-outline" size={16} color={GOLD} />
-                    <Text style={[btnStyles.outlineText, { color: GOLD }]}>Generate AI Email Draft</Text>
-                  </>
-                )}
-              </Pressable>
-            )}
-
-            {emailDraft && (
-              <View style={[formStyles.infoBox, { backgroundColor: GREEN + "18", borderLeftColor: GREEN }]}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View>
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: GREEN }}>✓ Email draft ready</Text>
-                    <Text style={{ fontSize: 11, color: GREEN, marginTop: 2 }} numberOfLines={1}>{emailDraft.subject}</Text>
-                  </View>
-                  <Pressable onPress={() => setShowEmailPreview(true)}>
-                    <Text style={{ fontSize: 12, color: GREEN, fontWeight: "600", textDecorationLine: "underline" }}>Preview & Edit</Text>
-                  </Pressable>
-                </View>
-              </View>
-            )}
-
-            {/* ── ACTIONS ──────────────────────────────────────────────────── */}
-            <View style={{ height: 20 }} />
-            <Pressable
-              style={[btnStyles.gold, { opacity: saving ? 0.6 : 1 }]}
-              onPress={saveEvent}
-              disabled={saving}
-            >
-              {saving ? <ActivityIndicator size="small" color={NAVY} /> : (
-                <>
-                  <Ionicons name="save-outline" size={16} color={NAVY} />
-                  <Text style={btnStyles.goldText}>{editId ? "Save Changes" : "Save Draft"}</Text>
-                </>
-              )}
-            </Pressable>
-
-            {editId && (
-              <Pressable
-                style={[btnStyles.navy, { marginTop: 10, opacity: publishing ? 0.6 : 1 }]}
-                onPress={() => {
-                  if (emailDraft) {
-                    setShowEmailPreview(true);
-                  } else {
-                    void publishEvent(editId);
-                  }
-                }}
-                disabled={publishing}
-              >
-                {publishing ? <ActivityIndicator size="small" color="#fff" /> : (
-                  <>
-                    <Ionicons name="send-outline" size={16} color="#fff" />
-                    <Text style={btnStyles.navyText}>
-                      {emailDraft ? "Review & Publish" : "Publish Now"}
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            )}
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-
   // ── Main render ───────────────────────────────────────────────────────────────
 
   return (
@@ -912,7 +461,7 @@ export default function FeeEventsScreen() {
         onBack={() => router.replace("/(admin)/operations-hub")}
       />
 
-      {/* ── Toolbar: always-visible create button ── */}
+      {/* ── Toolbar ── */}
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.border }}>
         <Pressable
           onPress={openCreate}
@@ -951,9 +500,392 @@ export default function FeeEventsScreen() {
         <Text style={fabStyles.fabText}>Create Event</Text>
       </Pressable>
 
-      <FormModal />
-      <StatsModal />
-      <EmailPreviewModal />
+      {/* ── STATS MODAL ── */}
+      <Modal visible={statsId !== null} animationType="slide" presentationStyle="pageSheet">
+        <View style={[modalStyles.container, { backgroundColor: colors.background }]}>
+          <View style={modalStyles.handle} />
+          <View style={modalStyles.header}>
+            <Text style={[modalStyles.title, { color: colors.foreground }]}>
+              {stats?.event?.title ?? "Statistics"}
+            </Text>
+            <Pressable onPress={() => { setStatsId(null); setStats(null); }}>
+              <Ionicons name="close" size={24} color={colors.foreground} />
+            </Pressable>
+          </View>
+          {statsLoading ? (
+            <ActivityIndicator color={NAVY} style={{ marginTop: 40 }} />
+          ) : stats ? (
+            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
+              <View style={statsStyles.pillRow}>
+                {[
+                  { label: "Total",   value: stats.stats.total,   color: colors.foreground },
+                  { label: "Read",    value: stats.stats.read,    color: GREEN },
+                  { label: "Skipped", value: stats.stats.skipped, color: "#f59e0b" },
+                  { label: "Pending", value: stats.stats.pending, color: colors.mutedForeground },
+                  { label: "Paid",    value: stats.stats.paid,    color: NAVY },
+                ].map(p => (
+                  <View key={p.label} style={[statsStyles.pill, { backgroundColor: p.color + "18" }]}>
+                    <Text style={[statsStyles.pillVal, { color: p.color }]}>{p.value}</Text>
+                    <Text style={[statsStyles.pillLabel, { color: p.color }]}>{p.label}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 20 }]}>Recipients</Text>
+              {stats.recipients.map(r => (
+                <View key={r.user_id} style={[statsStyles.row, { borderBottomColor: colors.border }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[statsStyles.name, { color: colors.foreground }]}>{r.member_name}</Text>
+                    <Text style={[statsStyles.sub, { color: colors.mutedForeground }]}>
+                      {r.read_at ? `Read ${new Date(r.read_at).toLocaleDateString()}` :
+                        r.skipped_at ? "Skipped" : "Not opened"}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={[
+                      statsStyles.payStatus,
+                      { color: r.payment_status === "paid" ? GREEN : r.payment_status === "partial" ? GOLD : RED },
+                    ]}>
+                      {r.payment_status.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          ) : null}
+        </View>
+      </Modal>
+
+      {/* ── EMAIL PREVIEW MODAL ── */}
+      <Modal visible={showEmailPreview} animationType="slide" presentationStyle="pageSheet">
+        <View style={[modalStyles.container, { backgroundColor: colors.background }]}>
+          <View style={modalStyles.handle} />
+          <View style={modalStyles.header}>
+            <Text style={[modalStyles.title, { color: colors.foreground }]}>Email Draft</Text>
+            <Pressable onPress={() => setShowEmailPreview(false)}>
+              <Ionicons name="close" size={24} color={colors.foreground} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
+            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>SUBJECT</Text>
+            <TextInput
+              style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, marginBottom: 16 }]}
+              value={emailDraft?.subject ?? ""}
+              onChangeText={v => setEmailDraft(prev => prev ? { ...prev, subject: v } : null)}
+              placeholderTextColor={colors.mutedForeground}
+            />
+            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>BODY (plain text — editable)</Text>
+            <TextInput
+              style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, minHeight: 200, textAlignVertical: "top", paddingTop: 12 }]}
+              value={emailDraft?.body ?? ""}
+              onChangeText={v => setEmailDraft(prev => prev ? { ...prev, body: v } : null)}
+              multiline
+              placeholderTextColor={colors.mutedForeground}
+            />
+            <View style={{ marginTop: 8, padding: 12, borderRadius: 8, backgroundColor: "#FEF9EE", borderLeftWidth: 3, borderLeftColor: GOLD }}>
+              <Text style={{ fontSize: 12, color: "#92400e" }}>
+                The HTML version is automatically generated from the body. You can edit the plain text above — it will be sent in the final email.
+              </Text>
+            </View>
+            <View style={{ height: 24 }} />
+            <Pressable
+              style={[btnStyles.gold, { opacity: publishing ? 0.6 : 1 }]}
+              onPress={() => { setShowEmailPreview(false); if (editId) void publishEvent(editId); }}
+            >
+              <Ionicons name="send-outline" size={16} color={NAVY} />
+              <Text style={btnStyles.goldText}>Publish & Send</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* ── FORM MODAL ── */}
+      <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={[modalStyles.container, { backgroundColor: colors.background }]}>
+            <View style={modalStyles.handle} />
+            <View style={modalStyles.header}>
+              <Text style={[modalStyles.title, { color: colors.foreground }]}>
+                {editId ? "Edit Event" : "Create Fee Event"}
+              </Text>
+              <Pressable onPress={() => { setShowForm(false); resetForm(); }}>
+                <Ionicons name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 60 }}>
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>DETAILS</Text>
+
+              <Text style={[formStyles.label, { color: colors.mutedForeground }]}>TITLE *</Text>
+              <TextInput
+                style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                placeholder="e.g. Year-End Gala Fee"
+                placeholderTextColor={colors.mutedForeground}
+                value={title}
+                onChangeText={setTitle}
+              />
+
+              <Text style={[formStyles.label, { color: colors.mutedForeground }]}>DESCRIPTION</Text>
+              <TextInput
+                style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, minHeight: 80, textAlignVertical: "top", paddingTop: 10 }]}
+                placeholder="What does this fee cover? Members will see this in the notification."
+                placeholderTextColor={colors.mutedForeground}
+                value={desc}
+                onChangeText={setDesc}
+                multiline
+              />
+
+              <Text style={[formStyles.label, { color: colors.mutedForeground }]}>CURRENCY</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                {CURRENCIES.map(c => (
+                  <Pressable
+                    key={c}
+                    style={[chipStyles.chip, { borderColor: currency === c ? NAVY : colors.border, backgroundColor: currency === c ? NAVY : colors.card }]}
+                    onPress={() => setCurrency(c)}
+                  >
+                    <Text style={{ color: currency === c ? "#fff" : colors.foreground, fontWeight: "600", fontSize: 13 }}>
+                      {c} {currSym(c)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              <View style={formStyles.sectionRow}>
+                <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>COST BREAKDOWN</Text>
+                <Pressable style={[btnStyles.small, { borderColor: NAVY }]} onPress={addLineItem}>
+                  <Ionicons name="add-outline" size={14} color={NAVY} />
+                  <Text style={[btnStyles.smallText, { color: NAVY }]}>Add Row</Text>
+                </Pressable>
+              </View>
+
+              {lineItems.length === 0 && (
+                <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
+                  Add rows to break down the fee (e.g. "Performance costume", "Venue hire"). Leave empty to use a single total amount.
+                </Text>
+              )}
+
+              {lineItems.map((li, i) => (
+                <View key={i} style={lineStyles.row}>
+                  <TextInput
+                    style={[lineStyles.descInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                    placeholder="Item description"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={li.description}
+                    onChangeText={v => updateLineItem(i, "description", v)}
+                  />
+                  <View style={lineStyles.amtRow}>
+                    <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
+                    <TextInput
+                      style={[lineStyles.amtInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="decimal-pad"
+                      value={li.amount_cents > 0 ? (li.amount_cents / 100).toFixed(2) : ""}
+                      onChangeText={v => updateLineItem(i, "amount_cents", Math.round(parseFloat(v || "0") * 100))}
+                    />
+                  </View>
+                  <Pressable onPress={() => removeLineItem(i)} style={{ marginLeft: 6 }}>
+                    <Ionicons name="close-circle" size={20} color={RED} />
+                  </Pressable>
+                </View>
+              ))}
+
+              {lineItems.length > 0 && (
+                <View style={[lineStyles.total, { borderTopColor: colors.border }]}>
+                  <Text style={[lineStyles.totalLabel, { color: colors.mutedForeground }]}>Total</Text>
+                  <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, currency)}</Text>
+                </View>
+              )}
+
+              {lineItems.length === 0 && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={[formStyles.label, { color: colors.mutedForeground }]}>TOTAL AMOUNT *</Text>
+                  <View style={lineStyles.amtRow}>
+                    <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
+                    <TextInput
+                      style={[lineStyles.amtInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                </View>
+              )}
+
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>TICKETS</Text>
+              <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
+                If this event has associated tickets, set how many complimentary tickets each member receives upon payment.
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+                <Pressable style={[chipStyles.counter, { borderColor: colors.border }]} onPress={() => setFreeTickets(p => Math.max(0, p - 1))}>
+                  <Ionicons name="remove" size={16} color={colors.foreground} />
+                </Pressable>
+                <Text style={[chipStyles.counterVal, { color: colors.foreground }]}>{freeTickets}</Text>
+                <Pressable style={[chipStyles.counter, { borderColor: colors.border }]} onPress={() => setFreeTickets(p => p + 1)}>
+                  <Ionicons name="add" size={16} color={colors.foreground} />
+                </Pressable>
+                <Text style={[formStyles.hint, { color: colors.mutedForeground, marginLeft: 10, flex: 1 }]}>
+                  {freeTickets === 0 ? "No complimentary tickets" : `${freeTickets} free ticket${freeTickets > 1 ? "s" : ""} per member`}
+                </Text>
+              </View>
+
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>PAYMENT</Text>
+              <View style={{ flexDirection: "row", marginBottom: 16, gap: 8 }}>
+                {([{ key: "single" as const, label: "Single Payment" }, { key: "installments" as const, label: "Installments" }]).map(opt => (
+                  <Pressable
+                    key={opt.key}
+                    style={[chipStyles.chip, { flex: 1, justifyContent: "center", borderColor: payType === opt.key ? NAVY : colors.border, backgroundColor: payType === opt.key ? NAVY : colors.card }]}
+                    onPress={() => setPayType(opt.key)}
+                  >
+                    <Text style={{ color: payType === opt.key ? "#fff" : colors.foreground, fontWeight: "600", fontSize: 13, textAlign: "center" }}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {payType === "single" && (
+                <DateInput label="DUE DATE" value={dueDate} onChange={setDueDate} colors={colors} />
+              )}
+
+              {payType === "installments" && (
+                <>
+                  <View style={formStyles.sectionRow}>
+                    <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
+                      Each installment is added to the member's cart on its due date.
+                    </Text>
+                    <Pressable style={[btnStyles.small, { borderColor: NAVY }]} onPress={addInstallment}>
+                      <Ionicons name="add-outline" size={14} color={NAVY} />
+                      <Text style={[btnStyles.smallText, { color: NAVY }]}>Add</Text>
+                    </Pressable>
+                  </View>
+                  {installments.map((ins, i) => (
+                    <View key={i} style={[instStyles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <Text style={[instStyles.num, { color: NAVY }]}>#{i + 1}</Text>
+                        <Pressable onPress={() => removeInstallment(i)}>
+                          <Ionicons name="close-circle" size={18} color={RED} />
+                        </Pressable>
+                      </View>
+                      <Text style={[formStyles.label, { color: colors.mutedForeground }]}>LABEL</Text>
+                      <TextInput
+                        style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 8 }]}
+                        placeholder={`Installment ${i + 1}`}
+                        placeholderTextColor={colors.mutedForeground}
+                        value={ins.label}
+                        onChangeText={v => updateInstallment(i, "label", v)}
+                      />
+                      <View style={{ flexDirection: "row", gap: 8 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[formStyles.label, { color: colors.mutedForeground }]}>AMOUNT</Text>
+                          <View style={lineStyles.amtRow}>
+                            <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
+                            <TextInput
+                              style={[lineStyles.amtInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                              placeholder="0.00"
+                              placeholderTextColor={colors.mutedForeground}
+                              keyboardType="decimal-pad"
+                              value={ins.amount_cents > 0 ? (ins.amount_cents / 100).toFixed(2) : ""}
+                              onChangeText={v => updateInstallment(i, "amount_cents", Math.round(parseFloat(v || "0") * 100))}
+                            />
+                          </View>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <DateInput label="DUE DATE" value={ins.due_date} onChange={v => updateInstallment(i, "due_date", v)} colors={colors} />
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                  {installments.length > 0 && (
+                    <View style={[lineStyles.total, { borderTopColor: colors.border }]}>
+                      <Text style={[lineStyles.totalLabel, { color: colors.mutedForeground }]}>Total (all installments)</Text>
+                      <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, currency)}</Text>
+                    </View>
+                  )}
+                </>
+              )}
+
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>AUDIENCE</Text>
+              {AUDIENCE_OPTIONS.map(opt => (
+                <Pressable
+                  key={opt.key}
+                  style={[audienceStyles.row, { borderColor: audience === opt.key ? NAVY : colors.border, backgroundColor: audience === opt.key ? NAVY + "12" : colors.card }]}
+                  onPress={() => setAudience(opt.key)}
+                >
+                  <Ionicons name={opt.icon as "people-outline"} size={18} color={audience === opt.key ? NAVY : colors.mutedForeground} />
+                  <Text style={[audienceStyles.label, { color: audience === opt.key ? NAVY : colors.foreground }]}>{opt.label}</Text>
+                  {audience === opt.key && <Ionicons name="checkmark-circle" size={18} color={NAVY} />}
+                </Pressable>
+              ))}
+              {audience === "all" && (
+                <View style={[formStyles.infoBox, { backgroundColor: NAVY + "0F", borderLeftColor: NAVY }]}>
+                  <Text style={{ fontSize: 12, color: NAVY }}>
+                    Operators who also have registered dependants will receive this notification automatically.
+                  </Text>
+                </View>
+              )}
+
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>EMAIL COMMUNICATION</Text>
+              <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
+                Our AI will draft a branded email with all the fee details, payment schedule, and ticket info.
+              </Text>
+              {!editId && (
+                <View style={[formStyles.infoBox, { backgroundColor: "#FEF3C7", borderLeftColor: GOLD }]}>
+                  <Text style={{ fontSize: 12, color: "#92400e" }}>
+                    Save the draft first, then generate the email before publishing.
+                  </Text>
+                </View>
+              )}
+              {editId && !emailDraft && (
+                <Pressable style={[btnStyles.outline, { borderColor: GOLD, opacity: genLoading ? 0.6 : 1 }]} onPress={generateEmail} disabled={genLoading}>
+                  {genLoading ? <ActivityIndicator size="small" color={GOLD} /> : (
+                    <>
+                      <Ionicons name="sparkles-outline" size={16} color={GOLD} />
+                      <Text style={[btnStyles.outlineText, { color: GOLD }]}>Generate AI Email Draft</Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
+              {emailDraft && (
+                <View style={[formStyles.infoBox, { backgroundColor: GREEN + "18", borderLeftColor: GREEN }]}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <View>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: GREEN }}>✓ Email draft ready</Text>
+                      <Text style={{ fontSize: 11, color: GREEN, marginTop: 2 }} numberOfLines={1}>{emailDraft.subject}</Text>
+                    </View>
+                    <Pressable onPress={() => setShowEmailPreview(true)}>
+                      <Text style={{ fontSize: 12, color: GREEN, fontWeight: "600", textDecorationLine: "underline" }}>Preview & Edit</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+
+              <View style={{ height: 20 }} />
+              <Pressable style={[btnStyles.gold, { opacity: saving ? 0.6 : 1 }]} onPress={saveEvent} disabled={saving}>
+                {saving ? <ActivityIndicator size="small" color={NAVY} /> : (
+                  <>
+                    <Ionicons name="save-outline" size={16} color={NAVY} />
+                    <Text style={btnStyles.goldText}>{editId ? "Save Changes" : "Save Draft"}</Text>
+                  </>
+                )}
+              </Pressable>
+              {editId && (
+                <Pressable
+                  style={[btnStyles.navy, { marginTop: 10, opacity: publishing ? 0.6 : 1 }]}
+                  onPress={() => { if (emailDraft) { setShowEmailPreview(true); } else { void publishEvent(editId); } }}
+                  disabled={publishing}
+                >
+                  {publishing ? <ActivityIndicator size="small" color="#fff" /> : (
+                    <>
+                      <Ionicons name="send-outline" size={16} color="#fff" />
+                      <Text style={btnStyles.navyText}>{emailDraft ? "Review & Publish" : "Publish Now"}</Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
