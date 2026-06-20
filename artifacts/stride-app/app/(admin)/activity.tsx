@@ -2560,18 +2560,17 @@ export default function ActivityScreen() {
                   trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
               </View>
               {draft.enrollment.monthly && (
-                <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.border }}>
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Monthly amount ({getCurrencySymbol(draft.enrollment.currencyCode)})</Text>
+                <>
+                  <View style={styles.enrollPriceRow}>
+                    <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Monthly amount ({getCurrencySymbol(draft.enrollment.currencyCode)})</Text>
                     <TextInput
-                      style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, textAlign: "right", minWidth: 60 }}
+                      style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                       keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
                       value={draft.enrollment.monthlyPrice > 0 ? String(draft.enrollment.monthlyPrice) : ""}
                       onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthlyPrice: Number(v) || 0 } }))}
                     />
                   </View>
-                  <Pressable
-                    style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.border }}
+                  <Pressable style={[styles.enrollRow, { paddingVertical: 12 }]}
                     onPress={() => {
                       if (draft.enrollment.monthlyEndDate) {
                         const [y, mo] = draft.enrollment.monthlyEndDate.split("-").map(Number);
@@ -2579,24 +2578,33 @@ export default function ActivityScreen() {
                       }
                       setShowMonthlyEndPicker(true);
                     }}>
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Subscription end date</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.monthlyEndDate ? "#1E3A8A" : colors.mutedForeground }}>
-                      {draft.enrollment.monthlyEndDate
-                        ? (() => { const [y,mo,d] = draft.enrollment.monthlyEndDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}, ${y}`; })()
-                        : "Select"}
-                    </Text>
-                    <Ionicons name="calendar-outline" size={16} color="#1E3A8A" style={{ marginLeft: 6 }} />
+                    <View style={styles.enrollLeft}>
+                      <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Subscription end date</Text>
+                      <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Empty = no end date</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.monthlyEndDate ? "#1E3A8A" : colors.mutedForeground }}>
+                        {draft.enrollment.monthlyEndDate
+                          ? (() => { const [y,mo,d] = draft.enrollment.monthlyEndDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}, ${y}`; })()
+                          : "Select"}
+                      </Text>
+                      <Ionicons name="calendar-outline" size={15} color="#1E3A8A" />
+                    </View>
                   </Pressable>
-                  <Pressable
-                    style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10 }}
+                  <Pressable style={[styles.enrollRow, { paddingVertical: 12 }]}
                     onPress={() => setShowMonthlyPayDayPicker(true)}>
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Billing day each month</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A" }}>
-                      {`${draft.enrollment.monthlyPayDay}${["th","st","nd","rd"][draft.enrollment.monthlyPayDay <= 3 ? draft.enrollment.monthlyPayDay : 0]}`}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#1E3A8A" style={{ marginLeft: 6 }} />
+                    <View style={styles.enrollLeft}>
+                      <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Billing day</Text>
+                      <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Day of month payment is collected</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A" }}>
+                        {`${draft.enrollment.monthlyPayDay}${["th","st","nd","rd"][draft.enrollment.monthlyPayDay <= 3 ? draft.enrollment.monthlyPayDay : 0]}`}
+                      </Text>
+                      <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                    </View>
                   </Pressable>
-                </View>
+                </>
               )}
 
               <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
@@ -2612,18 +2620,17 @@ export default function ActivityScreen() {
                   trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
               </View>
               {draft.enrollment.annual && (
-                <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.border }}>
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Annual amount ({getCurrencySymbol(draft.enrollment.currencyCode)})</Text>
+                <>
+                  <View style={styles.enrollPriceRow}>
+                    <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Annual amount ({getCurrencySymbol(draft.enrollment.currencyCode)})</Text>
                     <TextInput
-                      style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, textAlign: "right", minWidth: 60 }}
+                      style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
                       keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
                       value={draft.enrollment.annualPrice > 0 ? String(draft.enrollment.annualPrice) : ""}
                       onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, annualPrice: Number(v) || 0 } }))}
                     />
                   </View>
-                  <Pressable
-                    style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.border }}
+                  <Pressable style={[styles.enrollRow, { paddingVertical: 12 }]}
                     onPress={() => {
                       if (draft.enrollment.annualEndDate) {
                         const [y, mo] = draft.enrollment.annualEndDate.split("-").map(Number);
@@ -2631,24 +2638,33 @@ export default function ActivityScreen() {
                       }
                       setShowAnnualEndPicker(true);
                     }}>
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Subscription end date</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.annualEndDate ? "#1E3A8A" : colors.mutedForeground }}>
-                      {draft.enrollment.annualEndDate
-                        ? (() => { const [y,mo,d] = draft.enrollment.annualEndDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}, ${y}`; })()
-                        : "Select"}
-                    </Text>
-                    <Ionicons name="calendar-outline" size={16} color="#1E3A8A" style={{ marginLeft: 6 }} />
+                    <View style={styles.enrollLeft}>
+                      <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Subscription end date</Text>
+                      <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Empty = no end date</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.annualEndDate ? "#1E3A8A" : colors.mutedForeground }}>
+                        {draft.enrollment.annualEndDate
+                          ? (() => { const [y,mo,d] = draft.enrollment.annualEndDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}, ${y}`; })()
+                          : "Select"}
+                      </Text>
+                      <Ionicons name="calendar-outline" size={15} color="#1E3A8A" />
+                    </View>
                   </Pressable>
-                  <Pressable
-                    style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10 }}
+                  <Pressable style={[styles.enrollRow, { paddingVertical: 12 }]}
                     onPress={() => setShowAnnualPayDayPicker(true)}>
-                    <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground }}>Billing day each month</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A" }}>
-                      {`${draft.enrollment.annualPayDay}${["th","st","nd","rd"][draft.enrollment.annualPayDay <= 3 ? draft.enrollment.annualPayDay : 0]}`}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#1E3A8A" style={{ marginLeft: 6 }} />
+                    <View style={styles.enrollLeft}>
+                      <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Billing day</Text>
+                      <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Day of month payment is collected</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A" }}>
+                        {`${draft.enrollment.annualPayDay}${["th","st","nd","rd"][draft.enrollment.annualPayDay <= 3 ? draft.enrollment.annualPayDay : 0]}`}
+                      </Text>
+                      <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                    </View>
                   </Pressable>
-                </View>
+                </>
               )}
             </View>
 
