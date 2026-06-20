@@ -7,7 +7,7 @@ export interface CartItem {
   courseId: string;
   courseName: string;
   courseSchedule: string;
-  packageType: "dropIn" | "fixedBlock";
+  packageType: "dropIn" | "fixedBlock" | "monthlyBilling";
   label: string;
   price: number;
   participantName: string;
@@ -16,6 +16,10 @@ export interface CartItem {
   status: CartItemStatus;
   requestId?: string;
   validationIssue?: string;
+  /** For monthlyBilling: day of month the recurring charge runs (1-28) */
+  billingDayOfMonth?: number;
+  /** For monthlyBilling: last billing date (YYYY-MM-DD) */
+  billingEndDate?: string;
 }
 
 interface CartContextType {

@@ -289,15 +289,15 @@ export default function CartScreen() {
             <View key={item.id} style={[styles.itemCard, { backgroundColor: colors.card, opacity: item.status === "rejected" ? 0.7 : 1 }]}>
               <View style={styles.itemTop}>
                 <View style={[styles.itemTypeTag, {
-                  backgroundColor: item.packageType === "fixedBlock" ? colors.secondary : colors.muted,
+                  backgroundColor: item.packageType === "fixedBlock" ? colors.secondary : item.packageType === "monthlyBilling" ? "#EDE9FE" : colors.muted,
                 }]}>
                   <Ionicons
-                    name={item.packageType === "fixedBlock" ? "layers-outline" : "ticket-outline"}
+                    name={item.packageType === "fixedBlock" ? "layers-outline" : item.packageType === "monthlyBilling" ? "calendar-outline" : "ticket-outline"}
                     size={11}
-                    color={item.packageType === "fixedBlock" ? colors.primary : colors.mutedForeground}
+                    color={item.packageType === "fixedBlock" ? colors.primary : item.packageType === "monthlyBilling" ? "#7C3AED" : colors.mutedForeground}
                   />
-                  <Text style={[styles.itemTypeText, { color: item.packageType === "fixedBlock" ? colors.primary : colors.mutedForeground }]}>
-                    {item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson"}
+                  <Text style={[styles.itemTypeText, { color: item.packageType === "fixedBlock" ? colors.primary : item.packageType === "monthlyBilling" ? "#7C3AED" : colors.mutedForeground }]}>
+                    {item.packageType === "fixedBlock" ? "Full Package" : item.packageType === "monthlyBilling" ? "Monthly Billing" : "Single Lesson"}
                   </Text>
                 </View>
                 <View style={styles.itemTopRight}>

@@ -196,7 +196,7 @@ export default function CheckoutScreen() {
         const dateStr  = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
         const rows = snapshot.map(item =>
           `<tr><td>${item.courseName}</td><td>${item.participantName}</td>` +
-          `<td>${item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson"}</td>` +
+          `<td>${item.packageType === "fixedBlock" ? "Full Package" : item.packageType === "monthlyBilling" ? "Monthly Billing" : "Single Lesson"}</td>` +
           `<td style="text-align:right">&#8364;${item.price.toFixed(2)}</td></tr>`
         ).join("");
         const receiptTotal = snapshot.reduce((s, i) => s + i.price, 0).toFixed(2);
@@ -783,7 +783,7 @@ export default function CheckoutScreen() {
                       <Text style={[styles.lineItemSub, { color: colors.mutedForeground }]}>{item.participantName}</Text>
                       <Text style={[styles.lineItemSub, { color: colors.mutedForeground }]}>·</Text>
                       <Text style={[styles.lineItemSub, { color: colors.mutedForeground }]}>
-                        {item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson"}
+                        {item.packageType === "fixedBlock" ? "Full Package" : item.packageType === "monthlyBilling" ? "Monthly Billing" : "Single Lesson"}
                       </Text>
                     </View>
                     {item.priceSource === "client_fallback" && (

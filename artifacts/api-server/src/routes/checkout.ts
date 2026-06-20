@@ -226,7 +226,7 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
         currency,
         product_data: {
           name:        `${item.courseName} — ${item.participantName}`,
-          description: item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson",
+          description: item.packageType === "fixedBlock" ? "Full Package" : item.packageType === "monthlyBilling" ? "Monthly Billing" : "Single Lesson",
         },
         unit_amount: Math.round(item.finalPrice * 100),
       },

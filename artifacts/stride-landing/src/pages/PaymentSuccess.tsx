@@ -39,7 +39,7 @@ function generateInvoiceHtml(receipt: Receipt, sessionId: string): string {
     <tr style="background:${i % 2 === 0 ? "#F8FAFC" : "#ffffff"}">
       <td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #E5E7EB">${item.courseName}</td>
       <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #E5E7EB">${item.participantName}</td>
-      <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #E5E7EB">${item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson"}</td>
+      <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #E5E7EB">${item.packageType === "fixedBlock" ? "Full Package" : item.packageType === "monthlyBilling" ? "Monthly Billing" : "Single Lesson"}</td>
       <td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #E5E7EB;text-align:right;font-weight:700">${sym}${item.finalPrice.toFixed(2)}</td>
     </tr>`).join("");
 
@@ -217,7 +217,7 @@ function InvoiceCard({ receipt, sessionId, loading, attempts }: {
                     <p className="text-slate-400 text-xs mt-0.5">
                       {item.participantName}
                       {" · "}
-                      {item.packageType === "fixedBlock" ? "Full Package" : "Single Lesson"}
+                      {item.packageType === "fixedBlock" ? "Full Package" : item.packageType === "monthlyBilling" ? "Monthly Billing" : "Single Lesson"}
                       {item.organizationName ? ` · ${item.organizationName}` : ""}
                     </p>
                   </div>

@@ -93,6 +93,19 @@ export default function AdminLessonsScreen() {
   const [scFilterDay,          setScFilterDay]          = useState<number | null>(null);
   const [showAvailSection,     setShowAvailSection]     = useState(false);
 
+  // ── Scheduler payment config state ────────────────────────────────────────────
+  const [scPaymentType,          setScPaymentType]          = useState<"single"|"package"|"monthly_billing">("single");
+  const [scPricePerLesson,       setScPricePerLesson]       = useState("");
+  const [scPackageSize,          setScPackageSize]          = useState("");
+  const [scPackagePrice,         setScPackagePrice]         = useState("");
+  const [scMonthlyPrice,         setScMonthlyPrice]         = useState("");
+  const [scBillingDay,           setScBillingDay]           = useState(1);
+  const [scBillingEndDate,       setScBillingEndDate]       = useState("");
+  const [scShowEndDateCalendar,  setScShowEndDateCalendar]  = useState(false);
+  const [scEndDateDisplayMonth,  setScEndDateDisplayMonth]  = useState<{year:number;month:number}>(() => {
+    const n = new Date(); return { year: n.getFullYear(), month: n.getMonth() };
+  });
+
   // ── Data loading ──────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
@@ -856,6 +869,261 @@ export default function AdminLessonsScreen() {
               />
             </View>
 
+            {/* ── PAYMENT CONFIGURATION ── */}
+            <View style={[styles.formSection, { backgroundColor: colors.card }]}>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>PAYMENT TYPE</Text>
+
+              {/* Type chips */}
+              <View style={{ flexDirection: "row", gap: 6, marginBottom: 16 }}>
+                {([
+                  { label: "Single Lesson", value: "single"          as const, icon: "ticket-outline"   as const },
+                  { label: "Package",       value: "package"         as const, icon: "layers-outline"   as const },
+                  { label: "Monthly",       value: "monthly_billing" as const, icon: "calendar-outline" as const },
+                ] as const).map(opt => {
+                  const sel = scPaymentType === opt.value;
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => setScPaymentType(opt.value)}
+                      style={[styles.formChip, { flex: 1, justifyContent: "center", alignItems: "center", gap: 4,
+                        backgroundColor: sel ? colors.secondary : colors.muted }]}
+                    >
+                      <Ionicons name={opt.icon} size={13} color={sel ? colors.primary : colors.mutedForeground} />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: sel ? colors.primary : colors.mutedForeground, textAlign: "center" }}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* ── Single Lesson fields ── */}
+              {scPaymentType === "single" && (
+                <View>
+                  <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Price per lesson (€)</Text>
+                  <View style={styles.priceInputRow}>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>€</Text>
+                    <TextInput
+                      style={[styles.ageInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                      value={scPricePerLesson}
+                      onChangeText={setScPricePerLesson}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                  <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
+                    Members are charged this amount each time they book a session.
+                  </Text>
+                </View>
+              )}
+
+              {/* ── Package fields ── */}
+              {scPaymentType === "package" && (
+                <View style={{ gap: 12 }}>
+                  <View style={{ flexDirection: "row", gap: 10 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>No. of lessons</Text>
+                      <TextInput
+                        style={[styles.ageInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                        value={scPackageSize}
+                        onChangeText={setScPackageSize}
+                        placeholder="10"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="number-pad"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Package price (€)</Text>
+                      <View style={styles.priceInputRow}>
+                        <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>€</Text>
+                        <TextInput
+                          style={[styles.ageInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                          value={scPackagePrice}
+                          onChangeText={setScPackagePrice}
+                          placeholder="0.00"
+                          placeholderTextColor={colors.mutedForeground}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  {scPackageSize && scPackagePrice && parseFloat(scPackagePrice) > 0 && parseInt(scPackageSize, 10) > 0 && (
+                    <Text style={[styles.priceNote, { color: "#059669" }]}>
+                      ≈ €{(parseFloat(scPackagePrice) / parseInt(scPackageSize, 10)).toFixed(2)} per lesson
+                    </Text>
+                  )}
+                  <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
+                    Members pay the full package price upfront and can attend up to N sessions.
+                  </Text>
+                </View>
+              )}
+
+              {/* ── Monthly Billing fields ── */}
+              {scPaymentType === "monthly_billing" && (
+                <View style={{ gap: 14 }}>
+                  {/* Monthly price */}
+                  <View>
+                    <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Monthly amount (€)</Text>
+                    <View style={styles.priceInputRow}>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>€</Text>
+                      <TextInput
+                        style={[styles.ageInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                        value={scMonthlyPrice}
+                        onChangeText={setScMonthlyPrice}
+                        placeholder="0.00"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                    <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
+                      Charged automatically each month on the billing day below.
+                    </Text>
+                  </View>
+
+                  {/* Billing day of month 1–28 */}
+                  <View>
+                    <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>Billing day of month</Text>
+                    {/* 4 rows of 7 days (1-28) */}
+                    {([0,1,2,3] as const).map(row => (
+                      <View key={row} style={{ flexDirection: "row", gap: 5, marginBottom: 5 }}>
+                        {Array.from({ length: 7 }, (_, col) => {
+                          const day = row * 7 + col + 1;
+                          const sel = scBillingDay === day;
+                          return (
+                            <Pressable
+                              key={day}
+                              onPress={() => setScBillingDay(day)}
+                              style={{
+                                flex: 1,
+                                height: 36,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                borderRadius: 8,
+                                backgroundColor: sel ? colors.primary : colors.muted,
+                              }}
+                            >
+                              <Text style={{ fontSize: 12, fontWeight: sel ? "800" : "400", color: sel ? "#FFF" : colors.foreground }}>
+                                {day}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    ))}
+                    <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
+                      Day {scBillingDay} of each month. Days 29–31 are skipped in shorter months — use 1–28 to guarantee billing every month.
+                    </Text>
+                  </View>
+
+                  {/* End date calendar */}
+                  <View>
+                    <Pressable
+                      onPress={() => setScShowEndDateCalendar(v => !v)}
+                      style={[styles.timePickerBtn, { borderColor: scBillingEndDate ? colors.primary : colors.border, backgroundColor: colors.background }]}
+                    >
+                      <Ionicons name="calendar-outline" size={14} color={scBillingEndDate ? colors.primary : colors.mutedForeground} />
+                      <Text style={{ flex: 1, fontSize: 14, fontWeight: scBillingEndDate ? "700" : "400", color: scBillingEndDate ? colors.foreground : colors.mutedForeground }}>
+                        {scBillingEndDate
+                          ? `Last billing: ${(() => { try { return new Date(scBillingEndDate + "T00:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" }); } catch { return scBillingEndDate; } })()} `
+                          : "Last billing date (end of academic year)"}
+                      </Text>
+                      <Ionicons name={scShowEndDateCalendar ? "chevron-up" : "chevron-down"} size={13} color={colors.mutedForeground} />
+                    </Pressable>
+
+                    {scShowEndDateCalendar && (
+                      <View style={{ marginTop: 10, borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, padding: 12 }}>
+                        {/* Month nav */}
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                          <Pressable
+                            hitSlop={12}
+                            style={{ padding: 6, opacity: (scEndDateDisplayMonth.year > new Date().getFullYear() || scEndDateDisplayMonth.month > new Date().getMonth()) ? 1 : 0.25 }}
+                            onPress={() => {
+                              const now = new Date();
+                              if (scEndDateDisplayMonth.year > now.getFullYear() || scEndDateDisplayMonth.month > now.getMonth()) {
+                                setScEndDateDisplayMonth(prev => {
+                                  if (prev.month === 0) return { year: prev.year - 1, month: 11 };
+                                  return { year: prev.year, month: prev.month - 1 };
+                                });
+                              }
+                            }}
+                          >
+                            <Ionicons name="chevron-back" size={18} color={colors.primary} />
+                          </Pressable>
+                          <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>
+                            {new Date(scEndDateDisplayMonth.year, scEndDateDisplayMonth.month, 1)
+                              .toLocaleDateString("it-IT", { month: "long", year: "numeric" })
+                              .replace(/^\w/, c => c.toUpperCase())}
+                          </Text>
+                          <Pressable
+                            hitSlop={12}
+                            style={{ padding: 6 }}
+                            onPress={() => setScEndDateDisplayMonth(prev => {
+                              if (prev.month === 11) return { year: prev.year + 1, month: 0 };
+                              return { year: prev.year, month: prev.month + 1 };
+                            })}
+                          >
+                            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+                          </Pressable>
+                        </View>
+
+                        {/* Day-of-week headers */}
+                        <View style={{ flexDirection: "row", marginBottom: 6 }}>
+                          {["Lu","Ma","Me","Gi","Ve","Sa","Do"].map(wd => (
+                            <View key={wd} style={{ flex: 1, alignItems: "center" }}>
+                              <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>{wd}</Text>
+                            </View>
+                          ))}
+                        </View>
+
+                        {/* Calendar grid */}
+                        {(() => {
+                          const { year, month } = scEndDateDisplayMonth;
+                          const today = new Date(); today.setHours(0,0,0,0);
+                          const firstDow = new Date(year, month, 1).getDay();
+                          const mondayFirst = (firstDow + 6) % 7;
+                          const daysInMonth = new Date(year, month + 1, 0).getDate();
+                          const cells: (number|null)[] = [];
+                          for (let i = 0; i < mondayFirst; i++) cells.push(null);
+                          for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+                          while (cells.length % 7 !== 0) cells.push(null);
+                          const rows = Math.ceil(cells.length / 7);
+                          return Array.from({ length: rows }).map((_, row) => (
+                            <View key={row} style={{ flexDirection: "row" }}>
+                              {cells.slice(row * 7, (row + 1) * 7).map((day, col) => {
+                                if (!day) return <View key={col} style={{ flex: 1, height: 38 }} />;
+                                const iso = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                                const dayDate = new Date(year, month, day); dayDate.setHours(0,0,0,0);
+                                const disabled = dayDate < today;
+                                const selected = scBillingEndDate === iso;
+                                return (
+                                  <Pressable
+                                    key={col}
+                                    disabled={disabled}
+                                    onPress={() => { setScBillingEndDate(iso); setScShowEndDateCalendar(false); }}
+                                    style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, margin: 1, backgroundColor: selected ? colors.primary : "transparent" }}
+                                  >
+                                    <Text style={{ fontSize: 13, fontWeight: selected ? "700" : "400", color: selected ? "#FFF" : disabled ? colors.border : colors.foreground }}>
+                                      {day}
+                                    </Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+                          ));
+                        })()}
+                      </View>
+                    )}
+                    {scBillingEndDate && (
+                      <Pressable onPress={() => setScBillingEndDate("")} style={{ marginTop: 6, alignSelf: "flex-start" }}>
+                        <Text style={{ fontSize: 11, color: "#EF4444" }}>Rimuovi data fine</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
+
             {/* SUBMIT */}
             <Pressable
               style={[styles.addBtn, { backgroundColor: scSaving ? colors.mutedForeground : colors.primary, marginTop: 4 }]}
@@ -866,22 +1134,35 @@ export default function AdminLessonsScreen() {
                 setScSaving(true);
                 try {
                   await api.createScheduledCourse({
-                    disciplineId:      scDisciplineId,
-                    operatorProfileId: scOperatorId ?? undefined,
-                    dayOfWeek:         scDayOfWeek,
-                    startTime:         scStartTime,
-                    endTime:           scEndTime,
-                    ageMin:            parseInt(scAgeMin, 10) || 5,
-                    ageMax:            parseInt(scAgeMax, 10) || 18,
-                    skillLevel:        scSkillLevel,
-                    notes:             scNotes || undefined,
-                    weekInterval:      scWeekInterval,
+                    disciplineId:        scDisciplineId,
+                    operatorProfileId:   scOperatorId ?? undefined,
+                    dayOfWeek:           scDayOfWeek,
+                    startTime:           scStartTime,
+                    endTime:             scEndTime,
+                    ageMin:              parseInt(scAgeMin, 10) || 5,
+                    ageMax:              parseInt(scAgeMax, 10) || 18,
+                    skillLevel:          scSkillLevel,
+                    notes:               scNotes || undefined,
+                    weekInterval:        scWeekInterval,
+                    paymentType:         scPaymentType,
+                    pricePerLessonCents: scPaymentType === "single" && scPricePerLesson
+                      ? Math.round(parseFloat(scPricePerLesson) * 100) : undefined,
+                    packageSize:         scPaymentType === "package" && scPackageSize
+                      ? parseInt(scPackageSize, 10) : undefined,
+                    packagePriceCents:   scPaymentType === "package" && scPackagePrice
+                      ? Math.round(parseFloat(scPackagePrice) * 100) : undefined,
+                    monthlyPriceCents:   scPaymentType === "monthly_billing" && scMonthlyPrice
+                      ? Math.round(parseFloat(scMonthlyPrice) * 100) : undefined,
+                    billingDayOfMonth:   scPaymentType === "monthly_billing" ? scBillingDay : undefined,
+                    billingEndDate:      scPaymentType === "monthly_billing" && scBillingEndDate ? scBillingEndDate : undefined,
                   });
                   await load();
                   setScDisciplineId(null); setScOperatorId(null); setScDayOfWeek(1);
                   setScStartTime("09:00"); setScEndTime("10:00");
                   setScAgeMin("5"); setScAgeMax("18"); setScSkillLevel("open"); setScNotes("");
                   setScWeekInterval(1);
+                  setScPaymentType("single"); setScPricePerLesson(""); setScPackageSize(""); setScPackagePrice("");
+                  setScMonthlyPrice(""); setScBillingDay(1); setScBillingEndDate(""); setScShowEndDateCalendar(false);
                   Alert.alert("Sent", "Course request sent to the instructor for confirmation.");
                 } catch (e: unknown) {
                   Alert.alert("Error", e instanceof Error ? e.message : "Failed to create course");
@@ -905,6 +1186,20 @@ export default function AdminLessonsScreen() {
                   const statusColor = sc.status === "active" ? "#10B981" : sc.status === "declined" ? "#EF4444" : "#F59E0B";
                   const discName    = (sc.discipline as { name?: string } | null)?.name ?? "Course";
                   const opName      = (sc.operator as { user?: { name?: string } } | null)?.user?.name ?? "Unassigned";
+                  const pt          = sc.payment_type ?? "single";
+                  const payLabel    = pt === "monthly_billing"
+                    ? `Monthly · €${((sc.monthly_price_cents ?? 0) / 100).toFixed(2)}/mo · day ${sc.billing_day_of_month ?? "?"}`
+                    : pt === "package"
+                    ? `Package ${sc.package_size ?? "?"} lessons · €${((sc.package_price_cents ?? 0) / 100).toFixed(2)}`
+                    : sc.price_per_lesson_cents
+                    ? `Single · €${(sc.price_per_lesson_cents / 100).toFixed(2)}/lesson`
+                    : "No pricing set";
+                  const payIcon = pt === "monthly_billing" ? "calendar-outline" as const
+                    : pt === "package" ? "layers-outline" as const
+                    : "ticket-outline" as const;
+                  const payColor = pt === "monthly_billing" ? "#7C3AED"
+                    : pt === "package" ? colors.primary
+                    : colors.mutedForeground;
                   return (
                     <View key={sc.id} style={[styles.cleanCard, { backgroundColor: colors.card }]}>
                       <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
@@ -921,6 +1216,15 @@ export default function AdminLessonsScreen() {
                           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
                             {opName}
                           </Text>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+                            <Ionicons name={payIcon} size={11} color={payColor} />
+                            <Text style={{ fontSize: 11, fontWeight: "600", color: payColor }}>{payLabel}</Text>
+                          </View>
+                          {sc.billing_end_date && (
+                            <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 2 }}>
+                              Until: {(() => { try { return new Date(sc.billing_end_date + "T00:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" }); } catch { return sc.billing_end_date; } })()}
+                            </Text>
+                          )}
                         </View>
                         <View style={{ backgroundColor: `${statusColor}18`, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 }}>
                           <Text style={{ fontSize: 11, fontWeight: "700", color: statusColor, textTransform: "capitalize" }}>

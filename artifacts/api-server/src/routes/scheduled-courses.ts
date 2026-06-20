@@ -95,11 +95,20 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
     disciplineId, operatorProfileId, dayOfWeek,
     startTime, endTime, ageMin, ageMax, skillLevel, notes, weekInterval, evenWeekStart,
     location_label,
+    paymentType, pricePerLessonCents, packageSize, packagePriceCents,
+    monthlyPriceCents, billingDayOfMonth, billingEndDate,
   } = req.body as {
     disciplineId: number; operatorProfileId?: number; dayOfWeek: number;
     startTime: string; endTime: string; ageMin?: number; ageMax?: number;
     skillLevel?: string; notes?: string;
     weekInterval?: number; evenWeekStart?: boolean; location_label?: string;
+    paymentType?: "single" | "package" | "monthly_billing";
+    pricePerLessonCents?: number;
+    packageSize?: number;
+    packagePriceCents?: number;
+    monthlyPriceCents?: number;
+    billingDayOfMonth?: number;
+    billingEndDate?: string;
   };
 
   if (!disciplineId || dayOfWeek == null || !startTime || !endTime) {
@@ -136,21 +145,28 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
   const { data, error } = await supabase
     .from("scheduled_courses")
     .insert({
-      organization_id:     user.orgId,
-      discipline_id:       disciplineId,
-      operator_profile_id: operatorProfileId ?? null,
-      day_of_week:         dayOfWeek,
-      start_time:          startTime,
-      end_time:            endTime,
-      age_min:             ageMin ?? 5,
-      age_max:             ageMax ?? 18,
-      skill_level:         skillLevel ?? "open",
-      status:              "pending_confirmation",
-      notes:               notes ?? null,
-      week_interval:       weekInterval ?? 1,
-      even_week_start:     evenWeekStart ?? true,
-      created_by_admin_id: user.id,
-      location_label:      location_label?.trim() ?? null,
+      organization_id:        user.orgId,
+      discipline_id:          disciplineId,
+      operator_profile_id:    operatorProfileId ?? null,
+      day_of_week:            dayOfWeek,
+      start_time:             startTime,
+      end_time:               endTime,
+      age_min:                ageMin ?? 5,
+      age_max:                ageMax ?? 18,
+      skill_level:            skillLevel ?? "open",
+      status:                 "pending_confirmation",
+      notes:                  notes ?? null,
+      week_interval:          weekInterval ?? 1,
+      even_week_start:        evenWeekStart ?? true,
+      created_by_admin_id:    user.id,
+      location_label:         location_label?.trim() ?? null,
+      payment_type:           paymentType ?? "single",
+      price_per_lesson_cents: pricePerLessonCents ?? null,
+      package_size:           packageSize ?? null,
+      package_price_cents:    packagePriceCents ?? null,
+      monthly_price_cents:    monthlyPriceCents ?? null,
+      billing_day_of_month:   billingDayOfMonth ?? null,
+      billing_end_date:       billingEndDate ?? null,
     })
     .select()
     .single();

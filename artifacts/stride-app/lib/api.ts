@@ -889,6 +889,13 @@ export const api = {
     weekInterval?: number;
     evenWeekStart?: boolean;
     location_label?: string;
+    paymentType?: "single" | "package" | "monthly_billing";
+    pricePerLessonCents?: number;
+    packageSize?: number;
+    packagePriceCents?: number;
+    monthlyPriceCents?: number;
+    billingDayOfMonth?: number;
+    billingEndDate?: string;
   }) => request<ApiScheduledCourse>("POST", "/scheduled-courses", data),
   confirmScheduledCourse: (id: number) =>
     request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/confirm`, {}),
@@ -2021,6 +2028,14 @@ export interface ApiScheduledCourse {
     profile_type: "paid" | "volunteer";
     user?: { id: number; name: string };
   };
+  /** Payment configuration */
+  payment_type?: "single" | "package" | "monthly_billing";
+  price_per_lesson_cents?: number;
+  package_size?: number;
+  package_price_cents?: number;
+  monthly_price_cents?: number;
+  billing_day_of_month?: number;
+  billing_end_date?: string;
 }
 
 // ── Kiosk Provisioning ────────────────────────────────────────────────────────
