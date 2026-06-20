@@ -1,13 +1,21 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ActivityIndicator, View } from "react-native";
 import { api } from "@/lib/api";
 
+const DEMO_CREDS: Record<string, { email: string; password: string }> = {
+  parent:   { email: "genitore@test.com",  password: "password" },
+  operator: { email: "operatore@test.com", password: "password" },
+  admin:    { email: "admin@test.com",     password: "password" },
+};
+
 export default function Index() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, login } = useAuth();
   const router = useRouter();
-  const params = useLocalSearchParams<{ org?: string; school?: string; primary?: string; secondary?: string }>();
+  const params = useLocalSearchParams<{ org?: string; school?: string; primary?: string; secondary?: string; autoLogin?: string }>();
+  const autoLoginFired = useRef(false);
+  const [isAutoLogging, setIsAutoLogging] = useState(false);
 
   const [sysStatus, setSysStatus] = useState<{ configured: boolean; userCount: number; trialExpired?: boolean; subscriptionStatus?: string } | null>(null);
   const [sysLoading, setSysLoading] = useState(true);
@@ -26,10 +34,22 @@ export default function Index() {
     return () => clearTimeout(safetyTimer);
   }, []);
 
+  // ── Auto-login for demo/screenshot mode (?autoLogin=parent|operator|admin) ──
+  useEffect(() => {
+    if (!params.autoLogin || user || isLoading || autoLoginFired.current) return;
+    const creds = DEMO_CREDS[params.autoLogin];
+    if (!creds) return;
+    autoLoginFired.current = true;
+    setIsAutoLogging(true);
+    login(creds.email, creds.password)
+      .catch(() => {})
+      .finally(() => setIsAutoLogging(false));
+  }, [params.autoLogin, user, isLoading]);
+
   useEffect(() => {
     // ── Step 1: gate — do nothing until both async sources are settled ──────
-    if (isLoading || sysLoading) {
-      console.log("[index] still loading — isLoading:", isLoading, "sysLoading:", sysLoading);
+    if (isLoading || sysLoading || isAutoLogging) {
+      console.log("[index] still loading — isLoading:", isLoading, "sysLoading:", sysLoading, "isAutoLogging:", isAutoLogging);
       return;
     }
 
@@ -123,7 +143,7 @@ export default function Index() {
     // ── Member fan-out (operator / parent / fallback) ─────────────────────────
     console.log("[index] → /(member)/dashboard  [role:", user.role, "]");
     router.replace("/(member)/dashboard" as never);
-  }, [user, isLoading, sysStatus, sysLoading, params.org]);
+  }, [user, isLoading, sysStatus, sysLoading, isAutoLogging, params.org]);
 
   // Render-level gate: hold the spinner until both loading flags clear.
   return (
