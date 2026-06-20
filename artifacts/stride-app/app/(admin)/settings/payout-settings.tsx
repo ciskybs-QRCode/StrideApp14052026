@@ -28,7 +28,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiOperatorInvoice } from "@/lib/api";
-import { getDeviceLocale } from "@/hooks/useDeviceLocale";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -63,7 +63,7 @@ export default function PayoutSettingsScreen() {
   const colors   = useColors();
   const insets   = useSafeAreaInsets();
   const { user } = useAuth();
-  const cur      = getDeviceLocale().currencySymbol;
+  const cur      = useOrgCurrency();
 
   // ── Settings state ─────────────────────────────────────────────────────────
   const [payoutFreq,     setPayoutFreq]     = useState<"weekly" | "biweekly" | "monthly">("monthly");
@@ -266,14 +266,14 @@ export default function PayoutSettingsScreen() {
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No pending invoices</Text>
           </View>
         ) : (
-          pendingInvoices.map(inv => <InvoiceRow key={inv.id} inv={inv} colors={colors} onPress={() => openReview(inv)} />)
+          pendingInvoices.map(inv => <InvoiceRow key={inv.id} inv={inv} colors={colors} cur={cur} onPress={() => openReview(inv)} />)
         )}
 
         {/* ── HISTORY ── */}
         {historyInvoices.length > 0 && (
           <>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>HISTORY</Text>
-            {historyInvoices.map(inv => <InvoiceRow key={inv.id} inv={inv} colors={colors} onPress={() => openReview(inv)} />)}
+            {historyInvoices.map(inv => <InvoiceRow key={inv.id} inv={inv} colors={colors} cur={cur} onPress={() => openReview(inv)} />)}
           </>
         )}
       </ScrollView>
@@ -367,9 +367,9 @@ export default function PayoutSettingsScreen() {
 
 // ── Invoice row sub-component ─────────────────────────────────────────────────
 
-function InvoiceRow({ inv, colors, onPress }: { inv: ApiOperatorInvoice; colors: ReturnType<typeof useColors>; onPress: () => void }) {
+function InvoiceRow({ inv, colors, cur, onPress }: { inv: ApiOperatorInvoice; colors: ReturnType<typeof useColors>; cur: string; onPress: () => void }) {
   const statusColor = STATUS_COLOR[inv.status] ?? "#6B7280";
-  const invCur = getDeviceLocale().currencySymbol;
+  const invCur = cur;
   return (
     <Pressable
       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}

@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { getDeviceLocale } from "@/hooks/useDeviceLocale";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   BillingStartType,
@@ -136,7 +136,7 @@ export default function FeeSettingsScreen() {
   const router   = useRouter();
   const colors   = useColors();
   const insets   = useSafeAreaInsets();
-  const cur      = getDeviceLocale().currencySymbol;
+  const cur      = useOrgCurrency();
 
   const [settings, setSettings]   = useState<FeeSettings>(DEFAULT_FEE_SETTINGS);
   const [loading,  setLoading]    = useState(true);
