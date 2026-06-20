@@ -695,38 +695,18 @@ export default function ExpensesScreen() {
               </View>
 
               {/* AMOUNT */}
-              <SLabel label="AMOUNT & CURRENCY" />
+              <SLabel label="AMOUNT" />
               <View style={{ marginBottom: 16 }}>
                 {/* Amount input */}
                 <TextInput
                   style={[S.input, { borderColor: colors.border, color: colors.foreground,
-                    backgroundColor: colors.card, marginBottom: 10, fontSize: 18, fontWeight: "700" }]}
+                    backgroundColor: colors.card, fontSize: 18, fontWeight: "700" }]}
                   value={fAmount}
                   onChangeText={setFAmount}
                   placeholder="0.00"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="decimal-pad"
                 />
-                {/* Currency selector */}
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                  {SUPPORTED_CURRENCIES.map(c => (
-                    <Pressable
-                      key={c}
-                      onPress={() => setFCurrency(c)}
-                      style={{
-                        paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8,
-                        borderWidth: 1.5,
-                        borderColor: fCurrency === c ? NAVY : "#CBD5E1",
-                        backgroundColor: fCurrency === c ? NAVY : "#F8FAFC",
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: "700",
-                        color: fCurrency === c ? "#fff" : "#475569" }}>
-                        {c}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
               </View>
 
               {/* RECIPIENT */}
