@@ -10,7 +10,9 @@
     "test-identity": "tsx ./src/test-identity.ts",
     "test-import": "tsx ./src/test-import.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify-settings-clean": "tsx ./src/verify-settings-clean.ts"
+    "verify-settings-clean": "tsx ./src/verify-settings-clean.ts",
+    "seed-test-users": "tsx ./src/seed-test-users.ts",
+    "full-audit": "tsx ./src/full-audit.ts"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.105.4",

@@ -41,7 +41,7 @@ router.get("/members", requireAuth, async (req, res) => {
     .from("members")
     .select("*")
     .eq("user_id", parseInt(user.id))
-    .order("first_name");
+    .order("created_at", { ascending: false });
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data ?? []);
 });

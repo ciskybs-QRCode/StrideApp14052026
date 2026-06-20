@@ -16,7 +16,7 @@
 
 import { Router } from "express";
 import { pool } from "../lib/pg.js";
-import { requireAuth } from "../lib/auth.js";
+import { requireAuth, requireRole } from "../lib/auth.js";
 import {
   EmergencyPushService,
   type EmergencyCategory,
@@ -51,7 +51,7 @@ function categoryBody(cat: string, location: string): string {
 // ── POST /emergency/pulse ─────────────────────────────────────────────────────
 // Operator/Admin triggers an emergency broadcast.
 // Fires critical push notifications via EmergencyPushService before returning.
-router.post("/emergency/pulse", requireAuth, async (req: Request, res: Response) => {
+router.post("/emergency/pulse", requireAuth, requireRole("operator", "admin", "super_admin"), async (req: Request, res: Response) => {
   const user = (req as AuthedReq).user;
   const {
     org_id,
