@@ -90,15 +90,42 @@ router.post("/members", requireAuth, async (req, res) => {
     }, { onConflict: "user_id,organization_id" });
   }
 
+  // Build safe insert payload — only columns in the original schema cache.
+  // Columns added via ALTER TABLE (first_name, last_name, name, phone, etc.)
+  // are NOT in PostgREST's schema cache and will cause PGRST204 if included
+  // in an INSERT. We accept both "full_name" and "name"/"first_name"/"last_name"
+  // from callers and normalise to "full_name" here.
+  const fullNameRaw =
+    (body.full_name as string | undefined) ||
+    (body.name as string | undefined) ||
+    [body.first_name, body.last_name].filter(Boolean).join(" ").trim() ||
+    "";
+
+  const safeInsert: Record<string, unknown> = {
+    user_id:         parseInt(user.id),
+    organization_id: resolvedOrg,
+    full_name:       fullNameRaw || "Unnamed",
+  };
+  if (body.date_of_birth) safeInsert["date_of_birth"] = body.date_of_birth;
+  if (body.notes)         safeInsert["notes"]         = body.notes;
+
   const { data, error } = await supabase
     .from("members")
-    .insert({
-      ...body,
-      user_id: parseInt(user.id),
-      organization_id: resolvedOrg,
-    })
+    .insert(safeInsert)
     .select()
     .single();
+
+  // After insert, PATCH any extra columns via raw UPDATE (bypasses schema-cache check).
+  const extraCols: Record<string, unknown> = {};
+  const extras = ["first_name","last_name","phone","emergency_contact","allergies","photo_uri","medical_notes","status"] as const;
+  for (const col of extras) {
+    if (col in body && body[col] != null) extraCols[col] = body[col];
+  }
+  if (data && Object.keys(extraCols).length > 0) {
+    try {
+      await supabase.from("members").update(extraCols).eq("id", (data as { id: number }).id);
+    } catch { /* extra cols are best-effort */ }
+  }
   if (error) {
     req.log.error({ err: error, userId: user.id, orgId: resolvedOrg }, "POST /members insert failed");
     res.status(500).json({ error: error.message });
@@ -185,7 +212,7 @@ router.post("/members/:id/promote-to-member", requireAuth, async (req, res) => {
 
   if (!userData?.password_hash) { res.status(400).json({ error: "Cannot verify identity." }); return; }
 
-  const { default: bcrypt } = await import("bcrypt");
+  const { default: bcrypt } = await import("bcryptjs");
   const valid = await bcrypt.compare(body.password.trim(), userData.password_hash as string);
   if (!valid) { res.status(401).json({ error: "Incorrect password. Promotion cancelled." }); return; }
 
@@ -283,11 +310,10 @@ router.get("/members/confirm-promotion", async (req, res) => {
   await pool.query("UPDATE promotion_tokens SET status='confirmed', confirmed_at=NOW() WHERE id=$1", [row.id]);
 
   // Best-effort: flag the member record in Supabase
-  await supabase
+  void supabase
     .from("members")
     .update({ notes: `[PROMOTED] Independent account approved: ${row.dependent_email}` })
-    .eq("id", parseInt(row.member_id))
-    .catch(() => {});
+    .eq("id", parseInt(row.member_id));
 
   // Send welcome email to the dependent
   const smtpHost = process.env["SMTP_HOST"];

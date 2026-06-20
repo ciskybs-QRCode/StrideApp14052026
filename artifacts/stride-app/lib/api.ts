@@ -303,7 +303,42 @@ export const api = {
   deleteChild: (id: string) => request<void>("DELETE", `/members/${id}`),
 
   // Courses & Enrollments
-  getCourses: () => request<ApiCourse[]>("GET", "/courses"),
+  getCourses: async (params?: { page?: number; limit?: number; search?: string; discipline?: string }): Promise<ApiCourse[]> => {
+    const qs = new URLSearchParams();
+    if (params?.page)       qs.set("page",       String(params.page));
+    if (params?.limit)      qs.set("limit",       String(params.limit));
+    if (params?.search)     qs.set("search",      params.search);
+    if (params?.discipline) qs.set("discipline",  params.discipline);
+    const url = `/courses${qs.toString() ? `?${qs.toString()}` : ""}`;
+    const res = await request<{ courses: ApiCourse[]; total: number } | ApiCourse[]>(url.startsWith("/") ? "GET" : "GET", url);
+    return Array.isArray(res) ? res : (res as { courses: ApiCourse[] }).courses ?? [];
+  },
+  getCoursePaginated: (params?: { page?: number; limit?: number; search?: string; discipline?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.page)       qs.set("page",       String(params.page));
+    if (params?.limit)      qs.set("limit",       String(params.limit));
+    if (params?.search)     qs.set("search",      params.search);
+    if (params?.discipline) qs.set("discipline",  params.discipline);
+    return request<{ courses: ApiCourse[]; total: number; page: number; limit: number }>(
+      "GET", `/courses?${qs.toString()}`,
+    );
+  },
+  createCourse: (data: {
+    name: string; discipline: string; type?: string; level?: string;
+    age_min?: number; age_max?: number; capacity?: number; price?: number;
+    description?: string; instructor_id?: number | null; venue_id?: number | null;
+    start_date?: string | null; end_date?: string | null; recurring_pattern?: string | null;
+    days_of_week?: number[]; requires_approval?: boolean;
+  }) => request<ApiCourse>("POST", "/courses", data),
+  updateCourse: (id: number, data: Partial<{
+    name: string; discipline: string; type: string; level: string;
+    age_min: number; age_max: number; capacity: number; price: number;
+    description: string; instructor_id: number | null; venue_id: number | null;
+    start_date: string | null; end_date: string | null; recurring_pattern: string | null;
+    days_of_week: number[]; requires_approval: boolean; confirmation_status: string;
+  }>) => request<ApiCourse>("PATCH", `/courses/${id}`, data),
+  deleteCourse: (id: number) => request<void>("DELETE", `/courses/${id}`),
+  unenroll: (enrollmentId: number) => request<void>("DELETE", `/enrollments/${enrollmentId}`),
   getEnrollments: async (childId?: string): Promise<ApiEnrollment[]> =>
     (await isDemoSession())
       ? (childId ? DEMO_ENROLLMENTS.filter(e => String(e.child_id) === childId) : DEMO_ENROLLMENTS)
@@ -899,6 +934,18 @@ export const api = {
   }) => request<ApiScheduledCourse>("POST", "/scheduled-courses", data),
   confirmScheduledCourse: (id: number) =>
     request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/confirm`, {}),
+  updateScheduledCourse: (id: number, data: Partial<{
+    discipline_id: number; operator_profile_id: number | null;
+    day_of_week: number; start_time: string; end_time: string;
+    age_min: number; age_max: number; skill_level: string;
+    notes: string; week_interval: number; even_week_start: boolean;
+    location_label: string; status: string;
+    payment_type: string; price_per_lesson_cents: number | null;
+    package_size: number | null; package_price_cents: number | null;
+    monthly_price_cents: number | null; billing_day_of_month: number | null;
+    billing_end_date: string | null;
+  }>) => request<ApiScheduledCourse>("PATCH", `/scheduled-courses/${id}`, data),
+  deleteScheduledCourse: (id: number) => request<void>("DELETE", `/scheduled-courses/${id}`),
   declineScheduledCourse: (id: number) =>
     request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/decline`, {}),
 
@@ -2028,6 +2075,7 @@ export interface ApiScheduledCourse {
     profile_type: "paid" | "volunteer";
     user?: { id: number; name: string };
   };
+  week_interval?: 1 | 2 | 4;
   /** Payment configuration */
   payment_type?: "single" | "package" | "monthly_billing";
   price_per_lesson_cents?: number;
@@ -2889,12 +2937,35 @@ export interface EventTicket {
   currency?: string;
 }
 
-export function listEvents(orgId?: number, opts?: { includeDrafts?: boolean }): Promise<StrideEvent[]> {
+export async function listEvents(
+  orgId?: number,
+  opts?: { includeDrafts?: boolean; page?: number; limit?: number; category?: string },
+): Promise<StrideEvent[]> {
   const qs = new URLSearchParams();
-  if (orgId) qs.set("org_id", String(orgId));
-  if (opts?.includeDrafts) qs.set("include_drafts", "true");
+  if (orgId)               qs.set("org_id",         String(orgId));
+  if (opts?.includeDrafts) qs.set("include_drafts",  "true");
+  if (opts?.page)          qs.set("page",            String(opts.page));
+  if (opts?.limit)         qs.set("limit",           String(opts.limit));
+  if (opts?.category)      qs.set("category",        opts.category);
   const q = qs.size > 0 ? `?${qs.toString()}` : "";
-  return request<StrideEvent[]>("GET", `/events${q}`);
+  const res = await request<{ events: StrideEvent[]; total: number } | StrideEvent[]>("GET", `/events${q}`);
+  return Array.isArray(res) ? res : (res as { events: StrideEvent[] }).events ?? [];
+}
+
+export async function listEventsPaginated(
+  orgId?: number,
+  opts?: { includeDrafts?: boolean; page?: number; limit?: number; category?: string },
+): Promise<{ events: StrideEvent[]; total: number; page: number; limit: number }> {
+  const qs = new URLSearchParams();
+  if (orgId)               qs.set("org_id",         String(orgId));
+  if (opts?.includeDrafts) qs.set("include_drafts",  "true");
+  if (opts?.page)          qs.set("page",            String(opts.page));
+  if (opts?.limit)         qs.set("limit",           String(opts.limit));
+  if (opts?.category)      qs.set("category",        opts.category);
+  const q = qs.size > 0 ? `?${qs.toString()}` : "";
+  const res = await request<{ events: StrideEvent[]; total: number; page: number; limit: number } | StrideEvent[]>("GET", `/events${q}`);
+  if (Array.isArray(res)) return { events: res, total: res.length, page: 1, limit: res.length };
+  return res as { events: StrideEvent[]; total: number; page: number; limit: number };
 }
 
 export function getEvent(id: string): Promise<StrideEvent> {

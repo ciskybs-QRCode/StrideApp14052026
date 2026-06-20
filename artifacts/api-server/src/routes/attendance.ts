@@ -144,7 +144,7 @@ router.patch("/students/:id/stars", requireAuth, requireRole("admin", "operator"
       title:           `⭐ Star awarded to ${child.first_name}!`,
       body:            `${child.first_name} ${child.last_name} received ${delta} star${delta !== 1 ? "s" : ""} from their instructor. Total: ${newStars} ⭐`,
       read:            false,
-    }).then(() => {}).catch(() => {});
+    }).then(undefined, () => {});
   }
 
   res.json(data);

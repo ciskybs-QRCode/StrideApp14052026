@@ -102,6 +102,7 @@ export default function AdminLessonsScreen() {
   const [scWeekInterval,       setScWeekInterval]       = useState<1|2|4>(1);
   const [scFilterDay,          setScFilterDay]          = useState<number | null>(null);
   const [showAvailSection,     setShowAvailSection]     = useState(false);
+  const [editingScId,          setEditingScId]          = useState<number | null>(null);
 
   // ── Scheduler payment config state ────────────────────────────────────────────
   const [scPaymentType,          setScPaymentType]          = useState<"single"|"package"|"monthly_billing">("single");
@@ -1144,6 +1145,23 @@ export default function AdminLessonsScreen() {
             </View>
 
             {/* SUBMIT */}
+            {editingScId !== null && (
+              <Pressable
+                style={[styles.addBtn, { backgroundColor: colors.muted, marginTop: 4 }]}
+                onPress={() => {
+                  setEditingScId(null);
+                  setScDisciplineId(null); setScOperatorId(null); setScDayOfWeek(1);
+                  setScStartTime("09:00"); setScEndTime("10:00");
+                  setScAgeMin("5"); setScAgeMax("18"); setScSkillLevel("open"); setScNotes("");
+                  setScWeekInterval(1);
+                  setScPaymentType("single"); setScPricePerLesson(""); setScPackageSize(""); setScPackagePrice("");
+                  setScMonthlyPrice(""); setScBillingDay(1); setScBillingEndDate(""); setScShowEndDateCalendar(false);
+                }}
+              >
+                <Ionicons name="close-outline" size={17} color={colors.foreground} />
+                <Text style={[styles.addBtnText, { color: colors.foreground }]}>Cancel Edit</Text>
+              </Pressable>
+            )}
             <Pressable
               style={[styles.addBtn, { backgroundColor: scSaving ? colors.mutedForeground : colors.primary, marginTop: 4 }]}
               disabled={scSaving}
@@ -1151,30 +1169,38 @@ export default function AdminLessonsScreen() {
                 if (!scDisciplineId) { Alert.alert("Missing", "Please select an activity."); return; }
                 if (!scStartTime || !scEndTime) { Alert.alert("Missing", "Please select start and end times."); return; }
                 setScSaving(true);
+                const payload = {
+                  disciplineId:        scDisciplineId,
+                  operatorProfileId:   scOperatorId ?? undefined,
+                  dayOfWeek:           scDayOfWeek,
+                  startTime:           scStartTime,
+                  endTime:             scEndTime,
+                  ageMin:              parseInt(scAgeMin, 10) || 5,
+                  ageMax:              parseInt(scAgeMax, 10) || 18,
+                  skillLevel:          scSkillLevel,
+                  notes:               scNotes || undefined,
+                  weekInterval:        scWeekInterval,
+                  paymentType:         scPaymentType,
+                  pricePerLessonCents: scPaymentType === "single" && scPricePerLesson
+                    ? Math.round(parseFloat(scPricePerLesson) * 100) : undefined,
+                  packageSize:         scPaymentType === "package" && scPackageSize
+                    ? parseInt(scPackageSize, 10) : undefined,
+                  packagePriceCents:   scPaymentType === "package" && scPackagePrice
+                    ? Math.round(parseFloat(scPackagePrice) * 100) : undefined,
+                  monthlyPriceCents:   scPaymentType === "monthly_billing" && scMonthlyPrice
+                    ? Math.round(parseFloat(scMonthlyPrice) * 100) : undefined,
+                  billingDayOfMonth:   scPaymentType === "monthly_billing" ? scBillingDay : undefined,
+                  billingEndDate:      scPaymentType === "monthly_billing" && scBillingEndDate ? scBillingEndDate : undefined,
+                };
                 try {
-                  await api.createScheduledCourse({
-                    disciplineId:        scDisciplineId,
-                    operatorProfileId:   scOperatorId ?? undefined,
-                    dayOfWeek:           scDayOfWeek,
-                    startTime:           scStartTime,
-                    endTime:             scEndTime,
-                    ageMin:              parseInt(scAgeMin, 10) || 5,
-                    ageMax:              parseInt(scAgeMax, 10) || 18,
-                    skillLevel:          scSkillLevel,
-                    notes:               scNotes || undefined,
-                    weekInterval:        scWeekInterval,
-                    paymentType:         scPaymentType,
-                    pricePerLessonCents: scPaymentType === "single" && scPricePerLesson
-                      ? Math.round(parseFloat(scPricePerLesson) * 100) : undefined,
-                    packageSize:         scPaymentType === "package" && scPackageSize
-                      ? parseInt(scPackageSize, 10) : undefined,
-                    packagePriceCents:   scPaymentType === "package" && scPackagePrice
-                      ? Math.round(parseFloat(scPackagePrice) * 100) : undefined,
-                    monthlyPriceCents:   scPaymentType === "monthly_billing" && scMonthlyPrice
-                      ? Math.round(parseFloat(scMonthlyPrice) * 100) : undefined,
-                    billingDayOfMonth:   scPaymentType === "monthly_billing" ? scBillingDay : undefined,
-                    billingEndDate:      scPaymentType === "monthly_billing" && scBillingEndDate ? scBillingEndDate : undefined,
-                  });
+                  if (editingScId !== null) {
+                    await api.updateScheduledCourse(editingScId, payload);
+                    setEditingScId(null);
+                    Alert.alert("Updated", "Scheduled course updated.");
+                  } else {
+                    await api.createScheduledCourse(payload);
+                    Alert.alert("Sent", "Course request sent to the instructor for confirmation.");
+                  }
                   await load();
                   setScDisciplineId(null); setScOperatorId(null); setScDayOfWeek(1);
                   setScStartTime("09:00"); setScEndTime("10:00");
@@ -1182,16 +1208,15 @@ export default function AdminLessonsScreen() {
                   setScWeekInterval(1);
                   setScPaymentType("single"); setScPricePerLesson(""); setScPackageSize(""); setScPackagePrice("");
                   setScMonthlyPrice(""); setScBillingDay(1); setScBillingEndDate(""); setScShowEndDateCalendar(false);
-                  Alert.alert("Sent", "Course request sent to the instructor for confirmation.");
                 } catch (e: unknown) {
-                  Alert.alert("Error", e instanceof Error ? e.message : "Failed to create course");
+                  Alert.alert("Error", e instanceof Error ? e.message : "Failed to save course");
                 } finally { setScSaving(false); }
               }}
             >
               {scSaving
                 ? <ActivityIndicator size="small" color="#FFF" />
-                : <Ionicons name="paper-plane-outline" size={17} color="#FFF" />}
-              <Text style={styles.addBtnText}>Send to Instructor</Text>
+                : <Ionicons name={editingScId !== null ? "checkmark-outline" : "paper-plane-outline"} size={17} color="#FFF" />}
+              <Text style={styles.addBtnText}>{editingScId !== null ? "Update Course" : "Send to Instructor"}</Text>
             </Pressable>
 
             {/* ── Existing scheduled courses ── */}
@@ -1245,10 +1270,63 @@ export default function AdminLessonsScreen() {
                             </Text>
                           )}
                         </View>
-                        <View style={{ backgroundColor: `${statusColor}18`, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 }}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: statusColor, textTransform: "capitalize" }}>
-                            {sc.status.replace("_", " ")}
-                          </Text>
+                            <View style={{ alignItems: "flex-end", gap: 6 }}>
+                          <View style={{ backgroundColor: `${statusColor}18`, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 }}>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: statusColor, textTransform: "capitalize" }}>
+                              {sc.status.replace("_", " ")}
+                            </Text>
+                          </View>
+                          <View style={{ flexDirection: "row", gap: 6 }}>
+                            <Pressable
+                              onPress={() => {
+                                const disc = (sc.discipline as { id?: number } | null)?.id ?? sc.discipline_id;
+                                const op   = (sc.operator as { id?: number } | null)?.id ?? sc.operator_profile_id;
+                                setEditingScId(sc.id);
+                                setScDisciplineId(typeof disc === "number" ? disc : null);
+                                setScOperatorId(typeof op === "number" ? op : null);
+                                setScDayOfWeek(sc.day_of_week);
+                                setScStartTime(String(sc.start_time).slice(0, 5));
+                                setScEndTime(String(sc.end_time).slice(0, 5));
+                                setScAgeMin(String(sc.age_min ?? 5));
+                                setScAgeMax(String(sc.age_max ?? 18));
+                                setScSkillLevel((sc.skill_level as "beginner"|"intermediate"|"advanced"|"open") ?? "open");
+                                setScNotes(sc.notes ?? "");
+                                setScWeekInterval((sc.week_interval as 1|2|4) ?? 1);
+                                setScPaymentType((sc.payment_type as "single"|"package"|"monthly_billing") ?? "single");
+                                setScPricePerLesson(sc.price_per_lesson_cents ? String(sc.price_per_lesson_cents / 100) : "");
+                                setScPackageSize(sc.package_size ? String(sc.package_size) : "");
+                                setScPackagePrice(sc.package_price_cents ? String(sc.package_price_cents / 100) : "");
+                                setScMonthlyPrice(sc.monthly_price_cents ? String(sc.monthly_price_cents / 100) : "");
+                                setScBillingDay(sc.billing_day_of_month ?? 1);
+                                setScBillingEndDate(sc.billing_end_date ?? "");
+                              }}
+                              style={{ padding: 6, backgroundColor: `${colors.primary}18`, borderRadius: 8 }}
+                            >
+                              <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+                            </Pressable>
+                            <Pressable
+                              onPress={() => {
+                                Alert.alert(
+                                  "Cancel Course",
+                                  "This will mark the scheduled course as cancelled. Continue?",
+                                  [
+                                    { text: "Keep", style: "cancel" },
+                                    { text: "Cancel Course", style: "destructive", onPress: async () => {
+                                      try {
+                                        await api.deleteScheduledCourse(sc.id);
+                                        await load();
+                                      } catch (e: unknown) {
+                                        Alert.alert("Error", e instanceof Error ? e.message : "Failed");
+                                      }
+                                    }},
+                                  ]
+                                );
+                              }}
+                              style={{ padding: 6, backgroundColor: "#FEE2E2", borderRadius: 8 }}
+                            >
+                              <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                            </Pressable>
+                          </View>
                         </View>
                       </View>
                     </View>

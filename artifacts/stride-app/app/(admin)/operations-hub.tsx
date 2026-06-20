@@ -50,6 +50,12 @@ export default function OperationsHub() {
           description="Define class types and skill levels"
           onPress={() => router.push("/(admin)/disciplines" as never)}
         />
+        <HubCard
+          icon="book-outline"
+          title="Courses"
+          description="Create and manage enrollment-based courses for members"
+          onPress={() => router.push("/(admin)/courses-manage" as never)}
+        />
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>OPERATIONS</Text>
         <HubCard

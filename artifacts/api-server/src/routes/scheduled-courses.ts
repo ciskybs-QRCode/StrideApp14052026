@@ -316,4 +316,112 @@ router.post("/scheduled-courses/:id/decline", requireAuth, requireRole("operator
   res.json(data);
 });
 
+// ── PATCH /scheduled-courses/:id ─────────────────────────────────────────────
+// Admin can update a scheduled course (reassign operator, change time, etc.)
+
+router.patch("/scheduled-courses/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const id = parseInt(String(req.params.id));
+
+  const { data: existing } = await supabase
+    .from("scheduled_courses")
+    .select("id")
+    .eq("id", id)
+    .eq("organization_id", user.orgId)
+    .single();
+  if (!existing) { res.status(404).json({ error: "Course not found" }); return; }
+
+  const allowed = [
+    "discipline_id", "operator_profile_id", "day_of_week", "start_time", "end_time",
+    "age_min", "age_max", "skill_level", "notes", "week_interval", "even_week_start",
+    "location_label", "status", "payment_type", "price_per_lesson_cents",
+    "package_size", "package_price_cents", "monthly_price_cents",
+    "billing_day_of_month", "billing_end_date",
+  ];
+  const updates: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in (req.body as Record<string, unknown>)) {
+      updates[key] = (req.body as Record<string, unknown>)[key];
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("scheduled_courses")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+
+  // Notify operator if reassigned
+  if ("operator_profile_id" in updates && updates["operator_profile_id"]) {
+    const opId = updates["operator_profile_id"] as number;
+    const { data: opProfile } = await supabase
+      .from("operator_profiles")
+      .select("user_id")
+      .eq("id", opId)
+      .single();
+    if (opProfile) {
+      await supabase.from("private_notifications").insert({
+        organization_id: user.orgId,
+        recipient_id:    opProfile.user_id,
+        type:            "workshop_created",
+        title:           "Course Assignment Updated",
+        body:            "You have been reassigned to a course. Please confirm or decline in your dashboard.",
+        read:            false,
+      }).then(undefined, () => {});
+    }
+  }
+
+  res.json(data);
+});
+
+// ── DELETE /scheduled-courses/:id ─────────────────────────────────────────────
+// Admin cancels / removes a scheduled course.
+
+router.delete("/scheduled-courses/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const id = parseInt(String(req.params.id));
+
+  const { data: course } = await supabase
+    .from("scheduled_courses")
+    .select("*, discipline:disciplines!discipline_id(name)")
+    .eq("id", id)
+    .eq("organization_id", user.orgId)
+    .single();
+  if (!course) { res.status(404).json({ error: "Course not found" }); return; }
+
+  const { error } = await supabase
+    .from("scheduled_courses")
+    .update({ status: "cancelled" })
+    .eq("id", id);
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+
+  // Notify assigned operator
+  if (course.operator_profile_id) {
+    const { data: opProfile } = await supabase
+      .from("operator_profiles")
+      .select("user_id")
+      .eq("id", course.operator_profile_id as number)
+      .single();
+    if (opProfile) {
+      const discName = (course.discipline as { name?: string } | null)?.name ?? "course";
+      const dayName  = DAY_NAMES[course.day_of_week as number] ?? "scheduled day";
+      const timeStr  = String(course.start_time).slice(0, 5);
+      await supabase.from("private_notifications").insert({
+        organization_id: user.orgId,
+        recipient_id:    opProfile.user_id,
+        type:            "workshop_rejected",
+        title:           "Course Cancelled by Admin",
+        body:            `The ${discName} class on ${dayName} at ${timeStr} has been cancelled.`,
+        read:            false,
+      }).then(undefined, () => {});
+    }
+  }
+
+  res.status(204).send();
+});
+
 export default router;

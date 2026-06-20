@@ -809,8 +809,30 @@ router.post("/auth/forgot-password", authLimiter, async (req, res) => {
       [normalised, token, expiresAt],
     );
 
-    const smtpHost = process.env["SMTP_HOST"];
-    if (smtpHost) {
+    const htmlBody = `<div style="font-family:sans-serif;max-width:480px;margin:auto"><h2 style="color:#1E3A8A">Password Reset</h2><p>Hi ${user.name ?? ""},</p><p>Your 6-character reset code is:</p><div style="background:#EEF2FF;border-radius:12px;padding:20px;text-align:center;margin:20px 0"><span style="font-size:32px;letter-spacing:10px;font-weight:800;color:#1E3A8A">${token}</span></div><p style="color:#6B7280">This code expires in 30 minutes. If you did not request a password reset, you can safely ignore this email.</p><hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0"/><p style="color:#9CA3AF;font-size:12px">Stride — Association Management</p></div>`;
+    const textBody = `Hi ${user.name ?? ""},\n\nYour password reset code is: ${token}\n\nThis code expires in 30 minutes. If you did not request a reset, ignore this email.\n\n— Stride`;
+
+    const resendKey = process.env["RESEND_API_KEY"];
+    const smtpHost  = process.env["SMTP_HOST"];
+
+    if (resendKey) {
+      // ── Resend API (preferred — no SMTP config needed) ──────────────────────
+      try {
+        const fromAddr = process.env["SMTP_FROM"] ?? "Stride <no-reply@stride.app>";
+        const resp = await fetch("https://api.resend.com/emails", {
+          method:  "POST",
+          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+          body:    JSON.stringify({ from: fromAddr, to: user.email, subject: "Your Stride Password Reset Code", html: htmlBody, text: textBody }),
+        });
+        if (!resp.ok) {
+          const err = await resp.text().catch(() => resp.status.toString());
+          console.error("[forgot-password] Resend error:", err);
+        }
+      } catch (emailErr) {
+        console.error("[forgot-password] Resend send failed:", emailErr);
+      }
+    } else if (smtpHost) {
+      // ── Nodemailer SMTP fallback ─────────────────────────────────────────────
       try {
         const nodemailer = await import("nodemailer");
         const transporter = nodemailer.default.createTransport({
@@ -820,17 +842,17 @@ router.post("/auth/forgot-password", authLimiter, async (req, res) => {
           auth:   { user: process.env["SMTP_USER"], pass: process.env["SMTP_PASS"] },
         });
         await transporter.sendMail({
-          from:    process.env["SMTP_FROM"] ?? `Stride <no-reply@stride.app>`,
+          from:    process.env["SMTP_FROM"] ?? "Stride <no-reply@stride.app>",
           to:      user.email,
           subject: "Your Stride Password Reset Code",
-          text:    `Hi ${user.name ?? ""},\n\nYour password reset code is: ${token}\n\nThis code expires in 30 minutes. If you did not request a reset, ignore this email.\n\n— Stride`,
-          html:    `<div style="font-family:sans-serif;max-width:480px;margin:auto"><h2 style="color:#1E3A8A">Password Reset</h2><p>Hi ${user.name ?? ""},</p><p>Your 6-character reset code is:</p><div style="background:#EEF2FF;border-radius:12px;padding:20px;text-align:center;margin:20px 0"><span style="font-size:32px;letter-spacing:10px;font-weight:800;color:#1E3A8A">${token}</span></div><p style="color:#6B7280">This code expires in 30 minutes. If you did not request a password reset, you can safely ignore this email.</p><hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0"/><p style="color:#9CA3AF;font-size:12px">Stride — Association Management</p></div>`,
+          text:    textBody,
+          html:    htmlBody,
         });
       } catch (emailErr) {
-        console.error("[forgot-password] Email send failed:", emailErr);
+        console.error("[forgot-password] SMTP send failed:", emailErr);
       }
     } else {
-      console.info(`[forgot-password] *** Reset token for ${normalised}: ${token} (expires ${expiresAt.toISOString()}) ***`);
+      console.info(`[forgot-password] *** No email provider configured. Reset token for ${normalised}: ${token} (expires ${expiresAt.toISOString()}) ***`);
     }
   } catch (err) {
     console.error("[forgot-password] Error:", err);

@@ -1543,5 +1543,31 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS vol_reimb_user_idx ON volunteer_reimbursements(operator_user_id);
   `).catch(() => {});
 
+  // ── Schema migrations ──────────────────────────────────────────────────────
+  // Re-point enrollments.child_id FK to members table (original pointed to
+  // the empty `children` table which blocked all enrollment inserts).
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'enrollments_child_id_children_id_fk'
+          AND table_name = 'enrollments'
+      ) THEN
+        ALTER TABLE enrollments DROP CONSTRAINT enrollments_child_id_children_id_fk;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'enrollments_child_id_members_id_fk'
+          AND table_name = 'enrollments'
+      ) THEN
+        ALTER TABLE enrollments
+          ADD CONSTRAINT enrollments_child_id_members_id_fk
+          FOREIGN KEY (child_id) REFERENCES members(id) ON DELETE CASCADE;
+      END IF;
+    END$$;
+  `).catch(() => {});
+
   initialized = true;
 }

@@ -31,12 +31,22 @@ const router = Router();
 // ── GET /events ───────────────────────────────────────────────────────────────
 // include_drafts=true  → admin/operator fetches ALL events (draft + published)
 // include_drafts=false → members only see published events (is_active = true)
+// Pagination: ?page=1&limit=20 (default limit=20, max=100)
 router.get("/events", requireAuth, async (req: Request, res: Response) => {
-  const user = (req as AuthReq).user;
-  const orgId = parseInt(String(req.query["org_id"] ?? user.orgId), 10);
+  const user          = (req as AuthReq).user;
+  const orgId         = parseInt(String(req.query["org_id"] ?? user.orgId), 10);
   const includeDrafts = req.query["include_drafts"] === "true";
-  const activeFilter = includeDrafts ? "" : " AND e.is_active = true";
+  const activeFilter  = includeDrafts ? "" : " AND e.is_active = true";
+  const page          = Math.max(1, parseInt(String(req.query["page"]  ?? "1"),  10));
+  const limit         = Math.min(100, Math.max(1, parseInt(String(req.query["limit"] ?? "20"), 10)));
+  const offset        = (page - 1) * limit;
+  const category      = String(req.query["category"] ?? "").trim();
+  const catFilter     = category ? ` AND e.category = '${category.replace(/'/g, "''")}'` : "";
   try {
+    const { rows: countRows } = await pool.query<{ total: string }>(
+      `SELECT COUNT(*)::text AS total FROM events e WHERE e.org_id = $1${activeFilter}${catFilter}`,
+      [orgId],
+    );
     const { rows } = await pool.query<{
       id: string; org_id: number; title: string; description: string;
       location: string; category: string; is_active: boolean; created_at: string;
@@ -48,12 +58,13 @@ router.get("/events", requireAuth, async (req: Request, res: Response) => {
        FROM events e
        LEFT JOIN event_dates       ed  ON ed.event_id  = e.id
        LEFT JOIN event_ticket_types ett ON ett.event_id = e.id AND ett.is_active = true
-       WHERE e.org_id = $1${activeFilter}
+       WHERE e.org_id = $1${activeFilter}${catFilter}
        GROUP BY e.id
-       ORDER BY e.created_at DESC`,
-      [orgId],
+       ORDER BY e.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [orgId, limit, offset],
     );
-    res.json(rows);
+    res.json({ events: rows, total: parseInt(countRows[0]?.total ?? "0", 10), page, limit });
   } catch (err) {
     req.log?.error(err, "GET /events");
     res.status(500).json({ error: "Internal error" });

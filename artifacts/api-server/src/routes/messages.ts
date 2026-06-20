@@ -83,7 +83,7 @@ router.post(
 
 router.get("/messages/broadcast/:msgId/report", requireAuth, requireRole("admin"), async (req, res) => {
   const user = (req as AuthReq).user;
-  const msgId = req.params["msgId"] ?? "";
+  const msgId = String(req.params["msgId"] ?? "");
 
   const { data: msg } = await supabase
     .from("broadcast_messages")
@@ -123,7 +123,7 @@ router.get("/messages/broadcast/:msgId/report", requireAuth, requireRole("admin"
 
 router.post("/messages/broadcast/:msgId/read", requireAuth, async (req, res) => {
   const user  = (req as AuthReq).user;
-  const msgId = req.params["msgId"] ?? "";
+  const msgId = String(req.params["msgId"] ?? "");
   await pool.query(
     `UPDATE message_read_log SET read_at = NOW()
      WHERE broadcast_message_id = $1 AND recipient_id = $2 AND read_at IS NULL`,
@@ -136,7 +136,7 @@ router.post("/messages/broadcast/:msgId/read", requireAuth, async (req, res) => 
 
 router.post("/messages/broadcast/:msgId/skip", requireAuth, async (req, res) => {
   const user  = (req as AuthReq).user;
-  const msgId = req.params["msgId"] ?? "";
+  const msgId = String(req.params["msgId"] ?? "");
   await pool.query(
     `UPDATE message_read_log SET skipped_at = NOW()
      WHERE broadcast_message_id = $1 AND recipient_id = $2 AND skipped_at IS NULL AND read_at IS NULL`,
