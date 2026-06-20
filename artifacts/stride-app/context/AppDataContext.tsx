@@ -63,6 +63,14 @@ export interface Course {
   fixedBlockEnabled: boolean;
   fixedBlockPrice: number;
   fixedBlockLessons: number;
+  monthlyEnabled: boolean;
+  monthlyPrice: number;
+  monthlyPayDay: number;       // 1-28
+  monthlyEndDate: string;      // YYYY-MM-DD or ""
+  annualEnabled: boolean;
+  annualPrice: number;
+  annualPayDay: number;        // 1-28
+  annualEndDate: string;       // YYYY-MM-DD or ""
 }
 
 export interface Booking {
@@ -254,6 +262,14 @@ function mapCourse(c: ApiCourse): Course {
     fixedBlockEnabled: basePrice > 0,
     fixedBlockPrice: Math.round(basePrice * 8 * 0.85),
     fixedBlockLessons: 8,
+    monthlyEnabled: basePrice > 0,
+    monthlyPrice: Math.round(basePrice * 3.5),
+    monthlyPayDay: 1,
+    monthlyEndDate: "",
+    annualEnabled: basePrice > 0,
+    annualPrice: Math.round(basePrice * 36),
+    annualPayDay: 1,
+    annualEndDate: "",
   };
 }
 

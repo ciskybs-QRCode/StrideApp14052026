@@ -424,7 +424,7 @@ export default function CoursesScreen() {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrollCourse, setEnrollCourse] = useState<(typeof courses)[0] | null>(null);
   const [enrollParticipants, setEnrollParticipants] = useState<string[]>([]);
-  const [enrollPackage, setEnrollPackage] = useState<"dropIn" | "fixedBlock" | null>(null);
+  const [enrollPackage, setEnrollPackage] = useState<"dropIn" | "fixedBlock" | "monthlyBilling" | "annual" | null>(null);
   const [waitlistStatuses, setWaitlistStatuses] = useState<Record<string, WaitlistMyStatus | null>>({});
   const [waitlistLoading, setWaitlistLoading] = useState<string | null>(null);
 
@@ -488,27 +488,44 @@ export default function CoursesScreen() {
     }
     setEnrollCourse(c);
     setEnrollParticipants(participantOptions[0] ? [participantOptions[0]] : []);
-    setEnrollPackage(c.fixedBlockEnabled ? "fixedBlock" : "dropIn");
+    setEnrollPackage(
+      c.annualEnabled ? "annual"
+      : c.monthlyEnabled ? "monthlyBilling"
+      : c.fixedBlockEnabled ? "fixedBlock"
+      : "dropIn"
+    );
     setShowEnrollModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleAddToCart = () => {
     if (!enrollCourse || !enrollPackage || enrollParticipants.length === 0) return;
-    const isDropIn = enrollPackage === "dropIn";
-    const price = isDropIn ? enrollCourse.dropInPrice : enrollCourse.fixedBlockPrice;
-    const label = isDropIn
-      ? "Single Lesson"
-      : `Full Package (${enrollCourse.fixedBlockLessons} lessons)`;
+    let price = 0;
+    let label = "";
+    if (enrollPackage === "dropIn") {
+      price = enrollCourse.dropInPrice;
+      label = "Single Lesson";
+    } else if (enrollPackage === "fixedBlock") {
+      price = enrollCourse.fixedBlockPrice;
+      label = `Lesson Pack (${enrollCourse.fixedBlockLessons} sessions)`;
+    } else if (enrollPackage === "monthlyBilling") {
+      price = enrollCourse.monthlyPrice ?? 0;
+      label = "Monthly Subscription";
+    } else if (enrollPackage === "annual") {
+      price = enrollCourse.annualPrice ?? 0;
+      label = "Annual Subscription";
+    }
     enrollParticipants.forEach(participantName => {
       addItem({
         courseId: enrollCourse.id,
         courseName: enrollCourse.name,
         courseSchedule: enrollCourse.schedule,
-        packageType: enrollPackage,
+        packageType: enrollPackage === "monthlyBilling" ? "monthlyBilling" : enrollPackage === "annual" ? "annual" : enrollPackage,
         label,
         price,
         participantName,
+        billingDayOfMonth: enrollPackage === "monthlyBilling" ? (enrollCourse.monthlyPayDay ?? 1) : enrollPackage === "annual" ? (enrollCourse.annualPayDay ?? 1) : undefined,
+        billingEndDate: enrollPackage === "monthlyBilling" ? (enrollCourse.monthlyEndDate ?? "") : enrollPackage === "annual" ? (enrollCourse.annualEndDate ?? "") : undefined,
       });
     });
     setShowEnrollModal(false);
@@ -1038,6 +1055,52 @@ export default function CoursesScreen() {
                       <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>Discounted bundle</Text>
                     </View>
                     <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.fixedBlockPrice}</Text>
+                  </Pressable>
+                )}
+                {enrollCourse?.monthlyEnabled && (
+                  <Pressable
+                    style={[
+                      styles.participantRow,
+                      { borderColor: enrollPackage === "monthlyBilling" ? colors.primary : colors.border,
+                        backgroundColor: enrollPackage === "monthlyBilling" ? colors.muted : colors.background,
+                        marginTop: 8 },
+                    ]}
+                    onPress={() => setEnrollPackage("monthlyBilling")}
+                  >
+                    <Ionicons
+                      name={enrollPackage === "monthlyBilling" ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={enrollPackage === "monthlyBilling" ? colors.primary : colors.mutedForeground}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.participantName, { color: colors.foreground }]}>Monthly Subscription</Text>
+                      <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginTop: 2 }]}>
+                        Billed on the {enrollCourse.monthlyPayDay ?? 1}{["th","st","nd","rd"][(enrollCourse.monthlyPayDay ?? 1) <= 3 ? (enrollCourse.monthlyPayDay ?? 1) : 0]} each month
+                      </Text>
+                    </View>
+                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.monthlyPrice ?? 0}/mo</Text>
+                  </Pressable>
+                )}
+                {enrollCourse?.annualEnabled && (
+                  <Pressable
+                    style={[
+                      styles.participantRow,
+                      { borderColor: enrollPackage === "annual" ? "#FBBF24" : colors.border,
+                        backgroundColor: enrollPackage === "annual" ? "#FEF3C7" : colors.background,
+                        marginTop: 8 },
+                    ]}
+                    onPress={() => setEnrollPackage("annual")}
+                  >
+                    <Ionicons
+                      name={enrollPackage === "annual" ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={enrollPackage === "annual" ? "#FBBF24" : colors.mutedForeground}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.participantName, { color: colors.foreground }]}>Annual Subscription</Text>
+                      <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>Best value · Full year access</Text>
+                    </View>
+                    <Text style={[styles.participantName, { color: "#B45309", fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.annualPrice ?? 0}/yr</Text>
                   </Pressable>
                 )}
               </View>

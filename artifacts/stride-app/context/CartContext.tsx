@@ -7,7 +7,7 @@ export interface CartItem {
   courseId: string;
   courseName: string;
   courseSchedule: string;
-  packageType: "dropIn" | "fixedBlock" | "monthlyBilling";
+  packageType: "dropIn" | "fixedBlock" | "monthlyBilling" | "annual";
   label: string;
   price: number;
   participantName: string;
