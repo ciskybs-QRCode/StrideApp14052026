@@ -7,7 +7,6 @@ interface PageShellProps {
 
 export function PageShell({ children, dark = false }: PageShellProps) {
   const navBg   = dark ? "bg-[#0d1a3e] border-white/10" : "bg-white border-slate-100";
-  const logoTxt = dark ? "text-white" : "text-[#1E3A8A]";
   const linkTxt = dark ? "text-blue-200 hover:text-white" : "text-slate-500 hover:text-[#1E3A8A]";
 
   return (
@@ -18,12 +17,15 @@ export function PageShell({ children, dark = false }: PageShellProps) {
       {/* ── Nav ── */}
       <nav className={`sticky top-0 z-50 border-b shadow-sm ${navBg}`}>
         <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2.5 no-underline">
-            <svg height="26" width="26" viewBox="0 0 36 36" fill="none">
-              <rect width="36" height="36" rx="9" fill="#1E3A8A" />
-              <path d="M9 18h18M18 10l8 8-8 8" stroke={dark ? "#FBBF24" : "white"} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className={`text-base font-bold tracking-wide ${logoTxt}`}>Stride</span>
+          <a href="/" className="flex items-center no-underline">
+            {dark ? (
+              /* On dark nav: white pill container so the logo reads clearly */
+              <span className="bg-white rounded-xl px-2 py-1 flex items-center">
+                <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 32, width: "auto", display: "block" }} />
+              </span>
+            ) : (
+              <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 38, width: "auto", display: "block" }} />
+            )}
           </a>
           <div className="flex items-center gap-5">
             <a href="/about"   className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>About</a>
@@ -50,12 +52,10 @@ export function PageShell({ children, dark = false }: PageShellProps) {
         {/* Links grid */}
         <div className="max-w-5xl mx-auto px-5 py-8 grid grid-cols-2 sm:grid-cols-4 gap-6 border-b border-white/8">
           <div>
-            <a href="/" className="flex items-center gap-2 no-underline mb-3">
-              <svg height="22" width="22" viewBox="0 0 36 36" fill="none">
-                <rect width="36" height="36" rx="9" fill="white" fillOpacity="0.1" />
-                <path d="M9 18h18M18 10l8 8-8 8" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="font-semibold text-white text-sm">Stride</span>
+            <a href="/" className="flex items-center no-underline mb-3">
+              <span className="bg-white rounded-lg px-1.5 py-1 inline-flex items-center">
+                <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 26, width: "auto", display: "block" }} />
+              </span>
             </a>
             <p className="text-blue-400 text-xs leading-relaxed">
               Association management platform.

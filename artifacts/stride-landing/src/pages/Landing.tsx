@@ -227,10 +227,7 @@ const IcoChevron = ({ open }: { open: boolean }) => (
 );
 
 const Logo = () => (
-  <svg height="28" width="28" viewBox="0 0 36 36" fill="none">
-    <rect width="36" height="36" rx="9" fill="#1E3A8A" />
-    <path d="M9 18h18M18 10l8 8-8 8" stroke="#FBBF24" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+  <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 44, width: "auto", display: "block" }} />
 );
 
 // ── Stat counters ─────────────────────────────────────────────────────────────
@@ -303,10 +300,8 @@ export default function Landing() {
       {/* ── NAVBAR ─────────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2.5 no-underline">
+          <a href="/" className="flex items-center no-underline">
             <Logo />
-            <span className="text-base font-bold text-[#1E3A8A] tracking-wide">Stride</span>
-            <span className="hidden sm:inline text-slate-400 text-sm font-normal">Platform</span>
           </a>
 
           <div className="hidden md:flex items-center gap-6">
