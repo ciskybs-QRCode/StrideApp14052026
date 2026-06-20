@@ -133,6 +133,17 @@ type ScanResult = {
   payment: "paid" | "overdue" | "pending";
 };
 
+// ── Currency helpers ──────────────────────────────────────────────────────────
+
+const REGION_TO_CURRENCY: Record<string, string> = {
+  EU: "EUR", US: "USD", GB: "GBP", CH: "CHF",
+  AU: "AUD", CA: "CAD", JP: "JPY", SG: "SGD",
+};
+const CURRENCY_SYMBOL_MAP: Record<string, string> = {
+  EUR: "€", USD: "$", GBP: "£", CHF: "CHF ", AUD: "$", CAD: "$", JPY: "¥",
+  SGD: "$", NZD: "$", SEK: "kr", NOK: "kr", DKK: "kr", INR: "₹", BRL: "R$",
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AdminHome() {
@@ -143,7 +154,10 @@ export default function AdminHome() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const locale = useDeviceLocale();
-  const cur    = locale.currencySymbol;
+
+  const [orgCurrencySymbol, setOrgCurrencySymbol] = useState<string>("");
+
+  const cur = orgCurrencySymbol || locale.currencySymbol;
 
   const [period, setPeriod]                 = useState<"month" | "year">("month");
   const [showScanner, setShowScanner]       = useState(false);
@@ -193,6 +207,14 @@ export default function AdminHome() {
       if (org?.contact_phone)  setOrgContactPhone(org.contact_phone);
       if (org?.official_email) setOrgContactEmail(org.official_email);
     }).catch(() => setOrgLoadError(true));
+    api.getAdminSettings().then(s => {
+      const regionCode = (s as unknown as Record<string, unknown>).region_code as string | undefined;
+      if (regionCode) {
+        const iso = REGION_TO_CURRENCY[regionCode.toUpperCase()] ?? "USD";
+        const sym = CURRENCY_SYMBOL_MAP[iso] ?? iso;
+        setOrgCurrencySymbol(sym);
+      }
+    }).catch(() => {});
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.08, duration: 600, useNativeDriver: true }),

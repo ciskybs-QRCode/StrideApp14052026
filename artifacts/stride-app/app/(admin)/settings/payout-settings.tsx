@@ -28,10 +28,11 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiOperatorInvoice } from "@/lib/api";
+import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function centsToCurrency(cents: number, currency = "€") {
+function centsToCurrency(cents: number, currency: string) {
   return `${currency}${(cents / 100).toFixed(2)}`;
 }
 
@@ -62,6 +63,7 @@ export default function PayoutSettingsScreen() {
   const colors   = useColors();
   const insets   = useSafeAreaInsets();
   const { user } = useAuth();
+  const cur      = getDeviceLocale().currencySymbol;
 
   // ── Settings state ─────────────────────────────────────────────────────────
   const [payoutFreq,     setPayoutFreq]     = useState<"weekly" | "biweekly" | "monthly">("monthly");
@@ -209,7 +211,7 @@ export default function PayoutSettingsScreen() {
             Amounts above this threshold require a receipt. Set to 0 to always require one.
           </Text>
           <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
-            <Text style={[styles.currencySymbol, { color: colors.mutedForeground }]}>€</Text>
+            <Text style={[styles.currencySymbol, { color: colors.mutedForeground }]}>{cur}</Text>
             <TextInput
               value={threshold}
               onChangeText={setThreshold}
@@ -287,7 +289,7 @@ export default function PayoutSettingsScreen() {
                   {reviewInvoice.period_label}
                 </Text>
                 <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
-                  Operator #{reviewInvoice.operator_id} · {centsToCurrency(reviewInvoice.total_cents)}
+                  Operator #{reviewInvoice.operator_id} · {centsToCurrency(reviewInvoice.total_cents, cur)}
                 </Text>
 
                 {/* Line items */}
@@ -298,7 +300,7 @@ export default function PayoutSettingsScreen() {
                         {li.description}
                       </Text>
                       <Text style={[styles.lineItemAmt, { color: colors.foreground }]}>
-                        {centsToCurrency(li.amount_cents)}
+                        {centsToCurrency(li.amount_cents, cur)}
                       </Text>
                     </View>
                   ))}
@@ -367,6 +369,7 @@ export default function PayoutSettingsScreen() {
 
 function InvoiceRow({ inv, colors, onPress }: { inv: ApiOperatorInvoice; colors: ReturnType<typeof useColors>; onPress: () => void }) {
   const statusColor = STATUS_COLOR[inv.status] ?? "#6B7280";
+  const invCur = getDeviceLocale().currencySymbol;
   return (
     <Pressable
       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
@@ -386,7 +389,7 @@ function InvoiceRow({ inv, colors, onPress }: { inv: ApiOperatorInvoice; colors:
         </Text>
       </View>
       <View style={{ alignItems: "flex-end", gap: 4 }}>
-        <Text style={[styles.invAmt, { color: colors.foreground }]}>{centsToCurrency(inv.total_cents)}</Text>
+        <Text style={[styles.invAmt, { color: colors.foreground }]}>{centsToCurrency(inv.total_cents, invCur)}</Text>
         <View style={[styles.statusBadge, { backgroundColor: `${statusColor}18` }]}>
           <Text style={[styles.statusBadgeText, { color: statusColor }]}>{STATUS_LABEL[inv.status] ?? inv.status}</Text>
         </View>

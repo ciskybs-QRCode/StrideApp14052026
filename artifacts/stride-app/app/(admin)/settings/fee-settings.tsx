@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   BillingStartType,
@@ -135,6 +136,7 @@ export default function FeeSettingsScreen() {
   const router   = useRouter();
   const colors   = useColors();
   const insets   = useSafeAreaInsets();
+  const cur      = getDeviceLocale().currencySymbol;
 
   const [settings, setSettings]   = useState<FeeSettings>(DEFAULT_FEE_SETTINGS);
   const [loading,  setLoading]    = useState(true);
@@ -261,7 +263,7 @@ export default function FeeSettingsScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.inputLabel, { color: colors.foreground }]}>Amount</Text>
           <View style={[styles.amountRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
-            <Text style={[styles.currencySymbol, { color: colors.mutedForeground }]}>€</Text>
+            <Text style={[styles.currencySymbol, { color: colors.mutedForeground }]}>{cur}</Text>
             <TextInput
               value={amountText}
               onChangeText={t => { setAmountText(t.replace(/[^0-9.]/g, "")); setSaved(false); }}
