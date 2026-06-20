@@ -81,7 +81,7 @@ const CURRENCIES = ["EUR", "USD", "GBP", "CHF"];
 
 const AUDIENCE_OPTIONS = [
   { key: "all",       label: "Whole association (smart filter)", icon: "people-outline" },
-  { key: "parents",   label: "Parents & members only",          icon: "people-circle-outline" },
+  { key: "parents",   label: "Members & dependents only",        icon: "people-circle-outline" },
   { key: "operators", label: "Operators only",                  icon: "build-outline" },
   { key: "course",    label: "By course",                       icon: "book-outline" },
 ] as const;

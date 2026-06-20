@@ -31,9 +31,11 @@ function fmtDate(d: string) {
   try { return new Date(d + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" }); }
   catch { return d; }
 }
-function fmtPrice(cents: number) {
+const CURR_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", GBP: "£", CHF: "CHF ", AUD: "A$", CAD: "C$" };
+function fmtPrice(cents: number, currency?: string) {
   if (cents === 0) return "Free";
-  return `€${(cents / 100).toFixed(2)}`;
+  const sym = currency ? (CURR_SYMBOLS[currency.toUpperCase()] ?? currency + " ") : "";
+  return `${sym}${(cents / 100).toFixed(2)}`;
 }
 
 // ── Ticket Card (My Tickets tab) ──────────────────────────────────────────────
@@ -79,7 +81,7 @@ function TicketCard({ ticket, onDownload }: { ticket: EventTicket; onDownload: (
         </View>
         <View style={{ flex: 1, paddingLeft: 16, gap: 8 }}>
           <Text style={[styles.ticketQtyLabel, { color: colors.mutedForeground }]}>
-            Qty: {ticket.quantity}  ·  {fmtPrice(ticket.total_cents)}
+            Qty: {ticket.quantity}  ·  {fmtPrice(ticket.total_cents, ticket.currency)}
           </Text>
           <Text style={[styles.ticketIdText, { color: colors.mutedForeground }]} numberOfLines={1}>
             #{ticket.qr_code.slice(0, 8).toUpperCase()}
@@ -227,7 +229,7 @@ function PurchaseModal({
                       ) : null}
                     </View>
                     <Text style={[styles.typePrice, { color: sel ? "#1E3A8A" : colors.text }]}>
-                      {fmtPrice(t.price_cents)}
+                      {fmtPrice(t.price_cents, event.currency)}
                     </Text>
                     {sel && <Ionicons name="checkmark-circle" size={20} color="#1E3A8A" style={{ marginLeft: 8 }} />}
                   </Pressable>
@@ -281,12 +283,12 @@ function PurchaseModal({
               {paidInOrder > 0 && (
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Paid tickets</Text>
-                  <Text style={styles.summaryValue}>{paidInOrder} × {fmtPrice(unitPrice)}</Text>
+                  <Text style={styles.summaryValue}>{paidInOrder} × {fmtPrice(unitPrice, event.currency)}</Text>
                 </View>
               )}
               <View style={[styles.summaryRow, { marginTop: 4 }]}>
                 <Text style={[styles.summaryLabel, { fontWeight: "700" }]}>Total</Text>
-                <Text style={[styles.summaryValue, { fontWeight: "800", color: "#1E3A8A" }]}>{fmtPrice(totalCents)}</Text>
+                <Text style={[styles.summaryValue, { fontWeight: "800", color: "#1E3A8A" }]}>{fmtPrice(totalCents, event.currency)}</Text>
               </View>
               {totalCents > 0 && (
                 <Text style={styles.stripeNote}>You will be redirected to Stripe Checkout.</Text>
@@ -305,7 +307,7 @@ function PurchaseModal({
                 <>
                   <Ionicons name={totalCents === 0 ? "ticket-outline" : "card-outline"} size={18} color="#FFF" />
                   <Text style={styles.purchaseBtnText}>
-                    {totalCents === 0 ? "Get Free Ticket" : `Pay ${fmtPrice(totalCents)}`}
+                    {totalCents === 0 ? "Get Free Ticket" : `Pay ${fmtPrice(totalCents, event.currency)}`}
                   </Text>
                 </>
               )}
@@ -478,7 +480,7 @@ export default function ParentEventsScreen() {
                       {minPrice !== null && (
                         <View style={[styles.eventTag, { backgroundColor: "#EFF6FF" }]}>
                           <Text style={[styles.eventTagText, { color: "#1E3A8A" }]}>
-                            {minPrice === 0 ? "Free" : `From ${fmtPrice(minPrice)}`}
+                            {minPrice === 0 ? "Free" : `From ${fmtPrice(minPrice, e.currency)}`}
                           </Text>
                         </View>
                       )}

@@ -2856,6 +2856,7 @@ export interface StrideEvent {
   website_url: string | null;
   online_event: boolean;
   category: string;
+  currency?: string;           // e.g. "EUR", "USD"
   is_active: boolean;
   created_at: string;
   date_count?: string;
@@ -2885,6 +2886,7 @@ export interface EventTicket {
   event_start_time?: string;
   event_end_time?: string;
   ticket_type_name?: string;
+  currency?: string;
 }
 
 export function listEvents(orgId?: number, opts?: { includeDrafts?: boolean }): Promise<StrideEvent[]> {
