@@ -69,6 +69,9 @@ interface EnrollmentConfig {
   fixedBlock: boolean;
   fixedBlockLessons: number;
   fixedBlockPrice: number;
+  monthly: boolean;
+  monthlyPrice: number;
+  monthlyEndDate: string;   // YYYY-MM-DD
 }
 
 interface Activity {
@@ -234,7 +237,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t1", teacherName: "Emma Wilson",
     duration: 60, capacity: 15, enrolled: 11, status: "active",
-    enrollment: { dropIn: true, dropInPrice: 25, fixedBlock: true, fixedBlockLessons: 10, fixedBlockPrice: 200 },
+    enrollment: { dropIn: true, dropInPrice: 25, fixedBlock: true, fixedBlockLessons: 10, fixedBlockPrice: 200, monthly: false, monthlyPrice: 0, monthlyEndDate: "" },
     color: "#1E3A8A",
   },
   {
@@ -244,7 +247,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     campusId: "c1", campusName: "Main Studio", room: "Studio B",
     teacherId: "t2", teacherName: "Louis Ford",
     duration: 90, capacity: 20, enrolled: 14, status: "active",
-    enrollment: { dropIn: true, dropInPrice: 35, fixedBlock: false, fixedBlockLessons: 8, fixedBlockPrice: 240 },
+    enrollment: { dropIn: true, dropInPrice: 35, fixedBlock: false, fixedBlockLessons: 8, fixedBlockPrice: 240, monthly: false, monthlyPrice: 0, monthlyEndDate: "" },
     color: "#D97706",
   },
   {
@@ -254,7 +257,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     campusId: "c2", campusName: "East Wing Studio", room: "Meeting Room",
     teacherId: "t3", teacherName: "Anna Parker",
     duration: 60, capacity: 10, enrolled: 6, status: "active",
-    enrollment: { dropIn: false, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 0, fixedBlockPrice: 0 },
+    enrollment: { dropIn: false, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 0, fixedBlockPrice: 0, monthly: false, monthlyPrice: 0, monthlyEndDate: "" },
     color: "#0D9488",
   },
   {
@@ -264,7 +267,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     campusId: "c1", campusName: "Main Studio", room: "Studio A",
     teacherId: "t4", teacherName: "Mark Parker",
     duration: 45, capacity: 25, enrolled: 18, status: "draft",
-    enrollment: { dropIn: true, dropInPrice: 20, fixedBlock: true, fixedBlockLessons: 5, fixedBlockPrice: 80 },
+    enrollment: { dropIn: true, dropInPrice: 20, fixedBlock: true, fixedBlockLessons: 5, fixedBlockPrice: 80, monthly: false, monthlyPrice: 0, monthlyEndDate: "" },
     color: "#7C3AED",
   },
 ];
@@ -287,7 +290,7 @@ const BLANK_ACTIVITY = (): Omit<Activity, "id" | "enrolled" | "color"> => ({
   teacherId: "t1", teacherName: "",
   duration: 60, customDurationH: 0, customDurationM: 0,
   capacity: 15, status: "active",
-  enrollment: { dropIn: true, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0 },
+  enrollment: { dropIn: true, dropInPrice: 0, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0, monthly: false, monthlyPrice: 0, monthlyEndDate: "" },
   keyInstructions: "", alarmCode: "", doorPin: "", devicePin: "",
 });
 
@@ -605,7 +608,7 @@ export default function ActivityScreen() {
       capacity: p.capacity,
       enrolled: 0,
       status: "active",
-      enrollment: { dropIn: true, dropInPrice: 25, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0 },
+      enrollment: { dropIn: true, dropInPrice: 25, fixedBlock: false, fixedBlockLessons: 10, fixedBlockPrice: 0, monthly: false, monthlyPrice: 0, monthlyEndDate: "" },
       color: "#D97706",
       keyInstructions: "", alarmCode: "", doorPin: "", devicePin: "",
     };
@@ -1202,6 +1205,11 @@ export default function ActivityScreen() {
             {a.enrollment.fixedBlock && (
               <Text style={[styles.actEnrollTag, { color: colors.mutedForeground }]}>
                 {a.enrollment.fixedBlockLessons}-pack €{a.enrollment.fixedBlockPrice}
+              </Text>
+            )}
+            {a.enrollment.monthly && (
+              <Text style={[styles.actEnrollTag, { color: colors.mutedForeground }]}>
+                €{a.enrollment.monthlyPrice}/mese{a.enrollment.monthlyEndDate ? ` → ${a.enrollment.monthlyEndDate}` : ""}
               </Text>
             )}
           </View>
@@ -2329,6 +2337,46 @@ export default function ActivityScreen() {
                     keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
                     value={draft.enrollment.fixedBlockPrice > 0 ? String(draft.enrollment.fixedBlockPrice) : ""}
                     onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, fixedBlockPrice: Number(v) || 0 } }))}
+                  />
+                </View>
+              )}
+
+              {/* ── Quota mensile ── */}
+              <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.enrollRow}>
+                <View style={styles.enrollLeft}>
+                  <Text style={[styles.enrollTitle, { color: colors.foreground }]}>Quota mensile</Text>
+                  <Text style={[styles.enrollSub, { color: colors.mutedForeground }]}>Pagamento una volta al mese fino a data</Text>
+                </View>
+                <Switch
+                  value={draft.enrollment.monthly}
+                  onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthly: v } }))}
+                  trackColor={{ false: colors.border, true: `${colors.primary}60` }}
+                  thumbColor={draft.enrollment.monthly ? colors.primary : colors.mutedForeground}
+                />
+              </View>
+              {draft.enrollment.monthly && (
+                <View style={styles.enrollPriceRow}>
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Importo mensile (€)</Text>
+                  <TextInput
+                    style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                    keyboardType="numeric" placeholder="0" placeholderTextColor={colors.mutedForeground}
+                    value={draft.enrollment.monthlyPrice > 0 ? String(draft.enrollment.monthlyPrice) : ""}
+                    onChangeText={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthlyPrice: Number(v) || 0 } }))}
+                  />
+                  <Text style={[styles.enrollPriceLabel, { color: colors.mutedForeground }]}>Fino al (AAAA-MM-GG)</Text>
+                  <TextInput
+                    style={[styles.priceInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, width: 140 }]}
+                    keyboardType="numeric" placeholder="2025-06-30" placeholderTextColor={colors.mutedForeground}
+                    value={draft.enrollment.monthlyEndDate}
+                    maxLength={10}
+                    onChangeText={v => {
+                      const d2 = v.replace(/\D/g, "").slice(0, 8);
+                      let out = d2;
+                      if (d2.length > 4) out = d2.slice(0, 4) + "-" + d2.slice(4);
+                      if (d2.length > 6) out = out.slice(0, 7) + "-" + d2.slice(6);
+                      setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthlyEndDate: out } }));
+                    }}
                   />
                 </View>
               )}
