@@ -55,6 +55,12 @@ const NAV_ROWS = [
     description: "Branding, colours and themes",
     icon: "brush-outline" as const,
   },
+  {
+    key: "communication-settings",
+    title: "Communication Settings",
+    description: "Email (Resend) and SMS (Twilio) credentials",
+    icon: "mail-open-outline" as const,
+  },
 ] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────

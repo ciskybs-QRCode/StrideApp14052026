@@ -1562,6 +1562,23 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS vol_reimb_user_idx ON volunteer_reimbursements(operator_user_id);
   `).catch(() => {});
 
+  // ── Per-org Communication Settings ───────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_communication_settings (
+      id                  SERIAL PRIMARY KEY,
+      organization_id     INTEGER NOT NULL UNIQUE,
+      resend_api_key      TEXT,
+      resend_from_email   TEXT,
+      twilio_account_sid  TEXT,
+      twilio_auth_token   TEXT,
+      twilio_from_number  TEXT,
+      test_email_sent_at  TIMESTAMPTZ,
+      test_sms_sent_at    TIMESTAMPTZ,
+      updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS org_comm_settings_org_idx ON org_communication_settings(organization_id);
+  `).catch(() => {});
+
   // ── Schema migrations ──────────────────────────────────────────────────────
   // Re-point enrollments.child_id FK to members table (original pointed to
   // the empty `children` table which blocked all enrollment inserts).

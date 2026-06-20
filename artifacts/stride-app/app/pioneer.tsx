@@ -27,7 +27,7 @@ import { TERMS_OF_SERVICE, PRIVACY_POLICY, DATA_PROCESSING_AGREEMENT } from "@/l
 // ── Brand ─────────────────────────────────────────────────────────────────────
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
-const WIZARD_STEPS = 5; // steps 1-5 shown in indicator (after credentials)
+const WIZARD_STEPS = 6; // steps 1-6 shown in indicator (after credentials)
 
 // ── Auto-localization ──────────────────────────────────────────────────────────
 type Region = "IT" | "AU" | "GLOBAL";
@@ -112,7 +112,7 @@ const si = StyleSheet.create({
 // ── Chip presets ──────────────────────────────────────────────────────────────
 const AGE_GROUPS  = ["Under 6", "6–9", "10–13", "14–18", "Adult", "All Ages"];
 const SKILL_LVLS  = ["Beginner", "Intermediate", "Advanced", "Open Class"];
-const STEP_LABELS = ["Account Credentials", "Personal Profile", "Organisation Details", "System Assets", "Your Legal Documents", "Legal & Signature"];
+const STEP_LABELS = ["Account Credentials", "Personal Profile", "Organisation Details", "System Assets", "Communications Setup", "Your Legal Documents", "Legal & Signature"];
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Pioneer() {
@@ -162,7 +162,15 @@ export default function Pioneer() {
   const [skillLevels, setSkillLevels] = useState<string[]>([]);
   const [studios, setStudios] = useState<{ name: string; capacity: string }[]>([{ name: "", capacity: "20" }]);
 
-  // ── Step 4 ────────────────────────────────────────────────────────────────
+  // ── Step 4 — Communications ───────────────────────────────────────────────
+  const [commResendKey,   setCommResendKey]   = useState("");
+  const [commResendFrom,  setCommResendFrom]  = useState("");
+  const [commTwilioSid,   setCommTwilioSid]   = useState("");
+  const [commTwilioToken, setCommTwilioToken] = useState("");
+  const [commTwilioFrom,  setCommTwilioFrom]  = useState("");
+  const [commBusy,        setCommBusy]        = useState(false);
+
+  // ── Step 5 ────────────────────────────────────────────────────────────────
   const [termsScrolled,   setTermsScrolled]   = useState(false);
   const [privacyScrolled, setPrivacyScrolled] = useState(false);
   const [dpaScrolled,     setDpaScrolled]     = useState(false);
@@ -263,6 +271,25 @@ export default function Pioneer() {
       return;
     }
     next();
+  };
+
+  // ── Step 4: Communications ────────────────────────────────────────────────
+  const handleSaveComms = async () => {
+    if (!commResendKey && !commTwilioSid) { next(5); return; }
+    setCommBusy(true);
+    try {
+      await api.saveCommSettings({
+        resend_api_key:     commResendKey    || undefined,
+        resend_from_email:  commResendFrom   || undefined,
+        twilio_account_sid: commTwilioSid    || undefined,
+        twilio_auth_token:  commTwilioToken  || undefined,
+        twilio_from_number: commTwilioFrom   || undefined,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { /* silent — non-blocking */ } finally {
+      setCommBusy(false);
+      next(5);
+    }
   };
 
   // ── Step 4: Complete ──────────────────────────────────────────────────────
@@ -686,8 +713,122 @@ export default function Pioneer() {
           </View>
         )}
 
-        {/* ════ STEP 4 — Your Legal Documents ════ */}
+        {/* ════ STEP 4 — Communications Setup ════ */}
         {step === 4 && (
+          <View style={st.card}>
+            <Text style={st.cardTitle}>Communications Setup</Text>
+            <Text style={st.cardSub}>
+              Set up email and SMS for your organisation. These are used for password resets,
+              member notifications, and emergency alerts. Each association uses its own accounts — your credentials stay private.
+            </Text>
+
+            {/* Why this matters */}
+            <View style={{ backgroundColor: "#EFF6FF", borderRadius: 10, borderWidth: 1, borderColor: "#BFDBFE", padding: 12, marginBottom: 16 }}>
+              <Text style={{ fontSize: 11, fontWeight: "800", color: NAVY, marginBottom: 6, letterSpacing: 0.5 }}>WHAT THESE ARE USED FOR</Text>
+              {[
+                "Password reset emails for your members",
+                "Trial expiry and subscription reminders",
+                "Role assignment notifications",
+                "Emergency SMS alerts to admin phones (Twilio only)",
+              ].map(item => (
+                <View key={item} style={{ flexDirection: "row", alignItems: "flex-start", gap: 6, marginBottom: 4 }}>
+                  <Ionicons name="checkmark-circle-outline" size={13} color={NAVY} style={{ marginTop: 1 }} />
+                  <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>{item}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* EMAIL — Resend */}
+            <Text style={st.sectionHdr}>📧  Email — Resend (Free)</Text>
+            <Pressable
+              style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, alignSelf: "flex-start", marginBottom: 12 }}
+              onPress={() => Linking.openURL("https://resend.com/signup")}
+            >
+              <Ionicons name="open-outline" size={12} color={NAVY} />
+              <Text style={{ fontSize: 12, fontWeight: "700", color: NAVY }}>Create account → resend.com/signup</Text>
+            </Pressable>
+            <Text style={{ fontSize: 11, color: "#6B7280", lineHeight: 16, marginBottom: 12 }}>
+              Free tier: 100 emails/day, 3,000/month. Sign up, add your domain, create an API key, then paste it below.
+            </Text>
+
+            <Text style={st.label}>Resend API Key</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="key-outline" size={15} color="#9CA3AF" />
+              <TextInput style={st.input} value={commResendKey} onChangeText={setCommResendKey}
+                placeholder="re_xxxxxxxxxxxxxxxxxxxx" placeholderTextColor="#9CA3AF"
+                autoCapitalize="none" autoCorrect={false} secureTextEntry />
+            </View>
+
+            <Text style={st.label}>From Email Address</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="mail-outline" size={15} color="#9CA3AF" />
+              <TextInput style={st.input} value={commResendFrom} onChangeText={setCommResendFrom}
+                placeholder="Stride <no-reply@yourdomain.com>" placeholderTextColor="#9CA3AF"
+                autoCapitalize="none" autoCorrect={false} keyboardType="email-address" />
+            </View>
+
+            <View style={st.divider} />
+
+            {/* SMS — Twilio */}
+            <Text style={st.sectionHdr}>📱  SMS & Voice — Twilio (Optional)</Text>
+            <Pressable
+              style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, alignSelf: "flex-start", marginBottom: 12 }}
+              onPress={() => Linking.openURL("https://www.twilio.com/try-twilio")}
+            >
+              <Ionicons name="open-outline" size={12} color={NAVY} />
+              <Text style={{ fontSize: 12, fontWeight: "700", color: NAVY }}>Create account → twilio.com/try-twilio</Text>
+            </Pressable>
+            <Text style={{ fontSize: 11, color: "#6B7280", lineHeight: 16, marginBottom: 12 }}>
+              Emergency fallback SMS + voice call when push notifications fail. Sign up, get your Account SID and Auth Token from the Console, then buy or use your free trial number.
+            </Text>
+
+            <Text style={st.label}>Account SID</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="key-outline" size={15} color="#9CA3AF" />
+              <TextInput style={st.input} value={commTwilioSid} onChangeText={setCommTwilioSid}
+                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" placeholderTextColor="#9CA3AF"
+                autoCapitalize="none" autoCorrect={false} secureTextEntry />
+            </View>
+
+            <Text style={st.label}>Auth Token</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="lock-closed-outline" size={15} color="#9CA3AF" />
+              <TextInput style={st.input} value={commTwilioToken} onChangeText={setCommTwilioToken}
+                placeholder="Your Twilio auth token" placeholderTextColor="#9CA3AF"
+                autoCapitalize="none" autoCorrect={false} secureTextEntry />
+            </View>
+
+            <Text style={st.label}>From Number (E.164)</Text>
+            <View style={st.inputWrap}>
+              <Ionicons name="call-outline" size={15} color="#9CA3AF" />
+              <TextInput style={st.input} value={commTwilioFrom} onChangeText={setCommTwilioFrom}
+                placeholder="+15551234567" placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad" />
+            </View>
+
+            <Pressable
+              style={[st.primaryBtn, commBusy && st.btnDisabled]}
+              onPress={handleSaveComms}
+              disabled={commBusy}
+            >
+              {commBusy
+                ? <ActivityIndicator color={NAVY} />
+                : <><Text style={st.primaryBtnText}>{commResendKey || commTwilioSid ? "Save & Continue" : "Continue"}</Text><Ionicons name="arrow-forward-outline" size={18} color={NAVY} /></>
+              }
+            </Pressable>
+
+            <Pressable
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, paddingVertical: 10 }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); next(5); }}
+            >
+              <Ionicons name="chevron-forward-outline" size={13} color="rgba(255,255,255,0.4)" />
+              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Skip for now — set up later in Admin → Settings</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* ════ STEP 5 — Your Legal Documents ════ */}
+        {step === 5 && (
           <View style={st.card}>
             {/* Red warning header */}
             <View style={{ backgroundColor: "#FEF2F2", borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 2, borderColor: "#FCA5A5" }}>
@@ -739,7 +880,7 @@ export default function Pioneer() {
 
             <Pressable
               style={[st.primaryBtn, { marginTop: 4 }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); next(5); }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); next(6); }}
             >
               <Text style={st.primaryBtnText}>I Understand — Continue</Text>
               <Ionicons name="arrow-forward-outline" size={18} color={NAVY} />
@@ -747,7 +888,7 @@ export default function Pioneer() {
 
             <Pressable
               style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, paddingVertical: 10 }}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); next(5); }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); next(6); }}
             >
               <Ionicons name="chevron-forward-outline" size={13} color="rgba(255,255,255,0.4)" />
               <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Skip for now — upload documents later</Text>
@@ -755,8 +896,8 @@ export default function Pioneer() {
           </View>
         )}
 
-        {/* ════ STEP 5 — Legal & e-signature ════ */}
-        {step === 5 && (
+        {/* ════ STEP 6 — Legal & e-signature ════ */}
+        {step === 6 && (
           <View style={st.card}>
             <Text style={st.cardTitle}>Legal Acceptance</Text>
             <Text style={st.cardSub}>

@@ -289,6 +289,51 @@ export class EmergencyPushService {
     logger.info("EmergencyPushService: ACK watchdog started (30 s interval)");
   }
 
+  // ── Org-specific credential helpers ──────────────────────────────────────────
+
+  private static async _getOrgTwilioCreds(orgId: number): Promise<{ accountSid: string; authToken: string; from: string } | null> {
+    try {
+      const { rows } = await pool.query<{
+        twilio_account_sid: string | null;
+        twilio_auth_token:  string | null;
+        twilio_from_number: string | null;
+      }>(
+        `SELECT twilio_account_sid, twilio_auth_token, twilio_from_number
+         FROM org_communication_settings WHERE organization_id = $1`,
+        [orgId],
+      );
+      const r = rows[0];
+      if (r?.twilio_account_sid && r?.twilio_auth_token && r?.twilio_from_number) {
+        return { accountSid: r.twilio_account_sid, authToken: r.twilio_auth_token, from: r.twilio_from_number };
+      }
+    } catch { /* table may not exist yet — fall through */ }
+    const accountSid = process.env["TWILIO_ACCOUNT_SID"];
+    const authToken  = process.env["TWILIO_AUTH_TOKEN"];
+    const from       = process.env["TWILIO_FROM_NUMBER"];
+    if (accountSid && authToken && from) return { accountSid, authToken, from };
+    return null;
+  }
+
+  private static async _getOrgResendCreds(orgId: number): Promise<{ key: string; from: string } | null> {
+    try {
+      const { rows } = await pool.query<{
+        resend_api_key:    string | null;
+        resend_from_email: string | null;
+      }>(
+        `SELECT resend_api_key, resend_from_email
+         FROM org_communication_settings WHERE organization_id = $1`,
+        [orgId],
+      );
+      const r = rows[0];
+      if (r?.resend_api_key) {
+        return { key: r.resend_api_key, from: r.resend_from_email ?? "Stride Emergency <no-reply@stride.app>" };
+      }
+    } catch { /* fall through */ }
+    const key = process.env["RESEND_API_KEY"];
+    if (key) return { key, from: process.env["RESEND_FROM_EMAIL"] ?? "Stride Emergency <no-reply@stride.app>" };
+    return null;
+  }
+
   // ── Twilio Fallback ───────────────────────────────────────────────────────────
 
   private static async _sendTwilioFallback(
@@ -297,9 +342,10 @@ export class EmergencyPushService {
     message:  string,
     logId?:   number,
   ): Promise<void> {
-    const accountSid = process.env["TWILIO_ACCOUNT_SID"];
-    const authToken  = process.env["TWILIO_AUTH_TOKEN"];
-    const from       = process.env["TWILIO_FROM_NUMBER"];
+    const twilioCreds = await EmergencyPushService._getOrgTwilioCreds(orgId);
+    const accountSid  = twilioCreds?.accountSid;
+    const authToken   = twilioCreds?.authToken;
+    const from        = twilioCreds?.from;
 
     if (!accountSid || !authToken || !from) {
       logger.warn({ orgId }, "EmergencyPushService: Twilio not configured — attempting email fallback");
@@ -362,8 +408,9 @@ export class EmergencyPushService {
     message:  string,
     logId?:   number,
   ): Promise<void> {
-    const resendKey = process.env["RESEND_API_KEY"];
-    const fromAddr  = process.env["RESEND_FROM_EMAIL"] ?? "Stride Emergency <no-reply@stride.app>";
+    const resendCreds = await EmergencyPushService._getOrgResendCreds(orgId);
+    const resendKey   = resendCreds?.key ?? null;
+    const fromAddr    = resendCreds?.from ?? "Stride Emergency <no-reply@stride.app>";
 
     try {
       const { rows: adminRows } = await pool.query<{ email: string; name: string }>(

@@ -66,6 +66,7 @@ import employmentRouter        from "./employment.js";
 import accountantPaymentsRouter from "./accountant-payments.js";
 import feeEventsRouter from "./fee-events.js";
 import expensesRouter from "./expenses.js";
+import communicationSettingsRouter from "./communication-settings.js";
 
 const router: IRouter = Router();
 
@@ -136,5 +137,6 @@ router.use(employmentRouter);
 router.use(accountantPaymentsRouter);
 router.use(feeEventsRouter);
 router.use(expensesRouter);
+router.use(communicationSettingsRouter);
 
 export default router;

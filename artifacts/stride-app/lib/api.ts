@@ -1187,6 +1187,24 @@ export const api = {
   // ── Waitlist (member) ─────────────────────────────────────────────────────
   getMyWaitlistStatus: (courseId: number) =>
     request<WaitlistMyStatus | null>("GET", `/waitlist/my-status/${courseId}`),
+
+  // ── Communication Settings ────────────────────────────────────────────────
+  getCommSettings: () =>
+    request<OrgCommSettings>("GET", "/org/communication-settings"),
+
+  saveCommSettings: (data: {
+    resend_api_key?:     string;
+    resend_from_email?:  string;
+    twilio_account_sid?: string;
+    twilio_auth_token?:  string;
+    twilio_from_number?: string;
+  }) => request<{ ok: boolean }>("PUT", "/org/communication-settings", data),
+
+  testEmail: () =>
+    request<{ ok: boolean; message: string }>("POST", "/org/communication-settings/test-email", {}),
+
+  testSms: () =>
+    request<{ ok: boolean; message: string }>("POST", "/org/communication-settings/test-sms", {}),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -3431,4 +3449,35 @@ export function markFeeEventRead(id: number): Promise<{ ok: boolean }> {
 
 export function markFeeEventPaid(id: number): Promise<{ ok: boolean }> {
   return request("POST", `/fee-events/${id}/mark-paid`, {});
+}
+
+// ── Communication Settings ────────────────────────────────────────────────────
+
+export interface OrgCommSettings {
+  resend_configured:  boolean;
+  resend_from_email:  string | null;
+  twilio_configured:  boolean;
+  twilio_from_number: string | null;
+}
+
+export function getCommSettings(): Promise<OrgCommSettings> {
+  return request("GET", "/org/communication-settings");
+}
+
+export function saveCommSettings(data: {
+  resend_api_key?:     string;
+  resend_from_email?:  string;
+  twilio_account_sid?: string;
+  twilio_auth_token?:  string;
+  twilio_from_number?: string;
+}): Promise<{ ok: boolean }> {
+  return request("PUT", "/org/communication-settings", data);
+}
+
+export function testEmail(): Promise<{ ok: boolean; message: string }> {
+  return request("POST", "/org/communication-settings/test-email", {});
+}
+
+export function testSms(): Promise<{ ok: boolean; message: string }> {
+  return request("POST", "/org/communication-settings/test-sms", {});
 }
