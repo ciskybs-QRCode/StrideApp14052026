@@ -34,16 +34,16 @@ title = "Stride — 3 Documenti (Legal, Mappa App, Feature Tiers)"
 id = "igVM0phlsWSUfgROpbfq3"
 uri = "file://screenshots/stride-parent-home.jpg"
 type = "image"
-title = "👤 Parent View — Home famiglia (Emma & Matteo Conti, Ballet Baby, Saggio)"
+title = "Parent — Your Family (Emma & Matteo, courses, event, wallet)"
 
 [[outputs]]
 id = "nz_e3t-7E5LJSYtBcOm3i"
 uri = "file://screenshots/stride-operator-dashboard.jpg"
 type = "image"
-title = "🎓 Operator View — Dashboard (QR Scanner, programma giornaliero, appello)"
+title = "Operator — Dashboard (QR Scanner, schedule, roll call)"
 
 [[outputs]]
 id = "buhWVDtVQNNLDK6pQOGQ1"
 uri = "file://screenshots/stride-admin-stats.jpg"
 type = "image"
-title = "⚙️ Admin View — Statistiche (48 allievi, €3.840/mese, occupazione corsi)"
+title = "Admin — Statistics (48 students, €3,840 revenue, course occupancy)"
