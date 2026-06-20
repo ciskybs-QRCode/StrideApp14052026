@@ -157,7 +157,10 @@ export default function AdminHome() {
 
   const [orgCurrencySymbol, setOrgCurrencySymbol] = useState<string>("");
 
-  const cur = orgCurrencySymbol || locale.currencySymbol;
+  // Priority: 1) org regional-pricing setting  2) first course currency from backend  3) neutral "$"
+  // Never fall back to device locale — on web/Replit it resolves to en-GB → £ regardless of user location
+  const courseCurrency = courses.find(c => c.currency)?.currency ?? "";
+  const cur = orgCurrencySymbol || courseCurrency || "$";
 
   const [period, setPeriod]                 = useState<"month" | "year">("month");
   const [showScanner, setShowScanner]       = useState(false);
