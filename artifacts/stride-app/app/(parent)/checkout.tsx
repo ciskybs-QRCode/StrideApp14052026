@@ -192,7 +192,7 @@ export default function CheckoutScreen() {
     // Generate PDF receipt (non-blocking)
     (async () => {
       try {
-        const orgTitle = orgData?.name ?? "Dance Academy";
+        const orgTitle = orgData?.name ?? "Your Association";
         const dateStr  = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
         const rows = snapshot.map(item =>
           `<tr><td>${item.courseName}</td><td>${item.participantName}</td>` +

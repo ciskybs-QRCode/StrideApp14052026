@@ -93,8 +93,8 @@ function detectEmergencyInfo(address: string): EmergencyInfo {
     return { number: "999", country: "United Kingdom",flag: "🇬🇧", description: "Police · Fire · Ambulance" };
   if (/\b(usa|united states|canada)\b/.test(a))
     return { number: "911", country: "US / Canada",   flag: "🇺🇸", description: "Police · Fire · Ambulance" };
-  if (/\b(italia|italy)\b/.test(a))
-    return { number: "112", country: "Italy",         flag: "🇮🇹", description: "Numero di emergenza europeo" };
+  if (/\b(italia|italy|europe|european)\b/.test(a))
+    return { number: "112", country: "Europe",        flag: "🇪🇺", description: "European Emergency Number" };
   return   { number: "112", country: "International", flag: "🌍", description: "European Emergency Number" };
 }
 
@@ -975,10 +975,10 @@ export default function OperatorDashboard() {
       } catch {
         // Fallback demo members so the picker is never empty
         setSosMedicalMembers([
-          { id: "demo-1", name: "Marco Rossi",    role: "member" },
-          { id: "demo-2", name: "Giulia Ferrari",  role: "member" },
-          { id: "demo-3", name: "Luca Bianchi",    role: "member" },
-          { id: "demo-4", name: "Sofia Romano",    role: "member" },
+          { id: "demo-1", name: "Alex Johnson",    role: "member" },
+          { id: "demo-2", name: "Sam Rivera",      role: "member" },
+          { id: "demo-3", name: "Jordan Lee",      role: "member" },
+          { id: "demo-4", name: "Morgan Chen",     role: "member" },
         ]);
       } finally {
         setSosMembersLoading(false);
@@ -2250,7 +2250,7 @@ export default function OperatorDashboard() {
                   </Pressable>
                 </View>
               ) : (
-                <Text style={styles.guardianWarning}>⚠️ Contact parent before proceeding</Text>
+                <Text style={styles.guardianWarning}>⚠️ Contact member before proceeding</Text>
               )}
             </View>
           )}

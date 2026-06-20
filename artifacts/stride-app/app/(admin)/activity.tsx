@@ -199,7 +199,7 @@ function isoToDisplay(iso: string): string {
 
 const TYPE_CONFIG: Record<ActivityType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
   lesson:   { label: "Lesson",   icon: "musical-notes",   color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-  seminar:  { label: "Seminar",  icon: "school",          color: "#7C3AED", bg: "rgba(124,58,237,0.1)" },
+  seminar:  { label: "Seminar",  icon: "mic-outline",     color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
   meeting:  { label: "Meeting",  icon: "people",          color: "#0D9488", bg: "rgba(13,148,136,0.1)" },
   workshop: { label: "Workshop", icon: "construct",       color: "#D97706", bg: "rgba(217,119,6,0.1)" },
   custom:   { label: "Other",    icon: "star-outline",    color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
@@ -1027,7 +1027,7 @@ export default function ActivityScreen() {
   };
 
   // ── Recipient pools for meeting invites (operators = live from DB) ────────────
-  const MOCK_MEMBERS   = ["Maria Rossi","Giulia Bianchi","Anna Conti","Francesca Mori","Sofia Romano"];
+  const MOCK_MEMBERS   = ["Alex Johnson","Sam Rivera","Jordan Lee","Morgan Chen","Taylor Brooks"];
   const LIVE_OPERATORS = staffList.length > 0
     ? staffList.map(o => o.name)
     : ["Operator A","Operator B"];

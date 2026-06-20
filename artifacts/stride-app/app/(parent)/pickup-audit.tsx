@@ -150,7 +150,7 @@ export default function PickupAudit() {
           <Ionicons name="clipboard-outline" size={40} color={C.mutedForeground} />
           <Text style={styles.emptyTitle}>No pick-ups recorded yet</Text>
           <Text style={styles.emptyText}>
-            Each time your child is collected, the operator captures a signature on their device.
+            Each time your dependent member is collected, the operator captures a signature on their device.
             All records appear here with full location and timestamp.
           </Text>
         </View>

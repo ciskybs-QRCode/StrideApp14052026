@@ -363,7 +363,7 @@ function HeaderSettingsModal({ visible, onClose, header, onSave }: HeaderModalPr
           <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
             <View style={hm.fieldWrap}>
               <Text style={[hm.fieldLabel, { color: colors.mutedForeground }]}>Full Name / Business Name</Text>
-              <TextInput style={inputStyle} placeholder="e.g. Jane Smith / Smith Dance Studio" placeholderTextColor={colors.mutedForeground} value={draft.businessName} onChangeText={v => setDraft(p => ({ ...p, businessName: v }))} />
+              <TextInput style={inputStyle} placeholder="e.g. Jane Smith / City Sports Association" placeholderTextColor={colors.mutedForeground} value={draft.businessName} onChangeText={v => setDraft(p => ({ ...p, businessName: v }))} />
             </View>
             <View style={hm.fieldWrap}>
               <Text style={[hm.fieldLabel, { color: colors.mutedForeground }]}>Tax ID / ABN</Text>
@@ -445,7 +445,7 @@ export default function OperatorInvoicing() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const schoolName = user?.schoolName ?? "Dance Village";
+  const orgName = user?.schoolName ?? "Your Association";
 
   const { alerts } = useSubstitution();
 
@@ -803,7 +803,7 @@ export default function OperatorInvoicing() {
         dateRangeLabel:       dateRange.label,
         totalHours:           filteredTotalHours,
         totalCents:           filteredTotalCents,
-        schoolName,
+        schoolName:           orgName,
         header:               invoiceHeader,
         filteredLog:          filteredDailyLog,
         superCents:           filteredSuper,
@@ -855,7 +855,7 @@ export default function OperatorInvoicing() {
         totalCents:   filteredTotalCents,
         status:       "pending",
         submittedAt:  new Date().toISOString(),
-        schoolName,
+        schoolName:   orgName,
         sessions:     filteredDailyLog.length,
         totalHours:   filteredTotalHours,
       };
@@ -952,7 +952,7 @@ export default function OperatorInvoicing() {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{user?.name}</Text>
-              <Text style={styles.profileRole}>Association · {schoolName}</Text>
+              <Text style={styles.profileRole}>Association · {orgName}</Text>
             </View>
           </View>
           <View style={styles.profileStats}>

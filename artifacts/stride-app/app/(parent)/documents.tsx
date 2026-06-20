@@ -351,7 +351,7 @@ export default function DocumentsScreen() {
           </>
         )}
 
-        {/* School Notices — informational docs from school, no item count */}
+        {/* Association Notices — informational docs from the association, no item count */}
         {newDocs.length > 0 && (
           <View style={[styles.docTile, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
             <Pressable
@@ -603,7 +603,7 @@ export default function DocumentsScreen() {
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Phone</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.phone} onChangeText={v => setEditExtra(p => ({ ...p, phone: v }))} placeholder="+39 3xx xxx xxxx" placeholderTextColor={colors.mutedForeground} keyboardType="phone-pad" />
+                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.phone} onChangeText={v => setEditExtra(p => ({ ...p, phone: v }))} placeholder="+1 555 000 0000" placeholderTextColor={colors.mutedForeground} keyboardType="phone-pad" />
               </View>
             </View>
 

@@ -54,7 +54,7 @@ function lessonColor(courseName: string): string {
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-const DANCE_STYLES = [
+const DISCIPLINES = [
   { id: "yoga",         label: "Yoga",         icon: "fitness-outline"      },
   { id: "sport",        label: "Sport",        icon: "football-outline"     },
   { id: "music",        label: "Music",        icon: "musical-notes-outline"},
@@ -64,7 +64,7 @@ const DANCE_STYLES = [
   { id: "general",      label: "General",      icon: "apps-outline"         },
 ] as const;
 
-type StyleId = typeof DANCE_STYLES[number]["id"];
+type StyleId = typeof DISCIPLINES[number]["id"];
 
 const STORAGE_KEY           = "stride_workshops";
 const SAVED_INSTRUCTORS_KEY = "stride_saved_instructors";
@@ -681,12 +681,12 @@ export default function OperatorCalendar() {
                 {/* Legend */}
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
                   {[
-                    { label: "Ballet / Classical", color: "#1E3A8A", round: true },
-                    { label: "Hip Hop",            color: "#7C3AED", round: true },
-                    { label: "Contemporary",       color: "#FBBF24", round: true },
+                    { label: "Sport",              color: "#1E3A8A", round: true },
+                    { label: "Fitness",            color: "#FBBF24", round: true },
+                    { label: "Arts",               color: "#1E3A8A", round: true },
                     { label: "Yoga",               color: "#10B981", round: true },
-                    { label: "Latin",              color: "#EF4444", round: true },
-                    { label: "Jazz",               color: "#F59E0B", round: true },
+                    { label: "Music",              color: "#EF4444", round: true },
+                    { label: "General",            color: "#F59E0B", round: true },
                     { label: "Other",              color: "#6B7BA4", round: true },
                     { label: "Event",              color: "#F59E0B", round: false },
                     { label: "Meeting",            color: "#7C3AED", round: false },
@@ -898,16 +898,16 @@ export default function OperatorCalendar() {
               <Text style={[styles.fieldLabel, { color: colors.primary }]}>Workshop Title</Text>
               <TextInput
                 style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-                placeholder="e.g. Summer Ballet Intensive"
+                placeholder="e.g. Summer Sports Intensive"
                 placeholderTextColor={colors.mutedForeground}
                 value={wTitle}
                 onChangeText={t => { setWTitle(t); setValidationMsg(""); }}
               />
 
               {/* ─ Style ─ */}
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Dance Style</Text>
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Discipline</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-                {DANCE_STYLES.map(s => {
+                {DISCIPLINES.map(s => {
                   const active = wStyle === s.id;
                   return (
                     <Pressable

@@ -359,7 +359,7 @@ export default function BookLessonScreen() {
         title="Book a Private Lesson"
         subtitle={
           step === "operator" ? "Choose your instructor" :
-          step === "style" ? "Choose a dance style" :
+          step === "style" ? "Choose a discipline" :
           step === "location" ? "Choose a location" :
           step === "time" ? "Choose a time slot" : "Choose participants"
         }
@@ -417,7 +417,7 @@ export default function BookLessonScreen() {
               <View style={styles.emptyCard}>
                 <Ionicons name="musical-notes-outline" size={44} color={colors.mutedForeground} />
                 <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Styles Available</Text>
-                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>This instructor has no approved slots for any dance style.</Text>
+                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>This instructor has no approved slots for any discipline.</Text>
               </View>
             ) : (
               disciplinesForOp.map(d => (

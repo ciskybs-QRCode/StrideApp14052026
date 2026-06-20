@@ -61,9 +61,9 @@ const COUNTRIES: Country[] = [
 function detectDialCode(): string {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
-    return COUNTRIES.find(c => tz.startsWith(c.tzMatch))?.dial ?? "+39";
+    return COUNTRIES.find(c => tz.startsWith(c.tzMatch))?.dial ?? "+1";
   } catch {
-    return "+39";
+    return "+1";
   }
 }
 
@@ -324,10 +324,10 @@ export default function OnboardingScreen() {
                     <Field label="ZIP / Postal Code" value={zip} onChange={setZip} placeholder="00100" keyboardType="numeric" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Field label="State / Province" value={state} onChange={setState} placeholder="e.g. Lazio" autoCapitalize="words" />
+                    <Field label="State / Province" value={state} onChange={setState} placeholder="e.g. California" autoCapitalize="words" />
                   </View>
                 </View>
-                <Field label="Country" value={country} onChange={setCountry} placeholder="e.g. Italy" autoCapitalize="words" last />
+                <Field label="Country" value={country} onChange={setCountry} placeholder="e.g. United Kingdom" autoCapitalize="words" last />
               </View>
 
               <Pressable
@@ -399,10 +399,10 @@ export default function OnboardingScreen() {
               />
               <View style={styles.card}>
                 <Text style={styles.sectionLabel}>🆘  Next of Kin</Text>
-                <Field label="Full Name" value={kinName} onChange={setKinName} placeholder="e.g. Giovanni Rossi" autoCapitalize="words" />
-                <Field label="Relationship" value={kinRelationship} onChange={setKinRelationship} placeholder="e.g. Spouse, Parent, Sibling" autoCapitalize="words" />
-                <Field label="Phone Number" value={kinPhone} onChange={setKinPhone} placeholder="e.g. +39 333 456 7890" keyboardType="phone-pad" last />
-                <Text style={styles.hint}>Include the country code (e.g. +39 for Italy)</Text>
+                <Field label="Full Name" value={kinName} onChange={setKinName} placeholder="e.g. Alex Johnson" autoCapitalize="words" />
+                <Field label="Relationship" value={kinRelationship} onChange={setKinRelationship} placeholder="e.g. Spouse, Sibling, Friend" autoCapitalize="words" />
+                <Field label="Phone Number" value={kinPhone} onChange={setKinPhone} placeholder="e.g. +44 7700 900000" keyboardType="phone-pad" last />
+                <Text style={styles.hint}>Include the country code (e.g. +1 for USA, +44 for UK)</Text>
               </View>
               <Pressable
                 style={[styles.primaryBtn, !step3Valid && styles.primaryBtnDisabled]}

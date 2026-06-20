@@ -81,7 +81,7 @@ export default function OperatorStudents() {
         const studentName = students.find(s => s.id === id)?.name ?? "This student";
         Alert.alert(
           "⚠️ Unexcused Absence — Safety Alert",
-          `${studentName} is being marked absent with NO prior notice from their parent or guardian.\n\nThis may be a safety concern. Do you want to fire an immediate alert to the parent?`,
+          `${studentName} is being marked absent with NO prior notice from their member or guardian.\n\nThis may be a safety concern. Do you want to fire an immediate alert to the member?`,
           [
             {
               text: "Mark Absent Only",
@@ -97,7 +97,7 @@ export default function OperatorStudents() {
               onPress: async () => {
                 await updateStudentPresence(id, false);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                showSnack(`⚠️ Alert queued — parent will be notified that ${studentName} did not arrive.`);
+                showSnack(`⚠️ Alert queued — member will be notified that ${studentName} did not arrive.`);
                 // Production: api.sendAbsenceAlert(id, today).catch(() => {});
               },
             },

@@ -1,10 +1,10 @@
 /**
- * Stride Marketplace — Parent view
+ * Stride Marketplace — Member view
  *
  * Three sections:
- *   1. "School Shop" — named Shopify / external link buttons (admin-configured)
+ *   1. "Association Shop" — named / external link buttons (admin-configured)
  *   2. "Stride Verified Partners" — insurance / global products with gold ✓ badge
- *   3. "From Your School" — org-specific equipment, gear, accessories
+ *   3. "From Your Association" — org-specific equipment, gear, accessories
  */
 
 import { Ionicons } from "@expo/vector-icons";
@@ -148,7 +148,7 @@ export default function MarketplaceScreen() {
         {/* Hero banner */}
         <View style={S.hero}>
           <View style={S.heroLeft}>
-            <Text style={S.heroTitle}>Everything your{"\n"}child needs, in one place.</Text>
+            <Text style={S.heroTitle}>Everything your{"\n"}members need, in one place.</Text>
             <Text style={S.heroSub}>Gear, shop links, insurance — all Stride-vetted and one-tap checkout.</Text>
           </View>
           <View style={S.heroIcon}>
@@ -156,7 +156,7 @@ export default function MarketplaceScreen() {
           </View>
         </View>
 
-        {/* ── School Shop (external links) ─────────────────────────────────── */}
+        {/* ── Association Shop (external links) ────────────────────────────── */}
         {shopLinks.length > 0 && (
           <View style={S.section}>
             <View style={S.sectionHeader}>
@@ -207,7 +207,7 @@ export default function MarketplaceScreen() {
           </View>
         )}
 
-        {/* ── From Your School ─────────────────────────────────────────────── */}
+        {/* ── From Your Association ────────────────────────────────────────── */}
         {orgProducts.length > 0 && (
           <View style={[S.section, { marginTop: 8 }]}>
             <View style={S.sectionHeader}>
@@ -398,7 +398,7 @@ const S = StyleSheet.create({
   sectionTitle:  { fontSize: 16, fontWeight: "800", marginBottom: 2 },
   sectionSub:    { fontSize: 12 },
 
-  // School Shop
+  // Association Shop
   shopBadgeRow:  { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 },
   shopBadgeText: { color: "#1E3A8A", fontWeight: "900", fontSize: 12, letterSpacing: 0.8 },
   shopLinkBtn:   { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },

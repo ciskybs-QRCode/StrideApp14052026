@@ -826,7 +826,7 @@ export default function CalendarManagementScreen() {
               <TextInput
                 style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, color: colors.foreground, height: 80, textAlignVertical: "top" }]}
                 value={rosterPrefs} onChangeText={setRosterPrefs}
-                placeholder="e.g. avoid Monday mornings, keep beginner classes before 10:00, prioritise ballet on weekends…"
+                placeholder="e.g. avoid Monday mornings, keep beginner sessions before 10:00, prioritise sports on weekends…"
                 placeholderTextColor={colors.mutedForeground}
                 multiline
               />

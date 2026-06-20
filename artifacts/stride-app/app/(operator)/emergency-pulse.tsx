@@ -251,7 +251,7 @@ export default function EmergencyPulseDashboard() {
         {pulse.acks.length === 0 && isActive && (
           <View style={S.waitingBox}>
             <ActivityIndicator color="#DC2626" size="small" />
-            <Text style={S.waitingText}>Waiting for parent responses…</Text>
+            <Text style={S.waitingText}>Waiting for member responses…</Text>
             <Text style={S.waitingHint}>Dashboard updates every 5 seconds</Text>
           </View>
         )}

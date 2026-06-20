@@ -419,7 +419,7 @@ function WelcomeBanner() {
       </View>
       <Text style={wb.title}>Admin Copilot</Text>
       <Text style={wb.body}>
-        Ask me anything about your school data in plain language.{"\n"}Tap a suggestion below to get started.
+        Ask me anything about your association data in plain language.{"\n"}Tap a suggestion below to get started.
       </Text>
       <View style={wb.pills}>
         {["missing payments", "expired docs", "operator absences", "revenue", "member count"].map(k => (

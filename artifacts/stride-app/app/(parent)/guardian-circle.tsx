@@ -194,7 +194,7 @@ export default function GuardianCircle() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>Guardian Circle</Text>
-            <Text style={styles.headerSub}>Secondary authorised collectors for your child</Text>
+            <Text style={styles.headerSub}>Secondary authorised collectors for your dependent member</Text>
           </View>
           <Pressable style={styles.addBtn} onPress={() => { resetForm(); setShowAdd(true); }}>
             <Ionicons name="add" size={20} color="#FFF" />
@@ -205,7 +205,7 @@ export default function GuardianCircle() {
         <View style={styles.safetyNote}>
           <Ionicons name="shield-checkmark" size={13} color={C.primary} />
           <Text style={styles.safetyText}>
-            Guardian Circle is an <Text style={{ fontWeight: "900" }}>auxiliary</Text> layer only. It can never override the primary parent authorisation.{" "}
+            Guardian Circle is an <Text style={{ fontWeight: "900" }}>auxiliary</Text> layer only. It can never override the primary member authorisation.{" "}
             <Text style={{ fontWeight: "700" }}>Intelligent QR</Text> lets you restrict guardians to specific days, time windows, or single-use tokens.
           </Text>
         </View>
@@ -226,7 +226,7 @@ export default function GuardianCircle() {
         )}
 
         {child && (
-          <Text style={styles.childLabel}>Showing guardians for <Text style={{ fontWeight: "900", color: C.primary }}>{child.name}</Text></Text>
+          <Text style={styles.childLabel}>Showing guardians for <Text style={{ fontWeight: "900", color: C.primary }}>{child.name}</Text> (Dependent Member)</Text>
         )}
 
         {/* List */}
@@ -247,7 +247,7 @@ export default function GuardianCircle() {
             <Ionicons name="people-outline" size={44} color={C.mutedForeground} />
             <Text style={styles.emptyTitle}>No guardians added yet</Text>
             <Text style={styles.emptyText}>
-              Add trusted people who can collect {child?.name ?? "your child"} — grandparents, aunts, uncles, etc.
+              Add trusted people who can collect {child?.name ?? "your dependent member"} — grandparents, aunts, uncles, etc.
             </Text>
             <Pressable style={[styles.addBtnLarge, { backgroundColor: C.primary }]} onPress={() => { resetForm(); setShowAdd(true); }}>
               <Ionicons name="add" size={18} color="#FFF" />

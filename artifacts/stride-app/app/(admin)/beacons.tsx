@@ -43,9 +43,9 @@ type ZoneCategory = "core" | "transition" | "external_safe_zone" | "exit";
 
 const ZONE_CATEGORIES: { value: ZoneCategory; label: string; color: string; desc: string }[] = [
   { value: "core",               label: "Core",          color: "#1E3A8A", desc: "Main premises (studios, entrance)" },
-  { value: "transition",         label: "Transition",    color: "#1E3A8A", desc: "Within-school buffer zones" },
+  { value: "transition",         label: "Transition",    color: "#1E3A8A", desc: "Within-premises buffer zones" },
   { value: "external_safe_zone", label: "External Safe", color: "#1E3A8A", desc: "Outside but known safe (e.g. bathroom)" },
-  { value: "exit",               label: "Exit",          color: "#1E3A8A", desc: "School exit scanners" },
+  { value: "exit",               label: "Exit",          color: "#1E3A8A", desc: "Association exit scanners" },
 ];
 
 function generateUUID(): string {
@@ -265,7 +265,7 @@ export default function BeaconsScreen() {
         {/* ── School BLE Scanners ──────────────────────────────────────────── */}
         <View style={S.sectionHeader}>
           <View style={S.sectionLeft}>
-            <Text style={[S.sectionTitle, { color: colors.foreground }]}>School Scanners</Text>
+            <Text style={[S.sectionTitle, { color: colors.foreground }]}>Proximity Scanners</Text>
             <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Fixed BLE hubs at entrance zones</Text>
           </View>
           <Pressable
@@ -421,7 +421,7 @@ export default function BeaconsScreen() {
           <View style={[S.modalCard, { backgroundColor: colors.card }]}>
             <View style={S.modalHeader}>
               <Ionicons name="radio" size={24} color="#0EA5E9" />
-              <Text style={[S.modalTitle, { color: colors.foreground }]}>Register School Scanner</Text>
+              <Text style={[S.modalTitle, { color: colors.foreground }]}>Register Proximity Scanner</Text>
               <Pressable onPress={() => setShowAddBeacon(false)} hitSlop={10}>
                 <Ionicons name="close" size={22} color={colors.mutedForeground} />
               </Pressable>

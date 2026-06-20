@@ -579,8 +579,8 @@ export default function AppConfigurationPage() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={{ flexDirection: "row", gap: 6 }}>
                   {([
-                    { flag: "🇮🇹", name: "Italia", deductions: [
-                      { label: "IVA",   rate: "22" }, { label: "INPS", rate: "33" }, { label: "INAIL", rate: "3.38" },
+                    { flag: "🇪🇺", name: "Europe", deductions: [
+                      { label: "VAT",  rate: "20" }, { label: "NI",   rate: "13.8" },
                     ]},
                     { flag: "🇦🇺", name: "Australia", deductions: [
                       { label: "SUPER", rate: "11.5" },

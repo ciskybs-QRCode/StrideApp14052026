@@ -430,8 +430,8 @@ export default function AssociationsScreen() {
                 <Text style={styles.pilotTitle}>Pilot Configuration Reference</Text>
                 {[
                   { label: "Tenant A", desc: "AU Non-Profit Cultural Association · AUD · Associations Incorporation Act 2015 (WA)" },
-                  { label: "Tenant B", desc: "AU Commercial Dance School · AUD · Australian ABN Corporate" },
-                  { label: "Tenant C", desc: "IT Artistic Gymnastics Club · EUR · Italian ASD/SSD Tax-Sport Regulations" },
+                  { label: "Tenant B", desc: "AU Commercial Sports Club · AUD · Australian ABN Corporate" },
+                  { label: "Tenant C", desc: "EU Artistic Gymnastics Association · EUR · European Non-Profit Regulations" },
                 ].map(t => (
                   <View key={t.label} style={styles.pilotRow}>
                     <View style={styles.pilotDot} />

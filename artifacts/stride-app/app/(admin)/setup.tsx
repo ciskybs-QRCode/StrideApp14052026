@@ -419,7 +419,7 @@ export default function AdminSetup() {
           <div class="divider"></div>
           <div class="tagline">Scan to Join</div>
           ${svgString}
-          <div class="instruction">Scan the QR code or visit the link below to download the app and register as a parent of ${schoolName}.</div>
+          <div class="instruction">Scan the QR code or visit the link below to download the app and register as a member of ${schoolName}.</div>
           <div class="url">${registrationUrl}</div>
         </div>
       </body></html>`;
@@ -464,7 +464,7 @@ export default function AdminSetup() {
       >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.primary }]}>White-Label</Text>
-          <Text style={[styles.titleBold, { color: colors.primary }]}>School Setup</Text>
+          <Text style={[styles.titleBold, { color: colors.primary }]}>Organisation Setup</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Branding & Customization</Text>
         </View>
 
@@ -483,7 +483,7 @@ export default function AdminSetup() {
 
         {/* Logo Area */}
         <View style={[styles.logoCard, { backgroundColor: "#FFFFFF" }]}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>School Logo</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Organisation Logo</Text>
           <Pressable
             style={[styles.logoUpload, { borderColor: logoUri ? colors.primary : colors.border, borderStyle: logoUri ? "solid" : "dashed" }]}
             onPress={handlePickLogo}
@@ -513,7 +513,7 @@ export default function AdminSetup() {
             )}
           </Pressable>
 
-          <Text style={[styles.fieldLabel, { color: colors.primary }]}>School / Association Name</Text>
+          <Text style={[styles.fieldLabel, { color: colors.primary }]}>Organisation Name</Text>
           <TextInput
             style={[styles.fieldInput, { borderColor: colors.border }]}
             value={schoolName}
@@ -690,7 +690,7 @@ export default function AdminSetup() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.qrTitle, { color: colors.primary }]}>Registration QR Code</Text>
               <Text style={[styles.qrDesc, { color: colors.mutedForeground }]}>
-                Display at your entrance or share digitally. Scans open your school's sign-in page.
+                Display at your entrance or share digitally. Scans open your association's sign-in page.
               </Text>
             </View>
           </View>

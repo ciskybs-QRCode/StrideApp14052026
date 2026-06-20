@@ -844,7 +844,7 @@ function CreateEventModal({
                   height: 72, textAlignVertical: "top",
                 }]}
                 value={address} onChangeText={setAddress}
-                placeholder={"Via Roma 1\n20121 Milan, Italy"}
+                placeholder={"123 Main Street\nCity, Country"}
                 placeholderTextColor={colors.mutedForeground}
                 multiline
               />

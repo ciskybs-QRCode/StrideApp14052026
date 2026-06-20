@@ -49,8 +49,8 @@ function detectEmergencyInfo(address: string): EmergencyInfo {
     return { number: "999", country: "United Kingdom",flag: "🇬🇧", description: "Police · Fire · Ambulance" };
   if (/\b(usa|united states|canada)\b/.test(a))
     return { number: "911", country: "US / Canada",   flag: "🇺🇸", description: "Police · Fire · Ambulance" };
-  if (/\b(italia|italy)\b/.test(a))
-    return { number: "112", country: "Italy",         flag: "🇮🇹", description: "Numero di emergenza europeo" };
+  if (/\b(italia|italy|europe|european)\b/.test(a))
+    return { number: "112", country: "Europe",        flag: "🇪🇺", description: "European Emergency Number" };
   return   { number: "112", country: "International", flag: "🌍", description: "European Emergency Number" };
 }
 
@@ -369,7 +369,7 @@ export default function AdminHome() {
         {/* ── Org load error banner ── */}
         {orgLoadError && (
           <View style={{ backgroundColor: "#FEE2E2", borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#FCA5A5" }}>
-            <Text style={{ fontSize: 13, color: "#991B1B", fontWeight: "600" }}>Failed to load school data</Text>
+            <Text style={{ fontSize: 13, color: "#991B1B", fontWeight: "600" }}>Failed to load association data</Text>
             <Pressable
               onPress={() => {
                 setOrgLoadError(false);

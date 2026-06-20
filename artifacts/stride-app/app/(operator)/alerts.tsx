@@ -20,7 +20,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const PARENT_PHONE = "+39 347 1234 567";
+const MEMBER_PHONE = "+1 555 000 0000";
 
 const PHASE_COLOR: Record<number, string> = { 1: "#F59E0B", 2: "#EF4444", 3: "#7F1D1D" };
 const PHASE_LABEL: Record<number, string> = { 1: "Phase 1", 2: "CRITICAL", 3: "ALARM" };
@@ -34,10 +34,10 @@ function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =>
 
   const handleCall = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const tel = `tel:${PARENT_PHONE.replace(/\s/g, "")}`;
+    const tel = `tel:${MEMBER_PHONE.replace(/\s/g, "")}`;
     Linking.canOpenURL(tel).then(ok => {
       if (ok) Linking.openURL(tel);
-      else Alert.alert("Call Member", PARENT_PHONE);
+      else Alert.alert("Call Member", MEMBER_PHONE);
     });
   };
 

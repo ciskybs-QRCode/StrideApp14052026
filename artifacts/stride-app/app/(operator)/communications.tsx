@@ -321,7 +321,7 @@ export default function OperatorCommunications() {
             {recipientMode === "course" && (
               <TextInput
                 style={[styles.inputField, { color: colors.foreground, backgroundColor: colors.card, borderColor: "#D1D9F0", marginTop: 10 }]}
-                placeholder="Course name (e.g. Ballet, Contemporary)"
+                placeholder="Activity name (e.g. Yoga, Martial Arts)"
                 placeholderTextColor={colors.mutedForeground}
                 value={courseName}
                 onChangeText={setCourseName}

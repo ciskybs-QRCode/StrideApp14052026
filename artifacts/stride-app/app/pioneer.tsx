@@ -44,20 +44,14 @@ interface RegionCfg {
 
 const REGION_CFG: Record<Region, RegionCfg> = {
   IT: {
-    flag: "🇮🇹", label: "Italia", localeName: "Localizzazione italiana",
-    phonePrefix: "+39", phonePlaceholder: "02 1234 5678",
-    streetLabel: "Via / Piazza", postcodeLabel: "CAP",
-    cityLabel: "Citta'", stateLabel: "Provincia",
-    stateOptions: ["AG","AL","AN","AO","AR","AP","AT","AV","BA","BT","BL","BN","BG","BI",
-      "BO","BZ","BS","BR","CA","CL","CB","CE","CT","CZ","CH","CO","CS","CR","KR","CN",
-      "EN","FM","FE","FI","FG","FC","FR","GE","GO","GR","IM","IS","SP","AQ","LT","LE",
-      "LC","LI","LO","LU","MC","MN","MS","MT","ME","MI","MO","MB","NA","NO","NU","OG",
-      "OT","OR","PD","PA","PR","PV","PG","PU","PE","PC","PI","PT","PN","PZ","PO","RG",
-      "RA","RC","RE","RI","RN","RO","SA","SS","SV","SI","SR","SO","TA","TE","TR","TO",
-      "TP","TN","TV","TS","UD","VA","VE","VB","VC","VR","VV","VI","VT"],
-    taxLabel1: "Partita IVA", taxLabel2: "Codice Fiscale",
-    taxPlaceholder1: "IT12345678901", taxPlaceholder2: "RSSMRA80A01H501T",
-    schoolNamePlaceholder: "e.g. Sports Association Rome",
+    flag: "🇪🇺", label: "Europe", localeName: "European localisation",
+    phonePrefix: "+", phonePlaceholder: "Phone number",
+    streetLabel: "Street Address", postcodeLabel: "Postcode",
+    cityLabel: "City", stateLabel: "Region / Province",
+    stateOptions: [],
+    taxLabel1: "VAT Number", taxLabel2: "Tax / Registration Number",
+    taxPlaceholder1: "e.g. EU123456789", taxPlaceholder2: "Registration number",
+    schoolNamePlaceholder: "e.g. City Sports Association",
   },
   AU: {
     flag: "🇦🇺", label: "Australia", localeName: "AU localisation",
@@ -67,7 +61,7 @@ const REGION_CFG: Record<Region, RegionCfg> = {
     stateOptions: ["NSW","VIC","QLD","SA","WA","TAS","ACT","NT"],
     taxLabel1: "ABN", taxLabel2: "ACN (optional)",
     taxPlaceholder1: "12 345 678 901", taxPlaceholder2: "123 456 789",
-    schoolNamePlaceholder: "e.g. Sydney Dance Academy",
+    schoolNamePlaceholder: "e.g. Sydney Sports Association",
   },
   GLOBAL: {
     flag: "🌍", label: "Global", localeName: "Global localisation",
@@ -76,7 +70,7 @@ const REGION_CFG: Record<Region, RegionCfg> = {
     cityLabel: "City", stateLabel: "State / Region", stateOptions: [],
     taxLabel1: "Tax ID / Business Number", taxLabel2: "Secondary ID (optional)",
     taxPlaceholder1: "Tax identification number", taxPlaceholder2: "Secondary number",
-    schoolNamePlaceholder: "e.g. City Dance Studio",
+    schoolNamePlaceholder: "e.g. City Sports Association",
   },
 };
 

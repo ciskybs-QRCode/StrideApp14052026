@@ -79,7 +79,7 @@ export default function CreateAssociation() {
           <Text style={styles.label}>Association Name *</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Danza Roma ASD"
+            placeholder="e.g. City Sports Association"
             placeholderTextColor="#9CA3AF"
             value={name}
             onChangeText={setName}

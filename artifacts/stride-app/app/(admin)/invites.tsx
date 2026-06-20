@@ -189,7 +189,7 @@ export default function AdminInvitesScreen() {
           style={[s.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
           value={note}
           onChangeText={setNote}
-          placeholder="e.g. Ballet class parents"
+          placeholder="e.g. Yoga group members"
           placeholderTextColor={colors.mutedForeground}
           maxLength={80}
         />

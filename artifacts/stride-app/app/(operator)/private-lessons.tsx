@@ -1637,7 +1637,7 @@ export default function OperatorPrivateLessonsScreen() {
             </View>
             <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Scan Lesson QR</Text>
             <Text style={[styles.qrInstructions, { color: colors.mutedForeground }]}>
-              Enter the QR token from the parent's booking confirmation to log attendance and record earnings.
+              Enter the QR token from the member's booking confirmation to log attendance and record earnings.
             </Text>
             <TextInput
               style={[styles.input, {

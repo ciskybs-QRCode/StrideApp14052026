@@ -38,9 +38,6 @@ interface BankDetails {
 function isAustralia(lat: number, lng: number): boolean {
   return lat >= -44 && lat <= -10 && lng >= 113 && lng <= 154;
 }
-function isItaly(lat: number, lng: number): boolean {
-  return lat >= 35 && lat <= 47.5 && lng >= 6.5 && lng <= 18.5;
-}
 
 function formatBSB(raw: string): string {
   const digits = raw.replace(/\D/g, "").slice(0, 6);
@@ -157,7 +154,6 @@ export default function WalletScreen() {
         const { latitude, longitude } = pos.coords;
         let fmt: BankFormat = "other";
         if (isAustralia(latitude, longitude)) fmt = "au";
-        else if (isItaly(latitude, longitude)) fmt = "it";
         setDetectedFormat(fmt);
         if (!bankDetails) setDraftFormat(fmt);
       }
@@ -371,7 +367,7 @@ export default function WalletScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.bankFormatLabel, { color: colors.mutedForeground }]}>
-                    {bankDetails.format === "au" ? "Australian Bank Account" : bankDetails.format === "it" ? "Italian Bank Account (IBAN)" : "International Bank Account (IBAN)"}
+                    {bankDetails.format === "au" ? "Australian Bank Account" : "International Bank Account (IBAN)"}
                   </Text>
                   {bankDetails.format === "au" ? (
                     <>
@@ -401,7 +397,7 @@ export default function WalletScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.bankAddTitle, { color: colors.primary }]}>Add Bank Details</Text>
                 <Text style={[styles.bankAddSub, { color: colors.mutedForeground }]}>
-                  Used for refunds and payouts. Automatically detects Australian or Italian format.
+                  Used for refunds and payouts. Automatically detects Australian or international IBAN format.
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
@@ -531,23 +527,22 @@ export default function WalletScreen() {
                   <Text style={[styles.bankGpsText, { color: colors.primary }]}>Detecting your location…</Text>
                 </View>
               ) : (
-                <View style={[styles.bankGpsBanner, { backgroundColor: detectedFormat === "au" ? "#EFF6FF" : detectedFormat === "it" ? "#F0FDF4" : "#FFF7ED" }]}>
+                <View style={[styles.bankGpsBanner, { backgroundColor: detectedFormat === "au" ? "#EFF6FF" : "#FFF7ED" }]}>
                   <Ionicons
                     name="location"
                     size={14}
-                    color={detectedFormat === "au" ? "#1E3A8A" : detectedFormat === "it" ? "#16A34A" : "#D97706"}
+                    color={detectedFormat === "au" ? "#1E3A8A" : "#D97706"}
                   />
-                  <Text style={[styles.bankGpsText, { color: detectedFormat === "au" ? "#1E3A8A" : detectedFormat === "it" ? "#16A34A" : "#D97706" }]}>
+                  <Text style={[styles.bankGpsText, { color: detectedFormat === "au" ? "#1E3A8A" : "#D97706" }]}>
                     {detectedFormat === "au" ? "Australia detected — using BSB + Account Number format"
-                      : detectedFormat === "it" ? "Italy detected — using IBAN format"
-                      : "Location outside AU/IT — select your format below"}
+                      : "IBAN format — select your region below"}
                   </Text>
                 </View>
               )}
 
               <Text style={[styles.fieldLabel, { color: colors.primary }]}>Format</Text>
               <View style={[styles.formatToggle, { backgroundColor: colors.muted }]}>
-                {([["au", "\uD83C\uDDE6\uD83C\uDDFA Australia"], ["it", "\uD83C\uDDEE\uD83C\uDDF9 Italy / IBAN"], ["other", "\uD83C\uDF10 Other IBAN"]] as [BankFormat, string][]).map(([f, label]) => (
+                {([["au", "\uD83C\uDDE6\uD83C\uDDFA Australia"], ["other", "\uD83C\uDF10 IBAN (International)"]] as [BankFormat, string][]).map(([f, label]) => (
                   <Pressable
                     key={f}
                     style={[styles.formatTab, draftFormat === f && { backgroundColor: colors.primary }]}
@@ -606,7 +601,7 @@ export default function WalletScreen() {
                     maxLength={34}
                   />
                   <Text style={[styles.bankHint, { color: colors.mutedForeground }]}>
-                    {draftFormat === "it" ? "27-character Italian IBAN starting with IT" : "Up to 34 characters · No spaces required"}
+                    Up to 34 characters · No spaces required
                   </Text>
                 </>
               )}

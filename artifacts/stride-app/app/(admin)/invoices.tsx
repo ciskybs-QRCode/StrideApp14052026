@@ -121,7 +121,7 @@ export default function AdminInvoicesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  const schoolName = user?.schoolName ?? "Dance Village";
+  const orgName = user?.schoolName ?? "Your Association";
 
   const { markInvoicesRead, notifyNewInvoice } = useUnread();
 
@@ -162,7 +162,7 @@ export default function AdminInvoicesScreen() {
           totalCents:   (inv as unknown as { total_cents?: number }).total_cents ?? inv.total_cents,
           status:       inv.status as SubmittedInvoice["status"],
           submittedAt:  (inv as unknown as { submitted_at?: string }).submitted_at ?? new Date().toISOString(),
-          schoolName,
+          schoolName: orgName,
         }));
         setInvoices(mapped);
         return;
@@ -175,7 +175,7 @@ export default function AdminInvoicesScreen() {
     } catch {
       setInvoices(DEMO_INVOICES);
     }
-  }, [schoolName]);
+  }, [orgName]);
 
   const loadPayroll = useCallback(async (month: string) => {
     setPayrollLoading(true);
@@ -375,7 +375,7 @@ export default function AdminInvoicesScreen() {
         {activeTab === "invoices" && (<>
         <Text style={[styles.pageTitle, { color: colors.primary }]}>Invoices</Text>
         <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-          Operator payment requests for {schoolName}
+          Operator payment requests for {orgName}
         </Text>
 
         {/* ── New invoice received banner ── */}

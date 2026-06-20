@@ -30,7 +30,7 @@ const EMERGENCY_MAP: Record<string, { number: string; country: string }> = {
   QLD: { number: "000", country: "Australia" },
   WA: { number: "000", country: "Australia" },
   SG: { number: "995", country: "Singapore" },
-  IT: { number: "112", country: "Italy" },
+  EU: { number: "112", country: "Europe" },
   US: { number: "911", country: "USA" },
   GB: { number: "999", country: "UK" },
   NZ: { number: "111", country: "New Zealand" },
@@ -147,8 +147,8 @@ export default function OperatorSupport() {
   }, []);
 
   const emergency = detectEmergencyInfo(org);
-  const adminPhone = org?.contact_phone ?? "+390212345678";
-  const adminEmail = org?.official_email ?? "admin@dancevillage.it";
+  const adminPhone = org?.contact_phone ?? "+1 555 000 0000";
+  const adminEmail = org?.official_email ?? "admin@yourassociation.org";
 
   const openWizard = (protocol: Protocol) => {
     setWizardProtocol(protocol);
