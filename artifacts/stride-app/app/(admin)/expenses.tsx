@@ -12,12 +12,12 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as Localization from "expo-localization";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { request } from "@/lib/api";
@@ -66,25 +66,25 @@ interface Expense {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { key: "venue",       label: "Venue Rental",     icon: "business-outline" },
-  { key: "staff",       label: "Operator Payment",  icon: "person-outline" },
-  { key: "volunteer",   label: "Volunteer Reimb.",  icon: "heart-outline" },
-  { key: "equipment",   label: "Equipment",         icon: "cube-outline" },
-  { key: "utilities",   label: "Utilities",         icon: "flash-outline" },
-  { key: "insurance",   label: "Insurance",         icon: "shield-outline" },
-  { key: "marketing",   label: "Marketing",         icon: "megaphone-outline" },
-  { key: "transport",   label: "Transport",         icon: "car-outline" },
-  { key: "software",    label: "Software / Tools",  icon: "laptop-outline" },
-  { key: "legal",       label: "Legal / Admin",     icon: "document-text-outline" },
-  { key: "general",     label: "General",           icon: "ellipsis-horizontal-outline" },
+  { key: "venue",       label: "Venue Rental",    icon: "business-outline" },
+  { key: "staff",       label: "Operator Payment", icon: "person-outline" },
+  { key: "volunteer",   label: "Volunteer Reimb.", icon: "heart-outline" },
+  { key: "equipment",   label: "Equipment",        icon: "cube-outline" },
+  { key: "utilities",   label: "Utilities",        icon: "flash-outline" },
+  { key: "insurance",   label: "Insurance",        icon: "shield-outline" },
+  { key: "marketing",   label: "Marketing",        icon: "megaphone-outline" },
+  { key: "transport",   label: "Transport",        icon: "car-outline" },
+  { key: "software",    label: "Software / Tools", icon: "laptop-outline" },
+  { key: "legal",       label: "Legal / Admin",    icon: "document-text-outline" },
+  { key: "general",     label: "General",          icon: "ellipsis-horizontal-outline" },
 ];
 
 const PAYMENT_METHODS = [
-  { key: "bank",   label: "Bank Transfer" },
-  { key: "stripe", label: "Stripe" },
-  { key: "cash",   label: "Cash" },
-  { key: "check",  label: "Check" },
-  { key: "other",  label: "Other" },
+  { key: "bank",   label: "Bank Transfer", icon: "swap-horizontal-outline" },
+  { key: "stripe", label: "Stripe",        icon: "card-outline" },
+  { key: "cash",   label: "Cash",          icon: "cash-outline" },
+  { key: "check",  label: "Check",         icon: "document-outline" },
+  { key: "other",  label: "Other",         icon: "ellipsis-horizontal-outline" },
 ];
 
 const RECURRENCE_OPTIONS = [
@@ -95,19 +95,99 @@ const RECURRENCE_OPTIONS = [
 ];
 
 const REMINDER_OPTIONS = [
-  { key: "none",   label: "None" },
-  { key: "email",  label: "Email" },
-  { key: "in_app", label: "In-App Bell" },
-  { key: "both",   label: "Email + Bell" },
+  { key: "none",   label: "None",         icon: "ban-outline" },
+  { key: "email",  label: "Email",        icon: "mail-outline" },
+  { key: "in_app", label: "In-App Bell",  icon: "notifications-outline" },
+  { key: "both",   label: "Email + Bell", icon: "notifications-circle-outline" },
 ];
 
-const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", GBP: "£", CHF: "CHF " };
+const SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "CHF", "JPY", "CAD", "AUD"];
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$", EUR: "€", GBP: "£", CHF: "CHF", JPY: "¥", CAD: "CA$", AUD: "A$",
+};
+
+function getDeviceCurrency(): string {
+  try {
+    const code = Localization.getLocales()[0]?.currencyCode;
+    if (code && SUPPORTED_CURRENCIES.includes(code)) return code;
+  } catch {}
+  return "USD";
+}
+
 const currSym = (c: string) => CURRENCY_SYMBOLS[c] ?? c;
-const fmtMoney = (cents: number, c: string) => `${currSym(c)}${(cents / 100).toFixed(2)}`;
+const fmtMoney = (cents: number, c: string) =>
+  `${currSym(c)}${(cents / 100).toFixed(2)}`;
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// ── Dropdown component ────────────────────────────────────────────────────────
+
+function Dropdown({ value, options, onSelect, placeholder }: {
+  value: string;
+  options: { key: string; label: string; icon?: string }[];
+  onSelect: (key: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const found = options.find(o => o.key === value);
+  return (
+    <>
+      <Pressable
+        onPress={() => setOpen(true)}
+        style={S.dropdownBox}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+          {found?.icon ? (
+            <Ionicons name={found.icon as "cash-outline"} size={16} color={NAVY} />
+          ) : null}
+          <Text style={S.dropdownText}>{found?.label ?? placeholder ?? "Select…"}</Text>
+        </View>
+        <Ionicons name="chevron-down" size={16} color={NAVY} />
+      </Pressable>
+
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", padding: 28 }}
+          onPress={() => setOpen(false)}
+        >
+          <View style={{ backgroundColor: "#fff", borderRadius: 18, overflow: "hidden" }}>
+            {options.map((o, i) => (
+              <Pressable
+                key={o.key}
+                onPress={() => { onSelect(o.key); setOpen(false); }}
+                style={({ pressed }) => ({
+                  flexDirection: "row", alignItems: "center", gap: 12,
+                  paddingHorizontal: 18, paddingVertical: 15,
+                  borderTopWidth: i > 0 ? StyleSheet.hairlineWidth : 0,
+                  borderTopColor: "#E2E8F0",
+                  backgroundColor: pressed ? "#F8FAFC" : value === o.key ? NAVY + "08" : "#fff",
+                })}
+              >
+                {o.icon ? (
+                  <Ionicons name={o.icon as "cash-outline"} size={18}
+                    color={value === o.key ? NAVY : "#94a3b8"} />
+                ) : null}
+                <Text style={{
+                  flex: 1, fontSize: 14,
+                  fontWeight: value === o.key ? "700" : "500",
+                  color: value === o.key ? NAVY : "#1e293b",
+                }}>
+                  {o.label}
+                </Text>
+                {value === o.key ? (
+                  <Ionicons name="checkmark-circle" size={18} color={NAVY} />
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
 }
 
 // ── Category badge ────────────────────────────────────────────────────────────
@@ -123,6 +203,49 @@ function CatBadge({ cat }: { cat: string }) {
   );
 }
 
+// ── ToggleGrid — elegant grid selector ───────────────────────────────────────
+
+function ToggleGrid({ options, value, onSelect, columns = 2 }: {
+  options: { key: string; label: string; icon?: string }[];
+  value: string;
+  onSelect: (k: string) => void;
+  columns?: number;
+}) {
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+      {options.map(o => {
+        const active = o.key === value;
+        return (
+          <Pressable
+            key={o.key}
+            onPress={() => onSelect(o.key)}
+            style={{
+              flexDirection: "row", alignItems: "center", gap: 6,
+              width: columns === 2 ? "47%" : undefined,
+              flex: columns !== 2 ? 1 : undefined,
+              minWidth: columns !== 2 ? 70 : undefined,
+              paddingVertical: 10, paddingHorizontal: 12,
+              borderRadius: 10, borderWidth: 1.5,
+              borderColor: active ? NAVY : "#CBD5E1",
+              backgroundColor: active ? NAVY : "#F8FAFC",
+            }}
+          >
+            {o.icon ? (
+              <Ionicons name={o.icon as "cash-outline"} size={15}
+                color={active ? GOLD : "#94a3b8"} />
+            ) : null}
+            <Text style={{ fontSize: 12, fontWeight: "700",
+              color: active ? "#fff" : "#475569", flex: 1 }}>
+              {o.label}
+            </Text>
+            {active ? <Ionicons name="checkmark-circle" size={14} color={GOLD} /> : null}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function ExpensesScreen() {
@@ -130,11 +253,13 @@ export default function ExpensesScreen() {
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
 
+  const [deviceCurrency] = useState(getDeviceCurrency);
+
   const [expenses, setExpenses]   = useState<Expense[]>([]);
   const [loading, setLoading]     = useState(true);
   const [showForm, setShowForm]   = useState(false);
   const [editId, setEditId]       = useState<number | null>(null);
-  const [filterCat, setFilterCat] = useState<string | null>(null);
+  const [filterCat, setFilterCat] = useState<string>("all");
 
   // ── Form state ──────────────────────────────────────────────────────────────
   const [fTitle,       setFTitle]       = useState("");
@@ -144,7 +269,7 @@ export default function ExpensesScreen() {
   const [fBic,         setFBic]         = useState("");
   const [fStripe,      setFStripe]      = useState("");
   const [fAmount,      setFAmount]      = useState("");
-  const [fCurrency,    setFCurrency]    = useState("EUR");
+  const [fCurrency,    setFCurrency]    = useState(deviceCurrency);
   const [fRecurring,   setFRecurring]   = useState(false);
   const [fInterval,    setFInterval]    = useState("monthly");
   const [fDay,         setFDay]         = useState("1");
@@ -183,7 +308,7 @@ export default function ExpensesScreen() {
   // ── Helpers ────────────────────────────────────────────────────────────────
   function resetForm() {
     setFTitle(""); setFCat("general"); setFRecipient(""); setFIban(""); setFBic("");
-    setFStripe(""); setFAmount(""); setFCurrency("EUR"); setFRecurring(false);
+    setFStripe(""); setFAmount(""); setFCurrency(deviceCurrency); setFRecurring(false);
     setFInterval("monthly"); setFDay("1"); setFNextDue(""); setFMethod("bank");
     setFAutoPay(false); setFReminder("in_app"); setFNotes("");
     setEditId(null);
@@ -199,7 +324,7 @@ export default function ExpensesScreen() {
     setFBic(e.recipient_bic ?? "");
     setFStripe(e.recipient_stripe_link ?? "");
     setFAmount(e.amount_cents > 0 ? (e.amount_cents / 100).toFixed(2) : "");
-    setFCurrency(e.currency);
+    setFCurrency(e.currency || deviceCurrency);
     setFRecurring(e.is_recurring);
     setFInterval(e.recurrence_interval ?? "monthly");
     setFDay(String(e.recurrence_day ?? 1));
@@ -281,7 +406,7 @@ export default function ExpensesScreen() {
       const exp = expenses.find(e => e.id === payExpId);
       await request(`/api/expenses/${payExpId}/pay`, "POST", {
         amount_cents: Math.round(parseFloat(payAmount || "0") * 100),
-        currency:     exp?.currency ?? "EUR",
+        currency:     exp?.currency ?? deviceCurrency,
         reference:    payRef || undefined,
         notes:        payNotes || undefined,
       });
@@ -308,10 +433,12 @@ export default function ExpensesScreen() {
   }
 
   // ── Filtered list ──────────────────────────────────────────────────────────
-  const displayed = filterCat ? expenses.filter(e => e.category === filterCat) : expenses;
-  const totalMonthly = expenses.filter(e => e.is_recurring && e.recurrence_interval === "monthly")
+  const displayed = filterCat === "all"
+    ? expenses
+    : expenses.filter(e => e.category === filterCat);
+  const totalMonthly = expenses
+    .filter(e => e.is_recurring && e.recurrence_interval === "monthly")
     .reduce((s, e) => s + e.amount_cents, 0);
-  const totalAll = expenses.reduce((s, e) => s + e.amount_cents, 0);
 
   // ── Form section label ─────────────────────────────────────────────────────
   function SLabel({ label }: { label: string }) {
@@ -340,6 +467,12 @@ export default function ExpensesScreen() {
     );
   }
 
+  // Category options for filter dropdown (add "All")
+  const filterOptions = [
+    { key: "all", label: "All Categories", icon: "list-outline" },
+    ...CATEGORIES,
+  ];
+
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
       <ScreenHeader
@@ -361,49 +494,40 @@ export default function ExpensesScreen() {
         </View>
         <View style={[S.statDivider, { backgroundColor: colors.border }]} />
         <View style={S.statCell}>
-          <Text style={[S.statVal, { color: NAVY }]} numberOfLines={1}>
-            {fmtMoney(totalMonthly, "EUR")}/mo
+          <Text style={[S.statVal, { color: NAVY }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            {fmtMoney(totalMonthly, deviceCurrency)}/mo
           </Text>
           <Text style={[S.statLabel, { color: colors.mutedForeground }]}>Monthly cost</Text>
         </View>
       </View>
 
-      {/* ── Category filter chips ── */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        style={{ maxHeight: 48 }} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8, gap: 6, flexDirection: "row" }}>
-        <Pressable
-          style={[S.filterChip, { borderColor: filterCat === null ? NAVY : colors.border,
-            backgroundColor: filterCat === null ? NAVY : colors.card }]}
-          onPress={() => setFilterCat(null)}
-        >
-          <Text style={{ fontSize: 11, fontWeight: "700", color: filterCat === null ? "#fff" : colors.foreground }}>All</Text>
-        </Pressable>
-        {CATEGORIES.map(c => (
-          <Pressable key={c.key}
-            style={[S.filterChip, { borderColor: filterCat === c.key ? NAVY : colors.border,
-              backgroundColor: filterCat === c.key ? NAVY : colors.card }]}
-            onPress={() => setFilterCat(prev => prev === c.key ? null : c.key)}
-          >
-            <Ionicons name={c.icon as "cash-outline"} size={11} color={filterCat === c.key ? "#fff" : colors.mutedForeground} />
-            <Text style={{ fontSize: 11, fontWeight: "700", color: filterCat === c.key ? "#fff" : colors.foreground }}>{c.label}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      {/* ── Category filter dropdown ── */}
+      <View style={[S.filterRow, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
+        <Dropdown
+          value={filterCat}
+          options={filterOptions}
+          onSelect={setFilterCat}
+          placeholder="All Categories"
+        />
+      </View>
 
       {/* ── Action toolbar ── */}
       <View style={[S.toolbar, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={[S.toolBtn, { backgroundColor: NAVY }]} onPress={openCreate}>
-          <Ionicons name="add" size={16} color={GOLD} />
-          <Text style={[S.toolBtnText, { color: GOLD }]}>Add Expense</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[S.toolBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: NAVY }]}
-          onPress={() => void exportCSV()} disabled={exportLoading}>
+        <Pressable style={[S.toolBtn, { backgroundColor: NAVY }]} onPress={openCreate}>
+          <Ionicons name="add-circle-outline" size={17} color={GOLD} />
+          <Text style={[S.toolBtnText, { color: GOLD }]}>New Expense</Text>
+        </Pressable>
+        <Pressable
+          style={[S.toolBtn, { backgroundColor: colors.card, borderWidth: 1.5, borderColor: NAVY }]}
+          onPress={() => void exportCSV()}
+          disabled={exportLoading}
+        >
           {exportLoading
             ? <ActivityIndicator size="small" color={NAVY} />
-            : <><Ionicons name="download-outline" size={16} color={NAVY} />
+            : <><Ionicons name="download-outline" size={17} color={NAVY} />
                <Text style={[S.toolBtnText, { color: NAVY }]}>Export CSV</Text></>
           }
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* ── List ── */}
@@ -426,7 +550,7 @@ export default function ExpensesScreen() {
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <Text style={[S.cardTitle, { color: colors.foreground }]} numberOfLines={1}>{exp.title}</Text>
                     {exp.is_recurring && (
-                      <View style={[S.recurBadge]}>
+                      <View style={S.recurBadge}>
                         <Ionicons name="repeat" size={10} color={GOLD} />
                         <Text style={S.recurText}>{exp.recurrence_interval}</Text>
                       </View>
@@ -556,64 +680,58 @@ export default function ExpensesScreen() {
               {/* BASIC INFO */}
               <SLabel label="BASIC INFO" />
               <SInput label="TITLE *" value={fTitle} onChange={setFTitle} placeholder="e.g. Theatre Hall Rent" />
-              <SInput label="NOTES / DESCRIPTION" value={fNotes} onChange={setFNotes}
+              <SInput label="DESCRIPTION / NOTES" value={fNotes} onChange={setFNotes}
                 placeholder="Additional context for accountant review" multiline />
 
               {/* CATEGORY */}
               <SLabel label="CATEGORY" />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                <View style={{ flexDirection: "row", gap: 6 }}>
-                  {CATEGORIES.map(c => (
-                    <Pressable key={c.key}
-                      style={[S.catChip, { borderColor: fCat === c.key ? NAVY : colors.border,
-                        backgroundColor: fCat === c.key ? NAVY : colors.card }]}
-                      onPress={() => setFCat(c.key)}
+              <View style={{ marginBottom: 16 }}>
+                <Dropdown
+                  value={fCat}
+                  options={CATEGORIES}
+                  onSelect={setFCat}
+                  placeholder="Select category…"
+                />
+              </View>
+
+              {/* AMOUNT */}
+              <SLabel label="AMOUNT & CURRENCY" />
+              <View style={{ marginBottom: 16 }}>
+                {/* Amount input */}
+                <TextInput
+                  style={[S.input, { borderColor: colors.border, color: colors.foreground,
+                    backgroundColor: colors.card, marginBottom: 10, fontSize: 18, fontWeight: "700" }]}
+                  value={fAmount}
+                  onChangeText={setFAmount}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="decimal-pad"
+                />
+                {/* Currency selector */}
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  {SUPPORTED_CURRENCIES.map(c => (
+                    <Pressable
+                      key={c}
+                      onPress={() => setFCurrency(c)}
+                      style={{
+                        paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8,
+                        borderWidth: 1.5,
+                        borderColor: fCurrency === c ? NAVY : "#CBD5E1",
+                        backgroundColor: fCurrency === c ? NAVY : "#F8FAFC",
+                      }}
                     >
-                      <Ionicons name={c.icon as "cash-outline"} size={13} color={fCat === c.key ? GOLD : colors.mutedForeground} />
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: fCat === c.key ? "#fff" : colors.foreground }}>
-                        {c.label}
+                      <Text style={{ fontSize: 12, fontWeight: "700",
+                        color: fCurrency === c ? "#fff" : "#475569" }}>
+                        {c}
                       </Text>
                     </Pressable>
                   ))}
-                </View>
-              </ScrollView>
-
-              {/* AMOUNT */}
-              <SLabel label="AMOUNT" />
-              <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-                <View style={{ flex: 2 }}>
-                  <Text style={[S.fLabel, { color: colors.mutedForeground }]}>AMOUNT</Text>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={{ color: colors.mutedForeground, marginRight: 6 }}>{currSym(fCurrency)}</Text>
-                    <TextInput
-                      style={[S.input, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                      value={fAmount} onChangeText={setFAmount} placeholder="0.00"
-                      placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" />
-                  </View>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[S.fLabel, { color: colors.mutedForeground }]}>CURRENCY</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={{ flexDirection: "row", gap: 4 }}>
-                      {["EUR","USD","GBP","CHF"].map(c => (
-                        <Pressable key={c}
-                          style={[S.currChip, { borderColor: fCurrency === c ? NAVY : colors.border,
-                            backgroundColor: fCurrency === c ? NAVY : colors.card }]}
-                          onPress={() => setFCurrency(c)}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: fCurrency === c ? "#fff" : colors.foreground }}>
-                            {c}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </ScrollView>
                 </View>
               </View>
 
               {/* RECIPIENT */}
               <SLabel label="RECIPIENT" />
-              <SInput label="RECIPIENT NAME" value={fRecipient} onChange={setFRecipient} placeholder="Company / person name" />
-              <SInput label="BANK ACCOUNT HOLDER" value={fIban ? fRecipient : ""} onChange={() => {}} placeholder="" />
+              <SInput label="NAME" value={fRecipient} onChange={setFRecipient} placeholder="Company or person name" />
               <SInput label="IBAN" value={fIban} onChange={setFIban} placeholder="e.g. GB29 NWBK 6016 1331 9268 19" />
               <SInput label="BIC / SWIFT" value={fBic} onChange={setFBic} placeholder="e.g. NWBKGB2L" />
               <SInput label="STRIPE PAYMENT LINK (optional)" value={fStripe} onChange={setFStripe}
@@ -621,18 +739,12 @@ export default function ExpensesScreen() {
 
               {/* PAYMENT METHOD */}
               <SLabel label="PAYMENT METHOD" />
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-                {PAYMENT_METHODS.map(m => (
-                  <Pressable key={m.key}
-                    style={[S.catChip, { borderColor: fMethod === m.key ? NAVY : colors.border,
-                      backgroundColor: fMethod === m.key ? NAVY : colors.card }]}
-                    onPress={() => setFMethod(m.key)}>
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: fMethod === m.key ? "#fff" : colors.foreground }}>
-                      {m.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+              <ToggleGrid
+                options={PAYMENT_METHODS}
+                value={fMethod}
+                onSelect={setFMethod}
+                columns={2}
+              />
 
               {/* RECURRING */}
               <SLabel label="RECURRING" />
@@ -683,18 +795,12 @@ export default function ExpensesScreen() {
               {!fAutoPay && (
                 <>
                   <Text style={[S.fLabel, { color: colors.mutedForeground }]}>REMINDER CHANNEL</Text>
-                  <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-                    {REMINDER_OPTIONS.map(r => (
-                      <Pressable key={r.key}
-                        style={[S.catChip, { borderColor: fReminder === r.key ? NAVY : colors.border,
-                          backgroundColor: fReminder === r.key ? NAVY : colors.card }]}
-                        onPress={() => setFReminder(r.key)}>
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: fReminder === r.key ? "#fff" : colors.foreground }}>
-                          {r.label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
+                  <ToggleGrid
+                    options={REMINDER_OPTIONS}
+                    value={fReminder}
+                    onSelect={setFReminder}
+                    columns={2}
+                  />
                 </>
               )}
 
@@ -722,53 +828,56 @@ export default function ExpensesScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
-  root:          { flex: 1 },
-  statsBar:      { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 12 },
-  statCell:      { flex: 1, alignItems: "center" },
-  statVal:       { fontSize: 20, fontWeight: "800" },
-  statLabel:     { fontSize: 10, fontWeight: "600", marginTop: 2 },
-  statDivider:   { width: StyleSheet.hairlineWidth },
-  filterChip:    { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderRadius: 8,
-                   paddingHorizontal: 10, paddingVertical: 5 },
-  toolbar:       { flexDirection: "row", gap: 10, paddingHorizontal: 14, paddingVertical: 10,
-                   borderBottomWidth: StyleSheet.hairlineWidth },
-  toolBtn:       { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8,
-                   borderRadius: 8 },
-  toolBtnText:   { fontSize: 13, fontWeight: "700" },
-  empty:         { alignItems: "center", marginTop: 80, paddingHorizontal: 40, gap: 10 },
-  emptyTitle:    { fontSize: 18, fontWeight: "700" },
-  emptyHint:     { fontSize: 13, textAlign: "center", lineHeight: 19, color: "#94a3b8" },
-  card:          { borderRadius: 12, borderWidth: 1, marginBottom: 12, overflow: "hidden" },
-  cardHeader:    { flexDirection: "row", padding: 14, gap: 10 },
-  cardTitle:     { fontSize: 15, fontWeight: "700", flex: 1 },
-  cardAmount:    { fontSize: 17, fontWeight: "800" },
-  recurBadge:    { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: GOLD + "22",
-                   borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  recurText:     { fontSize: 9, fontWeight: "700", color: "#92400e" },
-  metaRow:       { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 14, paddingBottom: 10,
-                   borderTopWidth: StyleSheet.hairlineWidth },
-  metaChip:      { flexDirection: "row", alignItems: "center", gap: 3 },
-  metaText:      { fontSize: 11 },
-  cardActions:   { flexDirection: "row", gap: 6, paddingHorizontal: 14, paddingBottom: 12 },
-  actionBtn:     { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
-                   gap: 4, borderWidth: 1, borderRadius: 7, paddingVertical: 7 },
-  actionText:    { fontSize: 11, fontWeight: "700" },
-  paymentsBox:   { borderTopWidth: StyleSheet.hairlineWidth, padding: 12 },
-  paymentsTitle: { fontSize: 10, fontWeight: "700", letterSpacing: 1, marginBottom: 6 },
-  payRow:        { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
-  modalTitle:    { fontSize: 18, fontWeight: "700", marginBottom: 16 },
-  formRoot:      { flex: 1 },
-  formHeader:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-                   paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  root:            { flex: 1 },
+  statsBar:        { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 12 },
+  statCell:        { flex: 1, alignItems: "center" },
+  statVal:         { fontSize: 20, fontWeight: "800" },
+  statLabel:       { fontSize: 10, fontWeight: "600", marginTop: 2 },
+  statDivider:     { width: StyleSheet.hairlineWidth },
+  filterRow:       { paddingHorizontal: 14, paddingVertical: 10,
+                     borderBottomWidth: StyleSheet.hairlineWidth },
+  toolbar:         { flexDirection: "row", gap: 10, paddingHorizontal: 14, paddingVertical: 10,
+                     borderBottomWidth: StyleSheet.hairlineWidth },
+  toolBtn:         { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+                     gap: 6, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 10 },
+  toolBtnText:     { fontSize: 13, fontWeight: "700" },
+  empty:           { alignItems: "center", marginTop: 80, paddingHorizontal: 40, gap: 10 },
+  emptyTitle:      { fontSize: 18, fontWeight: "700" },
+  emptyHint:       { fontSize: 13, textAlign: "center", lineHeight: 19, color: "#94a3b8" },
+  card:            { borderRadius: 12, borderWidth: 1, marginBottom: 12, overflow: "hidden" },
+  cardHeader:      { flexDirection: "row", padding: 14, gap: 10 },
+  cardTitle:       { fontSize: 15, fontWeight: "700", flex: 1 },
+  cardAmount:      { fontSize: 17, fontWeight: "800" },
+  recurBadge:      { flexDirection: "row", alignItems: "center", gap: 3,
+                     backgroundColor: GOLD + "22", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  recurText:       { fontSize: 9, fontWeight: "700", color: "#92400e" },
+  metaRow:         { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 14,
+                     paddingBottom: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  metaChip:        { flexDirection: "row", alignItems: "center", gap: 3 },
+  metaText:        { fontSize: 11 },
+  cardActions:     { flexDirection: "row", gap: 6, paddingHorizontal: 14, paddingBottom: 12 },
+  actionBtn:       { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+                     gap: 4, borderWidth: 1, borderRadius: 7, paddingVertical: 7 },
+  actionText:      { fontSize: 11, fontWeight: "700" },
+  paymentsBox:     { borderTopWidth: StyleSheet.hairlineWidth, padding: 12 },
+  paymentsTitle:   { fontSize: 10, fontWeight: "700", letterSpacing: 1, marginBottom: 6 },
+  payRow:          { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
+  modalTitle:      { fontSize: 18, fontWeight: "700", marginBottom: 16 },
+  formRoot:        { flex: 1 },
+  formHeader:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+                     paddingHorizontal: 20, paddingVertical: 14,
+                     borderBottomWidth: StyleSheet.hairlineWidth },
   formHeaderTitle: { fontSize: 18, fontWeight: "700" },
-  sLabel:        { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, marginBottom: 10, marginTop: 8 },
-  fLabel:        { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, marginBottom: 6 },
-  input:         { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
-  catChip:       { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderRadius: 8,
-                   paddingHorizontal: 10, paddingVertical: 7 },
-  currChip:      { borderWidth: 1, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 6 },
-  switchRow:     { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 10,
-                   padding: 14, marginBottom: 12 },
-  btn:           { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-                   borderRadius: 12, paddingVertical: 14 },
+  sLabel:          { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, marginBottom: 10, marginTop: 8 },
+  fLabel:          { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, marginBottom: 6 },
+  input:           { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  catChip:         { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderRadius: 8,
+                     paddingHorizontal: 10, paddingVertical: 7 },
+  dropdownBox:     { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13,
+                     backgroundColor: "#F1F5F9", borderRadius: 12, borderWidth: 1.5, borderColor: NAVY + "25" },
+  dropdownText:    { fontSize: 14, fontWeight: "600", color: NAVY },
+  switchRow:       { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 10,
+                     padding: 14, marginBottom: 12 },
+  btn:             { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+                     borderRadius: 12, paddingVertical: 14 },
 });

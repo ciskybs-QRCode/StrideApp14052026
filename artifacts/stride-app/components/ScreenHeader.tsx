@@ -100,7 +100,8 @@ export function ScreenHeader({
 
         {/* Centre — title */}
         <View style={styles.centre}>
-          <Text style={[styles.title, { color: fg }]} numberOfLines={1}>
+          <Text style={[styles.title, { color: fg }]} numberOfLines={1}
+            adjustsFontSizeToFit minimumFontScale={0.72}>
             {title}
           </Text>
           {subtitle ? (
