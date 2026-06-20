@@ -1,3 +1,4 @@
+- [Stride UI language](stride-ui-language.md) — ALL app UI must be in English only. Never translate strings to Italian. "Italian-language" in replit.md refers to target market, not UI language.
 - [Stride app backend](stride-backend.md) — API server + Supabase is live; sole test user is ciskybs@gmail.com (ID 145, super_admin, org ID 1 "Stride Association"); EXPO_PUBLIC_DOMAIN is already set in the dev script.
 - [Stride DB cleanup approach](stride-db-cleanup.md) — Supabase REST DELETE needs uuid filter for uuid-pk tables (id=neq.00000000-…) not id=gt.0; child_activity_log has uuid pk; FK cascade order matters (emergency_assessments before users).
 - [Stride multi-tenant architecture](stride-multi-tenant.md) — organizations table = tenant table; super_admin role; trial guard middleware; Stripe Connect per-org.

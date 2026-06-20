@@ -106,8 +106,8 @@ export default function OperationsHub() {
         />
         <HubCard
           icon="cash-outline"
-          title="Quote Straordinarie"
-          description="Spese extra, rate, voci di costo ed email AI per gli iscritti"
+          title="Fee Events"
+          description="One-off payment events with line items, installments and AI email"
           iconBg="#1E3A8A"
           iconColor="#FBBF24"
           onPress={() => router.push("/(admin)/fee-events" as never)}

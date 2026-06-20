@@ -80,10 +80,10 @@ const CURRENCIES = ["EUR", "USD", "GBP", "CHF"];
 // ── audience options ──────────────────────────────────────────────────────────
 
 const AUDIENCE_OPTIONS = [
-  { key: "all",       label: "Tutta l'associazione",  icon: "people-outline" },
-  { key: "parents",   label: "Solo genitori/iscritti", icon: "people-circle-outline" },
-  { key: "operators", label: "Solo operatori",         icon: "build-outline" },
-  { key: "course",    label: "Per corso",              icon: "book-outline" },
+  { key: "all",       label: "Whole association (smart filter)", icon: "people-outline" },
+  { key: "parents",   label: "Parents & members only",          icon: "people-circle-outline" },
+  { key: "operators", label: "Operators only",                  icon: "build-outline" },
+  { key: "course",    label: "By course",                       icon: "book-outline" },
 ] as const;
 
 // ── StatusBadge ───────────────────────────────────────────────────────────────
@@ -401,8 +401,8 @@ export default function FeeEventsScreen() {
       <View style={cardStyles.meta}>
         <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
           <Text style={[cardStyles.metaText, { color: colors.mutedForeground }]}>
-            {item.payment_type === "single" ? "Pagamento unico" : "Rate"}
-            {item.due_date ? ` · Scadenza ${item.due_date}` : ""}
+            {item.payment_type === "single" ? "One-time" : "Installments"}
+            {item.due_date ? ` · Due ${item.due_date}` : ""}
           </Text>
           {item.free_tickets_per_member > 0 && (
             <Text style={[cardStyles.metaText, { color: GOLD }]}>
@@ -425,7 +425,7 @@ export default function FeeEventsScreen() {
           <>
             <Pressable style={[cardStyles.btn, { borderColor: NAVY }]} onPress={() => openEdit(item)}>
               <Ionicons name="pencil-outline" size={14} color={NAVY} />
-              <Text style={[cardStyles.btnText, { color: NAVY }]}>Modifica</Text>
+              <Text style={[cardStyles.btnText, { color: NAVY }]}>Edit</Text>
             </Pressable>
             <Pressable
               style={[cardStyles.btn, { borderColor: GREEN }]}
@@ -433,18 +433,18 @@ export default function FeeEventsScreen() {
               disabled={publishing}
             >
               <Ionicons name="send-outline" size={14} color={GREEN} />
-              <Text style={[cardStyles.btnText, { color: GREEN }]}>Pubblica</Text>
+              <Text style={[cardStyles.btnText, { color: GREEN }]}>Publish</Text>
             </Pressable>
             <Pressable style={[cardStyles.btn, { borderColor: RED }]} onPress={() => deleteEvent(item.id)}>
               <Ionicons name="trash-outline" size={14} color={RED} />
-              <Text style={[cardStyles.btnText, { color: RED }]}>Elimina</Text>
+              <Text style={[cardStyles.btnText, { color: RED }]}>Delete</Text>
             </Pressable>
           </>
         )}
         {item.status === "active" && (
           <Pressable style={[cardStyles.btn, { borderColor: NAVY }]} onPress={() => openStats(item.id)}>
             <Ionicons name="bar-chart-outline" size={14} color={NAVY} />
-            <Text style={[cardStyles.btnText, { color: NAVY }]}>Statistiche</Text>
+            <Text style={[cardStyles.btnText, { color: NAVY }]}>Statistics</Text>
           </Pressable>
         )}
       </View>
@@ -472,11 +472,11 @@ export default function FeeEventsScreen() {
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
             <View style={statsStyles.pillRow}>
               {[
-                { label: "Totale",   value: stats.stats.total,   color: colors.foreground },
-                { label: "Letto",    value: stats.stats.read,    color: GREEN },
-                { label: "Ignorato", value: stats.stats.skipped, color: "#f59e0b" },
-                { label: "In attesa", value: stats.stats.pending, color: colors.mutedForeground },
-                { label: "Pagato",   value: stats.stats.paid,    color: NAVY },
+                { label: "Total",   value: stats.stats.total,   color: colors.foreground },
+                { label: "Read",    value: stats.stats.read,    color: GREEN },
+                { label: "Skipped", value: stats.stats.skipped, color: "#f59e0b" },
+                { label: "Pending", value: stats.stats.pending, color: colors.mutedForeground },
+                { label: "Paid",    value: stats.stats.paid,    color: NAVY },
               ].map(p => (
                 <View key={p.label} style={[statsStyles.pill, { backgroundColor: p.color + "18" }]}>
                   <Text style={[statsStyles.pillVal, { color: p.color }]}>{p.value}</Text>
@@ -485,14 +485,14 @@ export default function FeeEventsScreen() {
               ))}
             </View>
 
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 20 }]}>Destinatari</Text>
+            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 20 }]}>Recipients</Text>
             {stats.recipients.map(r => (
               <View key={r.user_id} style={[statsStyles.row, { borderBottomColor: colors.border }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[statsStyles.name, { color: colors.foreground }]}>{r.member_name}</Text>
                   <Text style={[statsStyles.sub, { color: colors.mutedForeground }]}>
-                    {r.read_at ? `Letto il ${new Date(r.read_at).toLocaleDateString("it-IT")}` :
-                      r.skipped_at ? "Ignorato" : "Non aperto"}
+                    {r.read_at ? `Read ${new Date(r.read_at).toLocaleDateString()}` :
+                      r.skipped_at ? "Skipped" : "Not opened"}
                   </Text>
                 </View>
                 <View>
@@ -518,20 +518,20 @@ export default function FeeEventsScreen() {
       <View style={[modalStyles.container, { backgroundColor: colors.background }]}>
         <View style={modalStyles.handle} />
         <View style={modalStyles.header}>
-          <Text style={[modalStyles.title, { color: colors.foreground }]}>Anteprima Email</Text>
+          <Text style={[modalStyles.title, { color: colors.foreground }]}>Email Draft</Text>
           <Pressable onPress={() => setShowEmailPreview(false)}>
             <Ionicons name="close" size={24} color={colors.foreground} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
-          <Text style={[formStyles.label, { color: colors.mutedForeground }]}>OGGETTO</Text>
+          <Text style={[formStyles.label, { color: colors.mutedForeground }]}>SUBJECT</Text>
           <TextInput
             style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, marginBottom: 16 }]}
             value={emailDraft?.subject ?? ""}
             onChangeText={v => setEmailDraft(prev => prev ? { ...prev, subject: v } : null)}
             placeholderTextColor={colors.mutedForeground}
           />
-          <Text style={[formStyles.label, { color: colors.mutedForeground }]}>CORPO (testo libero — modificabile)</Text>
+          <Text style={[formStyles.label, { color: colors.mutedForeground }]}>BODY (plain text — editable)</Text>
           <TextInput
             style={[
               formStyles.input,
@@ -545,7 +545,7 @@ export default function FeeEventsScreen() {
           />
           <View style={{ marginTop: 8, padding: 12, borderRadius: 8, backgroundColor: "#FEF9EE", borderLeftWidth: 3, borderLeftColor: GOLD }}>
             <Text style={{ fontSize: 12, color: "#92400e" }}>
-              La versione HTML viene generata automaticamente dal testo. Puoi modificare il testo sopra — sarà quello inviato nell'email finale.
+              The HTML version is automatically generated from the body. You can edit the plain text above — it will be sent in the final email.
             </Text>
           </View>
           <View style={{ height: 24 }} />
@@ -557,7 +557,7 @@ export default function FeeEventsScreen() {
             }}
           >
             <Ionicons name="send-outline" size={16} color={NAVY} />
-            <Text style={btnStyles.goldText}>Pubblica e Invia</Text>
+            <Text style={btnStyles.goldText}>Publish & Send</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -576,7 +576,7 @@ export default function FeeEventsScreen() {
           <View style={modalStyles.handle} />
           <View style={modalStyles.header}>
             <Text style={[modalStyles.title, { color: colors.foreground }]}>
-              {editId ? "Modifica Quota" : "Nuova Quota Straordinaria"}
+              {editId ? "Edit Event" : "Create Fee Event"}
             </Text>
             <Pressable onPress={() => { setShowForm(false); resetForm(); }}>
               <Ionicons name="close" size={24} color={colors.foreground} />
@@ -588,21 +588,21 @@ export default function FeeEventsScreen() {
             contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 60 }}
           >
             {/* ── BASICS ─────────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>DETTAGLI</Text>
+            <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>DETAILS</Text>
 
-            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>TITOLO *</Text>
+            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>TITLE *</Text>
             <TextInput
               style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-              placeholder="es. Saggio di fine anno"
+              placeholder="e.g. Year-End Gala Fee"
               placeholderTextColor={colors.mutedForeground}
               value={title}
               onChangeText={setTitle}
             />
 
-            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>DESCRIZIONE</Text>
+            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>DESCRIPTION</Text>
             <TextInput
               style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, minHeight: 80, textAlignVertical: "top", paddingTop: 10 }]}
-              placeholder="Cosa copre questa quota? Gli iscritti la vedranno nella notifica."
+              placeholder="What does this fee cover? Members will see this in the notification."
               placeholderTextColor={colors.mutedForeground}
               value={desc}
               onChangeText={setDesc}
@@ -610,7 +610,7 @@ export default function FeeEventsScreen() {
             />
 
             {/* ── CURRENCY ────────────────────────────────────────────────── */}
-            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>VALUTA</Text>
+            <Text style={[formStyles.label, { color: colors.mutedForeground }]}>CURRENCY</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {CURRENCIES.map(c => (
                 <Pressable
@@ -627,16 +627,16 @@ export default function FeeEventsScreen() {
 
             {/* ── LINE ITEMS ──────────────────────────────────────────────── */}
             <View style={formStyles.sectionRow}>
-              <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>DETTAGLIO COSTI</Text>
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>COST BREAKDOWN</Text>
               <Pressable style={[btnStyles.small, { borderColor: NAVY }]} onPress={addLineItem}>
                 <Ionicons name="add-outline" size={14} color={NAVY} />
-                <Text style={[btnStyles.smallText, { color: NAVY }]}>Aggiungi</Text>
+                <Text style={[btnStyles.smallText, { color: NAVY }]}>Add Row</Text>
               </Pressable>
             </View>
 
             {lineItems.length === 0 && (
               <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
-                Aggiungi voci per dettagliare la spesa (es. "Costume", "Affitto sala"). Lascia vuoto per usare un importo totale unico.
+                Add rows to break down the fee (e.g. "Performance costume", "Venue hire"). Leave empty to use a single total amount.
               </Text>
             )}
 
@@ -644,7 +644,7 @@ export default function FeeEventsScreen() {
               <View key={i} style={lineStyles.row}>
                 <TextInput
                   style={[lineStyles.descInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                  placeholder="Descrizione voce"
+                  placeholder="Item description"
                   placeholderTextColor={colors.mutedForeground}
                   value={li.description}
                   onChangeText={v => updateLineItem(i, "description", v)}
@@ -713,12 +713,12 @@ export default function FeeEventsScreen() {
             </View>
 
             {/* ── PAYMENT TYPE ────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>PAGAMENTO</Text>
+            <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>PAYMENT</Text>
 
             <View style={{ flexDirection: "row", marginBottom: 16, gap: 8 }}>
               {[
-                { key: "single" as const,       label: "Pagamento Unico" },
-                { key: "installments" as const,  label: "Rate" },
+                { key: "single" as const,       label: "Single Payment" },
+                { key: "installments" as const,  label: "Installments" },
               ].map(opt => (
                 <Pressable
                   key={opt.key}
@@ -733,18 +733,18 @@ export default function FeeEventsScreen() {
             </View>
 
             {payType === "single" && (
-              <DateInput label="DATA SCADENZA" value={dueDate} onChange={setDueDate} colors={colors} />
+              <DateInput label="DUE DATE" value={dueDate} onChange={setDueDate} colors={colors} />
             )}
 
             {payType === "installments" && (
               <>
                 <View style={formStyles.sectionRow}>
                   <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
-                    Ogni rata viene aggiunta al carrello dell'iscritto alla sua data di scadenza.
+                    Each installment is added to the member's cart on its due date.
                   </Text>
                   <Pressable style={[btnStyles.small, { borderColor: NAVY }]} onPress={addInstallment}>
                     <Ionicons name="add-outline" size={14} color={NAVY} />
-                    <Text style={[btnStyles.smallText, { color: NAVY }]}>Aggiungi</Text>
+                    <Text style={[btnStyles.smallText, { color: NAVY }]}>Add</Text>
                   </Pressable>
                 </View>
                 {installments.map((ins, i) => (
@@ -755,17 +755,17 @@ export default function FeeEventsScreen() {
                         <Ionicons name="close-circle" size={18} color={RED} />
                       </Pressable>
                     </View>
-                    <Text style={[formStyles.label, { color: colors.mutedForeground }]}>ETICHETTA</Text>
+                    <Text style={[formStyles.label, { color: colors.mutedForeground }]}>LABEL</Text>
                     <TextInput
                       style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 8 }]}
-                      placeholder={`Rata ${i + 1}`}
+                      placeholder={`Installment ${i + 1}`}
                       placeholderTextColor={colors.mutedForeground}
                       value={ins.label}
                       onChangeText={v => updateInstallment(i, "label", v)}
                     />
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={[formStyles.label, { color: colors.mutedForeground }]}>IMPORTO</Text>
+                        <Text style={[formStyles.label, { color: colors.mutedForeground }]}>AMOUNT</Text>
                         <View style={lineStyles.amtRow}>
                           <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(currency)}</Text>
                           <TextInput
@@ -779,14 +779,14 @@ export default function FeeEventsScreen() {
                         </View>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <DateInput label="SCADENZA" value={ins.due_date} onChange={v => updateInstallment(i, "due_date", v)} colors={colors} />
+                        <DateInput label="DUE DATE" value={ins.due_date} onChange={v => updateInstallment(i, "due_date", v)} colors={colors} />
                       </View>
                     </View>
                   </View>
                 ))}
                 {installments.length > 0 && (
                   <View style={[lineStyles.total, { borderTopColor: colors.border }]}>
-                    <Text style={[lineStyles.totalLabel, { color: colors.mutedForeground }]}>Totale rate</Text>
+                    <Text style={[lineStyles.totalLabel, { color: colors.mutedForeground }]}>Total (all installments)</Text>
                     <Text style={[lineStyles.totalAmt, { color: NAVY }]}>{fmtMoney(totalCents, currency)}</Text>
                   </View>
                 )}
@@ -794,7 +794,7 @@ export default function FeeEventsScreen() {
             )}
 
             {/* ── AUDIENCE ────────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>DESTINATARI</Text>
+            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>AUDIENCE</Text>
             {AUDIENCE_OPTIONS.map(opt => (
               <Pressable
                 key={opt.key}
@@ -809,21 +809,21 @@ export default function FeeEventsScreen() {
             {audience === "all" && (
               <View style={[formStyles.infoBox, { backgroundColor: NAVY + "0F", borderLeftColor: NAVY }]}>
                 <Text style={{ fontSize: 12, color: NAVY }}>
-                  Gli operatori con iscritti a carico riceveranno questa notifica automaticamente.
+                  Operators who also have registered dependants will receive this notification automatically.
                 </Text>
               </View>
             )}
 
             {/* ── AI EMAIL ────────────────────────────────────────────────── */}
-            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>COMUNICAZIONE EMAIL</Text>
+            <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>EMAIL COMMUNICATION</Text>
             <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
-              L'AI creerà una bozza email con i dettagli della quota, il piano di pagamento e le info sui biglietti.
+              Our AI will draft a branded email with all the fee details, payment schedule, and ticket info.
             </Text>
 
             {!editId && (
               <View style={[formStyles.infoBox, { backgroundColor: "#FEF3C7", borderLeftColor: GOLD }]}>
                 <Text style={{ fontSize: 12, color: "#92400e" }}>
-                  Prima salva la bozza, poi genera l'email prima di pubblicare.
+                  Save the draft first, then generate the email before publishing.
                 </Text>
               </View>
             )}
@@ -839,7 +839,7 @@ export default function FeeEventsScreen() {
                 ) : (
                   <>
                     <Ionicons name="sparkles-outline" size={16} color={GOLD} />
-                    <Text style={[btnStyles.outlineText, { color: GOLD }]}>Genera Bozza Email AI</Text>
+                    <Text style={[btnStyles.outlineText, { color: GOLD }]}>Generate AI Email Draft</Text>
                   </>
                 )}
               </Pressable>
@@ -849,11 +849,11 @@ export default function FeeEventsScreen() {
               <View style={[formStyles.infoBox, { backgroundColor: GREEN + "18", borderLeftColor: GREEN }]}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <View>
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: GREEN }}>✓ Bozza email pronta</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: GREEN }}>✓ Email draft ready</Text>
                     <Text style={{ fontSize: 11, color: GREEN, marginTop: 2 }} numberOfLines={1}>{emailDraft.subject}</Text>
                   </View>
                   <Pressable onPress={() => setShowEmailPreview(true)}>
-                    <Text style={{ fontSize: 12, color: GREEN, fontWeight: "600", textDecorationLine: "underline" }}>Anteprima</Text>
+                    <Text style={{ fontSize: 12, color: GREEN, fontWeight: "600", textDecorationLine: "underline" }}>Preview & Edit</Text>
                   </Pressable>
                 </View>
               </View>
@@ -869,7 +869,7 @@ export default function FeeEventsScreen() {
               {saving ? <ActivityIndicator size="small" color={NAVY} /> : (
                 <>
                   <Ionicons name="save-outline" size={16} color={NAVY} />
-                  <Text style={btnStyles.goldText}>{editId ? "Salva Modifiche" : "Salva Bozza"}</Text>
+                  <Text style={btnStyles.goldText}>{editId ? "Save Changes" : "Save Draft"}</Text>
                 </>
               )}
             </Pressable>
@@ -890,7 +890,7 @@ export default function FeeEventsScreen() {
                   <>
                     <Ionicons name="send-outline" size={16} color="#fff" />
                     <Text style={btnStyles.navyText}>
-                      {emailDraft ? "Rivedi e Pubblica" : "Pubblica Ora"}
+                      {emailDraft ? "Review & Publish" : "Publish Now"}
                     </Text>
                   </>
                 )}
@@ -907,8 +907,8 @@ export default function FeeEventsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        title="Quote Straordinarie"
-        subtitle="Spese extra e pagamenti una tantum per gli iscritti"
+        title="Fee Events"
+        subtitle="One-off payment events for your members"
         onBack={() => router.replace("/(admin)/operations-hub")}
       />
 
@@ -923,9 +923,9 @@ export default function FeeEventsScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Ionicons name="cash-outline" size={48} color={colors.mutedForeground} />
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nessuna Quota</Text>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No Fee Events</Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Crea la tua prima quota straordinaria con il pulsante qui sotto.
+                Create your first one-off payment event to get started.
               </Text>
             </View>
           }
@@ -937,7 +937,7 @@ export default function FeeEventsScreen() {
         onPress={openCreate}
       >
         <Ionicons name="add" size={24} color={GOLD} />
-        <Text style={fabStyles.fabText}>Nuova Quota</Text>
+        <Text style={fabStyles.fabText}>Create Event</Text>
       </Pressable>
 
       <FormModal />
