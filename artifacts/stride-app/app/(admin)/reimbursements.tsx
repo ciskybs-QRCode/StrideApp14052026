@@ -21,6 +21,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
+import { getBankConfig, formatAmount, type BankConfig } from "@/lib/payment-regions";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -242,10 +243,14 @@ export default function AdminReimbursementsScreen() {
   const [payMethod, setPayMethod] = useState<"stripe" | "iban" | "cash">("cash");
   const [payRef, setPayRef] = useState("");
   const [payIban, setPayIban] = useState("");
+  const [payBic, setPayBic] = useState("");
   const [paying, setPaying] = useState(false);
   const [receiptThresholdCents, setReceiptThresholdCents] = useState(0);
   const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
   const [loadError, setLoadError] = useState(false);
+  const [orgCurrency, setOrgCurrency] = useState("EUR");
+  const [orgCountry, setOrgCountry] = useState("IT");
+  const [bankConfig, setBankConfig] = useState<BankConfig>(getBankConfig("IT", "EUR"));
 
   // Load receipt threshold from API (server-authoritative) with AsyncStorage as fallback
   useEffect(() => {
@@ -283,10 +288,15 @@ export default function AdminReimbursementsScreen() {
       setLoadError(true);
       setRequests([]);
     }
-    // Load school name from API
+    // Load school name + org region from API
     try {
       const org = await api.getOrg();
       if (org.name) setSchoolName(org.name);
+      const country = org.country ?? "IT";
+      const currency = org.currency ?? "EUR";
+      setOrgCountry(country);
+      setOrgCurrency(currency);
+      setBankConfig(getBankConfig(country, currency));
     } catch { /* ignore */ }
   }, []);
 
@@ -326,6 +336,7 @@ export default function AdminReimbursementsScreen() {
     setPayMethod("cash");
     setPayRef("");
     setPayIban("");
+    setPayBic("");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
@@ -335,7 +346,7 @@ export default function AdminReimbursementsScreen() {
       Alert.alert("Required", "Enter the Stripe Transfer ID."); return;
     }
     if (payMethod === "iban" && !payIban.trim()) {
-      Alert.alert("Required", "Enter the recipient IBAN."); return;
+      Alert.alert("Required", `Enter the ${bankConfig.accountLabel}.`); return;
     }
     setPaying(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -348,19 +359,26 @@ export default function AdminReimbursementsScreen() {
     ));
     setPayModal(null);
 
-    const amtStr = `€${(payModal.amountCents / 100).toFixed(2)}`;
+    const amtStr = formatAmount(payModal.amountCents, orgCurrency);
     if (payMethod === "cash") {
       Alert.alert("Cash Payment Recorded", `${payModal.claimantName} will be asked to confirm receipt of ${amtStr} in the app.`, [{ text: "OK" }]);
     } else {
       Alert.alert("Payment Recorded", `${payModal.claimantName} has been notified that their ${amtStr} reimbursement has been paid.`, [{ text: "OK" }]);
     }
 
+    // Build combined payeeIban: "ACCOUNT [/ BIC: XXXX]"
+    const accountId = payIban.trim();
+    const bicStr = payBic.trim();
+    const combinedAccount = accountId
+      ? (bicStr ? `${accountId} / BIC: ${bicStr}` : accountId)
+      : undefined;
+
     try {
       await api.updateReimbursement(payModal.id, {
         status: newStatus,
         paymentMethod: payMethod,
         paymentReference: payRef.trim() || undefined,
-        payeeIban: payIban.trim() || undefined,
+        payeeIban: combinedAccount,
       });
     } catch { /* optimistic applied */ } finally {
       setPaying(false);
@@ -426,7 +444,7 @@ export default function AdminReimbursementsScreen() {
         ) : (
           pending.map(req => {
             const meta = STATUS_META[req.status];
-            const conf = confirmAction?.id === req.id;
+            const conf = confirmReject === req.id;
             return (
               <View key={req.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.requestTop}>
@@ -447,7 +465,7 @@ export default function AdminReimbursementsScreen() {
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 6 }}>
                     <Text style={[styles.amount, { color: colors.primary }]}>
-                      ${(req.amountCents / 100).toFixed(2)}
+                      {formatAmount(req.amountCents, orgCurrency)}
                     </Text>
                     <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
                       <Ionicons name={meta.icon} size={10} color={meta.text} />
@@ -525,7 +543,7 @@ export default function AdminReimbursementsScreen() {
                     </View>
                     <View style={{ alignItems: "flex-end", gap: 6 }}>
                       <Text style={[styles.amount, { color: colors.foreground }]}>
-                        ${(req.amountCents / 100).toFixed(2)}
+                        {formatAmount(req.amountCents, orgCurrency)}
                       </Text>
                       <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
                         <Ionicons name={meta.icon} size={10} color={meta.text} />
@@ -548,7 +566,7 @@ export default function AdminReimbursementsScreen() {
             <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary, marginBottom: 4 }}>Record Payment</Text>
             {payModal && (
               <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 20 }}>
-                {payModal.claimantName} · €{(payModal.amountCents / 100).toFixed(2)} · {payModal.description}
+                {payModal.claimantName} · {formatAmount(payModal.amountCents, orgCurrency)} · {payModal.description}
               </Text>
             )}
 
@@ -570,7 +588,7 @@ export default function AdminReimbursementsScreen() {
                   />
                   <Text style={{ fontSize: 11, fontWeight: "700", marginTop: 4,
                     color: payMethod === m ? colors.primary : colors.mutedForeground }}>
-                    {m === "cash" ? "Cash" : m === "iban" ? "Bonifico" : "Stripe"}
+                    {m === "cash" ? "Cash" : m === "iban" ? bankConfig.label : "Stripe"}
                   </Text>
                 </Pressable>
               ))}
@@ -594,34 +612,49 @@ export default function AdminReimbursementsScreen() {
               </View>
             )}
 
-            {/* Bonifico/IBAN */}
+            {/* Bank Transfer — dynamic per org country */}
             {payMethod === "iban" && (
               <View style={{ gap: 12 }}>
                 <View>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>Recipient IBAN</Text>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>{bankConfig.accountLabel}</Text>
                   <TextInput
                     value={payIban}
                     onChangeText={setPayIban}
-                    placeholder="IT60 X054 2811 1010 0000 0123 456"
+                    placeholder={bankConfig.accountPlaceholder}
                     placeholderTextColor={colors.mutedForeground}
                     autoCapitalize="characters"
                     style={{ borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 13, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }}
                   />
                 </View>
+                {bankConfig.bicLabel ? (
+                  <View>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>{bankConfig.bicLabel}</Text>
+                    <TextInput
+                      value={payBic}
+                      onChangeText={setPayBic}
+                      placeholder="e.g. UNCRITMM"
+                      placeholderTextColor={colors.mutedForeground}
+                      autoCapitalize="characters"
+                      style={{ borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 13, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }}
+                    />
+                  </View>
+                ) : null}
                 <View>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>CRO / Reference (optional)</Text>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>{bankConfig.refLabel} (optional)</Text>
                   <TextInput
                     value={payRef}
                     onChangeText={setPayRef}
-                    placeholder="e.g. 12345678901234"
+                    placeholder="Transaction reference…"
                     placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numeric"
                     style={{ borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 13, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }}
                   />
                 </View>
-                <Text style={{ fontSize: 11, color: colors.mutedForeground, lineHeight: 16 }}>
-                  The member will be notified the transfer has been sent. Paid status is set immediately.
-                </Text>
+                <View style={{ backgroundColor: colors.primary + "10", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8, alignItems: "center" }}>
+                  <Ionicons name="information-circle-outline" size={15} color={colors.primary} />
+                  <Text style={{ flex: 1, fontSize: 11, color: colors.primary, lineHeight: 16 }}>
+                    {bankConfig.type === "iban" ? "SEPA transfer" : bankConfig.type === "bsb" ? "BSB transfer" : bankConfig.type === "sort_code" ? "Faster Payments" : "Wire transfer"} · {bankConfig.currencySymbol} {orgCurrency}. Member notified immediately.
+                  </Text>
+                </View>
               </View>
             )}
 

@@ -1613,6 +1613,8 @@ export interface ApiOrg {
   region?: string;
   plan?: string;
   birthday_message?: string;
+  currency?: string;
+  country?: string;
 }
 
 export interface ApiEnrollmentRequest {

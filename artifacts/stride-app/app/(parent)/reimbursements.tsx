@@ -27,6 +27,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
+import { formatAmount, currencySymbol } from "@/lib/payment-regions";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -45,9 +46,6 @@ interface ReimbursementItem {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function centsToCurrency(cents: number) {
-  return `€${(cents / 100).toFixed(2)}`;
-}
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
   pending:      { color: "#F59E0B", label: "Pending",       icon: "time-outline" },
@@ -72,6 +70,7 @@ export default function ParentReimbursementsScreen() {
   const [showForm,           setShowForm]           = useState(false);
   const [detailItem,         setDetailItem]         = useState<ReimbursementItem | null>(null);
   const [confirmingCash,     setConfirmingCash]     = useState(false);
+  const [orgCurrency,        setOrgCurrency]        = useState("EUR");
 
   // New claim form state
   const [desc,               setDesc]               = useState("");
@@ -86,11 +85,15 @@ export default function ParentReimbursementsScreen() {
     setLoading(true);
     setLoadError(false);
 
-    // Load threshold
+    // Load threshold + org currency
     api.getAdminSettings().then(s => {
       if (active && s.reimbursement_receipt_threshold_cents != null) {
         setThresholdCents(s.reimbursement_receipt_threshold_cents);
       }
+    }).catch(() => {});
+
+    api.getOrg().then(org => {
+      if (active && org.currency) setOrgCurrency(org.currency);
     }).catch(() => {});
 
     // Load claims
@@ -124,7 +127,7 @@ export default function ParentReimbursementsScreen() {
       return;
     }
     if (needsReceipt && !receiptUrl.trim()) {
-      Alert.alert("Ricevuta richiesta", `Gli importi superiori a ${centsToCurrency(thresholdCents)} richiedono una ricevuta o un link al file.`);
+      Alert.alert("Ricevuta richiesta", `Gli importi superiori a ${formatAmount(thresholdCents, orgCurrency)} richiedono una ricevuta o un link al file.`);
       return;
     }
 
@@ -207,7 +210,7 @@ export default function ParentReimbursementsScreen() {
           <View style={[styles.infoBox, { backgroundColor: "#FEF3C710", borderColor: "#F59E0B30" }]}>
             <Ionicons name="information-circle-outline" size={18} color="#F59E0B" />
             <Text style={[styles.infoText, { color: "#92400E" }]}>
-              Gli importi superiori a {centsToCurrency(thresholdCents)} richiedono una ricevuta o link allegato.
+              Gli importi superiori a {formatAmount(thresholdCents, orgCurrency)} richiedono una ricevuta o link allegato.
             </Text>
           </View>
         )}
@@ -225,14 +228,14 @@ export default function ParentReimbursementsScreen() {
             {pending.length > 0 && (
               <>
                 <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>IN ATTESA</Text>
-                {pending.map(item => <ClaimCard key={item.id} item={item} colors={colors} onPress={() => setDetailItem(item)} />)}
+                {pending.map(item => <ClaimCard key={item.id} item={item} colors={colors} orgCurrency={orgCurrency} onPress={() => setDetailItem(item)} />)}
               </>
             )}
 
             {resolved.length > 0 && (
               <>
                 <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>RISOLTE</Text>
-                {resolved.map(item => <ClaimCard key={item.id} item={item} colors={colors} onPress={() => setDetailItem(item)} />)}
+                {resolved.map(item => <ClaimCard key={item.id} item={item} colors={colors} orgCurrency={orgCurrency} onPress={() => setDetailItem(item)} />)}
               </>
             )}
 
@@ -269,7 +272,7 @@ export default function ParentReimbursementsScreen() {
 
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Importo *</Text>
             <View style={[styles.amtRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
-              <Text style={[styles.currencyText, { color: colors.mutedForeground }]}>€</Text>
+              <Text style={[styles.currencyText, { color: colors.mutedForeground }]}>{currencySymbol(orgCurrency)}</Text>
               <TextInput
                 value={amountText}
                 onChangeText={setAmountText}
@@ -284,7 +287,7 @@ export default function ParentReimbursementsScreen() {
               <View style={[styles.warningBox, { backgroundColor: "#FEF3C710", borderColor: "#F59E0B30" }]}>
                 <Ionicons name="alert-circle-outline" size={16} color="#F59E0B" />
                 <Text style={[styles.warningText, { color: "#92400E" }]}>
-                  Ricevuta richiesta per importi &gt; {centsToCurrency(thresholdCents)}
+                  Ricevuta richiesta per importi &gt; {formatAmount(thresholdCents, orgCurrency)}
                 </Text>
               </View>
             )}
@@ -341,7 +344,7 @@ export default function ParentReimbursementsScreen() {
                       <Text style={[styles.detailBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
                     </View>
                     <Text style={[styles.detailDesc, { color: colors.foreground }]}>{detailItem.description}</Text>
-                    <Text style={[styles.detailAmt, { color: colors.primary }]}>{centsToCurrency(detailItem.amount_cents)}</Text>
+                    <Text style={[styles.detailAmt, { color: colors.primary }]}>{formatAmount(detailItem.amount_cents, orgCurrency)}</Text>
                     <Text style={[styles.detailDate, { color: colors.mutedForeground }]}>
                       Submitted on {new Date(detailItem.submitted_at ?? detailItem.created_at ?? "").toLocaleDateString("en-GB")}
                     </Text>
@@ -399,7 +402,7 @@ export default function ParentReimbursementsScreen() {
 
 // ── Claim card sub-component ──────────────────────────────────────────────────
 
-function ClaimCard({ item, colors, onPress }: { item: ReimbursementItem; colors: ReturnType<typeof useColors>; onPress: () => void }) {
+function ClaimCard({ item, colors, orgCurrency, onPress }: { item: ReimbursementItem; colors: ReturnType<typeof useColors>; orgCurrency: string; onPress: () => void }) {
   const cfg = STATUS_CONFIG[item.status] ?? { color: "#6B7280", label: item.status, icon: "help-circle-outline" };
   return (
     <Pressable
@@ -416,7 +419,7 @@ function ClaimCard({ item, colors, onPress }: { item: ReimbursementItem; colors:
         </Text>
       </View>
       <View style={{ alignItems: "flex-end", gap: 4 }}>
-        <Text style={[styles.claimAmt, { color: colors.foreground }]}>{centsToCurrency(item.amount_cents)}</Text>
+        <Text style={[styles.claimAmt, { color: colors.foreground }]}>{formatAmount(item.amount_cents, orgCurrency)}</Text>
         <View style={[styles.statusBadge, { backgroundColor: `${cfg.color}18` }]}>
           <Text style={[styles.statusBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
         </View>
