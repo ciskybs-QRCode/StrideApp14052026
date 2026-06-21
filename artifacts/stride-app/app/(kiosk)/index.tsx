@@ -28,7 +28,7 @@ const { width: SW, height: SH } = Dimensions.get("window");
 
 // ── Types (declared early so constants below can reference FeedbackType) ────────
 
-type FeedbackType = "success" | "warning" | "denied" | "clock_in" | "clock_out" | "ticket_ok" | "ticket_fail";
+type FeedbackType = "success" | "warning" | "denied" | "blacklisted" | "clock_in" | "clock_out" | "ticket_ok" | "ticket_fail";
 
 interface FeedbackState {
   type: FeedbackType;
@@ -92,6 +92,7 @@ const BORDER_FLASH: Record<FeedbackType, string> = {
   ticket_ok:   "#22C55E",
   warning:     "#F59E0B",
   denied:      "#EF4444",
+  blacklisted: "#EF4444",
   clock_out:   "#EF4444",
   ticket_fail: "#EF4444",
 };
@@ -104,6 +105,7 @@ const TONE_FOR: Record<FeedbackType, "success" | "warning" | "denied"> = {
   ticket_ok:   "success",
   warning:     "warning",
   denied:      "denied",
+  blacklisted: "denied",
   clock_out:   "success",
   ticket_fail: "denied",
 };
@@ -114,6 +116,7 @@ const FEEDBACK_COLORS: Record<FeedbackType, { bg: string; icon: string }> = {
   success:     { bg: "rgba(5,150,105,0.97)",   icon: "#FFFFFF" },
   warning:     { bg: "rgba(217,119,6,0.97)",   icon: "#FFFFFF" },
   denied:      { bg: "rgba(220,38,38,0.97)",   icon: "#FFFFFF" },
+  blacklisted: { bg: "rgba(30,58,138,0.97)",   icon: "#FBBF24" },
   clock_in:    { bg: "rgba(30,58,138,0.97)",   icon: "#FBBF24" },
   clock_out:   { bg: "rgba(109,40,217,0.97)",  icon: "#FFFFFF" },
   ticket_ok:   { bg: "rgba(5,150,105,0.97)",   icon: "#FFFFFF" },
@@ -124,6 +127,7 @@ const FEEDBACK_ICONS: Record<FeedbackType, keyof typeof Ionicons.glyphMap> = {
   success:     "checkmark-circle",
   warning:     "warning",
   denied:      "close-circle",
+  blacklisted: "person-circle-outline",
   clock_in:    "timer",
   clock_out:   "exit",
   ticket_ok:   "ticket",
@@ -139,28 +143,59 @@ interface AccessResponse {
   payment_status?: string;
   is_blocked?: boolean;
   block_reason?: string;
+  blacklisted?: boolean;
   warning?: string;
   grace?: boolean;
   verdict?: string;
 }
 
 function mapAccessToFeedback(res: AccessResponse): FeedbackState {
-  const name = res.childName ?? res.name ?? "Member";
+  const name    = res.childName ?? res.name ?? "Member";
   const verdict = res.verdict;
 
+  // BLACKLISTED — show a calm, neutral message so the person doesn't react;
+  // the actual staff alert is sent separately as a silent push.
+  if (verdict === "blacklisted" || res.blacklisted === true) {
+    return {
+      type:     "blacklisted",
+      headline: "Verification Required",
+      subtext:  "Please wait at the front desk — a team member will be right with you.",
+      name,
+    };
+  }
   if (verdict === "suspended" || res.is_blocked) {
-    return { type: "denied", headline: "Access Denied", subtext: res.block_reason ?? "Please contact the front desk.", name };
+    return {
+      type:    "denied",
+      headline: "Account Unavailable",
+      subtext:  "This account is currently restricted. Please contact the school office for assistance.",
+      name,
+    };
   }
   if (verdict === "overdue_denied") {
-    return { type: "denied", headline: "Payment Overdue", subtext: "Please settle your account at the front desk.", name };
+    return {
+      type:    "denied",
+      headline: "Membership Payment Required",
+      subtext:  "Please visit the front desk to settle your account and regain access.",
+      name,
+    };
   }
   if (verdict === "grace_allowed" || res.grace) {
-    return { type: "warning", headline: "Welcome — Action Required", subtext: "Membership expired. One-time grace access granted. Please renew today.", name };
+    return {
+      type:    "warning",
+      headline: "Welcome — Action Required",
+      subtext:  "Your membership has expired. One-time grace access granted. Please renew your subscription today.",
+      name,
+    };
   }
   if (res.warning || res.payment_status === "expiring_soon") {
-    return { type: "warning", headline: "Welcome — Action Required", subtext: res.warning ?? "Membership expiring soon. Please renew at the front desk.", name };
+    return {
+      type:    "warning",
+      headline: "Welcome — Renewal Reminder",
+      subtext:  res.warning ?? "Your membership is expiring soon. Please renew at the front desk.",
+      name,
+    };
   }
-  return { type: "success", headline: "Welcome!", subtext: "Check-in recorded. Have a great class!", name };
+  return { type: "success", headline: "Welcome!", subtext: "Check-in recorded. Have a great session!", name };
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -302,6 +337,12 @@ export default function KioskScreen() {
                                 Haptics.NotificationFeedbackType.Error
       );
       showFeedback(fb);
+
+      // BLACKLISTED — silently alert all staff in the org.
+      // Fire-and-forget: person on the screen must not notice any change in UI.
+      if (res.blacklisted === true || res.verdict === "blacklisted") {
+        void api.sendSecurityAlert(childId, res.childName ?? res.name ?? undefined);
+      }
 
       // Log attendance for allowed / grace entries
       if (fb.type === "success" || fb.type === "warning") {

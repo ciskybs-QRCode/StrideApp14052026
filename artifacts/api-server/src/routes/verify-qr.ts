@@ -18,6 +18,7 @@ export type QrVerifyResult = {
   suspended?:       boolean;
   suspendedReason?: string;
   blocked?:         boolean;
+  blacklisted?:     boolean;
   graceDecision?:   "allowed_grace" | "blocked_grace_used" | "not_applicable";
   graceMessage?:    string;
   contactMessage?:  string;
@@ -111,11 +112,11 @@ router.post("/verify-member-qr", requireAuth, qrScanLimiter, async (req, res) =>
   }
 
   if (suspended) {
-    req.log.info({ orgId, memberId, suspendedReason }, "QR scan: SUSPENDED");
+    req.log.info({ orgId, memberId, suspendedReason }, "QR scan: SUSPENDED/BLACKLISTED");
     const result: QrVerifyResult = {
       name, subscription: "none", medical: "expired", payment: "overdue",
-      type: "error", suspended: true, blocked: true, suspendedReason,
-      contactMessage: "Contact Administration",
+      type: "error", suspended: true, blocked: true, blacklisted: true, suspendedReason,
+      contactMessage: "Please see the front desk",
     };
     res.json(result);
     return;

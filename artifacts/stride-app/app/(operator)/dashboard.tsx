@@ -901,14 +901,18 @@ export default function OperatorDashboard() {
           const displayName = check.childName || memberName;
           setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          if (check.verdict === "suspended" || check.verdict === "overdue_denied") {
+          // Silent staff alert for blacklisted persons
+          if (check.verdict === "blacklisted" || check.blacklisted === true) {
+            void api.sendSecurityAlert(memberId, displayName);
+          } else if (check.verdict === "suspended" || check.verdict === "overdue_denied") {
             triggerAccessAlert(memberId, displayName,
-              check.verdict === "suspended" ? "Account suspended" : "Payment overdue");
+              check.verdict === "suspended" ? "Account unavailable" : "Membership payment required");
           }
           const logMsg =
-            check.verdict === "suspended"    ? `✗ SUSPENDED: ${displayName}` :
-            check.verdict === "grace_allowed" ? `⚠ One-time access: ${displayName}` :
-            `✗ Payment overdue: ${displayName}`;
+            check.verdict === "blacklisted"  ? `⚠ SECURITY ALERT: ${displayName} — staff notified` :
+            check.verdict === "suspended"    ? `✗ Account restricted: ${displayName}` :
+            check.verdict === "grace_allowed" ? `⚠ One-time grace access: ${displayName}` :
+            `✗ Membership payment required: ${displayName}`;
           pushLog({ time: nowTime(), action: logMsg, type: check.verdict === "grace_allowed" ? "warning" : "error" });
           setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
           return;
@@ -942,14 +946,18 @@ export default function OperatorDashboard() {
           const displayName = check.childName || studentName;
           setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          if (check.verdict === "suspended" || check.verdict === "overdue_denied") {
+          // Silent staff alert for blacklisted persons
+          if (check.verdict === "blacklisted" || check.blacklisted === true) {
+            void api.sendSecurityAlert(studentId, displayName);
+          } else if (check.verdict === "suspended" || check.verdict === "overdue_denied") {
             triggerAccessAlert(studentId, displayName,
-              check.verdict === "suspended" ? "Account suspended" : "Payment overdue");
+              check.verdict === "suspended" ? "Account unavailable" : "Membership payment required");
           }
           const logMsg =
-            check.verdict === "suspended"    ? `✗ SUSPENDED: ${displayName}` :
-            check.verdict === "grace_allowed" ? `⚠ One-time access: ${displayName}` :
-            `✗ Payment overdue: ${displayName}`;
+            check.verdict === "blacklisted"  ? `⚠ SECURITY ALERT: ${displayName} — staff notified` :
+            check.verdict === "suspended"    ? `✗ Account restricted: ${displayName}` :
+            check.verdict === "grace_allowed" ? `⚠ One-time grace access: ${displayName}` :
+            `✗ Membership payment required: ${displayName}`;
           pushLog({ time: nowTime(), action: logMsg, type: check.verdict === "grace_allowed" ? "warning" : "error" });
           setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
           return;

@@ -1,14 +1,17 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { qrScanLimiter } from "../lib/rate-limit.js";
+import Expo, { type ExpoPushMessage } from "expo-server-sdk";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
 export type AccessVerdict =
   | "allowed"            // normal entry
-  | "suspended"          // is_blocked = true  (CASE A)
+  | "blacklisted"        // intentionally restricted person (CASE A-BL)
+  | "suspended"          // account blocked by admin  (CASE A)
   | "grace_allowed"      // expired + grace enabled, first time  (CASE B)
   | "overdue_denied";    // overdue OR expired without grace  (CASE C)
 
@@ -36,12 +39,26 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
   const isBlocked = child.is_blocked ?? false;
   const paymentStatus: string = child.payment_status ?? "active";
 
-  // CASE A — Blocked account
+  // CASE A — Blocked / blacklisted account
   if (isBlocked) {
+    // Check the blacklist table for a specific entry (intentional restriction vs admin block)
+    let isBlacklisted = false;
+    try {
+      const bl = await pool.query<{ id: number }>(
+        `SELECT id FROM blacklist
+         WHERE organization_id = $1 AND is_active = true
+           AND (user_id = $2::text OR first_name IS NOT NULL)
+         LIMIT 1`,
+        [orgId, String(childId)],
+      );
+      isBlacklisted = bl.rows.length > 0;
+    } catch { /* blacklist table may not exist yet */ }
+
     res.json({
-      verdict: "suspended" as AccessVerdict,
+      verdict: isBlacklisted ? ("blacklisted" as AccessVerdict) : ("suspended" as AccessVerdict),
       childId, childName,
-      blockReason: child.block_reason ?? "Account sospeso",
+      blacklisted: isBlacklisted,
+      blockReason: child.block_reason ?? "Account restricted",
     });
     return;
   }
@@ -123,6 +140,65 @@ router.patch("/access-check/:childId/payment", requireAuth, requireRole("admin")
 
   if (error) { res.status(500).json({ error: "Failed to update child record" }); return; }
   res.json(data);
+});
+
+// ── POST /access-check/security-alert ─────────────────────────────────────────
+// Silent staff alert: sends push to all operators + admins in the org.
+// Called when a blacklisted/restricted person attempts entry.
+// The push is a regular notification (NOT critical siren) so it appears silently
+// on staff devices without alarming the person standing at reception.
+router.post("/access-check/security-alert", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  const { childName, childId } = req.body as { childName?: string; childId?: string };
+
+  try {
+    // ── Fetch all operator + admin user IDs in this org ───────────────────────
+    const { data: staffUsers } = await supabase
+      .from("users")
+      .select("id")
+      .eq("organization_id", orgId)
+      .in("role", ["operator", "admin"]);
+
+    if (!staffUsers?.length) {
+      res.json({ sent: 0 });
+      return;
+    }
+
+    const staffIds = staffUsers.map(u => String(u.id));
+
+    // ── Fetch their registered push tokens ────────────────────────────────────
+    const { rows } = await pool.query<{ token: string }>(
+      `SELECT token FROM device_push_tokens WHERE org_id = $1 AND user_id = ANY($2)`,
+      [orgId, staffIds],
+    );
+
+    const validTokens = rows.map(r => r.token).filter(t => Expo.isExpoPushToken(t));
+
+    if (validTokens.length > 0) {
+      const expo = new Expo();
+      const personLabel = childName ? `re: ${childName}` : "at the entrance";
+      const messages: ExpoPushMessage[] = validTokens.map(to => ({
+        to,
+        title: "⚠️ Staff Alert — Restricted Person",
+        body: `A restricted individual has attempted access ${personLabel}. Please proceed to the entrance to provide support.`,
+        data: { category: "SECURITY_ALERT", orgId, childId, childName },
+        sound: "default" as const,
+        priority: "high" as const,
+        channelId: "security",
+      }));
+      for (const chunk of expo.chunkPushNotifications(messages)) {
+        await expo.sendPushNotificationsAsync(chunk).catch(() => {});
+      }
+    }
+
+    req.log.info({ orgId, tokensCount: validTokens.length, childId, childName },
+      "security-alert: dispatched to staff");
+    res.json({ sent: validTokens.length });
+  } catch (err) {
+    req.log.error(err, "security-alert: dispatch failed");
+    res.status(500).json({ error: "Failed to dispatch alert" });
+  }
 });
 
 export default router;

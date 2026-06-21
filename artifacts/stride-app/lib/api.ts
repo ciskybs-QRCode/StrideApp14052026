@@ -937,6 +937,11 @@ export const api = {
   // Access verification (QR anti-fraud check)
   checkAccess: (childId: string) =>
     request<ApiAccessCheck>("GET", `/access-check/${childId}`),
+
+  // Silent staff security alert when a blacklisted person attempts entry
+  sendSecurityAlert: (childId: string | number, childName?: string) =>
+    request<{ sent: number }>("POST", "/access-check/security-alert", { childId: String(childId), childName })
+      .catch(() => ({ sent: 0 })),
   updateChildPayment: (childId: string, data: { payment_status?: string; is_blocked?: boolean; block_reason?: string }) =>
     request<ApiAccessCheck>("PATCH", `/access-check/${childId}/payment`, data),
 
@@ -2150,9 +2155,10 @@ export interface ApiBlacklistEntry {
 }
 
 export interface ApiAccessCheck {
-  verdict: "allowed" | "suspended" | "grace_allowed" | "overdue_denied";
+  verdict: "allowed" | "suspended" | "blacklisted" | "grace_allowed" | "overdue_denied";
   childId: string;
   childName: string;
+  blacklisted?: boolean;
   blockReason?: string;
 }
 
