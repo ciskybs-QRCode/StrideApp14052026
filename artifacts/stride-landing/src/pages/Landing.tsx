@@ -454,6 +454,31 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── DEMO VIDEO TEASER ──────────────────────────────────────────────── */}
+      <section className="bg-slate-50 border-b border-slate-100 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center gap-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+            <a href="/marketing/promo-video" target="_blank" rel="noopener noreferrer"
+              className="flex-shrink-0 w-28 h-18 sm:w-36 sm:h-22 bg-[#1E3A8A] rounded-2xl flex items-center justify-center group no-underline" style={{ minWidth: 120, minHeight: 72 }}>
+              <div className="w-12 h-12 rounded-full bg-[#FBBF24] flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#1E3A8A" stroke="none">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+              </div>
+            </a>
+            <div className="flex-1 text-center sm:text-left">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">2-Minute Product Demo</p>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-1">See Stride turn paper chaos into a safe, digital operation</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">From sign-in sheet to QR kiosk. From phone tree to Emergency Pulse. Watch the transformation.</p>
+            </div>
+            <a href="/marketing/promo-video" target="_blank" rel="noopener noreferrer"
+              className="flex-shrink-0 inline-flex items-center gap-2 bg-[#1E3A8A] text-white font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-[#152d6e] transition-colors no-underline">
+              Watch Demo <IcoArrow />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ── STATS BAR ──────────────────────────────────────────────────────── */}
       <div className="bg-[#1E3A8A]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
@@ -540,6 +565,89 @@ export default function Landing() {
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHY NOT ALTERNATIVES ───────────────────────────────────────────── */}
+      <section className="py-20 bg-white border-b border-slate-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-full px-4 py-1.5 mb-5">
+              <span className="text-slate-600 text-xs font-bold tracking-wider uppercase">Why not the alternatives?</span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">
+              Stride is built for associations with dependants.<br className="hidden sm:block" /> Others aren't.
+            </h2>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+              Generic membership tools handle subscriptions. Stride handles safety, compliance, verified pick-up, and crisis communication — the things that matter when real people are involved.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+            {[
+              {
+                name: "Wild Apricot / TeamApp",
+                icon: "⚠️",
+                color: "border-amber-200 bg-amber-50",
+                badge: "bg-amber-100 text-amber-700",
+                badgeText: "Generic Platform",
+                cons: [
+                  "No verified pick-up or Guardian Circle",
+                  "No Emergency Pulse to families",
+                  "No SHA-256 audit trail for incidents",
+                  "No operator QR kiosk",
+                  "No AI absence & rescue cascade",
+                ],
+              },
+              {
+                name: "WhatsApp + Spreadsheets",
+                icon: "❌",
+                color: "border-red-200 bg-red-50",
+                badge: "bg-red-100 text-red-700",
+                badgeText: "Manual & Risky",
+                cons: [
+                  "No record of who picked up whom",
+                  "No immutable attendance log",
+                  "Zero legal compliance infrastructure",
+                  "No emergency broadcast system",
+                  "Admin spends 10+ hrs/week on paperwork",
+                ],
+              },
+              {
+                name: "Stride",
+                icon: "✅",
+                color: "border-[#1E3A8A] bg-[#1E3A8A]/3",
+                badge: "bg-[#1E3A8A] text-white",
+                badgeText: "Purpose-Built",
+                cons: [
+                  "Guardian Circle: QR-verified pick-up",
+                  "Emergency Pulse: forced alert in &lt;3 s",
+                  "SHA-256 audit trail on every event",
+                  "QR kiosk + operator mobile dashboard",
+                  "AI roster, payroll & compliance built-in",
+                ],
+                highlight: true,
+              },
+            ].map(alt => (
+              <div key={alt.name} className={`rounded-2xl border-2 p-6 ${alt.color} ${alt.highlight ? "shadow-lg" : ""}`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">{alt.icon}</span>
+                  <div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${alt.badge}`}>{alt.badgeText}</span>
+                    <p className="text-slate-900 font-black text-sm mt-1">{alt.name}</p>
+                  </div>
+                </div>
+                <ul className="space-y-2.5">
+                  {alt.cons.map(c => (
+                    <li key={c} className={`flex items-start gap-2 text-xs leading-relaxed ${alt.highlight ? "text-slate-700 font-medium" : "text-slate-500"}`}>
+                      <span className="mt-0.5 flex-shrink-0">{alt.highlight ? "✓" : "✗"}</span>
+                      <span dangerouslySetInnerHTML={{ __html: c }} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -778,6 +886,92 @@ export default function Landing() {
             className="inline-flex items-center gap-2 bg-[#FBBF24] text-[#0A192F] font-black px-8 py-4 rounded-xl text-sm hover:bg-[#fcd34d] transition-colors no-underline shadow-md">
             Start Your Free Trial <IcoArrow />
           </a>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ───────────────────────────────────────────────────── */}
+      <section className="py-24 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-14">
+            <span className="inline-flex items-center gap-2 bg-[#FBBF24]/15 border border-[#FBBF24]/40 rounded-full px-4 py-1.5 mb-5">
+              <span className="text-[#9a7000] text-xs font-bold tracking-wider uppercase">Real Results from Real Associations</span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">What association leaders say</h2>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+              From 30-member clubs to 500-member academies — Stride replaces the spreadsheet stack.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            {[
+              {
+                quote: "We ran our first session with zero paperwork on day two. The QR kiosk replaced our sign-in sheet overnight, and our parents love the pick-up alerts. I haven't touched a spreadsheet in three months.",
+                name: "Sarah M.",
+                role: "Director, City Athletics Club",
+                members: "180 members",
+                initials: "SM",
+                color: "bg-[#1E3A8A]",
+              },
+              {
+                quote: "The Emergency Pulse alone is worth the subscription. During a false fire alarm last winter, I had 47 acknowledgments from parents within 90 seconds. That used to take 20 minutes of phone calls.",
+                name: "James K.",
+                role: "Operations Manager, Lakeside Sports Association",
+                members: "340 members",
+                initials: "JK",
+                color: "bg-emerald-600",
+              },
+              {
+                quote: "As a parent, I can see exactly when my daughter checks in and who's authorised to pick her up. I removed my ex-partner's pickup access in 30 seconds when I needed to. No drama, no phone call.",
+                name: "Priya T.",
+                role: "Parent Member",
+                members: "Community Dance Academy",
+                initials: "PT",
+                color: "bg-violet-600",
+              },
+            ].map(({ quote, name, role, members, initials, color }) => (
+              <div key={name} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm flex flex-col">
+                <div className="flex gap-1 mb-5">
+                  {[0,1,2,3,4].map(i => (
+                    <svg key={i} className="w-4 h-4 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-slate-700 text-sm leading-relaxed flex-1 mb-6">"{quote}"</p>
+                <div className="flex items-center gap-3 pt-5 border-t border-slate-100">
+                  <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center flex-shrink-0`}>
+                    <span className="text-white text-xs font-black">{initials}</span>
+                  </div>
+                  <div>
+                    <p className="text-slate-900 text-sm font-bold">{name}</p>
+                    <p className="text-slate-500 text-xs">{role}</p>
+                    <p className="text-[#1E3A8A] text-xs font-semibold">{members}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Case study callout */}
+          <div className="bg-[#1E3A8A] rounded-2xl p-7 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="flex-1">
+              <p className="text-[#FBBF24] text-xs font-bold uppercase tracking-widest mb-2">Case Study</p>
+              <h3 className="text-white font-black text-xl mb-2">A 200-member dance academy cut admin time by 83%</h3>
+              <p className="text-blue-200 text-sm leading-relaxed">
+                Before Stride: 12+ hours/week on attendance, pickups, waivers, and WhatsApp chats. After Stride: 2 hours/week, fully auditable, zero paper.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 text-center sm:flex-shrink-0">
+              <div className="bg-white/10 border border-white/20 rounded-xl px-6 py-4">
+                <p className="text-[#FBBF24] text-3xl font-black">−83%</p>
+                <p className="text-blue-200 text-xs mt-1">Admin hours</p>
+              </div>
+              <div className="bg-white/10 border border-white/20 rounded-xl px-6 py-4">
+                <p className="text-[#FBBF24] text-3xl font-black">&lt;3 s</p>
+                <p className="text-blue-200 text-xs mt-1">Emergency reach</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
