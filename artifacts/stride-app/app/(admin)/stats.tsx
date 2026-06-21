@@ -26,7 +26,7 @@ import { useFeatures } from "@/context/FeaturesContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { useDeviceLocale } from "@/hooks/useDeviceLocale";
-import { api } from "@/lib/api";
+import { api, request } from "@/lib/api";
 import { HubCard } from "@/components/HubCard";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { SetupChecklist } from "@/components/SetupChecklist";
@@ -125,13 +125,22 @@ const SOS_PROCEDURES: Record<SosType, SosProcedure> = {
 
 // ── Scan result type ──────────────────────────────────────────────────────────
 
-type ScanResult = {
-  type: "success" | "warning" | "error";
-  name: string;
-  subscription: "active" | "expired" | "none";
-  medical: "valid" | "expiring" | "expired";
-  payment: "paid" | "overdue" | "pending";
-};
+type ScanResult =
+  | {
+      kind: "member";
+      type: "success" | "warning" | "error";
+      name: string;
+      subscription: "active" | "expired" | "none";
+      medical: "valid" | "expiring" | "expired";
+      payment: "paid" | "overdue" | "pending";
+    }
+  | {
+      kind: "generic";
+      type: "success" | "warning" | "error";
+      title: string;
+      body: string;
+      details?: Record<string, string | number | boolean | undefined>;
+    };
 
 // ── Currency helpers ──────────────────────────────────────────────────────────
 
@@ -261,16 +270,61 @@ export default function AdminHome() {
     setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 3500);
   };
 
-  const simulateScan = () => showScanResult({ type: "success", name: "Demo Member", subscription: "active", medical: "valid", payment: "paid" });
+  const simulateScan = () => showScanResult({ kind: "member", type: "success", name: "Demo Member", subscription: "active", medical: "valid", payment: "paid" });
 
   const handleBarcodeScan = async ({ data }: { data: string }) => {
     if (scanned) return;
     setScanned(true);
+
     try {
-      const result = await api.verifyMemberQr(data);
-      showScanResult(result);
+      // ── Route by QR prefix ────────────────────────────────────────────────
+      if (data.startsWith("STRIDE:TICKET:")) {
+        const parts    = data.split(":");
+        const ticketId = parts[3] ?? parts[2];
+        const resp = await request<{
+          event_name?: string; holder_name?: string; ticket_type?: string;
+          status?: string; message?: string; valid?: boolean;
+        }>("POST", "/events/validate-ticket", { ticketId, qrData: data });
+        const ok = resp.valid ?? resp.status === "valid";
+        showScanResult({
+          kind:  "generic",
+          type:  ok ? "success" : "error",
+          title: ok ? "Ticket Valid ✓" : "Ticket Invalid ✗",
+          body:  resp.message ?? (ok ? "Entry granted." : "This ticket cannot be used."),
+          details: { Event: resp.event_name, Holder: resp.holder_name, "Type": resp.ticket_type },
+        });
+
+      } else if (data.startsWith("STRIDE:GUARDIAN:")) {
+        const resp = await request<{
+          child_name?: string; guardian_name?: string; authorized?: boolean; message?: string;
+        }>("POST", "/scan", { qrData: data, scanType: "guardian" });
+        const ok = resp.authorized !== false;
+        showScanResult({
+          kind:  "generic",
+          type:  ok ? "success" : "error",
+          title: ok ? "Pickup Authorised ✓" : "Not Authorised ✗",
+          body:  resp.message ?? (ok ? "Guardian is authorised for pick-up." : "This guardian is not on the authorised list."),
+          details: { Child: resp.child_name, Guardian: resp.guardian_name },
+        });
+
+      } else if (data.startsWith("STRIDE:CHECKIN:") || data.startsWith("STRIDE:CHILD:")) {
+        const resp = await request<{
+          name?: string; child_name?: string; status?: string; message?: string;
+        }>("POST", "/scan", { qrData: data, scanType: "checkin" });
+        showScanResult({
+          kind:  "generic",
+          type:  "success",
+          title: "Check-In Confirmed ✓",
+          body:  resp.message ?? `${resp.child_name ?? resp.name ?? "Child"} checked in.`,
+        });
+
+      } else {
+        // Member QR (STRIDE:MEMBER: or legacy format) — semaphore view
+        const result = await api.verifyMemberQr(data);
+        showScanResult({ kind: "member", ...result });
+      }
     } catch {
-      showScanResult({ type: "error", name: "Unrecognized QR Code", subscription: "none", medical: "expired", payment: "overdue" });
+      showScanResult({ kind: "generic", type: "error", title: "Scan Failed", body: "Could not process this QR code. Please try again." });
     }
   };
 
@@ -436,8 +490,8 @@ export default function AdminHome() {
             <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
           </Pressable>
 
-          {/* 3. Scan Member QR */}
-          <QRScanButton onPress={handleScan} label="Scan Member QR" />
+          {/* 3. Scan QR Code */}
+          <QRScanButton onPress={handleScan} label="Scan QR Code" />
 
         </View>
 
@@ -570,7 +624,7 @@ export default function AdminHome() {
             <Pressable onPress={() => setShowScanner(false)}>
               <Ionicons name="close" size={28} color="#FFF" />
             </Pressable>
-            <Text style={styles.scannerTitle}>QR Scanner — Semaphore</Text>
+            <Text style={styles.scannerTitle}>Universal QR Scanner</Text>
             <View style={{ width: 28 }} />
           </View>
 
@@ -593,7 +647,7 @@ export default function AdminHome() {
             >
               <View style={styles.scannerOverlay}>
                 <View style={styles.scannerFrame} />
-                {!scanned && <Text style={styles.scannerHintText}>Point at a member's QR Code</Text>}
+                {!scanned && <Text style={styles.scannerHintText}>Point at any Stride QR Code</Text>}
               </View>
             </CameraView>
           )}
@@ -602,29 +656,55 @@ export default function AdminHome() {
             <View style={[styles.scanResultPanel, {
               backgroundColor: scanResult.type === "success" ? "#10B981" : scanResult.type === "warning" ? "#F59E0B" : "#EF4444",
             }]}>
-              <View style={styles.scanResultHeader}>
-                <Ionicons name={sIcon(scanResult.type)} size={30} color="#FFF" />
-                <Text style={styles.scanResultName}>{scanResult.name}</Text>
-              </View>
-              <View style={styles.semaphoreRow}>
-                {[
-                  { key: scanResult.subscription, label: "Subscription" },
-                  { key: scanResult.medical,       label: "Certificate" },
-                  { key: scanResult.payment,       label: "Payment" },
-                ].map(item => (
-                  <View key={item.label} style={styles.semaphoreItem}>
-                    <Ionicons name={sIcon(item.key)} size={20} color={sColor(item.key)} />
-                    <Text style={styles.semaphoreLabel}>{item.label}</Text>
-                    <Text style={[styles.semaphoreValue, { color: sColor(item.key) }]}>{sLabel(item.key)}</Text>
+              {scanResult.kind === "member" ? (
+                <>
+                  <View style={styles.scanResultHeader}>
+                    <Ionicons name={sIcon(scanResult.type)} size={30} color="#FFF" />
+                    <Text style={styles.scanResultName}>{scanResult.name}</Text>
                   </View>
-                ))}
-              </View>
+                  <View style={styles.semaphoreRow}>
+                    {[
+                      { key: scanResult.subscription, label: "Subscription" },
+                      { key: scanResult.medical,       label: "Certificate" },
+                      { key: scanResult.payment,       label: "Payment" },
+                    ].map(item => (
+                      <View key={item.label} style={styles.semaphoreItem}>
+                        <Ionicons name={sIcon(item.key)} size={20} color={sColor(item.key)} />
+                        <Text style={styles.semaphoreLabel}>{item.label}</Text>
+                        <Text style={[styles.semaphoreValue, { color: sColor(item.key) }]}>{sLabel(item.key)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.scanResultHeader}>
+                    <Ionicons name={sIcon(scanResult.type)} size={30} color="#FFF" />
+                    <Text style={styles.scanResultName}>{scanResult.title}</Text>
+                  </View>
+                  <Text style={{ color: "rgba(255,255,255,0.92)", fontSize: 14, textAlign: "center", marginTop: 6, paddingHorizontal: 16 }}>
+                    {scanResult.body}
+                  </Text>
+                  {scanResult.details && Object.entries(scanResult.details).filter(([, v]) => v != null).length > 0 && (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 10 }}>
+                      {Object.entries(scanResult.details)
+                        .filter(([, v]) => v != null)
+                        .map(([k, v]) => (
+                          <View key={k} style={{ backgroundColor: "rgba(0,0,0,0.18)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: "600" }}>{k.toUpperCase()}</Text>
+                            <Text style={{ color: "#FFF", fontSize: 13, fontWeight: "700" }}>{String(v)}</Text>
+                          </View>
+                        ))}
+                    </View>
+                  )}
+                </>
+              )}
             </View>
           )}
 
           {!scanResult && Platform.OS !== "web" && (
             <View style={styles.scannerFooter}>
-              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center" }}>Point at a member QR Code</Text>
+              <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center" }}>Member · Ticket · Guardian · Check-in</Text>
             </View>
           )}
         </View>
