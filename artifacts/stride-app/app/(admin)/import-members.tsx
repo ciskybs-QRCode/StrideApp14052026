@@ -171,9 +171,12 @@ export default function ImportMembersScreen() {
             <Text style={[S.cardTitle, { color: colors.foreground }]}>Required columns</Text>
           </View>
           <Text style={[S.cardBody, { color: colors.mutedForeground }]}>
-            Your file must include: <Text style={S.bold}>email</Text>, <Text style={S.bold}>first_name</Text>, <Text style={S.bold}>last_name</Text>.
-            {"\n"}Optional: <Text style={S.bold}>date_of_birth</Text> (YYYY-MM-DD), <Text style={S.bold}>phone</Text>, <Text style={S.bold}>role</Text> (parent/operator/admin).
-            {"\n"}Accepts: CSV, XLSX, XLS — max 5 MB, max 500 rows.
+            Your file must include: <Text style={S.bold}>email</Text>, <Text style={S.bold}>first_name</Text>, <Text style={S.bold}>last_name</Text>.{"\n"}
+            Optional: <Text style={S.bold}>date_of_birth</Text> (YYYY-MM-DD), <Text style={S.bold}>phone</Text>.{"\n"}
+            Accepts: CSV, XLSX, XLS — max 5 MB, up to 2 000 rows.{"\n"}
+            {"\n"}
+            <Text style={{ color: "#1E3A8A", fontWeight: "600" }}>No role column needed.</Text>
+            {" "}All imported members are created as standard members. You can assign operator or admin roles afterwards from the Members list.
           </Text>
         </View>
 
