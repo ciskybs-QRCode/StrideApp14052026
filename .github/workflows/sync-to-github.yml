@@ -700,7 +700,25 @@ jobs:
             if (isRetry) {
               // Write the incremented counter back to the issue body immediately
               // so the cap is correct even if subsequent steps fail or are skipped.
-              const bodyWithCount = setRetryCount(freshIssue.body, retryCount);
+              let bodyWithCount = setRetryCount(freshIssue.body, retryCount);
+
+              // Backfill the visible Slack deep-link for issues opened before the
+              // deep-link feature was added.  Those issues carry the hidden
+              // <!-- slack-thread-ts: TS --> marker but no visible link in the body.
+              // Add it now so the body stays consistent with newer issues.
+              // appendSlackLink already guards against duplicates, but we also
+              // short-circuit with !hasVisibleLink to skip the update entirely
+              // when the link is already present.
+              const backfillTs = extractSlackTs(bodyWithCount);
+              const backfillChannel = process.env.SLACK_ALERT_CHANNEL;
+              const hasVisibleLink = /🔗 \[Slack thread\]\(https:\/\/slack\.com\/app_redirect\?[^)]+\)/.test(bodyWithCount);
+              if (backfillTs && backfillChannel && !hasVisibleLink) {
+                bodyWithCount = appendSlackLink(bodyWithCount, backfillTs, backfillChannel);
+                console.log(
+                  `Backfilled Slack deep-link in issue #${existingIssue.number} (ts=${backfillTs})`
+                );
+              }
+
               await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
