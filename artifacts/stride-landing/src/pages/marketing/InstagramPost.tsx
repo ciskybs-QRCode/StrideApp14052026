@@ -22,20 +22,20 @@ export default function InstagramPost() {
 
   const slides = [
     {
-      tag: "For Parents",
-      headline: "Your kids.\nAlways safe.",
+      tag: "For Families",
+      headline: "Your members.\nAlways safe.",
       sub: "Real-time attendance, Smart Pick-Up alerts, and instant emergency notifications — all in one app.",
       accent: "#FBBF24",
     },
     {
-      tag: "For Operators",
-      headline: "Every class.\nUnder control.",
+      tag: "For Instructors",
+      headline: "Every session.\nUnder control.",
       sub: "QR scanner, roll call, substitute management, and payroll — so you can focus on teaching.",
       accent: "#60A5FA",
     },
     {
-      tag: "For Admins",
-      headline: "Your school.\nYour data.",
+      tag: "For Directors",
+      headline: "Your association.\nYour data.",
       sub: "Revenue tracking, course occupancy, member analytics and white-label branding in one dashboard.",
       accent: "#4ADE80",
     },
@@ -74,7 +74,7 @@ export default function InstagramPost() {
           </div>
         </div>
         <div style={{ padding: "0 60px 56px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: 2, marginBottom: 20 }}>EVERYTHING YOUR SCHOOL NEEDS</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: 2, marginBottom: 20 }}>EVERYTHING YOUR ASSOCIATION NEEDS</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             {features.map(f => (
               <div key={f.text} style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 30, padding: "10px 20px", display: "flex", alignItems: "center", gap: 8 }}>

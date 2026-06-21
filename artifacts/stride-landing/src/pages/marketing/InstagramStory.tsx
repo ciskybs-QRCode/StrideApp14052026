@@ -7,21 +7,21 @@ const montserrat = `@import url('https://fonts.googleapis.com/css2?family=Montse
 const ROLES = [
   {
     icon: "👨‍👩‍👧",
-    role: "Parents",
+    role: "Families",
     color: "#FBBF24",
     bg: "rgba(251,191,36,0.12)",
     points: ["Real-time attendance updates", "Smart Pick-Up alerts", "Event tickets & payments"],
   },
   {
     icon: "🎓",
-    role: "Operators",
+    role: "Instructors",
     color: "#60A5FA",
     bg: "rgba(96,165,250,0.12)",
     points: ["QR check-in scanner", "Daily roll call & roster", "Payroll & scheduling"],
   },
   {
     icon: "⚙️",
-    role: "Admins",
+    role: "Directors",
     color: "#4ADE80",
     bg: "rgba(74,222,128,0.12)",
     points: ["Revenue & stats dashboard", "Member & course management", "White-label branding"],
@@ -50,7 +50,7 @@ export default function InstagramStory() {
           </div>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>stride.app</div>
-            <div style={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }}>Dance School Management</div>
+            <div style={{ fontSize: 16, color: "rgba(255,255,255,0.5)" }}>Association Management</div>
           </div>
         </div>
         <div style={{ padding: "60px 40px 0", textAlign: "center" }}>
@@ -59,7 +59,7 @@ export default function InstagramStory() {
             One app.<br />Three views.<br />Zero chaos.
           </div>
           <div style={{ fontSize: 24, color: "rgba(255,255,255,0.6)", fontWeight: 400, lineHeight: 1.5, maxWidth: 780, margin: "0 auto" }}>
-            Built for every person in your dance school — parents, teachers, and directors.
+            Built for every person in your association — families, instructors, and directors.
           </div>
         </div>
         <div style={{ margin: "52px 40px 0", height: 2, background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />

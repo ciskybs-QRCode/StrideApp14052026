@@ -1,17 +1,20 @@
 import React from "react";
+import { useCurrency } from "../../lib/useCurrency";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
 const montserrat = `@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');`;
 
-const STATS = [
-  { value: "48",    label: "Students managed" },
-  { value: "87%",   label: "Avg. attendance" },
-  { value: "€3.8k", label: "Monthly revenue tracked" },
-  { value: "3",     label: "Roles, one platform" },
-];
-
 export default function LinkedInBanner() {
+  const curr = useCurrency();
+
+  const STATS = [
+    { value: "485",             label: "Members managed" },
+    { value: "87%",             label: "Avg. attendance" },
+    { value: curr.format(12840), label: "Monthly revenue tracked" },
+    { value: "3",               label: "Roles, one platform" },
+  ];
+
   return (
     <div style={{ width: "100vw", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e" }}>
       <div style={{ fontFamily: "Montserrat, sans-serif", width: 1200, height: 628, background: NAVY, position: "relative", overflow: "hidden", display: "flex" }}>
@@ -23,14 +26,14 @@ export default function LinkedInBanner() {
             </div>
             <span style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: 1 }}>STRIDE</span>
             <div style={{ height: 20, width: 1, background: "rgba(255,255,255,0.2)", margin: "0 4px" }} />
-            <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.5)", letterSpacing: 2 }}>DANCE SCHOOL MANAGEMENT</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.5)", letterSpacing: 2 }}>ASSOCIATION MANAGEMENT</span>
           </div>
           <div style={{ fontSize: 58, fontWeight: 900, color: "#fff", lineHeight: 1.05, letterSpacing: -1.5, marginBottom: 24 }}>
-            Run your school.<br />
+            Run your association.<br />
             <span style={{ color: GOLD }}>Not your spreadsheets.</span>
           </div>
           <div style={{ fontSize: 20, color: "rgba(255,255,255,0.65)", fontWeight: 400, lineHeight: 1.5, marginBottom: 40, maxWidth: 480 }}>
-            The all-in-one platform for dance schools — attendance, payments, communications and analytics.
+            The all-in-one platform for sports and cultural associations — attendance, payments, communications and analytics.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ background: GOLD, borderRadius: 30, padding: "14px 32px" }}>
