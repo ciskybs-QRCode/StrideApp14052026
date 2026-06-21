@@ -18,7 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
-import { api } from "@/lib/api";
+import { api, request } from "@/lib/api";
 
 type ScanState = "idle" | "processing" | "success" | "error";
 
@@ -53,7 +53,7 @@ export default function AdminQRGate() {
         // Child check-in QR
         const parts    = data.split(":");
         const childId  = parts[2];
-        const scanResp = await api.request<{
+        const scanResp = await request<{
           name?: string; child_name?: string; status?: string; message?: string;
         }>("POST", "/scan", { qrData: data, scanType: "checkin" });
 
@@ -68,7 +68,7 @@ export default function AdminQRGate() {
         // Event ticket QR
         const parts    = data.split(":");
         const ticketId = parts[3] ?? parts[2];
-        const scanResp = await api.request<{
+        const scanResp = await request<{
           event_name?: string; holder_name?: string; ticket_type?: string;
           status?: string; message?: string; valid?: boolean;
         }>("POST", "/events/validate-ticket", { ticketId, qrData: data });
@@ -87,7 +87,7 @@ export default function AdminQRGate() {
         });
       } else if (data.startsWith("STRIDE:GUARDIAN:")) {
         // Guardian pickup QR — call existing guardian scan
-        const scanResp = await api.request<{
+        const scanResp = await request<{
           child_name?: string; guardian_name?: string; authorized?: boolean; message?: string;
         }>("POST", "/scan", { qrData: data, scanType: "guardian" });
 

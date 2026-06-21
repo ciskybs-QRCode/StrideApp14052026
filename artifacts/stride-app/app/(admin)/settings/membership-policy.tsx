@@ -60,21 +60,21 @@ export default function MembershipPolicyScreen() {
 
   useEffect(() => {
     api.getAdminSettings()
-      .then((s: Record<string, unknown>) => {
+      .then((s) => {
         let reminderDays: number[] = [30, 15, 7, 3, 1];
         try {
-          const raw = s["membership_reminder_days"];
+          const raw = s.membership_reminder_days;
           const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
           if (Array.isArray(parsed)) reminderDays = parsed.map(Number).filter(Boolean);
         } catch { /* use defaults */ }
 
         setPolicy({
-          membership_mandatory:          Boolean(s["membership_mandatory"] ?? false),
-          membership_renewal_type:       (s["membership_renewal_type"] as RenewalType) ?? "monthly",
-          membership_renewal_days:       Number(s["membership_renewal_days"] ?? 365),
-          membership_renewal_fixed_date: String(s["membership_renewal_fixed_date"] ?? ""),
+          membership_mandatory:          Boolean(s.membership_mandatory ?? false),
+          membership_renewal_type:       (s.membership_renewal_type as RenewalType) ?? "monthly",
+          membership_renewal_days:       Number(s.membership_renewal_days ?? 365),
+          membership_renewal_fixed_date: String(s.membership_renewal_fixed_date ?? ""),
           membership_reminder_days:      reminderDays,
-          membership_suspend_on_expiry:  Boolean(s["membership_suspend_on_expiry"] ?? false),
+          membership_suspend_on_expiry:  Boolean(s.membership_suspend_on_expiry ?? false),
         });
         setLoading(false);
       })

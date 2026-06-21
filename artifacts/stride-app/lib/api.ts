@@ -2020,6 +2020,13 @@ export interface ApiAdminSettings {
   absence_postpone_minutes?: number;
   absence_cancel_refund_type?: string;
   updated_at?: string;
+  // Membership policy
+  membership_mandatory?:          boolean;
+  membership_renewal_type?:       string;
+  membership_renewal_days?:       number;
+  membership_renewal_fixed_date?: string | null;
+  membership_reminder_days?:      string | number[];
+  membership_suspend_on_expiry?:  boolean;
 }
 
 export interface MembershipPlans {
