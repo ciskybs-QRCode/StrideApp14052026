@@ -308,6 +308,41 @@ export default function AdminHome() {
         });
 
       } else if (data.startsWith("STRIDE:CHECKIN:") || data.startsWith("STRIDE:CHILD:")) {
+        const parts     = data.split(":");
+        const childId   = parts[2] ?? "";
+        const childName = decodeURIComponent(parts[3] ?? "Child");
+
+        // Access check before confirming check-in
+        if (childId) {
+          try {
+            const check = await api.checkAccess(childId);
+            if (check.verdict === "blacklisted" || check.blacklisted === true) {
+              // Silent staff alert — show benign message to person at scanner
+              void api.sendSecurityAlert(childId, check.childName ?? childName);
+              showScanResult({
+                kind:  "generic",
+                type:  "warning",
+                title: "Verification Required",
+                body:  "Please wait at the front desk — a team member will be right with you.",
+              });
+              setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 6000);
+              return;
+            }
+            if (check.verdict !== "allowed" && check.verdict !== "grace_allowed") {
+              showScanResult({
+                kind:  "generic",
+                type:  "error",
+                title: check.verdict === "overdue_denied" ? "Membership Payment Required" : "Account Unavailable",
+                body:  check.verdict === "overdue_denied"
+                  ? "Please visit the front desk to settle the account."
+                  : "This account is currently restricted. Please contact the school office.",
+              });
+              setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 6000);
+              return;
+            }
+          } catch { /* proceed on error */ }
+        }
+
         const resp = await request<{
           name?: string; child_name?: string; status?: string; message?: string;
         }>("POST", "/scan", { qrData: data, scanType: "checkin" });
@@ -315,12 +350,16 @@ export default function AdminHome() {
           kind:  "generic",
           type:  "success",
           title: "Check-In Confirmed ✓",
-          body:  resp.message ?? `${resp.child_name ?? resp.name ?? "Child"} checked in.`,
+          body:  resp.message ?? `${resp.child_name ?? resp.name ?? childName} checked in.`,
         });
 
       } else {
         // Member QR (STRIDE:MEMBER: or legacy format) — semaphore view
         const result = await api.verifyMemberQr(data);
+        // Silent staff alert if this member is blacklisted
+        if (result.blacklisted === true) {
+          void api.sendSecurityAlert("", result.name ?? undefined);
+        }
         showScanResult({ kind: "member", ...result });
       }
     } catch {
