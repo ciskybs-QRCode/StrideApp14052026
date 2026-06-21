@@ -107,12 +107,25 @@ const server = http.createServer((req, res) => {
 
   if (stat && !stat.isDirectory()) {
     // Serve the actual static file
-    const ext = path.extname(filePath).toLowerCase();
+    const ext      = path.extname(filePath).toLowerCase();
+    const basename = path.basename(filePath);
     const mime = MIME[ext] || "application/octet-stream";
-    const content = fs.readFileSync(filePath);
+    const content  = fs.readFileSync(filePath);
+
+    // manifest.json and PWA icons must revalidate so browsers pick up updates.
+    // JS/CSS bundles are content-hashed → safe to cache forever.
+    let cacheControl;
+    if (ext === ".html") {
+      cacheControl = "no-cache";
+    } else if (basename === "manifest.json" || basename.startsWith("icon-") || basename === "apple-touch-icon.png") {
+      cacheControl = "no-cache, no-store, must-revalidate";
+    } else {
+      cacheControl = "public, max-age=31536000, immutable";
+    }
+
     res.writeHead(200, {
       "Content-Type":  mime,
-      "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000, immutable",
+      "Cache-Control": cacheControl,
       "Content-Length": content.length,
     });
     res.end(content);
