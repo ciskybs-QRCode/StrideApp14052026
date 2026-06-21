@@ -1112,7 +1112,16 @@ export const api = {
     ),
 
   getMembersPresent: () =>
-    request<{ members: Array<{ id: string; name: string; role: string }> }>(
+    request<{ members: Array<{
+      id:                      string;
+      name:                    string;
+      role:                    string;
+      phone?:                  string | null;
+      parent_phone?:           string | null;
+      ambulance_consent?:      boolean | null;
+      emergency_contact_name?: string | null;
+      emergency_contact_phone?:string | null;
+    }> }>(
       "GET", "/emergency/members-present",
     ),
 

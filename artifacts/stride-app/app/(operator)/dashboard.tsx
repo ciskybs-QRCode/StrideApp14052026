@@ -108,7 +108,16 @@ function nowTime(): string {
 type SosType = "fire" | "medical" | "police";
 type SosPhase = "type" | "picker" | "call" | "procedure";
 
-interface SosMember { id: string; name: string; role: string; }
+interface SosMember {
+  id:                      string;
+  name:                    string;
+  role:                    string;
+  phone?:                  string | null;
+  parent_phone?:           string | null;
+  ambulance_consent?:      boolean | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?:string | null;
+}
 
 interface SosProcStep {
   text: string;
@@ -291,6 +300,9 @@ export default function OperatorDashboard() {
   const [showScanner, setShowScanner]     = useState(false);
   const [showSOS, setShowSOS]             = useState(false);
   const [showQRPanel, setShowQRPanel]     = useState(false);
+  const [showECModal, setShowECModal]     = useState(false);
+  const [ecLoading, setEcLoading]         = useState(false);
+  const [ecMembers, setEcMembers]         = useState<SosMember[]>([]);
   const [sosCount, setSosCount]           = useState(0);
   const [sosPhase, setSosPhase]           = useState<SosPhase>("type");
   const [sosType, setSosType]             = useState<SosType | null>(null);
@@ -1472,6 +1484,32 @@ export default function OperatorDashboard() {
             <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
           </Pressable>
 
+          {/* 2a. Emergency Contacts (quick-access, always visible) */}
+          <Pressable
+            style={[styles.qrPanel, { backgroundColor: "#FFF7ED", borderWidth: 1, borderColor: "#FED7AA" }]}
+            onPress={async () => {
+              setShowECModal(true);
+              if (ecMembers.length > 0) return;
+              setEcLoading(true);
+              try {
+                const data = await api.getMembersPresent();
+                setEcMembers(data.members);
+              } catch { /* silently keep empty */ }
+              finally { setEcLoading(false); }
+            }}
+          >
+            <View style={[styles.qrMiniBox, { backgroundColor: "#FEF3C7" }]}>
+              <Ionicons name="medkit" size={28} color="#92400E" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.qrCodeBtnLabel, { color: "#92400E" }]}>Emergency Contacts</Text>
+              <Text style={[styles.qrCodeBtnSub, { color: "#B45309" }]}>
+                Ambulance consent · NOK · Parent phone
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#D97706" />
+          </Pressable>
+
           {/* 2. SOS Emergency */}
           <SOSButton onConfirm={openSOS} />
 
@@ -2381,6 +2419,108 @@ export default function OperatorDashboard() {
       {/* ══════════════════════════════════════════════════
           SOS / Emergency Mode Modal  (3-phase flow)
       ══════════════════════════════════════════════════ */}
+      {/* ══ Emergency Contacts Modal ══════════════════════════════════════ */}
+      <Modal visible={showECModal} transparent animationType="slide" onRequestClose={() => setShowECModal(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "85%", padding: 20 }}>
+            {/* Header */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+              <Ionicons name="medkit" size={22} color="#92400E" />
+              <Text style={{ flex: 1, fontSize: 18, fontWeight: "800", color: "#1F2937", marginLeft: 10 }}>Emergency Contacts</Text>
+              <Pressable onPress={() => setShowECModal(false)} hitSlop={12}>
+                <Ionicons name="close" size={22} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 16 }}>
+              All registered members & dependants · Tap 📞 to call immediately
+            </Text>
+
+            {ecLoading ? (
+              <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                <ActivityIndicator size="large" color="#1E3A8A" />
+                <Text style={{ marginTop: 12, color: "#6B7280" }}>Loading contacts…</Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {ecMembers.length === 0 && (
+                  <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 32 }}>No members registered yet.</Text>
+                )}
+                {ecMembers.map(m => {
+                  const callPhone = m.emergency_contact_phone ?? m.parent_phone ?? m.phone;
+                  return (
+                    <View key={m.id} style={{ borderBottomWidth: 1, borderColor: "#F3F4F6", paddingVertical: 12, gap: 4 }}>
+                      {/* Name + role + ambulance badge */}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: m.role === "dependant" ? "#DBEAFE" : "#F0FDF4", alignItems: "center", justifyContent: "center" }}>
+                          <Ionicons name={m.role === "dependant" ? "happy" : "person"} size={18} color={m.role === "dependant" ? "#1E3A8A" : "#15803D"} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827" }}>{m.name}</Text>
+                          <Text style={{ fontSize: 12, color: "#6B7280", textTransform: "capitalize" }}>{m.role}</Text>
+                        </View>
+                        {/* Ambulance consent badge */}
+                        {m.ambulance_consent === true && (
+                          <View style={{ backgroundColor: "#DCFCE7", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#15803D" }}>🚑 Ambulance OK</Text>
+                          </View>
+                        )}
+                        {m.ambulance_consent === false && (
+                          <View style={{ backgroundColor: "#FEF9C3", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#854D0E" }}>📞 Call Parent</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* NOK / Emergency contact */}
+                      {m.emergency_contact_name && (
+                        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 6 }}>
+                          <Ionicons name="person-circle-outline" size={14} color="#9CA3AF" />
+                          <Text style={{ fontSize: 13, color: "#374151" }}>
+                            NOK: <Text style={{ fontWeight: "600" }}>{m.emergency_contact_name}</Text>
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Phone row with call button */}
+                      {callPhone ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 8 }}>
+                          <Ionicons name="call-outline" size={14} color="#9CA3AF" />
+                          <Text style={{ fontSize: 13, color: "#374151", flex: 1 }}>{callPhone}</Text>
+                          <Pressable
+                            onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${callPhone}`); }}
+                            style={{ backgroundColor: "#1E3A8A", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 4 }}
+                          >
+                            <Ionicons name="call" size={13} color="#FFF" />
+                            <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Call</Text>
+                          </Pressable>
+                        </View>
+                      ) : null}
+
+                      {/* Parent phone (for dependants, if different from NOK) */}
+                      {m.role === "dependant" && m.parent_phone && m.parent_phone !== callPhone && (
+                        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 8 }}>
+                          <Ionicons name="people-outline" size={14} color="#9CA3AF" />
+                          <Text style={{ fontSize: 13, color: "#374151", flex: 1 }}>Parent: {m.parent_phone}</Text>
+                          <Pressable
+                            onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${m.parent_phone!}`); }}
+                            style={{ backgroundColor: "#059669", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 4 }}
+                          >
+                            <Ionicons name="call" size={13} color="#FFF" />
+                            <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Parent</Text>
+                          </Pressable>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+                <View style={{ height: 32 }} />
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={showSOS} transparent animationType="fade" onRequestClose={closeSOS}>
         <View style={styles.sosOverlay}>
           <View style={styles.sosModalCard}>
@@ -2442,6 +2582,14 @@ export default function OperatorDashboard() {
                   <ScrollView style={styles.sosPickerScroll} showsVerticalScrollIndicator={false}>
                     {sosMedicalMembers.map(m => {
                       const selected = sosSelectedIds.includes(m.id);
+                      const callPhone = m.emergency_contact_phone ?? m.parent_phone ?? m.phone;
+                      const ambulanceLabel = m.ambulance_consent === true
+                        ? "🚑 Ambulance consented"
+                        : m.ambulance_consent === false
+                        ? "📞 Call parent only"
+                        : null;
+                      const ambulanceBg = m.ambulance_consent === true ? "#DCFCE7" : "#FEF9C3";
+                      const ambulanceFg = m.ambulance_consent === true ? "#15803D" : "#854D0E";
                       return (
                         <Pressable
                           key={m.id}
@@ -2459,10 +2607,29 @@ export default function OperatorDashboard() {
                           <View style={[styles.sosPickerCheck, selected && { backgroundColor: "#F59E0B", borderColor: "#F59E0B" }]}>
                             {selected && <Ionicons name="checkmark" size={14} color="#FFF" />}
                           </View>
-                          <View style={{ flex: 1 }}>
+                          <View style={{ flex: 1, gap: 3 }}>
                             <Text style={[styles.sosPickerName, selected && { color: "#F59E0B" }]}>{m.name}</Text>
                             <Text style={styles.sosPickerRole}>{m.role}</Text>
+                            {ambulanceLabel && (
+                              <View style={{ backgroundColor: ambulanceBg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: "flex-start", marginTop: 2 }}>
+                                <Text style={{ fontSize: 11, fontWeight: "700", color: ambulanceFg }}>{ambulanceLabel}</Text>
+                              </View>
+                            )}
+                            {m.emergency_contact_name && (
+                              <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 1 }}>
+                                NOK: {m.emergency_contact_name}
+                              </Text>
+                            )}
                           </View>
+                          {callPhone ? (
+                            <Pressable
+                              onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${callPhone}`); }}
+                              style={{ padding: 8, backgroundColor: "#22C55E22", borderRadius: 10 }}
+                              hitSlop={8}
+                            >
+                              <Ionicons name="call" size={18} color="#22C55E" />
+                            </Pressable>
+                          ) : null}
                         </Pressable>
                       );
                     })}

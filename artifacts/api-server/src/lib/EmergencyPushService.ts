@@ -314,6 +314,40 @@ export class EmergencyPushService {
     return null;
   }
 
+  // ── sendToUsers ──────────────────────────────────────────────────────────────
+  // Lightweight push for non-critical alerts (no-show, reminders, etc.)
+  // No ACK watchdog, no Twilio fallback — best effort.
+  static async sendToUsers(opts: {
+    orgId:   number;
+    userIds: (string | number)[];
+    title:   string;
+    body:    string;
+    data?:   Record<string, unknown>;
+  }): Promise<void> {
+    if (!opts.userIds.length) return;
+    const ids = opts.userIds.map(String);
+    try {
+      const { rows } = await pool.query<{ token: string }>(
+        `SELECT DISTINCT token FROM device_push_tokens WHERE org_id = $1 AND user_id = ANY($2)`,
+        [opts.orgId, ids],
+      );
+      const messages: ExpoPushMessage[] = rows
+        .filter(r => Expo.isExpoPushToken(r.token))
+        .map(r => ({
+          to:    r.token,
+          title: opts.title,
+          body:  opts.body,
+          data:  opts.data ?? {},
+          sound: "default" as const,
+        }));
+      if (!messages.length) return;
+      const chunks = expo.chunkPushNotifications(messages);
+      for (const chunk of chunks) {
+        await expo.sendPushNotificationsAsync(chunk).catch(() => {});
+      }
+    } catch { /* best-effort — do not throw */ }
+  }
+
   private static async _getOrgResendCreds(orgId: number): Promise<{ key: string; from: string } | null> {
     try {
       const { rows } = await pool.query<{

@@ -1,7 +1,8 @@
-import { supabase } from "./supabase.js";
-import { pool }     from "./pg.js";
-import { logger }   from "./logger.js";
+import { supabase }             from "./supabase.js";
+import { pool }                 from "./pg.js";
+import { logger }               from "./logger.js";
 import { sendTransactionalEmail } from "../services/emailService.js";
+import { EmergencyPushService } from "./EmergencyPushService.js";
 
 const WINDOW_MINUTES = 5;
 
@@ -308,28 +309,57 @@ async function sendScheduledCourseReminders(
       }
     }
 
-    // ── Parent / member reminder ───────────────────────────────────────────
-    // TODO: Notify enrolled parents. Requires an enrollments table linking
-    //       scheduled_courses to member children:
-    //
-    // const { data: enrollments } = await supabase
-    //   .from("course_enrollments")
-    //   .select("child:children!child_id(parent_user_id, full_name)")
-    //   .eq("scheduled_course_id", course.id)
-    //   .eq("status", "active");
-    //
-    // for (const enroll of (enrollments ?? [])) {
-    //   const parentId = enroll.child?.parent_user_id;
-    //   if (!parentId) continue;
-    //   await supabase.from("private_notifications").insert({
-    //     organization_id: course.organization_id,
-    //     recipient_id:    parentId,
-    //     type:            "lesson_reminder",
-    //     title:           `${discName} class in ${label}`,
-    //     body:            `Your child's ${discName} class starts at ${timeStr} on ${dayName}. See you there!`,
-    //     read:            false,
-    //   });
-    // }
+    // ── Parent / member reminder ──────────────────────────────────────────
+    // Notify parents of enrolled children about the upcoming class.
+    // Uses the `enrollments` table (child_id FK → children).
+    {
+      const { data: parentEnrollments } = await supabase
+        .from("enrollments")
+        .select("child_id, child:children!child_id(parent_id, first_name, last_name)")
+        .eq("course_id", course.id)
+        .eq("status", "active");
+
+      const notifiedParentIds = new Set<number>();
+
+      for (const enroll of (parentEnrollments ?? [])) {
+        const child = (enroll as Record<string,unknown>).child as {
+          parent_id: number; first_name: string; last_name: string;
+        } | null;
+        if (!child?.parent_id) continue;
+        if (notifiedParentIds.has(child.parent_id)) continue;
+        notifiedParentIds.add(child.parent_id);
+
+        // Dedup: skip if parent already has a reminder for this course+slot today
+        const { data: existingParent } = await supabase
+          .from("private_notifications")
+          .select("id")
+          .eq("organization_id", course.organization_id)
+          .eq("recipient_id", child.parent_id)
+          .eq("type", "lesson_reminder")
+          .ilike("body", `%${slotDate}%`)
+          .limit(1);
+        if (existingParent?.length) continue;
+
+        // Bell notification
+        await supabase.from("private_notifications").insert({
+          organization_id: course.organization_id,
+          recipient_id:    child.parent_id,
+          type:            "lesson_reminder",
+          title:           `${discName} class in ${label}`,
+          body:            `${child.first_name}'s ${discName} class starts at ${timeStr} on ${dayName} ${slotDate}. Please ensure on-time arrival.`,
+          read:            false,
+        }).then(undefined, () => {});
+
+        // Push notification (best-effort)
+        EmergencyPushService.sendToUsers({
+          orgId:   course.organization_id as number,
+          userIds: [child.parent_id],
+          title:   `📅 ${discName} in ${label}`,
+          body:    `${child.first_name}'s class starts at ${timeStr} on ${dayName}. Don't be late!`,
+          data:    { type: "lesson_reminder", course_id: String(course.id) },
+        }).catch(() => {});
+      }
+    }
   }
 }
 
@@ -436,6 +466,14 @@ async function checkNoShowAlerts(): Promise<void> {
           { childId: child.id, courseId: course.id, orgId, recipients: recipientIds.length },
           "no-show safety alert sent to parent + staff"
         );
+        // Fire push notifications to all recipient devices (best-effort, non-blocking)
+        EmergencyPushService.sendToUsers({
+          orgId,
+          userIds: recipientIds,
+          title:   `🚨 No-show — ${child.first_name} ${child.last_name}`,
+          body:    `${child.first_name} has not checked in for ${className} (${timeStr}). Please confirm their whereabouts immediately.`,
+          data:    { type: "no_show_alert", child_id: String(child.id), course_id: String(course.id) },
+        }).catch(() => {});
       }
     }
   }

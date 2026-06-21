@@ -15,7 +15,8 @@
  */
 
 import { Router } from "express";
-import { pool } from "../lib/pg.js";
+import { pool }     from "../lib/pg.js";
+import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole } from "../lib/auth.js";
 import {
   EmergencyPushService,
@@ -152,12 +153,23 @@ router.get("/emergency/members-present", requireAuth, async (req: Request, res: 
   const user = (req as AuthedReq).user;
   const orgId = (user as { org_id?: number }).org_id ?? 1;
 
-  const members: Array<{ id: string; name: string; role: string }> = [];
+  type RichMember = {
+    id:                      string;
+    name:                    string;
+    role:                    string;
+    phone?:                  string | null;
+    parent_phone?:           string | null;
+    ambulance_consent?:      boolean | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_phone?:string | null;
+  };
+
+  const members: RichMember[] = [];
 
   try {
-    // Org members (parents / members with accounts)
-    const { rows: memberRows } = await pool.query<{ id: string; name: string; role: string }>(
-      `SELECT u.id, u.name, om.role
+    // Org members (adults with accounts) — include phone for emergency contact use
+    const { rows: memberRows } = await pool.query<{ id: string; name: string; role: string; phone: string | null }>(
+      `SELECT u.id::text, u.name, om.role, u.phone
        FROM users u
        JOIN organization_members om ON om.user_id = u.id
        WHERE om.organization_id = $1
@@ -166,16 +178,27 @@ router.get("/emergency/members-present", requireAuth, async (req: Request, res: 
        LIMIT 100`,
       [orgId],
     );
-    members.push(...memberRows);
+    members.push(...memberRows.map(r => ({
+      id:    r.id,
+      name:  r.name,
+      role:  r.role,
+      phone: r.phone,
+    })));
   } catch { /* table schema may differ */ }
 
+  const depIds: string[] = [];
+
   try {
-    // Dependants registered under org members
-    const { rows: depRows } = await pool.query<{ id: string; name: string }>(
+    // Dependants (children) with parent phone via JOIN
+    const { rows: depRows } = await pool.query<{
+      id: string; name: string; parent_phone: string | null;
+    }>(
       `SELECT md.dependent_id AS id,
-              COALESCE(md.dependent_name, md.dependent_id) AS name
+              COALESCE(md.dependent_name, md.dependent_id) AS name,
+              u.phone AS parent_phone
        FROM member_dependents md
        JOIN organization_members om ON om.user_id = md.parent_user_id
+       JOIN users u ON u.id = md.parent_user_id
        WHERE om.organization_id = $1
        ORDER BY name
        LIMIT 100`,
@@ -183,19 +206,46 @@ router.get("/emergency/members-present", requireAuth, async (req: Request, res: 
     );
     for (const d of depRows) {
       if (!members.find(m => m.id === d.id)) {
-        members.push({ id: d.id, name: d.name, role: "dependant" });
+        members.push({ id: d.id, name: d.name, role: "dependant", parent_phone: d.parent_phone });
+        depIds.push(d.id);
       }
     }
   } catch { /* member_dependents may not exist */ }
 
+  // Enrich dependants with Supabase children emergency contact + ambulance consent
+  if (depIds.length > 0) {
+    try {
+      const { data: childRows } = await supabase
+        .from("children")
+        .select("id, ambulance_consent, emergency_contact_name, emergency_contact_phone")
+        .in("id", depIds);
+      if (childRows) {
+        for (const c of childRows) {
+          const m = members.find(x => x.id === (c as { id: string }).id);
+          if (m) {
+            const row = c as {
+              id: string;
+              ambulance_consent?: boolean | null;
+              emergency_contact_name?: string | null;
+              emergency_contact_phone?: string | null;
+            };
+            m.ambulance_consent       = row.ambulance_consent ?? null;
+            m.emergency_contact_name  = row.emergency_contact_name ?? null;
+            m.emergency_contact_phone = row.emergency_contact_phone ?? null;
+          }
+        }
+      }
+    } catch { /* Supabase children may not have these columns yet */ }
+  }
+
   // Fallback: if no members found (fresh system), return demo entries
   if (members.length === 0) {
     members.push(
-      { id: "demo-1", name: "Marco Rossi",   role: "member" },
-      { id: "demo-2", name: "Giulia Ferrari", role: "member" },
-      { id: "demo-3", name: "Luca Bianchi",   role: "member" },
-      { id: "demo-4", name: "Sofia Romano",   role: "member" },
-      { id: "demo-5", name: "Matteo Conti",   role: "member" },
+      { id: "demo-1", name: "Marco Rossi",    role: "member",    phone: "+39 02 1234567" },
+      { id: "demo-2", name: "Giulia Ferrari",  role: "member",    phone: "+39 02 9876543" },
+      { id: "demo-3", name: "Sofia Romano",    role: "dependant", parent_phone: "+39 338 1234567", ambulance_consent: true,  emergency_contact_name: "Marco Romano",    emergency_contact_phone: "+39 338 9999000" },
+      { id: "demo-4", name: "Luca Bianchi",    role: "dependant", parent_phone: "+39 347 5551234", ambulance_consent: false, emergency_contact_name: "Anna Bianchi",     emergency_contact_phone: "+39 347 0001234" },
+      { id: "demo-5", name: "Matteo Conti",    role: "dependant", parent_phone: "+39 333 8885555", ambulance_consent: true,  emergency_contact_name: "Carla Conti",      emergency_contact_phone: "+39 333 4445555" },
     );
   }
 
