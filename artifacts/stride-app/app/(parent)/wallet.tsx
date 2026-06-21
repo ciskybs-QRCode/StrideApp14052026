@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -94,6 +95,61 @@ export default function WalletScreen() {
   const [pendingFees, setPendingFees]       = useState<MyFeeEvent[]>([]);
   const [feesLoading, setFeesLoading]       = useState(false);
   const [expandedFee, setExpandedFee]       = useState<number | null>(null);
+
+  // ── Active subscriptions ────────────────────────────────────────────────────
+  interface ActiveSub {
+    id: number;
+    item_name: string | null;
+    participant_name: string | null;
+    package_type: string | null;
+    amount_cents: number;
+    currency: string;
+    status: string;
+    current_period_end: string | null;
+    cancel_at_period_end: boolean;
+  }
+  const [subscriptions,  setSubscriptions]  = useState<ActiveSub[]>([]);
+  const [subsLoading,    setSubsLoading]    = useState(false);
+  const [cancellingId,   setCancellingId]   = useState<number | null>(null);
+
+  useEffect(() => {
+    setSubsLoading(true);
+    import("@/lib/api").then(m =>
+      m.api.listSubscriptions().then(res => {
+        setSubscriptions(res.subscriptions as ActiveSub[]);
+        setSubsLoading(false);
+      }).catch(() => setSubsLoading(false))
+    ).catch(() => setSubsLoading(false));
+  }, []);
+
+  const cancelSub = (id: number) => {
+    Alert.alert(
+      "Cancel Subscription",
+      "The subscription will remain active until the end of the current billing period.",
+      [
+        { text: "Keep It", style: "cancel" },
+        {
+          text: "Cancel Subscription",
+          style: "destructive",
+          onPress: () => {
+            setCancellingId(id);
+            import("@/lib/api").then(m =>
+              m.api.cancelSubscription(id)
+                .then(() => {
+                  setSubscriptions(prev => prev.map(s => s.id === id ? { ...s, cancel_at_period_end: true } : s));
+                  setCancellingId(null);
+                  Alert.alert("Done", "Subscription will not renew.");
+                })
+                .catch(() => {
+                  setCancellingId(null);
+                  Alert.alert("Error", "Could not cancel. Please try again.");
+                })
+            ).catch(() => setCancellingId(null));
+          },
+        },
+      ],
+    );
+  };
 
   useEffect(() => {
     setFeesLoading(true);
@@ -430,38 +486,67 @@ export default function WalletScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
-        {/* Active Subscriptions */}
+        {/* ── Active Subscriptions (backend-driven) ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Active Subscriptions</Text>
-        {activeSubscriptions.map(booking => {
-          const course = courses.find(c => c.id === booking.courseId);
-          return course ? (
-            <View key={booking.id} style={[styles.subCard, { backgroundColor: colors.card }]}>
-              <View style={styles.subCardLeft}>
-                <View style={[styles.subIcon, { backgroundColor: colors.muted }]}>
-                  <Ionicons name="musical-notes" size={20} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.subName, { color: colors.primary }]}>{course.name}</Text>
-                  <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>Renews on 01/06/2026</Text>
-                  <Text style={[styles.subPrice, { color: colors.secondary }]}>{"\u20AC"}{course.price}/mo</Text>
-                </View>
-              </View>
-              <Pressable
-                style={[styles.cancelRenewalBtn, { borderColor: "#FCA5A5", alignSelf: "flex-end" }]}
-                onPress={() => openCancelFlow(booking.id)}
-              >
-                <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
-                <Text style={styles.cancelRenewalText}>Cancel Renewal</Text>
-              </Pressable>
-            </View>
-          ) : null;
-        })}
-        {activeSubscriptions.length === 0 && (
+        {subsLoading ? (
+          <ActivityIndicator color="#1E3A8A" style={{ marginVertical: 10 }} />
+        ) : subscriptions.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
             <Ionicons name="calendar-outline" size={28} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No active subscriptions</Text>
           </View>
-        )}
+        ) : subscriptions.map(sub => {
+          const SYMS: Record<string, string> = { EUR: "€", USD: "$", GBP: "£", CHF: "CHF " };
+          const sym      = SYMS[(sub.currency ?? "EUR").toUpperCase()] ?? sub.currency;
+          const amtStr   = `${sym}${(sub.amount_cents / 100).toFixed(2)}`;
+          const cycle    = sub.package_type === "annual" ? "/yr" : "/mo";
+          const nextDate = sub.current_period_end
+            ? new Date(sub.current_period_end).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+            : "—";
+          const willEnd  = sub.cancel_at_period_end;
+          return (
+            <View
+              key={sub.id}
+              style={[styles.subCard, { backgroundColor: colors.card, borderColor: willEnd ? "#FCA5A5" : colors.border, borderWidth: StyleSheet.hairlineWidth }]}
+            >
+              <View style={styles.subCardLeft}>
+                <View style={[styles.subIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                  <Ionicons name="calendar-outline" size={20} color="#1E3A8A" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.subName, { color: colors.primary }]}>{sub.item_name ?? "Subscription"}</Text>
+                  {sub.participant_name ? (
+                    <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>For: {sub.participant_name}</Text>
+                  ) : null}
+                  <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>
+                    {willEnd ? "Ends" : "Renews"} {nextDate}
+                  </Text>
+                  <Text style={[styles.subPrice, { color: colors.secondary }]}>{amtStr}{cycle}</Text>
+                  {willEnd && (
+                    <Text style={{ fontSize: 11, color: "#EF4444", fontWeight: "600", marginTop: 2 }}>
+                      Cancels at period end
+                    </Text>
+                  )}
+                </View>
+              </View>
+              {!willEnd && (
+                <Pressable
+                  style={[styles.cancelRenewalBtn, { borderColor: "#FCA5A5", alignSelf: "flex-end", opacity: cancellingId === sub.id ? 0.5 : 1 }]}
+                  onPress={() => cancelSub(sub.id)}
+                  disabled={cancellingId === sub.id}
+                >
+                  {cancellingId === sub.id
+                    ? <ActivityIndicator size="small" color="#EF4444" />
+                    : (<>
+                        <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
+                        <Text style={styles.cancelRenewalText}>Cancel</Text>
+                      </>)
+                  }
+                </Pressable>
+              )}
+            </View>
+          );
+        })}
 
         {/* Pending */}
         {pending.length > 0 && (

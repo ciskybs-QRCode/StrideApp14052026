@@ -26,6 +26,18 @@ import { useColors } from "@/hooks/useColors";
 
 interface FlaggedItem { itemId: string; courseName: string; participantName: string; issue: string; }
 
+// ── Item type / package display helper ──────────────────────────────────────
+function itemMeta(item: CartItem): { icon: string; label: string; color: string } {
+  const t = item.type;
+  if (t === "marketplace")  return { icon: "bag-outline",    label: "Product",                                              color: "#7C3AED" };
+  if (t === "event_ticket") return { icon: "ticket-outline", label: `Ticket${(item.quantity ?? 1) > 1 ? ` ×${item.quantity}` : ""}`, color: "#D97706" };
+  if (t === "membership")   return { icon: "id-card-outline",label: item.packageType === "annual" ? "Annual Membership" : "Monthly Membership", color: "#059669" };
+  if (item.packageType === "fixedBlock")     return { icon: "layers-outline",   label: "Full Package",    color: "#1E3A8A" };
+  if (item.packageType === "monthlyBilling") return { icon: "calendar-outline", label: "Monthly Billing", color: "#7C3AED" };
+  if (item.packageType === "annual")         return { icon: "refresh-outline",  label: "Annual Plan",     color: "#059669" };
+  return { icon: "ticket-outline", label: "Single Lesson", color: "#6B7280" };
+}
+
 function StatusBadge({ status }: { status: CartItemStatus }) {
   if (status === "ready") return null;
   const cfg = {
@@ -291,14 +303,15 @@ export default function CartScreen() {
                 <View style={[styles.itemTypeTag, {
                   backgroundColor: item.packageType === "fixedBlock" ? colors.secondary : item.packageType === "monthlyBilling" ? "#EDE9FE" : colors.muted,
                 }]}>
-                  <Ionicons
-                    name={item.packageType === "fixedBlock" ? "layers-outline" : item.packageType === "monthlyBilling" ? "calendar-outline" : "ticket-outline"}
-                    size={11}
-                    color={item.packageType === "fixedBlock" ? colors.primary : item.packageType === "monthlyBilling" ? "#7C3AED" : colors.mutedForeground}
-                  />
-                  <Text style={[styles.itemTypeText, { color: item.packageType === "fixedBlock" ? colors.primary : item.packageType === "monthlyBilling" ? "#7C3AED" : colors.mutedForeground }]}>
-                    {item.packageType === "fixedBlock" ? "Full Package" : item.packageType === "monthlyBilling" ? "Monthly Billing" : "Single Lesson"}
-                  </Text>
+                  {(() => {
+                    const m = itemMeta(item);
+                    return (
+                      <>
+                        <Ionicons name={m.icon as never} size={11} color={m.color} />
+                        <Text style={[styles.itemTypeText, { color: m.color }]}>{m.label}</Text>
+                      </>
+                    );
+                  })()}
                 </View>
                 <View style={styles.itemTopRight}>
                   <StatusBadge status={item.status} />

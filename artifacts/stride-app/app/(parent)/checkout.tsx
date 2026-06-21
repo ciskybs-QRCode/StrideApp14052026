@@ -384,12 +384,22 @@ export default function CheckoutScreen() {
         // Single org → existing single-session flow
         const result = await api.createWebCheckoutSession({
           items: payableItems.map(item => ({
-            courseId:        item.courseId,
-            courseName:      item.courseName,
-            participantName: item.participantName,
-            childId:         children.find(c => c.name === item.participantName)?.id,
-            packageType:     item.packageType,
-            clientPrice:     item.courseId.startsWith("private-") ? item.price : undefined,
+            type:                 item.type,
+            courseId:             item.courseId,
+            courseName:           item.courseName,
+            participantName:      item.participantName,
+            childId:              children.find(c => c.name === item.participantName)?.id,
+            packageType:          item.packageType,
+            clientPrice: (
+              item.type === "private_lesson" || item.courseId.startsWith("private-") ||
+              item.type === "marketplace" || item.type === "event_ticket" || item.type === "membership"
+            ) ? item.price : undefined,
+            marketplaceProductId: item.marketplaceProductId,
+            eventId:              item.eventId,
+            eventTicketTypeId:    item.eventTicketTypeId,
+            quantity:             item.quantity,
+            memberId:             item.memberId,
+            memberType:           item.memberType,
           })),
           ...(activePromo ? {
             promoCode:            activePromo.code,
@@ -399,14 +409,22 @@ export default function CheckoutScreen() {
             promoTargetCourseIds: activePromo.targetCourseIds,
           } : {}),
         });
-        const typedResult = result as CheckoutQuote;
-        if (typedResult.freeEnrollment) {
-          payableItems.forEach(item => removeItem(item.id));
-          clearCartBadge();
-          setSuccess({ invoiceNumber: typedResult.sessionId, invoiceId: null, amount: 0 });
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Mixed sub+payment cart returns { batchId, sessions } — handle as batch
+        const anyResult = result as Record<string, unknown>;
+        if (anyResult["batchId"] && Array.isArray(anyResult["sessions"])) {
+          const batchResult = result as unknown as BatchQuote;
+          setBatchQuote(batchResult);
+          await AsyncStorage.setItem(BATCH_RESUME_KEY, JSON.stringify(batchResult)).catch(() => {});
         } else {
-          setQuote(typedResult);
+          const typedResult = result as CheckoutQuote;
+          if (typedResult.freeEnrollment) {
+            payableItems.forEach(item => removeItem(item.id));
+            clearCartBadge();
+            setSuccess({ invoiceNumber: typedResult.sessionId, invoiceId: null, amount: 0 });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } else {
+            setQuote(typedResult);
+          }
         }
       }
     } catch (err) {

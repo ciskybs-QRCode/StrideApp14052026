@@ -1166,6 +1166,15 @@ export const api = {
   listMarketplacePurchases: () =>
     request<{ purchases: MarketplacePurchase[] }>("GET", "/marketplace/purchases"),
 
+  getMembershipPlans: () =>
+    request<MembershipPlans>("GET", "/membership-plans"),
+
+  listSubscriptions: () =>
+    request<{ subscriptions: MemberSubscription[] }>("GET", "/subscriptions"),
+
+  cancelSubscription: (id: number) =>
+    request<{ ok: boolean; message: string }>("DELETE", `/subscriptions/${id}`),
+
   // ── Shop Links (Shopify / external) ────────────────────────────────────────
   listShopLinks: (orgId: number) =>
     request<{ links: ShopLink[] }>("GET", `/marketplace/shop-links?org_id=${orgId}`),
@@ -1970,6 +1979,10 @@ export interface ApiAdminSettings {
   lesson_reminders_enabled?: boolean;
   role_assignment_email_subject?: string | null;
   role_assignment_email_body?: string | null;
+  // Membership plans
+  membership_annual_fee_cents?:  number;
+  membership_monthly_fee_cents?: number;
+  membership_description?:       string | null;
   // Feature toggles (DB-backed)
   push_notifications_enabled?: boolean;
   auto_invoice_enabled?: boolean;
@@ -2001,6 +2014,28 @@ export interface ApiAdminSettings {
   absence_postpone_minutes?: number;
   absence_cancel_refund_type?: string;
   updated_at?: string;
+}
+
+export interface MembershipPlans {
+  annual_fee_cents:  number;
+  monthly_fee_cents: number;
+  description:       string | null;
+  currency:          string;
+}
+
+export interface MemberSubscription {
+  id:                      number;
+  stripe_subscription_id:  string;
+  item_name:               string | null;
+  participant_name:        string | null;
+  item_type:               string | null;
+  package_type:            string | null;
+  amount_cents:            number;
+  currency:                string;
+  status:                  string;
+  current_period_end:      string | null;
+  cancel_at_period_end:    boolean;
+  created_at:              string;
 }
 
 export interface PresetMessage {

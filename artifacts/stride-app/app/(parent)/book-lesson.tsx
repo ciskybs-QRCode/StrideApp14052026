@@ -260,6 +260,7 @@ export default function BookLessonScreen() {
         .filter(p => selectedParticipants.has(p.id))
         .forEach((p, i) => {
           addItem({
+            type: "private_lesson",
             courseId: `private-${result.id}-${i}`,
             courseName: lessonName,
             courseSchedule: scheduleWithLocation,

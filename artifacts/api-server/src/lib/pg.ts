@@ -1621,5 +1621,35 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS public_reviews_approved_idx ON public_reviews(approved, created_at DESC);
   `).catch(() => {});
 
+  // ── Member Subscriptions (Stripe recurring) ──────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS member_subscriptions (
+      id                   SERIAL PRIMARY KEY,
+      stripe_subscription_id TEXT NOT NULL UNIQUE,
+      organization_id      INTEGER NOT NULL,
+      user_id              TEXT NOT NULL,
+      participant_name     TEXT,
+      item_name            TEXT,
+      item_type            TEXT NOT NULL DEFAULT 'course',
+      package_type         TEXT NOT NULL DEFAULT 'monthlyBilling',
+      amount_cents         INTEGER NOT NULL,
+      currency             TEXT NOT NULL DEFAULT 'EUR',
+      status               TEXT NOT NULL DEFAULT 'active',
+      current_period_end   TIMESTAMPTZ,
+      cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS member_subs_user_idx ON member_subscriptions(user_id, organization_id);
+    CREATE INDEX IF NOT EXISTS member_subs_org_idx  ON member_subscriptions(organization_id);
+  `).catch(() => {});
+
+  // ── Membership fee columns on admin_settings ──────────────────────────────
+  await pool.query(`
+    ALTER TABLE admin_settings
+      ADD COLUMN IF NOT EXISTS membership_annual_fee_cents  INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS membership_monthly_fee_cents INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS membership_description       TEXT;
+  `).catch(() => {});
+
   initialized = true;
 }

@@ -1,5 +1,6 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, type TokenPayload } from "../lib/auth.js";
 import { getPricingForOrg } from "../lib/pricing-service.js";
 
@@ -21,12 +22,22 @@ export type CheckoutLineItem = {
 };
 
 type CartItemInput = {
-  courseId:        string;
-  courseName:      string;
-  participantName: string;
-  childId?:        string;
-  packageType:     string;
-  clientPrice?:    number;
+  type?:                "course" | "private_lesson" | "marketplace" | "event_ticket" | "membership";
+  courseId:             string;
+  courseName:           string;
+  participantName:      string;
+  childId?:             string;
+  packageType:          string;
+  clientPrice?:         number;
+  // Marketplace
+  marketplaceProductId?: string;
+  // Event tickets
+  eventId?:             string;
+  eventTicketTypeId?:   string;
+  quantity?:            number;
+  // Membership
+  memberId?:            string;
+  memberType?:          "member" | "dependant";
 };
 
 type OrgRow = {
@@ -113,6 +124,137 @@ async function resolveLineItems(
   });
 }
 
+// ── Line item display helpers ─────────────────────────────────────────────────
+
+function buildLineItemName(item: CheckoutLineItem): string {
+  const base = item.participantName
+    ? `${item.courseName} — ${item.participantName}`
+    : item.courseName;
+  return base;
+}
+
+function buildLineItemDescription(item: CheckoutLineItem): string {
+  const pkg = item.packageType;
+  if (pkg === "fixedBlock")    return "Full Package";
+  if (pkg === "monthlyBilling") return "Monthly Subscription";
+  if (pkg === "annual")         return "Annual Subscription";
+  if (pkg === "one_time")       return "One-time Purchase";
+  return "Single Lesson";
+}
+
+// ── resolveAllLineItems — handles all CartItem types ─────────────────────────
+
+async function resolveAllLineItems(
+  orgId:                 number,
+  items:                 CartItemInput[],
+  orgName?:              string,
+  promoCode?:            string,
+  promoDiscountType?:    "percent" | "amount",
+  promoDiscountPercent?: number,
+  promoDiscountAmount?:  number,
+  promoTargetCourseIds?: string[],
+): Promise<CheckoutLineItem[]> {
+  const results: CheckoutLineItem[] = [];
+
+  // Group course/private_lesson items for batch resolution
+  const courseItems = items.filter(i => !i.type || i.type === "course" || i.type === "private_lesson");
+  const otherItems  = items.filter(i =>  i.type && i.type !== "course" && i.type !== "private_lesson");
+
+  // Resolve course items via existing logic
+  if (courseItems.length > 0) {
+    const resolved = await resolveLineItems(
+      orgId, courseItems, orgName,
+      promoCode, promoDiscountType, promoDiscountPercent,
+      promoDiscountAmount, promoTargetCourseIds,
+    );
+    results.push(...resolved);
+  }
+
+  // Resolve non-course items individually
+  for (const item of otherItems) {
+    const itemType = item.type!;
+    const qty      = Math.max(1, item.quantity ?? 1);
+
+    if (itemType === "marketplace") {
+      let unitPrice: number    = item.clientPrice ?? 0;
+      let priceSource: "db" | "client_fallback" = "client_fallback";
+      if (item.marketplaceProductId) {
+        const pid = parseInt(item.marketplaceProductId);
+        if (!isNaN(pid)) {
+          const { rows } = await pool.query<{ price_cents: number; name: string }>(
+            `SELECT price_cents, name FROM marketplace_products
+             WHERE id = $1 AND (org_id = $2 OR is_stride_verified = TRUE) AND is_active = TRUE`,
+            [pid, orgId],
+          );
+          if (rows[0]) { unitPrice = rows[0].price_cents / 100; priceSource = "db"; }
+        }
+      }
+      results.push({
+        courseId:         item.courseId,
+        courseName:       item.courseName,
+        participantName:  item.participantName,
+        packageType:      "one_time",
+        organizationName: orgName,
+        unitPrice,
+        discount:         0,
+        finalPrice:       unitPrice * qty,
+        priceSource,
+      });
+    } else if (itemType === "event_ticket") {
+      let unitPrice: number    = item.clientPrice ?? 0;
+      let priceSource: "db" | "client_fallback" = "client_fallback";
+      if (item.eventTicketTypeId) {
+        const tid = parseInt(item.eventTicketTypeId);
+        if (!isNaN(tid)) {
+          const { rows } = await pool.query<{ price_cents: number }>(
+            `SELECT price_cents FROM event_ticket_types WHERE id = $1`,
+            [tid],
+          );
+          if (rows[0]) { unitPrice = rows[0].price_cents / 100; priceSource = "db"; }
+        }
+      }
+      results.push({
+        courseId:         item.courseId,
+        courseName:       item.courseName,
+        participantName:  item.participantName,
+        packageType:      "one_time",
+        organizationName: orgName,
+        unitPrice,
+        discount:         0,
+        finalPrice:       unitPrice * qty,
+        priceSource,
+      });
+    } else if (itemType === "membership") {
+      let unitPrice: number    = item.clientPrice ?? 0;
+      let priceSource: "db" | "client_fallback" = "client_fallback";
+      const isAnnual = item.packageType === "annual";
+      const { rows } = await pool.query<{ membership_annual_fee_cents: number; membership_monthly_fee_cents: number }>(
+        `SELECT membership_annual_fee_cents, membership_monthly_fee_cents
+         FROM admin_settings WHERE organization_id = $1`,
+        [orgId],
+      );
+      if (rows[0]) {
+        const cents = isAnnual ? rows[0].membership_annual_fee_cents : rows[0].membership_monthly_fee_cents;
+        unitPrice   = cents / 100;
+        priceSource = "db";
+      }
+      results.push({
+        courseId:         item.courseId,
+        courseName:       item.courseName,
+        participantName:  item.participantName,
+        packageType:      item.packageType,
+        organizationName: orgName,
+        unitPrice,
+        discount:         0,
+        finalPrice:       unitPrice,
+        priceSource,
+      });
+    }
+  }
+
+  return results;
+}
+
 // ── POST /checkout/web-session ────────────────────────────────────────────────
 router.post("/checkout/web-session", requireAuth, async (req, res) => {
   const masterStripeKey = process.env["STRIPE_SECRET_KEY"];
@@ -165,7 +307,7 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     const trialEndsAt    = org?.trial_ends_at ?? null;
     const isTrial        = !trialEndsAt || new Date() < new Date(trialEndsAt);
 
-    const lineItems = await resolveLineItems(
+    const lineItems = await resolveAllLineItems(
       orgId, items, orgName,
       promoCode, promoDiscountType, promoDiscountPercent,
       promoDiscountAmount, promoTargetCourseIds,
@@ -219,23 +361,143 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     const baseUrl = `https://${rawDomain}`;
 
     const Stripe = (await import("stripe")).default;
-
     type SessionParams = Parameters<InstanceType<typeof Stripe>["checkout"]["sessions"]["create"]>[0];
-    const stripeLineItems = lineItems.map(item => ({
+
+    const activeStripeKey = orgStripeKey ?? masterStripeKey;
+    const stripe          = new Stripe(activeStripeKey);
+
+    // ── Detect subscription vs one-time items ──────────────────────────────
+    const isRecurring = (pkg: string) => pkg === "monthlyBilling" || pkg === "annual";
+    const subItems    = lineItems.filter(i => isRecurring(i.packageType));
+    const payItems    = lineItems.filter(i => !isRecurring(i.packageType));
+    const hasSubs     = subItems.length > 0;
+    const hasPay      = payItems.length > 0;
+
+    // Helper — build Stripe line item for one-time payment
+    const toPayStripeItem = (item: CheckoutLineItem) => ({
       price_data: {
         currency,
-        product_data: {
-          name:        `${item.courseName} — ${item.participantName}`,
-          description: item.packageType === "fixedBlock" ? "Full Package" : item.packageType === "monthlyBilling" ? "Monthly Billing" : "Single Lesson",
-        },
-        unit_amount: Math.round(item.finalPrice * 100),
+        product_data: { name: buildLineItemName(item), description: buildLineItemDescription(item) },
+        unit_amount:  Math.round(item.finalPrice * 100),
       },
       quantity: 1,
-    }));
+    });
 
+    // Helper — build Stripe line item for subscription
+    const toSubStripeItem = (item: CheckoutLineItem) => ({
+      price_data: {
+        currency,
+        product_data: { name: buildLineItemName(item) },
+        recurring:    { interval: (item.packageType === "annual" ? "year" : "month") as "month" | "year" },
+        unit_amount:  Math.round(item.finalPrice * 100),
+      },
+      quantity: 1,
+    });
+
+    // Helper — creates a single Stripe session and stores it in Supabase
+    const createAndStoreSession = async (
+      params: SessionParams,
+      sessionItems: CheckoutLineItem[],
+      amtCents: number,
+      batchId?: string,
+      batchPosition?: number,
+    ) => {
+      const sess = await stripe.checkout.sessions.create(params);
+      await supabase.from("checkout_sessions").insert({
+        session_id:      sess.id,
+        organization_id: orgId,
+        user_id:         String(user.id),
+        status:          "pending",
+        items:           sessionItems,
+        amount_cents:    amtCents,
+        checkout_url:    sess.url,
+        ...(batchId       ? { batch_id: batchId }          : {}),
+        ...(batchPosition ? { batch_position: batchPosition } : {}),
+      });
+      return sess;
+    };
+
+    // ── Case A: Pure subscription cart ─────────────────────────────────────
+    if (hasSubs && !hasPay) {
+      const subCents   = Math.round(subItems.reduce((s, i) => s + i.finalPrice, 0) * 100);
+      const subParams: SessionParams = {
+        mode:        "subscription",
+        line_items:  subItems.map(toSubStripeItem),
+        success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url:  `${baseUrl}/payment-cancelled`,
+        metadata:    { type: "member_checkout", orgId: String(orgId), userId: String(user.id), auditId },
+      };
+      if (!orgStripeKey && connectId) {
+        subParams.subscription_data = {
+          transfer_data:           { destination: connectId },
+          application_fee_percent: isTrial ? 0 : 2,
+        };
+      }
+      const sess = await createAndStoreSession(subParams, subItems, subCents);
+      await supabase.from("payment_audit_log").update({ stripe_session_id: sess.id }).eq("request_id", auditId);
+      res.json({
+        sessionId: sess.id, checkoutUrl: sess.url, auditId,
+        lineItems, calculatedTotal, discountApplied, currency,
+      });
+      return;
+    }
+
+    // ── Case B: Mixed cart → return as batch (sub + payment sessions) ──────
+    if (hasSubs && hasPay) {
+      const batchId  = crypto.randomUUID();
+      const payCents = Math.round(payItems.reduce((s, i) => s + i.finalPrice, 0) * 100);
+      const subCents = Math.round(subItems.reduce((s, i) => s + i.finalPrice, 0) * 100);
+
+      const payParams: SessionParams = {
+        mode:        "payment",
+        line_items:  payItems.map(toPayStripeItem),
+        success_url: `${baseUrl}/payment-batch?batch_id=${batchId}&position=1`,
+        cancel_url:  `${baseUrl}/payment-cancelled?batch_id=${batchId}&position=1`,
+        metadata:    { type: "member_checkout", orgId: String(orgId), userId: String(user.id), auditId, batchId, batchPosition: "1" },
+      };
+      if (!orgStripeKey && connectId) {
+        payParams.payment_intent_data = {
+          transfer_data:          { destination: connectId },
+          application_fee_amount: isTrial ? 0 : Math.round(payCents * 0.02),
+        };
+      }
+      const subParams: SessionParams = {
+        mode:        "subscription",
+        line_items:  subItems.map(toSubStripeItem),
+        success_url: `${baseUrl}/payment-batch?batch_id=${batchId}&position=2`,
+        cancel_url:  `${baseUrl}/payment-cancelled?batch_id=${batchId}&position=2`,
+        metadata:    { type: "member_checkout", orgId: String(orgId), userId: String(user.id), auditId, batchId, batchPosition: "2" },
+      };
+      if (!orgStripeKey && connectId) {
+        subParams.subscription_data = {
+          transfer_data:           { destination: connectId },
+          application_fee_percent: isTrial ? 0 : 2,
+        };
+      }
+      const [paySess, subSess] = await Promise.all([
+        createAndStoreSession(payParams, payItems, payCents, batchId, 1),
+        createAndStoreSession(subParams, subItems, subCents, batchId, 2),
+      ]);
+      await supabase.from("checkout_batches").insert({
+        batch_id: batchId, user_id: String(user.id), organization_id: orgId,
+        status: "pending", total_sessions: 2, completed_count: 0,
+        total_cents: payCents + subCents,
+      });
+      await supabase.from("payment_audit_log").update({ stripe_session_id: paySess.id }).eq("request_id", auditId);
+      res.json({
+        batchId,
+        sessions: [
+          { position: 1, sessionId: paySess.id, checkoutUrl: paySess.url, orgId, orgName, amountCents: payCents, currency },
+          { position: 2, sessionId: subSess.id, checkoutUrl: subSess.url, orgId, orgName, amountCents: subCents, currency },
+        ],
+      });
+      return;
+    }
+
+    // ── Case C: Pure payment cart (existing behavior) ───────────────────────
     const sessionParams: SessionParams = {
       mode:        "payment",
-      line_items:  stripeLineItems,
+      line_items:  payItems.map(toPayStripeItem),
       success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${baseUrl}/payment-cancelled`,
       metadata: {
@@ -245,39 +507,19 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
         auditId,
       },
     };
-
-    let activeStripeKey: string;
-
-    if (orgStripeKey) {
-      activeStripeKey = orgStripeKey;
-    } else {
-      activeStripeKey = masterStripeKey;
-      if (connectId) {
-        sessionParams.payment_intent_data = {
-          transfer_data:          { destination: connectId },
-          application_fee_amount: isTrial ? 0 : Math.round(calculatedCents * 0.02),
-        };
-      }
+    if (!orgStripeKey && connectId) {
+      sessionParams.payment_intent_data = {
+        transfer_data:          { destination: connectId },
+        application_fee_amount: isTrial ? 0 : Math.round(calculatedCents * 0.02),
+      };
     }
 
-    const stripe  = new Stripe(activeStripeKey);
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await createAndStoreSession(sessionParams, lineItems, calculatedCents);
 
-    await Promise.all([
-      supabase
-        .from("payment_audit_log")
-        .update({ stripe_session_id: session.id })
-        .eq("request_id", auditId),
-      supabase.from("checkout_sessions").insert({
-        session_id:      session.id,
-        organization_id: orgId,
-        user_id:         String(user.id),
-        status:          "pending",
-        items:           lineItems,
-        amount_cents:    calculatedCents,
-        checkout_url:    session.url,
-      }),
-    ]);
+    await supabase
+      .from("payment_audit_log")
+      .update({ stripe_session_id: session.id })
+      .eq("request_id", auditId);
 
     res.json({
       sessionId:        session.id,
@@ -619,6 +861,67 @@ router.get("/checkout/receipt/:sessionId", async (req, res) => {
     branding,
     items:         Array.isArray(row.items) ? row.items : [],
   });
+});
+
+// ── GET /subscriptions — list user's active recurring subscriptions ───────────
+router.get("/subscriptions", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, stripe_subscription_id, item_name, participant_name, item_type,
+              package_type, amount_cents, currency, status,
+              current_period_end, cancel_at_period_end, created_at
+       FROM member_subscriptions
+       WHERE user_id = $1 AND organization_id = $2
+         AND status NOT IN ('cancelled','canceled','unpaid')
+       ORDER BY created_at DESC`,
+      [String(user.id), orgId],
+    );
+    res.json({ subscriptions: rows });
+  } catch (err) {
+    req.log.error(err, "GET /subscriptions error");
+    res.status(500).json({ error: "Failed to load subscriptions" });
+  }
+});
+
+// ── DELETE /subscriptions/:id — cancel at period end ─────────────────────────
+router.delete("/subscriptions/:id", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  const subId = parseInt(String(req.params["id"] ?? ""));
+
+  if (isNaN(subId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  try {
+    const { rows } = await pool.query<{ stripe_subscription_id: string }>(
+      `SELECT stripe_subscription_id FROM member_subscriptions
+       WHERE id = $1 AND user_id = $2 AND organization_id = $3`,
+      [subId, String(user.id), orgId],
+    );
+    if (!rows[0]) { res.status(404).json({ error: "Subscription not found" }); return; }
+
+    const stripeSubId     = rows[0].stripe_subscription_id;
+    const masterStripeKey = process.env["STRIPE_SECRET_KEY"];
+
+    // Cancel at period end in Stripe (if real subscription id)
+    if (masterStripeKey && stripeSubId.startsWith("sub_")) {
+      try {
+        const Stripe = (await import("stripe")).default;
+        const stripe  = new Stripe(masterStripeKey);
+        await stripe.subscriptions.update(stripeSubId, { cancel_at_period_end: true });
+      } catch { /* non-blocking */ }
+    }
+
+    await pool.query(
+      `UPDATE member_subscriptions SET cancel_at_period_end = TRUE WHERE id = $1`,
+      [subId],
+    );
+    res.json({ ok: true, message: "Subscription will cancel at end of billing period." });
+  } catch (err) {
+    req.log.error(err, "DELETE /subscriptions/:id error");
+    res.status(500).json({ error: "Failed to cancel subscription" });
+  }
 });
 
 // ── processMemberCheckout (webhook / internal use) ────────────────────────────

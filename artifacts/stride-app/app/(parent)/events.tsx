@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
 import {
   listEvents, getEvent, getMyTickets, purchaseEventTickets,
@@ -110,7 +111,9 @@ function PurchaseModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const colors = useColors();
+  const colors  = useColors();
+  const router  = useRouter();
+  const { addItem } = useCart();
   const [selectedDate, setSelectedDate]       = useState<EventDate | null>(null);
   const [selectedType, setSelectedType]       = useState<EventTicketType | null>(null);
   const [quantity, setQuantity]               = useState(1);
@@ -137,24 +140,49 @@ function PurchaseModal({
 
   const handlePurchase = async () => {
     if (!selectedType) { Alert.alert("Select a ticket type"); return; }
-    setLoading(true);
-    try {
-      const result = await purchaseEventTickets({
-        event_id: event.id,
-        event_date_id: selectedDate?.id,
-        ticket_type_id: selectedType.id,
+
+    // Paid tickets → add to cart (unified checkout)
+    if (totalCents > 0) {
+      addItem({
+        type:              "event_ticket",
+        courseId:          event.id,
+        courseName:        event.title,
+        courseSchedule:    selectedDate ? fmtDate(selectedDate.date) : "",
+        packageType:       "one_time",
+        label:             selectedType.name,
+        price:             unitPrice / 100,
+        participantName:   attendeeName.trim() || "Attendee",
         quantity,
-        attendee_name: attendeeName.trim() || undefined,
+        eventId:           event.id,
+        eventTicketTypeId: String(selectedType.id),
       });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      if (result.checkout_url) {
-        onClose();
-        await Linking.openURL(result.checkout_url);
-      } else {
-        onSuccess();
-        onClose();
-        Alert.alert("Ticket Confirmed!", "Your free ticket has been issued. Check 'My Tickets' to view it.");
-      }
+      onClose();
+      Alert.alert(
+        "Added to Cart",
+        `${quantity}× ${selectedType.name} for "${event.title}" added to your cart.`,
+        [
+          { text: "Continue", style: "cancel" },
+          { text: "View Cart", onPress: () => router.push("/(parent)/cart") },
+        ],
+      );
+      return;
+    }
+
+    // Free tickets → issue immediately (existing flow)
+    setLoading(true);
+    try {
+      await purchaseEventTickets({
+        event_id:       event.id,
+        event_date_id:  selectedDate?.id,
+        ticket_type_id: selectedType.id,
+        quantity,
+        attendee_name:  attendeeName.trim() || undefined,
+      });
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onSuccess();
+      onClose();
+      Alert.alert("Ticket Confirmed!", "Your free ticket has been issued. Check 'My Tickets' to view it.");
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "Purchase failed");
     } finally {

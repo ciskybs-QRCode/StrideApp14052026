@@ -399,6 +399,38 @@ router.post("/billing/webhook", async (req, res) => {
               items:       items as Parameters<typeof processMemberCheckout>[0]["items"],
               amountCents: amtCents,
             });
+
+            // Capture Stripe subscription_id for recurring sessions
+            if (session.subscription) {
+              const { pool: pgPool }        = await import("../lib/pg.js");
+              const { getPricingForOrg }    = await import("../lib/pricing-service.js");
+              const { currency }            = await getPricingForOrg(orgId);
+              const subId = typeof session.subscription === "string"
+                ? session.subscription
+                : (session.subscription as { id: string }).id;
+              type SubItem = { courseName?: string; participantName?: string; packageType?: string; price?: number; quantity?: number };
+              const subItems = (items as SubItem[]).filter(
+                i => i.packageType === "monthlyBilling" || i.packageType === "annual",
+              );
+              for (const item of subItems) {
+                await pgPool.query(
+                  `INSERT INTO member_subscriptions
+                     (stripe_subscription_id, organization_id, user_id,
+                      participant_name, item_name, item_type, package_type,
+                      amount_cents, currency, status, created_at)
+                   VALUES ($1,$2,$3,$4,$5,'course',$6,$7,$8,'active',NOW())
+                   ON CONFLICT (stripe_subscription_id) DO NOTHING`,
+                  [
+                    subId, orgId, userId,
+                    item.participantName ?? null,
+                    item.courseName ?? null,
+                    item.packageType ?? "monthlyBilling",
+                    Math.round((item.price ?? 0) * 100 * (item.quantity ?? 1)),
+                    currency.toUpperCase(),
+                  ],
+                ).catch(() => {});
+              }
+            }
           }
         } else if (meta?.["type"] === "private_lesson") {
           const bookingId          = meta["bookingId"]          ? parseInt(meta["bookingId"])          : null;

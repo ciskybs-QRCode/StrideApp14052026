@@ -64,6 +64,9 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
     if (!("first_aid_cert_required"         in row)) row.first_aid_cert_required         = false;
     if (!("cert_grace_days"                 in row)) row.cert_grace_days                 = 30;
     if (!("cert_reminder_body"              in row)) row.cert_reminder_body              = null;
+    if (!("membership_annual_fee_cents"     in row)) row.membership_annual_fee_cents     = 0;
+    if (!("membership_monthly_fee_cents"    in row)) row.membership_monthly_fee_cents    = 0;
+    if (!("membership_description"          in row)) row.membership_description          = null;
 
     // Security: never send the raw Stripe secret key to the frontend.
     // Replace with a masked hint (last 4 chars) so the UI can show connection status.
@@ -133,6 +136,10 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "absence_policy",
     "absence_postpone_minutes",
     "absence_cancel_refund_type",
+    // Membership fee self-service
+    "membership_annual_fee_cents",
+    "membership_monthly_fee_cents",
+    "membership_description",
   ];
 
   const setClauses: string[] = ["updated_at = NOW()"];
@@ -213,6 +220,28 @@ router.put("/registration-config", requireAuth, requireRole("admin"), async (req
   } catch (err) {
     req.log.error(err, "registration-config PUT error");
     res.status(500).json({ error: "Failed to save registration config" });
+  }
+});
+
+// ── GET /membership-plans — accessible by parent + admin ─────────────────────
+router.get("/membership-plans", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  try {
+    const { rows } = await pool.query(
+      `SELECT membership_annual_fee_cents, membership_monthly_fee_cents, membership_description
+       FROM admin_settings WHERE organization_id = $1`,
+      [orgId],
+    );
+    const row = (rows[0] ?? {}) as Record<string, unknown>;
+    res.json({
+      annualFeeCents:  Number(row["membership_annual_fee_cents"]  ?? 0),
+      monthlyFeeCents: Number(row["membership_monthly_fee_cents"] ?? 0),
+      description:     (row["membership_description"] as string | null) ?? null,
+    });
+  } catch (err) {
+    req.log.error(err, "membership-plans GET error");
+    res.status(500).json({ error: "Failed to load membership plans" });
   }
 });
 

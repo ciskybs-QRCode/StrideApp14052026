@@ -517,6 +517,7 @@ export default function CoursesScreen() {
     }
     enrollParticipants.forEach(participantName => {
       addItem({
+        type: "course",
         courseId: enrollCourse.id,
         courseName: enrollCourse.name,
         courseSchedule: enrollCourse.schedule,
@@ -897,6 +898,24 @@ export default function CoursesScreen() {
               >
                 <Ionicons name="calendar-outline" size={18} color={colors.primary} />
                 <Text style={[styles.bookPrivateBtnText, { color: colors.primary }]}>BOOK MEETING</Text>
+              </Pressable>
+            </View>
+
+            {/* Membership Card */}
+            <View style={[styles.privateCard, { backgroundColor: "#1E3A8A", marginTop: 12 }]}>
+              <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(251,191,36,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
+                <Ionicons name="id-card" size={28} color="#FBBF24" />
+              </View>
+              <Text style={[styles.privateTitle, { color: "#FFF" }]}>Membership</Text>
+              <Text style={[styles.privateDesc, { color: "rgba(255,255,255,0.75)" }]}>
+                Become an official member of the association. Choose a monthly or annual plan for yourself and your dependants.
+              </Text>
+              <Pressable
+                style={[styles.bookPrivateBtn, { backgroundColor: "#FBBF24" }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); router.push("/(parent)/membership"); }}
+              >
+                <Ionicons name="id-card-outline" size={18} color="#1E3A8A" />
+                <Text style={[styles.bookPrivateBtnText, { color: "#1E3A8A" }]}>VIEW MEMBERSHIP PLANS</Text>
               </Pressable>
             </View>
           </View>

@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import { api, type MarketplaceProduct, type ShopLink } from "@/lib/api";
 
 // ── Category metadata ─────────────────────────────────────────────────────────
@@ -69,7 +70,8 @@ export default function MarketplaceScreen() {
   const [shopLinks,  setShopLinks]  = useState<ShopLink[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [selected,   setSelected]   = useState<MarketplaceProduct | null>(null);
-  const [checking,   setChecking]   = useState(false);
+  const [checking,   setChecking]   = useState(false); // kept for openShopLink spinner
+  const { addItem } = useCart();
   const [openingUrl, setOpeningUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -94,19 +96,29 @@ export default function MarketplaceScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const buyNow = async (product: MarketplaceProduct) => {
-    setChecking(true);
-    try {
-      const result = await api.marketplaceCheckout({ product_id: product.id });
-      setSelected(null);
-      await WebBrowser.openBrowserAsync(result.checkoutUrl, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-      });
-    } catch {
-      Alert.alert("Checkout Failed", "Could not initiate checkout. Please try again.");
-    } finally {
-      setChecking(false);
-    }
+  const addToCart = (product: MarketplaceProduct) => {
+    addItem({
+      type:                 "marketplace",
+      courseId:             String(product.id),
+      courseName:           product.title ?? "Product",
+      courseSchedule:       product.category ?? "",
+      packageType:          "one_time",
+      label:                product.category ?? "Product",
+      price:                product.price_cents / 100,
+      participantName:      "",
+      marketplaceProductId: String(product.id),
+      quantity:             1,
+    });
+    setSelected(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert(
+      "Added to Cart",
+      `"${product.title ?? "Product"}" has been added to your cart.`,
+      [
+        { text: "Continue Shopping", style: "cancel" },
+        { text: "View Cart", onPress: () => router.push("/(parent)/cart") },
+      ],
+    );
   };
 
   const openShopLink = async (link: ShopLink) => {
@@ -296,14 +308,11 @@ export default function MarketplaceScreen() {
               </View>
 
               <Pressable
-                style={[S.buyBtn, { opacity: checking ? 0.7 : 1 }]}
-                onPress={() => void buyNow(selected)}
-                disabled={checking}
+                style={S.buyBtn}
+                onPress={() => addToCart(selected)}
               >
-                {checking
-                  ? <ActivityIndicator color="#FFF" />
-                  : <><Ionicons name="card" size={18} color="#FFF" /><Text style={S.buyBtnText}>Buy Now — {formatPrice(selected.price_cents, selected.currency)}</Text></>
-                }
+                <Ionicons name="cart-outline" size={18} color="#FFF" />
+                <Text style={S.buyBtnText}>Add to Cart — {formatPrice(selected.price_cents, selected.currency)}</Text>
               </Pressable>
 
               <Pressable onPress={() => setSelected(null)} style={{ alignItems: "center", paddingVertical: 12 }}>
@@ -374,7 +383,7 @@ function ProductGridCard({ product, colors, onPress }: {
       </View>
       <Text style={S.gridCardPrice}>{formatPrice(product.price_cents, product.currency)}</Text>
       <View style={S.gridCardBtn}>
-        <Text style={S.gridCardBtnText}>Buy Now</Text>
+        <Text style={S.gridCardBtnText}>Add to Cart</Text>
       </View>
     </Pressable>
   );
