@@ -41,6 +41,30 @@ import { QRScanButton } from "@/components/QRScanButton";
 import { SOSButton } from "@/components/SOSButton";
 import { HubCard } from "@/components/HubCard";
 
+// ── Web Audio tone synthesiser ────────────────────────────────────────────────
+function playDashboardTone(result: "success" | "warning" | "denied"): void {
+  if (typeof window === "undefined") return;
+  try {
+    type WA = typeof AudioContext;
+    const AudioCtx: WA =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext: WA }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const s = (freq: number, t: number, dur: number, wave: OscillatorType = "sine", vol = 0.35) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = wave; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + dur);
+      osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + dur + 0.05);
+    };
+    if (result === "success")      { s(880, 0, 0.13); s(1100, 0.16, 0.11); }
+    else if (result === "warning") { s(620, 0, 0.11); s(620,  0.18, 0.11); }
+    else                           { s(180, 0, 0.52, "square", 0.28); }
+  } catch { /* ignore */ }
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type ScanResult = {
@@ -372,6 +396,9 @@ export default function OperatorDashboard() {
   // ── Camera ─────────────────────────────────────────────────────────────────
   const [scanResult, setScanResult]     = useState<ScanResult | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [cameraFacing, setCameraFacing] = useState<"back" | "front">("back");
+  const borderFlashOpacity = useRef(new Animated.Value(0)).current;
+  const [borderFlashColor, setBorderFlashColor] = useState("#22C55E");
 
   const isGPS         = true;
   const currentLesson = lessons[0];
@@ -595,6 +622,16 @@ export default function OperatorDashboard() {
     }
   }, [showScanner]);
 
+  const triggerBorderFlash = useCallback((color: string) => {
+    setBorderFlashColor(color);
+    borderFlashOpacity.setValue(0);
+    Animated.sequence([
+      Animated.timing(borderFlashOpacity, { toValue: 1, duration: 80,  useNativeDriver: true }),
+      Animated.delay(900),
+      Animated.timing(borderFlashOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start();
+  }, [borderFlashOpacity]);
+
   const showScanResult = (result: ScanResult) => {
     setScanResult(result);
     setScanned(true);
@@ -605,12 +642,18 @@ export default function OperatorDashboard() {
     pushLog({ time: nowTime(), action: logAction, type: result.type });
     if (result.type === "success") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      playDashboardTone("success");
+      triggerBorderFlash("#22C55E");
       updateStudentPresence("s1", true);
       clearAlertByStudent("s1");
     } else if (result.type === "warning") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      playDashboardTone("warning");
+      triggerBorderFlash("#F59E0B");
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      playDashboardTone("denied");
+      triggerBorderFlash("#EF4444");
     }
     setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 3500);
   };
@@ -2145,7 +2188,7 @@ export default function OperatorDashboard() {
           ) : (
             <CameraView
               style={styles.scannerPreview}
-              facing={Platform.OS === "web" ? "front" : "back"}
+              facing={cameraFacing}
               barcodeScannerSettings={{ barcodeTypes: ["qr", "ean13", "code128"] }}
               onBarcodeScanned={scanned ? undefined : handleBarcodeScan}
             >
@@ -2157,6 +2200,19 @@ export default function OperatorDashboard() {
                   </Text>
                 )}
               </View>
+              {/* Screen border flash */}
+              <Animated.View
+                pointerEvents="none"
+                style={[StyleSheet.absoluteFillObject, { borderWidth: 10, borderColor: borderFlashColor, opacity: borderFlashOpacity }]}
+              />
+              {/* Camera flip button */}
+              <Pressable
+                style={styles.camFlipBtn}
+                onPress={() => setCameraFacing(f => f === "back" ? "front" : "back")}
+                hitSlop={12}
+              >
+                <Ionicons name="camera-reverse-outline" size={28} color="#FFFFFF" />
+              </Pressable>
             </CameraView>
           )}
 
@@ -3014,6 +3070,12 @@ const styles = StyleSheet.create({
   scannerPreview: { flex: 1, alignItems: "center", justifyContent: "center" },
   scannerOverlay: { flex: 1, alignItems: "center", justifyContent: "center" },
   scannerFrame: { width: 220, height: 220, borderWidth: 2, borderColor: "#FBBF24", borderRadius: 16 },
+  camFlipBtn: {
+    position: "absolute", bottom: 32, right: 24,
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center", justifyContent: "center",
+  },
   scanResultPanel: { padding: 20 },
   scanResultHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
   scanResultName: { color: "#FFF", fontSize: 20, fontWeight: "700" },
