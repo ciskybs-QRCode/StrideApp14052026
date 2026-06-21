@@ -44,7 +44,8 @@
       "backgroundColor": "#1E3A8A",
       "display": "standalone",
       "orientation": "portrait",
-      "bundler": "metro"
+      "bundler": "metro",
+      "publicPath": "/app/"
     },
     "plugins": [
       [
