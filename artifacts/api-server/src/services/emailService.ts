@@ -177,7 +177,7 @@ export interface TransactionalEmail {
  */
 export async function sendTransactionalEmail(email: TransactionalEmail): Promise<void> {
   const apiKey = process.env["RESEND_API_KEY"];
-  const fromAddress = process.env["RESEND_FROM_EMAIL"] ?? "Stride <billing@stride.example.com>";
+  const fromAddress = process.env["RESEND_FROM_EMAIL"] ?? "Stride <info@stride-ops.com>";
 
   if (!apiKey) {
     // Development fallback: log the email payload instead of sending
@@ -636,7 +636,7 @@ export function buildUpgradeTrialEmail(p: UpgradeTrialEmailParams): {
 
           <p style="margin:0;font-size:12px;color:#9CA3AF;text-align:center;line-height:1.5;">
             This offer expires in 14 days. If you have questions, contact us at
-            <a href="mailto:support@stride.app" style="color:#1E3A8A;">support@stride.app</a>.
+            <a href="mailto:info@stride-ops.com" style="color:#1E3A8A;">info@stride-ops.com</a>.
           </p>
         </td></tr>
 

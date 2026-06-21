@@ -193,7 +193,7 @@ function SuspensionScreen() {
           style={({ pressed }) => [ss.ctaBtn, { opacity: pressed ? 0.85 : 1 }]}
           onPress={() =>
             Linking.openURL(
-              "mailto:support@stride.app?subject=Account%20Suspension%20%E2%80%94%20Reactivation%20Request",
+              "mailto:info@stride-ops.com?subject=Account%20Suspension%20%E2%80%94%20Reactivation%20Request",
             )
           }
         >

@@ -414,12 +414,12 @@ export default function SubscriptionBillingScreen() {
         {/* ── SUPPORT ── */}
         <Pressable
           style={({ pressed }) => [s.supportBtn, { opacity: pressed ? 0.85 : 1 }]}
-          onPress={() => Linking.openURL("mailto:support@stride.app?subject=Billing%20Enquiry")}
+          onPress={() => Linking.openURL("mailto:info@stride-ops.com?subject=Billing%20Enquiry")}
         >
           <Ionicons name="mail-outline" size={17} color={GOLD} />
           <Text style={s.supportBtnText}>Contact Billing Support</Text>
         </Pressable>
-        <Text style={s.supportNote}>support@stride.app · we respond within 24 h</Text>
+        <Text style={s.supportNote}>info@stride-ops.com · we respond within 24 h</Text>
 
       </ScrollView>
     </View>

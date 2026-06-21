@@ -44,7 +44,7 @@ You represent and warrant that:
 (a) You are 18+ and legally authorised to act on behalf of the Organisation;
 (b) All organisational and billing information is accurate and current;
 (c) You will maintain the confidentiality of your credentials and notify us
-    of any unauthorised access at support@stride.app;
+    of any unauthorised access at info@stride-ops.com;
 (d) You have obtained all necessary parental/guardian consents before
     entering any data relating to minors;
 (e) You will comply with all applicable data protection laws, including GDPR;
@@ -152,7 +152,7 @@ become insolvent, or continued access would violate applicable law.
 (a) All Member Data and Organisation data is retained for exactly 30 days
     after the termination date ("Retention Period");
 (b) You may request a full data export at any time during the Retention
-    Period at support@stride.app;
+    Period at info@stride-ops.com;
 (c) After the Retention Period, ALL data is permanently and irreversibly
     deleted from all Stride systems. This deletion cannot be reversed;
 (d) Exception: data subject to a valid legal hold is retained only for
@@ -180,7 +180,7 @@ in-app notification and email. Continued use constitutes acceptance.
 
 Governing law: laws of your Organisation's jurisdiction (EU Organisations:
 EU law including GDPR). These Terms, the Privacy Policy, and the DPA form
-the entire Agreement. Contact: legal@stride.app`;
+the entire Agreement. Contact: info@stride-ops.com`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. PRIVACY POLICY
@@ -204,7 +204,7 @@ For Member Data entered by your Organisation, Stride acts as a Data
 Processor on your instructions. Your Organisation is the Data Controller
 for Member Data.
 
-Contact: privacy@stride.app
+Contact: info@stride-ops.com
 
 2. WHAT DATA WE COLLECT
 
@@ -278,7 +278,7 @@ Under GDPR (and equivalent national laws):
 • OBJECT (Art. 21): Object to processing based on legitimate interests.
 • WITHDRAW CONSENT: At any time, without affecting lawfulness of prior processing.
 
-Contact: privacy@stride.app — we respond within 30 days.
+Contact: info@stride-ops.com — we respond within 30 days.
 
 8. SUPERVISORY AUTHORITY
 
@@ -388,7 +388,7 @@ written confirmation upon request.
 
 3.9 AUDIT RIGHTS. Make available all information necessary to demonstrate
 compliance and allow audits by the Controller or its appointed auditor
-(30 days' advance notice required at legal@stride.app).
+(30 days' advance notice required at info@stride-ops.com).
 
 3.10 STRIDE ACCESS RESTRICTION. Stride staff do not routinely access Member
 Data. Any technical support access is break-glass only, requires management
@@ -402,7 +402,7 @@ You shall:
 • Provide lawful and accurate instructions to Stride;
 • Obtain parental/guardian consent before entering minor data;
 • Maintain your own record of processing activities (GDPR Art. 30);
-• Promptly notify Stride at legal@stride.app of any legal hold,
+• Promptly notify Stride at info@stride-ops.com of any legal hold,
   regulatory investigation, or court order affecting Member Data.
 
 5. INTERNATIONAL TRANSFERS
@@ -460,7 +460,7 @@ MOBILE PUSH NOTIFICATIONS
 ───────────────────────────────────────────
 
 Stride will notify you 30 days in advance of any sub-processor
-change. Objections: legal@stride.app
+change. Objections: info@stride-ops.com
 
 Full list: stride.app/subprocessors`;
 
@@ -498,6 +498,6 @@ Stride may suspend or terminate access without notice for material
 breach of this Policy. Termination for cause carries no refund.
 
 REPORTING ABUSE
-support@stride.app
+info@stride-ops.com
 
 Full policy: stride.app/legal`;

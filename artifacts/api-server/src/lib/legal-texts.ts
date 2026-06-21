@@ -23,9 +23,9 @@
 
 export const DOC_VERSION = "1.0";
 export const LAST_UPDATED = "June 2025";
-export const SUPPORT_EMAIL = "support@stride.app";
-export const PRIVACY_EMAIL = "privacy@stride.app";
-export const LEGAL_EMAIL = "legal@stride.app";
+export const SUPPORT_EMAIL = "info@stride-ops.com";
+export const PRIVACY_EMAIL = "info@stride-ops.com";
+export const LEGAL_EMAIL = "info@stride-ops.com";
 export const COMPANY_NAME = "Stride Technologies";
 export const COMPANY_ADDRESS = "c/o registered agent — see stride.app/legal";
 

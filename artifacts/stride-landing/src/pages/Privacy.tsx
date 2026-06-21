@@ -6,7 +6,7 @@ const sections = [
     title: "1. Introduction",
     body: `Stride Platform ("we", "us", "our") is committed to protecting your personal data and respecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your information when you use the Stride platform ("Service").
 
-This Policy complies with the General Data Protection Regulation (GDPR), the UK GDPR, and other applicable data protection laws. If you have questions about how we handle your data, please contact us at privacy@stride.app.`,
+This Policy complies with the General Data Protection Regulation (GDPR), the UK GDPR, and other applicable data protection laws. If you have questions about how we handle your data, please contact us at info@stride-ops.com.`,
   },
   {
     id: "who",
@@ -114,7 +114,7 @@ Upon your request, we can delete your personal data earlier, subject to any lega
 • Right to Object — object to certain types of processing, including for legitimate interests
 • Right to Withdraw Consent — where processing is based on consent, withdraw it at any time
 
-To exercise any of these rights, contact us at privacy@stride.app. We will respond within 30 days.`,
+To exercise any of these rights, contact us at info@stride-ops.com. We will respond within 30 days.`,
   },
   {
     id: "security",
@@ -146,8 +146,8 @@ You can control cookies through your browser settings. Disabling cookies may aff
     title: "11. Contact and Complaints",
     body: `For questions, requests, or complaints regarding this Privacy Policy or our data practices:
 
-Email: privacy@stride.app
-Support: support@stride.app
+Email: info@stride-ops.com
+Support: info@stride-ops.com
 
 If you are not satisfied with our response, you have the right to lodge a complaint with your national data protection authority (e.g., the ICO in the UK, or your local supervisory authority in the EU).`,
   },
@@ -215,13 +215,13 @@ export default function Privacy() {
                 ))}
               </nav>
               <div className="mt-5 pt-4 border-t border-slate-200">
-                <a href="mailto:privacy@stride.app"
+                <a href="mailto:info@stride-ops.com"
                   className="flex items-center gap-2 text-xs text-[#1E3A8A] font-semibold hover:underline">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                     <polyline points="22,6 12,13 2,6" />
                   </svg>
-                  privacy@stride.app
+                  info@stride-ops.com
                 </a>
               </div>
             </div>
@@ -242,7 +242,7 @@ export default function Privacy() {
             <div className="mt-14 p-5 bg-[#1E3A8A]/5 border border-[#1E3A8A]/12 rounded-2xl">
               <p className="text-slate-600 text-sm leading-relaxed">
                 This policy was last reviewed on <strong>1 June 2026</strong>. To exercise your data rights, email{" "}
-                <a href="mailto:privacy@stride.app" className="text-[#1E3A8A] font-semibold hover:underline">privacy@stride.app</a>.
+                <a href="mailto:info@stride-ops.com" className="text-[#1E3A8A] font-semibold hover:underline">info@stride-ops.com</a>.
                 We respond within 30 days.
               </p>
             </div>

@@ -44,7 +44,7 @@ export default function Contact() {
     // Fallback: open mailto
     const subject = encodeURIComponent(`[Stride] ${topic} — ${name}`);
     const body    = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nTopic: ${topic}\n\n${message}`);
-    window.open(`mailto:support@stride.app?subject=${subject}&body=${body}`, "_blank");
+    window.open(`mailto:info@stride-ops.com?subject=${subject}&body=${body}`, "_blank");
     setSent(true);
   };
 
@@ -97,20 +97,20 @@ export default function Contact() {
                 {
                   icon: "✉️",
                   label: "General support",
-                  value: "support@stride.app",
-                  href: "mailto:support@stride.app",
+                  value: "info@stride-ops.com",
+                  href: "mailto:info@stride-ops.com",
                 },
                 {
                   icon: "⚖️",
                   label: "Legal & privacy",
-                  value: "legal@stride.app",
-                  href: "mailto:legal@stride.app",
+                  value: "info@stride-ops.com",
+                  href: "mailto:info@stride-ops.com",
                 },
                 {
                   icon: "💳",
                   label: "Billing enquiries",
-                  value: "billing@stride.app",
-                  href: "mailto:billing@stride.app?subject=Billing%20Enquiry",
+                  value: "info@stride-ops.com",
+                  href: "mailto:info@stride-ops.com?subject=Billing%20Enquiry",
                 },
               ].map(item => (
                 <a key={item.label} href={item.href} className="flex items-start gap-3 group no-underline">

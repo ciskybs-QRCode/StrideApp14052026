@@ -98,7 +98,7 @@ The Service is provided on an "as is" and "as available" basis without warrantie
 • We will retain your data for 30 days following termination to allow for data export
 • After 30 days, all organisation data will be permanently and irreversibly deleted
 
-You may terminate your account at any time by contacting us at support@stride.app.`,
+You may terminate your account at any time by contacting us at info@stride-ops.com.`,
   },
   {
     id: "governing",
@@ -112,8 +112,8 @@ If any provision of these Terms is found to be unenforceable, the remaining prov
     title: "11. Contact",
     body: `If you have any questions about these Terms, please contact us at:
 
-Email: legal@stride.app
-Support: support@stride.app
+Email: info@stride-ops.com
+Support: info@stride-ops.com
 
 Stride Platform operates this Service and is responsible for your data under applicable data protection laws.`,
   },
@@ -167,13 +167,13 @@ export default function Terms() {
                 ))}
               </nav>
               <div className="mt-5 pt-4 border-t border-slate-200">
-                <a href="mailto:legal@stride.app"
+                <a href="mailto:info@stride-ops.com"
                   className="flex items-center gap-2 text-xs text-[#1E3A8A] font-semibold hover:underline">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                     <polyline points="22,6 12,13 2,6" />
                   </svg>
-                  legal@stride.app
+                  info@stride-ops.com
                 </a>
               </div>
             </div>
@@ -194,7 +194,7 @@ export default function Terms() {
             <div className="mt-14 p-5 bg-[#1E3A8A]/5 border border-[#1E3A8A]/12 rounded-2xl">
               <p className="text-slate-600 text-sm leading-relaxed">
                 These terms were last reviewed on <strong>1 June 2026</strong>. Questions? Contact{" "}
-                <a href="mailto:legal@stride.app" className="text-[#1E3A8A] font-semibold hover:underline">legal@stride.app</a>.
+                <a href="mailto:info@stride-ops.com" className="text-[#1E3A8A] font-semibold hover:underline">info@stride-ops.com</a>.
               </p>
             </div>
           </main>

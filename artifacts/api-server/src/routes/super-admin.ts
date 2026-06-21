@@ -852,7 +852,7 @@ router.post("/super-admin/platform-broadcast", requireAuth, requireOwnerOrSuperA
   <div style="background:#F9FAFB;padding:16px 24px;border-top:1px solid #E2E8F0;text-align:center">
     <p style="color:#9CA3AF;font-size:11px;margin:0">
       This message was sent by STRIDE to ${r.name} (${r.email}).<br>
-      If you believe you received this in error, contact support@stride.app.
+      If you believe you received this in error, contact info@stride-ops.com.
     </p>
   </div>
 </div>`,

@@ -86,7 +86,7 @@ const categories = [
       },
       {
         q: "What happens to my data if I cancel?",
-        a: "On cancellation you can export everything in CSV/JSON. We retain your data for 90 days after cancellation and then permanently delete it. You can request early deletion at any time by contacting legal@stride.app.",
+        a: "On cancellation you can export everything in CSV/JSON. We retain your data for 90 days after cancellation and then permanently delete it. You can request early deletion at any time by contacting info@stride-ops.com.",
       },
     ],
   },

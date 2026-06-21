@@ -63,7 +63,7 @@ const TEMPLATES = [
     urgency: "critical" as const,
     channels: ["email", "in_app", "push"],
     subject: "Security Incident — Immediate Action Required",
-    body: "We are contacting you urgently to inform you of a security incident affecting the STRIDE platform.\n\n[Describe the incident and affected data here]\n\nWe recommend you:\n1. Immediately review your account access logs\n2. Notify your members if their data may be affected\n3. Reset any shared credentials\n\nWe will provide further updates as the investigation progresses. If you have any questions, reply to this message or contact support@stride.app immediately.",
+    body: "We are contacting you urgently to inform you of a security incident affecting the STRIDE platform.\n\n[Describe the incident and affected data here]\n\nWe recommend you:\n1. Immediately review your account access logs\n2. Notify your members if their data may be affected\n3. Reset any shared credentials\n\nWe will provide further updates as the investigation progresses. If you have any questions, reply to this message or contact info@stride-ops.com immediately.",
   },
   {
     label: "Legal Update",
@@ -71,7 +71,7 @@ const TEMPLATES = [
     urgency: "normal" as const,
     channels: ["email", "in_app"],
     subject: "Updated Legal Documents — Action Required",
-    body: "STRIDE has updated its Terms of Service and Privacy Policy.\n\n[Describe the key changes here]\n\nThese changes take effect on [DATE]. Please review the updated documents in your Admin Settings → Legal & Privacy section and ensure your own association documents are aligned.\n\nIf you have questions, contact support@stride.app.",
+    body: "STRIDE has updated its Terms of Service and Privacy Policy.\n\n[Describe the key changes here]\n\nThese changes take effect on [DATE]. Please review the updated documents in your Admin Settings → Legal & Privacy section and ensure your own association documents are aligned.\n\nIf you have questions, contact info@stride-ops.com.",
   },
   {
     label: "App Update",
@@ -87,7 +87,7 @@ const TEMPLATES = [
     urgency: "urgent" as const,
     channels: ["email", "in_app"],
     subject: "Scheduled Maintenance — [DATE] [TIME]",
-    body: "STRIDE will undergo scheduled maintenance on [DATE] from [START TIME] to [END TIME] (UTC).\n\nDuring this window:\n• The platform may be temporarily unavailable\n• Push notifications will be queued and delivered after maintenance\n• All data will be preserved\n\nWe apologise for any inconvenience. If you have urgent questions, contact support@stride.app.",
+    body: "STRIDE will undergo scheduled maintenance on [DATE] from [START TIME] to [END TIME] (UTC).\n\nDuring this window:\n• The platform may be temporarily unavailable\n• Push notifications will be queued and delivered after maintenance\n• All data will be preserved\n\nWe apologise for any inconvenience. If you have urgent questions, contact info@stride-ops.com.",
   },
   {
     label: "Data Breach",

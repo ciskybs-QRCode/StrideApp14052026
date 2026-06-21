@@ -72,13 +72,13 @@ HOW WE USE YOUR DATA. Your data is used to: (a) provide and maintain the Stride 
 
 DATA SHARING. We share personal data only with: (i) your designated administrators and operators within your account; (ii) payment processor Stripe for transaction processing; (iii) cloud infrastructure providers (AWS, Supabase) under data processing agreements; (iv) law enforcement or regulatory bodies when legally required.
 
-YOUR RIGHTS. Under applicable data protection law, you have the right to: access your personal data; correct inaccurate data; request erasure ("right to be forgotten"); restrict processing; data portability; and object to processing. To exercise these rights, contact privacy@strideapp.io.
+YOUR RIGHTS. Under applicable data protection law, you have the right to: access your personal data; correct inaccurate data; request erasure ("right to be forgotten"); restrict processing; data portability; and object to processing. To exercise these rights, contact info@stride-ops.com.
 
 RETENTION. We retain active account data for the duration of your subscription plus 30 days following account closure. Financial transaction records may be retained for up to 7 years for legal and tax compliance. Anonymised aggregated statistics may be retained indefinitely.
 
 SECURITY. We implement industry-standard security measures including encryption at rest and in transit, access controls, and regular security audits. No system is completely secure; please notify us immediately of any suspected breach.
 
-CONTACT. For privacy queries: privacy@strideapp.io.`,
+CONTACT. For privacy queries: info@stride-ops.com.`,
   },
   {
     id: "dpa",
@@ -110,7 +110,7 @@ ACCOUNT CLOSURE PROCESS. When an association account is closed (whether by the a
 
 IMMEDIATE (Day 0): Access to the platform is revoked. No new data may be processed. All sessions are invalidated.
 
-GRACE PERIOD (Days 1–30): Data is preserved in a restricted-access backup state. During this period, you may contact support@strideapp.io to request data export or account reinstatement. No routine access is available during this period.
+GRACE PERIOD (Days 1–30): Data is preserved in a restricted-access backup state. During this period, you may contact info@stride-ops.com to request data export or account reinstatement. No routine access is available during this period.
 
 AUTOMATIC DELETION (Day 30): All personal data associated with the account is permanently and irrecoverably deleted from Stride's active systems, including: member profiles and contact information; attendance and activity records; document signatures; uploaded files and media; communications and notifications; QR codes and access tokens.
 
@@ -120,7 +120,7 @@ MEMBER DATA AFTER ASSOCIATION DELETION. Where a member's personal data was colle
 
 DATA EXPORT. Before account closure, we recommend exporting your data using the Export function in Admin Settings. Stride cannot guarantee data recovery after the 30-day grace period expires.
 
-TO REQUEST DELETION: Email deletion@strideapp.io with your account details and "DATA DELETION REQUEST" in the subject line.`,
+TO REQUEST DELETION: Email info@stride-ops.com with your account details and "DATA DELETION REQUEST" in the subject line.`,
   },
 ];
 
