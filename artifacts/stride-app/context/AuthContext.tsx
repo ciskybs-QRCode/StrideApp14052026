@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert, Platform } from "react-native";
 import { router } from "expo-router";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { api, setToken, clearToken, getToken, apiSwitchOrgContext } from "../lib/api";
 
 export type UserRole =
@@ -245,7 +246,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           granted = result.granted ?? false;
         }
         if (!granted) return;
-        const { data: pushToken } = await Notifications.getExpoPushTokenAsync();
+        // In production (EAS Build), projectId is required.
+        // In Expo Go dev mode it works without — gracefully fall back.
+        const expoExtra = Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined;
+        const projectId = expoExtra?.eas?.projectId;
+        const { data: pushToken } = await Notifications.getExpoPushTokenAsync(
+          projectId ? { projectId } : undefined,
+        );
         if (!pushToken) return;
         const t = await getToken();
         if (!t) return;

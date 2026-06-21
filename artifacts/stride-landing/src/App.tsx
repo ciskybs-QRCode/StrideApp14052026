@@ -27,6 +27,7 @@ export default function App() {
     <Router base={base}>
       <Switch>
         <Route path="/register"              component={Register} />
+        <Route path="/join"                  component={Join} />
         <Route path="/join/:slug"            component={Join} />
         <Route path="/activate"              component={Activate} />
         <Route path="/payment-success"       component={PaymentSuccessPage} />
