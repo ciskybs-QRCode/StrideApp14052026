@@ -1,5 +1,5 @@
 kind = "mobile"
-previewPath = "/"
+previewPath = "/app/"
 title = "Stride App"
 version = "1.0.0"
 id = "artifacts/stride-app"
@@ -12,7 +12,7 @@ version = "1.0.0"
 [[services]]
 ensurePreviewReachable = "/status"
 name = "expo"
-paths = [ "/" ]
+paths = [ "/app/" ]
 localPort = 22361
 
 [services.development]
@@ -24,4 +24,4 @@ run = [ "pnpm", "--filter", "@workspace/stride-app", "run", "serve" ]
 
 [services.env]
 PORT = "22361"
-BASE_PATH = "/"
+BASE_PATH = "/app/"
