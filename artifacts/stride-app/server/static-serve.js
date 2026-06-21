@@ -5,10 +5,12 @@
  * - Strips /app/ prefix from incoming URLs
  * - Falls back to index.html (SPA routing) for unknown paths
  * - Patches index.html to add /app/ prefix to absolute asset URLs
+ * - Injects PWA deep-link recovery script so stale saved URLs auto-redirect
+ *   to /app/ before Expo Router initialises (no bundle rebuild needed)
  */
 
 const http = require("http");
-const fs = require("fs");
+const fs   = require("fs");
 const path = require("path");
 
 const DIST = path.resolve(__dirname, "..", "web-dist");
@@ -16,31 +18,58 @@ const PORT = parseInt(process.env.PORT || "3000", 10);
 const BASE = "/app";
 
 const MIME = {
-  ".html": "text/html; charset=utf-8",
-  ".js": "application/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".json": "application/json",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-  ".woff": "font/woff",
+  ".html":  "text/html; charset=utf-8",
+  ".js":    "application/javascript; charset=utf-8",
+  ".css":   "text/css; charset=utf-8",
+  ".json":  "application/json",
+  ".png":   "image/png",
+  ".jpg":   "image/jpeg",
+  ".jpeg":  "image/jpeg",
+  ".svg":   "image/svg+xml",
+  ".ico":   "image/x-icon",
+  ".woff":  "font/woff",
   ".woff2": "font/woff2",
-  ".ttf": "font/ttf",
-  ".otf": "font/otf",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-  ".map": "application/json",
+  ".ttf":   "font/ttf",
+  ".otf":   "font/otf",
+  ".webp":  "image/webp",
+  ".gif":   "image/gif",
+  ".map":   "application/json",
 };
+
+/**
+ * Tiny inline script injected into every index.html response.
+ *
+ * Runs synchronously before the React bundle so Expo Router never sees
+ * a stale deep-link URL.  replaceState keeps the session history clean
+ * (no extra back-button entry).
+ *
+ * Logic:
+ *   - If path is exactly /app or /app/ → do nothing (correct root)
+ *   - Otherwise → snap back to /app/ so the app always boots at login
+ */
+const PWA_REDIRECT_SCRIPT = `<script>
+(function(){
+  var base = '${BASE}';
+  var p = location.pathname;
+  if (p !== base && p !== base + '/') {
+    history.replaceState(null, '', base + '/');
+  }
+})();
+</script>`;
 
 // Read and patch index.html once at startup
 function buildIndexHtml() {
   const raw = fs.readFileSync(path.join(DIST, "index.html"), "utf8");
-  // Rewrite absolute src/href that start with / but not already /app/
-  return raw
+
+  // 1. Rewrite absolute src/href that start with / but not already /app/
+  let patched = raw
     .replace(/((?:src|href)=")\/(?!app\/|\/|#|data:)/g, `$1${BASE}/`)
     .replace(/((?:src|href)=')\/(?!app\/|\/|#|data:)/g, `$1${BASE}/`);
+
+  // 2. Inject deep-link recovery script right before </head>
+  patched = patched.replace("</head>", `${PWA_REDIRECT_SCRIPT}\n</head>`);
+
+  return patched;
 }
 
 let indexHtml;
@@ -77,21 +106,21 @@ const server = http.createServer((req, res) => {
   }
 
   if (stat && !stat.isDirectory()) {
-    // Serve the actual file
+    // Serve the actual static file
     const ext = path.extname(filePath).toLowerCase();
     const mime = MIME[ext] || "application/octet-stream";
     const content = fs.readFileSync(filePath);
     res.writeHead(200, {
-      "Content-Type": mime,
+      "Content-Type":  mime,
       "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000, immutable",
       "Content-Length": content.length,
     });
     res.end(content);
   } else {
-    // SPA fallback: serve patched index.html
+    // SPA fallback: serve patched index.html (includes deep-link recovery script)
     const buf = Buffer.from(indexHtml, "utf8");
     res.writeHead(200, {
-      "Content-Type": "text/html; charset=utf-8",
+      "Content-Type":  "text/html; charset=utf-8",
       "Cache-Control": "no-cache",
       "Content-Length": buf.length,
     });

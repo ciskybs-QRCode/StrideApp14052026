@@ -6,19 +6,25 @@
  *   2. Writes manifest.json with correct start_url, scope and icons
  *   3. Patches web-dist/index.html to add <link rel="manifest"> and
  *      Apple/Android PWA meta tags (idempotent — won't double-add)
+ *
+ * Icons are pre-generated in assets/images/ from the original icon.png
+ * using ImageMagick:
+ *   magick assets/images/icon.png -resize 512x512 assets/images/icon-512.png
+ *   magick assets/images/icon.png -resize 192x192 assets/images/icon-192.png
+ *   magick assets/images/icon.png -resize 180x180 -background white -alpha remove assets/images/apple-touch-icon.png
  */
 
 const fs   = require("fs");
 const path = require("path");
 
-const ROOT     = path.resolve(__dirname, "..");
-const DIST     = path.join(ROOT, "web-dist");
-const ASSETS   = path.join(ROOT, "assets", "images");
+const ROOT   = path.resolve(__dirname, "..");
+const DIST   = path.join(ROOT, "web-dist");
+const ASSETS = path.join(ROOT, "assets", "images");
 
 // ── 1. Copy icon files into web-dist ─────────────────────────────────────────
 const iconsToCopy = [
-  { src: "icon-192.png",       dst: "icon-192.png" },
-  { src: "icon-512.png",       dst: "icon-512.png" },
+  { src: "icon-192.png",         dst: "icon-192.png" },
+  { src: "icon-512.png",         dst: "icon-512.png" },
   { src: "apple-touch-icon.png", dst: "apple-touch-icon.png" },
 ];
 
@@ -66,22 +72,20 @@ if (!fs.existsSync(indexPath)) {
 
 let html = fs.readFileSync(indexPath, "utf8");
 
-// Idempotent: only inject if not already present
 if (!html.includes('rel="manifest"')) {
   const pwaHead = [
-    '  <!-- PWA manifest -->',
+    "  <!-- PWA manifest -->",
     '  <link rel="manifest" href="/manifest.json" />',
-    '  <!-- Apple / iOS PWA -->',
+    "  <!-- Apple / iOS PWA -->",
     '  <meta name="apple-mobile-web-app-capable" content="yes" />',
     '  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />',
     '  <meta name="apple-mobile-web-app-title" content="Stride" />',
     '  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
-    '  <!-- Android / Chrome PWA -->',
+    "  <!-- Android / Chrome PWA -->",
     '  <meta name="mobile-web-app-capable" content="yes" />',
     '  <meta name="application-name" content="Stride" />',
   ].join("\n");
 
-  // Insert just before </head>
   html = html.replace("</head>", `${pwaHead}\n</head>`);
   fs.writeFileSync(indexPath, html);
   console.log("[pwa-patch] Patched index.html with PWA meta tags");
