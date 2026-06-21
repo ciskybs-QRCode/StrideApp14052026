@@ -95,21 +95,21 @@ export function getBankConfig(country: string, orgCurrency: string): BankConfig 
 
   if (c === "CH") return {
     type: "iban",
-    label: "Virement Bancaire",
+    label: "Bank Transfer",
     accountLabel: "IBAN (Swiss)",
     accountPlaceholder: "CH56 0483 5012 3456 7800 9",
     bicLabel: "BIC/SWIFT (optional)",
-    refLabel: "Reference",
+    refLabel: "Payment Reference",
     currency: cur !== "EUR" ? cur : "CHF",
     currencySymbol: cur !== "EUR" ? currencySymbol(cur) : "CHF",
   };
 
   if (c === "JP") return {
     type: "swift",
-    label: "Furikomi (振込)",
+    label: "Bank Transfer",
     accountLabel: "Bank + Branch + Account",
-    accountPlaceholder: "Bank code + branch + account",
-    refLabel: "Tsuushin-in (通信欄)",
+    accountPlaceholder: "Bank code + branch + account number",
+    refLabel: "Payment Note",
     currency: cur !== "EUR" ? cur : "JPY",
     currencySymbol: cur !== "EUR" ? currencySymbol(cur) : "¥",
   };
@@ -117,16 +117,16 @@ export function getBankConfig(country: string, orgCurrency: string): BankConfig 
   if (c === "KZ") return {
     type: "swift",
     label: "Bank Transfer",
-    accountLabel: "BIN + IIK (Account)",
-    accountPlaceholder: "SWIFT BIC + IIK",
-    refLabel: "Naznachenie platezha",
+    accountLabel: "BIN + Account (IIK)",
+    accountPlaceholder: "SWIFT BIC + account number",
+    refLabel: "Payment Reference",
     currency: cur !== "EUR" ? cur : "KZT",
     currencySymbol: cur !== "EUR" ? currencySymbol(cur) : "₸",
   };
 
   if (EU.has(c)) return {
     type: "iban",
-    label: "Bonifico SEPA",
+    label: "SEPA Bank Transfer",
     accountLabel: "IBAN",
     accountPlaceholder: c === "IT" ? "IT60 X054 2811 1010 0000 0123 456"
                        : c === "DE" ? "DE89 3704 0044 0532 0130 00"
@@ -134,7 +134,7 @@ export function getBankConfig(country: string, orgCurrency: string): BankConfig 
                        : c === "ES" ? "ES91 2100 0418 4502 0005 1332"
                        : "XX00 0000 0000 0000 0000 0000 000",
     bicLabel: "BIC (optional)",
-    refLabel: "CRO / Causale",
+    refLabel: "CRO / Reference",
     currency: cur,
     currencySymbol: sym,
   };
