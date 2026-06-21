@@ -33,8 +33,11 @@ export interface ReimbursementRequest {
   description: string;
   amountCents: number;
   receiptUri?: string;
-  status: "pending" | "approved" | "paid" | "rejected";
+  status: "pending" | "approved" | "paid" | "rejected" | "cash_pending";
   submittedAt: string;
+  paymentMethod?: "stripe" | "iban" | "cash";
+  paymentReference?: string;
+  payeeIban?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -47,10 +50,11 @@ const ROLE_LABELS: Record<ClaimantRole, string> = {
 };
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; icon: React.ComponentProps<typeof Ionicons>["name"] }> = {
-  pending:  { label: "Pending",  bg: "#FEF3C7", text: "#92400E", icon: "time-outline" },
-  approved: { label: "Approved", bg: "#DBEAFE", text: "#1E3A8A", icon: "checkmark-circle-outline" },
-  paid:     { label: "Paid",     bg: "#D1FAE5", text: "#065F46", icon: "checkmark-circle" },
-  rejected: { label: "Rejected", bg: "#FEE2E2", text: "#991B1B", icon: "close-circle" },
+  pending:      { label: "Pending",      bg: "#FEF3C7", text: "#92400E", icon: "time-outline" },
+  approved:     { label: "Approved",     bg: "#DBEAFE", text: "#1E3A8A", icon: "checkmark-circle-outline" },
+  paid:         { label: "Paid",         bg: "#D1FAE5", text: "#065F46", icon: "checkmark-circle" },
+  rejected:     { label: "Rejected",     bg: "#FEE2E2", text: "#991B1B", icon: "close-circle" },
+  cash_pending: { label: "Cash Pending", bg: "#FEF9C3", text: "#854D0E", icon: "cash-outline" },
 };
 
 
@@ -233,7 +237,12 @@ export default function AdminReimbursementsScreen() {
 
   const [requests, setRequests] = useState<ReimbursementRequest[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<{ id: string; action: "paid" | "rejected" } | null>(null);
+  const [confirmReject, setConfirmReject] = useState<string | null>(null);
+  const [payModal, setPayModal] = useState<ReimbursementRequest | null>(null);
+  const [payMethod, setPayMethod] = useState<"stripe" | "iban" | "cash">("cash");
+  const [payRef, setPayRef] = useState("");
+  const [payIban, setPayIban] = useState("");
+  const [paying, setPaying] = useState(false);
   const [receiptThresholdCents, setReceiptThresholdCents] = useState(0);
   const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
   const [loadError, setLoadError] = useState(false);
@@ -305,41 +314,60 @@ export default function AdminReimbursementsScreen() {
     }
   };
 
-  const handleStatusUpdate = async (id: string, status: "paid" | "rejected") => {
-    Haptics.notificationAsync(
-      status === "paid" ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
-    );
+  const handleReject = async (id: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "rejected" as const } : r));
+    setConfirmReject(null);
+    try { await api.updateReimbursement(id, { status: "rejected" }); } catch { /* optimistic */ }
+  };
 
-    // Find the request before updating state (for notification)
-    const req = requests.find(r => r.id === id);
+  const openPayModal = (req: ReimbursementRequest) => {
+    setPayModal(req);
+    setPayMethod("cash");
+    setPayRef("");
+    setPayIban("");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
 
-    // Optimistic update
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-    setConfirmAction(null);
+  const handlePay = async () => {
+    if (!payModal) return;
+    if (payMethod === "stripe" && !payRef.trim()) {
+      Alert.alert("Required", "Enter the Stripe Transfer ID."); return;
+    }
+    if (payMethod === "iban" && !payIban.trim()) {
+      Alert.alert("Required", "Enter the recipient IBAN."); return;
+    }
+    setPaying(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    // Notify claimant when marked paid
-    if (status === "paid" && req) {
-      const amountStr = `$${(req.amountCents / 100).toFixed(2)}`;
-      Alert.alert(
-        "Payment Notification Sent",
-        `${req.claimantName} has been notified that their reimbursement of ${amountStr} has been approved and paid.`,
-        [{ text: "OK" }]
-      );
-      // Persist notification in local log for audit trail
-      try {
-        const raw = await AsyncStorage.getItem("stride_reimbursement_paid_log");
-        const log: { id: string; name: string; amount: number; paidAt: string }[] = raw ? JSON.parse(raw) : [];
-        log.unshift({ id: req.id, name: req.claimantName, amount: req.amountCents, paidAt: new Date().toISOString() });
-        await AsyncStorage.setItem("stride_reimbursement_paid_log", JSON.stringify(log.slice(0, 100)));
-      } catch { /* ignore */ }
+    const newStatus = payMethod === "cash" ? "cash_pending" : "paid";
+    setRequests(prev => prev.map(r =>
+      r.id === payModal.id
+        ? { ...r, status: newStatus as ReimbursementRequest["status"], paymentMethod: payMethod }
+        : r
+    ));
+    setPayModal(null);
+
+    const amtStr = `€${(payModal.amountCents / 100).toFixed(2)}`;
+    if (payMethod === "cash") {
+      Alert.alert("Cash Payment Recorded", `${payModal.claimantName} will be asked to confirm receipt of ${amtStr} in the app.`, [{ text: "OK" }]);
+    } else {
+      Alert.alert("Payment Recorded", `${payModal.claimantName} has been notified that their ${amtStr} reimbursement has been paid.`, [{ text: "OK" }]);
     }
 
     try {
-      await api.updateReimbursement(id, { status });
-    } catch { /* ignore — optimistic update already applied */ }
+      await api.updateReimbursement(payModal.id, {
+        status: newStatus,
+        paymentMethod: payMethod,
+        paymentReference: payRef.trim() || undefined,
+        payeeIban: payIban.trim() || undefined,
+      });
+    } catch { /* optimistic applied */ } finally {
+      setPaying(false);
+    }
   };
 
-  const pending = requests.filter(r => r.status === "pending" || r.status === "approved");
+  const pending = requests.filter(r => r.status === "pending" || r.status === "approved" || r.status === "cash_pending");
   const history = requests.filter(r => r.status === "paid" || r.status === "rejected");
 
   const handleViewReceipt = useCallback((uri: string) => {
@@ -428,24 +456,24 @@ export default function AdminReimbursementsScreen() {
                   </View>
                 </View>
 
-                {conf ? (
+                {req.status === "cash_pending" ? (
+                  <View style={[styles.confirmBox, { backgroundColor: "#FEF9C3", borderRadius: 10, padding: 10 }]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Ionicons name="hourglass-outline" size={14} color="#854D0E" />
+                      <Text style={[styles.confirmMsg, { color: "#854D0E", flex: 1 }]}>
+                        Awaiting cash receipt confirmation from member
+                      </Text>
+                    </View>
+                  </View>
+                ) : confirmReject === req.id ? (
                   <View style={styles.confirmBox}>
-                    <Text style={[styles.confirmMsg, { color: colors.foreground }]}>
-                      {confirmAction?.action === "paid"
-                        ? `Approve & mark $${(req.amountCents / 100).toFixed(2)} as paid?`
-                        : "Reject this reimbursement request?"}
-                    </Text>
+                    <Text style={[styles.confirmMsg, { color: colors.foreground }]}>Reject this reimbursement request?</Text>
                     <View style={styles.confirmBtns}>
-                      <Pressable style={[styles.confirmBtn, { backgroundColor: colors.muted }]} onPress={() => setConfirmAction(null)}>
+                      <Pressable style={[styles.confirmBtn, { backgroundColor: colors.muted }]} onPress={() => setConfirmReject(null)}>
                         <Text style={[styles.confirmBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                       </Pressable>
-                      <Pressable
-                        style={[styles.confirmBtn, { backgroundColor: confirmAction?.action === "paid" ? "#059669" : "#DC2626" }]}
-                        onPress={() => handleStatusUpdate(req.id, confirmAction!.action)}
-                      >
-                        <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>
-                          {confirmAction?.action === "paid" ? "Confirm Paid" : "Reject"}
-                        </Text>
+                      <Pressable style={[styles.confirmBtn, { backgroundColor: "#DC2626" }]} onPress={() => handleReject(req.id)}>
+                        <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Reject</Text>
                       </Pressable>
                     </View>
                   </View>
@@ -453,17 +481,17 @@ export default function AdminReimbursementsScreen() {
                   <View style={styles.actionRow}>
                     <Pressable
                       style={[styles.actionBtn, { backgroundColor: "#FEE2E2" }]}
-                      onPress={() => { setConfirmAction({ id: req.id, action: "rejected" }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                      onPress={() => { setConfirmReject(req.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                     >
                       <Ionicons name="close" size={14} color="#DC2626" />
                       <Text style={[styles.actionBtnText, { color: "#DC2626" }]}>Reject</Text>
                     </Pressable>
                     <Pressable
                       style={[styles.actionBtn, { backgroundColor: "#D1FAE5", flex: 1 }]}
-                      onPress={() => { setConfirmAction({ id: req.id, action: "paid" }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+                      onPress={() => openPayModal(req)}
                     >
                       <Ionicons name="cash-outline" size={14} color="#059669" />
-                      <Text style={[styles.actionBtnText, { color: "#059669" }]}>Approve & Pay</Text>
+                      <Text style={[styles.actionBtnText, { color: "#059669" }]}>Pay</Text>
                     </Pressable>
                   </View>
                 )}
@@ -512,7 +540,125 @@ export default function AdminReimbursementsScreen() {
         )}
       </ScrollView>
 
-      {/* ── Request Form Modal ── */}
+      {/* ── Payment Method Modal ── */}
+      <Modal visible={!!payModal} transparent animationType="slide" onRequestClose={() => setPayModal(null)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB", alignSelf: "center", marginBottom: 20 }} />
+            <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary, marginBottom: 4 }}>Record Payment</Text>
+            {payModal && (
+              <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 20 }}>
+                {payModal.claimantName} · €{(payModal.amountCents / 100).toFixed(2)} · {payModal.description}
+              </Text>
+            )}
+
+            {/* Method selector */}
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Payment Method</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
+              {(["cash", "iban", "stripe"] as const).map(m => (
+                <Pressable
+                  key={m}
+                  style={{ flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: "center", borderWidth: 2,
+                    borderColor: payMethod === m ? colors.primary : colors.border,
+                    backgroundColor: payMethod === m ? colors.primary + "15" : colors.background }}
+                  onPress={() => { setPayMethod(m); Haptics.selectionAsync(); }}
+                >
+                  <Ionicons
+                    name={m === "cash" ? "cash-outline" : m === "iban" ? "business-outline" : "card-outline"}
+                    size={18}
+                    color={payMethod === m ? colors.primary : colors.mutedForeground}
+                  />
+                  <Text style={{ fontSize: 11, fontWeight: "700", marginTop: 4,
+                    color: payMethod === m ? colors.primary : colors.mutedForeground }}>
+                    {m === "cash" ? "Cash" : m === "iban" ? "Bonifico" : "Stripe"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Stripe: Transfer ID */}
+            {payMethod === "stripe" && (
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>Stripe Transfer ID</Text>
+                <TextInput
+                  value={payRef}
+                  onChangeText={setPayRef}
+                  placeholder="tr_xxxxxxxxxxxxx"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="none"
+                  style={{ borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 13, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted, marginBottom: 8 }}
+                />
+                <Text style={{ fontSize: 11, color: colors.mutedForeground, lineHeight: 16 }}>
+                  Find this in your Stripe Dashboard → Transfers. The payment will be marked as paid immediately.
+                </Text>
+              </View>
+            )}
+
+            {/* Bonifico/IBAN */}
+            {payMethod === "iban" && (
+              <View style={{ gap: 12 }}>
+                <View>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>Recipient IBAN</Text>
+                  <TextInput
+                    value={payIban}
+                    onChangeText={setPayIban}
+                    placeholder="IT60 X054 2811 1010 0000 0123 456"
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="characters"
+                    style={{ borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 13, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }}
+                  />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>CRO / Reference (optional)</Text>
+                  <TextInput
+                    value={payRef}
+                    onChangeText={setPayRef}
+                    placeholder="e.g. 12345678901234"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="numeric"
+                    style={{ borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 13, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }}
+                  />
+                </View>
+                <Text style={{ fontSize: 11, color: colors.mutedForeground, lineHeight: 16 }}>
+                  The member will be notified the transfer has been sent. Paid status is set immediately.
+                </Text>
+              </View>
+            )}
+
+            {/* Cash */}
+            {payMethod === "cash" && (
+              <View style={{ backgroundColor: "#FEF9C3", borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+                <Ionicons name="information-circle-outline" size={18} color="#854D0E" />
+                <Text style={{ flex: 1, fontSize: 12, color: "#854D0E", lineHeight: 17 }}>
+                  The reimbursement will be marked as "Cash Pending". The member will receive a notification and must confirm receipt in the app. The record becomes "Paid" once they confirm.
+                </Text>
+              </View>
+            )}
+
+            {/* Action buttons */}
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+              <Pressable
+                style={{ flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: "center", backgroundColor: colors.muted }}
+                onPress={() => setPayModal(null)}
+              >
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.mutedForeground }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={{ flex: 2, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+                  borderRadius: 14, paddingVertical: 14, backgroundColor: colors.primary, opacity: paying ? 0.7 : 1 }}
+                onPress={handlePay}
+                disabled={paying}
+              >
+                <Ionicons name={payMethod === "cash" ? "cash-outline" : "checkmark-circle-outline"} size={16} color="#FBBF24" />
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#FBBF24" }}>
+                  {paying ? "Processing…" : payMethod === "cash" ? "Mark as Cash Paid" : "Confirm Payment"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <ReimbursementRequestForm
         visible={showForm}
         onClose={() => setShowForm(false)}

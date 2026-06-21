@@ -34,10 +34,13 @@ interface ReimbursementItem {
   id: number;
   description: string;
   amount_cents: number;
-  status: "pending" | "approved" | "paid" | "rejected";
+  status: "pending" | "approved" | "paid" | "rejected" | "cash_pending";
   receipt_url: string | null;
   admin_note: string | null;
-  created_at: string;
+  submitted_at: string;
+  created_at?: string;
+  payment_method?: "stripe" | "iban" | "cash";
+  payment_reference?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -47,10 +50,11 @@ function centsToCurrency(cents: number) {
 }
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
-  pending:  { color: "#F59E0B", label: "In attesa",  icon: "time-outline" },
-  approved: { color: "#10B981", label: "Approvata",  icon: "checkmark-circle-outline" },
-  paid:     { color: "#6366F1", label: "Pagata",     icon: "cash-outline" },
-  rejected: { color: "#EF4444", label: "Rifiutata",  icon: "close-circle-outline" },
+  pending:      { color: "#F59E0B", label: "Pending",       icon: "time-outline" },
+  approved:     { color: "#10B981", label: "Approved",      icon: "checkmark-circle-outline" },
+  paid:         { color: "#6366F1", label: "Paid",          icon: "cash-outline" },
+  rejected:     { color: "#EF4444", label: "Rejected",      icon: "close-circle-outline" },
+  cash_pending: { color: "#D97706", label: "Confirm Cash",  icon: "hand-right-outline" },
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -67,6 +71,7 @@ export default function ParentReimbursementsScreen() {
   const [thresholdCents,     setThresholdCents]     = useState(0);
   const [showForm,           setShowForm]           = useState(false);
   const [detailItem,         setDetailItem]         = useState<ReimbursementItem | null>(null);
+  const [confirmingCash,     setConfirmingCash]     = useState(false);
 
   // New claim form state
   const [desc,               setDesc]               = useState("");
@@ -89,9 +94,12 @@ export default function ParentReimbursementsScreen() {
     }).catch(() => {});
 
     // Load claims
-    api.getReimbursements().then((data: unknown[]) => {
+    api.getMyReimbursements().then((data: unknown[]) => {
       if (!active) return;
-      setItems((data as ReimbursementItem[]).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      setItems((data as ReimbursementItem[]).sort((a, b) =>
+        new Date(b.submitted_at ?? b.created_at ?? "").getTime() -
+        new Date(a.submitted_at ?? a.created_at ?? "").getTime()
+      ));
     }).catch(() => {
       if (active) setLoadError(true);
     }).finally(() => {
@@ -144,8 +152,23 @@ export default function ParentReimbursementsScreen() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const pending  = items.filter(i => i.status === "pending");
-  const resolved = items.filter(i => i.status !== "pending");
+  const handleConfirmCash = async (item: ReimbursementItem) => {
+    setConfirmingCash(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      await api.confirmCashReimbursement(item.id);
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: "paid" as const } : i));
+      setDetailItem(null);
+      Alert.alert("Receipt Confirmed", "Thank you — your cash receipt has been confirmed and recorded.", [{ text: "OK" }]);
+    } catch {
+      Alert.alert("Error", "Could not confirm receipt. Please try again.");
+    } finally {
+      setConfirmingCash(false);
+    }
+  };
+
+  const pending  = items.filter(i => i.status === "pending" || i.status === "cash_pending");
+  const resolved = items.filter(i => i.status !== "pending" && i.status !== "cash_pending");
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -320,8 +343,40 @@ export default function ParentReimbursementsScreen() {
                     <Text style={[styles.detailDesc, { color: colors.foreground }]}>{detailItem.description}</Text>
                     <Text style={[styles.detailAmt, { color: colors.primary }]}>{centsToCurrency(detailItem.amount_cents)}</Text>
                     <Text style={[styles.detailDate, { color: colors.mutedForeground }]}>
-                      Submitted on {new Date(detailItem.created_at).toLocaleDateString("en-GB")}
+                      Submitted on {new Date(detailItem.submitted_at ?? detailItem.created_at ?? "").toLocaleDateString("en-GB")}
                     </Text>
+                    {detailItem.status === "cash_pending" && (
+                      <View style={{ width: "100%", backgroundColor: "#FEF9C3", borderRadius: 12, padding: 14, marginTop: 4, gap: 8 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                          <Ionicons name="cash-outline" size={20} color="#854D0E" />
+                          <Text style={{ flex: 1, fontSize: 13, fontWeight: "700", color: "#854D0E" }}>Cash Payment Pending</Text>
+                        </View>
+                        <Text style={{ fontSize: 12, color: "#854D0E", lineHeight: 17 }}>
+                          The admin has recorded this as paid in cash. Please confirm you received the money.
+                        </Text>
+                        <Pressable
+                          onPress={() => handleConfirmCash(detailItem)}
+                          disabled={confirmingCash}
+                          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+                            backgroundColor: "#854D0E", borderRadius: 12, paddingVertical: 12, marginTop: 4, opacity: confirmingCash ? 0.7 : 1 }}
+                        >
+                          <Ionicons name="checkmark-circle-outline" size={18} color="#FBBF24" />
+                          <Text style={{ fontSize: 14, fontWeight: "800", color: "#FBBF24" }}>
+                            {confirmingCash ? "Confirming…" : "Yes, I received the cash"}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    )}
+                    {detailItem.payment_method && detailItem.status === "paid" && (
+                      <View style={{ width: "100%", backgroundColor: "#D1FAE5", borderRadius: 12, padding: 12, marginTop: 4 }}>
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: "#065F46", marginBottom: 2 }}>PAYMENT DETAILS</Text>
+                        <Text style={{ fontSize: 13, color: "#065F46" }}>
+                          {detailItem.payment_method === "stripe" ? "Stripe transfer" :
+                           detailItem.payment_method === "iban"   ? "Bank transfer (IBAN)" : "Cash (confirmed)"}
+                          {detailItem.payment_reference ? ` · Ref: ${detailItem.payment_reference}` : ""}
+                        </Text>
+                      </View>
+                    )}
                     {detailItem.admin_note ? (
                       <View style={[styles.noteBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
                         <Text style={[styles.noteBoxLabel, { color: colors.mutedForeground }]}>Admin note</Text>
@@ -357,7 +412,7 @@ function ClaimCard({ item, colors, onPress }: { item: ReimbursementItem; colors:
       <View style={{ flex: 1 }}>
         <Text style={[styles.claimDesc, { color: colors.foreground }]} numberOfLines={1}>{item.description}</Text>
         <Text style={[styles.claimDate, { color: colors.mutedForeground }]}>
-          {new Date(item.created_at).toLocaleDateString("en-GB")}
+          {new Date(item.submitted_at ?? item.created_at ?? "").toLocaleDateString("en-GB")}
         </Text>
       </View>
       <View style={{ alignItems: "flex-end", gap: 4 }}>

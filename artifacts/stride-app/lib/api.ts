@@ -457,12 +457,20 @@ export const api = {
 
   // Reimbursements
   getReimbursements: () => request<ApiReimbursement[]>("GET", "/reimbursements"),
+  getMyReimbursements: () => request<ApiReimbursement[]>("GET", "/reimbursements/mine"),
+  confirmCashReimbursement: (id: number | string) =>
+    request<ApiReimbursement>("POST", `/reimbursements/${id}/confirm-cash`),
   createReimbursement: (data: {
     claimantName: string; claimantRole: string;
     description: string; amountCents: number; receiptUri?: string;
   }) => request<ApiReimbursement>("POST", "/reimbursements", data),
-  updateReimbursement: (id: string, data: { status?: string; adminNote?: string }) =>
-    request<ApiReimbursement>("PATCH", `/reimbursements/${id}`, data),
+  updateReimbursement: (id: string, data: {
+    status?: string;
+    adminNote?: string;
+    paymentMethod?: "stripe" | "iban" | "cash";
+    paymentReference?: string;
+    payeeIban?: string;
+  }) => request<ApiReimbursement>("PATCH", `/reimbursements/${id}`, data),
 
   // Profile (parent self-update)
   updateProfile: (data: { name?: string; phone?: string }) =>
@@ -1530,10 +1538,15 @@ export interface ApiReimbursement {
   description: string;
   amount_cents: number;
   receipt_uri?: string;
-  status: "pending" | "approved" | "paid" | "rejected";
+  status: "pending" | "approved" | "paid" | "rejected" | "cash_pending";
   admin_note?: string;
   submitted_at: string;
   updated_at: string;
+  payment_method?: "stripe" | "iban" | "cash";
+  payment_reference?: string;
+  payee_iban?: string;
+  paid_at?: string;
+  cash_confirmed_at?: string;
 }
 
 export interface ApiMessage {
