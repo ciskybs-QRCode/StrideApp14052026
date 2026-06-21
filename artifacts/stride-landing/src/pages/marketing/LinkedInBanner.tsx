@@ -1,4 +1,5 @@
 import React from "react";
+import { ScaleToFit } from "./ScaleToFit";
 import { useCurrency } from "../../lib/useCurrency";
 
 const NAVY = "#1E3A8A";
@@ -9,14 +10,14 @@ export default function LinkedInBanner() {
   const curr = useCurrency();
 
   const STATS = [
-    { value: "485",             label: "Members managed" },
-    { value: "87%",             label: "Avg. attendance" },
+    { value: "485",              label: "Members managed" },
+    { value: "87%",              label: "Avg. attendance" },
     { value: curr.format(12840), label: "Monthly revenue tracked" },
-    { value: "3",               label: "Roles, one platform" },
+    { value: "3",                label: "Roles, one platform" },
   ];
 
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e" }}>
+    <ScaleToFit width={1200} height={628}>
       <div style={{ fontFamily: "Montserrat, sans-serif", width: 1200, height: 628, background: NAVY, position: "relative", overflow: "hidden", display: "flex" }}>
         <style>{montserrat}</style>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 80px", position: "relative", zIndex: 2 }}>
@@ -54,6 +55,6 @@ export default function LinkedInBanner() {
         <div style={{ position: "absolute", bottom: -200, right: 200, width: 600, height: 600, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.04)", zIndex: 1 }} />
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: GOLD, zIndex: 3 }} />
       </div>
-    </div>
+    </ScaleToFit>
   );
 }

@@ -21,10 +21,10 @@ export function PageShell({ children, dark = false }: PageShellProps) {
             {dark ? (
               /* On dark nav: white pill container so the logo reads clearly */
               <span className="bg-white rounded-xl px-2 py-1 flex items-center">
-                <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 32, width: "auto", display: "block" }} />
+                <img src="/stride-logo.png" alt="Stride" style={{ height: 32, width: "auto", display: "block" }} />
               </span>
             ) : (
-              <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 38, width: "auto", display: "block" }} />
+              <img src="/stride-logo.png" alt="Stride" style={{ height: 38, width: "auto", display: "block" }} />
             )}
           </a>
           <div className="flex items-center gap-5">
@@ -32,7 +32,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
             <a href="/pricing" className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>Pricing</a>
             <a href="/faq"     className={`text-sm font-medium transition-colors hidden sm:block ${linkTxt}`}>FAQ</a>
             <a href="/contact" className={`text-sm font-medium transition-colors ${linkTxt}`}>Support</a>
-            <a href="/landing/register" className="bg-[#FBBF24] text-[#0A192F] text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-[#fcd34d] transition-colors no-underline">
+            <a href="/register" className="bg-[#FBBF24] text-[#0A192F] text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-[#fcd34d] transition-colors no-underline">
               Get Started
             </a>
           </div>
@@ -54,7 +54,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
           <div>
             <a href="/" className="flex items-center no-underline mb-3">
               <span className="bg-white rounded-lg px-1.5 py-1 inline-flex items-center">
-                <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 26, width: "auto", display: "block" }} />
+                <img src="/stride-logo.png" alt="Stride" style={{ height: 26, width: "auto", display: "block" }} />
               </span>
             </a>
             <p className="text-blue-400 text-xs leading-relaxed">
@@ -75,7 +75,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
             <p className="text-white text-xs font-black uppercase tracking-wider mb-3">Support</p>
             <div className="flex flex-col gap-2">
               <a href="/contact" className="text-blue-300 text-xs hover:text-white transition-colors">Contact Us</a>
-              <a href="/landing/register" className="text-blue-300 text-xs hover:text-white transition-colors">Get Started</a>
+              <a href="/register" className="text-blue-300 text-xs hover:text-white transition-colors">Get Started</a>
             </div>
           </div>
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { ScaleToFit } from "./ScaleToFit";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
@@ -30,7 +31,7 @@ const ROLES = [
 
 export default function InstagramStory() {
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e" }}>
+    <ScaleToFit width={1080} height={1920}>
       <div style={{ fontFamily: "Montserrat, sans-serif", width: 1080, height: 1920, background: NAVY, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <style>{montserrat}</style>
         <div style={{ position: "absolute", top: -200, right: -200, width: 700, height: 700, borderRadius: "50%", border: `1px solid rgba(251,191,36,0.1)` }} />
@@ -88,6 +89,6 @@ export default function InstagramStory() {
           <div style={{ fontSize: 20, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>stride.app · No credit card required</div>
         </div>
       </div>
-    </div>
+    </ScaleToFit>
   );
 }

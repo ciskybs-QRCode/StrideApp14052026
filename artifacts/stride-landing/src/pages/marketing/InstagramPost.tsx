@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ScaleToFit } from "./ScaleToFit";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
@@ -44,7 +45,7 @@ export default function InstagramPost() {
   const s = slides[tick];
 
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e" }}>
+    <ScaleToFit width={1080} height={1080}>
       <div style={{ fontFamily: "Montserrat, sans-serif", width: 1080, height: 1080, background: NAVY, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <style>{montserrat}</style>
         <div style={{ position: "absolute", top: -120, right: -120, width: 500, height: 500, borderRadius: "50%", border: `2px solid rgba(251,191,36,0.15)` }} />
@@ -89,6 +90,6 @@ export default function InstagramPost() {
           <span style={{ fontSize: 20, color: GOLD, fontWeight: 700 }}>Run your school. Not your spreadsheets.</span>
         </div>
       </div>
-    </div>
+    </ScaleToFit>
   );
 }
