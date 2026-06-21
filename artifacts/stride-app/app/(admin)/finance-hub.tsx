@@ -11,6 +11,7 @@ import { HubCard } from "@/components/HubCard";
 import { useColors } from "@/hooks/useColors";
 import { useFeatures } from "@/context/FeaturesContext";
 import { useAppData } from "@/context/AppDataContext";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 
 export default function FinanceHub() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function FinanceHub() {
   const insets = useSafeAreaInsets();
   const { marketplaceEnabled } = useFeatures();
   const { payments } = useAppData();
+  const { can } = usePlanFeatures();
 
   const overdue = payments.filter(p => p.status === "pending" || p.status === "overdue").length;
 
@@ -73,12 +75,14 @@ export default function FinanceHub() {
           description="Fee frequency, billing cycle and pro-rata policy"
           onPress={() => router.push("/(admin)/settings/fee-settings" as never)}
         />
-        <HubCard
-          icon="globe-outline"
-          title="Global Pricing"
-          description="Multi-currency regional seat rates"
-          onPress={() => router.push("/(admin)/settings/regional-pricing" as never)}
-        />
+        {can("global_pricing") && (
+          <HubCard
+            icon="globe-outline"
+            title="Global Pricing"
+            description="Multi-currency regional seat rates"
+            onPress={() => router.push("/(admin)/settings/regional-pricing" as never)}
+          />
+        )}
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PROMOTIONS</Text>
         <HubCard
@@ -88,7 +92,7 @@ export default function FinanceHub() {
           onPress={() => router.push("/(admin)/settings/promo-codes" as never)}
         />
 
-        {marketplaceEnabled && (
+        {marketplaceEnabled && can("marketplace") && (
           <HubCard
             icon="storefront-outline"
             title="Marketplace Revenue"

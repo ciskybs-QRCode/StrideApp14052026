@@ -13,6 +13,7 @@ import { HubCard } from "@/components/HubCard";
 import { useColors } from "@/hooks/useColors";
 import { useFeatures } from "@/context/FeaturesContext";
 import { useAuth } from "@/context/AuthContext";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 
 export default function OperationsHub() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function OperationsHub() {
   const insets = useSafeAreaInsets();
   const { marketplaceEnabled } = useFeatures();
   const { user } = useAuth();
+  const { can } = usePlanFeatures();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -50,12 +52,14 @@ export default function OperationsHub() {
           description="Define class types and skill levels"
           onPress={() => router.push("/(admin)/disciplines" as never)}
         />
-        <HubCard
-          icon="book-outline"
-          title="Courses"
-          description="Create and manage enrollment-based courses for members"
-          onPress={() => router.push("/(admin)/courses-manage" as never)}
-        />
+        {can("courses") && (
+          <HubCard
+            icon="book-outline"
+            title="Courses"
+            description="Create and manage enrollment-based courses for members"
+            onPress={() => router.push("/(admin)/courses-manage" as never)}
+          />
+        )}
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>OPERATIONS</Text>
         <HubCard
@@ -74,28 +78,34 @@ export default function OperationsHub() {
           iconColor="#FBBF24"
           onPress={() => router.push("/(admin)/calendar-management" as never)}
         />
-        <HubCard
-          icon="sparkles"
-          title="Smart Rostering"
-          description="AI substitute matching, auto-notify, conflict detection"
-          iconBg="#1E3A8A"
-          iconColor="#FBBF24"
-          onPress={() => router.push("/(admin)/smart-roster" as never)}
-        />
-        <HubCard
-          icon="terminal-outline"
-          title="Admin Copilot"
-          description="Ask data questions in plain English"
-          iconBg="#050F2E"
-          iconColor="#FBBF24"
-          onPress={() => router.push("/(admin)/copilot" as never)}
-        />
-        <HubCard
-          icon="bluetooth-outline"
-          title="BLE Beacons"
-          description="Proximity check-in wearables and beacon management"
-          onPress={() => router.push("/(admin)/beacons" as never)}
-        />
+        {can("ai_suite") && (
+          <HubCard
+            icon="sparkles"
+            title="Smart Rostering"
+            description="AI substitute matching, auto-notify, conflict detection"
+            iconBg="#1E3A8A"
+            iconColor="#FBBF24"
+            onPress={() => router.push("/(admin)/smart-roster" as never)}
+          />
+        )}
+        {can("ai_suite") && (
+          <HubCard
+            icon="terminal-outline"
+            title="Admin Copilot"
+            description="Ask data questions in plain English"
+            iconBg="#050F2E"
+            iconColor="#FBBF24"
+            onPress={() => router.push("/(admin)/copilot" as never)}
+          />
+        )}
+        {can("ble_proximity") && (
+          <HubCard
+            icon="bluetooth-outline"
+            title="BLE Beacons"
+            description="Proximity check-in wearables and beacon management"
+            onPress={() => router.push("/(admin)/beacons" as never)}
+          />
+        )}
         <HubCard
           icon="bar-chart-outline"
           title="Analytics"
@@ -103,29 +113,37 @@ export default function OperationsHub() {
           onPress={() => router.push("/(admin)/analytics" as never)}
         />
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE & EVENTS</Text>
-        <HubCard
-          icon="storefront-outline"
-          title="Marketplace"
-          description="Products, shop links and platform commission"
-          iconBg="#DBEAFE"
-          iconColor="#1E3A8A"
-          onPress={() => router.push("/(admin)/marketplace" as never)}
-        />
-        <HubCard
-          icon="ticket-outline"
-          title="Events & Tickets"
-          description="Create events, manage dates and ticket types"
-          onPress={() => router.push("/(admin)/events" as never)}
-        />
-        <HubCard
-          icon="cash-outline"
-          title="Fee Events"
-          description="One-off payment events with line items, installments and AI email"
-          iconBg="#1E3A8A"
-          iconColor="#FBBF24"
-          onPress={() => router.push("/(admin)/fee-events" as never)}
-        />
+        {(can("marketplace") || can("events")) && (
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE & EVENTS</Text>
+        )}
+        {can("marketplace") && (
+          <HubCard
+            icon="storefront-outline"
+            title="Marketplace"
+            description="Products, shop links and platform commission"
+            iconBg="#DBEAFE"
+            iconColor="#1E3A8A"
+            onPress={() => router.push("/(admin)/marketplace" as never)}
+          />
+        )}
+        {can("events") && (
+          <HubCard
+            icon="ticket-outline"
+            title="Events & Tickets"
+            description="Create events, manage dates and ticket types"
+            onPress={() => router.push("/(admin)/events" as never)}
+          />
+        )}
+        {can("events") && (
+          <HubCard
+            icon="cash-outline"
+            title="Fee Events"
+            description="One-off payment events with line items, installments and AI email"
+            iconBg="#1E3A8A"
+            iconColor="#FBBF24"
+            onPress={() => router.push("/(admin)/fee-events" as never)}
+          />
+        )}
 
         {user?.role === "super_admin" && (
           <>

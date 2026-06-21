@@ -29,6 +29,7 @@ import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { usePaidLessons, type PaidLesson } from "@/context/PaidLessonsContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useFeatures } from "@/context/FeaturesContext";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { useColors } from "@/hooks/useColors";
 import { api, listEvents } from "@/lib/api";
 import { SOSButton } from "@/components/SOSButton";
@@ -66,6 +67,7 @@ export default function ParentHome() {
   const { user, updateUser } = useAuth();
   const { marketplaceEnabled } = useFeatures();
   const { children, courses, lessons } = useAppData();
+  const { can: planCan } = usePlanFeatures();
   const { unreadCount } = usePrivateLessons();
   const { paidLessons } = usePaidLessons();
   const { activeAlerts, dismissAlert } = useSecurityEscalation();
@@ -655,8 +657,8 @@ export default function ParentHome() {
         )}
 
 
-        {/* ── Stride Marketplace Banner (global flag ON + org has published products) ── */}
-        {marketplaceEnabled && hasPublishedProducts && (
+        {/* ── Stride Marketplace Banner (global flag ON + org has published products + plan) ── */}
+        {marketplaceEnabled && hasPublishedProducts && planCan("marketplace") && (
           <Pressable
             style={({ pressed }) => [styles.marketplaceBanner, { transform: pressed ? [{ scale: 0.98 }] : [] }]}
             onPress={() => router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0])}
@@ -677,8 +679,8 @@ export default function ParentHome() {
           </Pressable>
         )}
 
-        {/* ── Events Banner (only when org has published events) ── */}
-        {hasPublishedEvents && <Pressable
+        {/* ── Events Banner (only when org has published events + plan) ── */}
+        {hasPublishedEvents && planCan("events") && <Pressable
           style={({ pressed }) => [styles.marketplaceBanner, { backgroundColor: "#7C3AED", transform: pressed ? [{ scale: 0.98 }] : [] }]}
           onPress={() => router.push("/(parent)/events" as Parameters<typeof router.push>[0])}
         >

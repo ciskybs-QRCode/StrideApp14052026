@@ -20,6 +20,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { HubCard } from "@/components/HubCard";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 
 // ── Nav rows shown under CONFIGURATION ───────────────────────────────────────
 
@@ -71,6 +72,7 @@ export default function SettingsIndex() {
   const { legalAdminDocs } = useAppData();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { can } = usePlanFeatures();
 
   const unsignedCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
 
@@ -233,7 +235,7 @@ export default function SettingsIndex() {
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
 
         {/* ── CONFIG ROWS ── */}
-        {NAV_ROWS.map((item) => (
+        {NAV_ROWS.filter(item => item.key !== "app-customization" || can("white_label")).map((item) => (
           <HubCard
             key={item.key}
             icon={item.icon}
