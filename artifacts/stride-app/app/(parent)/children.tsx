@@ -78,8 +78,13 @@ export default function ChildrenScreen() {
   const [promoteLoading,   setPromoteLoading]   = useState(false);
   const [promotePendingIds, setPromotePendingIds] = useState<Set<string>>(new Set());
 
-  // Privacy & notification settings (persisted in AsyncStorage, default ON)
-  const [absenceAlertsEnabled,    setAbsenceAlertsEnabled]    = useState(true);
+  // Per-child no-show alert opt-out (keyed by child ID, loaded from context, default ON)
+  const [noshowByChildId,       setNoshowByChildId]       = useState<Record<string, boolean>>({});
+  const [showLiabilityModal,    setShowLiabilityModal]    = useState(false);
+  const [liabilityChildId,      setLiabilityChildId]      = useState<string | null>(null);
+  const [liabilityChildName,    setLiabilityChildName]    = useState("");
+  const [liabilityChecked,      setLiabilityChecked]      = useState(false);
+  const [liabilitySaving,       setLiabilitySaving]       = useState(false);
   const [emergencyContactVisible, setEmergencyContactVisible] = useState(true);
 
   // Add Child fields
@@ -149,14 +154,12 @@ export default function ChildrenScreen() {
   // Load privacy settings + pending promotion IDs from AsyncStorage
   useEffect(() => {
     AsyncStorage.multiGet([
-      "stride:absenceAlerts",
       "stride:emergencyContactVisible",
       "stride:promotePendingIds",
       "stride:child_certs",
     ]).then(pairs => {
       for (const [key, val] of pairs) {
         if (val === null) continue;
-        if (key === "stride:absenceAlerts")           setAbsenceAlertsEnabled(val !== "false");
         if (key === "stride:emergencyContactVisible") setEmergencyContactVisible(val !== "false");
         if (key === "stride:promotePendingIds") {
           try { setPromotePendingIds(new Set(JSON.parse(val))); } catch {}
@@ -168,10 +171,54 @@ export default function ChildrenScreen() {
     });
   }, []);
 
-  const toggleAbsenceAlerts = (v: boolean) => {
-    setAbsenceAlertsEnabled(v);
-    AsyncStorage.setItem("stride:absenceAlerts", String(v));
+  // Load noshowByChildId from children context whenever children data changes
+  useEffect(() => {
+    const map: Record<string, boolean> = {};
+    for (const c of children) {
+      map[c.id] = c.noshowAlertsEnabled ?? true;
+    }
+    setNoshowByChildId(prev => ({ ...map, ...prev }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children.length]);
+
+  // Attempt to disable noshow alerts: open liability modal first
+  const requestNoshowDisable = (childId: string, childName: string) => {
+    setLiabilityChildId(childId);
+    setLiabilityChildName(childName);
+    setLiabilityChecked(false);
+    setShowLiabilityModal(true);
   };
+
+  // Re-enable noshow alerts directly (no confirmation needed)
+  const handleNoshowToggle = async (childId: string, childName: string, value: boolean) => {
+    if (!value) {
+      requestNoshowDisable(childId, childName);
+      return;
+    }
+    // Re-enabling: just call API
+    try {
+      await api.setChildNoshowPreference(childId, true);
+      setNoshowByChildId(prev => ({ ...prev, [childId]: true }));
+    } catch {
+      Alert.alert("Error", "Could not update alert settings. Please try again.");
+    }
+  };
+
+  // Confirm opt-out after liability modal + checkbox
+  const handleLiabilityConfirm = async () => {
+    if (!liabilityChildId || !liabilityChecked) return;
+    setLiabilitySaving(true);
+    try {
+      await api.setChildNoshowPreference(liabilityChildId, false);
+      setNoshowByChildId(prev => ({ ...prev, [liabilityChildId]: false }));
+      setShowLiabilityModal(false);
+    } catch {
+      Alert.alert("Error", "Could not update alert settings. Please try again.");
+    } finally {
+      setLiabilitySaving(false);
+    }
+  };
+
   const toggleEmergencyContact = (v: boolean) => {
     setEmergencyContactVisible(v);
     AsyncStorage.setItem("stride:emergencyContactVisible", String(v));
@@ -833,30 +880,56 @@ export default function ChildrenScreen() {
             )}
           {/* Privacy & Notification Settings */}
           <View style={[styles.childCard, { backgroundColor: colors.card, marginTop: 8 }]}>
-            <Text style={[styles.childName, { color: colors.primary, fontSize: 16, marginBottom: 14 }]}>
-              🔔  Privacy & Notification Settings
+            <Text style={[styles.childName, { color: colors.primary, fontSize: 16, marginBottom: 4 }]}>
+              🔔  Safety & Notification Settings
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 14, lineHeight: 16 }}>
+              No-show alerts notify you and staff when a dependent hasn't checked in 10 minutes after class starts.
             </Text>
 
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-              <View style={{ flex: 1, marginRight: 16 }}>
-                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Absence Alerts</Text>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2, lineHeight: 16 }}>
-                  Receive security alerts when a dependent hasn't checked in as expected.
-                </Text>
-              </View>
-              <Switch
-                value={absenceAlertsEnabled}
-                onValueChange={toggleAbsenceAlerts}
-                trackColor={{ false: "#D1D5DB", true: colors.primary }}
-                thumbColor="#FFF"
-              />
-            </View>
+            {/* Per-child no-show toggles */}
+            {children.map((child, idx) => {
+              const isOn = noshowByChildId[child.id] ?? true;
+              return (
+                <View
+                  key={child.id}
+                  style={{
+                    flexDirection: "row", alignItems: "center",
+                    justifyContent: "space-between", paddingVertical: 11,
+                    borderBottomWidth: idx < children.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>{child.name}</Text>
+                      {!isOn && (
+                        <View style={{ backgroundColor: "#FEF2F2", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 10, fontWeight: "700", color: "#EF4444" }}>OPT-OUT</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>
+                      {isOn ? "No-show alerts active" : "Alerts disabled · you bear sole responsibility"}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={isOn}
+                    onValueChange={v => { void handleNoshowToggle(child.id, child.name, v); }}
+                    trackColor={{ false: "#EF4444", true: colors.primary }}
+                    thumbColor="#FFF"
+                  />
+                </View>
+              );
+            })}
 
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12 }}>
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12 }} />
+
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flex: 1, marginRight: 16 }}>
                 <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Emergency Contact Visible</Text>
                 <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2, lineHeight: 16 }}>
-                  Allow authorised staff to view your emergency contact (next of kin) details.
+                  Allow authorised staff to view next of kin details.
                 </Text>
               </View>
               <Switch
@@ -866,14 +939,96 @@ export default function ChildrenScreen() {
                 thumbColor="#FFF"
               />
             </View>
-
-            <Text style={{ fontSize: 11, color: colors.mutedForeground, fontStyle: "italic", marginTop: 4, lineHeight: 15 }}>
-              Settings are active by default. Changes take effect immediately for new events.
-            </Text>
           </View>
         </>
         )}
       </ScrollView>
+
+      {/* ── No-Show Opt-Out Liability Modal ──────────────────────────────── */}
+      <Modal
+        visible={showLiabilityModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { if (!liabilitySaving) setShowLiabilityModal(false); }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { borderColor: "#FBBF24", borderWidth: 2, maxHeight: "85%", paddingTop: 28 }]}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
+              {/* Warning header */}
+              <View style={{ alignItems: "center", marginBottom: 18 }}>
+                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                  <Text style={{ fontSize: 32 }}>⚠️</Text>
+                </View>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: "#DC2626", textAlign: "center" }}>
+                  Disable No-Show Alerts?
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginTop: 4, textAlign: "center" }}>
+                  for {liabilityChildName}
+                </Text>
+              </View>
+
+              {/* Explanation */}
+              <Text style={{ fontSize: 13, color: colors.foreground, lineHeight: 20, marginBottom: 12 }}>
+                No-show safety alerts are an automatic protection. When disabled, {liabilityChildName} will not receive automatic check-in verification and <Text style={{ fontWeight: "700" }}>neither you nor the association will be alerted</Text> if they fail to arrive for a scheduled class.
+              </Text>
+              <Text style={{ fontSize: 13, color: colors.foreground, lineHeight: 20, marginBottom: 16 }}>
+                You can re-enable this at any time from this screen.
+              </Text>
+
+              {/* Liability disclaimer box */}
+              <View style={{ backgroundColor: "#FEF2F2", borderRadius: 12, padding: 14, borderLeftWidth: 4, borderLeftColor: "#EF4444", marginBottom: 20 }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#991B1B", marginBottom: 6 }}>LIABILITY NOTICE</Text>
+                <Text style={{ fontSize: 12, color: "#7F1D1D", lineHeight: 18 }}>
+                  By disabling this alert you acknowledge that you, as the responsible party, assume full and sole liability for monitoring {liabilityChildName}'s attendance. The association bears no responsibility for any missed alerts or incidents that may arise from this setting being turned off.
+                </Text>
+              </View>
+
+              {/* Checkbox confirmation */}
+              <Pressable
+                style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 24, padding: 4 }}
+                onPress={() => setLiabilityChecked(prev => !prev)}
+              >
+                <View style={{
+                  width: 22, height: 22, borderRadius: 6, borderWidth: 2,
+                  borderColor: liabilityChecked ? "#EF4444" : "#D1D5DB",
+                  backgroundColor: liabilityChecked ? "#EF4444" : "#FFF",
+                  alignItems: "center", justifyContent: "center", marginTop: 1, flexShrink: 0,
+                }}>
+                  {liabilityChecked && <Text style={{ color: "#FFF", fontSize: 14, fontWeight: "900" }}>✓</Text>}
+                </View>
+                <Text style={{ flex: 1, fontSize: 13, color: colors.foreground, lineHeight: 19 }}>
+                  I understand and accept that I am solely responsible for {liabilityChildName}'s attendance tracking if I disable this alert.
+                </Text>
+              </Pressable>
+
+              {/* Buttons */}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Pressable
+                  style={{ flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: colors.muted, alignItems: "center" }}
+                  onPress={() => setShowLiabilityModal(false)}
+                  disabled={liabilitySaving}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={{
+                    flex: 1, paddingVertical: 14, borderRadius: 14,
+                    backgroundColor: liabilityChecked ? "#EF4444" : "#D1D5DB",
+                    alignItems: "center",
+                  }}
+                  onPress={handleLiabilityConfirm}
+                  disabled={!liabilityChecked || liabilitySaving}
+                >
+                  {liabilitySaving
+                    ? <ActivityIndicator color="#FFF" size="small" />
+                    : <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFF" }}>Disable Alerts</Text>
+                  }
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Promote to Member Modal */}
       <Modal

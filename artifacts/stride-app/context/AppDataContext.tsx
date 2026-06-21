@@ -29,6 +29,7 @@ export interface Child {
   skillLevel?: string;
   medicalCertUri?: string;
   medicalCertExpiry?: string;
+  noshowAlertsEnabled?: boolean;
 }
 
 export interface Delegate {
@@ -232,6 +233,7 @@ function mapChild(c: ApiChild, enrollments: ApiEnrollment[]): Child {
     qrPayload: c.qr_payload,
     dateOfBirth: dob,
     skillLevel: (c as unknown as Record<string, unknown>)["skill_level"] as string | undefined ?? inferSkillLevel(stars),
+    noshowAlertsEnabled: (c as unknown as Record<string, unknown>)["noshow_alerts_enabled"] as boolean | undefined ?? true,
   };
 }
 

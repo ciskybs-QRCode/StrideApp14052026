@@ -516,4 +516,44 @@ router.post("/analyze-cert", requireAuth, async (req, res) => {
   }
 });
 
+// ── PATCH /children/:id/noshow-preference ─────────────────────────────────────
+// Parent or admin toggles the no-show safety alert for a specific child.
+// Requires double confirmation on the client side (liability disclaimer shown).
+router.patch("/children/:id/noshow-preference", requireAuth, async (req, res) => {
+  const user    = (req as AuthReq).user;
+  const childId = parseInt(String(req.params.id), 10);
+  if (isNaN(childId)) { res.status(400).json({ error: "Invalid child ID" }); return; }
+
+  const { enabled } = req.body as { enabled?: boolean };
+  if (typeof enabled !== "boolean") { res.status(400).json({ error: "enabled must be a boolean" }); return; }
+
+  const { data: child } = await supabase
+    .from("children")
+    .select("id, parent_id")
+    .eq("id", childId)
+    .maybeSingle();
+
+  if (!child) { res.status(404).json({ error: "Child not found" }); return; }
+
+  const parentId = (child as Record<string, number>).parent_id;
+  const userId   = parseInt(user.id, 10);
+
+  if (!["admin", "super_admin"].includes(user.role) && parentId !== userId) {
+    res.status(403).json({ error: "Not authorized" }); return;
+  }
+
+  const { error } = await supabase
+    .from("children")
+    .update({
+      noshow_alerts_enabled: enabled,
+      noshow_disabled_at:    enabled ? null : new Date().toISOString(),
+    })
+    .eq("id", childId);
+
+  if (error) { req.log.error({ error }, "noshow-preference update failed"); res.status(500).json({ error: "Update failed" }); return; }
+
+  req.log.info({ childId, userId, enabled }, "noshow-preference updated");
+  res.json({ ok: true, enabled });
+});
+
 export default router;

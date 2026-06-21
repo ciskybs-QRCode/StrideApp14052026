@@ -301,6 +301,12 @@ export const api = {
   addChild: (data: Partial<ApiChild>) => request<ApiChild>("POST", "/members", data),
   updateChild: (id: string, data: Partial<ApiChild>) => request<ApiChild>("PATCH", `/members/${id}`, data),
   deleteChild: (id: string) => request<void>("DELETE", `/members/${id}`),
+  setChildNoshowPreference: (childId: string, enabled: boolean) =>
+    request<{ ok: boolean; enabled: boolean }>("PATCH", `/children/${childId}/noshow-preference`, { enabled }),
+  setNoshowPreference: (enabled: boolean) =>
+    request<{ ok: boolean; enabled: boolean }>("PATCH", "/account/noshow-preference", { enabled }),
+  updateNextOfKin: (data: { name?: string; phone?: string; email?: string }) =>
+    request<{ ok: boolean }>("PATCH", "/account/next-of-kin", data),
 
   // Courses & Enrollments
   getCourses: async (params?: { page?: number; limit?: number; search?: string; discipline?: string }): Promise<ApiCourse[]> => {

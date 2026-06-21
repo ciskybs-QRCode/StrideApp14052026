@@ -145,4 +145,60 @@ router.delete("/account", requireAuth, async (req, res) => {
   }
 });
 
+// ── PATCH /account/noshow-preference ─────────────────────────────────────────
+// Adult member toggles their own no-show safety alert preference.
+router.patch("/account/noshow-preference", requireAuth, async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  const { enabled } = req.body as { enabled?: boolean };
+
+  if (typeof enabled !== "boolean") {
+    res.status(400).json({ error: "enabled must be a boolean" });
+    return;
+  }
+
+  const { error } = await supabase
+    .from("users")
+    .update({
+      noshow_alerts_enabled: enabled,
+      noshow_disabled_at:    enabled ? null : new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  if (error) {
+    logger.error({ err: error }, "account/noshow-preference update failed");
+    res.status(500).json({ error: "Update failed" });
+    return;
+  }
+
+  logger.info({ userId, enabled }, "noshow-preference updated");
+  res.json({ ok: true, enabled });
+});
+
+// ── PATCH /account/next-of-kin ────────────────────────────────────────────────
+// Adult member sets or clears their next-of-kin contact details.
+// Next of kin is notified (by staff) if the member doesn't show up for a session.
+router.patch("/account/next-of-kin", requireAuth, async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  const { name, phone, email } = req.body as { name?: string; phone?: string; email?: string };
+
+  const { error } = await supabase
+    .from("users")
+    .update({
+      next_of_kin_name:  name  ?? null,
+      next_of_kin_phone: phone ?? null,
+      next_of_kin_email: email ?? null,
+    })
+    .eq("id", userId);
+
+  if (error) {
+    logger.error({ err: error }, "account/next-of-kin update failed");
+    res.status(500).json({ error: "Update failed" });
+    return;
+  }
+
+  res.json({ ok: true });
+});
+
 export default router;

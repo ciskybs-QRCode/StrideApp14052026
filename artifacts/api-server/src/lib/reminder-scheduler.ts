@@ -397,7 +397,7 @@ async function checkNoShowAlerts(): Promise<void> {
     // Get active enrollments for this course
     const { data: enrollments } = await supabase
       .from("enrollments")
-      .select("child_id, child:children!child_id(id, first_name, last_name, parent_id)")
+      .select("child_id, child:children!child_id(id, first_name, last_name, parent_id, noshow_alerts_enabled)")
       .eq("course_id", course.id)
       .eq("status", "active");
 
@@ -418,8 +418,12 @@ async function checkNoShowAlerts(): Promise<void> {
     for (const enroll of enrollments) {
       const child = (enroll as Record<string,unknown>).child as {
         id: number; first_name: string; last_name: string; parent_id: number;
+        noshow_alerts_enabled: boolean | null;
       } | null;
       if (!child?.parent_id) continue;
+
+      // ▶ OPT-OUT: parent disabled no-show alerts for this child — skip silently
+      if (child.noshow_alerts_enabled === false) continue;
 
       // Check if the child has ANY attendance record today (QR or manual)
       const { data: attendanceRows } = await supabase
@@ -445,8 +449,8 @@ async function checkNoShowAlerts(): Promise<void> {
       if (existing?.length) continue;
 
       const refTag  = `ref:${todayStr}|course:${course.id}|child:${child.id}`;
-      const bodyParent = `⚠️ ${child.first_name} non ha effettuato il check-in per ${className} (${timeStr}). Conferma la sua posizione. ${refTag}`;
-      const bodyStaff  = `⚠️ ${child.first_name} ${child.last_name} non risulta presente a ${className} (${timeStr}). Nessun QR registrato. ${refTag}`;
+      const bodyParent = `⚠️ ${child.first_name} has not checked in for ${className} at ${timeStr}. Please confirm their whereabouts immediately. ${refTag}`;
+      const bodyStaff  = `⚠️ ${child.first_name} ${child.last_name} has not been scanned for ${className} at ${timeStr}. No QR registered. ${refTag}`;
 
       // Build batch insert: parent + all staff
       const recipientIds = [child.parent_id, ...staffIds.filter(id => id !== child.parent_id)];
@@ -454,7 +458,7 @@ async function checkNoShowAlerts(): Promise<void> {
         organization_id: orgId,
         recipient_id:    recipientId,
         type:            "no_show_alert",
-        title:           `🚨 Assenza senza avviso — ${child.first_name} ${child.last_name}`,
+        title:           `🚨 Unexpected Absence — ${child.first_name} ${child.last_name}`,
         body:            recipientId === child.parent_id ? bodyParent : bodyStaff,
         read:            false,
       }));

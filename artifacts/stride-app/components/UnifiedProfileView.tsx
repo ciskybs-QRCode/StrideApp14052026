@@ -14,14 +14,17 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -121,6 +124,65 @@ export default function UnifiedProfileView({ currentRole }: Props) {
 
   const [provisioningOp, setProvisioningOp] = useState(false);
   const [provisioningPa, setProvisioningPa] = useState(false);
+
+  // ── My Safety (adult member) ──────────────────────────────────────────────
+  const [noshowEnabled,       setNoshowEnabled]       = useState(true);
+  const [kinName,             setKinName]             = useState("");
+  const [kinPhone,            setKinPhone]            = useState("");
+  const [kinEmail,            setKinEmail]            = useState("");
+  const [kinSaving,           setKinSaving]           = useState(false);
+  const [showNoshowModal,     setShowNoshowModal]     = useState(false);
+  const [noshowModalChecked,  setNoshowModalChecked]  = useState(false);
+  const [noshowModalSaving,   setNoshowModalSaving]   = useState(false);
+
+  // Load next-of-kin and noshow preference from user profile
+  useEffect(() => {
+    if (currentRole !== "parent") return;
+    const u = user as unknown as Record<string, unknown> | null;
+    if (!u) return;
+    setNoshowEnabled((u["noshow_alerts_enabled"] as boolean | undefined) ?? true);
+    setKinName((u["next_of_kin_name"] as string | undefined) ?? "");
+    setKinPhone((u["next_of_kin_phone"] as string | undefined) ?? "");
+    setKinEmail((u["next_of_kin_email"] as string | undefined) ?? "");
+  }, [user, currentRole]);
+
+  const handleNoshowToggle = (value: boolean) => {
+    if (!value) {
+      setNoshowModalChecked(false);
+      setShowNoshowModal(true);
+      return;
+    }
+    // Re-enable directly
+    void api.setNoshowPreference(true)
+      .then(() => setNoshowEnabled(true))
+      .catch(() => Alert.alert("Error", "Could not update preference. Please try again."));
+  };
+
+  const handleNoshowModalConfirm = async () => {
+    if (!noshowModalChecked) return;
+    setNoshowModalSaving(true);
+    try {
+      await api.setNoshowPreference(false);
+      setNoshowEnabled(false);
+      setShowNoshowModal(false);
+    } catch {
+      Alert.alert("Error", "Could not update preference. Please try again.");
+    } finally {
+      setNoshowModalSaving(false);
+    }
+  };
+
+  const handleSaveKin = async () => {
+    setKinSaving(true);
+    try {
+      await api.updateNextOfKin({ name: kinName || undefined, phone: kinPhone || undefined, email: kinEmail || undefined });
+      Alert.alert("Saved", "Next of kin details updated.");
+    } catch {
+      Alert.alert("Error", "Could not save next of kin. Please try again.");
+    } finally {
+      setKinSaving(false);
+    }
+  };
 
   const hasRole = (role: string) =>
     allRoles.some(r => r.role === role) || (user?.roles ?? []).includes(role as never);
@@ -513,6 +575,83 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               </>
             )}
 
+            {/* ── My Safety & Next of Kin ── */}
+            <Text style={[s.groupLabel, { color: colors.mutedForeground }]}>MY SAFETY</Text>
+
+            <View style={[s.rowGroup, { backgroundColor: colors.card, marginBottom: 24, padding: 16 }]}>
+              {/* No-show alert toggle for this adult member */}
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <View style={{ flex: 1, marginRight: 16 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>My No-Show Alerts</Text>
+                    {!noshowEnabled && (
+                      <View style={{ backgroundColor: "#FEF2F2", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ fontSize: 10, fontWeight: "700", color: "#EF4444" }}>OPT-OUT</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2, lineHeight: 17 }}>
+                    {noshowEnabled
+                      ? "Staff are alerted if you don't check in for a class."
+                      : "Disabled — you bear sole responsibility for attendance."}
+                  </Text>
+                </View>
+                <Switch
+                  value={noshowEnabled}
+                  onValueChange={handleNoshowToggle}
+                  trackColor={{ false: "#EF4444", true: colors.primary }}
+                  thumbColor="#FFF"
+                />
+              </View>
+
+              {/* Next of kin fields */}
+              <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginBottom: 4 }}>
+                🆘  Next of Kin
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 12, lineHeight: 16 }}>
+                Staff will contact this person in the event of an emergency or unexplained absence.
+              </Text>
+              <TextInput
+                style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, padding: 10, marginBottom: 8, fontSize: 14, color: colors.foreground, backgroundColor: colors.background }}
+                placeholder="Full name"
+                placeholderTextColor={colors.mutedForeground}
+                value={kinName}
+                onChangeText={setKinName}
+                autoCapitalize="words"
+              />
+              <TextInput
+                style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, padding: 10, marginBottom: 8, fontSize: 14, color: colors.foreground, backgroundColor: colors.background }}
+                placeholder="Phone number"
+                placeholderTextColor={colors.mutedForeground}
+                value={kinPhone}
+                onChangeText={setKinPhone}
+                keyboardType="phone-pad"
+              />
+              <TextInput
+                style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, padding: 10, marginBottom: 14, fontSize: 14, color: colors.foreground, backgroundColor: colors.background }}
+                placeholder="Email (optional)"
+                placeholderTextColor={colors.mutedForeground}
+                value={kinEmail}
+                onChangeText={setKinEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <Pressable
+                style={({ pressed }) => ({
+                  backgroundColor: colors.primary,
+                  borderRadius: 12, paddingVertical: 13, alignItems: "center",
+                  opacity: pressed ? 0.85 : 1,
+                })}
+                onPress={handleSaveKin}
+                disabled={kinSaving}
+              >
+                {kinSaving
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Save Next of Kin</Text>
+                }
+              </Pressable>
+            </View>
+
             {/* ── Documents ── */}
             <Text style={[s.groupLabel, { color: colors.mutedForeground }]}>MY DOCUMENTS</Text>
 
@@ -570,6 +709,83 @@ export default function UnifiedProfileView({ currentRole }: Props) {
         </Text>
 
       </ScrollView>
+
+      {/* ── Adult No-Show Opt-Out Liability Modal ──────────────────────── */}
+      <Modal
+        visible={showNoshowModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { if (!noshowModalSaving) setShowNoshowModal(false); }}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <View style={{
+            backgroundColor: colors.card, borderRadius: 20, padding: 24,
+            borderColor: "#FBBF24", borderWidth: 2, width: "100%", maxWidth: 420,
+          }}>
+            <View style={{ alignItems: "center", marginBottom: 16 }}>
+              <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                <Text style={{ fontSize: 28 }}>⚠️</Text>
+              </View>
+              <Text style={{ fontSize: 17, fontWeight: "800", color: "#DC2626", textAlign: "center" }}>
+                Disable Your No-Show Alerts?
+              </Text>
+            </View>
+
+            <Text style={{ fontSize: 13, color: colors.foreground, lineHeight: 20, marginBottom: 12 }}>
+              When disabled, <Text style={{ fontWeight: "700" }}>no one will be automatically notified</Text> if you fail to arrive for a scheduled class. You can re-enable this at any time.
+            </Text>
+
+            <View style={{ backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, borderLeftWidth: 4, borderLeftColor: "#EF4444", marginBottom: 18 }}>
+              <Text style={{ fontSize: 11, fontWeight: "700", color: "#991B1B", marginBottom: 4 }}>LIABILITY NOTICE</Text>
+              <Text style={{ fontSize: 12, color: "#7F1D1D", lineHeight: 17 }}>
+                By opting out you assume full and sole responsibility for your own attendance monitoring. The association bears no liability for any consequences arising from missed alerts.
+              </Text>
+            </View>
+
+            <Pressable
+              style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 22, padding: 2 }}
+              onPress={() => setNoshowModalChecked(prev => !prev)}
+            >
+              <View style={{
+                width: 22, height: 22, borderRadius: 6, borderWidth: 2,
+                borderColor: noshowModalChecked ? "#EF4444" : "#D1D5DB",
+                backgroundColor: noshowModalChecked ? "#EF4444" : "#FFF",
+                alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1,
+              }}>
+                {noshowModalChecked && <Text style={{ color: "#FFF", fontSize: 13, fontWeight: "900" }}>✓</Text>}
+              </View>
+              <Text style={{ flex: 1, fontSize: 13, color: colors.foreground, lineHeight: 18 }}>
+                I understand and accept sole responsibility for my own attendance tracking.
+              </Text>
+            </Pressable>
+
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Pressable
+                style={{ flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: colors.muted, alignItems: "center" }}
+                onPress={() => setShowNoshowModal(false)}
+                disabled={noshowModalSaving}
+              >
+                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={{
+                  flex: 1, paddingVertical: 13, borderRadius: 12,
+                  backgroundColor: noshowModalChecked ? "#EF4444" : "#D1D5DB",
+                  alignItems: "center",
+                }}
+                onPress={handleNoshowModalConfirm}
+                disabled={!noshowModalChecked || noshowModalSaving}
+              >
+                {noshowModalSaving
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={{ fontSize: 14, fontWeight: "700", color: "#FFF" }}>Disable</Text>
+                }
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
