@@ -144,6 +144,26 @@ jobs:
               `failing for ${duration} (since ${createdAt.toISOString()})`
             );
 
+            // ── Fetch latest failed sync-to-github run ───────────────────────
+            let latestFailedRunUrl = null;
+            try {
+              const { data: runsData } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'sync-to-github.yml',
+                status: 'failure',
+                per_page: 1,
+              });
+              if (runsData.workflow_runs.length > 0) {
+                latestFailedRunUrl = runsData.workflow_runs[0].html_url;
+                console.log(`Latest failed run: ${latestFailedRunUrl}`);
+              } else {
+                console.log('No failed runs found for sync-to-github.yml');
+              }
+            } catch (err) {
+              core.warning(`Could not fetch latest failed run: ${err.message}`);
+            }
+
             // ── Build Slack message ──────────────────────────────────────────
             const slackText =
               `:rotating_light: *Sync still failing* — open for ${duration}`;
@@ -159,10 +179,15 @@ jobs:
                 `\n:low_brightness: _Reduced digest — every ${safeCadence}h (failing > ${escalationHours}h)._`;
             }
 
+            const latestRunLine = latestFailedRunUrl
+              ? `\n*Latest failed run:* <${latestFailedRunUrl}|View run>`
+              : '';
+
             const slackMrkdwn =
               `:rotating_light: *Sync to GitHub is still failing*\n` +
               `*Duration:* ${duration} (since <!date^${Math.floor(createdAt.getTime() / 1000)}^{date_short_pretty} at {time}|${createdAt.toISOString()}>)\n` +
-              `*Issue:* <${issueUrl}|#${issue.number}: ${issueTitle}>\n` +
+              `*Issue:* <${issueUrl}|#${issue.number}: ${issueTitle}>` +
+              latestRunLine + `\n` +
               `:speech_balloon: _${isReducedCadence ? `Reduced digest (every ${safeCadence}h)` : 'Hourly digest'} — no action needed until the sync recovers._` +
               cadenceNote;
 
