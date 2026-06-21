@@ -50,7 +50,7 @@
       [
         "expo-router",
         {
-          "origin": "https://www.stride-ops.com/"
+          "origin": "https://www.stride-ops.com/app/"
         }
       ],
       "expo-font",
