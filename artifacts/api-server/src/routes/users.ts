@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { getOwnerEmail } from "../lib/owner-config.js";
-import { sendTransactionalEmail } from "../services/emailService.js";
+import { sendOrgEmail } from "../services/emailService.js";
 import { buildRoleAssignmentEmail } from "../services/emailService.js";
 
 const router = Router();
@@ -209,7 +209,7 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
           emailSubjectTpl: subjectTpl,
           emailBodyTpl:    bodyTpl,
         });
-        await sendTransactionalEmail({ to: userEmail, subject, html, text });
+        await sendOrgEmail(orgId, { to: userEmail, subject, html, text });
       }
 
       // Bell notification

@@ -168,6 +168,17 @@ export interface TransactionalEmail {
   subject: string;
   html: string;
   text: string;
+  /**
+   * Optional display name override for the From field.
+   * The actual sending address stays as RESEND_FROM_EMAIL.
+   * Used to brand org emails: "Bella Dance Academy via Stride".
+   */
+  fromDisplayName?: string;
+  /**
+   * Optional Reply-To address — typically the org's contact email.
+   * Recipients hit "Reply" and it lands directly in the org's inbox.
+   */
+  replyTo?: string;
 }
 
 /**
@@ -177,23 +188,29 @@ export interface TransactionalEmail {
  */
 export async function sendTransactionalEmail(email: TransactionalEmail): Promise<void> {
   const apiKey = process.env["RESEND_API_KEY"];
-  const fromAddress = process.env["RESEND_FROM_EMAIL"] ?? "Stride <info@stride-ops.com>";
+  const strideFromEmail = process.env["RESEND_FROM_EMAIL"] ?? "info@stride-ops.com";
+
+  // Build the From address: strip any existing display name from the env var,
+  // then apply the override display name if provided.
+  const rawAddress = strideFromEmail.match(/<(.+)>/)?.[1] ?? strideFromEmail;
+  const displayName = email.fromDisplayName ?? "Stride";
+  const fromAddress = `${displayName} <${rawAddress}>`;
 
   if (!apiKey) {
-    // Development fallback: log the email payload instead of sending
     const { logger: log } = await import("../lib/logger.js");
-    log.info({ to: email.to, subject: email.subject }, "[email-dev] Would send email (RESEND_API_KEY not set)");
+    log.info({ to: email.to, subject: email.subject, from: fromAddress }, "[email-dev] Would send email (RESEND_API_KEY not set)");
     log.info({ text: email.text }, "[email-dev] Email body");
     return;
   }
 
-  const body = JSON.stringify({
+  const payload: Record<string, unknown> = {
     from: fromAddress,
     to: [email.to],
     subject: email.subject,
     html: email.html,
     text: email.text,
-  });
+  };
+  if (email.replyTo) payload["reply_to"] = email.replyTo;
 
   const res = await fetch(RESEND_API_URL, {
     method: "POST",
@@ -201,13 +218,54 @@ export async function sendTransactionalEmail(email: TransactionalEmail): Promise
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body,
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "(no body)");
     throw new Error(`Resend API error ${res.status}: ${detail}`);
   }
+}
+
+/**
+ * Send an email branded on behalf of an organisation.
+ * Uses Stride's own Resend key and verified sending domain, but sets:
+ *   From:     "Org Name via Stride <info@stride-ops.com>"
+ *   Reply-To: org's contact email (from org_communication_settings), if set
+ *
+ * This means members see the school's name, replies go to the school, and
+ * individual schools never need their own Resend account.
+ */
+export async function sendOrgEmail(
+  orgId: number,
+  email: Omit<TransactionalEmail, "fromDisplayName" | "replyTo">,
+): Promise<void> {
+  // Lazily import to avoid circular deps in the module graph
+  const { supabase } = await import("../lib/supabase.js");
+  const { pool }     = await import("../lib/pg.js");
+
+  // Fetch org name + optional org-configured reply-to in parallel
+  const [orgRes, commRes] = await Promise.all([
+    supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .maybeSingle()
+      .then(r => r.data as { name?: string } | null),
+    pool.query<{ resend_from_email: string | null }>(
+      `SELECT resend_from_email FROM org_communication_settings WHERE organization_id = $1 LIMIT 1`,
+      [orgId],
+    ).then(r => r.rows[0]).catch(() => undefined),
+  ]);
+
+  const orgName  = orgRes?.name ?? "Your Association";
+  const replyTo  = commRes?.resend_from_email ?? undefined;
+
+  await sendTransactionalEmail({
+    ...email,
+    fromDisplayName: `${orgName} via Stride`,
+    replyTo,
+  });
 }
 
 // ── Trial reminder email template ─────────────────────────────────────────────

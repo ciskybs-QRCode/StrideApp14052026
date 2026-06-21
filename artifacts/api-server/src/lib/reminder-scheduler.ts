@@ -1,7 +1,7 @@
 import { supabase }             from "./supabase.js";
 import { pool }                 from "./pg.js";
 import { logger }               from "./logger.js";
-import { sendTransactionalEmail } from "../services/emailService.js";
+import { sendTransactionalEmail, sendOrgEmail } from "../services/emailService.js";
 import { EmergencyPushService } from "./EmergencyPushService.js";
 
 const WINDOW_MINUTES = 5;
@@ -513,11 +513,11 @@ async function sendCertReminder(opts: {
   ).catch(() => {});
 
   if (email) {
-    await sendTransactionalEmail({
-      to:   email,
+    await sendOrgEmail(orgId, {
+      to:      email,
       subject,
-      text: msgBody,
-      html: `<p>${msgBody.replace(/\n/g, "<br/>")}</p>`,
+      text:    msgBody,
+      html:    `<p>${msgBody.replace(/\n/g, "<br/>")}</p>`,
     }).catch(() => {});
   }
 
