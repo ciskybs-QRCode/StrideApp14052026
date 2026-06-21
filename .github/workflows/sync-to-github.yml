@@ -618,6 +618,12 @@ jobs:
                 ? `> ⚠️ **Auto-resolved status reverted** — the sync has failed again, so the \`auto-resolved\` label has been removed and this issue remains open.\n\n`
                 : '';
 
+              const retryThreadTs = extractSlackTs(existingIssue.body);
+              const retryChannel = process.env.SLACK_ALERT_CHANNEL;
+              const slackLinkMd = (retryThreadTs && retryChannel)
+                ? `\n\n🔗 [Slack thread](https://slack.com/app_redirect?channel=${retryChannel}&message_ts=${retryThreadTs})`
+                : '';
+
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -626,6 +632,7 @@ jobs:
                       `### New failure on run #${context.runNumber}\n\n` +
                       `**Commit:** \`${shortSha}\` · **Actor:** @${context.actor}\n\n` +
                       `[View run](${runUrl})` +
+                      slackLinkMd +
                       errorMd,
               });
               console.log(`Commented on existing issue #${existingIssue.number}`);
