@@ -442,9 +442,7 @@ export class EmergencyPushService {
     message:  string,
     logId?:   number,
   ): Promise<void> {
-    const resendCreds = await EmergencyPushService._getOrgResendCreds(orgId);
-    const resendKey   = resendCreds?.key ?? null;
-    const fromAddr    = resendCreds?.from ?? "Stride Emergency <no-reply@stride.app>";
+    const { sendOrgEmail } = await import("../services/emailService.js");
 
     try {
       const { rows: adminRows } = await pool.query<{ email: string; name: string }>(
@@ -463,43 +461,40 @@ export class EmergencyPushService {
         return;
       }
 
-      if (!resendKey) {
+      const apiKey = process.env["RESEND_API_KEY"];
+      if (!apiKey) {
         logger.error(
           { orgId, category, admins: adminRows.map(a => a.email) },
-          "EmergencyPushService: CRITICAL — no Twilio AND no Resend — emergency alert NOT delivered. Configure TWILIO_* or RESEND_API_KEY secrets.",
+          "EmergencyPushService: CRITICAL — no Twilio AND no Resend — emergency alert NOT delivered. Configure RESEND_API_KEY.",
         );
         return;
       }
 
       const catLabel = category.replace(/_/g, " ");
-      const subject  = `\uD83D\uDEA8 STRIDE EMERGENCY ALERT — ${catLabel}`;
+      const subject  = `\uD83D\uDEA8 EMERGENCY ALERT — ${catLabel}`;
       const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;font-family:sans-serif;background:#FFF1F2;">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px;">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;border:3px solid #DC2626;">
 <tr><td style="background:#DC2626;padding:24px 32px;text-align:center;">
-  <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:2px;color:#FEE2E2;text-transform:uppercase;">STRIDE EMERGENCY SYSTEM</p>
+  <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:2px;color:#FEE2E2;text-transform:uppercase;">EMERGENCY ALERT</p>
   <h1 style="margin:8px 0 0;font-size:28px;font-weight:900;color:#fff;">\uD83D\uDEA8 ${catLabel.toUpperCase()} EMERGENCY</h1>
 </td></tr>
 <tr><td style="padding:32px;">
-  <p style="margin:0 0 16px;font-size:16px;color:#111827;line-height:1.6;"><strong>Emergency reported at your Stride organisation (ID ${orgId}).</strong></p>
+  <p style="margin:0 0 16px;font-size:16px;color:#111827;line-height:1.6;"><strong>Emergency reported at your association.</strong></p>
   <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:20px;margin:20px 0;">
     <p style="margin:0;font-size:15px;color:#7F1D1D;font-weight:600;">Alert message:</p>
     <p style="margin:8px 0 0;font-size:17px;color:#111827;">${message}</p>
   </div>
   <p style="margin:24px 0 0;font-size:14px;color:#6B7280;">Open the Stride app immediately to acknowledge this alert. If you cannot reach the app, call emergency services.</p>
-  ${logId ? `<p style="margin:12px 0 0;font-size:12px;color:#9CA3AF;">Emergency log ID: ${logId}</p>` : ""}
+  ${logId ? `<p style="margin:12px 0 0;font-size:12px;color:#9CA3AF;">Alert log ID: ${logId}</p>` : ""}
 </td></tr>
 </table></td></tr></table></body></html>`;
 
-      const text = `STRIDE EMERGENCY ALERT — ${catLabel.toUpperCase()}\n\nEmergency reported at organisation ${orgId}.\n\n${message}\n\nOpen the Stride app immediately. If unreachable, call emergency services.`;
+      const text = `EMERGENCY ALERT — ${catLabel.toUpperCase()}\n\nEmergency reported at your association.\n\n${message}\n\nOpen the Stride app immediately. If unreachable, call emergency services.`;
 
       const results = await Promise.allSettled(
         adminRows.map(admin =>
-          fetch("https://api.resend.com/emails", {
-            method:  "POST",
-            headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-            body:    JSON.stringify({ from: fromAddr, to: admin.email, subject, html, text }),
-          }),
+          sendOrgEmail(orgId, { to: admin.email, subject, html, text }),
         ),
       );
 
