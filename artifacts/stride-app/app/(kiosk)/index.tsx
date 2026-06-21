@@ -26,7 +26,7 @@ const FALLBACK_PIN = "4321";
 const LOGO = require("@/assets/images/stride-logo.png");
 const { width: SW, height: SH } = Dimensions.get("window");
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Types (declared early so constants below can reference FeedbackType) ────────
 
 type FeedbackType = "success" | "warning" | "denied" | "clock_in" | "clock_out" | "ticket_ok" | "ticket_fail";
 
@@ -45,6 +45,68 @@ interface QrPayload {
   childId?: string;
   operatorId?: string;
 }
+
+// ── Web Audio tone synthesiser (works in mobile browser, no audio files needed)
+
+function playKioskTone(result: "success" | "warning" | "denied"): void {
+  if (typeof window === "undefined") return;
+  try {
+    type WA = typeof AudioContext;
+    const AudioCtx: WA =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext: WA }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const schedule = (
+      freq: number, start: number, dur: number,
+      wave: OscillatorType = "sine", vol = 0.35,
+    ) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = wave;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur + 0.05);
+    };
+    if (result === "success") {
+      schedule(880,  0,    0.13);          // bip
+      schedule(1100, 0.16, 0.11);          // higher bip
+    } else if (result === "warning") {
+      schedule(620, 0,    0.11);           // bip
+      schedule(620, 0.18, 0.11);           // bip again
+    } else {
+      schedule(180, 0, 0.52, "square", 0.28); // low TOOOOT
+    }
+  } catch { /* ignore if browser blocks audio */ }
+}
+
+// ── Border flash colour per feedback type ─────────────────────────────────────
+
+const BORDER_FLASH: Record<FeedbackType, string> = {
+  success:     "#22C55E",
+  clock_in:    "#22C55E",
+  ticket_ok:   "#22C55E",
+  warning:     "#F59E0B",
+  denied:      "#EF4444",
+  clock_out:   "#EF4444",
+  ticket_fail: "#EF4444",
+};
+
+// ── Tone category per feedback type ──────────────────────────────────────────
+
+const TONE_FOR: Record<FeedbackType, "success" | "warning" | "denied"> = {
+  success:     "success",
+  clock_in:    "success",
+  ticket_ok:   "success",
+  warning:     "warning",
+  denied:      "denied",
+  clock_out:   "success",
+  ticket_fail: "denied",
+};
 
 // ── Overlay colours ───────────────────────────────────────────────────────────
 
@@ -109,10 +171,15 @@ export default function KioskScreen() {
   const insets      = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
 
+  // Camera facing
+  const [facing, setFacing] = useState<"back" | "front">("back");
+
   // Scanner state
   const [scanned,  setScanned]  = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const overlayOpacity    = useRef(new Animated.Value(0)).current;
+  const borderFlashOpacity = useRef(new Animated.Value(0)).current;
+  const [borderColor, setBorderColor] = useState("#22C55E");
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Exit PIN (loaded from org settings on mount)
@@ -136,6 +203,17 @@ export default function KioskScreen() {
   // ── Feedback display ────────────────────────────────────────────────────────
 
   const showFeedback = useCallback((fb: FeedbackState) => {
+    // ── Audio & border flash ────────────────────────────────────────────────
+    playKioskTone(TONE_FOR[fb.type]);
+    setBorderColor(BORDER_FLASH[fb.type]);
+    borderFlashOpacity.setValue(0);
+    Animated.sequence([
+      Animated.timing(borderFlashOpacity, { toValue: 1, duration: 80,  useNativeDriver: true }),
+      Animated.delay(900),
+      Animated.timing(borderFlashOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start();
+
+    // ── Overlay ─────────────────────────────────────────────────────────────
     setFeedback(fb);
     Animated.timing(overlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
 
@@ -146,7 +224,7 @@ export default function KioskScreen() {
         setScanned(false);
       });
     }, 3500);
-  }, [overlayOpacity]);
+  }, [overlayOpacity, borderFlashOpacity]);
 
   // ── Operator QR flow ────────────────────────────────────────────────────────
 
@@ -352,12 +430,22 @@ export default function KioskScreen() {
       );
     }
     return (
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-        onBarcodeScanned={scanned ? undefined : (e) => { void processQrPayload(e.data); }}
-      />
+      <>
+        <CameraView
+          style={StyleSheet.absoluteFill}
+          facing={facing}
+          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+          onBarcodeScanned={scanned ? undefined : (e) => { void processQrPayload(e.data); }}
+        />
+        {/* Camera flip button — bottom-right of camera area */}
+        <Pressable
+          style={styles.flipBtn}
+          onPress={() => setFacing(f => f === "back" ? "front" : "back")}
+          hitSlop={12}
+        >
+          <Ionicons name="camera-reverse-outline" size={28} color="#FFFFFF" />
+        </Pressable>
+      </>
     );
   };
 
@@ -398,6 +486,12 @@ export default function KioskScreen() {
         <Ionicons name="qr-code-outline" size={22} color="rgba(251,191,36,0.85)" />
         <Text style={styles.bottomText}>Scan your QR code to check in, validate a ticket, or clock in</Text>
       </View>
+
+      {/* Screen border flash (green / yellow / red) */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.borderFlash, { borderColor, opacity: borderFlashOpacity }]}
+      />
 
       {/* Traffic Light Overlay */}
       {feedback && (
@@ -491,6 +585,25 @@ const FRAME = Math.min(SW, SH) * 0.55;
 const styles = StyleSheet.create({
   root:            { flex: 1, backgroundColor: "#0B1F4A", overflow: "hidden" },
   cameraContainer: { ...StyleSheet.absoluteFillObject },
+
+  borderFlash: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 10,
+    borderRadius: 0,
+    zIndex: 99,
+  },
+  flipBtn: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
 
   topGradient: {
     position: "absolute", top: 0, left: 0, right: 0, height: 200,
