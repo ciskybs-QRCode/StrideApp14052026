@@ -30,7 +30,7 @@ import { type QrScanParams, useOfflineSync } from "@/context/OfflineSyncContext"
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact, type ChildTransitWarning } from "@/lib/api";
+import { api, request, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact, type ChildTransitWarning } from "@/lib/api";
 import {
   CASCADE_TIMEOUT_SECS,
   MOCK_SUBS,
@@ -324,6 +324,10 @@ export default function OperatorDashboard() {
   const [activityLog, setActivityLog]     = useState<LogEntry[]>([]);
   const [lessonScanResult, setLessonScanResult] = useState<{
     discipline: string; student: string; earnings_cents: number; invoice_number: string; attended_at: string;
+  } | null>(null);
+  const [ticketScanResult, setTicketScanResult] = useState<{
+    ok: boolean; title: string; body: string;
+    event_name?: string; holder_name?: string; ticket_type?: string;
   } | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<import("@/lib/api").ApiPrivateBooking | null>(null);
   const [lessonScanning,  setLessonScanning]  = useState(false);
@@ -920,6 +924,35 @@ export default function OperatorDashboard() {
         medical: "valid",
         payment: "paid",
       });
+
+    } else if (data.startsWith("STRIDE:TICKET:")) {
+      // Event ticket validation
+      const parts    = data.split(":");
+      const ticketId = parts[3] ?? parts[2];
+      setScanned(true);
+      setGuardianResult(null);
+      setTicketScanResult(null);
+      try {
+        const resp = await request<{
+          event_name?: string; holder_name?: string; ticket_type?: string;
+          status?: string; message?: string; valid?: boolean;
+        }>("POST", "/events/validate-ticket", { ticketId, qrData: data });
+        const ok = resp.valid ?? resp.status === "valid";
+        Haptics.notificationAsync(ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
+        setTicketScanResult({
+          ok,
+          title:       ok ? "Ticket Valid ✓" : "Ticket Invalid ✗",
+          body:        resp.message ?? (ok ? "Entry granted." : "This ticket cannot be used."),
+          event_name:  resp.event_name,
+          holder_name: resp.holder_name,
+          ticket_type: resp.ticket_type,
+        });
+        pushLog({ time: nowTime(), action: ok ? `✓ Ticket: ${resp.holder_name ?? ticketId} — ${resp.event_name ?? "Event"}` : `✗ Invalid ticket: ${ticketId}`, type: ok ? "success" : "error" });
+        setTimeout(() => { setTicketScanResult(null); setScanned(false); setShowScanner(false); }, 4000);
+      } catch (err) {
+        setTicketScanResult({ ok: false, title: "Validation Failed", body: (err as Error)?.message ?? "Could not validate ticket." });
+        setTimeout(() => { setTicketScanResult(null); setScanned(false); setShowScanner(false); }, 3000);
+      }
 
     } else if (data.startsWith("STRIDE:")) {
       // Generic STRIDE QR — legacy member check-in
@@ -1536,7 +1569,7 @@ export default function OperatorDashboard() {
           </Pressable>
 
           {/* 4. Scan Member QR */}
-          <QRScanButton onPress={handleScan} label="Scan Member QR" />
+          <QRScanButton onPress={handleScan} label="Scan QR Code" />
 
         </View>
 
@@ -2366,7 +2399,40 @@ export default function OperatorDashboard() {
             </View>
           )}
 
-          {!scanResult && !lessonScanResult && !lessonScanning && !guardianResult && !accessAlert && Platform.OS !== "web" && (
+          {/* ── Ticket validation result ── */}
+          {ticketScanResult && (
+            <View style={[styles.lessonScanPanel, { backgroundColor: ticketScanResult.ok ? "#10B981" : "#EF4444" }]}>
+              <View style={styles.lessonScanCheck}>
+                <Ionicons name={ticketScanResult.ok ? "ticket" : "close-circle"} size={40} color="#FFF" />
+              </View>
+              <Text style={[styles.lessonScanTitle, { color: "#FFF" }]}>{ticketScanResult.title}</Text>
+              <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 14, textAlign: "center", marginTop: 4 }}>{ticketScanResult.body}</Text>
+              {(ticketScanResult.event_name || ticketScanResult.holder_name) && (
+                <View style={{ flexDirection: "row", gap: 10, marginTop: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                  {ticketScanResult.event_name && (
+                    <View style={{ backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: "600" }}>EVENT</Text>
+                      <Text style={{ color: "#FFF", fontWeight: "700" }}>{ticketScanResult.event_name}</Text>
+                    </View>
+                  )}
+                  {ticketScanResult.holder_name && (
+                    <View style={{ backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: "600" }}>HOLDER</Text>
+                      <Text style={{ color: "#FFF", fontWeight: "700" }}>{ticketScanResult.holder_name}</Text>
+                    </View>
+                  )}
+                  {ticketScanResult.ticket_type && (
+                    <View style={{ backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: "600" }}>TYPE</Text>
+                      <Text style={{ color: "#FFF", fontWeight: "700" }}>{ticketScanResult.ticket_type}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+
+          {!scanResult && !lessonScanResult && !lessonScanning && !guardianResult && !accessAlert && !ticketScanResult && Platform.OS !== "web" && (
             <View style={styles.scannerFooter}>
               <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 8 }}>Scan the member{"'"}s QR code</Text>
               <Pressable style={styles.simulateBtn} onPress={simulateScan}>

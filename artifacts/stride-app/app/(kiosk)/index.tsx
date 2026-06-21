@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
-import { api, getKioskPin } from "@/lib/api";
+import { api, getKioskPin, request } from "@/lib/api";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -28,13 +28,14 @@ const { width: SW, height: SH } = Dimensions.get("window");
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type FeedbackType = "success" | "warning" | "denied" | "clock_in" | "clock_out";
+type FeedbackType = "success" | "warning" | "denied" | "clock_in" | "clock_out" | "ticket_ok" | "ticket_fail";
 
 interface FeedbackState {
   type: FeedbackType;
   headline: string;
   subtext: string;
   name: string;
+  detail?: string;
 }
 
 interface QrPayload {
@@ -48,19 +49,23 @@ interface QrPayload {
 // ── Overlay colours ───────────────────────────────────────────────────────────
 
 const FEEDBACK_COLORS: Record<FeedbackType, { bg: string; icon: string }> = {
-  success:   { bg: "rgba(5,150,105,0.97)",   icon: "#FFFFFF" },
-  warning:   { bg: "rgba(217,119,6,0.97)",   icon: "#FFFFFF" },
-  denied:    { bg: "rgba(220,38,38,0.97)",   icon: "#FFFFFF" },
-  clock_in:  { bg: "rgba(30,58,138,0.97)",   icon: "#FBBF24" },
-  clock_out: { bg: "rgba(109,40,217,0.97)",  icon: "#FFFFFF" },
+  success:     { bg: "rgba(5,150,105,0.97)",   icon: "#FFFFFF" },
+  warning:     { bg: "rgba(217,119,6,0.97)",   icon: "#FFFFFF" },
+  denied:      { bg: "rgba(220,38,38,0.97)",   icon: "#FFFFFF" },
+  clock_in:    { bg: "rgba(30,58,138,0.97)",   icon: "#FBBF24" },
+  clock_out:   { bg: "rgba(109,40,217,0.97)",  icon: "#FFFFFF" },
+  ticket_ok:   { bg: "rgba(5,150,105,0.97)",   icon: "#FFFFFF" },
+  ticket_fail: { bg: "rgba(220,38,38,0.97)",   icon: "#FFFFFF" },
 };
 
 const FEEDBACK_ICONS: Record<FeedbackType, keyof typeof Ionicons.glyphMap> = {
-  success:   "checkmark-circle",
-  warning:   "warning",
-  denied:    "close-circle",
-  clock_in:  "timer",
-  clock_out: "exit",
+  success:     "checkmark-circle",
+  warning:     "warning",
+  denied:      "close-circle",
+  clock_in:    "timer",
+  clock_out:   "exit",
+  ticket_ok:   "ticket",
+  ticket_fail: "close-circle",
 };
 
 // ── Access response helpers ───────────────────────────────────────────────────
@@ -184,6 +189,29 @@ export default function KioskScreen() {
     }
   }, [showFeedback]);
 
+  // ── Event ticket validation flow ─────────────────────────────────────────────
+
+  const handleTicketScan = useCallback(async (ticketId: string, qrData: string) => {
+    try {
+      const resp = await request<{
+        event_name?: string; holder_name?: string; ticket_type?: string;
+        status?: string; message?: string; valid?: boolean;
+      }>("POST", "/events/validate-ticket", { ticketId, qrData });
+      const ok = resp.valid ?? resp.status === "valid";
+      await Haptics.notificationAsync(ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
+      showFeedback({
+        type:     ok ? "ticket_ok" : "ticket_fail",
+        headline: ok ? "Entry Granted ✓" : "Ticket Invalid ✗",
+        subtext:  resp.message ?? (ok ? "Enjoy the event!" : "This ticket cannot be used. Please see the front desk."),
+        name:     resp.holder_name ?? "",
+        detail:   resp.event_name ?? undefined,
+      });
+    } catch {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      showFeedback({ type: "ticket_fail", headline: "Validation Error", subtext: "Could not verify ticket. Please try again.", name: "" });
+    }
+  }, [showFeedback]);
+
   // ── Child/member QR flow ────────────────────────────────────────────────────
 
   const handleChildScan = useCallback(async (childId: string) => {
@@ -219,6 +247,27 @@ export default function KioskScreen() {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
+      // ── Prefix-based routing (takes priority over JSON parsing) ──────────
+      if (data.startsWith("STRIDE:TICKET:")) {
+        const parts    = data.split(":");
+        const ticketId = parts[3] ?? parts[2];
+        await handleTicketScan(ticketId, data);
+        return;
+      }
+
+      if (data.startsWith("STRIDE:OPERATOR:")) {
+        const parts = data.split(":");
+        await handleOperatorScan(parts[2] ?? data);
+        return;
+      }
+
+      if (data.startsWith("STRIDE:CHILD:") || data.startsWith("STRIDE:MEMBER:") || data.startsWith("STRIDE:CHECKIN:")) {
+        const parts = data.split(":");
+        await handleChildScan(parts[2] ?? data);
+        return;
+      }
+
+      // ── JSON payload (legacy kiosk QR) ────────────────────────────────────
       let parsed: QrPayload = {};
       try { parsed = JSON.parse(data) as QrPayload; } catch { /* raw string */ }
 
@@ -235,7 +284,7 @@ export default function KioskScreen() {
     } catch {
       showFeedback({ type: "denied", headline: "Scan Error", subtext: "Could not process QR code.", name: "" });
     }
-  }, [scanned, handleOperatorScan, handleChildScan, showFeedback]);
+  }, [scanned, handleOperatorScan, handleChildScan, handleTicketScan, showFeedback]);
 
   // ── Hidden exit hatch (5 rapid taps on top-right) ───────────────────────────
 
@@ -340,14 +389,14 @@ export default function KioskScreen() {
             <View style={[styles.corner, styles.cornerBL]} />
             <View style={[styles.corner, styles.cornerBR]} />
           </View>
-          <Text style={styles.scanHint}>Member or Instructor QR</Text>
+          <Text style={styles.scanHint}>Member · Ticket · Instructor</Text>
         </View>
       )}
 
       {/* Bottom instruction */}
       <View style={[styles.bottomHud, { paddingBottom: insets.bottom + 20 }]} pointerEvents="none">
         <Ionicons name="qr-code-outline" size={22} color="rgba(251,191,36,0.85)" />
-        <Text style={styles.bottomText}>Scan your QR code to check in, check out, or clock in</Text>
+        <Text style={styles.bottomText}>Scan your QR code to check in, validate a ticket, or clock in</Text>
       </View>
 
       {/* Traffic Light Overlay */}
@@ -373,7 +422,15 @@ export default function KioskScreen() {
               </View>
             )}
 
-            {feedback.type === "denied" && (
+            {/* Ticket detail badge */}
+            {(feedback.type === "ticket_ok" || feedback.type === "ticket_fail") && feedback.detail && (
+              <View style={[styles.clockBadge, { backgroundColor: "rgba(0,0,0,0.25)" }]}>
+                <Ionicons name="calendar-outline" size={16} color="#FFF" />
+                <Text style={[styles.clockBadgeText, { color: "#FFF" }]}>{feedback.detail}</Text>
+              </View>
+            )}
+
+            {(feedback.type === "denied" || feedback.type === "ticket_fail") && (
               <View style={styles.denyBadge}>
                 <Ionicons name="person-outline" size={16} color="#FFF" />
                 <Text style={styles.denyBadgeText}>Contact Admin / Front Desk</Text>
