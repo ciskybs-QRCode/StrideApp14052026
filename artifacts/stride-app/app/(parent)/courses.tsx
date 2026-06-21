@@ -442,9 +442,15 @@ export default function CoursesScreen() {
         {
           text: "Withdraw", style: "destructive",
           onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+            // Optimistic UI update
             setWithdrawnIds(prev => new Set([...prev, c.id]));
             setLocalBookings(prev => prev.filter(b => b.courseId !== c.id));
+            // Backend call — best-effort (non-blocking)
+            const booking = bookings.find(b => b.courseId === c.id);
+            import("@/lib/api").then(m =>
+              m.api.withdrawFromCourse(c.id, booking?.childId?.toString()).catch(() => {})
+            ).catch(() => {});
           },
         },
       ]

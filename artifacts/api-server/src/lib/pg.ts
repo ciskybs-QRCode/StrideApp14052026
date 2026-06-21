@@ -1643,12 +1643,39 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS member_subs_org_idx  ON member_subscriptions(organization_id);
   `).catch(() => {});
 
-  // ── Membership fee columns on admin_settings ──────────────────────────────
+  // ── Membership fee + policy columns on admin_settings ────────────────────
   await pool.query(`
     ALTER TABLE admin_settings
-      ADD COLUMN IF NOT EXISTS membership_annual_fee_cents  INTEGER NOT NULL DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS membership_monthly_fee_cents INTEGER NOT NULL DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS membership_description       TEXT;
+      ADD COLUMN IF NOT EXISTS membership_annual_fee_cents       INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS membership_monthly_fee_cents      INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS membership_description            TEXT;
+  `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE admin_settings
+      ADD COLUMN IF NOT EXISTS membership_mandatory              BOOLEAN NOT NULL DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS membership_renewal_type           TEXT    NOT NULL DEFAULT 'monthly',
+      ADD COLUMN IF NOT EXISTS membership_renewal_days           INTEGER NOT NULL DEFAULT 365,
+      ADD COLUMN IF NOT EXISTS membership_renewal_fixed_date     DATE,
+      ADD COLUMN IF NOT EXISTS membership_reminder_days          TEXT    NOT NULL DEFAULT '[30,15,7,3,1]',
+      ADD COLUMN IF NOT EXISTS membership_suspend_on_expiry      BOOLEAN NOT NULL DEFAULT FALSE;
+  `).catch(() => {});
+
+  // ── expires_at + membership_status on member_subscriptions ───────────────
+  await pool.query(`
+    ALTER TABLE member_subscriptions
+      ADD COLUMN IF NOT EXISTS expires_at        TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS membership_status TEXT NOT NULL DEFAULT 'active';
+  `).catch(() => {});
+
+  // ── membership_reminder_log — dedup table for expiry reminders ────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS membership_reminder_log (
+      id              SERIAL PRIMARY KEY,
+      subscription_id INTEGER NOT NULL,
+      reminder_day    INTEGER NOT NULL,
+      sent_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (subscription_id, reminder_day)
+    );
   `).catch(() => {});
 
   initialized = true;

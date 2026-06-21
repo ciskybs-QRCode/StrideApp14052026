@@ -365,6 +365,10 @@ export default function Landing() {
                 {label}
               </a>
             ))}
+            <a href="/join?signin=1"
+              className="text-sm text-[#1E3A8A] font-semibold px-4 py-2.5 rounded-lg border border-[#1E3A8A]/30 hover:border-[#1E3A8A] hover:bg-[#1E3A8A]/5 transition-colors no-underline">
+              Sign In
+            </a>
             <a href="/register"
               className="bg-[#FBBF24] text-[#0A192F] text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-[#fcd34d] transition-colors no-underline">
               Get Started Free
@@ -387,6 +391,11 @@ export default function Landing() {
                 className="text-sm text-slate-600 hover:text-[#1E3A8A] font-medium no-underline"
                 onClick={() => setMenuOpen(false)}>{label}</a>
             ))}
+            <a href="/join?signin=1"
+              className="text-[#1E3A8A] text-sm font-semibold px-5 py-3 rounded-lg border border-[#1E3A8A]/30 text-center no-underline"
+              onClick={() => setMenuOpen(false)}>
+              Sign In
+            </a>
             <a href="/register"
               className="bg-[#FBBF24] text-[#0A192F] text-sm font-bold px-5 py-3 rounded-lg text-center no-underline"
               onClick={() => setMenuOpen(false)}>

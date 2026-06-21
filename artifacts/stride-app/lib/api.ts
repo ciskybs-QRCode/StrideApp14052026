@@ -820,6 +820,12 @@ export const api = {
     return request<{ meeting_days: number[]; meeting_slots: string[] }>("GET", "/meeting-availability");
   },
 
+  // Enrollment withdrawal
+  withdrawFromCourse: (courseId: string, childId?: string) =>
+    request<{ ok: boolean }>("POST", "/enrollments/withdraw", { courseId, childId }),
+  leaveOrg: () =>
+    request<{ ok: boolean; message: string }>("DELETE", "/memberships/leave-org"),
+
   // Admin Settings (grace access + anti-fraud)
   getAdminSettings: () => request<ApiAdminSettings>("GET", "/admin-settings"),
   updateAdminSettings: (data: Partial<ApiAdminSettings>) =>

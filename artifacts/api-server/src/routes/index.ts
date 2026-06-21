@@ -68,6 +68,7 @@ import feeEventsRouter from "./fee-events.js";
 import expensesRouter from "./expenses.js";
 import communicationSettingsRouter from "./communication-settings.js";
 import reviewsRouter from "./reviews.js";
+import enrollmentsRouter from "./enrollments.js";
 
 const router: IRouter = Router();
 
@@ -140,5 +141,6 @@ router.use(feeEventsRouter);
 router.use(expensesRouter);
 router.use(communicationSettingsRouter);
 router.use(reviewsRouter);
+router.use(enrollmentsRouter);
 
 export default router;

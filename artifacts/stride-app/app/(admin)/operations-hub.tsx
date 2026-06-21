@@ -59,6 +59,14 @@ export default function OperationsHub() {
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>OPERATIONS</Text>
         <HubCard
+          icon="scan-outline"
+          title="QR Gate Scanner"
+          description="Scan child check-ins and event tickets at the door"
+          iconBg="#1E3A8A"
+          iconColor="#FBBF24"
+          onPress={() => router.push("/(admin)/qr-gate" as never)}
+        />
+        <HubCard
           icon="calendar-number-outline"
           title="Lesson Calendar"
           description="Events, workshops, AI roster, reminders and bi-weekly scheduling"

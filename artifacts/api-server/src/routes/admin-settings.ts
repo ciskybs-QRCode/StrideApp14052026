@@ -67,6 +67,12 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
     if (!("membership_annual_fee_cents"     in row)) row.membership_annual_fee_cents     = 0;
     if (!("membership_monthly_fee_cents"    in row)) row.membership_monthly_fee_cents    = 0;
     if (!("membership_description"          in row)) row.membership_description          = null;
+    if (!("membership_mandatory"            in row)) row.membership_mandatory            = false;
+    if (!("membership_renewal_type"         in row)) row.membership_renewal_type         = "monthly";
+    if (!("membership_renewal_days"         in row)) row.membership_renewal_days         = 365;
+    if (!("membership_renewal_fixed_date"   in row)) row.membership_renewal_fixed_date   = null;
+    if (!("membership_reminder_days"        in row)) row.membership_reminder_days        = [30, 15, 7, 3, 1];
+    if (!("membership_suspend_on_expiry"    in row)) row.membership_suspend_on_expiry    = false;
 
     // Security: never send the raw Stripe secret key to the frontend.
     // Replace with a masked hint (last 4 chars) so the UI can show connection status.
@@ -140,6 +146,13 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "membership_annual_fee_cents",
     "membership_monthly_fee_cents",
     "membership_description",
+    // Membership policy
+    "membership_mandatory",
+    "membership_renewal_type",
+    "membership_renewal_days",
+    "membership_renewal_fixed_date",
+    "membership_reminder_days",
+    "membership_suspend_on_expiry",
   ];
 
   const setClauses: string[] = ["updated_at = NOW()"];

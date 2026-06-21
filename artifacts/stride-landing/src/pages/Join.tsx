@@ -144,6 +144,14 @@ export default function Join() {
   const legalStep   = hasCustomStep ? 3 : 2;
   const currentMax  = TOTAL;
 
+  // Auto-switch to sign-in mode when ?signin=1 is in the URL
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("signin") === "1") setMode("signin");
+    }
+  }, []);
+
   useEffect(() => {
     if (!slug) return;
     fetch(`/api/public/join/${slug}`)
