@@ -344,6 +344,24 @@ export default function CalendarManagementScreen() {
               <Text style={{ fontSize: 12, fontWeight: "700", color: "#FBBF24" }}>AI Roster</Text>
             </Pressable>
             <Pressable
+              onPress={async () => {
+                try {
+                  const { api } = await import("@/lib/api");
+                  const icsUrl = await api.getCalendarExportUrl();
+                  const { Linking } = await import("react-native");
+                  await Linking.openURL(icsUrl);
+                } catch {
+                  const { Alert } = await import("react-native");
+                  Alert.alert("Error", "Could not export calendar.");
+                }
+              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4,
+                backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 }}
+            >
+              <Ionicons name="calendar-outline" size={14} color="#1E3A8A" />
+              <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" }}>iCal</Text>
+            </Pressable>
+            <Pressable
               onPress={() => openNew()}
               style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary,
                 alignItems: "center", justifyContent: "center" }}

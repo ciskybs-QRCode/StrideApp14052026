@@ -69,6 +69,8 @@ import expensesRouter from "./expenses.js";
 import communicationSettingsRouter from "./communication-settings.js";
 import reviewsRouter from "./reviews.js";
 import enrollmentsRouter from "./enrollments.js";
+import accountRouter from "./account.js";
+import calendarExportRouter from "./calendar-export.js";
 
 const router: IRouter = Router();
 
@@ -142,5 +144,7 @@ router.use(expensesRouter);
 router.use(communicationSettingsRouter);
 router.use(reviewsRouter);
 router.use(enrollmentsRouter);
+router.use(accountRouter);
+router.use(calendarExportRouter);
 
 export default router;

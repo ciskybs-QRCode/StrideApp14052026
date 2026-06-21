@@ -26,8 +26,23 @@ export default function DeleteAccountPage() {
       Alert.alert("Error", 'Type DELETE (all caps) to confirm.');
       return;
     }
-    setConfirm("");
-    await logout();
+    // Prompt for password to confirm on backend
+    Alert.prompt(
+      "Confirm Password",
+      "Enter your password to permanently delete your account.",
+      async (password) => {
+        if (!password) return;
+        setConfirm("");
+        try {
+          const { api } = await import("@/lib/api");
+          await api.deleteAccount(password);
+          await logout();
+        } catch (err) {
+          Alert.alert("Error", (err as Error).message || "Deletion failed. Please try again.");
+        }
+      },
+      "secure-text",
+    );
   };
 
   return (

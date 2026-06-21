@@ -826,6 +826,32 @@ export const api = {
   leaveOrg: () =>
     request<{ ok: boolean; message: string }>("DELETE", "/memberships/leave-org"),
 
+  // GDPR / Account self-service
+  downloadDataExport: async (): Promise<void> => {
+    const token  = await getToken();
+    const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+    const resp   = await fetch(`${domain}/api/account/data-export`, {
+      headers: { Authorization: `Bearer ${token ?? ""}` },
+    });
+    if (!resp.ok) throw new Error("Export failed");
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `stride-data-export-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  deleteAccount: (password: string) =>
+    request<{ deleted: boolean }>("DELETE", "/account", { password }),
+
+  // iCal calendar export URL
+  getCalendarExportUrl: async (): Promise<string> => {
+    const token  = await getToken();
+    const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+    return `${domain}/api/calendar/export.ics?token=${encodeURIComponent(token ?? "")}`;
+  },
+
   // Admin Settings (grace access + anti-fraud)
   getAdminSettings: () => request<ApiAdminSettings>("GET", "/admin-settings"),
   updateAdminSettings: (data: Partial<ApiAdminSettings>) =>

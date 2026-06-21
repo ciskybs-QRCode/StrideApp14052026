@@ -516,6 +516,19 @@ export default function AdminUsers() {
         showsVerticalScrollIndicator={false}
       >
 
+        {/* ── Import Members shortcut ── */}
+        <Pressable
+          style={[styles.importBanner, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}
+          onPress={() => router.push("/(admin)/import-members" as never)}
+        >
+          <Ionicons name="cloud-upload-outline" size={20} color="#1E3A8A" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A" }}>Bulk Import Members</Text>
+            <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 1 }}>Upload CSV or XLSX to add members in bulk</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#1E3A8A" />
+        </Pressable>
+
         {/* ── Load error banner ── */}
         {loadError && (
           <View style={{ backgroundColor: "#FEE2E2", borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#FCA5A5" }}>
@@ -1532,6 +1545,7 @@ const styles = StyleSheet.create({
   pageTitle:      { fontSize: 28, fontWeight: "800" },
   pageSub:        { fontSize: 13, marginTop: 2 },
   badgePdfBtn:    { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  importBanner:   { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
 
   statCard:  { borderRadius: 14, padding: 16, alignItems: "center", marginRight: 10, minWidth: 80 },
   statNum:   { fontSize: 26, fontWeight: "800", color: "#FFF" },

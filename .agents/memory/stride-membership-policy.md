@@ -42,4 +42,22 @@ description: Mandatory membership, renewal types, expiry reminders, auto-suspend
 - Landing.tsx nav: "Sign In" button → /join?signin=1 (desktop + mobile menu)
 - Join.tsx: useEffect detects ?signin=1 param → auto-switches to sign-in mode tab
 
+## Additional features verified as already implemented
+- Stripe webhook: complete in billing.ts (invoice.paid/failed, subscription.updated/deleted, checkout.session.completed with member_checkout + private_lesson)
+- Email (Resend): auth.ts checks RESEND_API_KEY → Resend API call; EmergencyPushService also uses Resend
+- Push token registration: AuthContext.tsx line ~248 calls Notifications.getExpoPushTokenAsync()
+- ErrorBoundary: components/ErrorBoundary.tsx used in app/_layout.tsx
+- CSV/XLSX import backend: routes/import.ts (POST /identity/import, dry-run support, row validation, upsert)
+- Admin analytics: analytics.tsx fetches real data from getAnalytics()
+
+## New additions (these did not exist before)
+- routes/account.ts: GET /account/data-export (JSON download), DELETE /account (real deletion with bcryptjs verify)
+- routes/calendar-export.ts: GET /calendar/export.ics (RFC 5545, courses + event_dates, authenticated)
+- lib/report-scheduler.ts: weekly Monday 08:00 UTC HTML email via Resend; stats: members, new, revenue, attendance, upcoming courses
+- app/(admin)/import-members.tsx: expo-document-picker + FormData upload → dry-run preview → confirm; wired as banner in users.tsx
+- users.tsx: "Bulk Import Members" banner shortcut at top of member list
+- calendar-management.tsx: gold iCal button in header → api.getCalendarExportUrl() → Linking.openURL
+- settings/delete-account.tsx: now calls DELETE /account with password verification (was just logout before)
+- api.ts: downloadDataExport(), deleteAccount(password), getCalendarExportUrl()
+
 **Why:** Multi-tenant accounts should survive org departure; withdrawal must persist to backend not just local state.
