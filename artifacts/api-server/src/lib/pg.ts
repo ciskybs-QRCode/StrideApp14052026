@@ -1605,5 +1605,21 @@ export async function ensureTables(): Promise<void> {
     END$$;
   `).catch(() => {});
 
+  // ── Public Reviews ────────────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public_reviews (
+      id               SERIAL PRIMARY KEY,
+      name             TEXT NOT NULL,
+      role             TEXT NOT NULL,
+      association_name TEXT NOT NULL,
+      member_count     INTEGER,
+      rating           INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      comment          TEXT NOT NULL,
+      approved         BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS public_reviews_approved_idx ON public_reviews(approved, created_at DESC);
+  `).catch(() => {});
+
   initialized = true;
 }

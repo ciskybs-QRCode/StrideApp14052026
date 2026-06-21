@@ -36,7 +36,15 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Stride",
+      "shortName": "Stride",
+      "description": "Association management — QR attendance, smart pick-up, emergency alerts.",
+      "themeColor": "#1E3A8A",
+      "backgroundColor": "#1E3A8A",
+      "display": "standalone",
+      "orientation": "portrait",
+      "bundler": "metro"
     },
     "plugins": [
       [

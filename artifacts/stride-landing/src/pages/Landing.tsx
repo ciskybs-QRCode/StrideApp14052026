@@ -233,10 +233,10 @@ const Logo = () => (
 // ── Stat counters ─────────────────────────────────────────────────────────────
 
 const STATS = [
-  { n: "500+",  label: "Associations Onboarded" },
-  { n: "12k+",  label: "Active Members" },
-  { n: "99.9%", label: "Platform Uptime" },
-  { n: "0%",    label: "Commission on Trials" },
+  { n: "30 days", label: "Free trial — no card" },
+  { n: "<60 s",   label: "Full setup time" },
+  { n: "<3 s",    label: "Emergency Pulse delivery" },
+  { n: "0%",      label: "Platform commission" },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -260,6 +260,23 @@ export default function Landing() {
   const [openFaq,   setOpenFaq]   = useState<number | null>(null);
   const [currency,  setCurrency]  = useState("USD");
   const [rates,     setRates]     = useState<Record<string, number>>({});
+
+  type Review = {
+    id: number; name: string; role: string; association_name: string;
+    member_count: number | null; rating: number; comment: string; created_at: string;
+  };
+  const [reviews,       setReviews]       = useState<Review[]>([]);
+  const [showForm,      setShowForm]      = useState(false);
+  const [formRating,    setFormRating]    = useState(0);
+  const [formHover,     setFormHover]     = useState(0);
+  const [formName,      setFormName]      = useState("");
+  const [formRole,      setFormRole]      = useState("");
+  const [formAssoc,     setFormAssoc]     = useState("");
+  const [formMembers,   setFormMembers]   = useState("");
+  const [formComment,   setFormComment]   = useState("");
+  const [formSending,   setFormSending]   = useState(false);
+  const [formSuccess,   setFormSuccess]   = useState(false);
+  const [formError,     setFormError]     = useState("");
 
   // 1. IP geolocation → currency (no permission required)
   useEffect(() => {
@@ -285,6 +302,43 @@ export default function Landing() {
       .then((d: { rates?: Record<string, number> }) => { if (d.rates) setRates(d.rates); })
       .catch(() => { /* keep empty — will show USD */ });
   }, []);
+
+  // 3. Fetch approved reviews
+  useEffect(() => {
+    fetch("/api/reviews")
+      .then(r => r.json())
+      .then((data: Review[]) => { if (Array.isArray(data)) setReviews(data); })
+      .catch(() => {});
+  }, []);
+
+  async function submitReview(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError("");
+    if (formRating === 0) { setFormError("Please choose a star rating."); return; }
+    if (formComment.trim().length < 20) { setFormError("Review must be at least 20 characters."); return; }
+    setFormSending(true);
+    try {
+      const res = await fetch("/api/reviews/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formName, role: formRole, association_name: formAssoc,
+          member_count: formMembers ? parseInt(formMembers) : null,
+          rating: formRating, comment: formComment,
+        }),
+      });
+      const json = await res.json() as { error?: string };
+      if (!res.ok) { setFormError(json.error ?? "Submission failed."); return; }
+      setFormSuccess(true);
+      setShowForm(false);
+      setFormRating(0); setFormName(""); setFormRole(""); setFormAssoc("");
+      setFormMembers(""); setFormComment("");
+    } catch {
+      setFormError("Network error — please try again.");
+    } finally {
+      setFormSending(false);
+    }
+  }
 
   const navLinks = [
     ["#for-associations", "For Associations"],
@@ -437,12 +491,12 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Social proof below card */}
+            {/* Product guarantees below card */}
             <div className="mt-4 grid grid-cols-3 gap-3">
               {[
-                { n: "500+",  label: "Orgs" },
-                { n: "12k+",  label: "Members" },
-                { n: "99.9%", label: "Uptime" },
+                { n: "30 days", label: "Free trial" },
+                { n: "<60 s",   label: "Full setup" },
+                { n: "0%",      label: "Commission" },
               ].map(({ n, label }) => (
                 <div key={label} className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
                   <div className="text-lg font-black text-[#1E3A8A]">{n}</div>
@@ -889,89 +943,185 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ───────────────────────────────────────────────────── */}
-      <section className="py-24 bg-slate-50">
+      {/* ── REVIEWS ────────────────────────────────────────────────────────── */}
+      <section id="reviews" className="py-24 bg-slate-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-2 bg-[#FBBF24]/15 border border-[#FBBF24]/40 rounded-full px-4 py-1.5 mb-5">
-              <span className="text-[#9a7000] text-xs font-bold tracking-wider uppercase">Real Results from Real Associations</span>
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">What association leaders say</h2>
-            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-              From 30-member clubs to 500-member academies — Stride replaces the spreadsheet stack.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            {[
-              {
-                quote: "We ran our first session with zero paperwork on day two. The QR kiosk replaced our sign-in sheet overnight, and our parents love the pick-up alerts. I haven't touched a spreadsheet in three months.",
-                name: "Sarah M.",
-                role: "Director, City Athletics Club",
-                members: "180 members",
-                initials: "SM",
-                color: "bg-[#1E3A8A]",
-              },
-              {
-                quote: "The Emergency Pulse alone is worth the subscription. During a false fire alarm last winter, I had 47 acknowledgments from parents within 90 seconds. That used to take 20 minutes of phone calls.",
-                name: "James K.",
-                role: "Operations Manager, Lakeside Sports Association",
-                members: "340 members",
-                initials: "JK",
-                color: "bg-emerald-600",
-              },
-              {
-                quote: "As a parent, I can see exactly when my daughter checks in and who's authorised to pick her up. I removed my ex-partner's pickup access in 30 seconds when I needed to. No drama, no phone call.",
-                name: "Priya T.",
-                role: "Parent Member",
-                members: "Community Dance Academy",
-                initials: "PT",
-                color: "bg-violet-600",
-              },
-            ].map(({ quote, name, role, members, initials, color }) => (
-              <div key={name} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm flex flex-col">
-                <div className="flex gap-1 mb-5">
-                  {[0,1,2,3,4].map(i => (
-                    <svg key={i} className="w-4 h-4 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-slate-700 text-sm leading-relaxed flex-1 mb-6">"{quote}"</p>
-                <div className="flex items-center gap-3 pt-5 border-t border-slate-100">
-                  <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center flex-shrink-0`}>
-                    <span className="text-white text-xs font-black">{initials}</span>
-                  </div>
-                  <div>
-                    <p className="text-slate-900 text-sm font-bold">{name}</p>
-                    <p className="text-slate-500 text-xs">{role}</p>
-                    <p className="text-[#1E3A8A] text-xs font-semibold">{members}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Case study callout */}
-          <div className="bg-[#1E3A8A] rounded-2xl p-7 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="flex-1">
-              <p className="text-[#FBBF24] text-xs font-bold uppercase tracking-widest mb-2">Case Study</p>
-              <h3 className="text-white font-black text-xl mb-2">A 200-member dance academy cut admin time by 83%</h3>
-              <p className="text-blue-200 text-sm leading-relaxed">
-                Before Stride: 12+ hours/week on attendance, pickups, waivers, and WhatsApp chats. After Stride: 2 hours/week, fully auditable, zero paper.
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
+            <div>
+              <span className="inline-flex items-center gap-2 bg-[#FBBF24]/15 border border-[#FBBF24]/40 rounded-full px-4 py-1.5 mb-5">
+                <span className="text-[#9a7000] text-xs font-bold tracking-wider uppercase">Verified User Reviews</span>
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3">What association leaders say</h2>
+              <p className="text-slate-500 text-base max-w-xl">
+                Every review here was submitted by a real Stride user and approved before publishing. No invented quotes, no stock photos.
               </p>
             </div>
-            <div className="flex flex-col gap-3 text-center sm:flex-shrink-0">
-              <div className="bg-white/10 border border-white/20 rounded-xl px-6 py-4">
-                <p className="text-[#FBBF24] text-3xl font-black">−83%</p>
-                <p className="text-blue-200 text-xs mt-1">Admin hours</p>
+            {!showForm && !formSuccess && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="flex-shrink-0 inline-flex items-center gap-2 bg-[#1E3A8A] text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-[#162d6e] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Leave a Review
+              </button>
+            )}
+          </div>
+
+          {/* Success banner */}
+          {formSuccess && (
+            <div className="mb-10 bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-              <div className="bg-white/10 border border-white/20 rounded-xl px-6 py-4">
-                <p className="text-[#FBBF24] text-3xl font-black">&lt;3 s</p>
-                <p className="text-blue-200 text-xs mt-1">Emergency reach</p>
+              <div>
+                <p className="text-emerald-800 font-bold text-sm">Review submitted — thank you!</p>
+                <p className="text-emerald-700 text-sm mt-0.5">Your experience will appear here once approved, usually within 24 hours.</p>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Submission form */}
+          {showForm && (
+            <form onSubmit={submitReview} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm mb-10">
+              <h3 className="text-slate-900 font-black text-lg mb-6">Share your experience with Stride</h3>
+
+              {/* Star rating */}
+              <div className="mb-6">
+                <p className="text-slate-700 text-sm font-semibold mb-3">Your rating *</p>
+                <div className="flex gap-2">
+                  {[1,2,3,4,5].map(star => (
+                    <button key={star} type="button"
+                      onClick={() => setFormRating(star)}
+                      onMouseEnter={() => setFormHover(star)}
+                      onMouseLeave={() => setFormHover(0)}
+                      className="focus:outline-none"
+                    >
+                      <svg className={`w-8 h-8 transition-colors ${star <= (formHover || formRating) ? "text-[#FBBF24]" : "text-slate-300"}`} fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">Your name *</label>
+                  <input required value={formName} onChange={e => setFormName(e.target.value)}
+                    placeholder="e.g. Marco R." maxLength={80}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 focus:border-[#1E3A8A]" />
+                </div>
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">Your role *</label>
+                  <input required value={formRole} onChange={e => setFormRole(e.target.value)}
+                    placeholder="e.g. Director, Parent, Operator" maxLength={80}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 focus:border-[#1E3A8A]" />
+                </div>
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">Association name *</label>
+                  <input required value={formAssoc} onChange={e => setFormAssoc(e.target.value)}
+                    placeholder="e.g. ASD Palestra Centrale" maxLength={120}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 focus:border-[#1E3A8A]" />
+                </div>
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-1.5">Number of members <span className="text-slate-400 font-normal">(optional)</span></label>
+                  <input type="number" min={1} max={50000} value={formMembers} onChange={e => setFormMembers(e.target.value)}
+                    placeholder="e.g. 120"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 focus:border-[#1E3A8A]" />
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <label className="block text-slate-700 text-sm font-semibold mb-1.5">Your review * <span className="text-slate-400 font-normal">(min 20 characters)</span></label>
+                <textarea required value={formComment} onChange={e => setFormComment(e.target.value)}
+                  rows={4} maxLength={1200}
+                  placeholder="What changed for your association after using Stride? What do you like most? Anything you'd improve?"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 focus:border-[#1E3A8A] resize-none" />
+                <p className="text-slate-400 text-xs mt-1 text-right">{formComment.length}/1200</p>
+              </div>
+
+              {formError && (
+                <p className="text-red-600 text-sm mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>
+              )}
+
+              <div className="flex gap-3 flex-wrap">
+                <button type="submit" disabled={formSending}
+                  className="bg-[#1E3A8A] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#162d6e] disabled:opacity-60 transition-colors">
+                  {formSending ? "Submitting…" : "Submit Review"}
+                </button>
+                <button type="button" onClick={() => setShowForm(false)}
+                  className="text-slate-500 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-100 transition-colors">
+                  Cancel
+                </button>
+              </div>
+              <p className="text-slate-400 text-xs mt-4">Reviews are moderated before publishing. We verify that the reviewer is a real Stride user.</p>
+            </form>
+          )}
+
+          {/* Reviews grid */}
+          {reviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviews.map(rv => {
+                const initials = rv.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
+                const colors = ["bg-[#1E3A8A]","bg-emerald-600","bg-violet-600","bg-amber-600","bg-sky-600"];
+                const color = colors[rv.id % colors.length];
+                return (
+                  <div key={rv.id} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm flex flex-col">
+                    <div className="flex gap-1 mb-4">
+                      {[1,2,3,4,5].map(s => (
+                        <svg key={s} className={`w-4 h-4 ${s <= rv.rating ? "text-[#FBBF24]" : "text-slate-200"}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                    </div>
+                    <p className="text-slate-700 text-sm leading-relaxed flex-1 mb-6">"{rv.comment}"</p>
+                    <div className="flex items-center gap-3 pt-5 border-t border-slate-100">
+                      <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center flex-shrink-0`}>
+                        <span className="text-white text-xs font-black">{initials}</span>
+                      </div>
+                      <div>
+                        <p className="text-slate-900 text-sm font-bold">{rv.name}</p>
+                        <p className="text-slate-500 text-xs">{rv.role}</p>
+                        <p className="text-[#1E3A8A] text-xs font-semibold">
+                          {rv.association_name}{rv.member_count ? ` · ${rv.member_count} members` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Empty state — only shows when no approved reviews yet */
+            <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center">
+              <div className="w-16 h-16 bg-[#FBBF24]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </div>
+              <h3 className="text-slate-900 font-black text-xl mb-3">Be the first founding association to review Stride</h3>
+              <p className="text-slate-500 text-sm max-w-md mx-auto mb-8">
+                Stride is in early access. If you are using it, your honest experience helps other association leaders decide — and shapes what we build next.
+              </p>
+              {!showForm && !formSuccess && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="inline-flex items-center gap-2 bg-[#1E3A8A] text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-[#162d6e] transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Share your experience
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -1270,7 +1420,7 @@ export default function Landing() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <div className="inline-flex items-center gap-2 bg-[#FBBF24]/15 border border-[#FBBF24]/30 rounded-full px-4 py-1.5 mb-6">
             <span className="w-2 h-2 rounded-full bg-[#FBBF24] animate-pulse" />
-            <span className="text-[#FBBF24] text-xs font-bold tracking-wider uppercase">Join 500+ Associations on Stride</span>
+            <span className="text-[#FBBF24] text-xs font-bold tracking-wider uppercase">Early Access — Founding Associations Only</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-white mb-5">
             Your Free Trial Starts the Moment You Sign Up
