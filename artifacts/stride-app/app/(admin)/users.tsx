@@ -67,7 +67,7 @@ interface UserRecord {
 
 const ROLE_COLORS: Record<UserRole, { bg: string; text: string }> = {
   parent:   { bg: "#DBEAFE", text: "#1E3A8A" },
-  operator: { bg: "#EDE9FE", text: "#7C3AED" },
+  operator: { bg: "#EFF6FF", text: "#1E3A8A" },
   admin:    { bg: "#FEF3C7", text: "#B45309" },
   student:  { bg: "#D1FAE5", text: "#059669" },
 };
@@ -571,7 +571,7 @@ export default function AdminUsers() {
           {[
             { label: "Total",                          value: counts.total,     bg: colors.primary },
             ...(counts.admins > 0 ? [{ label: "Admins", value: counts.admins, bg: "#B45309" }] : []),
-            { label: "Operators",                      value: counts.operators, bg: "#7C3AED" },
+            { label: "Operators",                      value: counts.operators, bg: "#1E3A8A" },
             { label: `${primaryRoleName}s`,            value: counts.parents,   bg: "#10B981" },
             { label: `${secondaryRoleName}s`,          value: counts.students,  bg: "#F59E0B" },
             ...(counts.suspended > 0 ? [{ label: "Suspended", value: counts.suspended, bg: "#EF4444" }] : []),
@@ -619,7 +619,7 @@ export default function AdminUsers() {
               groupUsers.length > 0 ? (
                 <View key={groupName}>
                   <View style={styles.groupHeader}>
-                    <View style={[styles.groupDot, { backgroundColor: groupName === "Admins" ? "#B45309" : groupName === "Operators" ? "#7C3AED" : groupName === `${primaryRoleName}s` ? "#10B981" : "#F59E0B" }]} />
+                    <View style={[styles.groupDot, { backgroundColor: groupName === "Admins" ? "#B45309" : groupName === "Operators" ? "#1E3A8A" : groupName === `${primaryRoleName}s` ? "#10B981" : "#F59E0B" }]} />
                     <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{groupName} ({groupUsers.length})</Text>
                   </View>
                   {groupUsers.map(user => (
@@ -694,10 +694,10 @@ export default function AdminUsers() {
                   {user.role !== "student" && !!user.phone && (
                     <View style={styles.phoneActionRow}>
                       {[
-                        { icon: "call"          as const, label: "Chiama",   color: "#10B981", bg: "#D1FAE5", action: "call"     as const },
+                        { icon: "call"          as const, label: "Call",     color: "#10B981", bg: "#D1FAE5", action: "call"     as const },
                         { icon: "chatbubble"    as const, label: "SMS",      color: "#1E3A8A", bg: "#EEF2FF", action: "sms"      as const },
                         { icon: "logo-whatsapp" as const, label: "WhatsApp", color: "#25D366", bg: "#DCFCE7", action: "whatsapp" as const },
-                        { icon: "mail-outline"  as const, label: "Email",    color: "#7C3AED", bg: "#EDE9FE", action: "email"    as const },
+                        { icon: "mail-outline"  as const, label: "Email",    color: "#1E3A8A", bg: "#EFF6FF", action: "email"    as const },
                       ].map(opt => (
                         <Pressable
                           key={opt.action}
@@ -880,9 +880,9 @@ export default function AdminUsers() {
                   {user.role === "operator" && (
                     <View style={[styles.disciplinesSection, { borderColor: colors.border }]}>
                       {operatorProfile && (
-                        <View style={[styles.profileTypePill, { backgroundColor: operatorProfile.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE" }]}>
-                          <Ionicons name={operatorProfile.profile_type === "paid" ? "cash-outline" : "heart-outline"} size={12} color={operatorProfile.profile_type === "paid" ? "#92400E" : "#6D28D9"} />
-                          <Text style={[styles.profileTypePillText, { color: operatorProfile.profile_type === "paid" ? "#92400E" : "#6D28D9" }]}>
+                        <View style={[styles.profileTypePill, { backgroundColor: operatorProfile.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF" }]}>
+                          <Ionicons name={operatorProfile.profile_type === "paid" ? "cash-outline" : "heart-outline"} size={12} color={operatorProfile.profile_type === "paid" ? "#92400E" : "#1E3A8A"} />
+                          <Text style={[styles.profileTypePillText, { color: operatorProfile.profile_type === "paid" ? "#92400E" : "#1E3A8A" }]}>
                             {operatorProfile.profile_type === "paid" ? "Paid Operator" : "Volunteer"}
                           </Text>
                         </View>
@@ -1059,10 +1059,10 @@ export default function AdminUsers() {
                                       <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground }}>TAX OBLIGATIONS</Text>
                                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
                                         {researchResult.tax_obligations.map((t, i) => (
-                                          <View key={i} style={{ backgroundColor: "#F5F3FF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5,
-                                            borderWidth: 1, borderColor: "#DDD6FE" }}>
-                                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#5B21B6" }}>{t.label} {t.rate}%</Text>
-                                            <Text style={{ fontSize: 9, color: "#7C3AED" }}>{t.payer} · {t.note}</Text>
+                                          <View key={i} style={{ backgroundColor: "#EFF6FF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5,
+                                            borderWidth: 1, borderColor: "#BFDBFE" }}>
+                                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>{t.label} {t.rate}%</Text>
+                                            <Text style={{ fontSize: 9, color: "#1E3A8A" }}>{t.payer} · {t.note}</Text>
                                           </View>
                                         ))}
                                       </View>
@@ -1260,7 +1260,7 @@ export default function AdminUsers() {
                         {(
                           [
                             { role: "parent"   as UserRole, label: "Member",   color: "#1E3A8A" },
-                            { role: "operator" as UserRole, label: "Operator", color: "#7C3AED" },
+                            { role: "operator" as UserRole, label: "Operator", color: "#1E3A8A" },
                             { role: "admin"    as UserRole, label: "Admin",    color: "#B45309" },
                           ] as const
                         ).map(({ role: r, label, color: c }) => {
@@ -1343,7 +1343,7 @@ export default function AdminUsers() {
             {[
               { type: "whatsapp" as const, label: "WhatsApp",   icon: "logo-whatsapp" as const, bg: "#25D366", fg: "#FFF" },
               { type: "sms"      as const, label: "Send SMS",   icon: "chatbubble"    as const, bg: "#007AFF", fg: "#FFF" },
-              { type: "email"    as const, label: "Send Email", icon: "mail"          as const, bg: "#7C3AED", fg: "#FFF" },
+              { type: "email"    as const, label: "Send Email", icon: "mail"          as const, bg: "#1E3A8A", fg: "#FFF" },
               { type: "call"     as const, label: "Phone Call", icon: "call"          as const, bg: "#1E3A8A", fg: "#FFF" },
             ].map(opt => (
               <Pressable key={opt.type} style={[styles.contactOption, { backgroundColor: opt.bg }]} onPress={() => handleContactAction(opt.type)}>

@@ -89,11 +89,11 @@ function detectAdminEmergency(address: string): { number: string; country: strin
 
 const PRESET_COLORS = [
   { primary: "#1E3A8A", secondary: "#FBBF24", name: "Stride Classic" },
-  { primary: "#7C3AED", secondary: "#C4B5FD", name: "Viola" },
-  { primary: "#059669", secondary: "#6EE7B7", name: "Smeraldo" },
-  { primary: "#DC2626", secondary: "#FCA5A5", name: "Rosso" },
-  { primary: "#EA580C", secondary: "#FDBA74", name: "Arancio" },
-  { primary: "#0EA5E9", secondary: "#BAE6FD", name: "Cielo" },
+  { primary: "#7C3AED", secondary: "#C4B5FD", name: "Violet" },
+  { primary: "#059669", secondary: "#6EE7B7", name: "Emerald" },
+  { primary: "#DC2626", secondary: "#FCA5A5", name: "Red" },
+  { primary: "#EA580C", secondary: "#FDBA74", name: "Orange" },
+  { primary: "#0EA5E9", secondary: "#BAE6FD", name: "Sky Blue" },
 ];
 
 const FONTS = ["Montserrat", "Open Sans", "Poppins", "Roboto", "Lato", "Inter"];
@@ -200,8 +200,8 @@ function MemberPortalCard() {
   return (
     <View style={[{ backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" }]}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 }}>
-        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#EDE9FE", alignItems: "center", justifyContent: "center" }}>
-          <Ionicons name="people-circle-outline" size={22} color="#6D28D9" />
+        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name="people-circle-outline" size={22} color="#1E3A8A" />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 15, fontWeight: "800", color: colors.primary }}>Member Portal</Text>
@@ -475,7 +475,7 @@ export default function AdminSetup() {
             <View style={{ flex: 1 }}>
               <Text style={{ color: "#FFF", fontWeight: "800", fontSize: 15 }}>🔴 RED ALERT — No Subs Available</Text>
               <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 3 }}>
-                {activeAlert.lessonName} · {activeAlert.operatorName ?? activeAlert.teacherName} — All substitutes unavailable. Admin action required.
+                {activeAlert.lessonName} · {activeAlert.teacherName} — All substitutes unavailable. Admin action required.
               </Text>
             </View>
           </View>

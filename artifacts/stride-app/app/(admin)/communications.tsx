@@ -447,7 +447,7 @@ export default function AdminCommunications() {
     const m = a.mimeType; const n = a.name;
     if (m === "text/uri-list")                                         return { icon: "link-outline",          color: "#3B82F6" };
     if (m.startsWith("image/"))                                        return { icon: "image-outline",        color: "#3B82F6" };
-    if (m.startsWith("video/"))                                        return { icon: "videocam-outline",     color: "#8B5CF6" };
+    if (m.startsWith("video/"))                                        return { icon: "videocam-outline",     color: "#1E3A8A" };
     if (m.startsWith("audio/"))                                        return { icon: "musical-note-outline", color: "#F59E0B" };
     if (m.includes("pdf"))                                             return { icon: "document-text-outline", color: "#EF4444" };
     if (m.includes("spreadsheet") || /\.(xls|xlsx)/i.test(n))         return { icon: "grid-outline",          color: "#16A34A" };
@@ -555,8 +555,8 @@ export default function AdminCommunications() {
                   </View>
                   {item.signatureRequired && (
                     <View style={styles.commStat}>
-                      <Ionicons name="create-outline" size={13} color="#7C3AED" />
-                      <Text style={[styles.commStatText, { color: "#7C3AED" }]}>Sig. req.</Text>
+                      <Ionicons name="create-outline" size={13} color="#1E3A8A" />
+                      <Text style={[styles.commStatText, { color: "#1E3A8A" }]}>Sig. req.</Text>
                     </View>
                   )}
                   {item.attachments.length > 0 && (
@@ -881,7 +881,7 @@ export default function AdminCommunications() {
               </View>
             ) : (
               filteredReceipts.map(r => {
-                const roleColors = { parent: { bg: "#DBEAFE", text: "#1E3A8A" }, operator: { bg: "#EDE9FE", text: "#7C3AED" }, student: { bg: "#D1FAE5", text: "#059669" } };
+                const roleColors = { parent: { bg: "#DBEAFE", text: "#1E3A8A" }, operator: { bg: "#EFF6FF", text: "#1E3A8A" }, student: { bg: "#D1FAE5", text: "#059669" } };
                 const rc = roleColors[r.recipientRole];
                 const sentDate = new Date(r.sentAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
                 const readDate = r.readAt ? new Date(r.readAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
@@ -969,7 +969,7 @@ export default function AdminCommunications() {
                       <Text style={[styles.templateItemPreview, { color: colors.mutedForeground }]} numberOfLines={1}>{tpl.title}</Text>
                     </View>
                     {tpl.urgent && <Ionicons name="warning" size={14} color="#EF4444" />}
-                    {tpl.signatureRequired && <Ionicons name="create-outline" size={14} color="#7C3AED" />}
+                    {tpl.signatureRequired && <Ionicons name="create-outline" size={14} color="#1E3A8A" />}
                   </Pressable>
                 ))}
               </View>
@@ -1033,13 +1033,13 @@ export default function AdminCommunications() {
             </View>
             <View style={[styles.toggleRow, { borderColor: colors.border, marginTop: 8 }]}>
               <View style={styles.toggleLeft}>
-                <Ionicons name="create-outline" size={18} color="#7C3AED" />
+                <Ionicons name="create-outline" size={18} color="#1E3A8A" />
                 <View>
                   <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Signature Required</Text>
                   <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Members must sign before reading</Text>
                 </View>
               </View>
-              <Switch value={signatureRequired} onValueChange={setSignatureRequired} trackColor={{ false: "#E5E7EB", true: "#C4B5FD" }} thumbColor={signatureRequired ? "#7C3AED" : "#9CA3AF"} />
+              <Switch value={signatureRequired} onValueChange={setSignatureRequired} trackColor={{ false: "#E5E7EB", true: "#1E3A8A" }} thumbColor={signatureRequired ? "#FBBF24" : "#9CA3AF"} />
             </View>
 
             {/* Attachments */}
@@ -1177,7 +1177,7 @@ export default function AdminCommunications() {
                   {[
                     { sel: { mode: "all" as const },                                        label: "All Users",      sub: userCounts.total ? `${userCounts.total} users registered` : "All members, operators and dependent members", icon: "people" as const, bg: "#DBEAFE", color: colors.primary },
                     { sel: { mode: "group" as const, groupRole: "parents" as const },       label: "All Members",    sub: `${userCounts.parents} members registered`,    icon: "person" as const,       bg: "#D1FAE5", color: "#10B981" },
-                    { sel: { mode: "group" as const, groupRole: "operators" as const },     label: "All Operators",  sub: `${userCounts.operators} operators registered`, icon: "briefcase" as const,    bg: "#EDE9FE", color: "#7C3AED" },
+                    { sel: { mode: "group" as const, groupRole: "operators" as const },     label: "All Operators",  sub: `${userCounts.operators} operators registered`, icon: "briefcase" as const,    bg: "#EFF6FF", color: "#1E3A8A" },
                     { sel: { mode: "group" as const, groupRole: "students" as const },      label: "All Dependent Members", sub: `${userCounts.students} dependent members registered`, icon: "people" as const, bg: "#FEF3C7", color: "#F59E0B" },
                   ].map(({ sel, label, sub, icon, bg, color }) => (
                     <Pressable

@@ -360,7 +360,7 @@ export default function GuardianCircle() {
                 <Switch
                   value={isSingleUse}
                   onValueChange={setIsSingleUse}
-                  trackColor={{ true: "#7C3AED" }}
+                  trackColor={{ true: "#1E3A8A" }}
                   thumbColor="#FFF"
                 />
               </View>
@@ -376,7 +376,7 @@ export default function GuardianCircle() {
                 <Switch
                   value={hasWindow}
                   onValueChange={v => { setHasWindow(v); if (v && pickupDays.length === 0) setPickupDays(["MON", "TUE", "WED", "THU", "FRI"]); }}
-                  trackColor={{ true: "#0891B2" }}
+                  trackColor={{ true: "#FBBF24" }}
                   thumbColor="#FFF"
                 />
               </View>
@@ -497,21 +497,21 @@ function GuardianCard({
       {(entry.is_single_use || hasWindow) && (
         <View style={styles.iqrRow}>
           {entry.is_single_use && (
-            <View style={[styles.iqrBadge, isUsed ? { backgroundColor: "#F3F4F6" } : { backgroundColor: "#EDE9FE" }]}>
+            <View style={[styles.iqrBadge, isUsed ? { backgroundColor: "#F3F4F6" } : { backgroundColor: "#EFF6FF" }]}>
               <Ionicons
                 name={isUsed ? "checkmark-done" : "key"}
                 size={11}
-                color={isUsed ? "#9CA3AF" : "#7C3AED"}
+                color={isUsed ? "#9CA3AF" : "#1E3A8A"}
               />
-              <Text style={[styles.iqrBadgeText, isUsed ? { color: "#9CA3AF" } : { color: "#7C3AED" }]}>
+              <Text style={[styles.iqrBadgeText, isUsed ? { color: "#9CA3AF" } : { color: "#1E3A8A" }]}>
                 {isUsed ? `Used ${formatDate(entry.used_at!)}` : "Single Use"}
               </Text>
             </View>
           )}
           {hasWindow && (
-            <View style={[styles.iqrBadge, { backgroundColor: "#E0F2FE" }]}>
-              <Ionicons name="time-outline" size={11} color="#0891B2" />
-              <Text style={[styles.iqrBadgeText, { color: "#0891B2" }]}>
+            <View style={[styles.iqrBadge, { backgroundColor: "#EFF6FF" }]}>
+              <Ionicons name="time-outline" size={11} color="#1E3A8A" />
+              <Text style={[styles.iqrBadgeText, { color: "#1E3A8A" }]}>
                 {entry.pickup_window_start}–{entry.pickup_window_end}
                 {entry.pickup_days && entry.pickup_days.length > 0 && (
                   ` · ${entry.pickup_days.map(d => d.slice(0, 3)).join(", ")}`
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
   windowBox:   { backgroundColor: "#F8FAFC", borderRadius: 12, padding: 14, marginTop: 10, borderWidth: 1, borderColor: C.border },
   dayChips:    { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 4 },
   dayChip:     { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: C.muted, borderWidth: 1, borderColor: C.border },
-  dayChipActive:     { backgroundColor: "#0891B2", borderColor: "#0891B2" },
+  dayChipActive:     { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
   dayChipText:       { fontSize: 12, fontWeight: "700", color: "#374151" },
   dayChipTextActive: { color: "#FFF" },
   timeRow:     { flexDirection: "row", alignItems: "flex-end", gap: 8 },

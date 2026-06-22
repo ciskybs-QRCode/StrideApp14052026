@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { api } from "@/lib/api";
 
@@ -33,7 +34,7 @@ type Step = "discipline" | "operator" | "datetime" | "confirm";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function cents(c: number) { return `€${(c / 100).toFixed(2)}`; }
+function cents(c: number, sym = "€") { return `${sym}${(c / 100).toFixed(2)}`; }
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -91,6 +92,7 @@ function StepBar({ current }: { current: Step }) {
 
 export default function PrivateLessonBook() {
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -257,7 +259,7 @@ export default function PrivateLessonBook() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.optionTitle, { color: colors.foreground }]}>{cfg.discipline_name}</Text>
                     <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>
-                      {cfg.duration_minutes} min · <Text style={{ color: colors.primary, fontWeight: "800" }}>{cents(cfg.member_price_cents)}</Text> per lesson
+                      {cfg.duration_minutes} min · <Text style={{ color: colors.primary, fontWeight: "800" }}>{cents(cfg.member_price_cents, cur)}</Text> per lesson
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
@@ -297,8 +299,8 @@ export default function PrivateLessonBook() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.optionTitle, { color: colors.foreground }]}>{op.name}</Text>
-                    <View style={[styles.badge, { backgroundColor: op.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE" }]}>
-                      <Text style={{ fontSize: 10, fontWeight: "700", color: op.profile_type === "paid" ? "#92400E" : "#6D28D9" }}>
+                    <View style={[styles.badge, { backgroundColor: op.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF" }]}>
+                      <Text style={{ fontSize: 10, fontWeight: "700", color: op.profile_type === "paid" ? "#1E3A8A" : "#B45309" }}>
                         {op.profile_type === "paid" ? "Professional" : "Volunteer"}
                       </Text>
                     </View>
@@ -380,7 +382,7 @@ export default function PrivateLessonBook() {
             <View style={[styles.priceBox, { backgroundColor: colors.primary + "08", borderColor: colors.primary + "30" }]}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Total to pay</Text>
-                <Text style={[styles.priceValue, { color: colors.primary }]}>{cents(selConfig.member_price_cents)}</Text>
+                <Text style={[styles.priceValue, { color: colors.primary }]}>{cents(selConfig.member_price_cents, cur)}</Text>
               </View>
               <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
                 Secure payment via Stripe · Your card is charged now.
@@ -395,7 +397,7 @@ export default function PrivateLessonBook() {
                 : <>
                     <Ionicons name="card-outline" size={18} color="#0A192F" />
                     <Text style={[styles.btnText, { color: "#0A192F", fontSize: 15 }]}>
-                      Pay {cents(selConfig.member_price_cents)}
+                      Pay {cents(selConfig.member_price_cents, cur)}
                     </Text>
                   </>
               }

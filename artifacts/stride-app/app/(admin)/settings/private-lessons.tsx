@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { api } from "@/lib/api";
 
@@ -24,7 +25,7 @@ interface LessonConfig {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function cents(c: number) { return `€${(c / 100).toFixed(2)}`; }
+function cents(c: number, sym = "€") { return `${sym}${(c / 100).toFixed(2)}`; }
 function parseCents(s: string) { return Math.round(parseFloat(s.replace(",", ".") || "0") * 100); }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -32,6 +33,7 @@ function parseCents(s: string) { return Math.round(parseFloat(s.replace(",", "."
 export default function PrivateLessonsSettings() {
   const router  = useRouter();
   const colors  = useColors();
+  const cur     = useOrgCurrency();
   const insets  = useSafeAreaInsets();
 
   const [loading,          setLoading]          = useState(true);
@@ -233,8 +235,8 @@ export default function PrivateLessonsSettings() {
                   style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }], marginLeft: -6 }}
                 />
               </View>
-              <Text style={[styles.configPrice, { color: colors.primary, flex: 1 }]}>{cents(cfg.member_price_cents)}</Text>
-              <Text style={[styles.configPrice, { color: "#059669", flex: 1 }]}>{cents(cfg.operator_payout_cents)}</Text>
+              <Text style={[styles.configPrice, { color: colors.primary, flex: 1 }]}>{cents(cfg.member_price_cents, cur)}</Text>
+              <Text style={[styles.configPrice, { color: "#059669", flex: 1 }]}>{cents(cfg.operator_payout_cents, cur)}</Text>
               <Text style={[styles.configPrice, { color: colors.mutedForeground, flex: 1 }]}>{cfg.duration_minutes}m</Text>
               <View style={{ flexDirection: "row", gap: 2, width: 60, justifyContent: "flex-end" }}>
                 <Pressable onPress={() => openEdit(cfg)} style={styles.iconBtn}>
@@ -275,7 +277,7 @@ export default function PrivateLessonsSettings() {
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Member price (€)</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Member price ({cur || "€"})</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                     value={fMember} onChangeText={setFMember}
@@ -284,7 +286,7 @@ export default function PrivateLessonsSettings() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: "#059669" }]}>Operator payout (€)</Text>
+                  <Text style={[styles.fieldLabel, { color: "#059669" }]}>Operator payout ({cur || "€"})</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                     value={fOperator} onChangeText={setFOperator}
@@ -310,7 +312,7 @@ export default function PrivateLessonsSettings() {
                   <Text style={{ fontSize: 12, color: colors.primary }}>
                     Association margin:{" "}
                     <Text style={{ fontWeight: "800" }}>
-                      {cents(Math.max(0, parseCents(fMember) - parseCents(fOperator)))}
+                      {cents(Math.max(0, parseCents(fMember) - parseCents(fOperator)), cur)}
                     </Text>
                     {" "}per lesson
                     {parseCents(fMember) > 0 ? ` (${Math.round(Math.max(0, parseCents(fMember) - parseCents(fOperator)) / parseCents(fMember) * 100)}%)` : ""}
@@ -353,7 +355,7 @@ export default function PrivateLessonsSettings() {
             { icon: "person-circle-outline", color: "#3B82F6", title: "Member books & pays", desc: "Member picks discipline + operator, selects a preferred date/time, and pays the full member price via Stripe." },
             { icon: "card-outline", color: "#059669", title: "Payment processed", desc: "Stripe processes the payment to your association account. A booking confirmation is created immediately." },
             { icon: "cash-outline", color: "#FBBF24", title: "Operator payroll auto-credited", desc: "The operator's payout is automatically added to their pending payroll for the current period — no manual entry needed." },
-            { icon: "checkmark-circle-outline", color: "#8B5CF6", title: "Operator confirms the slot", desc: "The operator sees the booking in their Invoicing screen and confirms (or requests to reschedule)." },
+            { icon: "checkmark-circle-outline", color: "#1E3A8A", title: "Operator confirms the slot", desc: "The operator sees the booking in their Invoicing screen and confirms (or requests to reschedule)." },
           ].map(({ icon, color, title, desc }) => (
             <View key={title} style={[styles.howRow, { borderColor: colors.border }]}>
               <View style={[styles.howIcon, { backgroundColor: color + "20" }]}>

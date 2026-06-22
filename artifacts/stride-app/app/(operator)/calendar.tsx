@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 
 const DAYS      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_HEADS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -48,7 +49,7 @@ function lessonColor(courseName: string): string {
   if (n.includes("swimming") || n.includes("aqua"))    return "#0EA5E9";
   if (n.includes("music") || n.includes("choir"))      return "#F59E0B";
   if (n.includes("art") || n.includes("painting"))     return "#FBBF24";
-  if (n.includes("sport") || n.includes("football"))   return "#7C3AED";
+  if (n.includes("sport") || n.includes("football"))   return "#1E3A8A";
   return "#6B7BA4";
 }
 
@@ -176,6 +177,7 @@ export default function OperatorCalendar() {
   const { courses } = useAppData();
   const { user } = useAuth();
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -666,7 +668,7 @@ export default function OperatorCalendar() {
                                   key={ev.id}
                                   style={{
                                     width: 6, height: 6, borderRadius: 1.5,
-                                    backgroundColor: ev.type === "event" ? "#F59E0B" : "#7C3AED",
+                                    backgroundColor: ev.type === "event" ? "#F59E0B" : "#1E3A8A",
                                   }}
                                 />
                               ))}
@@ -689,7 +691,7 @@ export default function OperatorCalendar() {
                     { label: "General",            color: "#F59E0B", round: true },
                     { label: "Other",              color: "#6B7BA4", round: true },
                     { label: "Event",              color: "#F59E0B", round: false },
-                    { label: "Meeting",            color: "#7C3AED", round: false },
+                    { label: "Meeting",            color: "#1E3A8A", round: false },
                   ].map(({ label, color, round }) => (
                     <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                       <View style={{ width: 8, height: 8, borderRadius: round ? 4 : 2, backgroundColor: color }} />
@@ -767,7 +769,7 @@ export default function OperatorCalendar() {
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                           <Ionicons name="cash-outline" size={13} color="#10B981" />
                           <Text style={{ fontSize: 13, color: "#065F46", fontWeight: "600" }}>
-                            {invite.payAmount ? `€${invite.payAmount} paid` : "Paid meeting"}
+                            {invite.payAmount ? `${cur}${invite.payAmount} paid` : "Paid meeting"}
                           </Text>
                         </View>
                       )}
@@ -813,11 +815,11 @@ export default function OperatorCalendar() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
-              <View style={[styles.eventIcon, { backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EDE9FE" }]}>
+              <View style={[styles.eventIcon, { backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EFF6FF" }]}>
                 <Ionicons
                   name={ev.type === "event" ? "star-outline" : ev.type === "meeting" ? "people-outline" : "musical-notes-outline"}
                   size={20}
-                  color={ev.type === "event" ? "#F59E0B" : "#7C3AED"}
+                  color={ev.type === "event" ? "#F59E0B" : "#1E3A8A"}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -1128,7 +1130,7 @@ export default function OperatorCalendar() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.subLabel}>Price (€, 0 = free)</Text>
+                  <Text style={styles.subLabel}>Price ({cur || "€"}, 0 = free)</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
                     placeholder="0"
@@ -1236,14 +1238,14 @@ export default function OperatorCalendar() {
 
                     {/* Events on this day */}
                     {dayEvs.map(ev => (
-                      <View key={ev.id} style={{ marginTop: 12, borderRadius: 12, borderWidth: 1.5, borderColor: ev.type === "event" ? "#F59E0B" : "#7C3AED", overflow: "hidden" }}>
-                        <View style={{ height: 4, backgroundColor: ev.type === "event" ? "#F59E0B" : "#7C3AED" }} />
+                      <View key={ev.id} style={{ marginTop: 12, borderRadius: 12, borderWidth: 1.5, borderColor: ev.type === "event" ? "#F59E0B" : "#1E3A8A", overflow: "hidden" }}>
+                        <View style={{ height: 4, backgroundColor: ev.type === "event" ? "#F59E0B" : "#1E3A8A" }} />
                         <View style={{ padding: 12, gap: 6 }}>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                             <Ionicons
                               name={ev.type === "event" ? "star-outline" : "people-outline"}
                               size={15}
-                              color={ev.type === "event" ? "#F59E0B" : "#7C3AED"}
+                              color={ev.type === "event" ? "#F59E0B" : "#1E3A8A"}
                             />
                             <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground, flex: 1 }}>{ev.title}</Text>
                           </View>
@@ -1314,13 +1316,13 @@ export default function OperatorCalendar() {
               const attendance  = eventAttendance[ev.id];
               const [evY, evM, evD] = ev.date.split("-");
               const displayDate = `${evD}/${evM}/${evY}`;
-              const accentColor = ev.type === "event" ? "#F59E0B" : "#7C3AED";
+              const accentColor = ev.type === "event" ? "#F59E0B" : "#1E3A8A";
 
               return (
                 <>
                   {/* Header bar */}
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 6 }}>
-                    <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EDE9FE", alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
                       <Ionicons
                         name={ev.type === "event" ? "star-outline" : ev.type === "meeting" ? "people-outline" : "musical-notes-outline"}
                         size={22}

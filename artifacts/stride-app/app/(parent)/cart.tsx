@@ -23,17 +23,18 @@ import { useRealtime } from "@/context/RealtimeContext";
 import { api } from "@/lib/api";
 import { validateEnrollment, type ParticipantInfo } from "@/utils/validateEnrollment";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 
 interface FlaggedItem { itemId: string; courseName: string; participantName: string; issue: string; }
 
 // ── Item type / package display helper ──────────────────────────────────────
 function itemMeta(item: CartItem): { icon: string; label: string; color: string } {
   const t = item.type;
-  if (t === "marketplace")  return { icon: "bag-outline",    label: "Product",                                              color: "#7C3AED" };
+  if (t === "marketplace")  return { icon: "bag-outline",    label: "Product",                                              color: "#1E3A8A" };
   if (t === "event_ticket") return { icon: "ticket-outline", label: `Ticket${(item.quantity ?? 1) > 1 ? ` ×${item.quantity}` : ""}`, color: "#D97706" };
   if (t === "membership")   return { icon: "id-card-outline",label: item.packageType === "annual" ? "Annual Membership" : "Monthly Membership", color: "#059669" };
   if (item.packageType === "fixedBlock")     return { icon: "layers-outline",   label: "Full Package",    color: "#1E3A8A" };
-  if (item.packageType === "monthlyBilling") return { icon: "calendar-outline", label: "Monthly Billing", color: "#7C3AED" };
+  if (item.packageType === "monthlyBilling") return { icon: "calendar-outline", label: "Monthly Billing", color: "#1E3A8A" };
   if (item.packageType === "annual")         return { icon: "refresh-outline",  label: "Annual Plan",     color: "#059669" };
   return { icon: "ticket-outline", label: "Single Lesson", color: "#6B7280" };
 }
@@ -56,6 +57,7 @@ function StatusBadge({ status }: { status: CartItemStatus }) {
 export default function CartScreen() {
   const router = useRouter();
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const { items, removeItem, clearCart, updateItemStatus, total, count } = useCart();
   const { children, courses } = useAppData();
@@ -301,7 +303,7 @@ export default function CartScreen() {
             <View key={item.id} style={[styles.itemCard, { backgroundColor: colors.card, opacity: item.status === "rejected" ? 0.7 : 1 }]}>
               <View style={styles.itemTop}>
                 <View style={[styles.itemTypeTag, {
-                  backgroundColor: item.packageType === "fixedBlock" ? colors.secondary : item.packageType === "monthlyBilling" ? "#EDE9FE" : colors.muted,
+                  backgroundColor: item.packageType === "fixedBlock" ? colors.secondary : item.packageType === "monthlyBilling" ? "#EFF6FF" : colors.muted,
                 }]}>
                   {(() => {
                     const m = itemMeta(item);
@@ -346,11 +348,11 @@ export default function CartScreen() {
                 const disc = calculateItemDiscount(item);
                 return disc > 0 ? (
                   <View style={{ alignItems: "flex-end" }}>
-                    <Text style={{ fontSize: 12, color: colors.mutedForeground, textDecorationLine: "line-through" }}>€{item.price.toFixed(2)}</Text>
-                    <Text style={[styles.itemPrice, { color: "#10B981" }]}>€{(item.price - disc).toFixed(2)}</Text>
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, textDecorationLine: "line-through" }}>{cur}{item.price.toFixed(2)}</Text>
+                    <Text style={[styles.itemPrice, { color: "#10B981" }]}>{cur}{(item.price - disc).toFixed(2)}</Text>
                   </View>
                 ) : (
-                  <Text style={[styles.itemPrice, { color: colors.primary }]}>€{item.price}</Text>
+                  <Text style={[styles.itemPrice, { color: colors.primary }]}>{cur}{item.price}</Text>
                 );
               })()}
               </View>
@@ -456,13 +458,13 @@ export default function CartScreen() {
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
                   {promoDiscount > 0 && (
-                    <Text style={{ fontSize: 12, color: colors.mutedForeground, textDecorationLine: "line-through" }}>€{payableTotal.toFixed(2)}</Text>
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, textDecorationLine: "line-through" }}>{cur}{payableTotal.toFixed(2)}</Text>
                   )}
                   <Text style={[styles.totalAmount, { color: promoDiscount > 0 ? "#10B981" : colors.primary }]}>
-                    €{discountedPayableTotal.toFixed(2)}
+                    {cur}{discountedPayableTotal.toFixed(2)}
                   </Text>
                   {promoDiscount > 0 && (
-                    <Text style={{ fontSize: 11, color: "#10B981" }}>save €{promoDiscount.toFixed(2)}</Text>
+                    <Text style={{ fontSize: 11, color: "#10B981" }}>save {cur}{promoDiscount.toFixed(2)}</Text>
                   )}
                 </View>
               </View>
@@ -589,7 +591,7 @@ export default function CartScreen() {
                     {validatedReady.length > 0 && (
                       <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: validatedFlagged.length > 0 ? 1 : 2 }]} onPress={handlePayReady}>
                         <Ionicons name="card-outline" size={15} color="#FFF" />
-                        <Text style={styles.modalBtnText}>Pay {validatedReady.length > 0 ? `(€${validatedReady.reduce((s, i) => s + i.price, 0)})` : ""}</Text>
+                        <Text style={styles.modalBtnText}>Pay {validatedReady.length > 0 ? `(${cur}${validatedReady.reduce((s, i) => s + i.price, 0)})` : ""}</Text>
                       </Pressable>
                     )}
                   </View>
@@ -606,7 +608,7 @@ export default function CartScreen() {
                   </Text>
                   {validatedReady.length > 0 && (
                     <Text style={[styles.successDesc, { color: colors.primary, fontWeight: "600" }]}>
-                      {validatedReady.length} item{validatedReady.length !== 1 ? "s" : ""} (€{validatedReady.reduce((s, i) => s + i.price, 0)}) ready for payment.
+                      {validatedReady.length} item{validatedReady.length !== 1 ? "s" : ""} ({cur}{validatedReady.reduce((s, i) => s + i.price, 0)}) ready for payment.
                     </Text>
                   )}
                   <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>

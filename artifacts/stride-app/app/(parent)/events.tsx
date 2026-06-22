@@ -21,11 +21,11 @@ import {
 
 const CATEGORIES: Record<string, { icon: string; color: string }> = {
   general:   { icon: "calendar-outline",   color: "#1E3A8A" },
-  concert:   { icon: "musical-notes",      color: "#7C3AED" },
+  concert:   { icon: "musical-notes",      color: "#1E3A8A" },
   sports:    { icon: "football-outline",   color: "#059669" },
   seminar:   { icon: "school-outline",     color: "#D97706" },
-  social:    { icon: "people-outline",     color: "#DB2777" },
-  workshop:  { icon: "construct-outline",  color: "#0284C7" },
+  social:    { icon: "people-outline",     color: "#FBBF24" },
+  workshop:  { icon: "construct-outline",  color: "#1E3A8A" },
 };
 
 function fmtDate(d: string) {

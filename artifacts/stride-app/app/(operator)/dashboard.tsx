@@ -30,6 +30,7 @@ import { type QrScanParams, useOfflineSync } from "@/context/OfflineSyncContext"
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, request, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact, type ChildTransitWarning } from "@/lib/api";
 import {
   CASCADE_TIMEOUT_SECS,
@@ -317,6 +318,7 @@ export default function OperatorDashboard() {
   const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts, triggerAccessAlert } = useSecurityEscalation();
   const { isOnline, enqueue, pendingCount: offlinePendingCount } = useOfflineSync();
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -829,7 +831,7 @@ export default function OperatorDashboard() {
           attended_at: r.attended_at,
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        pushLog({ time: nowTime(), action: `✓ Lesson completed — €${(r.earnings_cents / 100).toFixed(2)} earned`, type: "success" });
+        pushLog({ time: nowTime(), action: `✓ Lesson completed — ${cur}${(r.earnings_cents / 100).toFixed(2)} earned`, type: "success" });
         setTimeout(() => { setLessonScanResult(null); setScanned(false); setShowScanner(false); }, 5000);
       } catch (err) {
         Alert.alert("Scan Error", (err as Error).message ?? "Could not mark lesson as complete.");
@@ -1380,31 +1382,31 @@ export default function OperatorDashboard() {
 
         {/* ── Rescue Cascade Requests ── */}
         {rescuePending.length > 0 && (
-          <View style={{ backgroundColor: "#1A0A2E", borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1.5, borderColor: "#7C3AED" }}>
+          <View style={{ backgroundColor: "#0F2561", borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1.5, borderColor: "#1E3A8A" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: "rgba(124,58,237,0.2)", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="git-network-outline" size={16} color="#A78BFA" />
+              <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: "rgba(30,58,138,0.2)", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="git-network-outline" size={16} color="#FBBF24" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFF" }}>
                   Rescue Request{rescuePending.length > 1 ? "s" : ""} ({rescuePending.length})
                 </Text>
-                <Text style={{ fontSize: 10.5, color: "#A78BFA", marginTop: 1 }}>
+                <Text style={{ fontSize: 10.5, color: "#FBBF24", marginTop: 1 }}>
                   You have been selected to cover a class
                 </Text>
               </View>
-              <View style={{ backgroundColor: "#7C3AED", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+              <View style={{ backgroundColor: "#FBBF24", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
                 <Text style={{ color: "#FFF", fontSize: 9, fontWeight: "800", letterSpacing: 0.5 }}>URGENT</Text>
               </View>
             </View>
             {rescuePending.map(contact => (
-              <View key={contact.id} style={{ backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: "rgba(124,58,237,0.3)" }}>
+              <View key={contact.id} style={{ backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: "rgba(30,58,138,0.5)" }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
                   <Ionicons name="calendar-outline" size={13} color="rgba(255,255,255,0.4)" />
                   <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13, flex: 1 }} numberOfLines={1}>
                     {(contact as CascadeContact & { course_name?: string }).course_name ?? "Class cover request"}
                   </Text>
-                  <Text style={{ color: "#A78BFA", fontSize: 10, fontWeight: "700" }}>
+                  <Text style={{ color: "#FBBF24", fontSize: 10, fontWeight: "700" }}>
                     #{contact.rank} candidate
                   </Text>
                 </View>
@@ -1427,7 +1429,7 @@ export default function OperatorDashboard() {
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   <Pressable
                     disabled={rescueAcking === contact.id}
-                    style={({ pressed }) => [{ flex: 1, backgroundColor: "#7C3AED", borderRadius: 10, paddingVertical: 11, alignItems: "center", opacity: pressed || rescueAcking === contact.id ? 0.7 : 1 }]}
+                    style={({ pressed }) => [{ flex: 1, backgroundColor: "#1E3A8A", borderRadius: 10, paddingVertical: 11, alignItems: "center", opacity: pressed || rescueAcking === contact.id ? 0.7 : 1 }]}
                     onPress={() => handleRescueAck(contact, true)}
                   >
                     {rescueAcking === contact.id
@@ -1864,7 +1866,7 @@ export default function OperatorDashboard() {
               { icon: "time-outline"     as const, label: "Time",     value: selectedBooking ? `${selectedBooking.start_time} – ${selectedBooking.end_time}` : "—" },
               { icon: "location-outline" as const, label: "Location", value: selectedBooking?.location ?? "—" },
               { icon: "person-outline"   as const, label: "Member",   value: selectedBooking?.child?.name ?? "—" },
-              { icon: "cash-outline"     as const, label: "Fee",      value: selectedBooking ? `€${((selectedBooking.price_cents ?? 0) / 100).toFixed(2)}` : "—" },
+              { icon: "cash-outline"     as const, label: "Fee",      value: selectedBooking ? `${cur}${((selectedBooking.price_cents ?? 0) / 100).toFixed(2)}` : "—" },
             ].map(({ icon, label, value }) => (
               <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
                 <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${colors.primary}10`, alignItems: "center", justifyContent: "center" }}>
@@ -2076,7 +2078,7 @@ export default function OperatorDashboard() {
                   {activeAlert?.cascadeStep === 4 ? "🔴 RED ALERT" : "⚡ Substitution Cascade"}
                 </Text>
                 <Text style={styles.cascadeSubtitle}>
-                  {activeAlert?.lessonName} · {activeAlert?.operatorName ?? activeAlert?.teacherName}
+                  {activeAlert?.lessonName} · {activeAlert?.teacherName}
                 </Text>
               </View>
               <Pressable onPress={() => setShowCascade(false)}>
@@ -2183,7 +2185,7 @@ export default function OperatorDashboard() {
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#10B981" }]} onPress={simulateLessonScan}>
                 <Text style={styles.simulateBtnText}>Simulate Private Lesson QR</Text>
               </Pressable>
-              <Pressable style={[styles.simulateBtn, { backgroundColor: "#7C3AED" }]} onPress={simulateGuardianScan}>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#1E3A8A" }]} onPress={simulateGuardianScan}>
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C" }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
@@ -2322,14 +2324,14 @@ export default function OperatorDashboard() {
 
           {/* Guardian pickup result */}
           {guardianResult && (
-            <View style={[styles.guardianPanel, { backgroundColor: guardianResult.isSocialArrival ? "#064E3B" : guardianResult.isAuthorized ? "#4C1D95" : "#7F1D1D" }]}>
+            <View style={[styles.guardianPanel, { backgroundColor: guardianResult.isSocialArrival ? "#064E3B" : guardianResult.isAuthorized ? "#0F2561" : "#7F1D1D" }]}>
               <View style={styles.guardianHeader}>
-                <View style={[styles.guardianIconWrap, { backgroundColor: guardianResult.isSocialArrival ? "rgba(52,211,153,0.2)" : guardianResult.isAuthorized ? "rgba(167,139,250,0.25)" : "rgba(252,165,165,0.25)" }]}>
-                  <Ionicons name={guardianResult.isSocialArrival ? "time-outline" : guardianResult.isAuthorized ? "shield-checkmark" : "shield-outline"} size={28} color={guardianResult.isSocialArrival ? "#34D399" : guardianResult.isAuthorized ? "#A78BFA" : "#FCA5A5"} />
+                <View style={[styles.guardianIconWrap, { backgroundColor: guardianResult.isSocialArrival ? "rgba(52,211,153,0.2)" : guardianResult.isAuthorized ? "rgba(30,58,138,0.25)" : "rgba(252,165,165,0.25)" }]}>
+                  <Ionicons name={guardianResult.isSocialArrival ? "time-outline" : guardianResult.isAuthorized ? "shield-checkmark" : "shield-outline"} size={28} color={guardianResult.isSocialArrival ? "#34D399" : guardianResult.isAuthorized ? "#FBBF24" : "#FCA5A5"} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.guardianTitle}>
-                    {guardianResult.isSocialArrival ? "Early Arrival" : guardianResult.isAuthorized ? "Ritiro Autorizzato ✓" : "Ritiro NON Autorizzato ✗"}
+                    {guardianResult.isSocialArrival ? "Early Arrival" : guardianResult.isAuthorized ? "Authorised Pickup ✓" : "Pickup NOT Authorised ✗"}
                   </Text>
                   <Text style={styles.guardianSub}>{guardianResult.relationship}</Text>
                 </View>
@@ -2456,7 +2458,7 @@ export default function OperatorDashboard() {
               <View style={styles.lessonScanEarnings}>
                 <Ionicons name="cash-outline" size={18} color="#FBBF24" />
                 <Text style={styles.lessonScanEarningsText}>
-                  €{(lessonScanResult.earnings_cents / 100).toFixed(2)} earned
+                  {cur}{(lessonScanResult.earnings_cents / 100).toFixed(2)} earned
                 </Text>
               </View>
               <Text style={styles.lessonScanInvoice}>{lessonScanResult.invoice_number}</Text>
@@ -2505,7 +2507,7 @@ export default function OperatorDashboard() {
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#10B981", marginTop: 10 }]} onPress={simulateLessonScan}>
                 <Text style={styles.simulateBtnText}>Simulate Private Lesson QR</Text>
               </Pressable>
-              <Pressable style={[styles.simulateBtn, { backgroundColor: "#7C3AED", marginTop: 10 }]} onPress={simulateGuardianScan}>
+              <Pressable style={[styles.simulateBtn, { backgroundColor: "#1E3A8A", marginTop: 10 }]} onPress={simulateGuardianScan}>
                 <Text style={styles.simulateBtnText}>Simulate Guardian Pickup QR</Text>
               </Pressable>
               <Pressable style={[styles.simulateBtn, { backgroundColor: "#EA580C", marginTop: 10 }]} onPress={() => { setShowScanner(false); simulateAbsenceAlert(); }}>
@@ -2782,7 +2784,7 @@ export default function OperatorDashboard() {
 
                 <Pressable style={[styles.sosResolveBtn, { marginTop: 8 }]} onPress={() => setSosPhase("type")}>
                   <Ionicons name="arrow-back" size={16} color="rgba(255,255,255,0.6)" />
-                  <Text style={[styles.sosResolveBtnText, { color: "rgba(255,255,255,0.6)" }]}>Indietro</Text>
+                  <Text style={[styles.sosResolveBtnText, { color: "rgba(255,255,255,0.6)" }]}>Back</Text>
                 </Pressable>
               </>
             )}

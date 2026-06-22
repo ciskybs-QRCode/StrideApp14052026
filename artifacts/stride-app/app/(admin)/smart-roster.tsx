@@ -371,11 +371,11 @@ export default function SmartRosterScreen() {
               (Skill Match × 0.6) + (Reliability × 0.4)
             </Text>
             <View style={s.formulaRow}>
-              <View style={[s.formulaChip, { borderColor: "#7C3AED33", backgroundColor: "#7C3AED0A", flex: 1 }]}>
-                <Ionicons name="school-outline" size={13} color="#7C3AED" />
+              <View style={[s.formulaChip, { borderColor: "#1E3A8A33", backgroundColor: "#1E3A8A0A", flex: 1 }]}>
+                <Ionicons name="school-outline" size={13} color="#1E3A8A" />
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.formulaChipPct, { color: "#7C3AED" }]}>60%</Text>
-                  <Text style={[s.formulaChipTxt, { color: "#7C3AED" }]} numberOfLines={1}>Skill Match</Text>
+                  <Text style={[s.formulaChipPct, { color: "#1E3A8A" }]}>60%</Text>
+                  <Text style={[s.formulaChipTxt, { color: "#1E3A8A" }]} numberOfLines={1}>Skill Match</Text>
                 </View>
               </View>
               <View style={[s.formulaChip, { borderColor: "#10B98133", backgroundColor: "#10B9810A", flex: 1 }]}>
@@ -637,7 +637,7 @@ export default function SmartRosterScreen() {
               <Text style={[s.cardTitle, { color: colors.foreground }]}>How Scores Are Calculated</Text>
             </View>
             {[
-              { pct: "60%", icon: "school-outline"           as const, color: "#7C3AED", label: "Skill Match — discipline qualifications + completed sessions for this course" },
+              { pct: "60%", icon: "school-outline"           as const, color: "#1E3A8A", label: "Skill Match — discipline qualifications + completed sessions for this course" },
               { pct: "40%", icon: "shield-checkmark-outline" as const, color: "#10B981", label: "Reliability Score — attendance rate (60%) + cascade acceptance rate (40%)" },
             ].map(item => (
               <View key={item.pct} style={s.infoRow}>

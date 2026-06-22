@@ -97,7 +97,7 @@ const TRIGGERS = [
     key:     "payment-received",
     icon:    "card" as const,
     label:   "Payment Received",
-    color:   "#0891B2",
+    color:   "#1E3A8A",
     method:  "POST" as const,
     path:    "/dev/trigger/payment-received",
   },
@@ -134,23 +134,23 @@ const TYPE_BADGE: Record<string, { color: string; bg: string; icon: keyof typeof
   achievement:              { color: "#059669", bg: "#D1FAE5", icon: "trophy-outline" },
   private_lesson_approved:  { color: "#059669", bg: "#D1FAE5", icon: "ribbon-outline" },
   reimbursement:            { color: "#059669", bg: "#D1FAE5", icon: "cash-outline" },
-  // ── Blue / informational ───────────────────────────────────────────────────
-  chat_message:             { color: "#0284C7", bg: "#E0F2FE", icon: "chatbubble-outline" },
-  document:                 { color: "#0284C7", bg: "#E0F2FE", icon: "document-text-outline" },
-  meeting:                  { color: "#0891B2", bg: "#CFFAFE", icon: "people-outline" },
+  // ── Navy / informational ──────────────────────────────────────────────────
+  chat_message:             { color: "#1E3A8A", bg: "#EFF6FF", icon: "chatbubble-outline" },
+  document:                 { color: "#1E3A8A", bg: "#EFF6FF", icon: "document-text-outline" },
+  meeting:                  { color: "#1E3A8A", bg: "#EFF6FF", icon: "people-outline" },
   course_assignment:        { color: "#1E3A8A", bg: "#DBEAFE", icon: "school-outline" },
   course_pending_confirmation: { color: "#1E3A8A", bg: "#DBEAFE", icon: "time-outline" },
   private_lesson_proposed:  { color: "#1E3A8A", bg: "#DBEAFE", icon: "calendar-outline" },
   // ── Purple / system ────────────────────────────────────────────────────────
-  broadcast:                { color: "#7C3AED", bg: "#EDE9FE", icon: "megaphone-outline" },
-  promo:                    { color: "#7C3AED", bg: "#EDE9FE", icon: "pricetag-outline" },
+  broadcast:                { color: "#1E3A8A", bg: "#EFF6FF", icon: "megaphone-outline" },
+  promo:                    { color: "#1E3A8A", bg: "#EFF6FF", icon: "pricetag-outline" },
   // ── Gold / operational ────────────────────────────────────────────────────
   substitute_request:       { color: "#B45309", bg: "#FEF3C7", icon: "swap-horizontal" },
   lesson_decision:          { color: "#B45309", bg: "#FEF3C7", icon: "checkmark-done-circle-outline" },
   lesson_disruption:        { color: "#B45309", bg: "#FEF3C7", icon: "alert-outline" },
-  feedback:                 { color: "#6366F1", bg: "#EDE9FE", icon: "star-outline" },
-  compliance:               { color: "#6366F1", bg: "#EDE9FE", icon: "shield-checkmark-outline" },
-  material:                 { color: "#6366F1", bg: "#EDE9FE", icon: "book-outline" },
+  feedback:                 { color: "#1E3A8A", bg: "#EFF6FF", icon: "star-outline" },
+  compliance:               { color: "#1E3A8A", bg: "#EFF6FF", icon: "shield-checkmark-outline" },
+  material:                 { color: "#1E3A8A", bg: "#EFF6FF", icon: "book-outline" },
 };
 
 function typeBadgeCfg(type: string) {

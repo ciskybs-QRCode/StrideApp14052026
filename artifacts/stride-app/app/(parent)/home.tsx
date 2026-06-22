@@ -31,6 +31,7 @@ import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useFeatures } from "@/context/FeaturesContext";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, listEvents } from "@/lib/api";
 import { SOSButton } from "@/components/SOSButton";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
@@ -73,6 +74,7 @@ export default function ParentHome() {
   const { activeAlerts, dismissAlert } = useSecurityEscalation();
   const accessDeniedAlerts = activeAlerts.filter(a => a.type === "access_denied");
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [showQR, setShowQR] = useState(false);
@@ -681,7 +683,7 @@ export default function ParentHome() {
 
         {/* ── Events Banner (only when org has published events + plan) ── */}
         {hasPublishedEvents && planCan("events") && <Pressable
-          style={({ pressed }) => [styles.marketplaceBanner, { backgroundColor: "#7C3AED", transform: pressed ? [{ scale: 0.98 }] : [] }]}
+          style={({ pressed }) => [styles.marketplaceBanner, { backgroundColor: "#1E3A8A", transform: pressed ? [{ scale: 0.98 }] : [] }]}
           onPress={() => router.push("/(parent)/events" as Parameters<typeof router.push>[0])}
         >
           <View style={styles.marketplaceBannerLeft}>
@@ -955,7 +957,7 @@ export default function ParentHome() {
                 ...(dateTime  ? [{ icon: "time-outline",     label: "Schedule",    value: dateTime  }] : []),
                 ...(location  ? [{ icon: "location-outline", label: "Location",    value: location  }] : []),
                 { icon: "people-outline", label: "Participant", value: selectedLesson.participantName },
-                { icon: "card-outline",   label: "Amount Paid", value: `€${selectedLesson.price.toFixed(2)}` },
+                { icon: "card-outline",   label: "Amount Paid", value: `${cur}${selectedLesson.price.toFixed(2)}` },
               ];
               return (
                 <ScrollView style={{ width: "100%" }} showsVerticalScrollIndicator={false} bounces={false}>

@@ -297,7 +297,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     teacherId: "t4", teacherName: "Mark Parker",
     duration: 45, capacity: 25, enrolled: 18, status: "draft",
     enrollment: { waitlistEnabled: true, memberOnly: false, requireApproval: true, enrolmentOpenDate: "", enrolmentCloseDate: "", currencyCode: "EUR", trialEnabled: true, trialSessions: 1, dropIn: true, dropInPrice: 20, fixedBlock: true, fixedBlockLessons: 5, fixedBlockPrice: 80, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1, annual: false, annualPrice: 0, annualEndDate: "", annualPayDay: 1 },
-    color: "#7C3AED",
+    color: "#1E3A8A",
   },
 ];
 
@@ -341,7 +341,7 @@ const BLANK_ADMIN_ITEM = (): Omit<AdminScheduleItem, "id"> => ({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const TYPE_COLORS = ["#1E3A8A","#7C3AED","#0D9488","#D97706","#10B981","#EF4444"];
+const TYPE_COLORS = ["#1E3A8A","#FBBF24","#0D9488","#D97706","#10B981","#EF4444"];
 const nextColor = (i: number) => TYPE_COLORS[i % TYPE_COLORS.length];
 
 const fmtDuration = (min: number) =>
@@ -1780,7 +1780,7 @@ export default function ActivityScreen() {
             <View style={styles.pickerWrap}>
               {([
                 { value: "lesson"   as const, label: "Lesson",   color: "#1E3A8A", bg: "#DBEAFE" },
-                { value: "seminar"  as const, label: "Seminar",  color: "#7C3AED", bg: "#EDE9FE" },
+                { value: "seminar"  as const, label: "Seminar",  color: "#1E3A8A", bg: "#EFF6FF" },
                 { value: "workshop" as const, label: "Workshop", color: "#D97706", bg: "#FEF3C7" },
                 { value: "meeting"  as const, label: "Meeting",  color: "#0D9488", bg: "#CCFBF1" },
               ]).map(o => {

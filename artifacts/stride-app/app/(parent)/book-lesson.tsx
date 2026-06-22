@@ -397,9 +397,9 @@ export default function BookLessonScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.optionTitle, { color: colors.foreground }]}>{op.name}</Text>
                     {op.bio ? <Text style={[styles.optionSub, { color: colors.mutedForeground }]} numberOfLines={2}>{op.bio}</Text> : null}
-                    <View style={[styles.profileTypeBadge, { backgroundColor: op.profileType === "paid" ? "#FEF9C3" : "#EDE9FE" }]}>
-                      <Ionicons name={op.profileType === "paid" ? "cash-outline" : "heart-outline"} size={11} color={op.profileType === "paid" ? "#92400E" : "#6D28D9"} />
-                      <Text style={[styles.profileTypeText, { color: op.profileType === "paid" ? "#92400E" : "#6D28D9" }]}>
+                    <View style={[styles.profileTypeBadge, { backgroundColor: op.profileType === "paid" ? "#FEF9C3" : "#EFF6FF" }]}>
+                      <Ionicons name={op.profileType === "paid" ? "cash-outline" : "heart-outline"} size={11} color={op.profileType === "paid" ? "#1E3A8A" : "#FBBF24"} />
+                      <Text style={[styles.profileTypeText, { color: op.profileType === "paid" ? "#1E3A8A" : "#B45309" }]}>
                         {op.profileType === "paid" ? "Professional" : "Volunteer"}
                       </Text>
                     </View>

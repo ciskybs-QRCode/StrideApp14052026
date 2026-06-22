@@ -272,8 +272,8 @@ export default function SAOrgDetailScreen() {
                     {org.subscription_status.charAt(0).toUpperCase() + org.subscription_status.slice(1)}
                   </Text>
                 </View>
-                <View style={[s.statPill, { backgroundColor: "#F5F3FF" }]}>
-                  <Text style={[s.statPillText, { color: "#7C3AED" }]}>
+                <View style={[s.statPill, { backgroundColor: "#EFF6FF" }]}>
+                  <Text style={[s.statPillText, { color: "#1E3A8A" }]}>
                     {org.plan_tier.charAt(0).toUpperCase() + org.plan_tier.slice(1)}
                   </Text>
                 </View>

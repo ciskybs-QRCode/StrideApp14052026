@@ -477,9 +477,9 @@ export default function LegalPrivacyPage() {
         </View>
 
         {mandatoryCount > 0 && (
-          <View style={[styles.callout, { backgroundColor: "#EDE9FE" }]}>
-            <Ionicons name="lock-closed-outline" size={18} color="#7C3AED" />
-            <Text style={[styles.calloutText, { color: "#5B21B6" }]}>
+          <View style={[styles.callout, { backgroundColor: "#EFF6FF" }]}>
+            <Ionicons name="lock-closed-outline" size={18} color="#1E3A8A" />
+            <Text style={[styles.calloutText, { color: "#1E3A8A" }]}>
               {mandatoryCount} mandatory document{mandatoryCount !== 1 ? "s" : ""} will block member access until signed.
             </Text>
           </View>
@@ -650,8 +650,8 @@ export default function LegalPrivacyPage() {
                         {row.user_email ?? `User ${row.user_id}`}
                       </Text>
                       {row.selected_option && (
-                        <View style={{ backgroundColor: "#EDE9FE", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                          <Text style={{ fontSize: 10, fontWeight: "700", color: "#7C3AED" }}>{row.selected_option.replace("_", " ")}</Text>
+                        <View style={{ backgroundColor: "#EFF6FF", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 10, fontWeight: "700", color: "#1E3A8A" }}>{row.selected_option.replace("_", " ")}</Text>
                         </View>
                       )}
                     </View>
@@ -879,7 +879,7 @@ export default function LegalPrivacyPage() {
               <View style={styles.toggleRow}>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Ionicons name="lock-closed-outline" size={16} color="#7C3AED" />
+                    <Ionicons name="lock-closed-outline" size={16} color="#1E3A8A" />
                     <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Mandatory Signature</Text>
                   </View>
                   <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Blocks app access until signed</Text>
@@ -887,16 +887,16 @@ export default function LegalPrivacyPage() {
                 <Switch
                   value={newMandatory}
                   onValueChange={setNewMandatory}
-                  trackColor={{ false: colors.muted, true: "#EDE9FE" }}
-                  thumbColor={newMandatory ? "#7C3AED" : "#9CA3AF"}
+                  trackColor={{ false: colors.muted, true: "#1E3A8A" }}
+                  thumbColor={newMandatory ? "#FBBF24" : "#9CA3AF"}
                 />
               </View>
             </View>
 
             {newMandatory && (
-              <View style={[styles.callout, { backgroundColor: "#EDE9FE", marginTop: 12 }]}>
-                <Ionicons name="information-circle-outline" size={16} color="#7C3AED" />
-                <Text style={[styles.calloutText, { color: "#5B21B6" }]}>
+              <View style={[styles.callout, { backgroundColor: "#EFF6FF", marginTop: 12 }]}>
+                <Ionicons name="information-circle-outline" size={16} color="#1E3A8A" />
+                <Text style={[styles.calloutText, { color: "#1E3A8A" }]}>
                   All users will see a blocking screen until they sign this document.
                 </Text>
               </View>
@@ -954,9 +954,9 @@ export default function LegalPrivacyPage() {
                       </View>
                     )}
                     {doc.mandatorySignature && (
-                      <View style={[styles.flagBadge, { backgroundColor: "#EDE9FE" }]}>
-                        <Ionicons name="lock-closed" size={9} color="#7C3AED" />
-                        <Text style={[styles.flagText, { color: "#7C3AED" }]}>Mandatory Signature</Text>
+                      <View style={[styles.flagBadge, { backgroundColor: "#EFF6FF" }]}>
+                        <Ionicons name="lock-closed" size={9} color="#1E3A8A" />
+                        <Text style={[styles.flagText, { color: "#1E3A8A" }]}>Mandatory Signature</Text>
                       </View>
                     )}
                   </View>
@@ -1034,11 +1034,11 @@ export default function LegalPrivacyPage() {
                       </Text>
                     </Pressable>
                     <Pressable
-                      style={[styles.toggleSmall, { backgroundColor: doc.mandatorySignature ? "#EDE9FE" : colors.muted }]}
+                      style={[styles.toggleSmall, { backgroundColor: doc.mandatorySignature ? "#EFF6FF" : colors.muted }]}
                       onPress={() => { updateLegalDoc(doc.id, { mandatorySignature: !doc.mandatorySignature }); setShowDetail({ ...doc, mandatorySignature: !doc.mandatorySignature }); }}
                     >
-                      <Ionicons name="lock-closed-outline" size={13} color={doc.mandatorySignature ? "#7C3AED" : colors.mutedForeground} />
-                      <Text style={[styles.toggleSmallText, { color: doc.mandatorySignature ? "#7C3AED" : colors.mutedForeground }]}>
+                      <Ionicons name="lock-closed-outline" size={13} color={doc.mandatorySignature ? "#1E3A8A" : colors.mutedForeground} />
+                      <Text style={[styles.toggleSmallText, { color: doc.mandatorySignature ? "#1E3A8A" : colors.mutedForeground }]}>
                         {doc.mandatorySignature ? "Remove Mandatory" : "Make Mandatory"}
                       </Text>
                     </Pressable>

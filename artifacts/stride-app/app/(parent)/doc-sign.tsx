@@ -80,7 +80,7 @@ export default function DocSignScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title={doc.title} subtitle="Firma obbligatoria" light
+      <ScreenHeader title={doc.title} subtitle="Mandatory Signature" light
         right={
           <View style={s.mandatoryBadge}>
             <Ionicons name="lock-closed" size={12} color="#EF4444" />
@@ -132,12 +132,12 @@ export default function DocSignScreen() {
             {checkboxTicked && <Ionicons name="checkmark" size={14} color="#FFF" />}
           </View>
           <Text style={[s.checkLabel, { color: colors.foreground }]}>
-            Ho letto, compreso e accetto i termini del documento.
+            I have read, understood and accept the terms of this document.
           </Text>
         </Pressable>
 
         <View style={{ opacity: padUnlocked ? 1 : 0.3 }} pointerEvents={padUnlocked ? "auto" : "none"}>
-          <Text style={[s.padLabel, { color: colors.mutedForeground }]}>FIRMA / SIGNATURE</Text>
+          <Text style={[s.padLabel, { color: colors.mutedForeground }]}>SIGNATURE</Text>
           <SignaturePad onHasSignatureChange={setHasSignature} strokeColor={colors.primary} />
         </View>
 

@@ -38,7 +38,7 @@ function attachmentIcon(a: ApiAttachmentItem): { icon: keyof typeof Ionicons.gly
   const m = a.mimeType;
   if (m === "text/uri-list")                               return { icon: "link-outline",          color: "#3B82F6" };
   if (m.startsWith("image/"))                              return { icon: "image-outline",        color: "#3B82F6" };
-  if (m.startsWith("video/"))                              return { icon: "videocam-outline",     color: "#8B5CF6" };
+  if (m.startsWith("video/"))                              return { icon: "videocam-outline",     color: "#1E3A8A" };
   if (m.startsWith("audio/"))                              return { icon: "musical-note-outline", color: "#F59E0B" };
   if (m.includes("pdf"))                                   return { icon: "document-text-outline", color: "#EF4444" };
   if (m.includes("spreadsheet") || /\.(xls|xlsx)/i.test(a.name)) return { icon: "grid-outline", color: "#16A34A" };

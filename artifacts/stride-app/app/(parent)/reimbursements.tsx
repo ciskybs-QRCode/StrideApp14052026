@@ -119,15 +119,15 @@ export default function ParentReimbursementsScreen() {
 
   const handleSubmit = async () => {
     if (!desc.trim()) {
-      Alert.alert("Campi obbligatori", "Inserisci una descrizione per la richiesta.");
+      Alert.alert("Required", "Please enter a description for your request.");
       return;
     }
     if (amountCents <= 0 || isNaN(amountCents)) {
-      Alert.alert("Importo non valido", "Inserisci un importo valido.");
+      Alert.alert("Invalid Amount", "Please enter a valid amount.");
       return;
     }
     if (needsReceipt && !receiptUrl.trim()) {
-      Alert.alert("Ricevuta richiesta", `Gli importi superiori a ${formatAmount(thresholdCents, orgCurrency)} richiedono una ricevuta o un link al file.`);
+      Alert.alert("Receipt Required", `Amounts over ${formatAmount(thresholdCents, orgCurrency)} require a receipt or a link to the file.`);
       return;
     }
 
@@ -202,7 +202,7 @@ export default function ParentReimbursementsScreen() {
           style={[styles.newBtn, { backgroundColor: colors.primary }]}
         >
           <Ionicons name="add-circle-outline" size={20} color="#fff" />
-          <Text style={styles.newBtnText}>Nuova richiesta di rimborso</Text>
+          <Text style={styles.newBtnText}>New Reimbursement Request</Text>
         </Pressable>
 
         {/* ── THRESHOLD INFO ── */}
@@ -210,7 +210,7 @@ export default function ParentReimbursementsScreen() {
           <View style={[styles.infoBox, { backgroundColor: "#FEF3C710", borderColor: "#F59E0B30" }]}>
             <Ionicons name="information-circle-outline" size={18} color="#F59E0B" />
             <Text style={[styles.infoText, { color: "#92400E" }]}>
-              Gli importi superiori a {formatAmount(thresholdCents, orgCurrency)} richiedono una ricevuta o link allegato.
+              Amounts over {formatAmount(thresholdCents, orgCurrency)} require a receipt or attached link.
             </Text>
           </View>
         )}
@@ -257,20 +257,20 @@ export default function ParentReimbursementsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
             <View style={styles.handleBar} />
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Nuova richiesta</Text>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>New Request</Text>
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Descrizione *</Text>
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Description *</Text>
             <TextInput
               value={desc}
               onChangeText={setDesc}
               multiline
               numberOfLines={2}
-              placeholder="Es. Acquisto materiale didattico"
+              placeholder="e.g. Purchase of training materials"
               placeholderTextColor={colors.mutedForeground}
               style={[styles.textArea, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Importo *</Text>
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Amount *</Text>
             <View style={[styles.amtRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
               <Text style={[styles.currencyText, { color: colors.mutedForeground }]}>{currencySymbol(orgCurrency)}</Text>
               <TextInput
@@ -287,13 +287,13 @@ export default function ParentReimbursementsScreen() {
               <View style={[styles.warningBox, { backgroundColor: "#FEF3C710", borderColor: "#F59E0B30" }]}>
                 <Ionicons name="alert-circle-outline" size={16} color="#F59E0B" />
                 <Text style={[styles.warningText, { color: "#92400E" }]}>
-                  Ricevuta richiesta per importi &gt; {formatAmount(thresholdCents, orgCurrency)}
+                  Receipt required for amounts &gt; {formatAmount(thresholdCents, orgCurrency)}
                 </Text>
               </View>
             )}
 
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
-              Link ricevuta{needsReceipt ? " *" : " (opzionale)"}
+              Receipt link{needsReceipt ? " *" : " (optional)"}
             </Text>
             <View style={[styles.amtRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
               <Ionicons name="link-outline" size={18} color={colors.mutedForeground} />

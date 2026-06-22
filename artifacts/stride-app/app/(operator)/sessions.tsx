@@ -62,9 +62,9 @@ function StatusBadge({ status, method }: { status: RosterStatus; method: CheckIn
   if (status === "present") {
     const isQr = method === "qr";
     return (
-      <View style={[badge.pill, { backgroundColor: isQr ? "#DCFCE7" : "#EDE9FE" }]}>
-        <Ionicons name={isQr ? "qr-code" : "hand-left"} size={11} color={isQr ? "#15803D" : "#7C3AED"} />
-        <Text style={[badge.text, { color: isQr ? "#15803D" : "#7C3AED" }]}>
+      <View style={[badge.pill, { backgroundColor: isQr ? "#DCFCE7" : "#EFF6FF" }]}>
+        <Ionicons name={isQr ? "qr-code" : "hand-left"} size={11} color={isQr ? "#15803D" : "#1E3A8A"} />
+        <Text style={[badge.text, { color: isQr ? "#15803D" : "#1E3A8A" }]}>
           {isQr ? "QR Check-In" : "Manual"}
         </Text>
       </View>
@@ -284,12 +284,12 @@ export default function SessionsScreen() {
         {/* Avatar */}
         <View style={[styles.avatar, {
           backgroundColor: child.status === "present"
-            ? (child.check_in_method === "qr" ? "#DCFCE7" : "#EDE9FE")
+            ? (child.check_in_method === "qr" ? "#DCFCE7" : "#EFF6FF")
             : child.status === "signed_out" ? "#F3F4F6" : "#FEE2E2"
         }]}>
           <Text style={[styles.avatarText, {
             color: child.status === "present"
-              ? (child.check_in_method === "qr" ? "#15803D" : "#7C3AED")
+              ? (child.check_in_method === "qr" ? "#15803D" : "#1E3A8A")
               : child.status === "signed_out" ? "#6B7280" : "#DC2626"
           }]}>
             {child.first_name[0]}{child.last_name[0]}
@@ -463,7 +463,7 @@ export default function SessionsScreen() {
         >
           <Pressable style={[styles.confirmCard, { backgroundColor: colors.card }]} onPress={() => {}}>
             <View style={styles.confirmIcon}>
-              <Ionicons name="hand-left" size={28} color="#7C3AED" />
+              <Ionicons name="hand-left" size={28} color="#1E3A8A" />
             </View>
             <Text style={[styles.confirmTitle, { color: colors.foreground }]}>
               Mark Present Manually?
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   },
   confirmIcon: {
     width: 64, height: 64, borderRadius: 32,
-    backgroundColor: "#EDE9FE",
+    backgroundColor: "#EFF6FF",
     alignItems: "center", justifyContent: "center",
     marginBottom: 16,
   },
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
   confirmBtnCancelText: { fontWeight: "700", fontSize: 15 },
   confirmBtnOk: {
     flex: 1, height: 50, borderRadius: 12,
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#1E3A8A",
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
   },
   confirmBtnOkText: { color: "#FFF", fontWeight: "700", fontSize: 15 },

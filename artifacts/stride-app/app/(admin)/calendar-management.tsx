@@ -58,7 +58,7 @@ const DOW_FULL   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday",
 type EventType = "event" | "workshop" | "deadline" | "holiday" | "competition";
 const EVENT_TYPES: { value: EventType; label: string; color: string; icon: string }[] = [
   { value: "event",       label: "Event",       color: "#3B82F6", icon: "star-outline"        },
-  { value: "workshop",    label: "Workshop",    color: "#8B5CF6", icon: "hammer-outline"       },
+  { value: "workshop",    label: "Workshop",    color: "#1E3A8A", icon: "hammer-outline"       },
   { value: "deadline",    label: "Deadline",    color: "#EF4444", icon: "alert-circle-outline" },
   { value: "holiday",     label: "Holiday",     color: "#10B981", icon: "sunny-outline"        },
   { value: "competition", label: "Competition", color: "#F59E0B", icon: "trophy-outline"       },

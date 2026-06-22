@@ -24,7 +24,7 @@ const TABS: Array<{ key: string; label: string; color: string }> = [
   { key: "trial",   label: "Trial",   color: "#D97706" },
   { key: "core",    label: "Core",    color: NAVY      },
   { key: "plus",    label: "Plus",    color: "#2563EB" },
-  { key: "premium", label: "Premium", color: "#7C3AED" },
+  { key: "premium", label: "Premium", color: "#1E3A8A" },
   { key: "expired", label: "Expired", color: RED       },
 ];
 
@@ -33,17 +33,17 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
   active:   { label: "Active",   color: "#059669", bg: "#ECFDF5" },
   expired:  { label: "Expired",  color: RED,       bg: "#FEF2F2" },
   suspended:{ label: "Suspended",color: "#6B7280", bg: "#F9FAFB" },
-  granted:  { label: "Free",     color: "#7C3AED", bg: "#F5F3FF" },
+  granted:  { label: "Free",     color: "#1E3A8A", bg: "#EFF6FF" },
 };
 
 const PLAN_CFG: Record<string, { label: string; color: string; bg: string }> = {
   core:    { label: "Core",    color: NAVY,     bg: "#EFF6FF" },
   plus:    { label: "Plus",    color: "#2563EB", bg: "#DBEAFE" },
-  premium: { label: "Premium", color: "#7C3AED", bg: "#F5F3FF" },
+  premium: { label: "Premium", color: "#1E3A8A", bg: "#EFF6FF" },
   // legacy aliases
   studio:  { label: "Core",    color: NAVY,     bg: "#EFF6FF" },
   company: { label: "Plus",    color: "#2563EB", bg: "#DBEAFE" },
-  academy: { label: "Premium", color: "#7C3AED", bg: "#F5F3FF" },
+  academy: { label: "Premium", color: "#1E3A8A", bg: "#EFF6FF" },
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -75,8 +75,8 @@ function OrgCard({ org, onPress }: { org: SuperAdminOrg; onPress: () => void }) 
             <PlanPill tier={org.plan_tier} />
           )}
           {!!org.active_grant && (
-            <View style={[pill.wrap, { backgroundColor: "#F5F3FF" }]}>
-              <Text style={[pill.txt, { color: "#7C3AED" }]}>🎁 Free Access</Text>
+            <View style={[pill.wrap, { backgroundColor: "#EFF6FF" }]}>
+              <Text style={[pill.txt, { color: "#1E3A8A" }]}>🎁 Free Access</Text>
             </View>
           )}
         </View>
@@ -97,12 +97,12 @@ function OrgCard({ org, onPress }: { org: SuperAdminOrg; onPress: () => void }) 
           )}
           {!!org.active_grant?.end_date && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Ionicons name="gift-outline" size={11} color="#7C3AED" />
-              <Text style={[oc.metaText, { color: "#7C3AED" }]}>Free until {fmtDate(org.active_grant.end_date)}</Text>
+              <Ionicons name="gift-outline" size={11} color="#1E3A8A" />
+              <Text style={[oc.metaText, { color: "#1E3A8A" }]}>Free until {fmtDate(org.active_grant.end_date)}</Text>
             </View>
           )}
           {org.subscription_status === "granted" && !org.active_grant?.end_date && (
-            <Text style={[oc.metaText, { color: "#7C3AED" }]}>🎁 Free forever</Text>
+            <Text style={[oc.metaText, { color: "#1E3A8A" }]}>🎁 Free forever</Text>
           )}
         </View>
       </View>
@@ -131,7 +131,7 @@ function MiniStats({ metrics }: { metrics: SuperAdminPlanMetrics | null }) {
     { label: "Trial", value: metrics.trialing, color: "#D97706" },
     { label: "Core",    value: metrics.by_plan.core,    color: NAVY      },
     { label: "Plus",    value: metrics.by_plan.plus,    color: "#2563EB" },
-    { label: "Premium", value: metrics.by_plan.premium, color: "#7C3AED" },
+    { label: "Premium", value: metrics.by_plan.premium, color: "#1E3A8A" },
     { label: "Free", value: metrics.granted, color: "#059669" },
     { label: "Expired", value: metrics.expired, color: RED },
   ];

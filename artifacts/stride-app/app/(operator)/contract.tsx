@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, type ApiEmploymentContract } from "@/lib/api";
 
 type MyContract = (ApiEmploymentContract & {
@@ -36,6 +37,7 @@ const BILLING_LABELS: Record<string, string> = {
 
 export default function OperatorContract() {
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -97,7 +99,7 @@ export default function OperatorContract() {
   };
 
   const rateDisplay = contract
-    ? `€${(contract.contractor_rate_cents / 100).toFixed(2)} ${BILLING_LABELS[contract.contractor_billing_unit] ?? `/ ${contract.contractor_billing_unit}`}`
+    ? `${cur}${(contract.contractor_rate_cents / 100).toFixed(2)} ${BILLING_LABELS[contract.contractor_billing_unit] ?? `/ ${contract.contractor_billing_unit}`}`
     : null;
 
   const isWages = contract?.employment_type === "wages";

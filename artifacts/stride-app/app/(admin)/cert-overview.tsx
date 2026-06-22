@@ -20,7 +20,7 @@ const STATUS_META: Record<string, { label: string; bg: string; text: string }> =
   expiring:       { label: "Expiring Soon",   bg: "#FEF3C7", text: "#92400E" },
   expired:        { label: "Expired",         bg: "#FEE2E2", text: "#991B1B" },
   missing:        { label: "Missing",         bg: "#FEE2E2", text: "#991B1B" },
-  pending_review: { label: "Needs Review",    bg: "#EDE9FE", text: "#5B21B6" },
+  pending_review: { label: "Needs Review",    bg: "#EFF6FF", text: "#1E3A8A" },
 };
 
 const STATUS_ORDER = ["pending_review", "missing", "expired", "expiring", "valid"];
@@ -153,9 +153,9 @@ export default function CertOverviewPage() {
 
           {/* ── Pending Review Banner ── */}
           {hasPending && (
-            <View style={[styles.alert, { backgroundColor: "#F5F3FF", borderLeftColor: "#7C3AED" }]}>
-              <Ionicons name="time-outline" size={18} color="#7C3AED" />
-              <Text style={[styles.alertBody, { color: "#5B21B6", flex: 1 }]}>
+            <View style={[styles.alert, { backgroundColor: "#EFF6FF", borderLeftColor: "#1E3A8A" }]}>
+              <Ionicons name="time-outline" size={18} color="#1E3A8A" />
+              <Text style={[styles.alertBody, { color: "#1E3A8A", flex: 1 }]}>
                 {pendingMedical.length + pendingFirstAid.length} certificate{pendingMedical.length + pendingFirstAid.length !== 1 ? "s" : ""} need your review — scroll to find them or switch tabs.
               </Text>
             </View>
@@ -384,7 +384,7 @@ function MedicalRow({ entry, isLast, colors, actionLoading, onExtend, onReview }
           </Text>
         )}
         {entry.anomaly_reasons && (
-          <Text style={[styles.rowSub, { color: "#7C3AED" }]} numberOfLines={2}>⚠ {entry.anomaly_reasons}</Text>
+          <Text style={[styles.rowSub, { color: "#1E3A8A" }]} numberOfLines={2}>⚠ {entry.anomaly_reasons}</Text>
         )}
       </View>
       <View style={styles.rowActions}>
@@ -437,7 +437,7 @@ function FirstAidRow({ entry, isLast, colors, actionLoading, onReview }: {
           </Text>
         )}
         {entry.anomaly_reasons && (
-          <Text style={[styles.rowSub, { color: "#7C3AED" }]} numberOfLines={2}>⚠ {entry.anomaly_reasons}</Text>
+          <Text style={[styles.rowSub, { color: "#1E3A8A" }]} numberOfLines={2}>⚠ {entry.anomaly_reasons}</Text>
         )}
       </View>
       {isPending && entry.cert_id && (

@@ -1262,6 +1262,9 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_cwl_org    ON course_waitlist(org_id)`).catch(() => {});
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_cwl_member ON course_waitlist(member_id)`).catch(() => {});
 
+  // ── Backfill direct_messages.read_at (table predates column addition) ───────
+  await pool.query(`ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ`).catch(() => {});
+
   // ── Backfill missing blacklist columns (table predates schema additions) ────
   await pool.query(`ALTER TABLE blacklist ADD COLUMN IF NOT EXISTS phone_number TEXT`).catch(() => {});
   await pool.query(`ALTER TABLE blacklist ADD COLUMN IF NOT EXISTS first_name   TEXT`).catch(() => {});

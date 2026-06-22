@@ -31,7 +31,7 @@ function subscriptionChip(status?: string | null): SubChip {
     case "active":    return { label: "ACTIVE",    color: "#059669", bg: "#ECFDF5" };
     case "past_due":  return { label: "PAST DUE",  color: "#DC2626", bg: "#FEF2F2" };
     case "expired":   return { label: "EXPIRED",   color: "#DC2626", bg: "#FEF2F2" };
-    case "suspended": return { label: "SUSPENDED", color: "#7C3AED", bg: "#F5F3FF" };
+    case "suspended": return { label: "SUSPENDED", color: "#1E3A8A", bg: "#EFF6FF" };
     default:          return { label: "TRIALING",  color: "#D97706", bg: "#FFFBEB" };
   }
 }

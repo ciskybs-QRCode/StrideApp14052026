@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useRouter } from "expo-router";
 import {
@@ -30,6 +31,7 @@ type Tab = "operators" | "disciplines" | "availability" | "scheduler";
 
 export default function AdminLessonsScreen() {
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -405,8 +407,8 @@ export default function AdminLessonsScreen() {
                     <Text style={[styles.cardTitle, { color: colors.foreground }]}>{p.user?.name ?? `User #${p.user_id}`}</Text>
                     <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{p.user?.email}</Text>
                   </View>
-                  <View style={[styles.typeBadge, { backgroundColor: p.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE" }]}>
-                    <Text style={[styles.typeBadgeText, { color: p.profile_type === "paid" ? "#92400E" : "#6D28D9" }]}>
+                  <View style={[styles.typeBadge, { backgroundColor: p.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF" }]}>
+                    <Text style={[styles.typeBadgeText, { color: p.profile_type === "paid" ? "#92400E" : "#1E3A8A" }]}>
                       {p.profile_type === "paid" ? "Paid" : "Volunteer"}
                     </Text>
                   </View>
@@ -920,9 +922,9 @@ export default function AdminLessonsScreen() {
               {/* ── Single Lesson fields ── */}
               {scPaymentType === "single" && (
                 <View>
-                  <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Price per lesson (€)</Text>
+                  <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Price per lesson ({cur || "€"})</Text>
                   <View style={styles.priceInputRow}>
-                    <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>€</Text>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>{cur || "€"}</Text>
                     <TextInput
                       style={[styles.ageInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                       value={scPricePerLesson}
@@ -954,9 +956,9 @@ export default function AdminLessonsScreen() {
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Package price (€)</Text>
+                      <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Package price ({cur || "€"})</Text>
                       <View style={styles.priceInputRow}>
-                        <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>€</Text>
+                        <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>{cur || "€"}</Text>
                         <TextInput
                           style={[styles.ageInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                           value={scPackagePrice}
@@ -970,7 +972,7 @@ export default function AdminLessonsScreen() {
                   </View>
                   {scPackageSize && scPackagePrice && parseFloat(scPackagePrice) > 0 && parseInt(scPackageSize, 10) > 0 && (
                     <Text style={[styles.priceNote, { color: "#059669" }]}>
-                      ≈ €{(parseFloat(scPackagePrice) / parseInt(scPackageSize, 10)).toFixed(2)} per lesson
+                      ≈ {cur || "€"}{(parseFloat(scPackagePrice) / parseInt(scPackageSize, 10)).toFixed(2)} per lesson
                     </Text>
                   )}
                   <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
@@ -984,9 +986,9 @@ export default function AdminLessonsScreen() {
                 <View style={{ gap: 14 }}>
                   {/* Monthly price */}
                   <View>
-                    <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Monthly amount (€)</Text>
+                    <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Monthly amount ({cur || "€"})</Text>
                     <View style={styles.priceInputRow}>
-                      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>€</Text>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.mutedForeground }}>{cur || "€"}</Text>
                       <TextInput
                         style={[styles.ageInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                         value={scMonthlyPrice}
@@ -1136,7 +1138,7 @@ export default function AdminLessonsScreen() {
                     )}
                     {scBillingEndDate && (
                       <Pressable onPress={() => setScBillingEndDate("")} style={{ marginTop: 6, alignSelf: "flex-start" }}>
-                        <Text style={{ fontSize: 11, color: "#EF4444" }}>Rimuovi data fine</Text>
+                        <Text style={{ fontSize: 11, color: "#EF4444" }}>Remove end date</Text>
                       </Pressable>
                     )}
                   </View>
@@ -1232,16 +1234,16 @@ export default function AdminLessonsScreen() {
                   const opName      = (sc.operator as { user?: { name?: string } } | null)?.user?.name ?? "Unassigned";
                   const pt          = sc.payment_type ?? "single";
                   const payLabel    = pt === "monthly_billing"
-                    ? `Monthly · €${((sc.monthly_price_cents ?? 0) / 100).toFixed(2)}/mo · day ${sc.billing_day_of_month ?? "?"}`
+                    ? `Monthly · ${cur}${((sc.monthly_price_cents ?? 0) / 100).toFixed(2)}/mo · day ${sc.billing_day_of_month ?? "?"}`
                     : pt === "package"
-                    ? `Package ${sc.package_size ?? "?"} lessons · €${((sc.package_price_cents ?? 0) / 100).toFixed(2)}`
+                    ? `Package ${sc.package_size ?? "?"} lessons · ${cur}${((sc.package_price_cents ?? 0) / 100).toFixed(2)}`
                     : sc.price_per_lesson_cents
-                    ? `Single · €${(sc.price_per_lesson_cents / 100).toFixed(2)}/lesson`
+                    ? `Single · ${cur}${(sc.price_per_lesson_cents / 100).toFixed(2)}/lesson`
                     : "No pricing set";
                   const payIcon = pt === "monthly_billing" ? "calendar-outline" as const
                     : pt === "package" ? "layers-outline" as const
                     : "ticket-outline" as const;
-                  const payColor = pt === "monthly_billing" ? "#7C3AED"
+                  const payColor = pt === "monthly_billing" ? "#1E3A8A"
                     : pt === "package" ? colors.primary
                     : colors.mutedForeground;
                   return (
@@ -1445,24 +1447,24 @@ export default function AdminLessonsScreen() {
                   <Pressable
                     style={[
                       styles.typeCard,
-                      { borderColor: isVolunteer ? "#7C3AED" : colors.border,
-                        backgroundColor: isVolunteer ? "#F5F3FF" : colors.background },
+                      { borderColor: isVolunteer ? "#1E3A8A" : colors.border,
+                        backgroundColor: isVolunteer ? "#EFF6FF" : colors.background },
                     ]}
                     onPress={() => setIsVolunteer(true)}
                   >
-                    <View style={[styles.typeCardIcon, { backgroundColor: isVolunteer ? "#7C3AED" : colors.muted }]}>
+                    <View style={[styles.typeCardIcon, { backgroundColor: isVolunteer ? "#1E3A8A" : colors.muted }]}>
                       <Ionicons name="heart-outline" size={18} color={isVolunteer ? "#FFF" : colors.mutedForeground} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.typeCardTitle, { color: isVolunteer ? "#7C3AED" : colors.foreground }]}>
+                      <Text style={[styles.typeCardTitle, { color: isVolunteer ? "#1E3A8A" : colors.foreground }]}>
                         Volunteer
                       </Text>
                       <Text style={[styles.typeCardSub, { color: colors.mutedForeground }]}>
                         Unpaid — no hourly rates needed
                       </Text>
                     </View>
-                    <View style={[styles.typeRadio, { borderColor: isVolunteer ? "#7C3AED" : colors.border,
-                      backgroundColor: isVolunteer ? "#7C3AED" : "transparent" }]}>
+                    <View style={[styles.typeRadio, { borderColor: isVolunteer ? "#1E3A8A" : colors.border,
+                      backgroundColor: isVolunteer ? "#1E3A8A" : "transparent" }]}>
                       {isVolunteer && <Ionicons name="checkmark" size={13} color="#FFF" />}
                     </View>
                   </Pressable>
@@ -1496,7 +1498,7 @@ export default function AdminLessonsScreen() {
                         <View>
                           <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>AMOUNT</Text>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                            <Text style={{ color: colors.mutedForeground, fontSize: 15, fontWeight: "700" }}>€</Text>
+                            <Text style={{ color: colors.mutedForeground, fontSize: 15, fontWeight: "700" }}>{cur || "€"}</Text>
                             <TextInput
                               style={[styles.fieldInput, { flex: 1, borderColor: colors.border,
                                 backgroundColor: colors.muted, color: colors.foreground }]}
@@ -1860,9 +1862,9 @@ export default function AdminLessonsScreen() {
                       <View style={styles.reviewRow}>
                         <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>Type</Text>
                         <View style={[styles.typePill, {
-                          backgroundColor: reviewSlot.operator_profile.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE",
+                          backgroundColor: reviewSlot.operator_profile.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF",
                         }]}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: reviewSlot.operator_profile.profile_type === "paid" ? "#92400E" : "#6D28D9" }}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: reviewSlot.operator_profile.profile_type === "paid" ? "#92400E" : "#1E3A8A" }}>
                             {reviewSlot.operator_profile.profile_type === "paid" ? "Paid Operator" : "Volunteer"}
                           </Text>
                         </View>

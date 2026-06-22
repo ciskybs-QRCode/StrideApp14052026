@@ -98,7 +98,7 @@ const PROTOCOLS: Protocol[] = [
     id: "missing",
     title: "Dependent Member Not Collected",
     icon: "person-remove",
-    color: "#7C3AED",
+    color: "#1E3A8A",
     steps: [
       { icon: "time-outline",             text: "Wait 15 minutes past the scheduled collection time." },
       { icon: "call",                     text: "Attempt to contact the primary member or guardian by phone." },
@@ -385,7 +385,7 @@ export default function OperatorSupport() {
           {[
             { icon: "call" as const,          label: "Call Admin",  color: "#10B981", onPress: () => Linking.openURL(`tel:${adminPhone}`) },
             { icon: "logo-whatsapp" as const,  label: "WhatsApp",   color: "#25D366", onPress: () => Linking.openURL(`https://wa.me/${adminPhone.replace(/[^0-9]/g, "")}`) },
-            { icon: "mail" as const,           label: "Email",      color: "#7C3AED", onPress: () => Linking.openURL(`mailto:${adminEmail}`) },
+            { icon: "mail" as const,           label: "Email",      color: "#1E3A8A", onPress: () => Linking.openURL(`mailto:${adminEmail}`) },
           ].map(item => (
             <Pressable key={item.label} style={styles.contactItem} onPress={item.onPress}>
               <View style={[styles.contactIcon, { backgroundColor: `${item.color}20` }]}>

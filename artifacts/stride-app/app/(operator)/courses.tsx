@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -95,14 +96,14 @@ export function getTypeIcon(type: MaterialType): React.ComponentProps<typeof Ion
 }
 
 export function getTypeBg(type: MaterialType): string {
-  if (type === "video")    return "#EDE9FE";
+  if (type === "video")    return "#EFF6FF";
   if (type === "audio")    return "#D1FAE5";
   if (type === "image")    return "#FEF3C7";
   return "#DBEAFE";
 }
 
 export function getTypeColor(type: MaterialType): string {
-  if (type === "video")    return "#7C3AED";
+  if (type === "video")    return "#1E3A8A";
   if (type === "audio")    return "#059669";
   if (type === "image")    return "#D97706";
   return "#1E3A8A";
@@ -232,12 +233,12 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
           </Text>
         </Pressable>
         <Pressable
-          style={[pm.uploadBtn, { backgroundColor: "#EDE9FE", flex: 1, opacity: uploading ? 0.6 : 1 }]}
+          style={[pm.uploadBtn, { backgroundColor: "#EFF6FF", flex: 1, opacity: uploading ? 0.6 : 1 }]}
           onPress={handlePickImage}
           disabled={uploading}
         >
-          <Ionicons name="videocam-outline" size={18} color="#7C3AED" />
-          <Text style={[pm.uploadBtnText, { color: "#7C3AED" }]}>Photo / Video</Text>
+          <Ionicons name="videocam-outline" size={18} color="#1E3A8A" />
+          <Text style={[pm.uploadBtnText, { color: "#1E3A8A" }]}>Photo / Video</Text>
         </Pressable>
       </View>
 
@@ -403,6 +404,7 @@ export default function OperatorCoursesScreen() {
   const { courses } = useAppData();
   const { user } = useAuth();
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
 
   const myCourses = courses.filter(c => c.instructor === user?.name);
@@ -558,7 +560,7 @@ export default function OperatorCoursesScreen() {
                         { icon: "people-outline" as const,    label: "Members",   value: `${course.enrolled} / ${course.capacity} enrolled` },
                         { icon: "star-outline" as const,      label: "Level",     value: course.level || "—" },
                         { icon: "fitness-outline" as const,   label: "Age Group", value: `Ages ${course.ageMin}–${course.ageMax}` },
-                        { icon: "cash-outline" as const,      label: "Fee",       value: course.price > 0 ? `€${course.price}/month` : "Free" },
+                        { icon: "cash-outline" as const,      label: "Fee",       value: course.price > 0 ? `${cur}${course.price}/month` : "Free" },
                       ].map(({ icon, label, value }) => (
                         <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: `${colors.border}60` }}>
                           <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>

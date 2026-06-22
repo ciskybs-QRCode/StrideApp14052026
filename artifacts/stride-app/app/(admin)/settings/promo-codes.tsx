@@ -329,9 +329,9 @@ export default function PromoCodesPage() {
                   </Pressable>
                 )}
                 {p.targetType !== "all" && (
-                  <View style={[styles.actionChip, { backgroundColor: "#EDE9FE" }]}>
-                    <Ionicons name="people-outline" size={13} color="#7C3AED" />
-                    <Text style={[styles.actionChipText, { color: "#7C3AED" }]} numberOfLines={1}>
+                  <View style={[styles.actionChip, { backgroundColor: "#EFF6FF" }]}>
+                    <Ionicons name="people-outline" size={13} color="#1E3A8A" />
+                    <Text style={[styles.actionChipText, { color: "#1E3A8A" }]} numberOfLines={1}>
                       {p.targetType === "student" ? (p.targetStudentName ?? secondaryRoleName) : p.targetType === "courses" ? "Courses" : p.targetType === "locations" ? "Locations" : (p.targetParentNames?.length ? p.targetParentNames[0] : primaryRoleName + "s")}
                     </Text>
                   </View>
@@ -447,8 +447,8 @@ export default function PromoCodesPage() {
                 )}
                 <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Restrict to Courses (optional)</Text>
                 {courses.map(c => (
-                  <Pressable key={c.id} style={[styles.checkRow, { borderColor: targetMemberCourseIds.includes(c.id) ? "#7C3AED" : colors.border, backgroundColor: targetMemberCourseIds.includes(c.id) ? "#EDE9FE" : colors.card }]} onPress={() => setTargetMemberCourseIds(prev => prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id])}>
-                    <Ionicons name={targetMemberCourseIds.includes(c.id) ? "checkbox" : "square-outline"} size={18} color={targetMemberCourseIds.includes(c.id) ? "#7C3AED" : colors.mutedForeground} />
+                  <Pressable key={c.id} style={[styles.checkRow, { borderColor: targetMemberCourseIds.includes(c.id) ? "#1E3A8A" : colors.border, backgroundColor: targetMemberCourseIds.includes(c.id) ? "#EFF6FF" : colors.card }]} onPress={() => setTargetMemberCourseIds(prev => prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id])}>
+                    <Ionicons name={targetMemberCourseIds.includes(c.id) ? "checkbox" : "square-outline"} size={18} color={targetMemberCourseIds.includes(c.id) ? "#1E3A8A" : colors.mutedForeground} />
                     <Text style={[styles.checkRowText, { color: colors.foreground }]}>{c.name}</Text>
                   </Pressable>
                 ))}

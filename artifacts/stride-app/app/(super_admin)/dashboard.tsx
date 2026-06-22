@@ -105,15 +105,15 @@ function PlanBreakdown({ metrics, onPlanPress }: { metrics: SuperAdminPlanMetric
     { key: "trial",   label: "TRIAL",   value: metrics.trialing,        accent: "#D97706", bg: "#FFFBEB" },
     { key: "core",    label: "CORE",    value: metrics.by_plan.core,    accent: "#1E3A8A", bg: "#EFF6FF" },
     { key: "plus",    label: "PLUS",    value: metrics.by_plan.plus,    accent: "#2563EB", bg: "#DBEAFE" },
-    { key: "premium", label: "PREMIUM", value: metrics.by_plan.premium, accent: "#7C3AED", bg: "#F5F3FF" },
+    { key: "premium", label: "PREMIUM", value: metrics.by_plan.premium, accent: "#1E3A8A", bg: "#EFF6FF" },
   ];
   return (
     <View style={{ marginBottom: 14 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" }}>
-          <Ionicons name="layers-outline" size={16} color="#7C3AED" />
+        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name="layers-outline" size={16} color="#1E3A8A" />
         </View>
-        <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#7C3AED" }}>PLAN BREAKDOWN</Text>
+        <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#1E3A8A" }}>PLAN BREAKDOWN</Text>
         {metrics.granted > 0 && (
           <View style={{ marginLeft: "auto", backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
             <Text style={{ fontSize: 10, fontWeight: "800", color: "#059669" }}>🎁 {metrics.granted} free</Text>

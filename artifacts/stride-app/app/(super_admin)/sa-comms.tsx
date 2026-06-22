@@ -625,9 +625,9 @@ export default function SACommunications() {
                   {[
                     { label: "Total",   value: reportMsg.stats.total,    icon: "people-outline" as const,           color: "#1E3A8A" },
                     { label: "Read",    value: reportMsg.stats.read,     icon: "eye-outline" as const,              color: "#059669" },
-                    { label: "Email",   value: reportMsg.stats.emailSent, icon: "mail-outline" as const,            color: "#7C3AED" },
+                    { label: "Email",   value: reportMsg.stats.emailSent, icon: "mail-outline" as const,            color: "#1E3A8A" },
                     { label: "Push",    value: reportMsg.stats.pushSent,  icon: "phone-portrait-outline" as const,  color: "#D97706" },
-                    { label: "In-App",  value: reportMsg.stats.inAppSent, icon: "notifications-outline" as const,   color: "#0891B2" },
+                    { label: "In-App",  value: reportMsg.stats.inAppSent, icon: "notifications-outline" as const,   color: "#1E3A8A" },
                   ].map(stat => (
                     <View key={stat.label} style={[s.reportStat, { backgroundColor: stat.color + "10" }]}>
                       <Ionicons name={stat.icon} size={14} color={stat.color} />
@@ -663,7 +663,7 @@ export default function SACommunications() {
                     <View style={s.recipientChannels}>
                       {r.in_app_sent && <Ionicons name="notifications-outline" size={12} color={r.read_at ? "#059669" : "#9CA3AF"} />}
                       {r.push_sent   && <Ionicons name="phone-portrait-outline" size={12} color="#D97706" />}
-                      {r.email_sent  && <Ionicons name="mail-outline" size={12} color="#7C3AED" />}
+                      {r.email_sent  && <Ionicons name="mail-outline" size={12} color="#1E3A8A" />}
                     </View>
                     {r.read_at && (
                       <Text style={{ fontSize: 10, color: "#059669" }}>

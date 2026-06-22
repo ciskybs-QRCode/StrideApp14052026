@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, type ApiPrivateLessonBooking, type ApiPrivateLessonPolicy } from "@/lib/api";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -60,6 +61,7 @@ interface RescheduleState {
 export default function MyPrivateLessonsScreen() {
   const router = useRouter();
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
 
   const [bookings, setBookings]     = useState<ApiPrivateLessonBooking[]>([]);
@@ -135,7 +137,7 @@ export default function MyPrivateLessonsScreen() {
       ));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const feeMsg = result.fee_cents > 0
-        ? `\n\nRescheduling fee: €${(result.fee_cents / 100).toFixed(2)} (within the ${policy?.pl_reschedule_window_hours}h policy window).`
+        ? `\n\nRescheduling fee: ${cur}${(result.fee_cents / 100).toFixed(2)} (within the ${policy?.pl_reschedule_window_hours}h policy window).`
         : "";
       Alert.alert("Rescheduled", `Your lesson has been moved to ${fmtDate(newDate)} at ${fmtTime(newTime)}.${feeMsg}`);
       setReschedule(null);
@@ -207,7 +209,7 @@ export default function MyPrivateLessonsScreen() {
                     <View style={[styles.statusPill, { backgroundColor: `${statusColor}20` }]}>
                       <Text style={[styles.statusText, { color: statusColor }]}>{STATUS_LABEL[b.status]}</Text>
                     </View>
-                    <Text style={[styles.price, { color: colors.primary }]}>€{(b.member_price_cents / 100).toFixed(2)}</Text>
+                    <Text style={[styles.price, { color: colors.primary }]}>{cur}{(b.member_price_cents / 100).toFixed(2)}</Text>
                   </View>
                 </View>
 
@@ -236,7 +238,7 @@ export default function MyPrivateLessonsScreen() {
                   <View style={[styles.feeWarning, { backgroundColor: "#FFF7ED", borderLeftColor: "#FB923C" }]}>
                     <Ionicons name="warning-outline" size={14} color="#C2410C" />
                     <Text style={{ flex: 1, fontSize: 12, color: "#C2410C" }}>
-                      Rescheduling now will incur a €{(rFee / 100).toFixed(2)} fee (within {policy?.pl_reschedule_window_hours}h window).
+                      Rescheduling now will incur a {cur}{(rFee / 100).toFixed(2)} fee (within {policy?.pl_reschedule_window_hours}h window).
                     </Text>
                   </View>
                 )}
@@ -244,7 +246,7 @@ export default function MyPrivateLessonsScreen() {
                   <View style={[styles.feeWarning, { backgroundColor: "#FFF1F2", borderLeftColor: "#F87171" }]}>
                     <Ionicons name="alert-circle-outline" size={14} color="#DC2626" />
                     <Text style={{ flex: 1, fontSize: 12, color: "#DC2626" }}>
-                      Cancelling now will incur a €{(cFee / 100).toFixed(2)} fee (within {policy?.pl_cancel_window_hours}h window).
+                      Cancelling now will incur a {cur}{(cFee / 100).toFixed(2)} fee (within {policy?.pl_cancel_window_hours}h window).
                     </Text>
                   </View>
                 )}
@@ -294,7 +296,7 @@ export default function MyPrivateLessonsScreen() {
                         </Text>
                       </View>
                       <Text style={[styles.price, { color: colors.mutedForeground, fontSize: 13 }]}>
-                        €{(b.member_price_cents / 100).toFixed(2)}
+                        {cur}{(b.member_price_cents / 100).toFixed(2)}
                       </Text>
                     </View>
                   </View>
@@ -376,7 +378,7 @@ export default function MyPrivateLessonsScreen() {
               return (
                 <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
                   {cf > 0
-                    ? `A cancellation fee of €${(cf / 100).toFixed(2)} applies because the lesson is within ${policy?.pl_cancel_window_hours} hours.`
+                    ? `A cancellation fee of ${cur}${(cf / 100).toFixed(2)} applies because the lesson is within ${policy?.pl_cancel_window_hours} hours.`
                     : "This lesson will be cancelled. This cannot be undone."
                   }
                 </Text>

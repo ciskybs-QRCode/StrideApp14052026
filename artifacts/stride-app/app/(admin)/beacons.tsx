@@ -193,7 +193,7 @@ export default function BeaconsScreen() {
   if (loading) {
     return (
       <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#0EA5E9" />
+        <ActivityIndicator size="large" color="#1E3A8A" />
         <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading BLE data…</Text>
       </View>
     );
@@ -420,7 +420,7 @@ export default function BeaconsScreen() {
         <View style={S.modalOverlay}>
           <View style={[S.modalCard, { backgroundColor: colors.card }]}>
             <View style={S.modalHeader}>
-              <Ionicons name="radio" size={24} color="#0EA5E9" />
+              <Ionicons name="radio" size={24} color="#1E3A8A" />
               <Text style={[S.modalTitle, { color: colors.foreground }]}>Register Proximity Scanner</Text>
               <Pressable onPress={() => setShowAddBeacon(false)} hitSlop={10}>
                 <Ionicons name="close" size={22} color={colors.mutedForeground} />
@@ -438,7 +438,7 @@ export default function BeaconsScreen() {
                 autoCapitalize="characters"
               />
               <Pressable onPress={() => setBUUID(generateUUID())} hitSlop={8}>
-                <Ionicons name="refresh" size={18} color="#0EA5E9" />
+                <Ionicons name="refresh" size={18} color="#1E3A8A" />
               </Pressable>
             </View>
 
@@ -456,7 +456,7 @@ export default function BeaconsScreen() {
               {ZONES.map(z => (
                 <Pressable
                   key={z}
-                  style={[S.zoneChip, { backgroundColor: bZone === z ? "#0EA5E9" : colors.background, borderColor: bZone === z ? "#0EA5E9" : colors.border }]}
+                  style={[S.zoneChip, { backgroundColor: bZone === z ? "#1E3A8A" : colors.background, borderColor: bZone === z ? "#1E3A8A" : colors.border }]}
                   onPress={() => setBZone(z)}
                 >
                   <Text style={[S.zoneChipText, { color: bZone === z ? "#FFF" : colors.foreground }]}>{z}</Text>
@@ -581,7 +581,7 @@ const S = StyleSheet.create({
   toggleIconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   toggleTitle:    { fontSize: 14, fontWeight: "800", marginBottom: 2 },
   toggleSub:      { fontSize: 11, lineHeight: 16 },
-  infoCard:     { backgroundColor: "#0C4A6E15", borderWidth: 1, borderColor: "#0EA5E920", borderRadius: 16, padding: 14, marginBottom: 20 },
+  infoCard:     { backgroundColor: "#1E3A8A10", borderWidth: 1, borderColor: "#1E3A8A20", borderRadius: 16, padding: 14, marginBottom: 20 },
   infoRow:      { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   infoStep:     { flex: 1, alignItems: "center", gap: 6, borderRadius: 10, padding: 10 },
   infoStepText: { fontSize: 11, fontWeight: "600", textAlign: "center", color: "#374151" },
@@ -592,7 +592,7 @@ const S = StyleSheet.create({
   sectionLeft:   { flex: 1 },
   sectionTitle:  { fontSize: 15, fontWeight: "800" },
   sectionSub:    { fontSize: 11, marginTop: 1 },
-  addBtn:        { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#0EA5E9", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  addBtn:        { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#1E3A8A", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
   addBtnText:    { color: "#FFF", fontWeight: "700", fontSize: 12 },
 
   // Item cards

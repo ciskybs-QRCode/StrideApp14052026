@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { api, type ApiEnrollmentRequest } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 type Filter = "all" | "present" | "absent" | "approvals";
@@ -28,6 +29,7 @@ type Filter = "all" | "present" | "absent" | "approvals";
 export default function OperatorStudents() {
   const { students, updateStudentPresence, refreshData, isLoadingData } = useAppData();
   const colors = useColors();
+  const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -313,7 +315,7 @@ export default function OperatorStudents() {
                           {req.package_type === "fixedBlock" ? "Full Package" : "Single Lesson"}
                         </Text>
                       </View>
-                      <Text style={[styles.approvalPrice, { color: colors.primary }]}>€{req.price}</Text>
+                      <Text style={[styles.approvalPrice, { color: colors.primary }]}>{cur}{req.price}</Text>
                     </View>
 
                     {isPending && (

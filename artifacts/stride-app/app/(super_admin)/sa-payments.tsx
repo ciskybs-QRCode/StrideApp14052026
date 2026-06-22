@@ -178,7 +178,7 @@ function AutomationFlowCard() {
     },
     {
       icon: "card-outline" as const,
-      color: "#7C3AED",
+      color: "#1E3A8A",
       who: "Association admin — once",
       title: "They enter their card once",
       desc: "They tap \"Subscribe\" in their app → Stripe Checkout opens → they enter their card. Takes 60 seconds. Then they're in.",

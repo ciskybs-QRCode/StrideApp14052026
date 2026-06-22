@@ -337,7 +337,7 @@ export default function ParentTabLayout() {
                         <View style={styles.docCardMeta}>
                           {doc.has_options && (
                             <View style={styles.optionsBadge}>
-                              <Ionicons name="list-outline" size={10} color="#7C3AED" />
+                              <Ionicons name="list-outline" size={10} color="#1E3A8A" />
                               <Text style={styles.optionsBadgeText}>Options required</Text>
                             </View>
                           )}
@@ -397,8 +397,8 @@ export default function ParentTabLayout() {
                   {currentDoc.has_options && (
                     <View style={styles.section}>
                       <View style={styles.sectionHeader}>
-                        <Ionicons name="list-outline" size={16} color="#7C3AED" />
-                        <Text style={[styles.sectionTitle, { color: "#7C3AED" }]}>Select Your Option</Text>
+                        <Ionicons name="list-outline" size={16} color="#1E3A8A" />
+                        <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Select Your Option</Text>
                         <Text style={styles.requiredTag}>Required</Text>
                       </View>
                       {OPTION_KEYS.map(key => {
@@ -409,7 +409,7 @@ export default function ParentTabLayout() {
                             style={({ pressed }) => [
                               styles.optionCard,
                               selected && styles.optionCardSelected,
-                              pressed && !selected && { backgroundColor: "#F5F3FF" },
+                              pressed && !selected && { backgroundColor: "#EFF6FF" },
                             ]}
                             onPress={() => setSelectedOption(key)}
                           >
@@ -577,8 +577,8 @@ const styles = StyleSheet.create({
   docCardTitle:  { fontSize: 14, fontWeight: "700", color: "#1E3A8A", marginBottom: 3 },
   docCardDesc:   { fontSize: 12, color: "#64748B", lineHeight: 17 },
   docCardMeta:   { flexDirection: "row", gap: 6, marginTop: 5, flexWrap: "wrap" },
-  optionsBadge:  { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#F3E8FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  optionsBadgeText: { fontSize: 10, fontWeight: "600", color: "#7C3AED" },
+  optionsBadge:  { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#EFF6FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  optionsBadgeText: { fontSize: 10, fontWeight: "600", color: "#1E3A8A" },
   urgentBadge:   { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#FEE2E2", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   urgentBadgeText:  { fontSize: 10, fontWeight: "600", color: "#EF4444" },
 
@@ -605,8 +605,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 13, fontWeight: "700", color: "#1E3A8A", flex: 1 },
   requiredTag:  {
-    fontSize: 10, fontWeight: "700", color: "#7C3AED",
-    backgroundColor: "#F3E8FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
+    fontSize: 10, fontWeight: "700", color: "#1E3A8A",
+    backgroundColor: "#EFF6FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
   scrollHint: {
     flexDirection: "row", alignItems: "center", gap: 3,

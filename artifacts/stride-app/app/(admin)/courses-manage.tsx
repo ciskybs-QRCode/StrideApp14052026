@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, type ApiCourse, type ApiDiscipline } from "@/lib/api";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -51,6 +52,7 @@ function LevelBadge({ level }: { level?: string }) {
 
 export default function AdminCoursesManageScreen() {
   const colors  = useColors();
+  const cur     = useOrgCurrency();
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
 
@@ -253,7 +255,7 @@ export default function AdminCoursesManageScreen() {
                 </View>
                 <View style={S.metaChip}>
                   <Ionicons name="cash-outline" size={12} color={colors.mutedForeground} />
-                  <Text style={[S.metaText, { color: colors.mutedForeground }]}>€{fmt(c.price)}</Text>
+                  <Text style={[S.metaText, { color: colors.mutedForeground }]}>{cur}{fmt(c.price)}</Text>
                 </View>
                 {daysStr && (
                   <View style={S.metaChip}>
@@ -397,7 +399,7 @@ export default function AdminCoursesManageScreen() {
             </View>
 
             {/* Price */}
-            <Text style={[S.label, { color: colors.mutedForeground }]}>PRICE (€)</Text>
+            <Text style={[S.label, { color: colors.mutedForeground }]}>PRICE ({cur || "€"})</Text>
             <TextInput
               style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
               value={fPrice} onChangeText={setFPrice}

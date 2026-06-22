@@ -19,14 +19,14 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 function roleColor(role: string): string {
   if (role === "super_admin") return "#1E3A8A";
-  if (role === "admin")       return "#7C3AED";
+  if (role === "admin")       return "#1E3A8A";
   if (role === "operator")    return "#D97706";
   if (role === "parent")      return "#059669";
   return "#6B7280";
 }
 function roleBg(role: string): string {
   if (role === "super_admin") return "#EFF6FF";
-  if (role === "admin")       return "#F5F3FF";
+  if (role === "admin")       return "#EFF6FF";
   if (role === "operator")    return "#FFFBEB";
   if (role === "parent")      return "#ECFDF5";
   return "#F9FAFB";
@@ -77,7 +77,7 @@ const ar = StyleSheet.create({
 
 type ManageStep = "view" | "confirm_role" | "confirm_delete";
 const ROLE_OPTIONS = [
-  { key: "admin",    label: "Admin",    icon: "person" as const,         color: "#7C3AED", bg: "#F5F3FF" },
+  { key: "admin",    label: "Admin",    icon: "person" as const,         color: "#1E3A8A", bg: "#EFF6FF" },
   { key: "operator", label: "Operator", icon: "people" as const,         color: "#D97706", bg: "#FFFBEB" },
   { key: "parent",   label: "Member",   icon: "people-outline" as const, color: "#059669", bg: "#ECFDF5" },
 ];

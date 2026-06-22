@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { getAnalytics, type AnalyticsMonthly } from "@/lib/api";
 
@@ -27,6 +28,7 @@ export default function AdminAnalytics() {
   const { user }                        = useAuth();
   const { courses, students, payments } = useAppData();
   const colors                          = useColors();
+  const cur                             = useOrgCurrency();
   const insets                          = useSafeAreaInsets();
   const router                          = useRouter();
 
@@ -96,7 +98,7 @@ export default function AdminAnalytics() {
     .map(p => ({
       name:   p.description || "Payment",
       action: p.status === "paid" ? "Payment received" : "Payment pending",
-      amount: `€${p.amount}`,
+      amount: `${cur}${p.amount}`,
       time:   p.date,
       icon:   p.status === "paid" ? "checkmark-circle" as const : "time" as const,
       color:  p.status === "paid" ? "#10B981" : "#F59E0B",
@@ -251,7 +253,7 @@ export default function AdminAnalytics() {
                       <View key={data.key} style={styles.chartCol}>
                         <Text style={[styles.chartValue, { color: colors.mutedForeground }]}>
                           {chartMetric === "revenue"
-                            ? val >= 1000 ? `€${(val / 1000).toFixed(1)}k` : `€${val}`
+                            ? val >= 1000 ? `${cur}${(val / 1000).toFixed(1)}k` : `${cur}${val}`
                             : String(val)}
                         </Text>
                         <View style={styles.chartBarWrap}>
@@ -272,7 +274,7 @@ export default function AdminAnalytics() {
                   <Ionicons name="information-circle-outline" size={14} color={colors.mutedForeground} />
                   <Text style={[styles.chartFooterText, { color: colors.mutedForeground }]}>
                     {chartMetric === "revenue"
-                      ? `Total revenue last 6 months: €${totalRevenueTrend.toLocaleString()}`
+                      ? `Total revenue last 6 months: ${cur}${totalRevenueTrend.toLocaleString()}`
                       : `New members last 6 months: ${totalMembersTrend}`}
                   </Text>
                 </View>
@@ -304,8 +306,8 @@ export default function AdminAnalytics() {
               </View>
               <View style={styles.payLegend}>
                 {[
-                  { label: "Paid",    count: paidCount,    amount: `€${totalRevenue.toLocaleString()}`,  color: "#10B981" },
-                  { label: "Pending", count: pendingCount, amount: `€${pendingRevenue.toLocaleString()}`, color: "#F59E0B" },
+                  { label: "Paid",    count: paidCount,    amount: `${cur}${totalRevenue.toLocaleString()}`,  color: "#10B981" },
+                  { label: "Pending", count: pendingCount, amount: `${cur}${pendingRevenue.toLocaleString()}`, color: "#F59E0B" },
                 ].map(item => (
                   <View key={item.label} style={styles.payLegendItem}>
                     <View style={[styles.payDot, { backgroundColor: item.color }]} />
@@ -350,7 +352,7 @@ export default function AdminAnalytics() {
                       <View style={[styles.occBarFill, { width: `${pct}%` as `${number}%`, backgroundColor: barColor }]} />
                     </View>
                     <Text style={[styles.occMeta, { color: colors.mutedForeground }]}>
-                      {c.enrolled}/{c.capacity} spots · €{(c.price * c.enrolled).toLocaleString()} revenue
+                      {c.enrolled}/{c.capacity} spots · {cur}{(c.price * c.enrolled).toLocaleString()} revenue
                     </Text>
                   </View>
                   <View style={[styles.occBadge, { backgroundColor: `${barColor}20` }]}>
