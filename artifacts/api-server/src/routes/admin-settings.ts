@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { logAction } from "../lib/audit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -198,6 +199,7 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     row.stripe_key_is_live = rawKey ? rawKey.startsWith("sk_live_") : null;
 
     req.log.info({ orgId, settings: body }, "admin settings updated");
+    logAction({ userId: user.id, action: "ADMIN_SETTINGS_UPDATED", tableAffected: "admin_settings", recordId: orgId, details: { changed: Object.keys(body) } });
     res.json(row);
   } catch (err) {
     req.log.error(err, "admin-settings PUT: error");

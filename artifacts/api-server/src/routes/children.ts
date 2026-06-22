@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { pool } from "../lib/pg.js";
+import { logAction } from "../lib/audit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };

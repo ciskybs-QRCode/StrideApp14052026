@@ -5,6 +5,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { trialGuard } from "./middleware/trial-guard.js";
 import { globalApiLimiter } from "./lib/rate-limit.js";
+import { auditTrailMiddleware } from "./middleware/audit-trail.js";
 
 const app: Express = express();
 
@@ -35,6 +36,7 @@ app.use("/api/billing/webhook", express.raw({ type: "*/*" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(trialGuard);
+app.use(auditTrailMiddleware);
 
 app.use("/api", router);
 

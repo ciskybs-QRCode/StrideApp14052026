@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { logAction } from "../lib/audit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -106,6 +107,7 @@ router.post("/courses", requireAuth, requireRole("admin"), async (req, res) => {
     .single();
 
   if (error) { res.status(500).json({ error: error.message }); return; }
+  logAction({ userId: user.id, action: "COURSE_CREATED", tableAffected: "courses", recordId: (data as { id: number }).id, details: { name: (data as { name: string }).name } });
   res.status(201).json(data);
 });
 
@@ -146,6 +148,7 @@ router.patch("/courses/:id", requireAuth, requireRole("admin"), async (req, res)
     .single();
 
   if (error) { res.status(500).json({ error: error.message }); return; }
+  logAction({ userId: user.id, action: "COURSE_UPDATED", tableAffected: "courses", recordId: id, details: { changed: Object.keys(updates) } });
   res.json(data);
 });
 
@@ -167,6 +170,7 @@ router.delete("/courses/:id", requireAuth, requireRole("admin"), async (req, res
 
   const { error } = await supabase.from("courses").delete().eq("id", id);
   if (error) { res.status(500).json({ error: error.message }); return; }
+  logAction({ userId: user.id, action: "COURSE_DELETED", tableAffected: "courses", recordId: id });
   res.status(204).send();
 });
 
