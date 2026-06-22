@@ -6,6 +6,8 @@
  *   2. Writes manifest.json with correct start_url, scope and icons
  *   3. Patches web-dist/index.html to add <link rel="manifest"> and
  *      Apple/Android PWA meta tags (idempotent — won't double-add)
+ *   4. Patches JS bundles: replaces "/assets/ with "/app/assets/ in case
+ *      experiments.baseUrl was not picked up (safety net for future builds)
  *
  * Icons are pre-generated in assets/images/ from the original icon.png
  * using ImageMagick:
@@ -91,6 +93,29 @@ if (!html.includes('rel="manifest"')) {
   console.log("[pwa-patch] Patched index.html with PWA meta tags");
 } else {
   console.log("[pwa-patch] index.html already has manifest link — skipping patch");
+}
+
+// ── 4. Patch JS bundles: fix asset base path ──────────────────────────────────
+// expo export without experiments.baseUrl produces "/assets/..." paths.
+// These are routed to the landing-page server (path "/"), not the Stride app
+// (path "/app/"). Prefix them with "/app" so they resolve correctly.
+const bundleDir = path.join(DIST, "_expo", "static", "js", "web");
+if (fs.existsSync(bundleDir)) {
+  const bundles = fs.readdirSync(bundleDir).filter(f => f.endsWith(".js"));
+  for (const bundle of bundles) {
+    const bundlePath = path.join(bundleDir, bundle);
+    const src = fs.readFileSync(bundlePath, "utf8");
+    if (src.includes('"/assets/')) {
+      const patched = src.replaceAll('"/assets/', '"/app/assets/');
+      const count   = (src.match(/\"\/assets\//g) || []).length;
+      fs.writeFileSync(bundlePath, patched);
+      console.log(`[pwa-patch] Patched ${bundle}: fixed ${count} asset path(s)`);
+    } else {
+      console.log(`[pwa-patch] ${bundle}: asset paths already correct`);
+    }
+  }
+} else {
+  console.warn("[pwa-patch] WARNING: no bundle dir found — skipping asset path patch");
 }
 
 console.log("[pwa-patch] Done ✓");

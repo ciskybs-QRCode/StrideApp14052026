@@ -17,7 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.strideaccess.app",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       },
       "entitlements": {
         "com.apple.developer.usernotifications.critical-alerts": true
@@ -68,13 +70,16 @@
         {
           "icon": "./assets/images/icon.png",
           "color": "#1E3A8A",
-          "sounds": ["./assets/sounds/emergency_siren.wav"]
+          "sounds": [
+            "./assets/sounds/emergency_siren.wav"
+          ]
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": false
+      "reactCompiler": false,
+      "baseUrl": "/app"
     }
   }
 }
