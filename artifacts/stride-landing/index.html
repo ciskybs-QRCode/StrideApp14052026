@@ -13,6 +13,17 @@
     <meta name="twitter:title" content="Association Management Platform" />
     <meta name="twitter:description" content="The ultimate management platform for modern associations — streamline registrations, coordinate staff, and give members a premium mobile experience." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- PWA redirect: if the landing page was mistakenly saved to home screen, snap to the app -->
+    <script>
+      (function() {
+        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (isStandalone && location.pathname !== '/app/' && !location.pathname.startsWith('/app/')) {
+          location.replace('/app/');
+        }
+      })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
