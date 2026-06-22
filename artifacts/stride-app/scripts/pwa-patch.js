@@ -9,11 +9,12 @@
  *   4. Patches JS bundles: replaces "/assets/ with "/app/assets/ in case
  *      experiments.baseUrl was not picked up (safety net for future builds)
  *
- * Icons are pre-generated in assets/images/ from the original icon.png
- * using ImageMagick:
- *   magick assets/images/icon.png -resize 512x512 assets/images/icon-512.png
- *   magick assets/images/icon.png -resize 192x192 assets/images/icon-192.png
- *   magick assets/images/icon.png -resize 180x180 -background white -alpha remove assets/images/apple-touch-icon.png
+ * Icons are pre-generated in assets/images/ from favicon.png (original transparent logo)
+ * using ImageMagick — white background, no rounded corners (device adds rounding):
+ *   magick assets/images/favicon.png -background white -alpha remove -gravity center -resize 820x820 -extent 1024x1024 assets/images/icon.png
+ *   magick assets/images/favicon.png -background white -alpha remove -gravity center -resize 410x410 -extent 512x512 assets/images/icon-512.png
+ *   magick assets/images/favicon.png -background white -alpha remove -gravity center -resize 154x154 -extent 192x192 assets/images/icon-192.png
+ *   magick assets/images/favicon.png -background white -alpha remove -gravity center -resize 144x144 -extent 180x180 assets/images/apple-touch-icon.png
  */
 
 const fs   = require("fs");

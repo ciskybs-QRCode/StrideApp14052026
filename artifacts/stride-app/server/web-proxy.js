@@ -86,12 +86,19 @@ const server = http.createServer((req, res) => {
     proxyPath = proxyPath.slice(BASE.length) || "/";
   }
 
+  // Strip origin/referer so Expo's CORS middleware doesn't reject the request.
+  // Expo only whitelists localhost; the Replit proxy domain would be blocked.
+  const fwdHeaders = { ...req.headers };
+  fwdHeaders.host   = `localhost:${EXPO_PORT}`;
+  delete fwdHeaders.origin;
+  delete fwdHeaders.referer;
+
   const options = {
     hostname: "localhost",
     port: EXPO_PORT,
     path: proxyPath,
     method: req.method,
-    headers: { ...req.headers, host: `localhost:${EXPO_PORT}` },
+    headers: fwdHeaders,
   };
 
   const proxyReq = http.request(options, (proxyRes) => {
