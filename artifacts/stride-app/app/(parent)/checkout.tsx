@@ -509,6 +509,11 @@ export default function CheckoutScreen() {
   // ── Manual payment handler (cash, bank, PayPal, Apple Pay, Google Pay) ───
   const handleManualPayment = useCallback(async () => {
     if (!quote || !payableItems.length) return;
+    if (selectedPaymentMethod === "stripe_card") {
+      // Fallback to Stripe flow
+      await openPaymentPage();
+      return;
+    }
     setQuoteFetching(true);
     setQuoteError(null);
     try {
@@ -1160,6 +1165,7 @@ const styles = StyleSheet.create({
   payBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 17 },
   payBtnText:  { fontWeight: "800", fontSize: 16, color: "#1E3A8A" },
   payCardNote: { fontSize: 11, textAlign: "center", marginTop: 12, lineHeight: 16 },
+  paymentMethodsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 14 },
 
   // Waiting card
   waitingCard:        { borderRadius: 16, padding: 28, marginBottom: 16, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },

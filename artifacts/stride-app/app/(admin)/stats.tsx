@@ -596,6 +596,7 @@ export default function AdminHome() {
             </View>
           </View>
         </View>
+      )}
 
         {/* ── KPI CARDS ── */}
         <View style={styles.kpiRow}>
@@ -1008,6 +1009,10 @@ const styles = StyleSheet.create({
   heroSideValue: { color: "#FFF", fontSize: 22, fontWeight: "800" },
   heroSideLabel: { color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: 2 },
   heroSideDivider: { width: 1, height: 32, backgroundColor: "rgba(255,255,255,0.2)" },
+
+  ctaCard: { flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 16, gap: 8 },
+  ctaTitle: { color: "#FFF", fontSize: 16, fontWeight: "800" },
+  ctaSub: { color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 2 },
 
   kpiRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
   kpiCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: "center", gap: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3 },

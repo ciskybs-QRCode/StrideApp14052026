@@ -22,6 +22,7 @@ interface PendingPayment {
   status: string;
   items: Array<{ courseName: string; participantName: string; finalPrice: number }>;
   amount_cents: number;
+  currency: string;
   payment_method: string;
   bank_reference: string | null;
   cash_confirmed_by: number | null;

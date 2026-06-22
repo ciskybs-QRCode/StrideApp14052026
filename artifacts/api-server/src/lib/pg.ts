@@ -1236,6 +1236,11 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS min_first_aid_operators INTEGER NOT NULL DEFAULT 1;
   `).catch(() => {});
 
+  // ── admin_settings — org contact email for audit trail / branding ───────────
+  await pool.query(`
+    ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS org_contact_email TEXT;
+  `).catch(() => {});
+
   // ── course_waitlist — 'expired' status support ───────────────────────────────
   await pool.query(`
     ALTER TABLE course_waitlist DROP CONSTRAINT IF EXISTS course_waitlist_status_check;

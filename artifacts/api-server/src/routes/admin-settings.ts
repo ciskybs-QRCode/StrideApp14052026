@@ -77,6 +77,7 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
     if (!("membership_applies_to"           in row)) row.membership_applies_to           = "members";
     if (!("membership_billing_day"          in row)) row.membership_billing_day          = 1;
     if (!("membership_donation_mode"        in row)) row.membership_donation_mode        = false;
+    if (!("org_contact_email"              in row)) row.org_contact_email              = null;
 
     // Security: never send the raw Stripe secret key to the frontend.
     // Replace with a masked hint (last 4 chars) so the UI can show connection status.
@@ -131,6 +132,7 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "cert_grace_days",
     "cert_reminder_body",
     "min_first_aid_operators",
+    "org_contact_email",
     // Superannuation / Payroll deductions
     "super_rate_percent",
     "super_included",

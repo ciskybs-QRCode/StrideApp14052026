@@ -5,6 +5,7 @@ import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { getOwnerEmail } from "../lib/owner-config.js";
 import { sendOrgEmail } from "../services/emailService.js";
 import { buildRoleAssignmentEmail } from "../services/emailService.js";
+import { logAction } from "../lib/audit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -101,6 +102,7 @@ router.patch("/users/:id/status", requireAuth, requireRole("admin"), async (req,
     .select("id, name, email, role, blocked, blocked_reason")
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
+  logAction({ userId: admin.id, action: "USER_STATUS_CHANGED", tableAffected: "users", recordId: targetId, details: { blocked, reason } });
   res.json(data);
 });
 
@@ -122,6 +124,7 @@ router.patch("/users/:id/role", requireAuth, requireRole("admin"), async (req, r
     .select("id, name, email, role")
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
+  logAction({ userId: admin.id, action: "USER_ROLE_CHANGED", tableAffected: "users", recordId: targetId, details: { role } });
   res.json(data);
 });
 
@@ -226,6 +229,7 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
     }
   })();
 
+  logAction({ userId: admin.id, action: "USER_MULTI_ROLE_CHANGED", tableAffected: "users", recordId: targetId, details: { roles: cleanRoles, primaryRole } });
   res.json(updatedUser);
 });
 

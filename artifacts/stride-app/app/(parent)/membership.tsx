@@ -130,7 +130,7 @@ export default function MembershipScreen() {
       courseId:       `membership-donation-${user?.id ?? 0}`,
       courseName:     "Donation / Gold Coin",
       courseSchedule: "One-time contribution",
-      packageType:    "donation",
+      packageType:    "one_time",
       label:          "Donation",
       price:          cents / 100,
       participantName: user?.name ?? "Member",
