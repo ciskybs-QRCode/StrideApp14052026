@@ -342,6 +342,8 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="courses-manage"      options={{ href: null }} />
       <Tabs.Screen name="import-members"      options={{ href: null }} />
       <Tabs.Screen name="qr-gate"             options={{ href: null }} />
+      <Tabs.Screen name="support"              options={{ href: null }} />
+      <Tabs.Screen name="sa-support-tickets"  options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <BrandingLogoOverlay />

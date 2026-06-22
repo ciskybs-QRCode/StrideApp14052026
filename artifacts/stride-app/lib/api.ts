@@ -3731,3 +3731,48 @@ export function testEmail(): Promise<{ ok: boolean; message: string }> {
 export function testSms(): Promise<{ ok: boolean; message: string }> {
   return request("POST", "/org/communication-settings/test-sms", {});
 }
+
+// ── Support Tickets ────────────────────────────────────────────────────────────
+
+export interface SupportTicket {
+  id:           number;
+  category:     string;
+  subject:      string;
+  body:         string;
+  status:       "open" | "in_progress" | "resolved";
+  priority:     "normal" | "high" | "urgent";
+  admin_reply?: string;
+  replied_at?:  string;
+  created_at:   string;
+}
+
+export interface SupportTicketAdmin extends SupportTicket {
+  org_id?:              number;
+  org_name?:            string;
+  submitted_by_email:   string;
+  submitted_by_name?:   string;
+}
+
+export function submitSupportTicket(data: {
+  subject:  string;
+  body:     string;
+  category: string;
+}): Promise<{ ok: boolean; ticketId: number }> {
+  return request("POST", "/support/ticket", data);
+}
+
+export function getSupportTickets(): Promise<SupportTicket[]> {
+  return request("GET", "/support/tickets");
+}
+
+export function getSuperAdminSupportTickets(): Promise<SupportTicketAdmin[]> {
+  return request("GET", "/super-admin/support-tickets");
+}
+
+export function patchSupportTicket(id: number, data: {
+  status?:   string;
+  priority?: string;
+  reply?:    string;
+}): Promise<SupportTicketAdmin> {
+  return request("PATCH", `/super-admin/support-tickets/${id}`, data);
+}

@@ -72,6 +72,7 @@ import enrollmentsRouter from "./enrollments.js";
 import accountRouter from "./account.js";
 import calendarExportRouter from "./calendar-export.js";
 import directMessagesRouter from "./direct-messages.js";
+import supportRouter from "./support.js";
 
 const router: IRouter = Router();
 
@@ -148,5 +149,6 @@ router.use(enrollmentsRouter);
 router.use(accountRouter);
 router.use(calendarExportRouter);
 router.use(directMessagesRouter);
+router.use(supportRouter);
 
 export default router;

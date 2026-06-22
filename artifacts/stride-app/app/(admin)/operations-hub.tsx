@@ -156,8 +156,24 @@ export default function OperationsHub() {
               iconColor="#FBBF24"
               onPress={() => router.push("/(admin)/governance" as never)}
             />
+            <HubCard
+              icon="headset-outline"
+              title="Support Tickets"
+              description="View and respond to association support requests"
+              iconBg="#1E3A8A"
+              iconColor="#FBBF24"
+              onPress={() => router.push("/(admin)/sa-support-tickets" as never)}
+            />
           </>
         )}
+
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>HELP</Text>
+        <HubCard
+          icon="headset-outline"
+          title="Contact Stride Support"
+          description="Report a problem or ask us a question"
+          onPress={() => router.push("/(admin)/support" as never)}
+        />
       </ScrollView>
     </View>
   );
