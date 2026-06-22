@@ -139,15 +139,17 @@ router.patch("/payroll/accountant/orders/:id/mark-paid", requireAuth, requireRol
   const orgId = user.orgId ?? 1;
   const orderId = parseInt(String(req.params["id"]), 10);
   if (isNaN(orderId)) { res.status(400).json({ error: "invalid id" }); return; }
-  const { notes } = req.body as { notes?: string };
+  const { notes, paymentMethod } = req.body as { notes?: string; paymentMethod?: string };
   try {
     // Mark order as paid
     const { rows } = await pool.query(
       `UPDATE accountant_payment_orders
-       SET status = 'paid', paid_at = NOW(), payment_notes = COALESCE($1, payment_notes)
+       SET status = 'paid', paid_at = NOW(),
+           payment_notes  = COALESCE($1, payment_notes),
+           payment_method = COALESCE($4, payment_method)
        WHERE id = $2 AND org_id = $3 AND status IN ('authorized', 'pending_auth')
        RETURNING *`,
-      [notes ?? null, orderId, orgId],
+      [notes ?? null, orderId, orgId, paymentMethod ?? null],
     );
     if (!rows[0]) { res.status(404).json({ error: "Order not found or already paid" }); return; }
     const order = rows[0] as {

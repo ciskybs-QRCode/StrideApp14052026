@@ -138,7 +138,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
     setSending(true);
     try {
       await api.sendDirectMessage({
-        to_user_id: parseInt(String(selectedRecipient.id)),
+        toUserId: parseInt(String(selectedRecipient.id)),
         subject: composeSubject.trim() || undefined,
         body: composeBody.trim(),
         attachments: composeAttachments.length ? composeAttachments : undefined,

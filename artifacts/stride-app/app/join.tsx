@@ -25,13 +25,13 @@ export default function JoinScreen() {
 
   const params = useLocalSearchParams<{
     org?: string;
-    school?: string;
+    brand?: string;
     primary?: string;
     secondary?: string;
   }>();
 
   const orgSlug   = params.org      ?? "";
-  const schoolName = params.school  ? decodeURIComponent(params.school) : "the Association";
+  const assocName = params.brand  ? decodeURIComponent(params.brand) : "the Association";
   const primary   = params.primary  ? decodeURIComponent(params.primary)   : "#1E3A8A";
   const secondary = params.secondary ? decodeURIComponent(params.secondary) : "#FBBF24";
 
@@ -57,7 +57,7 @@ export default function JoinScreen() {
         role: "parent",
         roles: ["parent"],
         orgId: user.orgId,
-        schoolName,
+        schoolName: assocName,
         primaryColor: primary,
         secondaryColor: secondary,
         onboardingComplete: false,
@@ -90,7 +90,7 @@ export default function JoinScreen() {
             <Ionicons name="shield-checkmark" size={14} color={primary} />
             <Text style={[styles.schoolBadgeText, { color: primary }]}>STRIDE APP</Text>
           </View>
-          <Text style={styles.heroSchool}>{schoolName}</Text>
+          <Text style={styles.heroSchool}>{assocName}</Text>
           <Text style={styles.heroTagline}>Member Registration</Text>
           <Text style={styles.heroDesc}>
             Create your free account to follow lessons, payments and communications of your dependant members.
@@ -140,7 +140,7 @@ export default function JoinScreen() {
               ? <ActivityIndicator color="#FFF" size="small" />
               : <>
                   <Ionicons name="person-add-outline" size={20} color="#FFF" />
-                  <Text style={styles.registerBtnText}>Join {schoolName}</Text>
+                  <Text style={styles.registerBtnText}>Join {assocName}</Text>
                 </>
             }
           </Pressable>
@@ -159,7 +159,7 @@ export default function JoinScreen() {
           <View style={[styles.infoBox, { backgroundColor: `${primary}10`, borderColor: `${primary}30` }]}>
             <Ionicons name="information-circle-outline" size={15} color={primary} />
             <Text style={[styles.infoText, { color: primary }]}>
-              Your account will be linked to {schoolName}. The association administrator can manage your access from the admin panel.
+              Your account will be linked to {assocName}. The association administrator can manage your access from the admin panel.
             </Text>
           </View>
         </View>

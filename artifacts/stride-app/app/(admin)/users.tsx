@@ -1535,7 +1535,7 @@ export default function AdminUsers() {
                       );
                       // Reload users list
                       const updated = await api.getUsers();
-                      setUsers(updated);
+                      setUsers(updated.map(apiUserToRecord));
                     } catch (err) {
                       Alert.alert("Error", (err as Error).message ?? "Failed to invite admin. Please try again.");
                     } finally {

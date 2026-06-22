@@ -33,7 +33,7 @@ export default function TrialExpiredScreen() {
       const data = await getBillingStatus();
       setBilling(data);
       if (data.subscriptionStatus === "active") {
-        router.replace("/(admin)/dashboard" as never);
+        router.replace("/(admin)/stats" as never);
       }
     } catch {
     } finally {
@@ -57,8 +57,7 @@ export default function TrialExpiredScreen() {
         await WebBrowser.openBrowserAsync(url);
         setPolling(true);
       }
-    } catch (err) {
-      console.error("Subscribe error:", err);
+    } catch {
     } finally {
       setSubscribing(false);
     }

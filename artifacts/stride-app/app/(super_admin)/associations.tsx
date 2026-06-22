@@ -365,7 +365,7 @@ export default function AssociationsScreen() {
     <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
       <ScreenHeader
         title="Associations"
-        subtitle={`${orgs.length} school${orgs.length !== 1 ? "s" : ""}`}
+        subtitle={`${orgs.length} association${orgs.length !== 1 ? "s" : ""}`}
       />
       <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
           {loading ? (
@@ -412,7 +412,7 @@ export default function AssociationsScreen() {
                   <Ionicons name="business-outline" size={32} color="#9CA3AF" />
                   <Text style={styles.emptyTitle}>No associations yet</Text>
                   <Text style={styles.emptyDesc}>
-                    Register your first tenant school via the Pioneer Wizard.
+                    Register your first association via the Pioneer Wizard.
                   </Text>
                 </View>
               ) : (

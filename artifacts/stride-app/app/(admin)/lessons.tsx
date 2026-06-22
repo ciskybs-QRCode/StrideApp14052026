@@ -883,7 +883,7 @@ export default function AdminLessonsScreen() {
               <TextInput
                 style={[styles.notesInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                 value={scNotes} onChangeText={setScNotes}
-                placeholder="Additional notes for the instructor..."
+                placeholder="Additional notes for the operator..."
                 placeholderTextColor={colors.mutedForeground}
                 multiline
               />
@@ -1199,7 +1199,7 @@ export default function AdminLessonsScreen() {
                     Alert.alert("Updated", "Scheduled course updated.");
                   } else {
                     await api.createScheduledCourse(payload);
-                    Alert.alert("Sent", "Course request sent to the instructor for confirmation.");
+                    Alert.alert("Sent", "Course request sent to the operator for confirmation.");
                   }
                   await load();
                   setScDisciplineId(null); setScOperatorId(null); setScDayOfWeek(1);
@@ -1365,7 +1365,7 @@ export default function AdminLessonsScreen() {
                     {editingProfile ? "Edit Profile" : "New Operator Profile"}
                   </Text>
                   <Text style={[styles.modalCleanSub, { color: colors.mutedForeground }]}>
-                    {editingProfile ? (editingProfile.user?.name ?? "Operator") : "Configure instructor settings"}
+                    {editingProfile ? (editingProfile.user?.name ?? "Operator") : "Configure operator settings"}
                   </Text>
                 </View>
                 <Pressable
@@ -1680,7 +1680,7 @@ export default function AdminLessonsScreen() {
                       Hourly Rates
                     </Text>
                     <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>
-                      Set the instructor's pay rate for each selected discipline.
+                      Set the operator's pay rate for each selected discipline.
                     </Text>
                     <View style={[styles.ratesList, { borderColor: colors.border }]}>
                       {activeDiscs.filter(d => selectedDiscs.has(d.id)).map((d, i, arr) => (
@@ -1863,7 +1863,7 @@ export default function AdminLessonsScreen() {
                           backgroundColor: reviewSlot.operator_profile.profile_type === "paid" ? "#FEF9C3" : "#EDE9FE",
                         }]}>
                           <Text style={{ fontSize: 11, fontWeight: "700", color: reviewSlot.operator_profile.profile_type === "paid" ? "#92400E" : "#6D28D9" }}>
-                            {reviewSlot.operator_profile.profile_type === "paid" ? "Paid instructor" : "Volunteer"}
+                            {reviewSlot.operator_profile.profile_type === "paid" ? "Paid Operator" : "Volunteer"}
                           </Text>
                         </View>
                       </View>
@@ -1895,7 +1895,7 @@ export default function AdminLessonsScreen() {
                     What parents will be charged for this lesson.
                   </Text>
 
-                  {/* Operator pay — only relevant for paid instructors */}
+                  {/* Operator pay — only relevant for paid operators */}
                   {reviewSlot.operator_profile?.profile_type !== "volunteer" && (
                     <>
                       <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 14 }]}>

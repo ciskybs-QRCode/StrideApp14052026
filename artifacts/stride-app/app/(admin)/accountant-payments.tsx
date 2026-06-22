@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -238,6 +239,11 @@ export default function AccountantPaymentsScreen() {
   const [creating,    setCreating]    = useState(false);
   const [parseError,  setParseError]  = useState<string | null>(null);
 
+  // Pay modal state
+  const [payModal, setPayModal] = useState<{ orderId: number } | null>(null);
+  const [payModalMethod, setPayModalMethod] = useState<"bank_transfer" | "cash" | "paypal" | "revolut">("bank_transfer");
+  const [payModalNotes, setPayModalNotes] = useState("");
+
   const loadOrders = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true); else setLoading(true);
     try {
@@ -357,12 +363,11 @@ export default function AccountantPaymentsScreen() {
                       <OrderCard
                         order={order}
                         onAuthorize={() => doAction(order.id, () => authorizeAccountantOrder(order.id), "Payment authorized. Remember to execute it before the due date.")}
-                        onMarkPaid={() => Alert.prompt(
-                          "Mark as Paid",
-                          "Add a note (optional):",
-                          (notes) => doAction(order.id, () => markAccountantOrderPaid(order.id, notes ?? undefined), "Payment marked as paid. Operator will be notified if applicable."),
-                          "plain-text",
-                        )}
+                        onMarkPaid={() => {
+                          setPayModalMethod("bank_transfer");
+                          setPayModalNotes("");
+                          setPayModal({ orderId: order.id });
+                        }}
                         onMarkFailed={() => Alert.prompt(
                           "Mark as Failed",
                           "Reason for failure:",
@@ -506,6 +511,82 @@ export default function AccountantPaymentsScreen() {
           )}
         </ScrollView>
       )}
+
+      {/* ── Mark as Paid modal ────────────────────────────────────────────── */}
+      <Modal
+        visible={!!payModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPayModal(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: NAVY }}>Mark as Paid</Text>
+                <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>Select how this payment was executed</Text>
+              </View>
+              <Pressable onPress={() => setPayModal(null)} hitSlop={12}>
+                <Ionicons name="close" size={22} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            {/* Payment method chips */}
+            <Text style={{ fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, color: "#6B7280", marginBottom: 8 }}>Payment Method</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+              {([
+                { value: "bank_transfer", label: "Bank Transfer", icon: "business-outline" as const },
+                { value: "cash",          label: "Cash",           icon: "cash-outline" as const },
+                { value: "paypal",        label: "PayPal",         icon: "logo-paypal" as const },
+                { value: "revolut",       label: "Revolut",        icon: "card-outline" as const },
+              ] as { value: "bank_transfer" | "cash" | "paypal" | "revolut"; label: string; icon: keyof typeof Ionicons.glyphMap }[]).map(opt => (
+                <Pressable
+                  key={opt.value}
+                  onPress={() => setPayModalMethod(opt.value)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 9, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1.5, borderColor: payModalMethod === opt.value ? NAVY : "#E2E8F0", backgroundColor: payModalMethod === opt.value ? "#EFF6FF" : "#F9FAFB" }}
+                >
+                  <Ionicons name={opt.icon} size={14} color={payModalMethod === opt.value ? NAVY : "#6B7280"} />
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: payModalMethod === opt.value ? NAVY : "#374151" }}>{opt.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Optional notes */}
+            <Text style={{ fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, color: "#6B7280", marginBottom: 6 }}>Notes (optional)</Text>
+            <TextInput
+              style={{ borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, borderWidth: 1, borderColor: "#E2E8F0", backgroundColor: "#F9FAFB", color: "#111827", marginBottom: 20, minHeight: 60 }}
+              placeholder="Reference number, confirmation code, etc."
+              placeholderTextColor="#9CA3AF"
+              value={payModalNotes}
+              onChangeText={setPayModalNotes}
+              multiline
+              textAlignVertical="top"
+            />
+
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Pressable
+                style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 12, backgroundColor: "#F1F5F9" }}
+                onPress={() => setPayModal(null)}
+              >
+                <Text style={{ fontSize: 14, fontWeight: "700", color: "#374151" }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={{ flex: 2, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 12, backgroundColor: "#059669" }}
+                onPress={() => {
+                  if (!payModal) return;
+                  const id = payModal.orderId;
+                  setPayModal(null);
+                  doAction(id, () => markAccountantOrderPaid(id, payModalNotes.trim() || undefined, payModalMethod), "Payment marked as paid. Operator will be notified if applicable.");
+                }}
+              >
+                <Ionicons name="checkmark-circle-outline" size={18} color="#FFF" />
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFF" }}>Confirm Paid</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }

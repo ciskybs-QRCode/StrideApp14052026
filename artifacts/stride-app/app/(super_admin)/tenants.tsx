@@ -388,7 +388,7 @@ export default function TenantsScreen() {
     <View style={styles.container}>
       <ScreenHeader
         title="Tenant Management"
-        subtitle={`${orgs.length} school${orgs.length !== 1 ? "s" : ""}`}
+        subtitle={`${orgs.length} association${orgs.length !== 1 ? "s" : ""}`}
         right={
           <Pressable
             style={({ pressed }) => [styles.addBtn, { opacity: pressed ? 0.75 : 1 }]}

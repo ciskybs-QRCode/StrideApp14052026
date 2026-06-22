@@ -905,9 +905,10 @@ export const api = {
   getDirectMessageThread: (threadId: string) =>
     request<ApiDirectMessage[]>("GET", `/messages/thread/${threadId}`),
   sendDirectMessage: (data: {
-    to_user_id: number;
+    toUserId: number;
     subject?: string;
     body: string;
+    threadId?: string;
     attachments?: Array<{ name: string; url: string; mimeType: string }>;
   }) => request<ApiDirectMessage>("POST", "/messages/direct", data),
   markDirectMessageRead: (id: number) =>
@@ -1001,8 +1002,8 @@ export const api = {
 
   // Operator bank details
   getBankDetails: () =>
-    request<{ accountName: string | null; iban: string | null; swift: string | null; notes: string | null }>("GET", "/operator-bank-details"),
-  saveBankDetails: (data: { accountName?: string; iban?: string; swift?: string; notes?: string }) =>
+    request<{ accountName: string | null; iban: string | null; swift: string | null; notes: string | null; payout_method: string | null }>("GET", "/operator-bank-details"),
+  saveBankDetails: (data: { accountName?: string; iban?: string; swift?: string; notes?: string; payoutMethod?: string }) =>
     request<{ ok: boolean }>("PUT", "/operator-bank-details", data),
 
   // Operator invoices
@@ -3499,8 +3500,8 @@ export function getAccountantOrders(): Promise<{ orders: AccountantPaymentOrder[
 export function authorizeAccountantOrder(id: number): Promise<{ order: AccountantPaymentOrder }> {
   return request("PATCH", `/payroll/accountant/orders/${id}/authorize`);
 }
-export function markAccountantOrderPaid(id: number, notes?: string): Promise<{ order: AccountantPaymentOrder }> {
-  return request("PATCH", `/payroll/accountant/orders/${id}/mark-paid`, { notes });
+export function markAccountantOrderPaid(id: number, notes?: string, paymentMethod?: string): Promise<{ order: AccountantPaymentOrder }> {
+  return request("PATCH", `/payroll/accountant/orders/${id}/mark-paid`, { notes, paymentMethod });
 }
 export function markAccountantOrderFailed(id: number, reason?: string): Promise<{ order: AccountantPaymentOrder }> {
   return request("PATCH", `/payroll/accountant/orders/${id}/mark-failed`, { reason });

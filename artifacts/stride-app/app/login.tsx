@@ -43,9 +43,7 @@ export default function LoginScreen() {
   };
 
   const navigateAfterLogin = (role: UserRole, isOwner?: boolean) => {
-    console.log("[login] navigateAfterLogin — role:", role, "| isOwner:", isOwner);
     if (isOwner || role === "super_admin") {
-      console.log("[login] → /(super_admin)/dashboard");
       router.replace("/(super_admin)/dashboard" as never);
     } else if (role === "kiosk")    router.replace("/(kiosk)/" as never);
     else if (role === "admin")      router.replace("/(admin)/stats" as never);
@@ -89,8 +87,6 @@ export default function LoginScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally { setLoading(false); }
   };
-
-  const orgName = user?.schoolName;
 
   return (
     <View style={styles.container}>

@@ -1304,6 +1304,10 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE operator_profiles
       ADD COLUMN IF NOT EXISTS employment_sub_type TEXT;
   `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE operator_profiles
+      ADD COLUMN IF NOT EXISTS payout_method TEXT NOT NULL DEFAULT 'bank_transfer';
+  `).catch(() => {});
 
   // ── Employment contracts ───────────────────────────────────────────────────────
   await pool.query(`
@@ -1452,6 +1456,10 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS apo_org_idx    ON accountant_payment_orders(org_id);
     CREATE INDEX IF NOT EXISTS apo_status_idx ON accountant_payment_orders(org_id, status);
     CREATE INDEX IF NOT EXISTS apo_due_idx    ON accountant_payment_orders(due_date) WHERE status NOT IN ('paid','cancelled');
+  `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE accountant_payment_orders
+      ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'bank_transfer';
   `).catch(() => {});
 
   // ── Payment execution log ─────────────────────────────────────────────────────

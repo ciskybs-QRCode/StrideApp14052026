@@ -598,7 +598,8 @@ export default function AdminHome() {
         </View>
       )}
 
-        {/* ── KPI CARDS ── */}
+        {/* ── KPI CARDS (hidden for super_admin without org) ── */}
+        {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
         <View style={styles.kpiRow}>
           {[
             { label: "Outstanding", value: `${cur}${pendingRevenue.toLocaleString()}`,  icon: "time-outline"    as const, color: "#1E3A8A", bg: "#EFF6FF" },
@@ -615,8 +616,11 @@ export default function AdminHome() {
             </View>
           ))}
         </View>
+        )}
 
-        {/* ── Contact the Office ── */}
+        {/* ── Contact the Office (hidden for super_admin without org) ── */}
+        {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
+        <>
         <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 24, marginBottom: 10 }]}>
           Contact the Office
         </Text>
@@ -660,6 +664,8 @@ export default function AdminHome() {
             </View>
           )}
         </View>
+        </>
+        )}
 
       </ScrollView>
 

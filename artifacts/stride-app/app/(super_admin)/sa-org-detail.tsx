@@ -410,7 +410,7 @@ export default function SAOrgDetailScreen() {
             <Text style={[m.fieldLabel, { marginTop: 16 }]}>REASON (OPTIONAL)</Text>
             <TextInput
               style={m.input}
-              placeholder="e.g. Partner school, personal use, pilot programme…"
+              placeholder="e.g. Partner association, personal use, pilot programme…"
               placeholderTextColor="#9CA3AF"
               value={grantReason}
               onChangeText={setGrantReason}

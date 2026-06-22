@@ -29,7 +29,7 @@ import {
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
 
-type View = "list" | "chat" | "ticket";
+type SupportView = "list" | "chat" | "ticket";
 
 const CATEGORIES = [
   { key: "billing",   label: "Billing & Payments", icon: "card-outline"       as const },
@@ -60,7 +60,7 @@ export default function SupportScreen() {
   const { user } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
 
-  const [view, setView] = useState<View>("list");
+  const [view, setView] = useState<SupportView>("list");
   const [tickets, setTickets]     = useState<SupportTicket[]>([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);

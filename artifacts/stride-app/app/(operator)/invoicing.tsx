@@ -492,10 +492,11 @@ export default function OperatorInvoicing() {
   const [bankValues, setBankValues]   = useState<Record<string, string>>({});
   const [bankSaving, setBankSaving]   = useState(false);
   const [bankSaved, setBankSaved]     = useState(false);
+  const [payoutMethod, setPayoutMethod] = useState<"bank_transfer" | "cash" | "paypal">("bank_transfer");
 
   const handleSaveBank = async () => {
     setBankSaving(true);
-    const apiPayload: { accountName?: string; iban?: string; swift?: string } = {};
+    const apiPayload: { accountName?: string; iban?: string; swift?: string; payoutMethod?: string } = { payoutMethod };
     for (const f of bankFields) {
       const val = bankValues[f.key] ?? "";
       if (f.apiField === "accountName") apiPayload.accountName = val;
@@ -536,6 +537,7 @@ export default function OperatorInvoicing() {
           else if (f.apiField === "swift")  vals[f.key] = d.swift ?? "";
         }
         setBankValues(vals);
+        if (d.payout_method) setPayoutMethod(d.payout_method as "bank_transfer" | "cash" | "paypal");
         AsyncStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(vals)).catch(() => {});
       } else {
         AsyncStorage.getItem(BANK_STORAGE_KEY).then(raw => {
@@ -1602,6 +1604,29 @@ export default function OperatorInvoicing() {
               <Pressable onPress={() => setShowPaymentDetails(false)} hitSlop={12}>
                 <Ionicons name="close" size={22} color={colors.mutedForeground} />
               </Pressable>
+            </View>
+
+            {/* ── Payout Method selector ── */}
+            <View style={{ marginBottom: 18 }}>
+              <Text style={{ fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, color: colors.mutedForeground, marginBottom: 8 }}>
+                Preferred Payout Method
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {([
+                  { value: "bank_transfer", label: "Bank Transfer", icon: "business-outline" as const },
+                  { value: "paypal",        label: "PayPal",        icon: "logo-paypal" as const },
+                  { value: "cash",          label: "Cash",          icon: "cash-outline" as const },
+                ] as { value: "bank_transfer" | "cash" | "paypal"; label: string; icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap }[]).map(opt => (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => setPayoutMethod(opt.value)}
+                    style={{ flex: 1, alignItems: "center", gap: 4, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: payoutMethod === opt.value ? colors.primary : colors.border, backgroundColor: payoutMethod === opt.value ? "#EFF6FF" : colors.muted }}
+                  >
+                    <Ionicons name={opt.icon} size={16} color={payoutMethod === opt.value ? colors.primary : colors.mutedForeground} />
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: payoutMethod === opt.value ? colors.primary : colors.mutedForeground, textAlign: "center" }}>{opt.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
 
             {bankFields.map(field => (

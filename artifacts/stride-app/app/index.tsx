@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 export default function Index() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const params = useLocalSearchParams<{ org?: string; school?: string; primary?: string; secondary?: string }>();
+  const params = useLocalSearchParams<{ org?: string; brand?: string; primary?: string; secondary?: string }>();
 
   const [sysStatus, setSysStatus] = useState<{ configured: boolean; userCount: number; trialExpired?: boolean; subscriptionStatus?: string } | null>(null);
   const [sysLoading, setSysLoading] = useState(true);
@@ -33,7 +33,7 @@ export default function Index() {
     if (params.org) {
       const qs = new URLSearchParams({
         org: params.org,
-        ...(params.school    ? { school:    params.school }    : {}),
+        ...(params.brand    ? { brand:    params.brand }    : {}),
         ...(params.primary   ? { primary:   params.primary }   : {}),
         ...(params.secondary ? { secondary: params.secondary } : {}),
       }).toString();

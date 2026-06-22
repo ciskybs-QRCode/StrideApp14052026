@@ -25,10 +25,10 @@ import { getMyOrgs, type OrgEntry } from "@/lib/api";
 // ── Role helpers ──────────────────────────────────────────────────────────────
 
 const ROLE_META: Record<string, { label: string; color: string; icon: string }> = {
-  admin:       { label: "Admin",    color: "#6D28D9", icon: "shield-checkmark" },
-  operator:    { label: "Operator", color: "#0369A1", icon: "school" },
-  parent:      { label: "Member",   color: "#047857", icon: "person" },
-  super_admin: { label: "Platform", color: "#FBBF24", icon: "globe-outline" },
+  admin:       { label: "Admin",    color: "#1E3A8A", icon: "shield-checkmark" },
+  operator:    { label: "Operator", color: "#FBBF24", icon: "briefcase-outline" },
+  parent:      { label: "Member",   color: "#6B7280", icon: "person" },
+  super_admin: { label: "Platform", color: "#1E3A8A", icon: "globe-outline" },
 };
 
 function roleMeta(role: string) {
@@ -49,8 +49,7 @@ export default function MyAssociationsScreen() {
     try {
       const data = await getMyOrgs();
       setOrgs(data.orgs);
-    } catch (err) {
-      console.error("my-associations load error:", err);
+    } catch {
     } finally {
       setLoading(false);
       setRefreshing(false);

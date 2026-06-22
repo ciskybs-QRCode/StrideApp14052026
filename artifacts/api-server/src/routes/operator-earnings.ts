@@ -236,12 +236,13 @@ router.get("/operator-bank-details", requireAuth, requireRole("operator", "admin
       bank_iban:         string | null;
       bank_swift:        string | null;
       bank_notes:        string | null;
+      payout_method:     string | null;
     }>(
-      `SELECT bank_account_name, bank_iban, bank_swift, bank_notes
+      `SELECT bank_account_name, bank_iban, bank_swift, bank_notes, payout_method
        FROM operator_profiles WHERE user_id = $1 AND organization_id = $2`,
       [parseInt(user.id), user.orgId ?? 1],
     );
-    res.json(rows[0] ?? { bank_account_name: null, bank_iban: null, bank_swift: null, bank_notes: null });
+    res.json(rows[0] ?? { bank_account_name: null, bank_iban: null, bank_swift: null, bank_notes: null, payout_method: "bank_transfer" });
   } catch {
     res.json({ bank_account_name: null, bank_iban: null, bank_swift: null, bank_notes: null });
   }
@@ -250,22 +251,24 @@ router.get("/operator-bank-details", requireAuth, requireRole("operator", "admin
 // ── PUT /operator-bank-details ────────────────────────────────────────────────
 router.put("/operator-bank-details", requireAuth, requireRole("operator", "admin"), async (req, res) => {
   const user = (req as AuthReq).user;
-  const { accountName, iban, swift, notes } = req.body as {
-    accountName?: string;
-    iban?:        string;
-    swift?:       string;
-    notes?:       string;
+  const { accountName, iban, swift, notes, payoutMethod } = req.body as {
+    accountName?:   string;
+    iban?:          string;
+    swift?:         string;
+    notes?:         string;
+    payoutMethod?:  string;
   };
   try {
     await pool.query(
-      `INSERT INTO operator_profiles (user_id, organization_id, bank_account_name, bank_iban, bank_swift, bank_notes)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO operator_profiles (user_id, organization_id, bank_account_name, bank_iban, bank_swift, bank_notes, payout_method)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (user_id, organization_id) DO UPDATE
          SET bank_account_name = EXCLUDED.bank_account_name,
              bank_iban         = EXCLUDED.bank_iban,
              bank_swift        = EXCLUDED.bank_swift,
-             bank_notes        = EXCLUDED.bank_notes`,
-      [parseInt(user.id), user.orgId ?? 1, accountName ?? null, iban ?? null, swift ?? null, notes ?? null],
+             bank_notes        = EXCLUDED.bank_notes,
+             payout_method     = EXCLUDED.payout_method`,
+      [parseInt(user.id), user.orgId ?? 1, accountName ?? null, iban ?? null, swift ?? null, notes ?? null, payoutMethod ?? "bank_transfer"],
     );
     req.log.info({ userId: user.id }, "operator bank details saved");
     res.json({ ok: true });
