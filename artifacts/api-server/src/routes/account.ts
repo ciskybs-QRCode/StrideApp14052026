@@ -145,6 +145,77 @@ router.delete("/account", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /account/profile-extra ───────────────────────────────────────────────
+router.get("/account/profile-extra", requireAuth, async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  try {
+    const { rows } = await pool.query(
+      `SELECT preferred_name, date_of_birth, gender, phone,
+              address_street, address_suburb, address_city,
+              address_postcode, address_state, tax_id, acn
+         FROM user_profile_extra WHERE user_id = $1`,
+      [userId],
+    );
+    res.json(rows[0] ?? {});
+  } catch (err) {
+    logger.error({ err }, "account/profile-extra GET failed");
+    res.json({});
+  }
+});
+
+// ── PATCH /account/profile-extra ─────────────────────────────────────────────
+router.patch("/account/profile-extra", requireAuth, async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  const {
+    preferred_name, date_of_birth, gender, phone,
+    address_street, address_suburb, address_city,
+    address_postcode, address_state, tax_id, acn,
+  } = req.body as {
+    preferred_name?: string; date_of_birth?: string; gender?: string; phone?: string;
+    address_street?: string; address_suburb?: string; address_city?: string;
+    address_postcode?: string; address_state?: string; tax_id?: string; acn?: string;
+  };
+
+  try {
+    await pool.query(
+      `INSERT INTO user_profile_extra
+         (user_id, preferred_name, date_of_birth, gender, phone,
+          address_street, address_suburb, address_city,
+          address_postcode, address_state, tax_id, acn, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         preferred_name   = EXCLUDED.preferred_name,
+         date_of_birth    = EXCLUDED.date_of_birth,
+         gender           = EXCLUDED.gender,
+         phone            = EXCLUDED.phone,
+         address_street   = EXCLUDED.address_street,
+         address_suburb   = EXCLUDED.address_suburb,
+         address_city     = EXCLUDED.address_city,
+         address_postcode = EXCLUDED.address_postcode,
+         address_state    = EXCLUDED.address_state,
+         tax_id           = EXCLUDED.tax_id,
+         acn              = EXCLUDED.acn,
+         updated_at       = NOW()`,
+      [userId, preferred_name ?? null, date_of_birth ?? null, gender ?? null, phone ?? null,
+       address_street ?? null, address_suburb ?? null, address_city ?? null,
+       address_postcode ?? null, address_state ?? null, tax_id ?? null, acn ?? null],
+    );
+
+    // Also sync phone to Supabase users table (used by other parts of the app)
+    if (phone !== undefined) {
+      await supabase.from("users").update({ phone }).eq("id", userId);
+    }
+
+    logger.info({ userId }, "account/profile-extra saved");
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "account/profile-extra PATCH failed");
+    res.status(500).json({ error: "Failed to save profile" });
+  }
+});
+
 // ── PATCH /account/noshow-preference ─────────────────────────────────────────
 // Adult member toggles their own no-show safety alert preference.
 router.patch("/account/noshow-preference", requireAuth, async (req, res) => {

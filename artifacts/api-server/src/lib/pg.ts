@@ -1678,5 +1678,24 @@ export async function ensureTables(): Promise<void> {
     );
   `).catch(() => {});
 
+  // ── user_profile_extra — all non-auth profile fields synced across devices ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_profile_extra (
+      user_id          INTEGER PRIMARY KEY,
+      preferred_name   TEXT,
+      date_of_birth    TEXT,
+      gender           TEXT,
+      phone            TEXT,
+      address_street   TEXT,
+      address_suburb   TEXT,
+      address_city     TEXT,
+      address_postcode TEXT,
+      address_state    TEXT,
+      tax_id           TEXT,
+      acn              TEXT,
+      updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `).catch(() => {});
+
   initialized = true;
 }

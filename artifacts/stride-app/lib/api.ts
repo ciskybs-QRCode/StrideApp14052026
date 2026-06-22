@@ -271,6 +271,19 @@ export const api = {
   updateMyProfile: (data: { profilePhotoUri?: string | null; name?: string; preferred_name?: string }) =>
     request<{ ok: boolean }>("PATCH", "/user/me", data),
 
+  getProfileExtra: () =>
+    request<{
+      preferred_name?: string; date_of_birth?: string; gender?: string; phone?: string;
+      address_street?: string; address_suburb?: string; address_city?: string;
+      address_postcode?: string; address_state?: string; tax_id?: string; acn?: string;
+    }>("GET", "/account/profile-extra"),
+
+  saveProfileExtra: (data: {
+    preferred_name: string; date_of_birth: string; gender: string; phone: string;
+    address_street: string; address_suburb: string; address_city: string;
+    address_postcode: string; address_state: string; tax_id: string; acn: string;
+  }) => request<{ ok: boolean }>("PATCH", "/account/profile-extra", data),
+
   /**
    * POST /user/activate-operator — upserts an operator_profiles row for the
    * current user + their active orgId, granting them the operator/teacher role

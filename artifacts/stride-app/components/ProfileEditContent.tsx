@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
+import { api } from "@/lib/api";
 
 // ── Storage key (shared across all roles) ─────────────────────────────────────
 
@@ -267,24 +268,63 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
   const addrLabels = getAddressLabels(countryCode);
   const bizLabels  = getBusinessLabels(countryCode);
 
+  // ── Load profile: backend first, fall back to AsyncStorage, then user.name ──
   useEffect(() => {
-    AsyncStorage.getItem(PROFILE_KEY)
-      .then(raw => {
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw) as Partial<ProfileExtra>;
-            setForm(prev => ({ ...prev, ...parsed }));
-          } catch { /* ignore */ }
-        } else if (user?.name) {
-          const parts = user.name.split(" ");
-          setForm(prev => ({
-            ...prev,
-            firstName: parts[0] ?? "",
-            lastName: parts.slice(1).join(" "),
-          }));
-        }
+    let cancelled = false;
+    api.getProfileExtra()
+      .then((remote: {
+        preferred_name?: string; date_of_birth?: string; gender?: string; phone?: string;
+        address_street?: string; address_suburb?: string; address_city?: string;
+        address_postcode?: string; address_state?: string; tax_id?: string; acn?: string;
+      }) => {
+        if (cancelled) return;
+        // Map snake_case remote fields → camelCase form fields
+        const fromRemote: Partial<ProfileExtra> = {
+          preferredName:   remote.preferred_name   ?? "",
+          dateOfBirth:     remote.date_of_birth    ?? "",
+          gender:          remote.gender            ?? "",
+          phone:           remote.phone             ?? "",
+          addressStreet:   remote.address_street    ?? "",
+          addressSuburb:   remote.address_suburb    ?? "",
+          addressCity:     remote.address_city      ?? "",
+          addressPostcode: remote.address_postcode  ?? "",
+          addressState:    remote.address_state     ?? "",
+          taxId:           remote.tax_id            ?? "",
+          acn:             remote.acn               ?? "",
+        };
+        // Populate name from user if backend has no preferred/first name yet
+        const nameParts = user?.name?.split(" ") ?? [];
+        setForm(prev => ({
+          ...prev,
+          firstName: nameParts[0] ?? prev.firstName,
+          lastName:  nameParts.slice(1).join(" ") || prev.lastName,
+          ...fromRemote,
+        }));
+        // Also persist to local cache
+        AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(fromRemote)).catch(() => {});
       })
-      .catch(() => {});
+      .catch(() => {
+        // Backend unavailable — fall back to AsyncStorage
+        AsyncStorage.getItem(PROFILE_KEY)
+          .then(raw => {
+            if (cancelled) return;
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw) as Partial<ProfileExtra>;
+                setForm(prev => ({ ...prev, ...parsed }));
+              } catch { /* ignore */ }
+            } else if (user?.name) {
+              const parts = user.name.split(" ");
+              setForm(prev => ({
+                ...prev,
+                firstName: parts[0] ?? "",
+                lastName:  parts.slice(1).join(" "),
+              }));
+            }
+          })
+          .catch(() => {});
+      });
+    return () => { cancelled = true; };
   }, [user?.name]);
 
   const set = (key: keyof ProfileExtra) => (v: string) => {
@@ -309,11 +349,31 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
         form.addressPostcode,
         form.addressState,
       ].filter(Boolean).join(", ");
+
+      // 1. Save all extended fields to backend (persisted in pool, synced across devices)
+      await api.saveProfileExtra({
+        preferred_name:   form.preferredName,
+        date_of_birth:    form.dateOfBirth,
+        gender:           form.gender,
+        phone:            form.phone,
+        address_street:   form.addressStreet,
+        address_suburb:   form.addressSuburb,
+        address_city:     form.addressCity,
+        address_postcode: form.addressPostcode,
+        address_state:    form.addressState,
+        tax_id:           form.taxId,
+        acn:              form.acn,
+      });
+
+      // 2. Persist full name to backend + local state
+      const fullName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(" ");
+      if (fullName) await updateUser({ name: fullName });
+
+      // 3. Cache locally for offline access
       const toSave: ProfileExtra = { ...form, address: combined };
       await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(toSave));
       if (combined) await AsyncStorage.setItem("stride_campus_address", combined);
-      const fullName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(" ");
-      if (fullName) await updateUser({ name: fullName });
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSaved(true);
       setErrors({});
