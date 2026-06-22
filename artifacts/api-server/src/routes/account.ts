@@ -145,6 +145,35 @@ router.delete("/account", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /org/user-context ────────────────────────────────────────────────────
+// Returns the organisation's country, city, and name so the profile form can
+// suggest smart defaults / placeholders to all roles (parent/operator/admin).
+router.get("/org/user-context", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? parseInt(user.id, 10);
+  try {
+    const { data } = await supabase
+      .from("organizations")
+      .select("name, country, legal_address, contact_phone")
+      .eq("id", orgId)
+      .maybeSingle();
+
+    // Best-effort city parse: take the second-to-last comma-segment of legal_address
+    const parts = (data?.legal_address ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
+    const city  = parts.length >= 2 ? parts[parts.length - 2] : (parts[0] ?? "");
+
+    res.json({
+      org_name:     data?.name    ?? "",
+      country:      data?.country ?? "",
+      city,
+      legal_address: data?.legal_address ?? "",
+    });
+  } catch (err) {
+    logger.error({ err }, "org/user-context failed");
+    res.json({ org_name: "", country: "", city: "", legal_address: "" });
+  }
+});
+
 // ── GET /account/profile-extra ───────────────────────────────────────────────
 router.get("/account/profile-extra", requireAuth, async (req, res) => {
   const user   = (req as AuthReq).user;

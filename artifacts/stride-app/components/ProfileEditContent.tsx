@@ -1,8 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -65,8 +68,8 @@ function getAddressLabels(cc: string): AddressLabels {
       stateChips: ["ACT","NSW","NT","QLD","SA","TAS","VIC","WA"],
     };
     case "IT": return {
-      street: "Via e Numero Civico", suburb: "Quartiere / Frazione", suburbOptional: true,
-      city: "Comune", postcode: "CAP", state: "Provincia",
+      street: "Street Address", suburb: "Area / District", suburbOptional: true,
+      city: "City / Municipality", postcode: "Postcode (CAP)", state: "Province",
       stateChips: null,
     };
     case "NZ": return {
@@ -104,8 +107,8 @@ function getBusinessLabels(cc: string): BusinessLabels {
       secondary: { label: "ACN / Nonprofit Number", sublabel: "Australian Company Number or Association Reg.", placeholder: "XXX XXX XXX" },
     };
     case "IT": return {
-      primary:   { label: "Partita IVA / Codice Fiscale", sublabel: "Identificativo fiscale (obbligatorio)", placeholder: "XXXXXXXXXXXXXXX", required: true },
-      secondary: { label: "REA / Numero ETS", sublabel: "Registro Imprese o Terzo Settore (facoltativo)", placeholder: "MI-XXXXXXX" },
+      primary:   { label: "Tax ID / VAT (Codice Fiscale)", sublabel: "Italian fiscal identifier (required)", placeholder: "XXXXXXXXXXXXXXX", required: true },
+      secondary: { label: "REA / Association Number", sublabel: "Chamber of Commerce or ETS register (optional)", placeholder: "MI-XXXXXXX" },
     };
     case "NZ": return {
       primary:   { label: "NZBN / IRD Number", sublabel: "New Zealand Business Number", placeholder: "XXXXXXXXXX", required: false },
@@ -264,6 +267,8 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [orgCity, setOrgCity] = useState("");
 
   const addrLabels = getAddressLabels(countryCode);
   const bizLabels  = getBusinessLabels(countryCode);
@@ -326,6 +331,51 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
       });
     return () => { cancelled = true; };
   }, [user?.name]);
+
+  // ── Fetch org context for smart address defaults ───────────────────────────
+  useEffect(() => {
+    api.getOrgContext()
+      .then(ctx => {
+        if (ctx.city) setOrgCity(ctx.city);
+      })
+      .catch(() => {});
+  }, []);
+
+  // ── Geolocation fill ───────────────────────────────────────────────────────
+  const fillFromLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Location Access",
+        "Enable location access in your device settings to auto-fill your address.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    setLocating(true);
+    try {
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const [geo] = await Location.reverseGeocodeAsync({
+        latitude:  pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      });
+      if (geo) {
+        setForm(p => ({
+          ...p,
+          addressStreet:   [geo.streetNumber, geo.street].filter(Boolean).join(" ") || p.addressStreet,
+          addressSuburb:   geo.subregion ?? geo.district ?? p.addressSuburb,
+          addressCity:     geo.city ?? geo.region ?? p.addressCity,
+          addressPostcode: geo.postalCode ?? p.addressPostcode,
+          addressState:    geo.region ?? p.addressState,
+        }));
+        setTouched(true);
+      }
+    } catch {
+      Alert.alert("Location Error", "Could not determine your location. Please enter your address manually.");
+    } finally {
+      setLocating(false);
+    }
+  };
 
   const set = (key: keyof ProfileExtra) => (v: string) => {
     setForm(p => ({ ...p, [key]: v }));
@@ -516,7 +566,22 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
       </View>
 
       {/* ── ADDRESS ── */}
-      <SectionHeader icon="location-outline" title="Address" colors={colors} />
+      <View style={styles.sectionHeaderRow}>
+        <SectionHeader icon="location-outline" title="Address" colors={colors} />
+        <Pressable
+          onPress={() => { void fillFromLocation(); }}
+          style={[styles.locateBtn, { borderColor: colors.primary }]}
+          disabled={locating}
+        >
+          {locating
+            ? <ActivityIndicator size="small" color={colors.primary} />
+            : <Ionicons name="locate-outline" size={14} color={colors.primary} />
+          }
+          <Text style={[styles.locateBtnText, { color: colors.primary }]}>
+            {locating ? "Locating…" : "Use My Location"}
+          </Text>
+        </Pressable>
+      </View>
       <View style={[styles.card, { backgroundColor: colors.card, gap: 14 }]}>
 
         {/* Street */}
@@ -531,7 +596,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
               }]}
               value={form.addressStreet}
               onChangeText={set("addressStreet")}
-              placeholder={countryCode === "IT" ? "Es. Via Roma 12" : "e.g. 12 Example Street"}
+              placeholder="e.g. 12 Main Street"
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="words"
               autoCorrect={false}
@@ -575,7 +640,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
             }]}
             value={form.addressCity}
             onChangeText={set("addressCity")}
-            placeholder={addrLabels.city}
+            placeholder={orgCity || addrLabels.city}
             placeholderTextColor={colors.mutedForeground}
             autoCapitalize="words"
             autoCorrect={false}
@@ -788,6 +853,14 @@ const styles = StyleSheet.create({
   },
   errMsg: { fontSize: 11, color: "#EF4444", marginTop: 5, marginLeft: 2 },
   sublabel: { fontSize: 11, lineHeight: 14, marginBottom: 8, marginTop: 1 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  locateBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    borderWidth: 1, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 5,
+    marginBottom: 10,
+  },
+  locateBtnText: { fontSize: 12, fontWeight: "600" },
   genderGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   genderPill: {
     paddingHorizontal: 16, paddingVertical: 9,

@@ -271,6 +271,11 @@ export const api = {
   updateMyProfile: (data: { profilePhotoUri?: string | null; name?: string; preferred_name?: string }) =>
     request<{ ok: boolean }>("PATCH", "/user/me", data),
 
+  getOrgContext: () =>
+    request<{ org_name: string; country: string; city: string; legal_address: string }>(
+      "GET", "/org/user-context"
+    ),
+
   getProfileExtra: () =>
     request<{
       preferred_name?: string; date_of_birth?: string; gender?: string; phone?: string;
