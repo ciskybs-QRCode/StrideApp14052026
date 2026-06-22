@@ -303,7 +303,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
 
 const INITIAL_ADMIN_ITEMS: AdminScheduleItem[] = [
   { id: "s1", title: "Front Desk Coverage", type: "secretary_hours", date: "19/05/2026", startTime: "09:00", duration: 480, participants: "Sara Chen", notes: "Covers registration and payments", status: "scheduled" },
-  { id: "s2", title: "Weekly Staff Briefing", type: "staff_meeting", date: "20/05/2026", startTime: "08:30", duration: 30, participants: "All instructors", notes: "Discuss schedule changes", status: "scheduled" },
+  { id: "s2", title: "Weekly Staff Briefing", type: "staff_meeting", date: "20/05/2026", startTime: "08:30", duration: 30, participants: "All operators", notes: "Discuss schedule changes", status: "scheduled" },
   { id: "s3", title: "Member Consultation — Smith", type: "parent_teacher", date: "21/05/2026", startTime: "17:00", duration: 45, participants: "Emma Wilson, Mr & Mrs Smith", notes: "Progress review for Jane", status: "scheduled" },
 ];
 
@@ -3271,7 +3271,7 @@ export default function ActivityScreen() {
               Clone to another campus
             </Text>
             <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 20 }}>
-              Are the details (days, times, teachers, ages, level) identical, or do they need changes?
+              Are the details (days, times, operators, ages, level) identical, or do they need changes?
             </Text>
             <Pressable onPress={cloneIdentical}
               style={{ backgroundColor: "#D1FAE5", borderRadius: 14, padding: 16, marginBottom: 10,

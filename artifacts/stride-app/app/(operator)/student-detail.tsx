@@ -58,7 +58,7 @@ export default function StudentDetail() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
         <Ionicons name="person-outline" size={48} color={colors.mutedForeground} />
-        <Text style={[styles.notFoundText, { color: colors.mutedForeground }]}>Student not found</Text>
+        <Text style={[styles.notFoundText, { color: colors.mutedForeground }]}>Member not found</Text>
         <Pressable style={[styles.backFallback, { backgroundColor: colors.primary }]} onPress={() => router.navigate("/(operator)/students" as never)}>
           <Text style={styles.backFallbackText}>Go Back</Text>
         </Pressable>

@@ -945,7 +945,7 @@ export default function CalendarManagementScreen() {
                   backgroundColor: colors.muted, borderRadius: 12, padding: 14 }}>
                   <Ionicons name="alert-circle-outline" size={18} color={colors.mutedForeground} />
                   <Text style={{ fontSize: 13, color: colors.foreground }}>
-                    <Text style={{ fontWeight: "800" }}>{waitlistTotal}</Text> students currently on waitlists
+                    <Text style={{ fontWeight: "800" }}>{waitlistTotal}</Text> members currently on waitlists
                   </Text>
                 </View>
               )}

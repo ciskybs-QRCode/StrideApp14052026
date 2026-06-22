@@ -298,7 +298,7 @@ export default function BookLessonScreen() {
             <Ionicons name="checkmark-circle" size={56} color={colors.primary} />
           </View>
           <Text style={styles.confirmedTitle}>Lesson Booked!</Text>
-          <Text style={styles.confirmedSub}>Your request has been sent. You'll be notified when the instructor confirms.</Text>
+          <Text style={styles.confirmedSub}>Your request has been sent. You'll be notified when the operator confirms.</Text>
 
           <View style={[styles.confirmedCard, { backgroundColor: "rgba(255,255,255,0.12)" }]}>
             {[
@@ -359,7 +359,7 @@ export default function BookLessonScreen() {
       <ScreenHeader
         title="Book a Private Lesson"
         subtitle={
-          step === "operator" ? "Choose your instructor" :
+          step === "operator" ? "Choose your operator" :
           step === "style" ? "Choose a discipline" :
           step === "location" ? "Choose a location" :
           step === "time" ? "Choose a time slot" : "Choose participants"
@@ -418,7 +418,7 @@ export default function BookLessonScreen() {
               <View style={styles.emptyCard}>
                 <Ionicons name="musical-notes-outline" size={44} color={colors.mutedForeground} />
                 <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Styles Available</Text>
-                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>This instructor has no approved slots for any discipline.</Text>
+                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>This operator has no approved slots for any discipline.</Text>
               </View>
             ) : (
               disciplinesForOp.map(d => (

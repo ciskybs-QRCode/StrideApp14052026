@@ -167,7 +167,7 @@ function mapAccessToFeedback(res: AccessResponse): FeedbackState {
     return {
       type:    "denied",
       headline: "Account Unavailable",
-      subtext:  "This account is currently restricted. Please contact the school office for assistance.",
+      subtext:  "This account is currently restricted. Please contact the administration for assistance.",
       name,
     };
   }
@@ -518,7 +518,7 @@ export default function KioskScreen() {
             <View style={[styles.corner, styles.cornerBL]} />
             <View style={[styles.corner, styles.cornerBR]} />
           </View>
-          <Text style={styles.scanHint}>Member · Ticket · Instructor</Text>
+          <Text style={styles.scanHint}>Member · Ticket · Operator</Text>
         </View>
       )}
 

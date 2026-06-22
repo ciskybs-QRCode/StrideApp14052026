@@ -486,7 +486,7 @@ export default function OperatorCoursesScreen() {
         <View style={[styles.accessNote, { backgroundColor: "#DBEAFE", borderColor: "#BFDBFE" }]}>
           <Ionicons name="shield-checkmark-outline" size={16} color="#1D4ED8" />
           <Text style={{ fontSize: 12, color: "#1D4ED8", fontWeight: "600", flex: 1 }}>
-            Materials are only visible to enrolled students and their parents. You can upload content for courses where you are the assigned instructor.
+            Materials are only visible to enrolled members and their guardians. You can upload content for courses where you are the assigned operator.
           </Text>
         </View>
 
@@ -495,7 +495,7 @@ export default function OperatorCoursesScreen() {
             <Ionicons name="school-outline" size={40} color={colors.mutedForeground} />
             <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No Assigned Courses</Text>
             <Text style={[styles.emptyBody, { color: colors.mutedForeground }]}>
-              You will see your courses here once the Admin assigns you as the instructor.
+              You will see your courses here once the Admin assigns you as the operator.
             </Text>
           </View>
         ) : (
@@ -555,7 +555,7 @@ export default function OperatorCoursesScreen() {
                       {[
                         { icon: "calendar-outline" as const,  label: "Schedule",  value: course.schedule || "—" },
                         { icon: "location-outline" as const,  label: "Location",  value: course.location || "—" },
-                        { icon: "people-outline" as const,    label: "Students",  value: `${course.enrolled} / ${course.capacity} enrolled` },
+                        { icon: "people-outline" as const,    label: "Members",   value: `${course.enrolled} / ${course.capacity} enrolled` },
                         { icon: "star-outline" as const,      label: "Level",     value: course.level || "—" },
                         { icon: "fitness-outline" as const,   label: "Age Group", value: `Ages ${course.ageMin}–${course.ageMax}` },
                         { icon: "cash-outline" as const,      label: "Fee",       value: course.price > 0 ? `€${course.price}/month` : "Free" },

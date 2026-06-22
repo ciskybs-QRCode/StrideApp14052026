@@ -49,7 +49,7 @@ function fmtDate(d: string) {
 
 const STEPS: { key: Step; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: "discipline", label: "Discipline", icon: "school-outline" },
-  { key: "operator",   label: "Instructor", icon: "person-outline" },
+  { key: "operator",   label: "Operator",   icon: "person-outline" },
   { key: "datetime",   label: "Date & Time", icon: "calendar-outline" },
   { key: "confirm",    label: "Pay",         icon: "card-outline" },
 ];
@@ -191,7 +191,7 @@ export default function PrivateLessonBook() {
           </View>
           <Text style={styles.successTitle}>Booking Requested!</Text>
           <Text style={styles.successSub}>
-            Your payment is being processed. Once confirmed, your instructor will be in touch to finalise the date and time.
+            Your payment is being processed. Once confirmed, your operator will be in touch to finalise the date and time.
           </Text>
           <Pressable style={[styles.btn, { backgroundColor: colors.secondary, marginTop: 24 }]}
             onPress={() => router.replace("/(parent)/home")}>
@@ -217,7 +217,7 @@ export default function PrivateLessonBook() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title="Book a Private Lesson" subtitle={
         step === "discipline" ? "Choose a discipline" :
-        step === "operator"   ? "Choose your instructor" :
+        step === "operator"   ? "Choose your operator" :
         step === "datetime"   ? "Preferred date & time" :
                                 "Review & pay"
       } />
@@ -273,14 +273,14 @@ export default function PrivateLessonBook() {
             {loadingOps ? (
               <View style={styles.center}>
                 <ActivityIndicator color={colors.primary} />
-                <Text style={[styles.emptySub, { color: colors.mutedForeground, marginTop: 8 }]}>Loading instructors…</Text>
+                <Text style={[styles.emptySub, { color: colors.mutedForeground, marginTop: 8 }]}>Loading operators…</Text>
               </View>
             ) : operators.length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="person-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Instructors Available</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Operators Available</Text>
                 <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-                  No instructor is currently available for {selConfig?.discipline_name}. Please try another discipline.
+                  No operator is currently available for {selConfig?.discipline_name}. Please try another discipline.
                 </Text>
               </View>
             ) : (
@@ -336,7 +336,7 @@ export default function PrivateLessonBook() {
             <View style={[styles.infoRow, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE", marginTop: 14 }]}>
               <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
               <Text style={{ fontSize: 12, color: colors.primary, flex: 1 }}>
-                Your instructor will confirm the exact slot. You won&apos;t be charged until your request is matched.
+                Your operator will confirm the exact slot. You won&apos;t be charged until your request is matched.
               </Text>
             </View>
 
@@ -365,7 +365,7 @@ export default function PrivateLessonBook() {
               {[
                 ["Discipline",  selConfig.discipline_name],
                 ["Duration",    `${selConfig.duration_minutes} minutes`],
-                ["Instructor",  selOperator.name],
+                ["Operator",  selOperator.name],
                 ["Preferred date", fmtDate(prefDate)],
                 ["Preferred time", prefTime || "Flexible"],
                 ...(notes ? [["Notes", notes]] : []),

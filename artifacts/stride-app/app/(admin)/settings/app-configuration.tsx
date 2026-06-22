@@ -442,7 +442,7 @@ export default function AppConfigurationPage() {
             placeholderTextColor={colors.mutedForeground}
             returnKeyType="next"
           />
-          <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6, marginTop: 14 }]}>Participant (e.g. Dependent Member, Student, Guest)</Text>
+          <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6, marginTop: 14 }]}>Participant (e.g. Dependent Member, Guest)</Text>
           <TextInput
             style={[styles.termInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
             value={secondaryInput}

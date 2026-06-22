@@ -518,7 +518,7 @@ export default function ParentHome() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground, marginBottom: 1 }}>Private Lessons</Text>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Book a 1-on-1 session with an instructor</Text>
+            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Book a 1-on-1 private session</Text>
           </View>
           {unreadCount > 0 && (
             <View style={styles.privateLessonBadge}>

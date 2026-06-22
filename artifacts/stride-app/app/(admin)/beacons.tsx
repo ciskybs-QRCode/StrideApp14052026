@@ -262,7 +262,7 @@ export default function BeaconsScreen() {
         {/* ── Locked content — greyed out when BLE not yet enabled ─────────── */}
         <View style={{ position: "relative" }}>
 
-        {/* ── School BLE Scanners ──────────────────────────────────────────── */}
+        {/* ── Association BLE Scanners ──────────────────────────────────────── */}
         <View style={S.sectionHeader}>
           <View style={S.sectionLeft}>
             <Text style={[S.sectionTitle, { color: colors.foreground }]}>Proximity Scanners</Text>

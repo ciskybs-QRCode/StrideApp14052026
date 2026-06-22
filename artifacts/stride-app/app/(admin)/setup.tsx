@@ -475,7 +475,7 @@ export default function AdminSetup() {
             <View style={{ flex: 1 }}>
               <Text style={{ color: "#FFF", fontWeight: "800", fontSize: 15 }}>🔴 RED ALERT — No Subs Available</Text>
               <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 3 }}>
-                {activeAlert.lessonName} · {activeAlert.teacherName} — All substitutes unavailable. Admin action required.
+                {activeAlert.lessonName} · {activeAlert.operatorName ?? activeAlert.teacherName} — All substitutes unavailable. Admin action required.
               </Text>
             </View>
           </View>

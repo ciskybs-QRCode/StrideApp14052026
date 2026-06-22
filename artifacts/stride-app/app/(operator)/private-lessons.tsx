@@ -657,7 +657,7 @@ export default function OperatorPrivateLessonsScreen() {
                   <Text style={[styles.bookingDayNum, { color: colors.primary }]}>{fmtDate(b.slot_date).split(" ")[1]}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>{b.child?.name ?? "Student"}</Text>
+                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>{b.child?.name ?? "Member"}</Text>
                   <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
                     {b.discipline?.name} · {fmtTime(b.start_time)} – {fmtTime(b.end_time)}
                   </Text>

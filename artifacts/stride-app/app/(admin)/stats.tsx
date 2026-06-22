@@ -335,7 +335,7 @@ export default function AdminHome() {
                 title: check.verdict === "overdue_denied" ? "Membership Payment Required" : "Account Unavailable",
                 body:  check.verdict === "overdue_denied"
                   ? "Please visit the front desk to settle the account."
-                  : "This account is currently restricted. Please contact the school office.",
+                  : "This account is currently restricted. Please contact the administration.",
               });
               setTimeout(() => { setScanResult(null); setScanned(false); setShowScanner(false); }, 6000);
               return;

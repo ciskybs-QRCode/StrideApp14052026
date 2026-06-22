@@ -716,7 +716,7 @@ export default function AdminLessonsScreen() {
 
             {/* INSTRUCTOR */}
             <View style={[styles.formSection, { backgroundColor: colors.card }]}>
-              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>INSTRUCTOR (optional)</Text>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>OPERATOR (optional)</Text>
               {profiles.length === 0 ? (
                 <Text style={{ fontSize: 13, color: colors.mutedForeground }}>No staff profiles yet.</Text>
               ) : (
@@ -1216,7 +1216,7 @@ export default function AdminLessonsScreen() {
               {scSaving
                 ? <ActivityIndicator size="small" color="#FFF" />
                 : <Ionicons name={editingScId !== null ? "checkmark-outline" : "paper-plane-outline"} size={17} color="#FFF" />}
-              <Text style={styles.addBtnText}>{editingScId !== null ? "Update Course" : "Send to Instructor"}</Text>
+              <Text style={styles.addBtnText}>{editingScId !== null ? "Update Course" : "Send to Operator"}</Text>
             </Pressable>
 
             {/* ── Existing scheduled courses ── */}
@@ -1429,7 +1429,7 @@ export default function AdminLessonsScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.typeCardTitle, { color: !isVolunteer ? colors.primary : colors.foreground }]}>
-                        Paid Instructor
+                        Paid Operator
                       </Text>
                       <Text style={[styles.typeCardSub, { color: colors.mutedForeground }]}>
                         Hourly rates set per discipline
@@ -1773,7 +1773,7 @@ export default function AdminLessonsScreen() {
               </View>
               <View>
                 <Text style={styles.modalHeaderTitle}>{editingDisc ? "Edit Discipline" : "New Discipline"}</Text>
-                <Text style={styles.modalHeaderSub}>{editingDisc ? `Edit "${editingDisc.name}"` : "e.g. Zumba, Crossfit, Classical Dance"}</Text>
+                <Text style={styles.modalHeaderSub}>{editingDisc ? `Edit "${editingDisc.name}"` : "e.g. Zumba, Crossfit, Pilates, Karate"}</Text>
               </View>
             </View>
 
@@ -1913,7 +1913,7 @@ export default function AdminLessonsScreen() {
                         />
                       </View>
                       <Text style={[styles.priceNote, { color: colors.mutedForeground }]}>
-                        What the instructor is paid. Pre-filled from their rate if set.
+                        What the operator is paid. Pre-filled from their rate if set.
                       </Text>
 
                       {/* Margin indicator */}

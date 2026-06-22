@@ -675,7 +675,7 @@ export default function CheckoutScreen() {
                       [
                         operator ? ["Operator", operator,            "person-outline"]     : null,
                         ["Style",   discipline,                       "musical-notes-outline"],
-                        ["Student", item.participantName,             "body-outline"],
+                        ["Member",  item.participantName,             "body-outline"],
                         ["Schedule", dateTime,                        "time-outline"],
                         location ? ["Location", location,            "location-outline"]   : null,
                         ["Price",   `\u20AC${item.price.toFixed(2)}`, "card-outline"],

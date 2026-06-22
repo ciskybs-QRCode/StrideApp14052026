@@ -200,7 +200,7 @@ export default function MyPrivateLessonsScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.disciplineName, { color: colors.foreground }]}>{b.discipline_name}</Text>
                     <Text style={[styles.operatorName, { color: colors.mutedForeground }]}>
-                      {b.operator_name ?? "Instructor TBD"}
+                      {b.operator_name ?? "Operator TBD"}
                     </Text>
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>

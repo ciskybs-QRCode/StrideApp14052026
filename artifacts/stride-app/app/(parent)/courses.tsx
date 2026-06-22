@@ -873,7 +873,7 @@ export default function CoursesScreen() {
               <Ionicons name="star" size={32} color={colors.secondary} />
               <Text style={[styles.privateTitle, { color: colors.primary }]}>Private Lessons</Text>
               <Text style={[styles.privateDesc, { color: colors.mutedForeground }]}>
-                Choose your instructor and book a personalised one-on-one session. Availability is filtered in real time.
+                Choose your operator and book a personalised one-on-one session. Availability is filtered in real time.
               </Text>
               <Pressable
                 style={[styles.bookPrivateBtn, { backgroundColor: colors.primary }]}

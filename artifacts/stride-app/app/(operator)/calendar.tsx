@@ -334,7 +334,7 @@ export default function OperatorCalendar() {
     const duration   = daysBetween(wStartDate, wEndDate);
 
     if (!wTitle.trim())   { setValidationMsg("Enter a workshop title.");              return; }
-    if (!instructor)      { setValidationMsg("Select or enter an instructor.");       return; }
+    if (!instructor)      { setValidationMsg("Select or enter an operator.");         return; }
     if (!location)        { setValidationMsg("Select or enter a venue.");             return; }
     if (duration < 0)     { setValidationMsg("End date must be after start date.");   return; }
     if (duration > 6)     { setValidationMsg("Max 7 days — use a Course for longer."); return; }
@@ -1221,7 +1221,7 @@ export default function OperatorCalendar() {
                           </View>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                             <Ionicons name="people-outline" size={13} color={colors.mutedForeground} />
-                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{lesson.students} students enrolled</Text>
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{lesson.students} members enrolled</Text>
                           </View>
                           <Pressable
                             style={{ marginTop: 4, backgroundColor: "#10B981", borderRadius: 10, paddingVertical: 9, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}

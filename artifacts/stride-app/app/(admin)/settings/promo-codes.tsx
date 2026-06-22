@@ -468,7 +468,7 @@ export default function PromoCodesPage() {
               <View style={{ marginTop: 8 }}>
                 <View style={[styles.searchBar, { backgroundColor: colors.muted, borderColor: colors.border, marginBottom: 8 }]}>
                   <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
-                  <TextInput style={[styles.searchInput, { color: colors.foreground }]} value={targetStudentSearch} onChangeText={setTargetStudentSearch} placeholder="Student name..." placeholderTextColor={colors.mutedForeground} />
+                  <TextInput style={[styles.searchInput, { color: colors.foreground }]} value={targetStudentSearch} onChangeText={setTargetStudentSearch} placeholder="Member name..." placeholderTextColor={colors.mutedForeground} />
                 </View>
                 {filteredStudents.map(s => (
                   <Pressable key={s.id} style={[styles.checkRow, { borderColor: targetStudentId === s.id ? colors.primary : colors.border, backgroundColor: targetStudentId === s.id ? "#EEF2FF" : colors.card }]} onPress={() => setTargetStudentId(targetStudentId === s.id ? null : s.id)}>

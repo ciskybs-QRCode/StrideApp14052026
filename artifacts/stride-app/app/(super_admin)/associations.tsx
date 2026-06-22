@@ -56,7 +56,7 @@ function getTrialStatus(endsAt: string | undefined | null): TrialStatus {
 
 const TENANT_LABELS: Record<string, string> = {
   nonprofit:   "Non-Profit Association",
-  commercial:  "Commercial School",
+  commercial:  "Commercial Organisation",
   sports_club: "Sports Club / ASD",
 };
 

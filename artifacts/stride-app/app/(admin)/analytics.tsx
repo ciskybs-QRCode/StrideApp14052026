@@ -112,7 +112,7 @@ export default function AdminAnalytics() {
       case "Attendance":
         rows = [
           ["Attendance Report", school, now], [],
-          ["Student", "Courses", "Status"],
+          ["Member", "Courses", "Status"],
           ...students.map(s => [s.name, (s.courses ?? []).join("; "), "Present"]),
         ];
         break;
@@ -428,7 +428,7 @@ export default function AdminAnalytics() {
             {[
               { label: "Attendance",    icon: "people-outline"    as const, desc: "Daily attendance records" },
               { label: "Income",        icon: "cash-outline"      as const, desc: "Revenue & payments" },
-              { label: "Registrations", icon: "school-outline"    as const, desc: "Student enrollments" },
+              { label: "Registrations", icon: "person-add-outline" as const, desc: "Member enrollments" },
               { label: "Annual Report", icon: "bar-chart-outline" as const, desc: "Full year summary" },
             ].map(item => (
               <Pressable

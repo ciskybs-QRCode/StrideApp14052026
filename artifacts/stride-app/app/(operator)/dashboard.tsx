@@ -166,7 +166,7 @@ const SOS_PROCEDURES: Record<SosType, SosProcedure> = {
     steps: [
       { icon: "alarm-outline",        text: "Activate the fire alarm immediately." },
       { icon: "walk-outline",         text: "Evacuate the room in an orderly fashion — no running." },
-      { icon: "people-outline",       text: "Escort all students to the designated assembly point." },
+      { icon: "people-outline",       text: "Escort all members to the designated assembly point." },
       { icon: "call",                 text: "Call the fire brigade using the emergency number." },
       { icon: "megaphone-outline",    text: "Notify administration and await further instructions." },
     ],
@@ -195,7 +195,7 @@ const SOS_PROCEDURES: Record<SosType, SosProcedure> = {
     callLabel: "Police",
     steps: [
       { icon: "shield-checkmark-outline", text: "Keep all persons calm. Do not allow anyone to leave or enter the premises." },
-      { icon: "lock-closed-outline",      text: "Lock all entrances. Secure the area and account for all students present." },
+      { icon: "lock-closed-outline",      text: "Lock all entrances. Secure the area and account for all members present." },
       { icon: "eye-off-outline",          text: "Do not confront any threat. Observe and document details safely from a distance." },
       { icon: "call",                     text: "Police already called. Provide your location, description of the situation, and number of persons involved." },
       { icon: "document-text-outline",    text: "Log all witnesses and events. Await police instructions — do not move anyone until officers arrive." },
@@ -823,7 +823,7 @@ export default function OperatorDashboard() {
         const r = await api.scanPrivateLesson(qrToken);
         setLessonScanResult({
           discipline: parts[4] ?? "Private Lesson",
-          student: parts[5] ?? "Student",
+          student: parts[5] ?? "Member",
           earnings_cents: r.earnings_cents,
           invoice_number: r.invoice_number,
           attended_at: r.attended_at,
@@ -935,7 +935,7 @@ export default function OperatorDashboard() {
       // Direct child check-in QR — format: STRIDE:CHILD:<studentId>:<encodedName>
       const parts = data.split(":");
       const studentId   = parts[2] ?? "";
-      const studentName = decodeURIComponent(parts[3] ?? "Student");
+      const studentName = decodeURIComponent(parts[3] ?? "Member");
       setScanned(true);
       setGuardianResult(null);
 
@@ -1863,7 +1863,7 @@ export default function OperatorDashboard() {
               { icon: "calendar-outline" as const, label: "Date",     value: selectedBooking?.slot_date ?? "—" },
               { icon: "time-outline"     as const, label: "Time",     value: selectedBooking ? `${selectedBooking.start_time} – ${selectedBooking.end_time}` : "—" },
               { icon: "location-outline" as const, label: "Location", value: selectedBooking?.location ?? "—" },
-              { icon: "person-outline"   as const, label: "Student",  value: selectedBooking?.child?.name ?? "—" },
+              { icon: "person-outline"   as const, label: "Member",   value: selectedBooking?.child?.name ?? "—" },
               { icon: "cash-outline"     as const, label: "Fee",      value: selectedBooking ? `€${((selectedBooking.price_cents ?? 0) / 100).toFixed(2)}` : "—" },
             ].map(({ icon, label, value }) => (
               <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
@@ -2076,7 +2076,7 @@ export default function OperatorDashboard() {
                   {activeAlert?.cascadeStep === 4 ? "🔴 RED ALERT" : "⚡ Substitution Cascade"}
                 </Text>
                 <Text style={styles.cascadeSubtitle}>
-                  {activeAlert?.lessonName} · {activeAlert?.teacherName}
+                  {activeAlert?.lessonName} · {activeAlert?.operatorName ?? activeAlert?.teacherName}
                 </Text>
               </View>
               <Pressable onPress={() => setShowCascade(false)}>

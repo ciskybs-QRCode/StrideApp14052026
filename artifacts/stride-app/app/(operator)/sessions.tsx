@@ -183,7 +183,7 @@ export default function SessionsScreen() {
       ));
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert("Error", "Could not mark student present. Please try again.");
+      Alert.alert("Error", "Could not mark member present. Please try again.");
     }
     setOverrideChild(null);
   }, [overrideChild, selectedId]);
@@ -214,7 +214,7 @@ export default function SessionsScreen() {
     if (selectedId === null || presentCount === 0) return;
     Alert.alert(
       "Session Sign-Out",
-      `Sign out all ${presentCount} present student${presentCount !== 1 ? "s" : ""}? This records their exit time for the session.`,
+      `Sign out all ${presentCount} present member${presentCount !== 1 ? "s" : ""}? This records their exit time for the session.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -419,7 +419,7 @@ export default function SessionsScreen() {
                   <View style={styles.legend}>
                     <Ionicons name="information-circle-outline" size={13} color={colors.mutedForeground} />
                     <Text style={[styles.legendText, { color: colors.mutedForeground }]}>
-                      Tap an absent student to mark them present manually
+                      Tap an absent member to mark them present manually
                     </Text>
                   </View>
                   {roster.map(renderRow)}

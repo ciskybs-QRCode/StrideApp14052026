@@ -350,7 +350,7 @@ export default function PrivateLessonsSettings() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>HOW IT WORKS</Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {[
-            { icon: "person-circle-outline", color: "#3B82F6", title: "Member books & pays", desc: "Member picks discipline + instructor, selects a preferred date/time, and pays the full member price via Stripe." },
+            { icon: "person-circle-outline", color: "#3B82F6", title: "Member books & pays", desc: "Member picks discipline + operator, selects a preferred date/time, and pays the full member price via Stripe." },
             { icon: "card-outline", color: "#059669", title: "Payment processed", desc: "Stripe processes the payment to your association account. A booking confirmation is created immediately." },
             { icon: "cash-outline", color: "#FBBF24", title: "Operator payroll auto-credited", desc: "The operator's payout is automatically added to their pending payroll for the current period — no manual entry needed." },
             { icon: "checkmark-circle-outline", color: "#8B5CF6", title: "Operator confirms the slot", desc: "The operator sees the booking in their Invoicing screen and confirms (or requests to reschedule)." },

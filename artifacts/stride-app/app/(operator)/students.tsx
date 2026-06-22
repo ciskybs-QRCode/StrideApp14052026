@@ -78,7 +78,7 @@ export default function OperatorStudents() {
       try { hasNotice = !!(await AsyncStorage.getItem(noticeKey)); } catch { /* ignore */ }
 
       if (!hasNotice) {
-        const studentName = students.find(s => s.id === id)?.name ?? "This student";
+        const studentName = students.find(s => s.id === id)?.name ?? "This member";
         Alert.alert(
           "⚠️ Unexcused Absence — Safety Alert",
           `${studentName} is being marked absent with NO prior notice from their member or guardian.\n\nThis may be a safety concern. Do you want to fire an immediate alert to the member?`,
@@ -167,7 +167,7 @@ export default function OperatorStudents() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        title="Students"
+        title="Members"
         right={
           <Pressable
             style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}
@@ -219,7 +219,7 @@ export default function OperatorStudents() {
               style={[styles.searchInput, { color: colors.foreground }]}
               value={search}
               onChangeText={setSearch}
-              placeholder="Search student..."
+              placeholder="Search member..."
               placeholderTextColor={colors.mutedForeground}
             />
           </View>
