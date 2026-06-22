@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
-import { requireAuth, type TokenPayload } from "../lib/auth.js";
+import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { getPricingForOrg } from "../lib/pricing-service.js";
 
 const router = Router();
@@ -1017,5 +1017,301 @@ export async function processMemberCheckout(opts: {
 
   return { invoiceNumber, invoiceId };
 }
+
+// ── POST /checkout/manual-payment ──────────────────────────────────────────
+// Handles cash, bank transfer, and PayPal payments. Creates a checkout session
+// with manual payment method and stores it in the database.
+router.post("/checkout/manual-payment", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+
+  const {
+    items,
+    paymentMethod,
+    promoCode,
+    promoDiscountType,
+    promoDiscountPercent,
+    promoDiscountAmount,
+    promoTargetCourseIds,
+  } = req.body as {
+    items:                 CartItemInput[];
+    paymentMethod:         "cash" | "bank_transfer" | "paypal" | "apple_pay" | "google_pay";
+    promoCode?:            string;
+    promoDiscountType?:    "percent" | "amount";
+    promoDiscountPercent?: number;
+    promoDiscountAmount?:  number;
+    promoTargetCourseIds?: string[];
+  };
+
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: "No items provided" });
+    return;
+  }
+
+  const validMethods = ["cash", "bank_transfer", "paypal", "apple_pay", "google_pay"];
+  if (!validMethods.includes(paymentMethod)) {
+    res.status(400).json({ error: "Invalid payment method" });
+    return;
+  }
+
+  try {
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("name, currency, stripe_connect_account_id, stripe_secret_key, trial_ends_at")
+      .eq("id", orgId)
+      .maybeSingle();
+
+    const org = orgData as OrgRow | null;
+    const { currency } = await getPricingForOrg(orgId);
+    const orgName = org?.name ?? "Stride";
+
+    const lineItems = await resolveAllLineItems(
+      orgId, items, orgName,
+      promoCode, promoDiscountType, promoDiscountPercent,
+      promoDiscountAmount, promoTargetCourseIds,
+    );
+
+    const discountApplied = lineItems.reduce((s, i) => s + i.discount, 0);
+    const calculatedTotal = lineItems.reduce((s, i) => s + i.finalPrice, 0);
+    const calculatedCents = Math.round(calculatedTotal * 100);
+
+    if (calculatedCents <= 0) {
+      res.status(400).json({ error: "Total amount must be greater than zero" });
+      return;
+    }
+
+    // Generate reference numbers
+    const sessionId = `manual_${paymentMethod}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const bankReference = paymentMethod === "bank_transfer"
+      ? `STRIDE-BANK-${orgId}-${Date.now().toString(36).toUpperCase()}`
+      : null;
+    const paypalOrderId = paymentMethod === "paypal"
+      ? `paypal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      : null;
+
+    const status = paymentMethod === "cash" ? "pending_cash" :
+                   paymentMethod === "bank_transfer" ? "pending_bank" :
+                   paymentMethod === "paypal" ? "pending_paypal" : "pending";
+
+    // Audit log
+    const { data: auditRow } = await supabase
+      .from("payment_audit_log")
+      .insert({
+        organization_id:  orgId,
+        user_id:          String(user.id),
+        performed_by_user_id: parseInt(user.id),
+        performed_by_name:   user.email,
+        items_list:       lineItems,
+        calculated_total: calculatedTotal,
+        discount_applied: discountApplied,
+        promo_code:       promoCode ?? null,
+        payment_method:   paymentMethod,
+        bank_reference:   bankReference,
+        paypal_order_id:  paypalOrderId,
+        status:           status,
+      })
+      .select("request_id")
+      .single();
+
+    const auditId = (auditRow as { request_id?: string } | null)?.request_id ?? "unknown";
+
+    // Create checkout session
+    await supabase.from("checkout_sessions").insert({
+      session_id:      sessionId,
+      organization_id: orgId,
+      user_id:         String(user.id),
+      status:          status,
+      items:           lineItems,
+      amount_cents:    calculatedCents,
+      payment_method:  paymentMethod,
+      bank_reference:  bankReference,
+      paypal_order_id: paypalOrderId,
+      checkout_url:    null,
+    });
+
+    const resp: Record<string, unknown> = {
+      sessionId,
+      paymentMethod,
+      status,
+      lineItems,
+      calculatedTotal,
+      discountApplied,
+      currency,
+      auditId,
+    };
+
+    if (bankReference) resp.bankReference = bankReference;
+    if (paypalOrderId) resp.paypalOrderId = paypalOrderId;
+
+    res.json(resp);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ── GET /checkout/pending-payments ──────────────────────────────────
+// Admin/operator: list all pending manual payments for this org
+router.get("/checkout/pending-payments", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  try {
+    const { data } = await supabase
+      .from("checkout_sessions")
+      .select("session_id, user_id, status, items, amount_cents, payment_method, bank_reference, cash_confirmed_by, cash_confirmed_at, created_at, paypal_order_id")
+      .eq("organization_id", user.orgId)
+      .in("status", ["pending_cash", "pending_bank", "pending_paypal", "pending"])
+      .order("created_at", { ascending: false });
+    res.json(data ?? []);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Failed to load pending payments" });
+  }
+});
+
+// ── POST /checkout/confirm-cash/:sessionId ─────────────────────────
+// Admin/operator: confirm a cash payment was received
+router.post("/checkout/confirm-cash/:sessionId", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user      = (req as AuthReq).user;
+  const sessionId = String(req.params["sessionId"] ?? "");
+  if (!sessionId) { res.status(400).json({ error: "Missing sessionId" }); return; }
+
+  try {
+    const { data } = await supabase
+      .from("checkout_sessions")
+      .select("status, amount_cents, items, user_id, payment_method")
+      .eq("session_id", sessionId)
+      .eq("organization_id", user.orgId)
+      .maybeSingle();
+
+    if (!data) { res.status(404).json({ error: "Session not found" }); return; }
+    const row = data as { status: string; amount_cents: number; items: unknown; user_id: string; payment_method: string };
+    if (row.status !== "pending_cash") {
+      res.status(400).json({ error: "Session is not awaiting cash confirmation" });
+      return;
+    }
+
+    // Update session
+    await supabase
+      .from("checkout_sessions")
+      .update({
+        status: "complete",
+        cash_confirmed_by: parseInt(user.id),
+        cash_confirmed_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+      })
+      .eq("session_id", sessionId);
+
+    // Update audit log
+    await supabase
+      .from("payment_audit_log")
+      .update({
+        status: "complete",
+        cash_confirmed_by: parseInt(user.id),
+        cash_confirmed_at: new Date().toISOString(),
+      })
+      .eq("stripe_session_id", sessionId);
+
+    // Process enrollment (same as Stripe)
+    if (Array.isArray(row.items)) {
+      const items = row.items as Array<{ childId?: string; courseId?: string }>;
+      for (const item of items) {
+        if (!item.childId || !item.courseId) continue;
+        const childId  = parseInt(item.childId);
+        const courseId = parseInt(item.courseId);
+        if (isNaN(childId) || isNaN(courseId)) continue;
+        await supabase
+          .from("enrollments")
+          .upsert(
+            { child_id: childId, course_id: courseId, status: "enrolled" },
+            { onConflict: "child_id,course_id" },
+          );
+      }
+    }
+
+    // Notify user
+    await supabase.from("private_notifications").insert({
+      user_id:         parseInt(row.user_id),
+      organization_id: user.orgId,
+      type:            "payment_confirmed",
+      title:           "Cash Payment Confirmed",
+      body:            `Your cash payment of €${(row.amount_cents / 100).toFixed(2)} has been confirmed.`,
+      read:            false,
+      created_at:      new Date().toISOString(),
+    });
+
+    res.json({ ok: true, sessionId });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Failed to confirm cash payment" });
+  }
+});
+
+// ── POST /checkout/confirm-bank/:sessionId ─────────────────────────
+// Admin/operator: confirm a bank transfer was received
+router.post("/checkout/confirm-bank/:sessionId", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user      = (req as AuthReq).user;
+  const sessionId = String(req.params["sessionId"] ?? "");
+  if (!sessionId) { res.status(400).json({ error: "Missing sessionId" }); return; }
+
+  try {
+    const { data } = await supabase
+      .from("checkout_sessions")
+      .select("status, amount_cents, items, user_id, payment_method")
+      .eq("session_id", sessionId)
+      .eq("organization_id", user.orgId)
+      .maybeSingle();
+
+    if (!data) { res.status(404).json({ error: "Session not found" }); return; }
+    const row = data as { status: string; amount_cents: number; items: unknown; user_id: string; payment_method: string };
+    if (row.status !== "pending_bank") {
+      res.status(400).json({ error: "Session is not awaiting bank confirmation" });
+      return;
+    }
+
+    await supabase
+      .from("checkout_sessions")
+      .update({
+        status: "complete",
+        completed_at: new Date().toISOString(),
+      })
+      .eq("session_id", sessionId);
+
+    await supabase
+      .from("payment_audit_log")
+      .update({ status: "complete" })
+      .eq("stripe_session_id", sessionId);
+
+    if (Array.isArray(row.items)) {
+      const items = row.items as Array<{ childId?: string; courseId?: string }>;
+      for (const item of items) {
+        if (!item.childId || !item.courseId) continue;
+        const childId  = parseInt(item.childId);
+        const courseId = parseInt(item.courseId);
+        if (isNaN(childId) || isNaN(courseId)) continue;
+        await supabase
+          .from("enrollments")
+          .upsert(
+            { child_id: childId, course_id: courseId, status: "enrolled" },
+            { onConflict: "child_id,course_id" },
+          );
+      }
+    }
+
+    await supabase.from("private_notifications").insert({
+      user_id:         parseInt(row.user_id),
+      organization_id: user.orgId,
+      type:            "payment_confirmed",
+      title:           "Bank Transfer Confirmed",
+      body:            `Your bank transfer payment of €${(row.amount_cents / 100).toFixed(2)} has been confirmed.`,
+      read:            false,
+      created_at:      new Date().toISOString(),
+    });
+
+    res.json({ ok: true, sessionId });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Failed to confirm bank payment" });
+  }
+});
 
 export default router;

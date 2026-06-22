@@ -647,6 +647,65 @@ export const api = {
     totalSessions: number;
   }>("POST", "/checkout/batch-session", data),
 
+  // Manual payment methods (cash, bank transfer, PayPal, Apple Pay, Google Pay)
+  createManualPayment: (data: {
+    items: Array<{
+      courseId: string;
+      courseName: string;
+      participantName: string;
+      childId?: string;
+      packageType: string;
+      clientPrice?: number;
+    }>;
+    paymentMethod: "cash" | "bank_transfer" | "paypal" | "apple_pay" | "google_pay";
+    promoCode?: string;
+    promoDiscountType?: "percent" | "amount";
+    promoDiscountPercent?: number;
+    promoDiscountAmount?: number;
+    promoTargetCourseIds?: string[];
+  }) => request<{
+    sessionId: string;
+    paymentMethod: string;
+    status: string;
+    lineItems: Array<{
+      courseId: string;
+      courseName: string;
+      participantName: string;
+      packageType: string;
+      unitPrice: number;
+      discount: number;
+      finalPrice: number;
+      priceSource: "db" | "client_fallback";
+    }>;
+    calculatedTotal: number;
+    discountApplied: number;
+    currency: string;
+    auditId: string;
+    bankReference?: string;
+    paypalOrderId?: string;
+  }>("POST", "/checkout/manual-payment", data),
+
+  getPendingPayments: () =>
+    request<Array<{
+      session_id: string;
+      user_id: string;
+      status: string;
+      items: unknown;
+      amount_cents: number;
+      payment_method: string;
+      bank_reference: string | null;
+      cash_confirmed_by: number | null;
+      cash_confirmed_at: string | null;
+      created_at: string;
+      paypal_order_id: string | null;
+    }>>("GET", "/checkout/pending-payments"),
+
+  confirmCashPayment: (sessionId: string) =>
+    request<{ ok: boolean; sessionId: string }>("POST", `/checkout/confirm-cash/${sessionId}`, {}),
+
+  confirmBankPayment: (sessionId: string) =>
+    request<{ ok: boolean; sessionId: string }>("POST", `/checkout/confirm-bank/${sessionId}`, {}),
+
   getBatchStatus: (batchId: string) =>
     request<{
       batchId:        string;

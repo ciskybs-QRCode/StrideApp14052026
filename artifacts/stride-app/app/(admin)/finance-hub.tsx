@@ -55,6 +55,14 @@ export default function FinanceHub() {
           description="Operator expense claims and approvals"
           onPress={() => router.push("/(admin)/reimbursements" as never)}
         />
+        <HubCard
+          icon="time-outline"
+          title="Pending Payments"
+          description="Confirm cash and bank transfer payments"
+          iconBg="#FFF9E6"
+          iconColor="#B45309"
+          onPress={() => router.push("/(admin)/pending-payments" as never)}
+        />
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>BILLING</Text>
         <HubCard

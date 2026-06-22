@@ -313,4 +313,387 @@ router.post("/messages", requireAuth, requireRole("admin", "operator"), async (r
   res.status(201).json(msg);
 });
 
+// ── GET /messages/threads ──────────────────────────────────────────
+router.get("/messages/threads", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const userId = parseInt(user.id);
+  const orgId = user.orgId ?? 0;
+
+  const { rows } = await pool.query<{
+    id: string; participant_1: number; participant_2: number; last_message_at: string;
+  }>(
+    `SELECT id, participant_1, participant_2, last_message_at
+     FROM direct_message_threads
+     WHERE organization_id = $1 AND (participant_1 = $2 OR participant_2 = $2)
+     ORDER BY last_message_at DESC`,
+    [orgId, userId],
+  );
+
+  // Get partner info for each thread
+  const partnerIds = rows.map(r => r.participant_1 === userId ? r.participant_2 : r.participant_1);
+  const { data: users } = await supabase
+    .from("users")
+    .select("id, name, role")
+    .in("id", partnerIds.length ? partnerIds : [0]);
+
+  const userMap = new Map((users ?? []).map((u: { id: number; name: string; role: string }) => [u.id, u]));
+
+  const { rows: unreadCounts } = await pool.query<{
+    thread_id: string; count: number;
+  }>(
+    `SELECT thread_id, COUNT(*)::int as count
+     FROM direct_messages
+     WHERE thread_id = ANY($1) AND to_user_id = $2 AND read_at IS NULL
+     GROUP BY thread_id`,
+    [rows.map(r => r.id), userId],
+  );
+  const unreadMap = new Map(unreadCounts.map(r => [r.thread_id, r.count]));
+
+  res.json(rows.map(r => {
+    const partnerId = r.participant_1 === userId ? r.participant_2 : r.participant_1;
+    const partner = userMap.get(partnerId);
+    return {
+      id: r.id,
+      partner_id: partnerId,
+      partner_name: partner?.name ?? "Unknown",
+      partner_role: partner?.role ?? "",
+      last_message_at: r.last_message_at,
+      unread_count: unreadMap.get(r.id) ?? 0,
+    };
+  }));
+});
+
+// ── GET /messages/unread-count ──────────────────────────────────
+router.get("/messages/unread-count", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const userId = parseInt(user.id);
+
+  const { rows } = await pool.query<{ count: number }>(
+    `SELECT COUNT(*)::int as count FROM direct_messages WHERE to_user_id = $1 AND read_at IS NULL`,
+    [userId],
+  );
+  res.json({ count: rows[0]?.count ?? 0 });
+});
+
+// ── Direct Messaging API ────────────────────────────────────────
+
+// POST /messages/direct — send a direct message
+router.post("/messages/direct", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const body = req.body as {
+    toUserId: number;
+    subject?: string;
+    body: string;
+    attachments?: AttachmentItem[];
+    threadId?: string;
+  };
+
+  if (!body.toUserId || !body.body) {
+    res.status(400).json({ error: "toUserId and body are required" });
+    return;
+  }
+
+  const orgId = user.orgId ?? 0;
+  const toUserId = Number(body.toUserId);
+  const fromUserId = parseInt(user.id);
+
+  // Validate recipient exists and is in same org
+  const { data: recipient } = await supabase
+    .from("users")
+    .select("id, name")
+    .eq("id", toUserId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (!recipient) {
+    res.status(404).json({ error: "Recipient not found or not in your organization" });
+    return;
+  }
+
+  // Create or reuse thread
+  let threadId = body.threadId ? body.threadId : null;
+  if (!threadId) {
+    const participants = [Math.min(fromUserId, toUserId), Math.max(fromUserId, toUserId)];
+    const { data: existingThread } = await supabase
+      .from("direct_message_threads")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("participant_1", participants[0])
+      .eq("participant_2", participants[1])
+      .maybeSingle();
+
+    if (existingThread) {
+      threadId = (existingThread as { id: string }).id;
+    } else {
+      const { data: newThread } = await supabase
+        .from("direct_message_threads")
+        .insert({
+          organization_id: orgId,
+          participant_1: participants[0],
+          participant_2: participants[1],
+        })
+        .select("id")
+        .single();
+      threadId = (newThread as { id: string } | null)?.id ?? null;
+    }
+  }
+
+  const { data: msg, error } = await supabase
+    .from("direct_messages")
+    .insert({
+      organization_id: orgId,
+      thread_id: threadId,
+      from_user_id: fromUserId,
+      to_user_id: toUserId,
+      subject: body.subject ?? null,
+      body: body.body,
+      attachments: body.attachments ?? [],
+    })
+    .select("id, thread_id, from_user_id, to_user_id, subject, body, attachments, created_at")
+    .single();
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+
+  // Update thread last_message_at
+  if (threadId) {
+    await supabase
+      .from("direct_message_threads")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", threadId);
+  }
+
+  // Notify recipient
+  const { data: fromUser } = await supabase
+    .from("users")
+    .select("name")
+    .eq("id", fromUserId)
+    .maybeSingle();
+  const senderName = (fromUser as { name?: string } | null)?.name ?? "Someone";
+
+  await supabase.from("private_notifications").insert({
+    user_id: toUserId,
+    organization_id: orgId,
+    type: "direct_message",
+    title: `New message from ${senderName}`,
+    body: body.subject ? body.subject : body.body.slice(0, 100),
+    read: false,
+    created_at: new Date().toISOString(),
+  });
+
+  // Push notification
+  void (async () => {
+    try {
+      const { rows: tokenRows } = await pool.query<{ token: string }>(
+        `SELECT token FROM device_push_tokens WHERE org_id = $1 AND user_id = $2`,
+        [orgId, String(toUserId)],
+      );
+      if (tokenRows.length > 0) {
+        const pushMessages = tokenRows
+          .filter(r => Expo.isExpoPushToken(r.token))
+          .map(r => ({
+            to: r.token,
+            title: `New message from ${senderName}`,
+            body: body.subject ? body.subject : body.body.slice(0, 100),
+            sound: "default" as const,
+            data: { type: "direct_message", threadId: threadId ?? "", senderId: String(fromUserId) },
+            badge: 1,
+          }));
+        const chunks = expo.chunkPushNotifications(pushMessages);
+        await Promise.all(chunks.map(chunk => expo.sendPushNotificationsAsync(chunk).catch(() => {})));
+      }
+    } catch { /* never block */ }
+  })();
+
+  res.status(201).json(msg);
+});
+
+// GET /messages/inbox — get messages received by current user
+router.get("/messages/inbox", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const orgId = user.orgId ?? 0;
+  const fromUserId = parseInt(user.id);
+
+  const { data, error } = await supabase
+    .from("direct_messages")
+    .select("id, thread_id, from_user_id, to_user_id, subject, body, attachments, read_at, created_at, from:users!from_user_id(name,role)")
+    .eq("to_user_id", fromUserId)
+    .eq("organization_id", orgId)
+    .eq("deleted_by_recipient", false)
+    .order("created_at", { ascending: false });
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  res.json(data ?? []);
+});
+
+// GET /messages/sent — get messages sent by current user
+router.get("/messages/sent", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const orgId = user.orgId ?? 0;
+  const fromUserId = parseInt(user.id);
+
+  const { data, error } = await supabase
+    .from("direct_messages")
+    .select("id, thread_id, from_user_id, to_user_id, subject, body, attachments, read_at, created_at, to:users!to_user_id(name,role)")
+    .eq("from_user_id", fromUserId)
+    .eq("organization_id", orgId)
+    .eq("deleted_by_sender", false)
+    .order("created_at", { ascending: false });
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  res.json(data ?? []);
+});
+
+// GET /messages/thread/:threadId — get all messages in a thread
+router.get("/messages/thread/:threadId", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const orgId = user.orgId ?? 0;
+  const userId = parseInt(user.id);
+  const threadId = String(req.params["threadId"] ?? "");
+
+  if (!threadId) { res.status(400).json({ error: "Missing threadId" }); return; }
+
+  // Verify user is part of this thread
+  const { data: thread } = await supabase
+    .from("direct_message_threads")
+    .select("participant_1, participant_2")
+    .eq("id", threadId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (!thread) { res.status(404).json({ error: "Thread not found" }); return; }
+  const t = thread as { participant_1: number; participant_2: number };
+  if (t.participant_1 !== userId && t.participant_2 !== userId) {
+    res.status(403).json({ error: "Not authorized to view this thread" });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("direct_messages")
+    .select("id, thread_id, from_user_id, to_user_id, subject, body, attachments, read_at, created_at")
+    .eq("thread_id", threadId)
+    .or(`deleted_by_sender.eq.false,and(deleted_by_recipient.eq.false)`)
+    .order("created_at", { ascending: true });
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+  res.json(data ?? []);
+});
+
+// POST /messages/:id/read — mark message as read
+router.post("/messages/:id/read", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const msgId = String(req.params["id"] ?? "");
+  if (!msgId) { res.status(400).json({ error: "Missing message id" }); return; }
+
+  const { data } = await supabase
+    .from("direct_messages")
+    .select("to_user_id, read_at")
+    .eq("id", msgId)
+    .maybeSingle();
+
+  if (!data) { res.status(404).json({ error: "Message not found" }); return; }
+  const row = data as { to_user_id: number; read_at: string | null };
+  if (row.to_user_id !== parseInt(user.id)) {
+    res.status(403).json({ error: "Not authorized" });
+    return;
+  }
+  if (row.read_at) { res.json({ ok: true }); return; }
+
+  await supabase
+    .from("direct_messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("id", msgId);
+
+  res.json({ ok: true });
+});
+
+// POST /messages/:id/reply — reply to a message (creates new DM in same thread)
+router.post("/messages/:id/reply", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const orgId = user.orgId ?? 0;
+  const msgId = String(req.params["id"] ?? "");
+  const body = req.body as { body: string; attachments?: AttachmentItem[] };
+
+  if (!msgId || !body.body) {
+    res.status(400).json({ error: "Message id and body are required" });
+    return;
+  }
+
+  const { data: orig } = await supabase
+    .from("direct_messages")
+    .select("thread_id, from_user_id, to_user_id, organization_id")
+    .eq("id", msgId)
+    .maybeSingle();
+
+  if (!orig) { res.status(404).json({ error: "Original message not found" }); return; }
+  const o = orig as { thread_id: string | null; from_user_id: number; to_user_id: number; organization_id: number };
+  if (o.organization_id !== orgId) {
+    res.status(403).json({ error: "Not authorized" });
+    return;
+  }
+
+  const userId = parseInt(user.id);
+  const toUserId = o.from_user_id === userId ? o.to_user_id : o.from_user_id;
+  let threadId = o.thread_id;
+
+  if (!threadId) {
+    const participants = [Math.min(userId, toUserId), Math.max(userId, toUserId)];
+    const { data: existingThread } = await supabase
+      .from("direct_message_threads")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("participant_1", participants[0])
+      .eq("participant_2", participants[1])
+      .maybeSingle();
+    if (existingThread) {
+      threadId = (existingThread as { id: string }).id;
+    } else {
+      const { data: newThread } = await supabase
+        .from("direct_message_threads")
+        .insert({
+          organization_id: orgId,
+          participant_1: participants[0],
+          participant_2: participants[1],
+        })
+        .select("id")
+        .single();
+      threadId = (newThread as { id: string } | null)?.id ?? null;
+    }
+  }
+
+  const { data: msg, error } = await supabase
+    .from("direct_messages")
+    .insert({
+      organization_id: orgId,
+      thread_id: threadId,
+      from_user_id: userId,
+      to_user_id: toUserId,
+      subject: null,
+      body: body.body,
+      attachments: body.attachments ?? [],
+    })
+    .select("id, thread_id, from_user_id, to_user_id, subject, body, attachments, created_at")
+    .single();
+
+  if (error) { res.status(500).json({ error: error.message }); return; }
+
+  if (threadId) {
+    await supabase
+      .from("direct_message_threads")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", threadId);
+  }
+
+  await supabase.from("private_notifications").insert({
+    user_id: toUserId,
+    organization_id: orgId,
+    type: "direct_message",
+    title: "New reply",
+    body: body.body.slice(0, 100),
+    read: false,
+    created_at: new Date().toISOString(),
+  });
+
+  res.status(201).json(msg);
+});
+
 export default router;

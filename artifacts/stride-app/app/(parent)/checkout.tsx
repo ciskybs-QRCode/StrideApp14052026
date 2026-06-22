@@ -53,6 +53,21 @@ type CheckoutQuote = {
   freeEnrollment?: boolean;
 };
 
+type PaymentMethod = "stripe_card" | "bank_transfer" | "paypal" | "cash" | "apple_pay" | "google_pay";
+
+type ManualPaymentQuote = {
+  sessionId:       string;
+  paymentMethod:   PaymentMethod;
+  status:          string;
+  lineItems:       ServerLineItem[];
+  calculatedTotal: number;
+  discountApplied: number;
+  currency:        string;
+  auditId:         string;
+  bankReference?:  string;
+  paypalOrderId?:  string;
+};
+
 type BatchSession = {
   position:    number;
   sessionId:   string;
@@ -123,6 +138,11 @@ export default function CheckoutScreen() {
   const sessionItemsRef    = useRef<CartItem[]>([]);
   const batchQuoteRef      = useRef<BatchQuote | null>(null);
   const batchCurrentPosRef = useRef(1);
+
+  // Payment method selection
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("stripe_card");
+  const [manualPaymentQuote, setManualPaymentQuote] = useState<ManualPaymentQuote | null>(null);
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
 
   // Success state
   const [success, setSuccess] = useState<{
@@ -485,6 +505,55 @@ export default function CheckoutScreen() {
     await AsyncStorage.removeItem(BATCH_RESUME_KEY).catch(() => {});
     void fetchQuote();
   }, [fetchQuote]);
+
+  // ── Manual payment handler (cash, bank, PayPal, Apple Pay, Google Pay) ───
+  const handleManualPayment = useCallback(async () => {
+    if (!quote || !payableItems.length) return;
+    setQuoteFetching(true);
+    setQuoteError(null);
+    try {
+      const result = await api.createManualPayment({
+        items: payableItems.map(item => ({
+          courseId: item.courseId,
+          courseName: item.courseName,
+          participantName: item.participantName,
+          childId: children.find(c => c.name === item.participantName)?.id,
+          packageType: item.packageType,
+          clientPrice: item.courseId.startsWith("private-") ? item.price : undefined,
+        })),
+        paymentMethod: selectedPaymentMethod,
+        ...(activePromo ? {
+          promoCode: activePromo.code,
+          promoDiscountType: activePromo.discountType,
+          promoDiscountPercent: activePromo.discountPercent,
+          promoDiscountAmount: activePromo.discountAmount,
+          promoTargetCourseIds: activePromo.targetCourseIds,
+        } : {}),
+      });
+
+      const typed = result as unknown as ManualPaymentQuote;
+      setManualPaymentQuote(typed);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Remove items from cart
+      payableItems.forEach(item => removeItem(item.id));
+      clearCartBadge();
+      setPaidItems([...payableItems]);
+      setSuccess({
+        invoiceNumber: typed.sessionId,
+        invoiceId: null,
+        amount: typed.calculatedTotal,
+      });
+      setPendingSessionId(null);
+      setWaitingForReturn(false);
+      setQuote(null);
+    } catch (err) {
+      const msg = (err as Error).message ?? "";
+      setQuoteError(msg || "Could not process payment. Please try again.");
+    } finally {
+      setQuoteFetching(false);
+    }
+  }, [quote, payableItems, children, activePromo, selectedPaymentMethod, removeItem, clearCartBadge]);
 
   // ── Open payment ──────────────────────────────────────────────────────────
   const openPaymentPage = async () => {
@@ -856,25 +925,75 @@ export default function CheckoutScreen() {
                 <Ionicons name="lock-closed" size={14} color="#059669" />
                 <Text style={[styles.secureText, { color: "#059669" }]}>Secured by Stripe · PCI DSS Level 1</Text>
               </View>
-              <Text style={[styles.payCardDesc, { color: colors.mutedForeground }]}>
-                Tapping below opens Stripe's secure payment page in your browser. No card details are stored in this app.
-              </Text>
-              <View style={styles.methodsRow}>
-                {["Visa", "Mastercard", "Apple Pay", "Google Pay"].map(m => (
-                  <View key={m} style={[styles.methodChip, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.methodChipText, { color: colors.mutedForeground }]}>{m}</Text>
-                  </View>
-                ))}
+
+              {/* Payment Method Selector */}
+              <View style={{ marginBottom: 14 }}>
+                <Text style={[styles.payCardDesc, { color: colors.mutedForeground, marginBottom: 8 }]}>
+                  Choose how you want to pay:
+                </Text>
+                <View style={[styles.paymentMethodsGrid, { backgroundColor: colors.muted, borderRadius: 12, padding: 10, gap: 8 }]}>
+                  {([
+                    { id: "stripe_card" as PaymentMethod, label: "Credit Card", icon: "card-outline" as const, desc: "Visa, Mastercard, Apple Pay, Google Pay" },
+                    { id: "bank_transfer" as PaymentMethod, label: "Bank Transfer", icon: "business-outline" as const, desc: "Pay via bank transfer" },
+                    { id: "paypal" as PaymentMethod, label: "PayPal", icon: "logo-paypal" as const, desc: "Pay via PayPal" },
+                    { id: "cash" as PaymentMethod, label: "Cash", icon: "cash-outline" as const, desc: "Pay at the office" },
+                    { id: "apple_pay" as PaymentMethod, label: "Apple Pay", icon: "phone-portrait-outline" as const, desc: "Apple Pay on mobile" },
+                    { id: "google_pay" as PaymentMethod, label: "Google Pay", icon: "phone-portrait-outline" as const, desc: "Google Pay on mobile" },
+                  ]).map(method => (
+                    <Pressable
+                      key={method.id}
+                      style={[styles.methodChip, {
+                        backgroundColor: selectedPaymentMethod === method.id ? "#1E3A8A" : colors.card,
+                        borderWidth: selectedPaymentMethod === method.id ? 2 : 1,
+                        borderColor: selectedPaymentMethod === method.id ? "#FBBF24" : colors.border,
+                        padding: 12,
+                        borderRadius: 10,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        flex: 1,
+                        minWidth: 120,
+                      }]}
+                      onPress={() => setSelectedPaymentMethod(method.id)}
+                    >
+                      <Ionicons name={method.icon} size={18} color={selectedPaymentMethod === method.id ? "#FFF" : colors.primary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: "700", fontSize: 13, color: selectedPaymentMethod === method.id ? "#FFF" : colors.foreground }}>
+                          {method.label}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: selectedPaymentMethod === method.id ? "rgba(255,255,255,0.7)" : colors.mutedForeground }}>
+                          {method.desc}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
-              <Pressable style={[styles.payBtn, { backgroundColor: "#FBBF24" }]} onPress={openPaymentPage}>
-                <Ionicons name="lock-closed" size={18} color="#1E3A8A" />
+
+              <Pressable
+                style={[styles.payBtn, { backgroundColor: "#FBBF24" }]} 
+                onPress={selectedPaymentMethod === "stripe_card" ? openPaymentPage : handleManualPayment}
+              >
+                <Ionicons name={selectedPaymentMethod === "stripe_card" ? "lock-closed" : "cash-outline"} size={18} color="#1E3A8A" />
                 <Text style={styles.payBtnText}>
-                  Pay {formatCurrency(quote.calculatedTotal, quote.currency)} Securely Online
+                  {selectedPaymentMethod === "stripe_card" 
+                    ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} Securely Online`
+                    : selectedPaymentMethod === "cash"
+                    ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} in Cash`
+                    : selectedPaymentMethod === "bank_transfer"
+                    ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} via Bank Transfer`
+                    : selectedPaymentMethod === "paypal"
+                    ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} via PayPal`
+                    : `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} via ${selectedPaymentMethod === "apple_pay" ? "Apple Pay" : "Google Pay"}`
+                  }
                 </Text>
                 <Ionicons name="open-outline" size={16} color="#1E3A8A" />
               </Pressable>
               <Text style={[styles.payCardNote, { color: colors.mutedForeground }]}>
-                You will be redirected to stripe.com. Return here after payment for your confirmation.
+                {selectedPaymentMethod === "stripe_card" 
+                  ? "You will be redirected to stripe.com. Return here after payment for your confirmation."
+                  : "Admin will confirm your payment. You will receive a notification when confirmed."
+                }
               </Text>
             </View>
           </>
