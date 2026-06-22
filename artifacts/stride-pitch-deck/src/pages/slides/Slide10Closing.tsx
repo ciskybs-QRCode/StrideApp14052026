@@ -24,13 +24,13 @@ export default function Slide10Closing() {
           READY TO GET STARTED?
         </div>
         <div style={{ fontSize: "7vw", fontWeight: 900, color: "#fff", lineHeight: 1.0, letterSpacing: "-0.03em", marginBottom: "4vh" }}>
-          Run your school.
+          Run your association.
           <br />
           <span style={{ color: "#FBBF24" }}>Not your spreadsheets.</span>
         </div>
         <div style={{ width: "8vw", height: "0.5vh", background: "#FBBF24", margin: "0 auto 4vh" }} />
         <div style={{ fontSize: "2.2vw", color: "rgba(255,255,255,0.6)", fontWeight: 400, lineHeight: 1.5, marginBottom: "5vh" }}>
-          Join the growing community of dance schools on Stride.
+          Join the growing community of associations on Stride.
           <br />
           6 months free. No credit card required.
         </div>

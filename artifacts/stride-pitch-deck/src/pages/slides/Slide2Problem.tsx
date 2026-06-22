@@ -9,7 +9,7 @@ export default function Slide2Problem() {
       <div className="absolute" style={{ top: "7vh", left: "7vw", right: "7vw" }}>
         <div style={{ fontSize: "1.3vw", fontWeight: 700, color: "#FBBF24", letterSpacing: "0.2em", marginBottom: "2vh" }}>THE PROBLEM</div>
         <div style={{ fontSize: "5.2vw", fontWeight: 900, color: "#1E3A8A", lineHeight: 1.05, letterSpacing: "-0.025em", marginBottom: "1.5vh" }}>
-          Running a dance school is still manual.
+          Running an association is still manual.
         </div>
         <div style={{ width: "6vw", height: "0.4vh", background: "#FBBF24" }} />
       </div>
@@ -45,9 +45,9 @@ export default function Slide2Problem() {
       {/* Bottom quote */}
       <div className="absolute" style={{ bottom: "7vh", left: "7vw", right: "7vw", borderLeft: "0.4vw solid #FBBF24", paddingLeft: "2vw" }}>
         <div style={{ fontSize: "2.2vw", fontWeight: 700, color: "#1E3A8A", lineHeight: 1.4 }}>
-          "We were managing 120 students across 6 courses — entirely by hand."
+          "We were managing 120 members across 6 courses — entirely by hand."
         </div>
-        <div style={{ fontSize: "1.4vw", color: "#64748B", marginTop: "1vh", fontWeight: 500 }}>Dance school director, Turin</div>
+        <div style={{ fontSize: "1.4vw", color: "#64748B", marginTop: "1vh", fontWeight: 500 }}>Association Director</div>
       </div>
     </div>
   );

@@ -35,7 +35,7 @@ export default function Slide9Traction() {
               <div style={{ width: "4vw", height: "4vw", borderRadius: "50%", background: "#F8FAFF", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <span style={{ fontSize: "1.5vw", fontWeight: 900, color: "#1E3A8A" }}>2</span>
               </div>
-              <span style={{ fontSize: "1.6vw", color: "#374151", fontWeight: 600 }}>First 50 paying schools</span>
+              <span style={{ fontSize: "1.6vw", color: "#374151", fontWeight: 600 }}>First 50 paying associations</span>
             </div>
             <div style={{ display: "flex", gap: "1.5vw", alignItems: "center" }}>
               <div style={{ width: "4vw", height: "4vw", borderRadius: "50%", background: "#F8FAFF", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

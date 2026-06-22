@@ -9,7 +9,7 @@ export default function Slide4Roles() {
       <div className="absolute" style={{ top: "7vh", left: "7vw", right: "7vw" }}>
         <div style={{ fontSize: "1.3vw", fontWeight: 700, color: "#FBBF24", letterSpacing: "0.2em", marginBottom: "1.8vh" }}>THREE VIEWS. ONE PLATFORM.</div>
         <div style={{ fontSize: "5vw", fontWeight: 900, color: "#1E3A8A", letterSpacing: "-0.025em", lineHeight: 1.05, marginBottom: "1.5vh" }}>
-          Built for everyone in the school.
+          Built for everyone in the association.
         </div>
         <div style={{ width: "6vw", height: "0.4vh", background: "#FBBF24" }} />
       </div>

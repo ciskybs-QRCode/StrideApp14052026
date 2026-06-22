@@ -19,7 +19,7 @@ export default function Slide3Solution() {
         </div>
         <div style={{ width: "6vw", height: "0.4vh", background: "#FBBF24", marginBottom: "3.5vh" }} />
         <div style={{ fontSize: "2vw", color: "rgba(255,255,255,0.65)", fontWeight: 400, lineHeight: 1.6 }}>
-          One platform that replaces the spreadsheets, the group chats, the paper forms, and the guesswork — built for every role in the school.
+          One platform that replaces the spreadsheets, the group chats, the paper forms, and the guesswork — built for every role in the association.
         </div>
       </div>
 

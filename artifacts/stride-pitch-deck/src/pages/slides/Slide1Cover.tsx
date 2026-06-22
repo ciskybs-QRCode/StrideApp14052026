@@ -28,14 +28,14 @@ export default function Slide1Cover() {
       {/* Main content — left aligned, vertically centered */}
       <div className="absolute" style={{ top: "50%", transform: "translateY(-50%)", left: "7vw", maxWidth: "58vw" }}>
         <div style={{ fontSize: "1.4vw", fontWeight: 700, color: "#FBBF24", letterSpacing: "0.2em", marginBottom: "3.5vh" }}>
-          DANCE SCHOOL MANAGEMENT PLATFORM
+          ASSOCIATION MANAGEMENT PLATFORM
         </div>
         <div style={{ fontSize: "7.5vw", fontWeight: 900, color: "#fff", lineHeight: 1.0, letterSpacing: "-0.03em", marginBottom: "4vh", textWrap: "balance" }}>
-          Built for dance schools.
+          Built for associations.
         </div>
         <div style={{ width: "8vw", height: "0.5vh", background: "#FBBF24", marginBottom: "4vh" }} />
         <div style={{ fontSize: "2.4vw", color: "rgba(255,255,255,0.65)", fontWeight: 400, lineHeight: 1.5, maxWidth: "46vw" }}>
-          Attendance, payments, communications, and analytics — in one platform built specifically for dance schools.
+          Attendance, payments, communications, and analytics — in one platform built specifically for associations.
         </div>
       </div>
 
