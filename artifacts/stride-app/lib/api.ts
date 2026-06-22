@@ -472,7 +472,7 @@ export const api = {
 
   // QR verification
   verifyMemberQr: (qrData: string) =>
-    request<{ name: string; subscription: "active" | "expired" | "none"; medical: "valid" | "expiring" | "expired"; payment: "paid" | "overdue" | "pending"; type: "success" | "warning" | "error" }>("POST", "/verify-member-qr", { qrData }),
+    request<{ name: string; subscription: "active" | "expired" | "none"; medical: "valid" | "expiring" | "expired"; payment: "paid" | "overdue" | "pending"; type: "success" | "warning" | "error"; blacklisted?: boolean }>("POST", "/verify-member-qr", { qrData }),
 
   // Org
   getOrg: () => request<ApiOrg>("GET", "/org"),
@@ -832,6 +832,30 @@ export const api = {
     }
     return request<{ ok: boolean }>("POST", "/private-notifications/read-all", {});
   },
+
+  // Direct messages (internal messaging)
+  getDirectMessageThreads: () =>
+    request<ApiThread[]>("GET", "/messages/threads"),
+  getDirectMessageInbox: () =>
+    request<ApiDirectMessage[]>("GET", "/messages/inbox"),
+  getDirectMessageSent: () =>
+    request<ApiDirectMessage[]>("GET", "/messages/sent"),
+  getDirectMessageThread: (threadId: string) =>
+    request<ApiDirectMessage[]>("GET", `/messages/thread/${threadId}`),
+  sendDirectMessage: (data: {
+    to_user_id: number;
+    subject?: string;
+    body: string;
+    attachments?: Array<{ name: string; url: string; mimeType: string }>;
+  }) => request<ApiDirectMessage>("POST", "/messages/direct", data),
+  markDirectMessageRead: (id: number) =>
+    request<{ ok: boolean }>("POST", `/messages/${id}/read`, {}),
+  replyToDirectMessage: (id: number, body: string, attachments?: Array<{ name: string; url: string; mimeType: string }>) =>
+    request<ApiDirectMessage>("POST", `/messages/${id}/reply`, { body, attachments }),
+  getDirectMessageUnreadCount: () =>
+    request<{ count: number }>("GET", "/messages/unread-count"),
+  searchUsers: (q: string) =>
+    request<ApiUser[]>("GET", `/users/search?q=${encodeURIComponent(q)}`),
 
   // Meeting availability (all authenticated roles)
   getMeetingAvailability: async (): Promise<{ meeting_days: number[]; meeting_slots: string[] }> => {
@@ -1642,6 +1666,32 @@ export interface ApiMessage {
   signature_required?: boolean;
   created_at?: string;
   sender?: { id: number; name: string; role: string };
+  org?: { id: number; name: string; contact_email?: string };
+}
+
+export interface ApiDirectMessage {
+  id: number;
+  organization_id: number;
+  thread_id?: string;
+  from_user_id: number;
+  to_user_id: number;
+  subject?: string;
+  body: string;
+  attachments?: Array<{ name: string; url: string; mimeType: string }>;
+  read_at?: string | null;
+  created_at?: string;
+  sender?: { id: number; name: string; role: string };
+  recipient?: { id: number; name: string; role: string };
+}
+
+export interface ApiThread {
+  thread_id: string;
+  other_id: number;
+  other_name: string;
+  other_role: string;
+  last_message: string;
+  last_at: string;
+  unread_count: number;
 }
 
 export interface ApiStudent {

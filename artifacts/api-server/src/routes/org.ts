@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { logAction } from "../lib/audit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -49,6 +50,18 @@ router.patch("/org", requireAuth, requireRole("admin"), async (req, res) => {
     .select()
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
+
+  logAction({
+    userId: user.id,
+    action: "org_settings_updated",
+    tableAffected: "organizations",
+    recordId: user.orgId,
+    details: {
+      changed_fields: Object.keys(body),
+      performed_by_name: user.email ?? "Admin",
+    },
+  });
+
   res.json(data);
 });
 

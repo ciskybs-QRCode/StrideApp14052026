@@ -285,4 +285,23 @@ router.patch("/profile", requireAuth, async (req, res) => {
   res.json(data);
 });
 
+// ── GET /users/search?q= ──────────────────────────────────────────────────────
+// Search users by name or email within the same org. All authenticated roles.
+
+router.get("/users/search", requireAuth, async (req, res) => {
+  const user = (req as AuthReq).user;
+  const orgId = user.orgId ?? 0;
+  const q = String(req.query["q"] ?? "").trim();
+  if (!q || q.length < 2) { res.json([]); return; }
+
+  const pattern = `%${q}%`;
+  const { rows } = await pool.query<{ id: number; name: string; email: string; role: string }>(
+    `SELECT id, name, email, role FROM users
+     WHERE organization_id = $1 AND (name ILIKE $2 OR email ILIKE $2)
+     ORDER BY name LIMIT 20`,
+    [orgId, pattern],
+  );
+  res.json(rows);
+});
+
 export default router;

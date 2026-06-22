@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, type TokenPayload } from "../lib/auth.js";
 import { qrScanLimiter } from "../lib/rate-limit.js";
+import { logAction } from "../lib/audit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -219,6 +220,26 @@ router.post("/verify-member-qr", requireAuth, qrScanLimiter, async (req, res) =>
     ...(graceDecision !== "not_applicable" && { graceDecision, graceMessage }),
     ...(hardBlock && { contactMessage: "Contact Administration" }),
   };
+
+  // Audit log
+  logAction({
+    userId: actor.id,
+    action: "qr_scan",
+    tableAffected: "children",
+    recordId: memberId,
+    details: {
+      org_id: orgId,
+      member_id: memberId,
+      name,
+      result_type: type,
+      subscription,
+      medical,
+      payment,
+      grace_decision: graceDecision,
+      hard_block: hardBlock,
+      performed_by_name: actor.email ?? "Operator",
+    },
+  });
 
   req.log.info({ orgId, memberId, type, graceDecision }, "QR scan result");
   res.json(result);

@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { LayoutAnimation, Platform, Pressable, Text, UIManager, View } from "react-native";
+import { useAuth } from "@/context/AuthContext";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -58,6 +59,7 @@ const ITEMS: ChecklistItem[] = [
 
 export function SetupChecklist() {
   const router = useRouter();
+  const { user } = useAuth();
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -88,6 +90,9 @@ export function SetupChecklist() {
   );
 
   if (!loaded) return null;
+
+  // Super-admin without an association: no setup checklist
+  if (user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) return null;
 
   const doneCount = ITEMS.filter(i => done[i.id]).length;
   if (doneCount === ITEMS.length) return null;

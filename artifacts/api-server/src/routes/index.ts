@@ -71,6 +71,7 @@ import reviewsRouter from "./reviews.js";
 import enrollmentsRouter from "./enrollments.js";
 import accountRouter from "./account.js";
 import calendarExportRouter from "./calendar-export.js";
+import directMessagesRouter from "./direct-messages.js";
 
 const router: IRouter = Router();
 
@@ -146,5 +147,6 @@ router.use(reviewsRouter);
 router.use(enrollmentsRouter);
 router.use(accountRouter);
 router.use(calendarExportRouter);
+router.use(directMessagesRouter);
 
 export default router;

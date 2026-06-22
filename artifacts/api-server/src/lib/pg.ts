@@ -238,6 +238,9 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS stripe_price_id_per_seat TEXT;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS cost_per_seat_cents INTEGER DEFAULT 150;`).catch(() => {});
 
+  // Org contact email for audit-traced communications
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS contact_email TEXT;`).catch(() => {});
+
   // Data lifecycle: schedule deletion 30 days after trial/subscription expiry
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS data_deletion_scheduled_at TIMESTAMPTZ;`).catch(() => {});
 
@@ -1014,6 +1017,8 @@ export async function ensureTables(): Promise<void> {
       recipient_id          INTEGER     NOT NULL,
       recipient_name        TEXT        NOT NULL DEFAULT '',
       recipient_role        TEXT        NOT NULL DEFAULT '',
+      performed_by_user_id  INTEGER,
+      performed_by_name     TEXT        NOT NULL DEFAULT '',
       delivered_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       read_at               TIMESTAMPTZ,
       skipped_at            TIMESTAMPTZ,
@@ -1695,6 +1700,36 @@ export async function ensureTables(): Promise<void> {
       acn              TEXT,
       updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS direct_messages (
+      id              SERIAL PRIMARY KEY,
+      organization_id INTEGER NOT NULL,
+      thread_id       UUID,
+      from_user_id    INTEGER NOT NULL,
+      to_user_id      INTEGER NOT NULL,
+      subject         TEXT,
+      body            TEXT NOT NULL,
+      attachments     JSONB DEFAULT '[]',
+      read_at         TIMESTAMPTZ,
+      deleted_by_sender   BOOLEAN NOT NULL DEFAULT FALSE,
+      deleted_by_recipient BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS dm_to_user_idx     ON direct_messages (to_user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS dm_from_user_idx   ON direct_messages (from_user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS dm_org_idx         ON direct_messages (organization_id);
+    CREATE INDEX IF NOT EXISTS dm_thread_idx      ON direct_messages (thread_id);
+    CREATE INDEX IF NOT EXISTS dm_unread_idx      ON direct_messages (to_user_id, read_at) WHERE read_at IS NULL;
+
+    CREATE TABLE IF NOT EXISTS direct_message_threads (
+      id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id INTEGER NOT NULL,
+      participant_1   INTEGER NOT NULL,
+      participant_2   INTEGER NOT NULL,
+      last_message_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(organization_id, participant_1, participant_2)
+    );
+    CREATE INDEX IF NOT EXISTS dmt_participant_idx ON direct_message_threads (participant_1, participant_2);
   `).catch(() => {});
 
   initialized = true;

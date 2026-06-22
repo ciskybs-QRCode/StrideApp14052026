@@ -25,6 +25,7 @@ export interface PrivateNotification {
 interface NotificationsCtx {
   notifications: PrivateNotification[];
   unreadCount: number;
+  unreadDirectCount: number;
   loading: boolean;
   refresh: () => Promise<void>;
   markRead: (id: number) => Promise<void>;
@@ -36,6 +37,7 @@ interface NotificationsCtx {
 const Ctx = createContext<NotificationsCtx>({
   notifications: [],
   unreadCount: 0,
+  unreadDirectCount: 0,
   loading: false,
   refresh: async () => {},
   markRead: async () => {},
@@ -49,14 +51,19 @@ const POLL_INTERVAL = 30_000; // 30 s
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<PrivateNotification[]>([]);
+  const [directUnreadCount, setDirectUnreadCount] = useState(0);
   const [loading, setLoading]             = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetch = useCallback(async () => {
     if (!user) return;
     try {
-      const data = await api.getPrivateNotifications();
+      const [data, dmCount] = await Promise.all([
+        api.getPrivateNotifications().catch(() => [] as PrivateNotification[]),
+        api.getDirectMessageUnreadCount().catch(() => ({ count: 0 })),
+      ]);
       setNotifications(data as PrivateNotification[]);
+      setDirectUnreadCount(dmCount.count ?? 0);
     } catch {
       // silent — don't disrupt the UI for polling failures
     }
@@ -84,7 +91,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   // Initial fetch + polling
   useEffect(() => {
-    if (!user) { setNotifications([]); return; }
+    if (!user) { setNotifications([]); setDirectUnreadCount(0); return; }
     fetch();
     intervalRef.current = setInterval(fetch, POLL_INTERVAL);
     return () => {
@@ -92,10 +99,11 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     };
   }, [user?.id, fetch]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const notifUnreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifUnreadCount + directUnreadCount;
 
   return (
-    <Ctx.Provider value={{ notifications, unreadCount, loading, refresh, markRead, markAllRead }}>
+    <Ctx.Provider value={{ notifications, unreadCount, unreadDirectCount: directUnreadCount, loading, refresh, markRead, markAllRead }}>
       {children}
     </Ctx.Provider>
   );

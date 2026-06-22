@@ -4,6 +4,7 @@ import { Expo } from "expo-server-sdk";
 import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { logAction } from "../lib/audit.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -44,7 +45,7 @@ router.get("/messages", requireAuth, requireRole("admin", "operator"), async (re
   const user = (req as AuthReq).user;
   const { data, error } = await supabase
     .from("broadcast_messages")
-    .select("*, sender:users!sender_id(id,name,role)")
+    .select("*, sender:users!sender_id(id,name,role), org:organizations!organization_id(id,name,contact_email)")
     .eq("organization_id", user.orgId)
     .order("created_at", { ascending: false });
   if (error) { res.status(500).json({ error: error.message }); return; }
@@ -87,7 +88,7 @@ router.get("/messages/broadcast/:msgId/report", requireAuth, requireRole("admin"
 
   const { data: msg } = await supabase
     .from("broadcast_messages")
-    .select("id, title, body, created_at, urgent, recipient_mode, sender:users!sender_id(id,name)")
+    .select("id, title, body, created_at, urgent, recipient_mode, sender:users!sender_id(id,name), org:organizations!organization_id(id,name,contact_email)")
     .eq("id", parseInt(msgId))
     .eq("organization_id", user.orgId)
     .single();
@@ -98,12 +99,15 @@ router.get("/messages/broadcast/:msgId/report", requireAuth, requireRole("admin"
     recipient_id: number;
     recipient_name: string;
     recipient_role: string;
+    performed_by_user_id: number | null;
+    performed_by_name: string;
     delivered_at: string;
     read_at: string | null;
     skipped_at: string | null;
     push_sent: boolean;
   }>(
     `SELECT recipient_id, recipient_name, recipient_role,
+            performed_by_user_id, performed_by_name,
             delivered_at, read_at, skipped_at, push_sent
      FROM message_read_log
      WHERE broadcast_message_id = $1 AND organization_id = $2
@@ -159,6 +163,23 @@ router.post("/messages", requireAuth, requireRole("admin", "operator"), async (r
     signature_required?: boolean;
   };
 
+  // Resolve org name for audit-traced sender
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("name, contact_email")
+    .eq("id", user.orgId ?? 0)
+    .maybeSingle();
+  const orgName = (orgRow as { name?: string } | null)?.name ?? "Your Association";
+  const orgFrom = `${orgName}`;
+
+  // Resolve actor name for audit
+  const { data: actorRow } = await supabase
+    .from("users")
+    .select("name")
+    .eq("id", user.id)
+    .maybeSingle();
+  const actorName = (actorRow as { name?: string } | null)?.name ?? user.email ?? "Staff";
+
   const { data: msg, error } = await supabase
     .from("broadcast_messages")
     .insert({
@@ -176,6 +197,21 @@ router.post("/messages", requireAuth, requireRole("admin", "operator"), async (r
     .single();
 
   if (error) { res.status(500).json({ error: error.message }); return; }
+
+  // Audit: broadcast sent
+  logAction({
+    userId: user.id,
+    action: "broadcast_message_sent",
+    tableAffected: "broadcast_messages",
+    recordId: (msg as { id: number } | null)?.id ?? null,
+    details: {
+      org_id: user.orgId,
+      title: body.title,
+      recipient_mode: body.recipient_mode ?? "all",
+      urgent: body.urgent ?? false,
+      performed_by_name: actorName,
+    },
+  });
 
   void (async () => {
     try {
@@ -198,7 +234,7 @@ router.post("/messages", requireAuth, requireRole("admin", "operator"), async (r
       const notifBody  = [
         body.body.slice(0, 180),
         hasFiles
-          ? `📎 ${body.attachments!.length} allegato${body.attachments!.length !== 1 ? "i" : ""}`
+          ? `📎 ${body.attachments!.length} attachment${body.attachments!.length !== 1 ? "s" : ""}`
           : "",
       ].filter(Boolean).join(" · ");
 
@@ -218,24 +254,29 @@ router.post("/messages", requireAuth, requireRole("admin", "operator"), async (r
         .insert(rows)
         .select("id, recipient_id");
 
-      // Insert audit log rows
+      // Insert audit log rows with performed_by
       if (inserted && inserted.length > 0 && msg?.id != null) {
         const ph = inserted
-          .map((_: unknown, i: number) => `($${i * 6 + 1},$${i * 6 + 2},$${i * 6 + 3},$${i * 6 + 4},$${i * 6 + 5},$${i * 6 + 6})`)
+          .map((_: unknown, i: number) => `($${i * 8 + 1},$${i * 8 + 2},$${i * 8 + 3},$${i * 8 + 4},$${i * 8 + 5},$${i * 8 + 6},$${i * 8 + 7},$${i * 8 + 8})`)
           .join(",");
         await pool.query(
           `INSERT INTO message_read_log
-             (broadcast_message_id, notification_id, organization_id, recipient_id, recipient_name, recipient_role)
+             (broadcast_message_id, notification_id, organization_id, recipient_id,
+              recipient_name, recipient_role, performed_by_user_id, performed_by_name)
            VALUES ${ph}
            ON CONFLICT (broadcast_message_id, recipient_id) DO NOTHING`,
           (inserted as { id: number; recipient_id: number }[]).flatMap(n => {
             const u = userMap.get(n.recipient_id);
-            return [String(msg.id), n.id, user.orgId ?? 0, n.recipient_id, u?.name ?? "", u?.role ?? ""];
+            return [
+              String(msg.id), n.id, user.orgId ?? 0, n.recipient_id,
+              u?.name ?? "", u?.role ?? "",
+              parseInt(user.id), actorName,
+            ];
           }),
         ).catch(() => {});
       }
 
-      // ── Fire Expo push notifications ──────────────────────────────────────
+      // ── Fire Expo push notifications (sender = org, not individual) ─────
       const { rows: tokenRows } = await pool.query<{ token: string }>(
         `SELECT token FROM device_push_tokens WHERE org_id = $1 AND user_id = ANY($2)`,
         [user.orgId ?? 0, recipientIds.map(String)],
@@ -249,7 +290,7 @@ router.post("/messages", requireAuth, requireRole("admin", "operator"), async (r
             title: notifTitle,
             body: body.body.slice(0, 200),
             sound: "default" as const,
-            data: { type: "broadcast", broadcastMessageId: String(msg?.id ?? "") },
+            data: { type: "broadcast", broadcastMessageId: String(msg?.id ?? ""), orgName },
             badge: 1,
           }));
 

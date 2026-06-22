@@ -97,7 +97,7 @@ router.post("/auth/login", authLimiter, async (req, res) => {
     }
   }
 
-  const resolvedOrgId = user.organization_id ?? 1;
+  const resolvedOrgId = effectiveRole === "super_admin" ? 0 : (user.organization_id ?? 1);
   const globalUserId = await resolveGlobalUserId(
     user.email,
     user.name ?? user.email,
@@ -690,12 +690,10 @@ router.get("/user/roles", requireAuth, async (req, res) => {
   if (user.email === "ciskybs@gmail.com") {
     const hasRealMemberships = (memberships ?? []).length > 0;
     if (!hasRealMemberships) {
-      const bypassOrgId =
-        (dbUser?.organization_id && dbUser.organization_id > 0)
-          ? dbUser.organization_id
-          : (user.orgId > 0 ? user.orgId : 1);
+      // Super-admin with no real associations: no org context, no setup reminders
+      // They manage the platform, not any association
       for (const role of ["admin", "operator", "parent"]) {
-        push(role, bypassOrgId);
+        push(role, 0);
       }
     }
   }

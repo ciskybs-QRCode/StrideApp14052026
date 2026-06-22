@@ -300,11 +300,12 @@ export default function AdminTabLayout() {
         tabBarLabelStyle: { fontSize: 9, fontWeight: "600" },
       }}
     >
-      {/* ── 5 visible tabs ── */}
+      {/* ── 6 visible tabs ── */}
       <Tabs.Screen name="stats"           options={{ title: "Home",       tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
       <Tabs.Screen name="operations-hub" options={{ title: "Operations", tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline"             size={size} color={color} /> }} />
       <Tabs.Screen name="members-hub"    options={{ title: "Members",    tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"    size={size} color={color} /> }} />
       <Tabs.Screen name="finance-hub"    options={{ title: "Finance",    tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline"           size={size} color={color} /> }} />
+      <Tabs.Screen name="messages"       options={{ title: "Messages",   tabBarIcon: ({ color, size }) => <Ionicons name="mail"                     size={size} color={color} /> }} />
       <Tabs.Screen name="settings"       options={{ title: "Settings",   tabBarIcon: ({ color, size }) => <SettingsTabIcon color={color} size={size} /> }} />
 
       {/* ── Hidden deep-link screens (reached from hub pages) ── */}
