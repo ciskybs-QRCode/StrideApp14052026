@@ -3776,3 +3776,14 @@ export function patchSupportTicket(id: number, data: {
 }): Promise<SupportTicketAdmin> {
   return request("PATCH", `/super-admin/support-tickets/${id}`, data);
 }
+
+export interface SupportChatMessage {
+  role:    "user" | "assistant";
+  content: string;
+}
+
+export function supportAiChat(data: {
+  messages: SupportChatMessage[];
+}): Promise<{ reply: string; resolved: boolean }> {
+  return request("POST", "/support/ai-chat", data);
+}

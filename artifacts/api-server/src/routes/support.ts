@@ -1,8 +1,9 @@
 import { Router, type Request } from "express";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireOwnerOrSuperAdmin, type TokenPayload } from "../lib/auth.js";
-import { getOwnerEmail } from "../lib/owner-config.js";
 import { supabase } from "../lib/supabase.js";
+import { openai } from "@workspace/integrations-openai-ai-server";
+import { aiLimiter } from "../lib/rate-limit.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -95,6 +96,82 @@ router.post("/support/ticket", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error(err, "support/ticket error");
     res.status(500).json({ error: "Failed to submit ticket" });
+  }
+});
+
+// ── POST /support/ai-chat — AI chatbot before opening a ticket ───────────────
+router.post("/support/ai-chat", requireAuth, aiLimiter, async (req, res) => {
+  const user = (req as AuthReq).user;
+
+  const { messages } = req.body as {
+    messages?: Array<{ role: "user" | "assistant"; content: string }>;
+  };
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    res.status(400).json({ error: "messages array required" });
+    return;
+  }
+
+  const SYSTEM_PROMPT = `You are Stride Support Assistant — a friendly, knowledgeable helper built into the Stride association management platform.
+
+Your job is to help association administrators resolve issues quickly without needing to open a support ticket. Answer clearly and concisely.
+
+PLATFORM OVERVIEW:
+Stride is a complete management platform for dance and sports associations. It has three roles:
+- Admin: manages the organisation — members, finances, courses, staff, settings
+- Operator: front-line staff — takes attendance, manages sessions, handles QR check-in
+- Parent/Member: enrolls children, makes payments, signs documents, views schedule
+
+KEY ADMIN FEATURES:
+- Dashboard with stats, activity feed, emergency alerts
+- Members Hub: add/manage members and dependants, Smart Pick-Up, documents, certificates
+- Operations Hub: lessons, courses, disciplines, calendar, event ticketing, fee events, marketplace
+- Finance Hub: invoices, payroll, reimbursements, accountant payments, promo codes, expenses
+- Communications: send messages to members/operators, broadcast with attachments
+- Settings: white-label branding, Stripe Connect, subscription billing, regional pricing, import members, legal documents, QR gate, communication settings
+- AI Copilot: analytics and data queries in natural language
+- Support: this chatbot + support ticket system
+
+COMMON ISSUES & SOLUTIONS:
+- "Can't see members" → Go to Members Hub (bottom tab 2nd icon) → Students tab
+- "Payment not showing" → Finance Hub → Invoices or Pending Payments
+- "How to add a course" → Operations Hub → Courses
+- "Member can't log in" → Users screen → check if account is active; can reset password
+- "How to set up Stripe" → Settings → Payment Processing (Stripe Connect)
+- "Change subscription plan" → Settings → Subscription & Billing
+- "Send a message to all parents" → Communications → compose, select recipients
+- "How to scan QR at entry" → Operator dashboard → QR scan button (camera icon)
+- "Invite another admin" → Users screen → invite by email
+- "Medical certificate expired" → Members Hub → Cert Overview
+- "How to export data" → Analytics screen → export icon top right
+
+Keep responses short (3-5 sentences max). If you cannot resolve the issue, say so clearly and tell the user to tap "Open a Ticket" to reach the Stride team directly.
+
+Do NOT invent features that don't exist. If unsure, say "I'm not sure — please open a ticket so the team can help."
+
+Current user: ${user.email} (org ID: ${user.orgId ?? "none"}, role: ${user.role})`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model:       "gpt-4o-mini",
+      max_tokens:  400,
+      temperature: 0.4,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...messages.map(m => ({ role: m.role, content: m.content })),
+      ],
+    });
+
+    const reply   = completion.choices[0]?.message?.content?.trim() ?? "I'm sorry, I couldn't generate a response. Please open a ticket.";
+    const resolved = /hope that help|does that help|let me know if|resolved|should fix|try that/i.test(reply);
+
+    res.json({ reply, resolved });
+  } catch (err) {
+    req.log.error(err, "[support/ai-chat] OpenAI error");
+    res.json({
+      reply: "I'm having trouble connecting right now. Please open a ticket and the Stride team will get back to you shortly.",
+      resolved: false,
+    });
   }
 });
 
@@ -199,9 +276,9 @@ async function sendOwnerNotification(opts: {
   body:       string;
   category:   string;
 }): Promise<void> {
-  const ownerEmail = getOwnerEmail();
   const resendKey  = process.env["RESEND_API_KEY"];
-  if (!resendKey || !ownerEmail) return;
+  if (!resendKey) return;
+  const ownerEmail = "info@stride-ops.com";
 
   const categoryLabel = {
     billing:   "Billing & Payments",
