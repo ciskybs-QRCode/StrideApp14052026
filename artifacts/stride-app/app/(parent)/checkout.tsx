@@ -939,11 +939,11 @@ export default function CheckoutScreen() {
                 <View style={[styles.paymentMethodsGrid, { backgroundColor: colors.muted, borderRadius: 12, padding: 10, gap: 8 }]}>
                   {([
                     { id: "stripe_card" as PaymentMethod, label: "Credit Card", icon: "card-outline" as const, desc: "Visa, Mastercard, Apple Pay, Google Pay" },
+                    { id: "apple_pay" as PaymentMethod, label: "Apple Pay", icon: "phone-portrait-outline" as const, desc: "Apple Pay via Stripe (no extra fee)" },
+                    { id: "google_pay" as PaymentMethod, label: "Google Pay", icon: "phone-portrait-outline" as const, desc: "Google Pay via Stripe (no extra fee)" },
+                    { id: "paypal" as PaymentMethod, label: "PayPal", icon: "logo-paypal" as const, desc: "Pay via PayPal (admin will confirm)" },
                     { id: "bank_transfer" as PaymentMethod, label: "Bank Transfer", icon: "business-outline" as const, desc: "Pay via bank transfer" },
-                    { id: "paypal" as PaymentMethod, label: "PayPal", icon: "logo-paypal" as const, desc: "Pay via PayPal" },
                     { id: "cash" as PaymentMethod, label: "Cash", icon: "cash-outline" as const, desc: "Pay at the office" },
-                    { id: "apple_pay" as PaymentMethod, label: "Apple Pay", icon: "phone-portrait-outline" as const, desc: "Apple Pay on mobile" },
-                    { id: "google_pay" as PaymentMethod, label: "Google Pay", icon: "phone-portrait-outline" as const, desc: "Google Pay on mobile" },
                   ]).map(method => (
                     <Pressable
                       key={method.id}
@@ -977,26 +977,26 @@ export default function CheckoutScreen() {
 
               <Pressable
                 style={[styles.payBtn, { backgroundColor: "#FBBF24" }]} 
-                onPress={selectedPaymentMethod === "stripe_card" ? openPaymentPage : handleManualPayment}
+                onPress={selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay" ? openPaymentPage : handleManualPayment}
               >
-                <Ionicons name={selectedPaymentMethod === "stripe_card" ? "lock-closed" : "cash-outline"} size={18} color="#1E3A8A" />
+                <Ionicons name={selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay" ? "lock-closed" : "cash-outline"} size={18} color="#1E3A8A" />
                 <Text style={styles.payBtnText}>
-                  {selectedPaymentMethod === "stripe_card" 
+                  {selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay"
                     ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} Securely Online`
                     : selectedPaymentMethod === "cash"
                     ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} in Cash`
                     : selectedPaymentMethod === "bank_transfer"
                     ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} via Bank Transfer`
-                    : selectedPaymentMethod === "paypal"
-                    ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} via PayPal`
-                    : `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} via ${selectedPaymentMethod === "apple_pay" ? "Apple Pay" : "Google Pay"}`
+                    : `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} via PayPal`
                   }
                 </Text>
                 <Ionicons name="open-outline" size={16} color="#1E3A8A" />
               </Pressable>
               <Text style={[styles.payCardNote, { color: colors.mutedForeground }]}>
-                {selectedPaymentMethod === "stripe_card" 
+                {selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay"
                   ? "You will be redirected to stripe.com. Return here after payment for your confirmation."
+                  : selectedPaymentMethod === "paypal"
+                  ? "PayPal payment is marked pending. Admin will confirm after receiving PayPal notification."
                   : "Admin will confirm your payment. You will receive a notification when confirmed."
                 }
               </Text>

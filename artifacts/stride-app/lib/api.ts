@@ -706,6 +706,9 @@ export const api = {
   confirmBankPayment: (sessionId: string) =>
     request<{ ok: boolean; sessionId: string }>("POST", `/checkout/confirm-bank/${sessionId}`, {}),
 
+  confirmPayPalPayment: (sessionId: string) =>
+    request<{ ok: boolean; sessionId: string }>("POST", `/checkout/confirm-paypal/${sessionId}`, {}),
+
   getBatchStatus: (batchId: string) =>
     request<{
       batchId:        string;

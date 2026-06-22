@@ -1239,6 +1239,9 @@ export async function ensureTables(): Promise<void> {
   // ── admin_settings — org contact email for audit trail / branding ───────────
   await pool.query(`
     ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS org_contact_email TEXT;
+
+  -- Platform support email for the founder (super admin)
+  ALTER TABLE system_config ADD COLUMN IF NOT EXISTS support_email TEXT;
   `).catch(() => {});
 
   // ── course_waitlist — 'expired' status support ───────────────────────────────

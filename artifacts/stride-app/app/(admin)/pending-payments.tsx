@@ -107,6 +107,32 @@ export default function PendingPaymentsScreen() {
     );
   }, [load]);
 
+  const confirmPayPal = useCallback(async (sessionId: string) => {
+    Alert.alert(
+      "Confirm PayPal Payment",
+      "Are you sure this PayPal payment was received?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Confirm",
+          style: "default",
+          onPress: async () => {
+            setProcessing(sessionId);
+            try {
+              await api.confirmPayPalPayment(sessionId);
+              Alert.alert("Success", "PayPal payment confirmed.");
+              load();
+            } catch (err) {
+              Alert.alert("Error", "Failed to confirm PayPal payment.");
+            } finally {
+              setProcessing(null);
+            }
+          },
+        },
+      ]
+    );
+  }, [load]);
+
   const formatMethod = (m: string) => {
     const map: Record<string, string> = {
       cash: "Cash",
@@ -237,10 +263,20 @@ export default function PendingPaymentsScreen() {
               )}
 
               {p.status === "pending_paypal" && (
-                <View style={[styles.infoBadge, { backgroundColor: "#EFF6FF" }]}>
-                  <Ionicons name="information-circle-outline" size={14} color="#1D4ED8" />
-                  <Text style={[styles.infoText, { color: "#1D4ED8" }]}>PayPal confirmation is handled automatically.</Text>
-                </View>
+                <Pressable
+                  style={[styles.confirmBtn, { backgroundColor: "#1D4ED8" }]}
+                  onPress={() => confirmPayPal(p.session_id)}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="logo-paypal" size={16} color="#FFF" />
+                      <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>Confirm PayPal Received</Text>
+                    </>
+                  )}
+                </Pressable>
               )}
             </View>
           );

@@ -1314,4 +1314,72 @@ router.post("/checkout/confirm-bank/:sessionId", requireAuth, requireRole("admin
   }
 });
 
+// ── POST /checkout/confirm-paypal/:sessionId ───────────────────────
+// Admin/operator: confirm a PayPal payment was received
+router.post("/checkout/confirm-paypal/:sessionId", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user      = (req as AuthReq).user;
+  const sessionId = String(req.params["sessionId"] ?? "");
+  if (!sessionId) { res.status(400).json({ error: "Missing sessionId" }); return; }
+
+  try {
+    const { data } = await supabase
+      .from("checkout_sessions")
+      .select("status, amount_cents, items, user_id, payment_method")
+      .eq("session_id", sessionId)
+      .eq("organization_id", user.orgId)
+      .maybeSingle();
+
+    if (!data) { res.status(404).json({ error: "Session not found" }); return; }
+    const row = data as { status: string; amount_cents: number; items: unknown; user_id: string; payment_method: string };
+    if (row.status !== "pending_paypal") {
+      res.status(400).json({ error: "Session is not awaiting PayPal confirmation" });
+      return;
+    }
+
+    await supabase
+      .from("checkout_sessions")
+      .update({
+        status: "complete",
+        completed_at: new Date().toISOString(),
+      })
+      .eq("session_id", sessionId);
+
+    await supabase
+      .from("payment_audit_log")
+      .update({ status: "complete" })
+      .eq("stripe_session_id", sessionId);
+
+    if (Array.isArray(row.items)) {
+      const items = row.items as Array<{ childId?: string; courseId?: string }>;
+      for (const item of items) {
+        if (!item.childId || !item.courseId) continue;
+        const childId  = parseInt(item.childId);
+        const courseId = parseInt(item.courseId);
+        if (isNaN(childId) || isNaN(courseId)) continue;
+        await supabase
+          .from("enrollments")
+          .upsert(
+            { child_id: childId, course_id: courseId, status: "enrolled" },
+            { onConflict: "child_id,course_id" },
+          );
+      }
+    }
+
+    await supabase.from("private_notifications").insert({
+      user_id:         parseInt(row.user_id),
+      organization_id: user.orgId,
+      type:            "payment_confirmed",
+      title:           "PayPal Payment Confirmed",
+      body:            `Your PayPal payment of \u20ac${(row.amount_cents / 100).toFixed(2)} has been confirmed.`,
+      read:            false,
+      created_at:      new Date().toISOString(),
+    });
+
+    res.json({ ok: true, sessionId });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Failed to confirm PayPal payment" });
+  }
+});
+
 export default router;
