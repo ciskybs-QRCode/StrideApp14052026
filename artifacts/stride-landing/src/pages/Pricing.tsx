@@ -189,21 +189,21 @@ export default function PricingPage() {
       desc: "Perfect for small associations taking their first step into digital management.",
       scale: "", ring: "border-slate-200",
       headerBg: "bg-slate-50", nameColor: "text-slate-400", priceColor: "text-slate-900", subColor: "text-slate-400",
-      cta: "Start Free Trial", ctaStyle: "bg-[#1E3A8A] text-white hover:bg-[#1e3070]", href: "/landing/register",
+      cta: "Start Free Trial", ctaStyle: "bg-[#1E3A8A] text-white hover:bg-[#1e3070]", href: "/register",
     },
     {
       key: "plus", name: "Plus", emoji: "🥈", badge: "★ Most Popular",
       desc: "The complete platform for growing associations and multi-site organisations.",
       scale: "scale-[1.03]", ring: "border-[#1E3A8A] shadow-xl shadow-[#1E3A8A]/15",
       headerBg: "bg-[#1E3A8A]", nameColor: "text-blue-300", priceColor: "text-white", subColor: "text-blue-200",
-      cta: "Get Started", ctaStyle: "bg-[#FBBF24] text-[#0A192F] hover:bg-[#fcd34d] font-black", href: "/landing/register",
+      cta: "Get Started", ctaStyle: "bg-[#FBBF24] text-[#0A192F] hover:bg-[#fcd34d] font-black", href: "/register",
     },
     {
       key: "premium", name: "Premium", emoji: "🥇", badge: null,
       desc: "Full AI suite for large academies, multi-site organisations, and national associations.",
       scale: "", ring: "border-slate-800",
       headerBg: "bg-slate-900", nameColor: "text-slate-400", priceColor: "text-white", subColor: "text-slate-400",
-      cta: "Get Started", ctaStyle: "bg-[#1E3A8A] text-white hover:bg-[#1e3070]", href: "/landing/register",
+      cta: "Get Started", ctaStyle: "bg-[#1E3A8A] text-white hover:bg-[#1e3070]", href: "/register",
     },
   ];
 

@@ -166,7 +166,7 @@ const labelCls  = "block text-sm font-semibold text-slate-700 mb-2";
 // ── Logo ──────────────────────────────────────────────────────────────────────
 
 const Logo = () => (
-  <img src="/landing/stride-logo.png" alt="Stride" style={{ height: 44, width: "auto", display: "block" }} />
+  <img src="/stride-logo.png" alt="Stride" style={{ height: 44, width: "auto", display: "block" }} />
 );
 
 // ── Legal accordion ───────────────────────────────────────────────────────────

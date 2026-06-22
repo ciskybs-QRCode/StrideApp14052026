@@ -60,7 +60,7 @@ export default function InstagramStory() {
             One app.<br />Three views.<br />Zero chaos.
           </div>
           <div style={{ fontSize: 24, color: "rgba(255,255,255,0.6)", fontWeight: 400, lineHeight: 1.5, maxWidth: 780, margin: "0 auto" }}>
-            Built for every person in your association — families, instructors, and directors.
+            Built for every person in your association — families, operators, and directors.
           </div>
         </div>
         <div style={{ margin: "52px 40px 0", height: 2, background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />

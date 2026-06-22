@@ -139,7 +139,7 @@ export default function About() {
           <h2 className="text-xl font-black text-slate-900 mb-2">Ready to see it in action?</h2>
           <p className="text-slate-500 text-sm mb-6">Start your free 30-day trial. No credit card required.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/landing/register" className="bg-[#1E3A8A] text-white font-bold text-sm px-6 py-3 rounded-xl hover:bg-[#1e3070] transition-colors no-underline">
+            <a href="/register" className="bg-[#1E3A8A] text-white font-bold text-sm px-6 py-3 rounded-xl hover:bg-[#1e3070] transition-colors no-underline">
               Start Free Trial
             </a>
             <a href="/contact" className="bg-white border border-slate-200 text-slate-700 font-bold text-sm px-6 py-3 rounded-xl hover:border-[#1E3A8A] transition-colors no-underline">

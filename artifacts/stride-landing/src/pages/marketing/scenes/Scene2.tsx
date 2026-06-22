@@ -61,7 +61,7 @@ export function Scene2() {
           animate={phase >= 3 ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, ease: 'easeOut' }}
         >
-          Run your school.<br />
+          Run your association.<br />
           <span className="text-[#FBBF24]">Not your spreadsheets.</span>
         </motion.h2>
       </div>

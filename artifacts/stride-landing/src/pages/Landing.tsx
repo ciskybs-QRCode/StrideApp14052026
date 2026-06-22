@@ -56,7 +56,7 @@ const ASSOC_FEATURES = [
     tag: "Dependant Safety",
     title: "Smart Pick-Up Control",
     desc: "Define exactly who can collect each dependant. Unauthorised pickup attempts trigger an immediate alert to association operators.",
-    accent: "bg-indigo-600 text-white",
+    accent: "bg-[#1E3A8A] text-white",
   },
   {
     icon: (
@@ -68,7 +68,7 @@ const ASSOC_FEATURES = [
     tag: "Zero Liability",
     title: "Digital Legal Gate",
     desc: "Consent forms, waivers, and media releases — signed on the member's phone before first access. SHA-256 audit trail included.",
-    accent: "bg-violet-600 text-white",
+    accent: "bg-[#1E3A8A] text-white",
   },
   {
     icon: (
@@ -161,8 +161,8 @@ const PRIVACY_PILLARS = [
     title: "The 'Local-Only' Rule",
     badge: "Zero PII",
     desc: "Wearable UUIDs are randomly generated anonymous identifiers. They contain NO member name or personal info — only the secure portal can link them.",
-    badgeColor: "bg-violet-50 text-violet-700 border-violet-200",
-    iconColor: "text-violet-600",
+    badgeColor: "bg-[#EFF6FF] text-[#1E3A8A] border-[#1E3A8A]/20",
+    iconColor: "text-[#1E3A8A]",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" />
@@ -446,7 +446,7 @@ export default function Landing() {
                 className="inline-flex items-center justify-center gap-2 bg-[#FBBF24] text-[#0A192F] font-black px-8 py-4 rounded-xl text-base hover:bg-[#fcd34d] transition-colors shadow-md shadow-amber-100 no-underline">
                 Start Free Trial <IcoArrow />
               </a>
-              <a href="#for-schools"
+              <a href="#for-associations"
                 className="inline-flex items-center justify-center gap-2 bg-white border-2 border-slate-200 text-slate-700 font-semibold px-8 py-4 rounded-xl text-base hover:border-[#1E3A8A] hover:text-[#1E3A8A] transition-colors no-underline">
                 See All Features
               </a>
@@ -903,7 +903,7 @@ export default function Landing() {
                   {[
                     { label: "Alex checked in",           time: "3:01 PM",   color: "bg-emerald-400" },
                     { label: "Pickup: Mum (authorised)",  time: "5:30 PM",   color: "bg-blue-400" },
-                    { label: "Waiver signed",             time: "Yesterday", color: "bg-violet-400" },
+                    { label: "Waiver signed",             time: "Yesterday", color: "bg-[#1E3A8A]" },
                   ].map(({ label, time, color }) => (
                     <div key={label} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 flex items-center gap-3">
                       <span className={`w-2 h-2 rounded-full ${color} flex-shrink-0`} />
@@ -1078,7 +1078,7 @@ export default function Landing() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {reviews.map(rv => {
                 const initials = rv.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
-                const colors = ["bg-[#1E3A8A]","bg-emerald-600","bg-violet-600","bg-amber-600","bg-sky-600"];
+                const colors = ["bg-[#1E3A8A]","bg-emerald-600","bg-[#152d6e]","bg-amber-600","bg-[#2a4fa3]"];
                 const color = colors[rv.id % colors.length];
                 return (
                   <div key={rv.id} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm flex flex-col">
@@ -1179,7 +1179,7 @@ export default function Landing() {
             {[
               { color: "text-emerald-600", label: "AES-256 at rest & in transit" },
               { color: "text-blue-600",    label: "GDPR \u00B7 CCPA \u00B7 UK GDPR" },
-              { color: "text-violet-600",  label: "No third-party data sharing" },
+              { color: "text-[#1E3A8A]",   label: "No third-party data sharing" },
               { color: "text-amber-600",   label: "Full audit export on request" },
             ].map(({ color, label }) => (
               <div key={label} className={`flex items-center gap-2 text-sm font-medium ${color}`}>

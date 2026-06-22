@@ -56,7 +56,7 @@ export function Scene7() {
           initial={{ opacity: 0, y: 20 }}
           animate={phase >= 2 ? { opacity: 1, y: 0 } : {}}
         >
-          Run your school. Not your spreadsheets.
+          Run your association. Not your spreadsheets.
         </motion.h2>
 
         <motion.div

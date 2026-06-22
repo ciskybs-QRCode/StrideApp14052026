@@ -87,7 +87,7 @@ export default function InstagramPost() {
         </div>
         <div style={{ background: "rgba(0,0,0,0.3)", borderTop: `1px solid rgba(255,255,255,0.08)`, padding: "24px 60px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 20, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>stride.app</span>
-          <span style={{ fontSize: 20, color: GOLD, fontWeight: 700 }}>Run your school. Not your spreadsheets.</span>
+          <span style={{ fontSize: 20, color: GOLD, fontWeight: 700 }}>Run your association. Not your spreadsheets.</span>
         </div>
       </div>
     </ScaleToFit>

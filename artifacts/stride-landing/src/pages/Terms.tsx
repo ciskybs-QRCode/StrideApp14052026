@@ -11,10 +11,10 @@ The Service is provided by Stride Platform ("Company", "we", "us", "our"). We re
   {
     id: "description",
     title: "2. Description of Service",
-    body: `Stride is a SaaS (Software as a Service) platform designed for the management of dance schools, sports academies, and similar activity centres. The Service includes, but is not limited to:
+    body: `Stride is a SaaS (Software as a Service) platform designed for the management of associations, sports academies, and similar activity centres. The Service includes, but is not limited to:
 
-• Member and student management (enrolment, profiles, attendance)
-• Class scheduling and instructor management
+• Member management (enrolment, profiles, attendance)
+• Course scheduling and operator management
 • Member portal with Smart Pick-Up and emergency protocols
 • QR code-based check-in and kiosk management
 • Digital document signing and record keeping

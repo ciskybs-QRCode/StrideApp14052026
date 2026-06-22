@@ -12,8 +12,8 @@ const topics = [
 ];
 
 const ROLES = [
-  "School Director",
-  "Dance Teacher / Coach",
+  "Association Director",
+  "Operator / Coach",
   "Association Manager",
   "Parent / Guardian",
   "Administrator",
