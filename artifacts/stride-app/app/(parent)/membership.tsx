@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,6 +43,7 @@ export default function MembershipScreen() {
   const [billingCycle,   setBillingCycle]   = useState<"monthly" | "annual">("monthly");
   const [selfSelected,   setSelfSelected]   = useState(true);
   const [selectedDeps,   setSelectedDeps]   = useState<Set<string>>(new Set());
+  const [donationAmount, setDonationAmount] = useState<string>("");
 
   useEffect(() => {
     api.getMembershipPlans()
@@ -116,6 +118,37 @@ export default function MembershipScreen() {
     );
   };
 
+  const handleDonationAdd = async () => {
+    if (!plans || !donationAmount) return;
+    const cents = Math.round(parseFloat(donationAmount) * 100);
+    if (cents <= 0) {
+      Alert.alert("Invalid Amount", "Please enter a positive amount.");
+      return;
+    }
+    addItem({
+      type:           "membership",
+      courseId:       `membership-donation-${user?.id ?? 0}`,
+      courseName:     "Donation / Gold Coin",
+      courseSchedule: "One-time contribution",
+      packageType:    "donation",
+      label:          "Donation",
+      price:          cents / 100,
+      participantName: user?.name ?? "Member",
+      memberId:       String(user?.id ?? 0),
+      memberType:     "member",
+      quantity:       1,
+    });
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert(
+      "Added to Cart",
+      "Donation added to your cart.",
+      [
+        { text: "Continue", style: "cancel" },
+        { text: "View Cart", onPress: () => router.push("/(parent)/cart") },
+      ],
+    );
+  };
+
   if (loading) {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
@@ -128,15 +161,35 @@ export default function MembershipScreen() {
     );
   }
 
-  if (!plans || (plans.monthly_fee_cents === 0 && plans.annual_fee_cents === 0)) {
+  // Admin disabled membership entirely
+  if (!plans || !plans.membershipEnabled) {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Membership" onBack={() => router.back()} />
         <View style={S.centerBox}>
           <Ionicons name="id-card-outline" size={52} color={colors.mutedForeground} />
-          <Text style={[S.emptyTitle, { color: colors.foreground }]}>No Membership Plans</Text>
+          <Text style={[S.emptyTitle, { color: colors.foreground }]}>No Membership Fees</Text>
           <Text style={[S.emptyText, { color: colors.mutedForeground }]}>
-            The association has not configured membership plans yet. Check back later.
+            This association does not require membership fees.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // No fee configured (fixed mode)
+  const hasFixedFees = plans.monthly_fee_cents > 0 || plans.annual_fee_cents > 0;
+  const isDonation = plans.membershipDonationMode;
+
+  if (!isDonation && !hasFixedFees) {
+    return (
+      <View style={[S.root, { backgroundColor: colors.background }]}>
+        <ScreenHeader title="Membership" onBack={() => router.back()} />
+        <View style={S.centerBox}>
+          <Ionicons name="id-card-outline" size={52} color={colors.mutedForeground} />
+          <Text style={[S.emptyTitle, { color: colors.foreground }]}>No Fees Configured</Text>
+          <Text style={[S.emptyText, { color: colors.mutedForeground }]}>
+            Membership is enabled but no fee amounts have been set yet.
           </Text>
         </View>
       </View>
@@ -148,6 +201,10 @@ export default function MembershipScreen() {
   const annualSave  = (plans.annual_fee_cents > 0 && plans.monthly_fee_cents > 0)
     ? plans.monthly_fee_cents * 12 - plans.annual_fee_cents : 0;
   const selectedCount = (selfSelected ? 1 : 0) + selectedDeps.size;
+
+  const appliesTo = plans.membershipAppliesTo;
+  const showSelf = appliesTo === "members" || appliesTo === "everyone";
+  const showDeps = appliesTo === "dependants" || appliesTo === "everyone";
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
@@ -170,128 +227,174 @@ export default function MembershipScreen() {
           </View>
         </View>
 
-        {/* Billing cycle */}
-        <Text style={[S.sectionLabel, { color: colors.foreground }]}>Billing Cycle</Text>
-        <View style={[S.toggleRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {(["monthly", "annual"] as const).map(cycle => {
-            const active   = billingCycle === cycle;
-            const cents    = cycle === "annual" ? plans.annual_fee_cents : plans.monthly_fee_cents;
-            const suffix   = cycle === "annual" ? "/yr" : "/mo";
-            const disabled = cents === 0;
-            return (
-              <Pressable
-                key={cycle}
-                style={[S.toggleBtn, active && S.toggleBtnActive, disabled && { opacity: 0.4 }]}
-                onPress={() => !disabled && setBillingCycle(cycle)}
-                disabled={disabled}
-              >
-                <Text style={[S.toggleBtnTitle, active && { color: "#FFF" }]}>
-                  {cycle === "annual" ? "Annual" : "Monthly"}
-                </Text>
-                <Text style={[S.toggleBtnPrice, active && { color: "rgba(255,255,255,0.9)" }]}>
-                  {fmtAmt(cents, currency)}{suffix}
-                </Text>
-                {cycle === "annual" && annualSave > 0 && (
-                  <View style={S.saveBadge}>
-                    <Text style={S.saveText}>Save {fmtAmt(annualSave, currency)}</Text>
-                  </View>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Price card */}
-        <View style={[S.priceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[S.priceLbl, { color: colors.mutedForeground }]}>
-            {billingCycle === "annual" ? "Annual fee per member" : "Monthly fee per member"}
-          </Text>
-          <Text style={[S.priceVal, { color: "#1E3A8A" }]}>{fmtAmt(feeCents, currency)}</Text>
-          {billingCycle === "annual" && plans.monthly_fee_cents > 0 && (
-            <Text style={[S.priceNote, { color: colors.mutedForeground }]}>
-              ≈ {fmtAmt(Math.round(plans.annual_fee_cents / 12), currency)}/mo
-            </Text>
-          )}
-        </View>
-
-        {/* Members */}
-        <Text style={[S.sectionLabel, { color: colors.foreground }]}>Select Members</Text>
-        <View style={[S.membersCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={S.memberRow}>
-            <View style={S.memberLeft}>
-              <View style={[S.avatar, { backgroundColor: "rgba(30,58,138,0.12)" }]}>
-                <Ionicons name="person" size={17} color="#1E3A8A" />
-              </View>
-              <View>
-                <Text style={[S.memberName, { color: colors.foreground }]}>
-                  {user?.name ?? "You"}
-                  {"  "}<Text style={[S.youBadge, { color: "#1E3A8A" }]}>(you)</Text>
-                </Text>
-                <Text style={[S.memberSub, { color: colors.mutedForeground }]}>Primary account holder</Text>
-              </View>
-            </View>
-            <Switch
-              value={selfSelected}
-              onValueChange={setSelfSelected}
-              trackColor={{ true: "#1E3A8A" }}
-            />
-          </View>
-
-          {dependants.map((dep, idx) => (
-            <View
-              key={dep.id}
-              style={[
-                S.memberRow,
-                idx >= 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-              ]}
-            >
-              <View style={S.memberLeft}>
-                <View style={[S.avatar, { backgroundColor: "rgba(251,191,36,0.15)" }]}>
-                  <Ionicons name="people" size={17} color="#FBBF24" />
-                </View>
-                <View>
-                  <Text style={[S.memberName, { color: colors.foreground }]}>{dep.name}</Text>
-                  <Text style={[S.memberSub, { color: colors.mutedForeground }]}>Dependant</Text>
-                </View>
-              </View>
-              <Switch
-                value={selectedDeps.has(String(dep.id))}
-                onValueChange={() => toggleDep(String(dep.id))}
-                trackColor={{ true: "#1E3A8A" }}
+        {/* Donation mode UI */}
+        {isDonation && (
+          <>
+            <Text style={[S.sectionLabel, { color: colors.foreground }]}>Gold Coin / Donation</Text>
+            <View style={[S.priceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[S.priceLbl, { color: colors.mutedForeground }]}>
+                Choose your contribution
+              </Text>
+              <TextInput
+                style={[S.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background, marginTop: 12, fontSize: 24, fontWeight: "800", textAlign: "center" }]}
+                value={donationAmount}
+                onChangeText={setDonationAmount}
+                keyboardType="decimal-pad"
+                placeholder={fmtAmt(0, currency)}
+                placeholderTextColor={colors.mutedForeground}
               />
+              <Text style={[S.priceNote, { color: colors.mutedForeground, marginTop: 8 }]}>
+                Any amount helps support the association. Thank you!
+              </Text>
             </View>
-          ))}
-        </View>
+            <Pressable
+              style={[S.cta, { marginTop: 16, marginBottom: 24 }]}           onPress={() => void handleDonationAdd()}
+            >
+              <Ionicons name="heart-outline" size={20} color="#FFF" />
+              <Text style={S.ctaText}>Contribute Now</Text>
+            </Pressable>
+          </>
+        )}
 
-        {/* Total */}
-        {selectedCount > 0 && (
-          <View style={[S.totalRow, { backgroundColor: "rgba(30,58,138,0.07)", borderColor: "rgba(30,58,138,0.2)" }]}>
-            <Text style={[S.totalLbl, { color: "#1E3A8A" }]}>
-              Total · {selectedCount} member{selectedCount > 1 ? "s" : ""}
-            </Text>
-            <Text style={[S.totalVal, { color: "#1E3A8A" }]}>
-              {fmtAmt(feeCents * selectedCount, currency)}
-              {billingCycle === "annual" ? "/yr" : "/mo"}
-            </Text>
-          </View>
+        {/* Fixed fee mode UI */}
+        {!isDonation && (
+          <>
+            {/* Billing cycle */}
+            <Text style={[S.sectionLabel, { color: colors.foreground }]}>Billing Cycle</Text>
+            <View style={[S.toggleRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {(["monthly", "annual"] as const).map(cycle => {
+                const active   = billingCycle === cycle;
+                const cents    = cycle === "annual" ? plans.annual_fee_cents : plans.monthly_fee_cents;
+                const suffix   = cycle === "annual" ? "/yr" : "/mo";
+                const disabled = cents === 0;
+                return (
+                  <Pressable
+                    key={cycle}
+                    style={[S.toggleBtn, active && S.toggleBtnActive, disabled && { opacity: 0.4 }]}
+                    onPress={() => !disabled && setBillingCycle(cycle)}
+                    disabled={disabled}
+                  >
+                    <Text style={[S.toggleBtnTitle, active && { color: "#FFF" }]}>
+                      {cycle === "annual" ? "Annual" : "Monthly"}
+                    </Text>
+                    <Text style={[S.toggleBtnPrice, active && { color: "rgba(255,255,255,0.9)" }]}>
+                      {fmtAmt(cents, currency)}{suffix}
+                    </Text>
+                    {cycle === "annual" && annualSave > 0 && (
+                      <View style={S.saveBadge}>
+                        <Text style={S.saveText}>Save {fmtAmt(annualSave, currency)}</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Price card */}
+            <View style={[S.priceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[S.priceLbl, { color: colors.mutedForeground }]}>
+                {billingCycle === "annual" ? "Annual fee per member" : "Monthly fee per member"}
+              </Text>
+              <Text style={[S.priceVal, { color: "#1E3A8A" }]}>{fmtAmt(feeCents, currency)}</Text>
+              {billingCycle === "annual" && plans.monthly_fee_cents > 0 && (
+                <Text style={[S.priceNote, { color: colors.mutedForeground }]}>
+                  ≈ {fmtAmt(Math.round(plans.annual_fee_cents / 12), currency)}/mo
+                </Text>
+              )}
+              {plans.membershipBillingDay > 0 && (
+                <Text style={[S.priceNote, { color: colors.mutedForeground, marginTop: 4 }]}>
+                  Billed on day {plans.membershipBillingDay} of each period
+                </Text>
+              )}
+            </View>
+
+            {/* Members */}
+            <Text style={[S.sectionLabel, { color: colors.foreground }]}>Select Members</Text>
+            <View style={[S.membersCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {showSelf && (
+                <View style={S.memberRow}>
+                  <View style={S.memberLeft}>
+                    <View style={[S.avatar, { backgroundColor: "rgba(30,58,138,0.12)" }]}>
+                      <Ionicons name="person" size={17} color="#1E3A8A" />
+                    </View>
+                    <View>
+                      <Text style={[S.memberName, { color: colors.foreground }]}>
+                        {user?.name ?? "You"}
+                        {"  "}<Text style={[S.youBadge, { color: "#1E3A8A" }]}>(you)</Text>
+                      </Text>
+                      <Text style={[S.memberSub, { color: colors.mutedForeground }]}>Primary account holder</Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={selfSelected}
+                    onValueChange={setSelfSelected}
+                    trackColor={{ true: "#1E3A8A" }}
+                  />
+                </View>
+              )}
+
+              {showDeps && dependants.map((dep, idx) => (
+                <View
+                  key={dep.id}
+                  style={[
+                    S.memberRow,
+                    { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+                  ]}
+                >
+                  <View style={S.memberLeft}>
+                    <View style={[S.avatar, { backgroundColor: "rgba(251,191,36,0.15)" }]}>
+                      <Ionicons name="people" size={17} color="#FBBF24" />
+                    </View>
+                    <View>
+                      <Text style={[S.memberName, { color: colors.foreground }]}>{dep.name}</Text>
+                      <Text style={[S.memberSub, { color: colors.mutedForeground }]}>Dependant</Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={selectedDeps.has(String(dep.id))}
+                    onValueChange={() => toggleDep(String(dep.id))}
+                    trackColor={{ true: "#1E3A8A" }}
+                  />
+                </View>
+              ))}
+
+              {showDeps && dependants.length === 0 && (
+                <View style={[S.memberRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                  <Text style={[S.memberSub, { color: colors.mutedForeground, textAlign: "center", flex: 1 }]}>
+                    No dependants linked to your account.
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Total */}
+            {selectedCount > 0 && (
+              <View style={[S.totalRow, { backgroundColor: "rgba(30,58,138,0.07)", borderColor: "rgba(30,58,138,0.2)" }]}>
+                <Text style={[S.totalLbl, { color: "#1E3A8A" }]}>
+                  Total · {selectedCount} member{selectedCount > 1 ? "s" : ""}
+                </Text>
+                <Text style={[S.totalVal, { color: "#1E3A8A" }]}>
+                  {fmtAmt(feeCents * selectedCount, currency)}
+                  {billingCycle === "annual" ? "/yr" : "/mo"}
+                </Text>
+              </View>
+            )}
+
+            {/* CTA */}
+            <Pressable
+              style={[S.cta, selectedCount === 0 && { opacity: 0.45 }, { marginTop: 16, marginBottom: 24 }]}              onPress={() => void handleAddToCart()}
+              disabled={selectedCount === 0}
+            >
+              <Ionicons name="cart-outline" size={20} color="#FFF" />
+              <Text style={S.ctaText}>
+                {selectedCount === 0
+                  ? "Select at least one member"
+                  : `Add ${selectedCount} Membership${selectedCount > 1 ? "s" : ""} to Cart`}
+              </Text>
+            </Pressable>
+          </>
         )}
       </ScrollView>
-
-      {/* CTA footer */}
-      <View style={[S.footer, { paddingBottom: insets.bottom + 12, backgroundColor: colors.card, borderTopColor: colors.border }]}>
-        <Pressable
-          style={[S.cta, selectedCount === 0 && { opacity: 0.45 }]}
-          onPress={() => void handleAddToCart()}
-          disabled={selectedCount === 0}
-        >
-          <Ionicons name="cart-outline" size={20} color="#FFF" />
-          <Text style={S.ctaText}>
-            {selectedCount === 0
-              ? "Select at least one member"
-              : `Add ${selectedCount} Membership${selectedCount > 1 ? "s" : ""} to Cart`}
-          </Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -324,6 +427,8 @@ const S = StyleSheet.create({
   priceVal:   { fontSize: 34, fontWeight: "800" },
   priceNote:  { fontSize: 12, marginTop: 3 },
 
+  input:      { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+
   membersCard: { borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden", marginBottom: 14 },
   memberRow:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 14 },
   memberLeft:  { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
@@ -336,7 +441,6 @@ const S = StyleSheet.create({
   totalLbl:    { fontSize: 14, fontWeight: "600" },
   totalVal:    { fontSize: 18, fontWeight: "800" },
 
-  footer:      { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 12 },
   cta:         { backgroundColor: "#1E3A8A", borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 15, gap: 10 },
   ctaText:     { fontSize: 16, fontWeight: "800", color: "#FFF" },
 });

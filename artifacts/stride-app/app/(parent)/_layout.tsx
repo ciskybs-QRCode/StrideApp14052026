@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -72,6 +72,14 @@ export default function ParentTabLayout() {
   const { cartBadgeCount }                            = useRealtime();
   const { legalAdminDocs, signedAdminDocIds, signAdminDoc } = useAppData();
   const { secondaryRoleName }                         = useTerminology();
+
+  // ── Membership tab visibility (admin-controlled) ─────────────────────────────
+  const [membershipEnabled, setMembershipEnabled] = useState(false);
+  useEffect(() => {
+    import("@/lib/api").then(m => m.api.getMembershipPlans())
+      .then(p => setMembershipEnabled(p.membershipEnabled))
+      .catch(() => setMembershipEnabled(false));
+  }, []);
 
   // ── Gate state ───────────────────────────────────────────────────────────────
   const [gatePhase,     setGatePhase]     = useState<"index" | "signing">("index");
@@ -189,6 +197,15 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="wallet"      options={{ href: null }} />
         <Tabs.Screen name="marketplace" options={{ href: null }} />
         <Tabs.Screen name="cart"      options={{ title: "Cart",    tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
+        {membershipEnabled && (
+          <Tabs.Screen
+            name="membership"
+            options={{
+              title: "Membership",
+              tabBarIcon: ({ color, size }) => <Ionicons name="id-card" size={size} color={color} />,
+            }}
+          />
+        )}
         <Tabs.Screen name="profile"                options={{ href: null }} />
         <Tabs.Screen name="notification-settings"  options={{ href: null }} />
         <Tabs.Screen name="documents" options={{ title: "Settings",tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />

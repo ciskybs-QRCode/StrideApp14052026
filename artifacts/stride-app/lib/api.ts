@@ -2103,6 +2103,11 @@ export interface ApiAdminSettings {
   membership_annual_fee_cents?:  number;
   membership_monthly_fee_cents?: number;
   membership_description?:       string | null;
+  // NEW: membership visibility controls (admin-only)
+  membership_enabled?:           boolean;
+  membership_applies_to?:        "members" | "dependants" | "everyone";
+  membership_billing_day?:       number;
+  membership_donation_mode?:     boolean;
   // Feature toggles (DB-backed)
   push_notifications_enabled?: boolean;
   auto_invoice_enabled?: boolean;
@@ -2144,10 +2149,15 @@ export interface ApiAdminSettings {
 }
 
 export interface MembershipPlans {
-  annual_fee_cents:  number;
-  monthly_fee_cents: number;
-  description:       string | null;
-  currency:          string;
+  annual_fee_cents:       number;
+  monthly_fee_cents:      number;
+  description:            string | null;
+  currency:               string;
+  // NEW: admin controls visibility
+  membershipEnabled:      boolean;
+  membershipAppliesTo:    "members" | "dependants" | "everyone";
+  membershipBillingDay:   number;
+  membershipDonationMode: boolean;
 }
 
 export interface MemberSubscription {

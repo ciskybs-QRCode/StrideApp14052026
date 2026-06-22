@@ -1664,6 +1664,14 @@ export async function ensureTables(): Promise<void> {
       ADD COLUMN IF NOT EXISTS membership_reminder_days          TEXT    NOT NULL DEFAULT '[30,15,7,3,1]',
       ADD COLUMN IF NOT EXISTS membership_suspend_on_expiry      BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
+  // NEW: membership fee visibility controls (admin decides everything)
+  await pool.query(`
+    ALTER TABLE admin_settings
+      ADD COLUMN IF NOT EXISTS membership_enabled                BOOLEAN NOT NULL DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS membership_applies_to               TEXT    NOT NULL DEFAULT 'members',
+      ADD COLUMN IF NOT EXISTS membership_billing_day            INTEGER NOT NULL DEFAULT 1,
+      ADD COLUMN IF NOT EXISTS membership_donation_mode          BOOLEAN NOT NULL DEFAULT FALSE;
+  `).catch(() => {});
 
   // ── expires_at + membership_status on member_subscriptions ───────────────
   await pool.query(`
