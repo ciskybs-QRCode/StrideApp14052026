@@ -74,25 +74,35 @@ if (!fs.existsSync(indexPath)) {
 
 let html = fs.readFileSync(indexPath, "utf8");
 
-if (!html.includes('rel="manifest"')) {
+// Always ensure correct /app/ prefixed URLs (re-apply even if already patched with wrong URL)
+const needsInsert  = !html.includes('rel="manifest"');
+const hasWrongUrls = html.includes('href="/manifest.json"') || html.includes('href="/apple-touch-icon.png"');
+
+if (needsInsert) {
   const pwaHead = [
     "  <!-- PWA manifest -->",
-    '  <link rel="manifest" href="/manifest.json" />',
+    '  <link rel="manifest" href="/app/manifest.json" />',
     "  <!-- Apple / iOS PWA -->",
     '  <meta name="apple-mobile-web-app-capable" content="yes" />',
     '  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />',
     '  <meta name="apple-mobile-web-app-title" content="Stride" />',
-    '  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
+    '  <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />',
     "  <!-- Android / Chrome PWA -->",
     '  <meta name="mobile-web-app-capable" content="yes" />',
     '  <meta name="application-name" content="Stride" />',
   ].join("\n");
-
   html = html.replace("</head>", `${pwaHead}\n</head>`);
   fs.writeFileSync(indexPath, html);
   console.log("[pwa-patch] Patched index.html with PWA meta tags");
+} else if (hasWrongUrls) {
+  // Fix wrong root-relative URLs → correct /app/-prefixed URLs
+  html = html
+    .replace(/href="\/manifest\.json"/g,        'href="/app/manifest.json"')
+    .replace(/href="\/apple-touch-icon\.png"/g, 'href="/app/apple-touch-icon.png"');
+  fs.writeFileSync(indexPath, html);
+  console.log("[pwa-patch] Fixed wrong manifest/icon URLs in index.html");
 } else {
-  console.log("[pwa-patch] index.html already has manifest link — skipping patch");
+  console.log("[pwa-patch] index.html already correct — skipping patch");
 }
 
 // ── 4. Patch JS bundles: fix asset base path ──────────────────────────────────
