@@ -3,7 +3,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -70,6 +70,11 @@ export default function OperatorCommunications() {
   const [linkInputVisible, setLinkInputVisible] = useState(false);
   const [linkInputValue,   setLinkInputValue]   = useState("");
   const [sent,             setSent]             = useState<SentEntry[]>([]);
+  const [orgName,          setOrgName]          = useState("");
+
+  useEffect(() => {
+    api.getOrg().then(o => setOrgName(o.name ?? "")).catch(() => {});
+  }, []);
 
   const recipientLabel = (mode: RecipientMode, course: string) => {
     if (mode === "course") return course ? `Course: ${course}` : "Select a course below";
@@ -367,6 +372,14 @@ export default function OperatorCommunications() {
               numberOfLines={6}
               textAlignVertical="top"
             />
+
+            {/* Sent as org info */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EFF6FF", borderRadius: 10, padding: 10, marginTop: 14, borderWidth: 1, borderColor: "#BFDBFE" }}>
+              <Ionicons name="business-outline" size={14} color="#1E3A8A" />
+              <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>
+                Sent as: {orgName || "Your Organisation"} — recipients see your association name, not your personal name
+              </Text>
+            </View>
 
             {/* Attachments */}
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>ATTACHMENTS</Text>

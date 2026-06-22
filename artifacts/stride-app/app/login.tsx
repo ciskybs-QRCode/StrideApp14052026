@@ -53,24 +53,7 @@ export default function LoginScreen() {
     else                            router.replace("/(parent)/home" as never);
   };
 
-  // Demo auto-login: ?demo=parent|operator|admin auto-signs in for canvas previews
-  useEffect(() => {
-    if (Platform.OS !== "web" || typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const demo = params.get("demo");
-    if (!demo) return;
-    const DEMO_CREDS: Record<string, { email: string; password: string }> = {
-      parent:   { email: "ciskybs@gmail.com",   password: "stride123" },
-      operator: { email: "ciskybs@gmail.com",   password: "stride123" },
-      admin:    { email: "ciskybs@gmail.com",   password: "stride123" },
-    };
-    const creds = DEMO_CREDS[demo];
-    if (!creds) return;
-    login(creds.email, creds.password)
-      .then(u => navigateAfterLogin(u.role, u.is_owner))
-      .catch(() => { /* silently fall through to manual login */ });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Demo auto-login removed — hardcoded credentials eliminated.
 
   const handleLogin = async () => {
     if (!email || !password) { setError("Enter your email and password"); shake(); return; }

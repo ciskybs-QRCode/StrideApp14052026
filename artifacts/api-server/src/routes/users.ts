@@ -310,4 +310,114 @@ router.get("/users/search", requireAuth, async (req, res) => {
   res.json(rows);
 });
 
+// ── POST /admin/invite-admin ──────────────────────────────────────────────────
+// Invite a new admin by email. Creates the account and sends login credentials.
+
+router.post("/admin/invite-admin", requireAuth, requireRole("admin"), async (req, res) => {
+  const actor = (req as AuthReq).user;
+  const orgId = actor.orgId ?? 0;
+  const { email, name } = req.body as { email?: string; name?: string };
+
+  if (!email || !email.includes("@")) {
+    res.status(400).json({ error: "A valid email address is required" });
+    return;
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+  const displayName = name?.trim() || cleanEmail.split("@")[0]!;
+
+  // Reject if user already exists in this org
+  const { data: existing } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", cleanEmail)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (existing) {
+    res.status(409).json({ error: "A user with this email already exists in your organisation" });
+    return;
+  }
+
+  // Generate temporary password (letters + digits + symbol, ≥ 10 chars)
+  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const tempRaw = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("") + "!7";
+
+  const { default: bcrypt } = await import("bcryptjs");
+  const passwordHash = await bcrypt.hash(tempRaw, 10);
+
+  // Create admin user
+  const { data: newUser, error: createErr } = await supabase
+    .from("users")
+    .insert({
+      email: cleanEmail,
+      name: displayName,
+      role: "admin",
+      roles: JSON.stringify(["admin"]),
+      organization_id: orgId,
+      password_hash: passwordHash,
+      active: true,
+      created_at: new Date().toISOString(),
+    })
+    .select("id, email, name")
+    .single();
+
+  if (createErr || !newUser) {
+    res.status(500).json({ error: createErr?.message ?? "Failed to create admin account" });
+    return;
+  }
+
+  const created = newUser as { id: number; email: string; name: string };
+
+  // Fetch org name for the email
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", orgId)
+    .maybeSingle();
+  const orgName = (orgRow as { name?: string } | null)?.name ?? "Your Organisation";
+
+  // Send invite email (non-blocking)
+  void sendOrgEmail(orgId, {
+    to: cleanEmail,
+    subject: `You've been invited to manage ${orgName} on Stride`,
+    text: `Hi ${displayName}, you've been added as an administrator for ${orgName} on Stride.\n\nEmail: ${cleanEmail}\nTemporary Password: ${tempRaw}\n\nPlease change your password after first login.`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px;color:#1E3A8A">
+        <div style="border-bottom:3px solid #FBBF24;padding-bottom:16px;margin-bottom:24px">
+          <h2 style="margin:0;font-size:22px">${orgName}</h2>
+          <p style="margin:4px 0 0;color:#6B7280;font-size:13px">Powered by Stride</p>
+        </div>
+        <h3 style="font-size:20px;margin-bottom:8px">You're now an Admin</h3>
+        <p style="color:#374151;font-size:14px;line-height:1.6">
+          Hi ${displayName},<br><br>
+          You've been added as an administrator for <strong>${orgName}</strong> on Stride.
+          Use the credentials below to log in to the Stride app and start managing your association.
+        </p>
+        <div style="background:#F3F4F6;border-radius:12px;padding:20px;margin:20px 0;border-left:4px solid #FBBF24">
+          <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#6B7280;letter-spacing:1px">YOUR LOGIN CREDENTIALS</p>
+          <p style="margin:0;font-size:15px;font-weight:700">Email: ${cleanEmail}</p>
+          <p style="margin:6px 0 0;font-size:15px;font-weight:700">Temporary Password: ${tempRaw}</p>
+        </div>
+        <p style="color:#374151;font-size:13px;line-height:1.5">
+          <strong>Important:</strong> Please change your password after your first login via your profile settings.
+        </p>
+        <p style="color:#9CA3AF;font-size:11px;margin-top:24px;padding-top:16px;border-top:1px solid #E5E7EB">
+          If you did not expect this invitation, please contact ${orgName} directly. Do not share your credentials.
+        </p>
+      </div>
+    `,
+  }).catch(() => {});
+
+  void logAction({
+    userId: parseInt(actor.id),
+    action: "invite_admin",
+    tableAffected: "users",
+    recordId: String(created.id),
+    details: { invitedEmail: cleanEmail, invitedName: displayName, orgId },
+  });
+
+  res.status(201).json({ ok: true, userId: created.id, email: cleanEmail, name: displayName });
+});
+
 export default router;

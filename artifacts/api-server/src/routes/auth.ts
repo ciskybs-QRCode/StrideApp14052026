@@ -682,12 +682,13 @@ router.get("/user/roles", requireAuth, async (req, res) => {
     push(user.role, user.orgId);
   }
 
-  // 6. Super-user bypass: ciskybs@gmail.com always holds all 4 roles.
+  // 6. Super-user bypass: the platform owner always holds all 4 roles.
   //    Only synthesize if the user has NO real org memberships yet (i.e. before
   //    they create their first association). Once real entries exist in
   //    organization_members, those are used directly and the bypass is skipped
   //    so the platform seed org ("Stride Association") is never shown as theirs.
-  if (user.email === "ciskybs@gmail.com") {
+  const ownerEmail = getOwnerEmail();
+  if (ownerEmail && user.email === ownerEmail) {
     const hasRealMemberships = (memberships ?? []).length > 0;
     if (!hasRealMemberships) {
       // Super-admin with no real associations: no org context, no setup reminders

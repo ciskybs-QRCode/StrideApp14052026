@@ -12,7 +12,7 @@
 
 import { pool } from "./pg.js";
 
-const BOOTSTRAP_OWNER_EMAIL = "ciskybs@gmail.com";
+const BOOTSTRAP_OWNER_EMAIL = process.env["STRIDE_OWNER_EMAIL"] ?? "";
 
 let _ownerEmail: string = BOOTSTRAP_OWNER_EMAIL;
 let _initialized = false;

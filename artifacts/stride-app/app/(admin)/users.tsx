@@ -19,7 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { api, request, ApiChild, ApiOperatorProfile, ApiStudent, type ApiEmploymentConfig, type ApiContractResearch, type ApiAccountantParse } from "@/lib/api";
+import { api, request, inviteAdmin, ApiChild, ApiOperatorProfile, ApiStudent, type ApiEmploymentConfig, type ApiContractResearch, type ApiAccountantParse } from "@/lib/api";
 import { useTerminology } from "@/context/TerminologyContext";
 
 // ── Full member profile (fetched on-demand for admin detail modal) ──────────
@@ -170,6 +170,10 @@ export default function AdminUsers() {
   const [researchResult,     setResearchResult]     = useState<ApiContractResearch | null>(null);
   const [researchLoading,    setResearchLoading]    = useState(false);
   const [showAccountantModal,setShowAccountantModal]= useState(false);
+  const [showInviteModal,    setShowInviteModal]    = useState(false);
+  const [inviteEmail,        setInviteEmail]        = useState("");
+  const [inviteName,         setInviteName]         = useState("");
+  const [inviting,           setInviting]           = useState(false);
   const [accountantEmail,    setAccountantEmail]    = useState("");
   const [accountantSubject,  setAccountantSubject]  = useState("");
   const [accountantBody,     setAccountantBody]     = useState("");
@@ -515,6 +519,19 @@ export default function AdminUsers() {
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+
+        {/* ── Invite Admin shortcut ── */}
+        <Pressable
+          style={[styles.importBanner, { backgroundColor: "#FEF9EC", borderColor: "#FDE68A", marginBottom: 8 }]}
+          onPress={() => { setInviteEmail(""); setInviteName(""); setShowInviteModal(true); }}
+        >
+          <Ionicons name="person-add-outline" size={20} color="#B45309" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: "#B45309" }}>Invite Admin</Text>
+            <Text style={{ fontSize: 12, color: "#92400E", marginTop: 1 }}>Add another administrator to co-manage this association</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#B45309" />
+        </Pressable>
 
         {/* ── Import Members shortcut ── */}
         <Pressable
@@ -1428,6 +1445,113 @@ export default function AdminUsers() {
             </Pressable>
           </View>
         </Pressable>
+      </Modal>
+
+      {/* ══════════════════════════════════════════════════
+          INVITE ADMIN MODAL
+      ══════════════════════════════════════════════════ */}
+      <Modal visible={showInviteModal} transparent animationType="slide" onRequestClose={() => setShowInviteModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card, maxHeight: "70%" }]}>
+            <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
+              {/* Header */}
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 20, fontWeight: "900", color: colors.primary }}>Invite Admin</Text>
+                  <Text style={{ fontSize: 13, color: colors.mutedForeground, marginTop: 2 }}>
+                    They'll receive login credentials by email
+                  </Text>
+                </View>
+                <Pressable onPress={() => setShowInviteModal(false)} hitSlop={12}>
+                  <Ionicons name="close" size={24} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+
+              {/* Info banner */}
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#FEF9EC", borderRadius: 10, padding: 12, marginBottom: 20, borderWidth: 1, borderColor: "#FDE68A" }}>
+                <Ionicons name="information-circle-outline" size={16} color="#B45309" style={{ marginTop: 1 }} />
+                <Text style={{ color: "#92400E", fontSize: 12, flex: 1, lineHeight: 18 }}>
+                  A new admin account will be created with a temporary password. The invite email contains their login credentials. They should change their password after first login.
+                </Text>
+              </View>
+
+              {/* Name field */}
+              <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.5, marginBottom: 6 }}>
+                FULL NAME (OPTIONAL)
+              </Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }}
+                value={inviteName}
+                onChangeText={setInviteName}
+                placeholder="e.g. Sarah Johnson"
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="words"
+                returnKeyType="next"
+              />
+
+              {/* Email field */}
+              <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.5, marginBottom: 6 }}>
+                EMAIL ADDRESS *
+              </Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: colors.foreground, backgroundColor: colors.background, marginBottom: 24 }}
+                value={inviteEmail}
+                onChangeText={setInviteEmail}
+                placeholder="admin@example.com"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+              />
+
+              {/* Buttons */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <Pressable
+                  style={{ flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: "center", backgroundColor: colors.muted }}
+                  onPress={() => setShowInviteModal(false)}
+                >
+                  <Text style={{ fontWeight: "700", fontSize: 14, color: colors.mutedForeground }}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[{ flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: "center", backgroundColor: "#B45309" }, inviting && { opacity: 0.6 }]}
+                  disabled={inviting}
+                  onPress={async () => {
+                    const email = inviteEmail.trim();
+                    if (!email || !email.includes("@")) {
+                      Alert.alert("Invalid Email", "Please enter a valid email address.");
+                      return;
+                    }
+                    setInviting(true);
+                    try {
+                      const result = await inviteAdmin({ email, name: inviteName.trim() || undefined });
+                      setShowInviteModal(false);
+                      setInviteEmail("");
+                      setInviteName("");
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      Alert.alert(
+                        "Admin Invited",
+                        `Login credentials have been sent to ${result.email}. They can now sign in to the Stride app.`,
+                      );
+                      // Reload users list
+                      const updated = await api.getUsers();
+                      setUsers(updated);
+                    } catch (err) {
+                      Alert.alert("Error", (err as Error).message ?? "Failed to invite admin. Please try again.");
+                    } finally {
+                      setInviting(false);
+                    }
+                  }}
+                >
+                  {inviting
+                    ? <ActivityIndicator size="small" color="#FFF" />
+                    : <Text style={{ fontWeight: "800", fontSize: 14, color: "#FFF" }}>Send Invite</Text>
+                  }
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </View>
   );

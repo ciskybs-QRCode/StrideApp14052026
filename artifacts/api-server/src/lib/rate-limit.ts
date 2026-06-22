@@ -79,7 +79,6 @@ export const qrScanLimiter = rateLimit({
 });
 
 const DEV_EMAILS = new Set([
-  "ciskybs@gmail.com",
   "genitore@test.com",
   "operatore@test.com",
   "admin@test.com",

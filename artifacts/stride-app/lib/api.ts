@@ -3787,3 +3787,10 @@ export function supportAiChat(data: {
 }): Promise<{ reply: string; resolved: boolean }> {
   return request("POST", "/support/ai-chat", data);
 }
+
+export function inviteAdmin(data: {
+  email: string;
+  name?: string;
+}): Promise<{ ok: boolean; userId: number; email: string; name: string }> {
+  return request("POST", "/admin/invite-admin", data);
+}

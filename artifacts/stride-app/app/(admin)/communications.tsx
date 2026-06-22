@@ -216,12 +216,13 @@ export default function AdminCommunications() {
     }).catch(() => {});
   }, []);
 
-  // Load role email template from backend on mount
+  // Load role email template + org name from backend on mount
   useEffect(() => {
     api.getAdminSettings().then(s => {
       if (s.role_assignment_email_subject) setRoleEmailSubject(s.role_assignment_email_subject);
       if (s.role_assignment_email_body)    setRoleEmailBody(s.role_assignment_email_body);
     }).catch(() => {});
+    api.getOrg().then(o => setOrgName(o.name ?? "")).catch(() => {});
   }, []);
 
   const saveRoleEmailTemplate = async () => {
@@ -248,6 +249,7 @@ export default function AdminCommunications() {
 
   const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
   const [showCompose, setShowCompose] = useState(false);
+  const [orgName,    setOrgName]    = useState("");
   const [showDetail, setShowDetail] = useState<SentMessage | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showReport, setShowReport] = useState<SentMessage | null>(null);
@@ -1111,8 +1113,16 @@ export default function AdminCommunications() {
               </View>
             )}
 
+            {/* Sent as org info */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EFF6FF", borderRadius: 10, padding: 10, marginTop: 16 }}>
+              <Ionicons name="business-outline" size={14} color="#1E3A8A" />
+              <Text style={{ color: "#1E3A8A", fontSize: 12, fontWeight: "600", flex: 1 }}>
+                Sent as: {orgName || "Your Organisation"} — recipients see your association name, not your personal name
+              </Text>
+            </View>
+
             {/* Send */}
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 20, marginBottom: 8 }}>
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 16, marginBottom: 8 }}>
               <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setShowCompose(false)}>
                 <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
               </Pressable>

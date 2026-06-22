@@ -14,6 +14,7 @@
  */
 
 import type { TokenPayload } from "../lib/auth.js";
+import { getOwnerEmail } from "../lib/owner-config.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,8 +35,8 @@ export interface User extends TokenPayload {
 /**
  * The single protected owner account. Every destructive or privilege-changing
  * operation targeting this email is unconditionally rejected.
+ * Resolved dynamically from the system_config DB table at runtime.
  */
-const OWNER_EMAIL = "ciskybs@gmail.com";
 
 /**
  * Numeric privilege rank. Used for "non-super_admin" lateral/upward move checks.
@@ -59,18 +60,19 @@ const rank = (role: string): number => ROLE_RANK[role] ?? -1;
  *
  * @param ownerEmail - Dynamic owner email (defaults to compile-time constant).
  */
-function isPermitted(requester: User, target: User, ownerEmail: string = OWNER_EMAIL): boolean {
-  const ownerLower = ownerEmail.toLowerCase();
+function isPermitted(requester: User, target: User, ownerEmail?: string): boolean {
+  const resolved  = (ownerEmail ?? getOwnerEmail()).toLowerCase();
+  const ownerLower = resolved;
 
   // Rule 1 — owner lock: the owner's account is never a valid target for others.
-  if (target.email.toLowerCase() === ownerLower) return false;
+  if (ownerLower && target.email.toLowerCase() === ownerLower) return false;
 
   // Rule 2 — self-guard: no self-modification.
   if (requester.id === target.id) return false;
 
   // Rule O — owner privilege: the platform owner may act on any non-owner, non-self account.
   //           This intentionally overrides the peer-SA restriction below.
-  if (requester.email.toLowerCase() === ownerLower) return true;
+  if (ownerLower && requester.email.toLowerCase() === ownerLower) return true;
 
   // Rule 3 — peer-SA protection: a non-owner super_admin cannot touch another super_admin.
   if (requester.role === "super_admin") return target.role !== "super_admin";
@@ -84,15 +86,12 @@ function isPermitted(requester: User, target: User, ownerEmail: string = OWNER_E
 /**
  * Returns `true` if `requester` is allowed to delete `target`.
  *
- * Pass the current dynamic ownerEmail so the check stays accurate after an
- * owner-email update (falls back to the compile-time constant if omitted).
- *
  * @example
- * if (!canDelete(req.user, targetUser, getOwnerEmail())) {
+ * if (!canDelete(req.user, targetUser)) {
  *   return res.status(403).json({ error: "Forbidden" });
  * }
  */
-export function canDelete(requester: User, target: User, ownerEmail: string = OWNER_EMAIL): boolean {
+export function canDelete(requester: User, target: User, ownerEmail?: string): boolean {
   return isPermitted(requester, target, ownerEmail);
 }
 
@@ -102,7 +101,7 @@ export function canDelete(requester: User, target: User, ownerEmail: string = OW
  * Additional constraint: no one may promote a target TO super_admin via the API.
  *
  * @example
- * if (!canUpdateRole(req.user, targetUser, "admin", getOwnerEmail())) {
+ * if (!canUpdateRole(req.user, targetUser, "admin")) {
  *   return res.status(403).json({ error: "Forbidden" });
  * }
  */
@@ -110,7 +109,7 @@ export function canUpdateRole(
   requester: User,
   target: User,
   newRole: UserRole,
-  ownerEmail: string = OWNER_EMAIL,
+  ownerEmail?: string,
 ): boolean {
   // Nobody can promote anyone to super_admin via the API
   if (newRole === "super_admin") return false;
