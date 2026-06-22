@@ -489,42 +489,60 @@ export default function AdminHome() {
           </View>
         )}
 
-        {/* ── QUICK ACTIONS ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
-        <View style={{ gap: 12, marginBottom: 16 }}>
-
-          {/* 1. SOS Emergency */}
-          <SOSButton onConfirm={openSOS} />
-
-          {/* 2. Admin Pass */}
+        {/* ── Super Admin without org: show only platform CTA ── */}
+        {user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId) && (
           <Pressable
-            style={[styles.qrPanel, { backgroundColor: colors.card }]}
-            onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            style={[styles.ctaCard, { backgroundColor: "#1E3A8A", marginBottom: 16 }]}            onPress={() => { router.push("/(super_admin)/dashboard" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <View style={[styles.qrMiniBox, { backgroundColor: "#EFF6FF" }]}>
-              <QRCode value={qrValue} size={72} color={colors.primary} backgroundColor="transparent" />
+            <Ionicons name="shield-checkmark" size={28} color="#FBBF24" />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.ctaTitle}>Super Admin Dashboard</Text>
+              <Text style={styles.ctaSub}>Manage platform, associations, and users</Text>
             </View>
-            <View style={styles.qrPanelRight}>
-              <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>ADMIN PASS</Text>
-              <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Admin"}</Text>
-              <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>
-                {user?.role === "super_admin" ? "Super Admin" : "Admin"} · {orgName || user?.schoolName || ""}
-              </Text>
-              <View style={[styles.qrActiveBadge, { backgroundColor: "#DBEAFE" }]}>
-                <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
-                <Text style={[styles.qrActiveBadgeText, { color: colors.primary }]}>Active Credential</Text>
-              </View>
-            </View>
-            <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
+            <Ionicons name="chevron-forward" size={20} color="#FFF" />
           </Pressable>
+        )}
 
-          {/* 3. Scan QR Code */}
-          <QRScanButton onPress={handleScan} label="Scan QR Code" />
+        {/* ── QUICK ACTIONS (hidden for super_admin without org) ── */}
+        {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
+            <View style={{ gap: 12, marginBottom: 16 }}>
 
-        </View>
+              {/* 1. SOS Emergency */}
+              <SOSButton onConfirm={openSOS} />
+
+              {/* 2. Admin Pass */}
+              <Pressable
+                style={[styles.qrPanel, { backgroundColor: colors.card }]}
+                onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              >
+                <View style={[styles.qrMiniBox, { backgroundColor: "#EFF6FF" }]}>
+                  <QRCode value={qrValue} size={72} color={colors.primary} backgroundColor="transparent" />
+                </View>
+                <View style={styles.qrPanelRight}>
+                  <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>ADMIN PASS</Text>
+                  <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Admin"}</Text>
+                  <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>
+                    {user?.role === "super_admin" ? "Super Admin" : "Admin"} · {orgName || user?.schoolName || ""}
+                  </Text>
+                  <View style={[styles.qrActiveBadge, { backgroundColor: "#DBEAFE" }]}>
+                    <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
+                    <Text style={[styles.qrActiveBadgeText, { color: colors.primary }]}>Active Credential</Text>
+                  </View>
+                </View>
+                <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
+              </Pressable>
+
+              {/* 3. Scan QR Code */}
+              <QRScanButton onPress={handleScan} label="Scan QR Code" />
+
+            </View>
+          </>
+        )}
 
         {/* ── HUB CARDS ── */}
-        {user?.role === "super_admin" && (
+        {user?.role === "super_admin" && (user?.orgId && user?.orgId > 0) && (
           <HubCard
             icon="shield-checkmark"
             title="System Governance"
@@ -533,8 +551,9 @@ export default function AdminHome() {
           />
         )}
 
-        {/* ── HERO KPI BANNER ── */}
-        <View style={[styles.heroBanner, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
+        {/* ── HERO KPI BANNER (hidden for super_admin without org) ── */}
+        {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
+          <View style={[styles.heroBanner, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]}>
           <View style={styles.heroMain}>
             {/* Label + Month/Year toggle in same row */}
             <View style={styles.heroTopRow}>

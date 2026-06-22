@@ -342,13 +342,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // ── 1. Permission check ────────────────────────────────────────────────
-      // ciskybs@gmail.com is the platform super-user — it holds all 4 roles by
-      // design and bypasses the mutual-exclusivity DB check.
-      const isSuperUserAccount  = user.email === 'ciskybs@gmail.com';
+      // super_admin holds all 4 roles by design and bypasses the DB check.
+      const isSuperAdmin      = user.role === 'super_admin';
       const permittedInAllRoles = allRoles.some(r => r.role === newRole);
       const permittedInDerived  = user.roles.includes(newRole);
 
-      if (!isSuperUserAccount && !permittedInAllRoles && !permittedInDerived) {
+      // super_admin without an org cannot switch to admin/operator/parent
+      if (isSuperAdmin && (user.orgId === 0 || !user.orgId) && newRole !== 'super_admin') {
+        Alert.alert(
+          "Role Switch Denied",
+          "You are managing the Stride platform. Create an association first to use other roles.",
+        );
+        return;
+      }
+
+      if (!isSuperAdmin && !permittedInAllRoles && !permittedInDerived) {
         console.error(
           `\u274c switchActiveRole DENIED: user ${user.email} does not hold role "${newRole}" in DB.`,
           { allRoles, userRoles: user.roles },
@@ -402,6 +410,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const switchOrgContext = async (targetOrgId: number, targetRole: string) => {
     if (!user) {
       Alert.alert("Switch Failed", "No active session. Please log in again.");
+      return;
+    }
+    // super_admin without org cannot switch to non-super roles
+    if (user.role === "super_admin" && (user.orgId === 0 || !user.orgId) && targetRole !== "super_admin") {
+      Alert.alert("Switch Denied", "Create an association first to switch to other roles.");
       return;
     }
     try {

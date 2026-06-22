@@ -364,25 +364,34 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS mmc_org_idx    ON member_medical_certs (org_id);
   `).catch(() => {});
 
-  // Financial audit trail — every payment request logged before Stripe session is created
+  // Financial audit trail — every payment request logged before any session is created
   await pool.query(`
     CREATE TABLE IF NOT EXISTS payment_audit_log (
       id               SERIAL PRIMARY KEY,
       request_id       UUID    NOT NULL DEFAULT gen_random_uuid(),
       organization_id  INTEGER,
       user_id          TEXT    NOT NULL,
+      performed_by_user_id  INTEGER,
+      performed_by_name     TEXT,
       items_list       JSONB   NOT NULL,
       calculated_total NUMERIC(10,2) NOT NULL,
       discount_applied NUMERIC(10,2) NOT NULL DEFAULT 0,
       promo_code       TEXT,
+      payment_method   TEXT    NOT NULL DEFAULT 'stripe_card',
       stripe_session_id TEXT,
+      bank_reference   TEXT,
+      cash_confirmed_by INTEGER,
+      cash_confirmed_at TIMESTAMPTZ,
+      paypal_order_id  TEXT,
+      status           TEXT    NOT NULL DEFAULT 'pending',
       created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS pal_org_idx  ON payment_audit_log (organization_id);
     CREATE INDEX IF NOT EXISTS pal_user_idx ON payment_audit_log (user_id);
+    CREATE INDEX IF NOT EXISTS pal_status_idx ON payment_audit_log (status);
   `).catch(() => {});
 
-  // Web-Checkout Proxy: track Stripe-hosted checkout sessions for member purchases
+  // Web-Checkout Proxy: track all checkout sessions (Stripe + manual)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS checkout_sessions (
       id              SERIAL PRIMARY KEY,
@@ -394,6 +403,11 @@ export async function ensureTables(): Promise<void> {
       invoice_number  TEXT,
       invoice_id      INTEGER,
       amount_cents    INTEGER,
+      payment_method  TEXT NOT NULL DEFAULT 'stripe_card',
+      bank_reference  TEXT,
+      cash_confirmed_by INTEGER,
+      cash_confirmed_at TIMESTAMPTZ,
+      paypal_order_id TEXT,
       created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       completed_at    TIMESTAMPTZ
     );
