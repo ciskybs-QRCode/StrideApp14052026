@@ -1390,6 +1390,8 @@ export const api = {
     request<{ ok: boolean; message: string }>("POST", "/org/communication-settings/test-sms", {}),
   testWhatsApp: () =>
     request<{ ok: boolean; message: string }>("POST", "/org/communication-settings/test-whatsapp", {}),
+  whatsappGuide: (data: { message: string; history: { role: "user" | "assistant"; content: string }[] }) =>
+    request<{ reply: string }>("POST", "/org/communication-settings/whatsapp-guide", data),
   sendWhatsAppBroadcast: (data: { body: string; recipient_mode?: string; recipient_data?: Record<string, unknown> }) =>
     request<{ sent: number; failed: number; no_phone: number }>("POST", "/messages/whatsapp-broadcast", data),
 };
@@ -3718,13 +3720,14 @@ export function markFeeEventPaid(id: number): Promise<{ ok: boolean }> {
 // ── Communication Settings ────────────────────────────────────────────────────
 
 export interface OrgCommSettings {
-  resend_configured:     boolean;
-  resend_from_email:     string | null;
-  twilio_configured:     boolean;
-  twilio_from_number:    string | null;
-  whatsapp_enabled:      boolean;
-  whatsapp_configured:   boolean;
-  whatsapp_from_number:  string | null;
+  resend_configured:           boolean;
+  resend_from_email:           string | null;
+  twilio_configured:           boolean;
+  twilio_from_number:          string | null;
+  whatsapp_enabled:            boolean;
+  whatsapp_configured:         boolean;
+  whatsapp_from_number:        string | null;
+  whatsapp_uses_stride_account: boolean;
 }
 
 export function getCommSettings(): Promise<OrgCommSettings> {
@@ -3753,6 +3756,13 @@ export function testSms(): Promise<{ ok: boolean; message: string }> {
 
 export function testWhatsApp(): Promise<{ ok: boolean; message: string }> {
   return request("POST", "/org/communication-settings/test-whatsapp", {});
+}
+
+export function whatsappGuide(data: {
+  message: string;
+  history: { role: "user" | "assistant"; content: string }[];
+}): Promise<{ reply: string }> {
+  return request("POST", "/org/communication-settings/whatsapp-guide", data);
 }
 
 export function sendWhatsAppBroadcast(data: {

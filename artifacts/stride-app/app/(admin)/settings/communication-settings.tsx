@@ -1,11 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Linking,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -121,6 +124,135 @@ const f = StyleSheet.create({
   hint:  { fontSize: 11, color: "#9CA3AF", marginTop: 4, lineHeight: 15 },
 });
 
+// ── WhatsApp AI Guide Modal ───────────────────────────────────────────────────
+type ChatMsg = { role: "user" | "assistant"; content: string };
+
+function WAGuideModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const insets  = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const [messages, setMessages] = useState<ChatMsg[]>([
+    {
+      role: "assistant",
+      content:
+        "Hi! I'm your WhatsApp setup guide. I'll walk you through enabling WhatsApp broadcasts for your organisation step by step.\n\nDo you already have a Twilio account, or are you starting from scratch?",
+    },
+  ]);
+  const [input,   setInput]   = useState("");
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || sending) return;
+    const userMsg: ChatMsg = { role: "user", content: text };
+    const nextHistory = [...messages, userMsg];
+    setMessages(nextHistory);
+    setInput("");
+    setSending(true);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    try {
+      const { reply } = await api.whatsappGuide({
+        message: text,
+        history: messages.slice(-10),
+      });
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        { role: "assistant", content: "I'm having trouble connecting right now. Please check your connection and try again." },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={0}
+      >
+        {/* Header */}
+        <View style={[gm.header, { paddingTop: insets.top + 12 }]}>
+          <View style={gm.headerLeft}>
+            <View style={gm.avatarWrap}>
+              <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+            </View>
+            <View>
+              <Text style={gm.headerTitle}>WhatsApp Setup Guide</Text>
+              <Text style={gm.headerSub}>Powered by Stride AI</Text>
+            </View>
+          </View>
+          <Pressable onPress={onClose} hitSlop={12} style={gm.closeBtn}>
+            <Ionicons name="close" size={22} color="#374151" />
+          </Pressable>
+        </View>
+
+        {/* Messages */}
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={[gm.msgList, { paddingBottom: 16 }]}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+        >
+          {messages.map((m, i) => (
+            <View key={i} style={[gm.bubble, m.role === "user" ? gm.bubbleUser : gm.bubbleAI]}>
+              <Text style={m.role === "user" ? gm.textUser : gm.textAI}>{m.content}</Text>
+            </View>
+          ))}
+          {sending && (
+            <View style={[gm.bubble, gm.bubbleAI, { flexDirection: "row", gap: 6 }]}>
+              <ActivityIndicator size="small" color={NAVY} />
+              <Text style={gm.textAI}>Thinking…</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Input */}
+        <View style={[gm.inputRow, { paddingBottom: insets.bottom + 12 }]}>
+          <TextInput
+            style={gm.textInput}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Type your question…"
+            placeholderTextColor="#9CA3AF"
+            multiline
+            returnKeyType="send"
+            onSubmitEditing={send}
+          />
+          <Pressable
+            style={[gm.sendBtn, (!input.trim() || sending) && { opacity: 0.4 }]}
+            onPress={send}
+            disabled={!input.trim() || sending}
+          >
+            <Ionicons name="send" size={18} color="#fff" />
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const gm = StyleSheet.create({
+  header:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
+  headerLeft:  { flexDirection: "row", alignItems: "center", gap: 10 },
+  avatarWrap:  { width: 38, height: 38, borderRadius: 19, backgroundColor: "#16A34A", alignItems: "center", justifyContent: "center" },
+  headerTitle: { fontSize: 15, fontWeight: "700", color: "#111827" },
+  headerSub:   { fontSize: 11, color: "#6B7280", marginTop: 1 },
+  closeBtn:    { padding: 4 },
+  msgList:     { padding: 16, gap: 10 },
+  bubble:      { maxWidth: "82%", borderRadius: 14, padding: 12 },
+  bubbleAI:    { alignSelf: "flex-start", backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5E7EB" },
+  bubbleUser:  { alignSelf: "flex-end", backgroundColor: NAVY },
+  textAI:      { fontSize: 13, color: "#111827", lineHeight: 19 },
+  textUser:    { fontSize: 13, color: "#fff", lineHeight: 19 },
+  inputRow:    { flexDirection: "row", alignItems: "flex-end", gap: 10, paddingHorizontal: 14, paddingTop: 10, backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#E5E7EB" },
+  textInput:   { flex: 1, fontSize: 14, color: "#111827", borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 22, paddingHorizontal: 14, paddingVertical: 10, maxHeight: 100, backgroundColor: "#F9FAFB" },
+  sendBtn:     { width: 42, height: 42, borderRadius: 21, backgroundColor: NAVY, alignItems: "center", justifyContent: "center" },
+});
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function CommunicationSettingsPage() {
   const router   = useRouter();
@@ -140,10 +272,12 @@ export default function CommunicationSettingsPage() {
   const [twilioSid,     setTwilioSid]     = useState("");
   const [twilioToken,   setTwilioToken]   = useState("");
   const [twilioFrom,    setTwilioFrom]    = useState("");
-  const [testingWa,    setTestingWa]    = useState(false);
-  const [waConfigured, setWaConfigured] = useState(false);
-  const [waEnabled,    setWaEnabled]    = useState(false);
-  const [waFrom,       setWaFrom]       = useState("");
+  const [testingWa,       setTestingWa]       = useState(false);
+  const [waConfigured,    setWaConfigured]    = useState(false);
+  const [waEnabled,       setWaEnabled]       = useState(false);
+  const [waFrom,          setWaFrom]          = useState("");
+  const [waUsesStride,    setWaUsesStride]    = useState(false);
+  const [showGuide,       setShowGuide]       = useState(false);
 
   useEffect(() => {
     api.getCommSettings()
@@ -154,6 +288,7 @@ export default function CommunicationSettingsPage() {
         if (d.twilio_from_number)   setTwilioFrom(d.twilio_from_number);
         setWaConfigured(d.whatsapp_configured ?? false);
         setWaEnabled(d.whatsapp_enabled ?? false);
+        setWaUsesStride(d.whatsapp_uses_stride_account ?? false);
         if (d.whatsapp_from_number) setWaFrom(d.whatsapp_from_number);
       })
       .catch(() => {})
@@ -180,6 +315,7 @@ export default function CommunicationSettingsPage() {
       if (d.twilio_from_number)   setTwilioFrom(d.twilio_from_number);
       setWaConfigured(d.whatsapp_configured ?? false);
       setWaEnabled(d.whatsapp_enabled ?? false);
+      setWaUsesStride(d.whatsapp_uses_stride_account ?? false);
       if (d.whatsapp_from_number) setWaFrom(d.whatsapp_from_number);
       setResendKey(""); setTwilioSid(""); setTwilioToken("");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -372,25 +508,51 @@ export default function CommunicationSettingsPage() {
           <ServiceCard
             icon="logo-whatsapp"
             title="WhatsApp Broadcasts — Optional"
-            subtitle="Send announcements directly to members' WhatsApp. Requires a Twilio WhatsApp-approved sender number. Members without WhatsApp always receive the full in-app notification regardless."
+            subtitle="Send announcements directly to members' WhatsApp. Members without WhatsApp always receive the full in-app notification regardless."
             configured={waConfigured}
             linkUrl="https://www.twilio.com/en-us/whatsapp"
             linkLabel="Activate WhatsApp on Twilio → twilio.com/whatsapp"
           >
-            {/* Steps */}
-            <View style={s.steps}>
-              {[
-                "Open your Twilio Console → Messaging → Senders → WhatsApp Senders",
-                "Click 'Add WhatsApp Sender' and connect a Twilio number (or use the sandbox for testing first)",
-                "Enter your WhatsApp-approved number below — it can be the same number as SMS if WA-enabled",
-                "Toggle WhatsApp ON, save, then tap the test button to send a WhatsApp to your admin phone",
-              ].map((step, i) => (
-                <View key={i} style={s.stepRow}>
-                  <View style={s.stepNum}><Text style={s.stepNumText}>{i + 1}</Text></View>
-                  <Text style={s.stepText}>{step}</Text>
+            {/* AI Guide button */}
+            <Pressable style={wa.guideBtn} onPress={() => setShowGuide(true)}>
+              <View style={wa.guideBtnLeft}>
+                <View style={wa.guideIcon}>
+                  <Ionicons name="sparkles" size={14} color={NAVY} />
                 </View>
-              ))}
-            </View>
+                <View>
+                  <Text style={wa.guideBtnTitle}>Not sure how to set this up?</Text>
+                  <Text style={wa.guideBtnSub}>Ask the AI guide — it'll walk you through step by step</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={NAVY} />
+            </Pressable>
+
+            {/* Using Stride's shared account banner */}
+            {waUsesStride && (
+              <View style={wa.strideBanner}>
+                <Ionicons name="checkmark-circle" size={15} color="#16A34A" />
+                <Text style={wa.strideBannerText}>
+                  Using Stride's shared WhatsApp sender — no Twilio account needed. Messages will appear from Stride's number.
+                </Text>
+              </View>
+            )}
+
+            {/* Steps — shown only when no Stride account */}
+            {!waUsesStride && (
+              <View style={s.steps}>
+                {[
+                  "Open your Twilio Console → Messaging → Senders → WhatsApp Senders",
+                  "Click 'Add WhatsApp Sender' and connect a Twilio number (or use the sandbox for testing first)",
+                  "Enter your WhatsApp-approved number below — it can be the same number as SMS if WA-enabled",
+                  "Toggle WhatsApp ON, save, then tap the test button to send a WhatsApp to your admin phone",
+                ].map((step, i) => (
+                  <View key={i} style={s.stepRow}>
+                    <View style={s.stepNum}><Text style={s.stepNumText}>{i + 1}</Text></View>
+                    <Text style={s.stepText}>{step}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             {/* Privacy notice */}
             <View style={s.noticeBox}>
@@ -416,13 +578,14 @@ export default function CommunicationSettingsPage() {
               />
             </View>
 
-            {waEnabled && (
+            {/* WA number field — only if not using Stride's account */}
+            {waEnabled && !waUsesStride && (
               <Field
                 label="WhatsApp-Approved Sender Number *"
                 value={waFrom}
                 onChangeText={setWaFrom}
                 placeholder="+15551234567"
-                hint="Your Twilio number approved for WhatsApp, in E.164 format. Uses the same Twilio account SID and auth token you saved above."
+                hint="Your Twilio number approved for WhatsApp, in E.164 format. Uses the same Twilio Account SID and Auth Token you saved in the Twilio card above."
               />
             )}
 
@@ -454,6 +617,8 @@ export default function CommunicationSettingsPage() {
 
         </ScrollView>
       )}
+
+      <WAGuideModal visible={showGuide} onClose={() => setShowGuide(false)} />
     </View>
   );
 }
@@ -475,4 +640,14 @@ const s = StyleSheet.create({
   saveBtn:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: GOLD, borderRadius: 12, paddingVertical: 16, marginTop: 8 },
   saveBtnText:{ fontSize: 15, fontWeight: "800", color: NAVY },
   btnDisabled:{ opacity: 0.6 },
+});
+
+const wa = StyleSheet.create({
+  guideBtn:        { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#EFF6FF", borderRadius: 10, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: "#BFDBFE" },
+  guideBtnLeft:    { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  guideIcon:       { width: 30, height: 30, borderRadius: 15, backgroundColor: GOLD, alignItems: "center", justifyContent: "center" },
+  guideBtnTitle:   { fontSize: 13, fontWeight: "700", color: NAVY },
+  guideBtnSub:     { fontSize: 11, color: "#3B82F6", marginTop: 1, lineHeight: 15 },
+  strideBanner:    { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#DCFCE7", borderRadius: 10, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: "#86EFAC" },
+  strideBannerText:{ flex: 1, fontSize: 12, color: "#166534", lineHeight: 17, fontWeight: "500" },
 });

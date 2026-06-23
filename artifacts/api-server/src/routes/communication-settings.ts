@@ -13,6 +13,8 @@ import { Router } from "express";
 import { requireAuth, type TokenPayload } from "../lib/auth.js";
 import { pool } from "../lib/pg.js";
 import { logger } from "../lib/logger.js";
+import { openai } from "@workspace/integrations-openai-ai-server";
+import { aiLimiter } from "../lib/rate-limit.js";
 
 declare global {
   namespace Express {
@@ -43,20 +45,36 @@ async function getOrgCreds(orgId: number) {
   return rows[0] ?? null;
 }
 
+// ── Helpers: Stride-level fallback detection ──────────────────────────────
+function strideWaEnvVars() {
+  const sid  = process.env["TWILIO_ACCOUNT_SID"]  ?? null;
+  const tok  = process.env["TWILIO_AUTH_TOKEN"]   ?? null;
+  const from = process.env["TWILIO_WHATSAPP_FROM_NUMBER"] ?? process.env["TWILIO_FROM_NUMBER"] ?? null;
+  return { sid, tok, from, ready: !!(sid && tok && from) };
+}
+
 // ── GET /org/communication-settings ───────────────────────────────────────
 router.get("/org/communication-settings", requireAuth, async (req, res) => {
   const orgId = req.user!.orgId;
   if (!orgId) { res.status(400).json({ error: "No organisation" }); return; }
 
-  const creds = await getOrgCreds(orgId);
+  const creds   = await getOrgCreds(orgId);
+  const strideWa = strideWaEnvVars();
+
+  const orgHasWaCreds   = !!(creds?.twilio_account_sid && creds?.whatsapp_from_number);
+  const waEnabled       = creds?.whatsapp_enabled ?? false;
+  const waConfigured    = waEnabled && (orgHasWaCreds || strideWa.ready);
+  const usesStrideAcct  = waEnabled && strideWa.ready && !creds?.twilio_account_sid;
+
   res.json({
-    resend_configured:    !!(creds?.resend_api_key),
-    resend_from_email:    creds?.resend_from_email   ?? null,
-    twilio_configured:    !!(creds?.twilio_account_sid && creds?.twilio_auth_token && creds?.twilio_from_number),
-    twilio_from_number:   creds?.twilio_from_number  ?? null,
-    whatsapp_enabled:     creds?.whatsapp_enabled     ?? false,
-    whatsapp_configured:  !!(creds?.whatsapp_enabled && creds?.whatsapp_from_number && creds?.twilio_account_sid),
-    whatsapp_from_number: creds?.whatsapp_from_number ?? null,
+    resend_configured:            !!(creds?.resend_api_key),
+    resend_from_email:            creds?.resend_from_email   ?? null,
+    twilio_configured:            !!(creds?.twilio_account_sid && creds?.twilio_auth_token && creds?.twilio_from_number),
+    twilio_from_number:           creds?.twilio_from_number  ?? null,
+    whatsapp_enabled:             waEnabled,
+    whatsapp_configured:          waConfigured,
+    whatsapp_from_number:         creds?.whatsapp_from_number ?? null,
+    whatsapp_uses_stride_account: usesStrideAcct,
   });
 });
 
@@ -261,5 +279,99 @@ router.post("/org/communication-settings/test-whatsapp", requireAuth, async (req
     res.status(422).json({ ok: false, message: `Twilio WhatsApp error: ${msg}. Make sure your Twilio number is approved for WhatsApp.` });
   }
 });
+
+// ── POST /org/communication-settings/whatsapp-guide ───────────────────────
+// AI chat assistant that walks admins through WhatsApp setup step by step.
+router.post(
+  "/org/communication-settings/whatsapp-guide",
+  requireAuth,
+  aiLimiter,
+  async (req, res) => {
+    const orgId  = req.user!.orgId;
+    if (!orgId) { res.status(400).json({ error: "No organisation" }); return; }
+
+    const { message, history = [] } = req.body as {
+      message: string;
+      history: { role: "user" | "assistant"; content: string }[];
+    };
+
+    if (!message?.trim()) {
+      res.status(400).json({ error: "message is required" });
+      return;
+    }
+
+    // Build context-aware system prompt
+    const creds    = await getOrgCreds(orgId);
+    const strideWa = strideWaEnvVars();
+    const waEnabled       = creds?.whatsapp_enabled ?? false;
+    const orgHasTwilio    = !!(creds?.twilio_account_sid);
+    const orgHasWaNum     = !!(creds?.whatsapp_from_number);
+    const usesStrideAcct  = strideWa.ready && !orgHasTwilio;
+
+    const statusLines = [
+      `WhatsApp channel: ${waEnabled ? "ENABLED" : "DISABLED"}`,
+      usesStrideAcct
+        ? "Twilio credentials: Using Stride shared account (no org credentials needed)"
+        : orgHasTwilio
+          ? `Twilio credentials: Org has its own account configured${orgHasWaNum ? " + WA number set" : " — WA number NOT set yet"}`
+          : "Twilio credentials: NOT configured (no org credentials, no Stride fallback)",
+    ].join("\n");
+
+    const systemPrompt = `You are a friendly WhatsApp setup assistant embedded in Stride, a dance and sports association management platform.
+Your job is to guide this administrator through enabling WhatsApp broadcasts for their organisation.
+
+CURRENT STATE FOR THIS ORG:
+${statusLines}
+
+HOW WHATSAPP WORKS IN STRIDE:
+- WhatsApp broadcasts use the Twilio WhatsApp Business API.
+- The admin can either use Stride's shared sender (if available) or connect their own Twilio account.
+- Setup happens in: Admin app → Settings → Communication Settings → "WhatsApp Broadcasts" card.
+
+SETUP PATH — Own Twilio account:
+1. Create a free Twilio account at twilio.com/try-twilio
+2. Verify your phone number during signup
+3. In Twilio Console → Account Info: copy Account SID and Auth Token
+4. In Twilio Console → Messaging → Senders → WhatsApp Senders → Add WhatsApp Sender
+5. Connect a Twilio number to WhatsApp (sandbox is fine for testing)
+6. Back in Stride Communication Settings:
+   - Paste Account SID, Auth Token, and SMS From Number in the Twilio card
+   - Paste your WhatsApp-approved number in the WhatsApp card's "WhatsApp-Approved Sender Number" field
+   - Toggle "Enable WhatsApp Channel" ON
+   - Tap Save
+7. Tap "Send Test WhatsApp to My Phone" to verify
+
+SETUP PATH — Using Stride's shared account (simpler):
+1. Ask your Stride platform admin whether a shared WhatsApp sender is configured.
+2. If yes: go to Communication Settings, toggle "Enable WhatsApp Channel" ON, tap Save. That's it.
+3. Messages will arrive from Stride's number, not your own.
+
+Once WhatsApp is enabled, operators and admins see "Also send via WhatsApp" when composing a broadcast.
+Members without a phone number still receive everything in-app.
+
+STYLE:
+- Keep replies to 2-4 sentences max.
+- Ask one focused question at a time.
+- Be concrete and friendly — the admin is non-technical.
+- If something is already done (from current state), acknowledge it and move to the next step.`;
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model:       "gpt-4o-mini",
+        max_tokens:  300,
+        messages:    [
+          { role: "system",    content: systemPrompt },
+          ...history.slice(-10),
+          { role: "user",      content: message },
+        ],
+      });
+      const reply = completion.choices[0]?.message?.content?.trim() ?? "I'm not sure how to help with that. Could you tell me where you're stuck?";
+      res.json({ reply });
+    } catch (err) {
+      req.log.error({ err, orgId }, "whatsapp-guide openai error");
+      res.json({ reply: "I'm having trouble connecting right now. Here's the quick summary: go to twilio.com, create an account, copy your Account SID + Auth Token, activate WhatsApp on a Twilio number, then enter everything in Communication Settings and toggle WhatsApp ON." });
+    }
+  },
+);
 
 export default router;
