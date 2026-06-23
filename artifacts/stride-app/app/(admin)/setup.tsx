@@ -154,7 +154,7 @@ function InviteCard() {
 
       {!inviteUrl ? (
         <Pressable
-          style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#1E3A8A", borderRadius: 14, paddingVertical: 13, opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 13, opacity: pressed ? 0.85 : 1 }]}
           onPress={handleGenerate}
           disabled={generating}
         >
@@ -166,17 +166,17 @@ function InviteCard() {
       ) : (
         <>
           <View style={{ backgroundColor: "#F0F4FF", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#DBEAFE" }}>
-            <Text style={{ fontSize: 10, fontWeight: "700", color: "#1E3A8A", marginBottom: 4, letterSpacing: 0.8 }}>SECURE INVITE URL</Text>
-            <Text style={{ fontSize: 12, color: "#1E3A8A", fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }} numberOfLines={2}>
+            <Text style={{ fontSize: 10, fontWeight: "700", color: colors.primary, marginBottom: 4, letterSpacing: 0.8 }}>SECURE INVITE URL</Text>
+            <Text style={{ fontSize: 12, color: colors.primary, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" }} numberOfLines={2}>
               {inviteUrl}
             </Text>
           </View>
           <View style={{ flexDirection: "row", gap: 10 }}>
             <Pressable style={[{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#DBEAFE", borderRadius: 12, paddingVertical: 11 }]} onPress={handleCopy}>
-              <Ionicons name="copy-outline" size={16} color={"#1E3A8A"} />
-              <Text style={{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" }}>Copy</Text>
+              <Ionicons name="copy-outline" size={16} color={colors.primary} />
+              <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>Copy</Text>
             </Pressable>
-            <Pressable style={[{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#1E3A8A", borderRadius: 12, paddingVertical: 11 }]} onPress={handleShare}>
+            <Pressable style={[{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 11 }]} onPress={handleShare}>
               <Ionicons name="share-social-outline" size={16} color="#FFF" />
               <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFF" }}>Share</Text>
             </Pressable>
@@ -494,19 +494,19 @@ export default function AdminSetup() {
               <>
                 <Image source={{ uri: logoUri }} style={styles.logoPreviewImg} resizeMode="contain" />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.logoUploadTitle, { color: "#1E3A8A" }]}>Logo uploaded</Text>
+                  <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Logo uploaded</Text>
                   <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]} numberOfLines={1}>
                     {logoFileName ?? "logo.png"}
                   </Text>
-                  <Text style={[styles.logoUploadHint, { color: "#1E3A8A" }]}>Tap to change</Text>
+                  <Text style={[styles.logoUploadHint, { color: colors.primary }]}>Tap to change</Text>
                 </View>
-                <Ionicons name="checkmark-circle" size={22} color={"#1E3A8A"} />
+                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
               </>
             ) : (
               <>
                 <Ionicons name="cloud-upload-outline" size={40} color={colors.mutedForeground} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.logoUploadTitle, { color: "#1E3A8A" }]}>Upload logo</Text>
+                  <Text style={[styles.logoUploadTitle, { color: colors.primary }]}>Upload logo</Text>
                   <Text style={[styles.logoUploadSub, { color: colors.mutedForeground }]}>Tap to select from gallery</Text>
                   <Text style={[styles.logoUploadHint, { color: colors.mutedForeground }]}>PNG, JPG — max 5MB</Text>
                 </View>
@@ -546,7 +546,7 @@ export default function AdminSetup() {
                   <View style={{ flex: 2, backgroundColor: preset.secondary }} />
                 </View>
                 <View style={styles.colorTileFooter}>
-                  <Text style={[styles.colorTileName, { color: selectedColors === i ? preset.primary : "#1E3A8A" }]} numberOfLines={1}>{preset.name}</Text>
+                  <Text style={[styles.colorTileName, { color: selectedColors === i ? preset.primary : colors.primary }]} numberOfLines={1}>{preset.name}</Text>
                   {selectedColors === i && <Ionicons name="checkmark-circle" size={13} color={preset.primary} />}
                 </View>
               </Pressable>
@@ -589,11 +589,11 @@ export default function AdminSetup() {
             {FONTS.map(font => (
               <Pressable
                 key={font}
-                style={[styles.fontCard, { borderColor: selectedFont === font ? "#1E3A8A" : "#D1D9F0", backgroundColor: selectedFont === font ? "#1E3A8A" : "#F0F4FF" }]}
+                style={[styles.fontCard, { borderColor: selectedFont === font ? colors.primary : "#D1D9F0", backgroundColor: selectedFont === font ? colors.primary : "#F0F4FF" }]}
                 onPress={() => { setSelectedFont(font); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               >
                 <Text style={[styles.fontCardAa, { color: selectedFont === font ? "rgba(255,255,255,0.8)" : "#8896B0" }]}>Aa</Text>
-                <Text style={[styles.fontCardName, { color: selectedFont === font ? "#FFF" : "#1E3A8A" }]} numberOfLines={1}>{font}</Text>
+                <Text style={[styles.fontCardName, { color: selectedFont === font ? "#FFF" : colors.primary }]} numberOfLines={1}>{font}</Text>
               </Pressable>
             ))}
           </View>
@@ -699,7 +699,7 @@ export default function AdminSetup() {
 
           {!qrGenerated ? (
             <Pressable
-              style={[styles.generateBtn, { backgroundColor: "#1E3A8A" }]}
+              style={[styles.generateBtn, { backgroundColor: colors.primary }]}
               onPress={handleGenerateQr}
             >
               <Ionicons name="qr-code" size={18} color="#FFF" />
@@ -715,7 +715,7 @@ export default function AdminSetup() {
                   color={PRESET_COLORS[selectedColors].primary}
                   backgroundColor="#FFFFFF"
                 />
-                <Text style={[styles.qrSchoolLabel, { color: "#1E3A8A" }]}>
+                <Text style={[styles.qrSchoolLabel, { color: colors.primary }]}>
                   {schoolName || "Your Organisation"}
                 </Text>
                 <Text style={[styles.qrSubLabel, { color: colors.mutedForeground }]}>
@@ -737,11 +737,11 @@ export default function AdminSetup() {
                   style={[styles.qrActionBtn, { backgroundColor: "#DBEAFE" }]}
                   onPress={handleCopyLink}
                 >
-                  <Ionicons name="copy-outline" size={16} color={"#1E3A8A"} />
-                  <Text style={[styles.qrActionText, { color: "#1E3A8A" }]}>Copy Link</Text>
+                  <Ionicons name="copy-outline" size={16} color={colors.primary} />
+                  <Text style={[styles.qrActionText, { color: colors.primary }]}>Copy Link</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.qrActionBtn, { backgroundColor: "#1E3A8A" }]}
+                  style={[styles.qrActionBtn, { backgroundColor: colors.primary }]}
                   onPress={handleShareQr}
                 >
                   <Ionicons name="share-social-outline" size={16} color="#FFF" />
@@ -751,11 +751,11 @@ export default function AdminSetup() {
 
               {/* Print QR Code button */}
               <Pressable
-                style={[styles.printBtn, { borderColor: "#1E3A8A" }]}
+                style={[styles.printBtn, { borderColor: colors.primary }]}
                 onPress={handlePrintQr}
               >
-                <Ionicons name="print-outline" size={18} color={"#1E3A8A"} />
-                <Text style={[styles.printBtnText, { color: "#1E3A8A" }]}>Print QR Code (A4)</Text>
+                <Ionicons name="print-outline" size={18} color={colors.primary} />
+                <Text style={[styles.printBtnText, { color: colors.primary }]}>Print QR Code (A4)</Text>
               </Pressable>
 
               <View style={[styles.qrInfoBox, { backgroundColor: "#FEF3C7" }]}>

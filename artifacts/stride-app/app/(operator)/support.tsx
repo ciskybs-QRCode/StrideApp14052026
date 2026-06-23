@@ -307,14 +307,14 @@ export default function OperatorSupport() {
           {firstAidCert && (
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
               {firstAidCert.expiration_date ? (
-                <View style={{ flex: 1, backgroundColor: `"#1E3A8A"08`, borderRadius: 10, padding: 10 }}>
+                <View style={{ flex: 1, backgroundColor: `colors.primary08`, borderRadius: 10, padding: 10 }}>
                   <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase" }}>Expires</Text>
                   <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginTop: 2 }}>
                     {new Date(firstAidCert.expiration_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   </Text>
                 </View>
               ) : null}
-              <View style={{ flex: 1, backgroundColor: `"#1E3A8A"08`, borderRadius: 10, padding: 10 }}>
+              <View style={{ flex: 1, backgroundColor: `colors.primary08`, borderRadius: 10, padding: 10 }}>
                 <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase" }}>Uploaded</Text>
                 <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginTop: 2 }}>
                   {new Date(firstAidCert.uploaded_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
@@ -336,11 +336,11 @@ export default function OperatorSupport() {
             disabled={certAnalyzing}
           >
             {certAnalyzing ? (
-              <ActivityIndicator size="small" color={"#FBBF24"} />
+              <ActivityIndicator size="small" color={colors.secondary} />
             ) : (
               <>
-                <Ionicons name="cloud-upload-outline" size={18} color={"#FBBF24"} />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#FBBF24" }}>
+                <Ionicons name="cloud-upload-outline" size={18} color={colors.secondary} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.secondary }}>
                   {firstAidCert ? "Update Certificate" : "Upload Certificate"}
                 </Text>
               </>
@@ -360,7 +360,7 @@ export default function OperatorSupport() {
                 <Ionicons name={protocol.icon} size={28} color={protocol.color} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.protocolTitle, { color: "#1E3A8A" }]}>{protocol.title}</Text>
+                <Text style={[styles.protocolTitle, { color: colors.primary }]}>{protocol.title}</Text>
                 <Text style={[styles.protocolSub, { color: colors.mutedForeground }]}>{protocol.steps.length} steps</Text>
               </View>
               {completedProtocols.has(protocol.id) && (
@@ -376,7 +376,7 @@ export default function OperatorSupport() {
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>FAQs</Text>
         {FAQS.map((faq, i) => (
           <View key={i} style={[styles.faqCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.faqQ, { color: "#1E3A8A" }]}>{faq.q}</Text>
+            <Text style={[styles.faqQ, { color: colors.primary }]}>{faq.q}</Text>
             <Text style={[styles.faqA, { color: colors.mutedForeground }]}>{faq.a}</Text>
           </View>
         ))}
@@ -386,7 +386,7 @@ export default function OperatorSupport() {
           {[
             { icon: "call" as const,          label: "Call Admin",  color: "#10B981", onPress: () => Linking.openURL(`tel:${adminPhone}`) },
             { icon: "logo-whatsapp" as const,  label: "WhatsApp",   color: "#25D366", onPress: () => Linking.openURL(`https://wa.me/${adminPhone.replace(/[^0-9]/g, "")}`) },
-            { icon: "mail" as const,           label: "Email",      color: "#1E3A8A", onPress: () => Linking.openURL(`mailto:${adminEmail}`) },
+            { icon: "mail" as const,           label: "Email",      color: colors.primary, onPress: () => Linking.openURL(`mailto:${adminEmail}`) },
           ].map(item => (
             <Pressable key={item.label} style={styles.contactItem} onPress={item.onPress}>
               <View style={[styles.contactIcon, { backgroundColor: `${item.color}20` }]}>
@@ -409,7 +409,7 @@ export default function OperatorSupport() {
                     <Ionicons name={wizardProtocol.icon} size={28} color={wizardProtocol.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.wizardTitle, { color: "#1E3A8A" }]}>{wizardProtocol.title}</Text>
+                    <Text style={[styles.wizardTitle, { color: colors.primary }]}>{wizardProtocol.title}</Text>
                     <Text style={[styles.wizardProgress, { color: colors.mutedForeground }]}>
                       Step {currentStep + 1} of {wizardProtocol.steps.length}
                     </Text>
@@ -477,7 +477,7 @@ export default function OperatorSupport() {
                     All {wizardProtocol.steps.length} steps for "{wizardProtocol.title}" have been logged to Supabase with your operator ID and timestamps.
                   </Text>
                 </View>
-                <Pressable style={[styles.doneBtn, { backgroundColor: "#1E3A8A" }]} onPress={closeWizard}>
+                <Pressable style={[styles.doneBtn, { backgroundColor: colors.primary }]} onPress={closeWizard}>
                   <Text style={styles.doneBtnText}>Close</Text>
                 </Pressable>
                 <Pressable

@@ -151,7 +151,7 @@ export default function MembershipPolicyScreen() {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Membership Policy" onBack={() => router.back()} />
-        <View style={S.center}><ActivityIndicator color={"#1E3A8A"} /></View>
+        <View style={S.center}><ActivityIndicator color={colors.primary} /></View>
       </View>
     );
   }
@@ -189,7 +189,7 @@ export default function MembershipPolicyScreen() {
 
         {!isEnabled && (
           <View style={[S.infoBox, { borderColor: "#BFDBFE", backgroundColor: "#EFF6FF" }]}>
-            <Ionicons name="information-circle-outline" size={18} color={"#1E3A8A"} />
+            <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
             <Text style={S.infoText}>
               Membership is disabled. Members will not see any membership tab or fees.
             </Text>
@@ -209,7 +209,7 @@ export default function MembershipPolicyScreen() {
                 >
                   <View style={[
                     S.radio,
-                    policy.membership_applies_to === opt.value && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
+                    policy.membership_applies_to === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary },
                     { borderColor: colors.border },
                   ]}>
                     {policy.membership_applies_to === opt.value && <View style={S.radioDot} />}
@@ -234,7 +234,7 @@ export default function MembershipPolicyScreen() {
                 <Switch
                   value={policy.membership_donation_mode}
                   onValueChange={v => setPolicy(p => ({ ...p, membership_donation_mode: v }))}
-                  trackColor={{ true: "#1E3A8A" }}
+                  trackColor={{ true: colors.primary }}
                 />
               </View>
             </View>
@@ -303,7 +303,7 @@ export default function MembershipPolicyScreen() {
                 >
                   <View style={[
                     S.radio,
-                    policy.membership_renewal_type === opt.value && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
+                    policy.membership_renewal_type === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary },
                     { borderColor: colors.border },
                   ]}>
                     {policy.membership_renewal_type === opt.value && <View style={S.radioDot} />}
@@ -357,7 +357,7 @@ export default function MembershipPolicyScreen() {
                 <Switch
                   value={policy.membership_mandatory}
                   onValueChange={v => setPolicy(p => ({ ...p, membership_mandatory: v }))}
-                  trackColor={{ true: "#1E3A8A" }}
+                  trackColor={{ true: colors.primary }}
                 />
               </View>
             </View>
@@ -380,7 +380,7 @@ export default function MembershipPolicyScreen() {
                   <View style={[
                     S.check,
                     policy.membership_reminder_days.includes(day)
-                      ? { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }
+                      ? { backgroundColor: colors.primary, borderColor: colors.primary }
                       : { borderColor: colors.border },
                   ]}>
                     {policy.membership_reminder_days.includes(day) && (

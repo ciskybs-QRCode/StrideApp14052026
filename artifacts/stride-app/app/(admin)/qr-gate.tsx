@@ -135,7 +135,7 @@ export default function AdminQRGate() {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="QR Gate" onBack={() => router.back()} />
-        <View style={S.center}><ActivityIndicator color={"#1E3A8A"} /></View>
+        <View style={S.center}><ActivityIndicator color={colors.primary} /></View>
       </View>
     );
   }
@@ -193,7 +193,7 @@ export default function AdminQRGate() {
               {scanState === "processing" ? "Processing…" : "Point at a Stride QR code"}
             </Text>
             {scanState === "processing" && (
-              <ActivityIndicator color={"#FBBF24"} style={{ marginTop: 16 }} />
+              <ActivityIndicator color={colors.secondary} style={{ marginTop: 16 }} />
             )}
           </View>
         </View>
@@ -223,7 +223,7 @@ export default function AdminQRGate() {
           </View>
 
           <Pressable
-            style={[S.nextBtn, { backgroundColor: "#1E3A8A" }]}
+            style={[S.nextBtn, { backgroundColor: colors.primary }]}
             onPress={reset}
           >
             <Ionicons name="scan-outline" size={20} color="#FFF" />

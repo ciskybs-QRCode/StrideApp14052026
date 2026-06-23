@@ -135,7 +135,7 @@ export default function CertOverviewPage() {
       <ScreenHeader title="Certificate Status" onBack={() => router.navigate("/(admin)/operations-hub" as never)} />
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : (
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
@@ -156,9 +156,9 @@ export default function CertOverviewPage() {
 
           {/* ── Pending Review Banner ── */}
           {hasPending && (
-            <View style={[styles.alert, { backgroundColor: "#EFF6FF", borderLeftColor: "#1E3A8A" }]}>
-              <Ionicons name="time-outline" size={18} color={"#1E3A8A"} />
-              <Text style={[styles.alertBody, { color: "#1E3A8A", flex: 1 }]}>
+            <View style={[styles.alert, { backgroundColor: "#EFF6FF", borderLeftColor: colors.primary }]}>
+              <Ionicons name="time-outline" size={18} color={colors.primary} />
+              <Text style={[styles.alertBody, { color: colors.primary, flex: 1 }]}>
                 {pendingMedical.length + pendingFirstAid.length} certificate{pendingMedical.length + pendingFirstAid.length !== 1 ? "s" : ""} need your review — scroll to find them or switch tabs.
               </Text>
             </View>
@@ -167,8 +167,8 @@ export default function CertOverviewPage() {
           {/* ── Summary cards ── */}
           <View style={styles.summaryRow}>
             {[
-              { label: "Members",   count: overview?.medical.length   ?? 0, color: "#1E3A8A" },
-              { label: "Operators", count: overview?.first_aid.length ?? 0, color: "#1E3A8A" },
+              { label: "Members",   count: overview?.medical.length   ?? 0, color: colors.primary },
+              { label: "Operators", count: overview?.first_aid.length ?? 0, color: colors.primary },
               { label: "Valid",     count: (overview?.medical.filter(e => e.cert_status === "valid").length ?? 0) + (overview?.first_aid.filter(e => e.cert_status === "valid").length ?? 0), color: "#166534" },
               { label: "Issues",    count: (overview?.medical.filter(e => ["missing","expired","expiring","pending_review"].includes(e.cert_status)).length ?? 0) + (overview?.first_aid.filter(e => ["missing","expired","expiring","pending_review"].includes(e.cert_status)).length ?? 0), color: "#991B1B" },
             ].map(s => (
@@ -184,10 +184,10 @@ export default function CertOverviewPage() {
             {(["medical", "first_aid"] as const).map(t => (
               <Pressable
                 key={t}
-                style={[styles.tabBtn, tab === t && { backgroundColor: "#1E3A8A" }]}
+                style={[styles.tabBtn, tab === t && { backgroundColor: colors.primary }]}
                 onPress={() => setTab(t)}
               >
-                <Text style={[styles.tabLabel, { color: tab === t ? "#FBBF24" : colors.mutedForeground }]}>
+                <Text style={[styles.tabLabel, { color: tab === t ? colors.secondary : colors.mutedForeground }]}>
                   {t === "medical" ? "Medical Certs" : "First Aid Certs"}
                 </Text>
                 {t === "medical" && pendingMedical.length > 0 && (
@@ -241,7 +241,7 @@ export default function CertOverviewPage() {
                     returnKeyType="done"
                   />
                   <Pressable
-                    style={[styles.saveBtn, { backgroundColor: "#1E3A8A", opacity: savingMin ? 0.7 : 1 }]}
+                    style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: savingMin ? 0.7 : 1 }]}
                     onPress={saveMinFirstAid}
                     disabled={savingMin}
                   >
@@ -341,13 +341,13 @@ export default function CertOverviewPage() {
               </Pressable>
               <Pressable
                 style={[styles.modalBtn, { flex: 1, opacity: actionLoading ? 0.7 : 1,
-                  backgroundColor: reviewModal?.action === "approve" ? "#1E3A8A" : "#DC2626" }]}
+                  backgroundColor: reviewModal?.action === "approve" ? colors.primary : "#DC2626" }]}
                 onPress={handleReview}
                 disabled={!!actionLoading}
               >
                 {actionLoading
                   ? <ActivityIndicator size="small" color="#FFF" />
-                  : <Text style={[styles.modalBtnText, { color: reviewModal?.action === "approve" ? "#FBBF24" : "#FFF" }]}>
+                  : <Text style={[styles.modalBtnText, { color: reviewModal?.action === "approve" ? colors.secondary : "#FFF" }]}>
                       {reviewModal?.action === "approve" ? "Approve" : "Reject"}
                     </Text>
                 }
@@ -388,13 +388,13 @@ function MedicalRow({ entry, isLast, colors, actionLoading, onExtend, onReview }
           </Text>
         )}
         {entry.anomaly_reasons && (
-          <Text style={[styles.rowSub, { color: "#1E3A8A" }]} numberOfLines={2}>⚠ {entry.anomaly_reasons}</Text>
+          <Text style={[styles.rowSub, { color: colors.primary }]} numberOfLines={2}>⚠ {entry.anomaly_reasons}</Text>
         )}
       </View>
       <View style={styles.rowActions}>
-        <Pressable style={[styles.actionBtn, { borderColor: "#1E3A8A" }]} onPress={onExtend}>
-          <Ionicons name="time-outline" size={12} color={"#1E3A8A"} />
-          <Text style={[styles.actionBtnText, { color: "#1E3A8A" }]}>Extend</Text>
+        <Pressable style={[styles.actionBtn, { borderColor: colors.primary }]} onPress={onExtend}>
+          <Ionicons name="time-outline" size={12} color={colors.primary} />
+          <Text style={[styles.actionBtnText, { color: colors.primary }]}>Extend</Text>
         </Pressable>
         {isPending && entry.cert_id && (
           <>
@@ -442,7 +442,7 @@ function FirstAidRow({ entry, isLast, colors, actionLoading, onReview }: {
           </Text>
         )}
         {entry.anomaly_reasons && (
-          <Text style={[styles.rowSub, { color: "#1E3A8A" }]} numberOfLines={2}>⚠ {entry.anomaly_reasons}</Text>
+          <Text style={[styles.rowSub, { color: colors.primary }]} numberOfLines={2}>⚠ {entry.anomaly_reasons}</Text>
         )}
       </View>
       {isPending && entry.cert_id && (

@@ -108,7 +108,7 @@ export function SetupChecklist() {
         borderRadius: 14,
         overflow: "hidden",
         borderWidth: 1,
-        borderColor: ("#FBBF24" + "50"),
+        borderColor: (colors.secondary + "50"),
       }}
     >
       {/* ── Collapsed header bar ── */}
@@ -143,7 +143,7 @@ export function SetupChecklist() {
               style={{
                 height: 3,
                 width: `${pct * 100}%` as `${number}%`,
-                backgroundColor: "#FBBF24",
+                backgroundColor: colors.secondary,
                 borderRadius: 4,
               }}
             />
@@ -222,7 +222,7 @@ export function SetupChecklist() {
                     style={({ pressed }) => ({
                       paddingHorizontal: 10,
                       paddingVertical: 5,
-                      backgroundColor: "#FBBF24",
+                      backgroundColor: colors.secondary,
                       borderRadius: 8,
                       opacity: pressed ? 0.7 : 1,
                     })}

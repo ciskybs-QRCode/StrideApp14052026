@@ -49,7 +49,7 @@ export default function ChangePasswordPage() {
 
         {fields.map((f, i) => (
           <View key={f.label} style={{ marginBottom: i === 2 ? 8 : 20 }}>
-            <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>{f.label}</Text>
+            <Text style={[styles.fieldLabel, { color: colors.primary }]}>{f.label}</Text>
             <View style={[styles.inputRow, { borderColor: mismatch && i > 0 ? "#EF4444" : colors.border, backgroundColor: colors.card }]}>
               <Ionicons name="lock-closed-outline" size={17} color={colors.mutedForeground} />
               <TextInput
@@ -74,7 +74,7 @@ export default function ChangePasswordPage() {
         <Pressable
           style={({ pressed }) => [
             styles.saveBtn,
-            { backgroundColor: "#1E3A8A", opacity: pressed ? 0.85 : 1, marginTop: 24 },
+            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, marginTop: 24 },
           ]}
           onPress={handleSave}
         >

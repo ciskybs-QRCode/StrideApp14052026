@@ -275,7 +275,7 @@ export default function EmergencyPulseDashboard() {
         )}
 
         {!isActive && (
-          <Pressable style={[S.resolveBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => router.back()}>
+          <Pressable style={[S.resolveBtn, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={20} color="#FFF" />
             <Text style={S.resolveBtnText}>Return to Dashboard</Text>
           </Pressable>

@@ -105,7 +105,7 @@ export default function OperatorTabLayout() {
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#1E3A8A",
+          tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.mutedForeground,
           headerShown: false,
           tabBarStyle: {
@@ -131,7 +131,7 @@ export default function OperatorTabLayout() {
             title: "Home",
             tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
             tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-            tabBarBadgeStyle: { backgroundColor: "#FBBF24", color: "#1E3A8A", fontSize: 10, fontWeight: "800" },
+            tabBarBadgeStyle: { backgroundColor: colors.secondary, color: colors.primary, fontSize: 10, fontWeight: "800" },
           }}
         />
         <Tabs.Screen name="calendar"        options={{ title: "Calendar",  tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"  size={size} color={color} /> }} />

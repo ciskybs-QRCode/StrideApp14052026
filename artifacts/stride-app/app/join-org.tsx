@@ -62,7 +62,7 @@ export default function JoinOrgScreen() {
         {(["code", "qr"] as Tab[]).map(t => (
           <Pressable
             key={t}
-            style={[s.tabBtn, tab === t && { backgroundColor: "#1E3A8A" }]}
+            style={[s.tabBtn, tab === t && { backgroundColor: colors.primary }]}
             onPress={() => setTab(t)}
           >
             <Ionicons
@@ -136,8 +136,8 @@ function CodeTab({
         keyboardShouldPersistTaps="handled"
       >
         <View style={[s.codeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[s.codeIconBox, { backgroundColor: `"#1E3A8A"15` }]}>
-            <Ionicons name="key-outline" size={36} color={"#1E3A8A"} />
+          <View style={[s.codeIconBox, { backgroundColor: `colors.primary15` }]}>
+            <Ionicons name="key-outline" size={36} color={colors.primary} />
           </View>
           <Text style={[s.codeHint, { color: colors.foreground }]}>Enter Invite Code</Text>
           <Text style={[s.codeSub, { color: colors.mutedForeground }]}>
@@ -148,7 +148,7 @@ function CodeTab({
             ref={inputRef}
             style={[s.codeInput, {
               backgroundColor: colors.background,
-              borderColor: code.length > 0 ? "#1E3A8A" : colors.border,
+              borderColor: code.length > 0 ? colors.primary : colors.border,
               color: colors.foreground,
             }]}
             value={code}
@@ -165,7 +165,7 @@ function CodeTab({
           <Pressable
             style={({ pressed }) => [
               s.joinBtn,
-              { backgroundColor: "#1E3A8A", opacity: (busy || code.length < 4) ? 0.55 : pressed ? 0.85 : 1 },
+              { backgroundColor: colors.primary, opacity: (busy || code.length < 4) ? 0.55 : pressed ? 0.85 : 1 },
             ]}
             onPress={handleJoin}
             disabled={busy || code.length < 4}
@@ -252,7 +252,7 @@ function QrTab({
         <Ionicons name="camera-outline" size={48} color={colors.mutedForeground} />
         <Text style={[s.webNote, { color: colors.mutedForeground }]}>Camera access required.</Text>
         <Pressable
-          style={[s.joinBtn, { backgroundColor: "#1E3A8A", marginTop: 16 }]}
+          style={[s.joinBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
           onPress={() => void requestPermission()}
         >
           <Text style={s.joinBtnText}>Allow Camera</Text>
@@ -276,7 +276,7 @@ function QrTab({
         </View>
       )}
       <View style={[s.scanHintBar, { backgroundColor: colors.card }]}>
-        <Ionicons name="scan-outline" size={18} color={"#1E3A8A"} />
+        <Ionicons name="scan-outline" size={18} color={colors.primary} />
         <Text style={[s.scanHint, { color: colors.foreground }]}>
           Point at the association{"'"}s QR code
         </Text>

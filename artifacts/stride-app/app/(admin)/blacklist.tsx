@@ -167,11 +167,11 @@ export default function BlacklistScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color={"#1E3A8A"} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
         ) : entries.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="shield-checkmark-outline" size={56} color={"#1E3A8A"} style={{ opacity: 0.2 }} />
-            <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>Blacklist is empty</Text>
+            <Ionicons name="shield-checkmark-outline" size={56} color={colors.primary} style={{ opacity: 0.2 }} />
+            <Text style={[styles.emptyTitle, { color: colors.primary }]}>Blacklist is empty</Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Tap "Block" to prevent someone from registering.</Text>
           </View>
         ) : (
@@ -183,7 +183,7 @@ export default function BlacklistScreen() {
             >
               <View style={styles.entryHeader}>
                 <View style={[styles.entryIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Ionicons name="ban-outline" size={20} color={"#1E3A8A"} />
+                  <Ionicons name="ban-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   {(entry.first_name || entry.last_name) ? (
@@ -199,8 +199,8 @@ export default function BlacklistScreen() {
                   ) : null}
                   {entry.reason ? (
                     <View style={styles.reasonBadge}>
-                      <Ionicons name="alert-circle-outline" size={11} color={"#1E3A8A"} />
-                      <Text style={[styles.entryReason, { color: "#1E3A8A" }]}>{entry.reason}</Text>
+                      <Ionicons name="alert-circle-outline" size={11} color={colors.primary} />
+                      <Text style={[styles.entryReason, { color: colors.primary }]}>{entry.reason}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -258,15 +258,15 @@ export default function BlacklistScreen() {
                       style={[styles.suggestionRow, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
                       onPress={() => fillFromUser(u)}
                     >
-                      <View style={[styles.suggestionAvatar, { backgroundColor: `"#1E3A8A"20` }]}>
-                        <Text style={[styles.suggestionAvatarText, { color: "#1E3A8A" }]}>{u.name.charAt(0)}</Text>
+                      <View style={[styles.suggestionAvatar, { backgroundColor: `colors.primary20` }]}>
+                        <Text style={[styles.suggestionAvatarText, { color: colors.primary }]}>{u.name.charAt(0)}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.suggestionName, { color: colors.foreground }]}>{u.name}</Text>
                         <Text style={[styles.suggestionEmail, { color: colors.mutedForeground }]}>{u.email}</Text>
                       </View>
-                      <View style={[styles.suggestionRoleBadge, { backgroundColor: `"#1E3A8A"15` }]}>
-                        <Text style={[styles.suggestionRoleText, { color: "#1E3A8A" }]}>{u.role}</Text>
+                      <View style={[styles.suggestionRoleBadge, { backgroundColor: `colors.primary15` }]}>
+                        <Text style={[styles.suggestionRoleText, { color: colors.primary }]}>{u.role}</Text>
                       </View>
                       <Ionicons name="arrow-down-circle-outline" size={18} color="#DC2626" style={{ marginLeft: 6 }} />
                     </Pressable>
@@ -305,7 +305,7 @@ export default function BlacklistScreen() {
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType={field.keyboardType}
                     autoCapitalize={field.key === "email" ? "none" : field.key === "phone_number" ? "none" : "words"}
-                    style={[styles.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: form[field.key] ? "#1E3A8A" : colors.border }]}
+                    style={[styles.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: form[field.key] ? colors.primary : colors.border }]}
                   />
                 </View>
               ))}
@@ -351,7 +351,7 @@ export default function BlacklistScreen() {
                   <Ionicons name="ban" size={28} color="#DC2626" />
                 </View>
 
-                <Text style={[styles.detailName, { color: "#1E3A8A" }]}>
+                <Text style={[styles.detailName, { color: colors.primary }]}>
                   {[detailEntry.first_name, detailEntry.last_name].filter(Boolean).join(" ") || "Unknown"}
                 </Text>
 

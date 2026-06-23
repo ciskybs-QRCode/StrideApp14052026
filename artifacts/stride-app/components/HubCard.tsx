@@ -39,8 +39,8 @@ export function HubCard({
 }: HubCardProps) {
   const colors = useColors();
 
-  const resolvedIconBg    = iconBg    ?? "#1E3A8A";
-  const resolvedIconColor = iconColor ?? "#FBBF24";
+  const resolvedIconBg    = iconBg    ?? colors.primary;
+  const resolvedIconColor = iconColor ?? colors.secondary;
 
   return (
     <Pressable
@@ -69,13 +69,13 @@ export function HubCard({
         <Ionicons
           name={icon}
           size={22}
-          color={danger ? "#DC2626" : resolvedIconColor === "#FBBF24" ? resolvedIconBg : resolvedIconColor}
+          color={danger ? "#DC2626" : resolvedIconColor === colors.secondary ? resolvedIconBg : resolvedIconColor}
         />
       </View>
 
       <View style={styles.text}>
         <Text
-          style={[styles.title, { color: danger ? "#DC2626" : colors.foreground ?? "#1E3A8A" }]}
+          style={[styles.title, { color: danger ? "#DC2626" : colors.foreground ?? colors.primary }]}
           numberOfLines={1}
         >
           {title}
@@ -92,8 +92,8 @@ export function HubCard({
 
       <View style={styles.right}>
         {badge !== undefined && badge !== 0 && badge !== "" ? (
-          <View style={[styles.badge, { backgroundColor: "#FBBF24" }]}>
-            <Text style={[styles.badgeText, { color: "#1E3A8A" }]}>
+          <View style={[styles.badge, { backgroundColor: colors.secondary }]}>
+            <Text style={[styles.badgeText, { color: colors.primary }]}>
               {badge}
             </Text>
           </View>

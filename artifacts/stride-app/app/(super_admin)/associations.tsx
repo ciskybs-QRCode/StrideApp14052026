@@ -89,7 +89,7 @@ function AssociationCard({
       {/* Title row */}
       <View style={styles.orgTitleRow}>
         <View style={styles.orgIconBox}>
-          <Ionicons name="business-outline" size={20} color={"#1E3A8A"} />
+          <Ionicons name="business-outline" size={20} color={colors.primary} />
         </View>
         <View style={styles.orgTitleText}>
           <Text style={styles.orgName} numberOfLines={1}>{org.name}</Text>
@@ -152,9 +152,9 @@ function AssociationCard({
         style={({ pressed }) => [styles.extendBtn, { opacity: pressed ? 0.85 : 1 }]}
         onPress={() => onExtend(org)}
       >
-        <Ionicons name="calendar-outline" size={15} color={"#1E3A8A"} />
+        <Ionicons name="calendar-outline" size={15} color={colors.primary} />
         <Text style={styles.extendBtnText}>Extend Trial</Text>
-        <Ionicons name="chevron-forward" size={14} color={"#1E3A8A"} />
+        <Ionicons name="chevron-forward" size={14} color={colors.primary} />
       </Pressable>
     </View>
   );
@@ -240,7 +240,7 @@ function ExtendModal({
               {/* Header */}
               <View style={styles.modalHeader}>
                 <View style={styles.modalIconCircle}>
-                  <Ionicons name="calendar" size={26} color={"#1E3A8A"} />
+                  <Ionicons name="calendar" size={26} color={colors.primary} />
                 </View>
                 <Text style={styles.modalTitle}>Extend Trial</Text>
                 <Text style={styles.modalOrgName} numberOfLines={1}>
@@ -300,7 +300,7 @@ function ExtendModal({
                   disabled={extending}
                 >
                   {extending ? (
-                    <ActivityIndicator size="small" color={"#1E3A8A"} />
+                    <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <Text style={styles.customApplyText}>Apply</Text>
                   )}
@@ -377,7 +377,7 @@ export default function AssociationsScreen() {
       <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
           {loading ? (
             <View style={styles.centeredState}>
-              <ActivityIndicator size="large" color={"#1E3A8A"} />
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.centeredText}>Loading associations…</Text>
             </View>
           ) : error ? (
@@ -433,7 +433,7 @@ export default function AssociationsScreen() {
               )}
 
               {/* Pilot Tenants Reference */}
-              <View style={[styles.pilotCard, { backgroundColor: "#1E3A8A" }]}>
+              <View style={[styles.pilotCard, { backgroundColor: colors.primary }]}>
                 <Text style={styles.pilotTitle}>Pilot Configuration Reference</Text>
                 {[
                   { label: "Tenant A", desc: "AU Non-Profit Cultural Association · AUD · Associations Incorporation Act 2015 (WA)" },

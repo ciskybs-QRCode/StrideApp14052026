@@ -18,9 +18,9 @@ import { useColors } from "@/hooks/useColors";
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
 
-function roleColor(role: string): string {
-  if (role === "super_admin") return "#1E3A8A";
-  if (role === "admin")       return "#1E3A8A";
+function roleColor(role: string, primary: string): string {
+  if (role === "super_admin") return primary;
+  if (role === "admin")       return primary;
   if (role === "operator")    return "#D97706";
   if (role === "parent")      return "#059669";
   return "#6B7280";
@@ -44,7 +44,7 @@ function roleLabel(role: string): string {
 
 function AdminRow({ rec, onEdit }: { rec: AdminRecord; onEdit: (rec: AdminRecord) => void }) {
   const colors = useColors();
-  const color = roleColor(rec.role);
+  const color = roleColor(rec.role, colors.primary);
   const bg    = roleBg(rec.role);
   return (
     <View style={ar.row}>
@@ -148,12 +148,12 @@ function ManageUserModal({ visible, target, currentUser, ownerEmail, onClose, on
               <>
                 <View style={mu.header}>
                   <View style={[mu.avatar, { backgroundColor: roleBg(target.role) }]}>
-                    <Ionicons name={target.role === "super_admin" ? "shield-checkmark" : "person"} size={26} color={roleColor(target.role)} />
+                    <Ionicons name={target.role === "super_admin" ? "shield-checkmark" : "person"} size={26} color={roleColor(target.role, colors.primary)} />
                   </View>
                   <Text style={mu.name} numberOfLines={1}>{target.name}</Text>
                   <Text style={mu.emailTxt} numberOfLines={1}>{target.email}</Text>
                   <View style={[mu.roleBadge, { backgroundColor: roleBg(target.role) }]}>
-                    <Text style={[mu.roleChipTxt, { color: roleColor(target.role) }]}>{roleLabel(target.role).toUpperCase()}</Text>
+                    <Text style={[mu.roleChipTxt, { color: roleColor(target.role, colors.primary) }]}>{roleLabel(target.role).toUpperCase()}</Text>
                   </View>
                   {!canAct && (
                     <View style={mu.lockNote}>
@@ -195,7 +195,7 @@ function ManageUserModal({ visible, target, currentUser, ownerEmail, onClose, on
                 <View style={mu.confirmBox}>
                   <View style={[mu.confirmIcon, { backgroundColor: "#FFFBEB" }]}><Ionicons name="swap-horizontal" size={26} color="#D97706" /></View>
                   <Text style={mu.confirmTitle}>Confirm Role Change</Text>
-                  <Text style={mu.confirmDesc}>Change <Text style={{ fontWeight: "900", color: "#111827" }}>{target.name}</Text> from <Text style={{ color: roleColor(target.role), fontWeight: "700" }}>{roleLabel(target.role)}</Text> to <Text style={{ color: roleColor(pendingRole), fontWeight: "700" }}>{roleLabel(pendingRole)}</Text>?</Text>
+                  <Text style={mu.confirmDesc}>Change <Text style={{ fontWeight: "900", color: "#111827" }}>{target.name}</Text> from <Text style={{ color: roleColor(target.role, colors.primary), fontWeight: "700" }}>{roleLabel(target.role)}</Text> to <Text style={{ color: roleColor(pendingRole, colors.primary), fontWeight: "700" }}>{roleLabel(pendingRole)}</Text>?</Text>
                   <Text style={{ fontSize: 12, color: "#9CA3AF", textAlign: "center", marginTop: 4 }}>This takes effect immediately.</Text>
                 </View>
                 {!!error && <View style={[em.errorBox, { marginHorizontal: 20 }]}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
@@ -264,7 +264,7 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
             {result ? (
               <View style={{ alignItems: "center", padding: 32, gap: 12 }}>
                 <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name="shield-checkmark" size={36} color={"#1E3A8A"} />
+                  <Ionicons name="shield-checkmark" size={36} color={colors.primary} />
                 </View>
                 <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827" }}>Super Admin Added</Text>
                 <Text style={{ fontSize: 14, color: "#6B7280", textAlign: "center" }}>{email} now has super_admin access.</Text>
@@ -281,7 +281,7 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
             ) : (
               <>
                 <View style={{ alignItems: "center", padding: 24, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" }}>
-                  <View style={em.headerIcon}><Ionicons name="shield-checkmark" size={28} color={"#1E3A8A"} /></View>
+                  <View style={em.headerIcon}><Ionicons name="shield-checkmark" size={28} color={colors.primary} /></View>
                   <Text style={em.title}>Add Super Admin</Text>
                   <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Promotes an existing user or creates a new super_admin account</Text>
                 </View>
@@ -291,7 +291,7 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
                 </View>
                 {!!error && <View style={[em.errorBox, { marginHorizontal: 24 }]}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
                 <Pressable style={({ pressed }) => [em.ctaBtn, { opacity: pressed || saving ? 0.85 : 1 }]} onPress={() => void handleAdd()} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color={"#1E3A8A"} /> : <><Ionicons name="shield-checkmark" size={18} color={"#1E3A8A"} /><Text style={em.ctaText}>Grant Super Admin Access</Text></>}
+                  {saving ? <ActivityIndicator size="small" color={colors.primary} /> : <><Ionicons name="shield-checkmark" size={18} color={colors.primary} /><Text style={em.ctaText}>Grant Super Admin Access</Text></>}
                 </Pressable>
                 <Pressable style={({ pressed }) => [em.cancelBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={onClose}><Text style={em.cancelText}>Cancel</Text></Pressable>
               </>
@@ -339,13 +339,13 @@ export default function UserAdminScreen() {
       />
 
       {loading ? (
-        <View style={styles.loadingBox}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
+        <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={"#1E3A8A"} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={colors.primary} />}
         >
           <View style={styles.card}>
             {admins.length === 0 ? (

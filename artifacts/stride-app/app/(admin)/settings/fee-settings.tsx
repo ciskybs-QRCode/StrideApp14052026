@@ -67,17 +67,17 @@ function OptionCard<T extends string>({
       style={[
         styles.optionCard,
         {
-          borderColor: selected ? "#1E3A8A" : colors.border,
-          backgroundColor: selected ? `"#1E3A8A"10` : colors.card,
+          borderColor: selected ? colors.primary : colors.border,
+          backgroundColor: selected ? `colors.primary10` : colors.card,
         },
       ]}
     >
       <View style={styles.optionCardRow}>
         <View style={[
           styles.optionRadio,
-          { borderColor: selected ? "#1E3A8A" : colors.border },
+          { borderColor: selected ? colors.primary : colors.border },
         ]}>
-          {selected && <View style={[styles.optionRadioInner, { backgroundColor: "#1E3A8A" }]} />}
+          {selected && <View style={[styles.optionRadioInner, { backgroundColor: colors.primary }]} />}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.optionLabel, { color: colors.foreground }]}>{label}</Text>
@@ -123,7 +123,7 @@ function PickerModal<T extends string | number>({
             >
               <Text style={[styles.modalItemText, { color: colors.foreground }]}>{opt.label}</Text>
               {opt.value === selected && (
-                <Ionicons name="checkmark" size={18} color={"#1E3A8A"} />
+                <Ionicons name="checkmark" size={18} color={colors.primary} />
               )}
             </Pressable>
           ))}
@@ -233,7 +233,7 @@ export default function FeeSettingsScreen() {
   if (loading) {
     return (
       <View style={[styles.loader, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={"#1E3A8A"} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -356,9 +356,9 @@ export default function FeeSettingsScreen() {
             : "What a new member pays when they join part-way through a cycle."}
         />
         {isJoiningDateBasis ? (
-          <View style={[styles.infoBox, { backgroundColor: `"#1E3A8A"12`, borderColor: `"#1E3A8A"30` }]}>
-            <Ionicons name="information-circle-outline" size={18} color={"#1E3A8A"} />
-            <Text style={[styles.infoText, { color: "#1E3A8A" }]}>
+          <View style={[styles.infoBox, { backgroundColor: `colors.primary12`, borderColor: `colors.primary30` }]}>
+            <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.primary }]}>
               Since each member's cycle starts on their own joining date, there is no mid-cycle
               scenario. The member always pays the full amount from day one.
             </Text>
@@ -457,7 +457,7 @@ export default function FeeSettingsScreen() {
           disabled={saving}
           style={({ pressed }) => [
             styles.saveBtn,
-            { backgroundColor: saved ? "#10B981" : "#1E3A8A", opacity: pressed ? 0.88 : 1 },
+            { backgroundColor: saved ? "#10B981" : colors.primary, opacity: pressed ? 0.88 : 1 },
           ]}
         >
           {saving ? (

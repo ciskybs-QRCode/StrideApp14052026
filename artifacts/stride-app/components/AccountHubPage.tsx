@@ -131,24 +131,24 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
       icon: "create-outline",
       label: "Information Settings",
       desc: "Name, date of birth, gender, phone and address",
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(profileEditRoute as never); },
     },
     {
       icon: "mail-outline",
       label: "Change Email",
       desc: user?.email ?? "Update your login email address",
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCurrentEmail(""); setNewEmail(""); setConfirmEmail(""); setShowEmail(true); },
     },
     {
       icon: "lock-closed-outline",
       label: "Change Password",
       desc: "Update your account password",
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPwCurrent(""); setPwNew(""); setPwConfirm(""); setShowPassword(true); },
     },
     ...extraRows,
@@ -156,8 +156,8 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
       icon: "log-out-outline",
       label: "Log Out",
       desc: "Sign out of this device",
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowLogout(true); },
     },
     ...(showDeleteAccount ? [{
@@ -214,7 +214,7 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
             </Text>
             {requireCurrentEmail && (
               <>
-                <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Current Email Address</Text>
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Current Email Address</Text>
                 <TextInput
                   style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }]}
                   value={currentEmail}
@@ -240,7 +240,7 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
             />
             {requireCurrentEmail && (
               <>
-                <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Confirm New Email</Text>
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Confirm New Email</Text>
                 <TextInput
                   style={[styles.input, { borderColor: newEmail && confirmEmail && newEmail.trim().toLowerCase() !== confirmEmail.trim().toLowerCase() ? "#EF4444" : colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                   value={confirmEmail}
@@ -290,7 +290,7 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
               const mismatch = i > 0 && pwNew.length > 0 && pwConfirm.length > 0 && pwNew !== pwConfirm;
               return (
                 <View key={f.label} style={{ marginBottom: 14 }}>
-                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>{f.label}</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>{f.label}</Text>
                   <View style={[styles.pwRow, { borderColor: mismatch ? "#EF4444" : colors.border, backgroundColor: colors.background }]}>
                     <Ionicons name="lock-closed-outline" size={16} color={colors.mutedForeground} />
                     <TextInput

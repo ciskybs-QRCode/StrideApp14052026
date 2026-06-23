@@ -93,7 +93,7 @@ function SectionHead({
   return (
     <View style={S.sectionHead}>
       <View style={S.sectionHeadLine} />
-      <Ionicons name={icon} size={14} color={"#1E3A8A"} />
+      <Ionicons name={icon} size={14} color={colors.primary} />
       <Text style={S.sectionHeadText}>{title}</Text>
     </View>
   );
@@ -127,16 +127,16 @@ function CatChips({
               key={c}
               onPress={() => onChange(c)}
               style={[S.catChip, {
-                backgroundColor: active ? "#1E3A8A" : "#EFF6FF",
-                borderColor: active ? "#1E3A8A" : "#BFDBFE",
+                backgroundColor: active ? colors.primary : "#EFF6FF",
+                borderColor: active ? colors.primary : "#BFDBFE",
               }]}
             >
               <Ionicons
                 name={meta.icon}
                 size={13}
-                color={active ? "#FBBF24" : "#1E3A8A"}
+                color={active ? colors.secondary : colors.primary}
               />
-              <Text style={[S.catChipText, { color: active ? "#FBBF24" : "#1E3A8A" }]}>
+              <Text style={[S.catChipText, { color: active ? colors.secondary : colors.primary }]}>
                 {meta.label}
               </Text>
             </Pressable>
@@ -349,11 +349,11 @@ function EventDetailSheet({
           <View style={{ flexDirection: "row", gap: 16 }}>
             <Pressable onPress={handleTogglePublish} disabled={publishing} hitSlop={10}>
               {publishing
-                ? <ActivityIndicator size="small" color={"#1E3A8A"} />
+                ? <ActivityIndicator size="small" color={colors.primary} />
                 : <Ionicons
                     name={ev.is_active ? "eye-off-outline" : "eye-outline"}
                     size={22}
-                    color={ev.is_active ? "#6B7280" : "#1E3A8A"}
+                    color={ev.is_active ? "#6B7280" : colors.primary}
                   />
               }
             </Pressable>
@@ -364,7 +364,7 @@ function EventDetailSheet({
         </View>
 
         {loadingDetail ? (
-          <ActivityIndicator size="large" color={"#1E3A8A"} style={{ marginTop: 60 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 60 }} />
         ) : (
           <ScrollView
             contentContainerStyle={{ paddingBottom: 60 }}
@@ -378,7 +378,7 @@ function EventDetailSheet({
                 resizeMode="cover"
               />
             ) : (
-              <View style={[S.bannerPlaceholder, { backgroundColor: "#1E3A8A" }]}>
+              <View style={[S.bannerPlaceholder, { backgroundColor: colors.primary }]}>
                 <Ionicons name="calendar" size={48} color="rgba(255,255,255,0.3)" />
                 <Text style={S.bannerPlaceholderCat}>
                   {(CAT_META[ev.category as Category] ?? CAT_META.general).label.toUpperCase()}
@@ -429,7 +429,7 @@ function EventDetailSheet({
                   <SectionHead icon="location-outline" title="Location" />
                   {ev.online_event ? (
                     <View style={[S.locationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <Ionicons name="videocam-outline" size={20} color={"#1E3A8A"} />
+                      <Ionicons name="videocam-outline" size={20} color={colors.primary} />
                       <View style={{ flex: 1 }}>
                         <Text style={[S.locationVenue, { color: colors.foreground }]}>Online Event</Text>
                         {ev.website_url ? (
@@ -441,7 +441,7 @@ function EventDetailSheet({
                     </View>
                   ) : (
                     <View style={[S.locationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <Ionicons name="business-outline" size={20} color={"#1E3A8A"} />
+                      <Ionicons name="business-outline" size={20} color={colors.primary} />
                       <View style={{ flex: 1 }}>
                         {ev.location ? (
                           <Text style={[S.locationVenue, { color: colors.foreground }]}>{ev.location}</Text>
@@ -467,7 +467,7 @@ function EventDetailSheet({
                   style={S.websiteRow}
                   onPress={() => Linking.openURL(ev.website_url!)}
                 >
-                  <Ionicons name="link-outline" size={16} color={"#1E3A8A"} />
+                  <Ionicons name="link-outline" size={16} color={colors.primary} />
                   <Text style={S.websiteText} numberOfLines={1}>{ev.website_url}</Text>
                   <Ionicons name="open-outline" size={14} color="#6B7280" />
                 </Pressable>
@@ -542,7 +542,7 @@ function EventDetailSheet({
                 </View>
               ) : (
                 <Pressable style={S.addRowBtn} onPress={() => setAddDateOpen(true)}>
-                  <Ionicons name="add-circle-outline" size={16} color={"#1E3A8A"} />
+                  <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
                   <Text style={S.addRowBtnText}>Add Date</Text>
                 </Pressable>
               )}
@@ -619,7 +619,7 @@ function EventDetailSheet({
                 </View>
               ) : (
                 <Pressable style={S.addRowBtn} onPress={() => setAddTypeOpen(true)}>
-                  <Ionicons name="add-circle-outline" size={16} color={"#1E3A8A"} />
+                  <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
                   <Text style={S.addRowBtnText}>Add Ticket Type</Text>
                 </Pressable>
               )}
@@ -832,7 +832,7 @@ function CreateEventModal({
             <Switch
               value={onlineEvent}
               onValueChange={setOnlineEvent}
-              trackColor={{ true: "#1E3A8A", false: "#D1D5DB" }}
+              trackColor={{ true: colors.primary, false: "#D1D5DB" }}
               thumbColor="#FFF"
             />
           </View>
@@ -864,7 +864,7 @@ function CreateEventModal({
                   style={S.navigatePreviewBtn}
                   onPress={() => openMaps(address.trim() || venueName.trim())}
                 >
-                  <Ionicons name="navigate" size={14} color={"#1E3A8A"} />
+                  <Ionicons name="navigate" size={14} color={colors.primary} />
                   <Text style={S.navigatePreviewText}>Preview in Maps</Text>
                 </Pressable>
               ) : null}
@@ -933,7 +933,7 @@ function CreateEventModal({
               style={[S.ticketRow, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
               <View style={S.ticketRowLeft}>
-                <Ionicons name="ticket-outline" size={14} color={"#FBBF24"} />
+                <Ionicons name="ticket-outline" size={14} color={colors.secondary} />
                 <View style={{ flex: 1 }}>
                   <Text style={[S.ticketName, { color: colors.foreground }]}>{t.name}</Text>
                   <Text style={[S.ticketMeta, { color: colors.mutedForeground }]}>
@@ -998,7 +998,7 @@ function CreateEventModal({
             </View>
           ) : (
             <Pressable style={S.addRowBtn} onPress={() => setShowTicketForm(true)}>
-              <Ionicons name="add-circle-outline" size={16} color={"#1E3A8A"} />
+              <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
               <Text style={S.addRowBtnText}>Add Ticket Type</Text>
             </Pressable>
           )}
@@ -1013,7 +1013,7 @@ function CreateEventModal({
               <ActivityIndicator color="#FFF" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={20} color={"#1E3A8A"} />
+                <Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} />
                 <Text style={S.createBtnText}>Create Event</Text>
               </>
             )}
@@ -1051,7 +1051,7 @@ function EventCard({
       {event.banner_url ? (
         <Image source={{ uri: event.banner_url }} style={S.cardBanner} resizeMode="cover" />
       ) : (
-        <View style={[S.cardBannerPlaceholder, { backgroundColor: "#1E3A8A" }]}>
+        <View style={[S.cardBannerPlaceholder, { backgroundColor: colors.primary }]}>
           <Ionicons name={meta.icon} size={22} color="rgba(255,255,255,0.5)" />
         </View>
       )}
@@ -1088,8 +1088,8 @@ function EventCard({
             </View>
           )}
           <View style={[S.pill, { backgroundColor: "#EFF6FF" }]}>
-            <Ionicons name={meta.icon} size={10} color={"#1E3A8A"} />
-            <Text style={[S.pillText, { color: "#1E3A8A" }]}>{meta.label}</Text>
+            <Ionicons name={meta.icon} size={10} color={colors.primary} />
+            <Text style={[S.pillText, { color: colors.primary }]}>{meta.label}</Text>
           </View>
           {dates > 0 && (
             <View style={[S.pill, { backgroundColor: "#F3F4F6" }]}>
@@ -1153,7 +1153,7 @@ export default function AdminEventsScreen() {
 
       {loading ? (
         <View style={S.loader}>
-          <ActivityIndicator size="large" color={"#1E3A8A"} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <ScrollView
@@ -1162,7 +1162,7 @@ export default function AdminEventsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); void load(); }}
-              tintColor={"#1E3A8A"}
+              tintColor={colors.primary}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -1177,7 +1177,7 @@ export default function AdminEventsScreen() {
                 Create your first event — set dates, sell tickets, and manage attendees.
               </Text>
               <Pressable style={S.emptyCreateBtn} onPress={() => setShowCreate(true)}>
-                <Ionicons name="add-circle-outline" size={18} color={"#1E3A8A"} />
+                <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
                 <Text style={S.emptyCreateBtnText}>Create Event</Text>
               </Pressable>
             </View>

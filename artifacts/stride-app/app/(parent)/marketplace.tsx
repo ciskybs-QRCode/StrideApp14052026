@@ -35,16 +35,16 @@ import { api, type MarketplaceProduct, type ShopLink } from "@/lib/api";
 
 type CategoryKey = "insurance" | "equipment" | "apparel" | "accessories" | "services";
 
-const CATEGORY_META: Record<CategoryKey | string, { icon: React.ComponentProps<typeof Ionicons>["name"]; color: string; bg: string; label: string }> = {
-  insurance:   { icon: "shield-checkmark", color: "#1E3A8A", bg: "#DBEAFE",  label: "Insurance"   },
-  equipment:   { icon: "barbell-outline",  color: "#1E3A8A", bg: "#DBEAFE",  label: "Equipment"   },
-  apparel:     { icon: "shirt-outline",    color: "#1E3A8A", bg: "#DBEAFE",  label: "Apparel"     },
-  accessories: { icon: "bag-handle",       color: "#1E3A8A", bg: "#DBEAFE",  label: "Accessories" },
-  services:    { icon: "sparkles",         color: "#1E3A8A", bg: "#DBEAFE",  label: "Services"    },
-};
+const getCategoryMeta = (primary: string): Record<CategoryKey | string, { icon: React.ComponentProps<typeof Ionicons>["name"]; color: string; bg: string; label: string }> => ({
+  insurance:   { icon: "shield-checkmark", color: primary, bg: "#DBEAFE",  label: "Insurance"   },
+  equipment:   { icon: "barbell-outline",  color: primary, bg: "#DBEAFE",  label: "Equipment"   },
+  apparel:     { icon: "shirt-outline",    color: primary, bg: "#DBEAFE",  label: "Apparel"     },
+  accessories: { icon: "bag-handle",       color: primary, bg: "#DBEAFE",  label: "Accessories" },
+  services:    { icon: "sparkles",         color: primary, bg: "#DBEAFE",  label: "Services"    },
+});
 
 function catMeta(cat: string) {
-  return CATEGORY_META[cat] ?? { icon: "pricetag-outline" as const, color: "#6B7280", bg: "#F3F4F6", label: cat };
+  return getCategoryMeta("#1E3A8A")[cat] ?? { icon: "pricetag-outline" as const, color: "#6B7280", bg: "#F3F4F6", label: cat };
 }
 
 function formatPrice(cents: number, currency: string) {
@@ -60,6 +60,7 @@ function formatPrice(cents: number, currency: string) {
 
 export default function MarketplaceScreen() {
   const colors = useColors();
+  const CATEGORY_META = getCategoryMeta(colors.primary);
   const S = make_S(colors.primary, colors.secondary);
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -142,7 +143,7 @@ export default function MarketplaceScreen() {
   if (loading) {
     return (
       <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28) }]}>
-        <ActivityIndicator size="large" color={"#1E3A8A"} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading marketplace…</Text>
       </View>
     );
@@ -174,7 +175,7 @@ export default function MarketplaceScreen() {
           <View style={S.section}>
             <View style={S.sectionHeader}>
               <View style={S.shopBadgeRow}>
-                <Ionicons name="bag-handle" size={16} color={"#1E3A8A"} />
+                <Ionicons name="bag-handle" size={16} color={colors.primary} />
                 <Text style={S.shopBadgeText}>SHOP</Text>
               </View>
               <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Tap to open in browser</Text>
@@ -357,7 +358,7 @@ function VerifiedCard({ product, colors, onPress }: {
           <Text style={S.verifiedCardPrice}>{formatPrice(product.price_cents, product.currency)}</Text>
           <View style={S.verifiedCardCta}>
             <Text style={S.verifiedCardCtaText}>Explore</Text>
-            <Ionicons name="chevron-forward" size={13} color={"#1E3A8A"} />
+            <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </View>
         </View>
       </View>

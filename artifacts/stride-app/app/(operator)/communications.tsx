@@ -175,7 +175,7 @@ export default function OperatorCommunications() {
         onBack={() => router.navigate("/(operator)/workspace" as never)}
         right={
           <Pressable
-            style={[styles.composeBtn, { backgroundColor: "#1E3A8A" }]}
+            style={[styles.composeBtn, { backgroundColor: colors.primary }]}
             onPress={() => setShowCompose(true)}
             hitSlop={8}
           >
@@ -199,7 +199,7 @@ export default function OperatorCommunications() {
               Use Compose to broadcast announcements, scripts, videos, or files to members and staff.
             </Text>
             <Pressable
-              style={[styles.emptyActionBtn, { backgroundColor: "#1E3A8A" }]}
+              style={[styles.emptyActionBtn, { backgroundColor: colors.primary }]}
               onPress={() => setShowCompose(true)}
             >
               <Ionicons name="create-outline" size={18} color="#FFF" />
@@ -212,12 +212,12 @@ export default function OperatorCommunications() {
             {sent.map(s => (
               <View key={s.id} style={[styles.msgCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.msgIconWrap, {
-                  backgroundColor: s.urgent ? "#FEF2F2" : "#1E3A8A" + "18",
+                  backgroundColor: s.urgent ? "#FEF2F2" : colors.primary + "18",
                 }]}>
                   <Ionicons
                     name={s.urgent ? "alert-circle-outline" : "megaphone-outline"}
                     size={24}
-                    color={s.urgent ? "#EF4444" : "#1E3A8A"}
+                    color={s.urgent ? "#EF4444" : colors.primary}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -301,8 +301,8 @@ export default function OperatorCommunications() {
                   key={mode}
                   style={[
                     styles.recipientChip,
-                    { borderColor: recipientMode === mode ? "#1E3A8A" : "#D1D9F0" },
-                    recipientMode === mode && { backgroundColor: "#1E3A8A" },
+                    { borderColor: recipientMode === mode ? colors.primary : "#D1D9F0" },
+                    recipientMode === mode && { backgroundColor: colors.primary },
                   ]}
                   onPress={() => setRecipientMode(mode)}
                 >
@@ -426,7 +426,7 @@ export default function OperatorCommunications() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
                   style={({ pressed }) => ({
-                    backgroundColor: "#1E3A8A",
+                    backgroundColor: colors.primary,
                     borderRadius: 10,
                     paddingHorizontal: 14,
                     paddingVertical: 10,
@@ -440,7 +440,7 @@ export default function OperatorCommunications() {
 
             {uploading && (
               <View style={[styles.attachRow, { backgroundColor: colors.card, marginBottom: 6 }]}>
-                <ActivityIndicator size="small" color={"#1E3A8A"} />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={[styles.attachName, { color: colors.mutedForeground }]}>Uploading...</Text>
               </View>
             )}

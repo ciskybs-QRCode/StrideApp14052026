@@ -251,10 +251,10 @@ export default function SessionsScreen() {
         return (
           <Pressable
             key={s.id}
-            style={[styles.sessionTab, active && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
+            style={[styles.sessionTab, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
             onPress={() => setSelectedId(s.id)}
           >
-            <Text style={[styles.sessionTabDisc, { color: active ? "#FBBF24" : colors.mutedForeground }]}>
+            <Text style={[styles.sessionTabDisc, { color: active ? colors.secondary : colors.mutedForeground }]}>
               {s.disciplines?.name ?? "Session"}
             </Text>
             <Text style={[styles.sessionTabTime, { color: active ? "#FFFFFF" : colors.foreground }]}>
@@ -290,7 +290,7 @@ export default function SessionsScreen() {
         }]}>
           <Text style={[styles.avatarText, {
             color: child.status === "present"
-              ? (child.check_in_method === "qr" ? "#15803D" : "#1E3A8A")
+              ? (child.check_in_method === "qr" ? "#15803D" : colors.primary)
               : child.status === "signed_out" ? "#6B7280" : "#DC2626"
           }]}>
             {child.first_name[0]}{child.last_name[0]}
@@ -311,7 +311,7 @@ export default function SessionsScreen() {
               </View>
             ) : null}
             <View style={styles.starsBadge}>
-              <Ionicons name="star" size={10} color={"#FBBF24"} />
+              <Ionicons name="star" size={10} color={colors.secondary} />
               <Text style={styles.starsText}>{child.gold_stars}</Text>
             </View>
           </View>
@@ -342,7 +342,7 @@ export default function SessionsScreen() {
   if (sessionsLoading) {
     return (
       <View style={[styles.centred, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={"#1E3A8A"} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 13 }}>Loading sessions…</Text>
       </View>
     );
@@ -359,7 +359,7 @@ export default function SessionsScreen() {
             There are no scheduled classes for today.
           </Text>
           <Pressable
-            style={[styles.goCalBtn, { backgroundColor: "#1E3A8A" }]}
+            style={[styles.goCalBtn, { backgroundColor: colors.primary }]}
             onPress={() => router.push("/(operator)/calendar")}
           >
             <Ionicons name="calendar" size={16} color="#FFF" />
@@ -390,7 +390,7 @@ export default function SessionsScreen() {
               </View>
               <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
               <View style={styles.summaryItem}>
-                <Text style={[styles.summaryNum, { color: "#1E3A8A" }]}>{roster.length}</Text>
+                <Text style={[styles.summaryNum, { color: colors.primary }]}>{roster.length}</Text>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Enrolled</Text>
               </View>
             </View>
@@ -399,14 +399,14 @@ export default function SessionsScreen() {
           {/* Roster list */}
           {rosterLoading ? (
             <View style={[styles.centred, { flex: 1 }]}>
-              <ActivityIndicator size="large" color={"#1E3A8A"} />
+              <ActivityIndicator size="large" color={colors.primary} />
             </View>
           ) : (
             <ScrollView
               style={{ flex: 1 }}
               contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 140 }]}
               showsVerticalScrollIndicator={false}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={"#1E3A8A"} />}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             >
               {roster.length === 0 ? (
                 <View style={[styles.centred, { paddingVertical: 60 }]}>
@@ -438,9 +438,9 @@ export default function SessionsScreen() {
                 disabled={signingOut}
               >
                 {signingOut ? (
-                  <ActivityIndicator size="small" color={"#1E3A8A"} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Ionicons name="exit-outline" size={20} color={"#1E3A8A"} />
+                  <Ionicons name="exit-outline" size={20} color={colors.primary} />
                 )}
                 <Text style={styles.signOutBtnText}>
                   {signingOut ? "Signing Out…" : `Session Sign-Out (${presentCount} Active)`}

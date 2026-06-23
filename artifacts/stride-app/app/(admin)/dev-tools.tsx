@@ -223,7 +223,7 @@ function SandboxCard({
             { label: "Courses",  value: status.courseCount },
           ].map(c => (
             <View key={c.label} style={[styles.countChip, { backgroundColor: colors.background }]}>
-              <Text style={[styles.countNum, { color: "#1E3A8A" }]}>{c.value}</Text>
+              <Text style={[styles.countNum, { color: colors.primary }]}>{c.value}</Text>
               <Text style={[styles.countLbl, { color: colors.mutedForeground }]}>{c.label}</Text>
             </View>
           ))}
@@ -566,7 +566,7 @@ export default function DevToolsScreen() {
                 <RefreshControl
                   refreshing={logRefreshing}
                   onRefresh={() => fetchLog(true)}
-                  tintColor={"#1E3A8A"}
+                  tintColor={colors.primary}
                 />
               }
             />
@@ -583,7 +583,7 @@ export default function DevToolsScreen() {
             { icon: "lock-closed-outline" as const, text: "All /dev/* endpoints return 403 in production. The screen itself renders a hard block outside __DEV__." },
           ].map((item, i) => (
             <View key={i} style={[styles.auditRow, i < 3 ? { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth } : {}]}>
-              <Ionicons name={item.icon} size={16} color={"#1E3A8A"} style={styles.auditIcon} />
+              <Ionicons name={item.icon} size={16} color={colors.primary} style={styles.auditIcon} />
               <Text style={[styles.auditText, { color: colors.mutedForeground }]}>{item.text}</Text>
             </View>
           ))}

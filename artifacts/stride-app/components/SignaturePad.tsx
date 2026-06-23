@@ -24,7 +24,7 @@ export function SignaturePad({
 }: SignaturePadProps) {
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
-  const effectiveStrokeColor = strokeColor ?? "#1E3A8A";
+  const effectiveStrokeColor = strokeColor ?? colors.primary;
   const [completedPaths, setCompletedPaths] = useState<string[]>([]);
   const currentPath = useRef("");
   const [drawTick, setDrawTick] = useState(0);

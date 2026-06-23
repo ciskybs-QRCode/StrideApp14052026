@@ -224,9 +224,9 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
           disabled={uploading}
         >
           {uploading ? (
-            <ActivityIndicator size="small" color={"#1E3A8A"} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Ionicons name="cloud-upload-outline" size={18} color={"#1E3A8A"} />
+            <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
           )}
           <Text style={[pm.uploadBtnText, { color: colors.primary }]}>
             {uploading ? "Uploading…" : "PDF / DOC / MP3"}
@@ -327,17 +327,17 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
   return (
     <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <Ionicons name="list-outline" size={15} color={"#1E3A8A"} />
-        <Text style={{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" }}>Waitlist</Text>
-        <View style={{ backgroundColor: "#FBBF24", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-          <Text style={{ fontSize: 11, fontWeight: "800", color: "#1E3A8A" }}>{count}</Text>
+        <Ionicons name="list-outline" size={15} color={colors.primary} />
+        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>Waitlist</Text>
+        <View style={{ backgroundColor: colors.secondary, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+          <Text style={{ fontSize: 11, fontWeight: "800", color: colors.primary }}>{count}</Text>
         </View>
       </View>
       {waitlist.map((entry, idx) => (
         <View key={entry.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6,
           borderBottomWidth: idx < waitlist.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
           <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>{idx + 1}</Text>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{idx + 1}</Text>
           </View>
           <Text style={{ flex: 1, fontSize: 13, fontWeight: "500", color: colors.foreground }} numberOfLines={1}>
             {entry.member_name}
@@ -352,7 +352,7 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
       {isFull && waitlist.every(e => e.status !== "offered") && (
         <Pressable
           style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-            backgroundColor: "#1E3A8A", borderRadius: 10, paddingVertical: 10, marginTop: 10,
+            backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 10, marginTop: 10,
             opacity: offerLoading ? 0.7 : 1 }}
           disabled={offerLoading}
           onPress={async () => {
@@ -371,9 +371,9 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
             }
           }}
         >
-          {offerLoading ? <ActivityIndicator size="small" color={"#FBBF24"} /> : (
-            <><Ionicons name="person-add-outline" size={15} color={"#FBBF24"} />
-            <Text style={{ fontSize: 13, fontWeight: "700", color: "#FBBF24" }}>Offer Spot to Next</Text></>
+          {offerLoading ? <ActivityIndicator size="small" color={colors.secondary} /> : (
+            <><Ionicons name="person-add-outline" size={15} color={colors.secondary} />
+            <Text style={{ fontSize: 13, fontWeight: "700", color: colors.secondary }}>Offer Spot to Next</Text></>
           )}
         </Pressable>
       )}
@@ -386,7 +386,7 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
             { label: "Accepted",  value: analytics.total_accepted,    color: "#166534" },
             { label: "Declined",  value: analytics.total_declined,    color: "#991B1B" },
             { label: "Refusal",   value: `${analytics.refusal_rate}%`, color: "#92400E" },
-            { label: "Avg wait",  value: analytics.avg_wait_days != null ? `${analytics.avg_wait_days}d` : "—", color: "#1E3A8A" },
+            { label: "Avg wait",  value: analytics.avg_wait_days != null ? `${analytics.avg_wait_days}d` : "—", color: colors.primary },
           ].map(stat => (
             <View key={stat.label} style={{ backgroundColor: colors.background, borderRadius: 8,
               paddingHorizontal: 10, paddingVertical: 5, alignItems: "center" }}>
@@ -513,10 +513,10 @@ export default function OperatorCoursesScreen() {
                     <Ionicons name="alert-circle-outline" size={16} color="#D97706" />
                     <Text style={{ flex: 1, fontSize: 12, color: "#92400E", fontWeight: "600" }}>Pending your confirmation</Text>
                     <Pressable
-                      style={{ backgroundColor: "#1E3A8A", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 }}
+                      style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 }}
                       onPress={() => acceptAssignment(course.id, course.name)}
                     >
-                      <Text style={{ fontSize: 12, fontWeight: "800", color: "#FBBF24" }}>Accept Assignment</Text>
+                      <Text style={{ fontSize: 12, fontWeight: "800", color: colors.secondary }}>Accept Assignment</Text>
                     </Pressable>
                   </View>
                 )}
@@ -524,7 +524,7 @@ export default function OperatorCoursesScreen() {
                 {/* Course header row */}
                 <Pressable style={styles.courseHeader} onPress={() => toggleCourse(course.id)}>
                   <View style={[styles.courseIconBox, { backgroundColor: isAccepted ? "#D1FAE5" : "#DBEAFE" }]}>
-                    <Ionicons name="school" size={22} color={isAccepted ? "#059669" : "#1E3A8A"} />
+                    <Ionicons name="school" size={22} color={isAccepted ? "#059669" : colors.primary} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[styles.courseName, { color: colors.foreground }]} numberOfLines={1}>{course.name}</Text>
@@ -541,8 +541,8 @@ export default function OperatorCoursesScreen() {
                     </View>
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
-                    <View style={[styles.levelBadge, { backgroundColor: `"#1E3A8A"18` }]}>
-                      <Text style={[styles.levelText, { color: "#1E3A8A" }]}>{course.level}</Text>
+                    <View style={[styles.levelBadge, { backgroundColor: `colors.primary18` }]}>
+                      <Text style={[styles.levelText, { color: colors.primary }]}>{course.level}</Text>
                     </View>
                     <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
                   </View>
@@ -552,8 +552,8 @@ export default function OperatorCoursesScreen() {
                 {isExpanded && (
                   <View style={[styles.materialsPanel, { borderTopColor: colors.border }]}>
                     {/* Course Details */}
-                    <Text style={[styles.detailsHeader, { color: "#1E3A8A" }]}>Course Details</Text>
-                    <View style={[styles.detailsGrid, { backgroundColor: `"#1E3A8A"06`, borderRadius: 12, padding: 12 }]}>
+                    <Text style={[styles.detailsHeader, { color: colors.primary }]}>Course Details</Text>
+                    <View style={[styles.detailsGrid, { backgroundColor: `colors.primary06`, borderRadius: 12, padding: 12 }]}>
                       {[
                         { icon: "calendar-outline" as const,  label: "Schedule",  value: course.schedule || "—" },
                         { icon: "location-outline" as const,  label: "Location",  value: course.location || "—" },
@@ -564,7 +564,7 @@ export default function OperatorCoursesScreen() {
                       ].map(({ icon, label, value }) => (
                         <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: `${colors.border}60` }}>
                           <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
-                            <Ionicons name={icon} size={15} color={"#1E3A8A"} />
+                            <Ionicons name={icon} size={15} color={colors.primary} />
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</Text>
@@ -578,7 +578,7 @@ export default function OperatorCoursesScreen() {
                         <View style={{ paddingTop: 8 }}>
                           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
                             <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: "600" }}>Class Capacity</Text>
-                            <Text style={{ fontSize: 11, color: "#1E3A8A", fontWeight: "800" }}>
+                            <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "800" }}>
                               {Math.round((course.enrolled / course.capacity) * 100)}% full
                             </Text>
                           </View>
@@ -586,7 +586,7 @@ export default function OperatorCoursesScreen() {
                             <View style={{
                               height: 6,
                               borderRadius: 3,
-                              backgroundColor: course.enrolled / course.capacity > 0.85 ? "#EF4444" : "#1E3A8A",
+                              backgroundColor: course.enrolled / course.capacity > 0.85 ? "#EF4444" : colors.primary,
                               width: `${Math.min(100, (course.enrolled / course.capacity) * 100)}%`,
                             }} />
                           </View>
@@ -596,8 +596,8 @@ export default function OperatorCoursesScreen() {
 
                     {/* Teaching Materials */}
                     <View style={styles.materialsPanelHeader}>
-                      <Ionicons name="folder-open-outline" size={16} color={"#1E3A8A"} />
-                      <Text style={[styles.materialsPanelTitle, { color: "#1E3A8A" }]}>Teaching Materials</Text>
+                      <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
+                      <Text style={[styles.materialsPanelTitle, { color: colors.primary }]}>Teaching Materials</Text>
                     </View>
                     <CourseMaterialsPanel courseId={course.id} courseName={course.name} colors={colors} />
 
@@ -667,8 +667,8 @@ export default function OperatorCoursesScreen() {
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
               {(["beginner","intermediate","advanced","all"] as WLevel[]).map(l => (
                 <Pressable key={l} onPress={() => setPropDraft(d => ({ ...d, level: l }))}
-                  style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.level === l ? "#1E3A8A" : colors.border, backgroundColor: propDraft.level === l ? "#DBEAFE" : colors.card }}>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.level === l ? "#1E3A8A" : colors.mutedForeground }}>
+                  style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.level === l ? colors.primary : colors.border, backgroundColor: propDraft.level === l ? "#DBEAFE" : colors.card }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.level === l ? colors.primary : colors.mutedForeground }}>
                     {l.charAt(0).toUpperCase() + l.slice(1)}
                   </Text>
                 </Pressable>
@@ -702,8 +702,8 @@ export default function OperatorCoursesScreen() {
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
               {DAYS.map(d => (
                 <Pressable key={d} onPress={() => setPropDraft(p => ({ ...p, day: d }))}
-                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.day === d ? "#1E3A8A" : colors.border, backgroundColor: propDraft.day === d ? "#DBEAFE" : colors.card }}>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.day === d ? "#1E3A8A" : colors.mutedForeground }}>{d}</Text>
+                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.day === d ? colors.primary : colors.border, backgroundColor: propDraft.day === d ? "#DBEAFE" : colors.card }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.day === d ? colors.primary : colors.mutedForeground }}>{d}</Text>
                 </Pressable>
               ))}
             </View>
@@ -719,8 +719,8 @@ export default function OperatorCoursesScreen() {
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
               {DURATION_OPTS.map(m => (
                 <Pressable key={m} onPress={() => setPropDraft(d => ({ ...d, duration: m }))}
-                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.duration === m ? "#1E3A8A" : colors.border, backgroundColor: propDraft.duration === m ? "#DBEAFE" : colors.card }}>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.duration === m ? "#1E3A8A" : colors.mutedForeground }}>
+                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: propDraft.duration === m ? colors.primary : colors.border, backgroundColor: propDraft.duration === m ? "#DBEAFE" : colors.card }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: propDraft.duration === m ? colors.primary : colors.mutedForeground }}>
                     {m < 60 ? `${m}m` : `${m / 60}h`}
                   </Text>
                 </Pressable>

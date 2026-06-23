@@ -196,7 +196,7 @@ export default function AdminMarketplaceScreen() {
 
   // ── Shop Links CRUD ───────────────────────────────────────────────────────
   const resetLinkForm = () => {
-    setLName(""); setLUrl(""); setLIcon("bag-handle-outline"); setLColor("#1E3A8A");
+    setLName(""); setLUrl(""); setLIcon("bag-handle-outline"); setLColor(colors.primary);
     setEditLink(null);
   };
 
@@ -268,7 +268,7 @@ export default function AdminMarketplaceScreen() {
       {/* ── Products tab ──────────────────────────────────────────────────── */}
       {tab === "products" && (
         loading ? (
-          <View style={S.loader}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
+          <View style={S.loader}><ActivityIndicator size="large" color={colors.primary} /></View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
             <View style={[S.infoCard, { backgroundColor: "#FEF9E7" }]}>
@@ -282,7 +282,7 @@ export default function AdminMarketplaceScreen() {
               <>
                 <View style={S.sectionHeader}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Ionicons name="checkmark-circle" size={16} color={"#1E3A8A"} />
+                    <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
                     <Text style={[S.sectionTitle, { color: colors.foreground }]}>Stride Verified Partners</Text>
                   </View>
                   <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Global products — read only</Text>
@@ -330,12 +330,12 @@ export default function AdminMarketplaceScreen() {
       {/* ── Shop Links tab ────────────────────────────────────────────────── */}
       {tab === "shop" && (
         linksLoading ? (
-          <View style={S.loader}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
+          <View style={S.loader}><ActivityIndicator size="large" color={colors.primary} /></View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
             <View style={[S.infoCard, { backgroundColor: "#EFF6FF" }]}>
-              <Ionicons name="bag-handle" size={20} color={"#1E3A8A"} />
-              <Text style={[S.infoText, { color: "#1E3A8A" }]}>
+              <Ionicons name="bag-handle" size={20} color={colors.primary} />
+              <Text style={[S.infoText, { color: colors.primary }]}>
                 <Text style={{ fontWeight: "800" }}>Shop Links</Text> — Add buttons that open your collections (or any URL) directly in the member{"'"}s browser. Members see these in the Marketplace under {"\""}Shop{"\""}.
               </Text>
             </View>
@@ -402,12 +402,12 @@ export default function AdminMarketplaceScreen() {
                     <Pressable
                       key={c}
                       style={[S.catChip, {
-                        backgroundColor: active ? "#1E3A8A" : colors.background,
-                        borderColor: active ? "#1E3A8A" : colors.border,
+                        backgroundColor: active ? colors.primary : colors.background,
+                        borderColor: active ? colors.primary : colors.border,
                       }]}
                       onPress={() => setFCat(c)}
                     >
-                      <Text style={[S.catChipText, { color: active ? "#FBBF24" : "#1E3A8A" }]}>
+                      <Text style={[S.catChipText, { color: active ? colors.secondary : colors.primary }]}>
                         {catMeta(c).label}
                       </Text>
                     </Pressable>
@@ -448,7 +448,7 @@ export default function AdminMarketplaceScreen() {
                   <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 6 }} />
                   <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "700" }}>Your association receives</Text>
-                    <Text style={{ fontWeight: "900", color: "#1E3A8A", fontSize: 12 }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (1 - (parseFloat(fFee) || 0) / 100)))}</Text>
+                    <Text style={{ fontWeight: "900", color: colors.primary, fontSize: 12 }}>{fmtPrice(Math.round(parseFloat(fPrice) * 100 * (1 - (parseFloat(fFee) || 0) / 100)))}</Text>
                   </View>
                 </View>
               )}
@@ -502,11 +502,11 @@ export default function AdminMarketplaceScreen() {
                 {LINK_ICONS.map(({ icon, label }) => (
                   <Pressable
                     key={icon}
-                    style={[S.iconChip, { borderColor: lIcon === icon ? "#1E3A8A" : colors.border, backgroundColor: lIcon === icon ? "#EEF2FF" : colors.background }]}
+                    style={[S.iconChip, { borderColor: lIcon === icon ? colors.primary : colors.border, backgroundColor: lIcon === icon ? "#EEF2FF" : colors.background }]}
                     onPress={() => setLIcon(icon)}
                   >
-                    <Ionicons name={icon} size={20} color={lIcon === icon ? "#1E3A8A" : colors.mutedForeground} />
-                    <Text style={[S.iconChipLabel, { color: lIcon === icon ? "#1E3A8A" : colors.mutedForeground }]}>{label}</Text>
+                    <Ionicons name={icon} size={20} color={lIcon === icon ? colors.primary : colors.mutedForeground} />
+                    <Text style={[S.iconChipLabel, { color: lIcon === icon ? colors.primary : colors.mutedForeground }]}>{label}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -575,7 +575,7 @@ function ProductRow({ product, colors, readOnly = false, onEdit, onRemove, onTog
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
           <Text style={[S.productTitle, { color: colors.foreground }]} numberOfLines={1}>{product.title}</Text>
-          {product.is_stride_verified && <Ionicons name="checkmark-circle" size={14} color={"#1E3A8A"} />}
+          {product.is_stride_verified && <Ionicons name="checkmark-circle" size={14} color={colors.primary} />}
           {!product.is_active && !readOnly && (
             <View style={{ backgroundColor: "#FEF3C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
               <Text style={{ fontSize: 10, fontWeight: "800", color: "#D97706" }}>DRAFT</Text>
@@ -596,7 +596,7 @@ function ProductRow({ product, colors, readOnly = false, onEdit, onRemove, onTog
           <Pressable onPress={onTogglePublish} style={{ marginTop: 6, alignSelf: "flex-start" }}>
             <Text style={{
               fontSize: 11, fontWeight: "700",
-              color: product.is_active ? "#6B7280" : "#1E3A8A",
+              color: product.is_active ? "#6B7280" : colors.primary,
               textDecorationLine: "underline",
             }}>
               {product.is_active ? "Unpublish" : "Publish"}

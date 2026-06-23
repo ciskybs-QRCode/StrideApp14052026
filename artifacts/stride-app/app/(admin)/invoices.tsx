@@ -360,9 +360,9 @@ export default function AdminInvoicesScreen() {
           <Pressable key={tab}
             onPress={() => { setActiveTab(tab); Haptics.selectionAsync(); }}
             style={{ flex: 1, paddingVertical: 12, alignItems: "center", borderBottomWidth: 2.5,
-              borderBottomColor: activeTab === tab ? "#1E3A8A" : "transparent" }}>
+              borderBottomColor: activeTab === tab ? colors.primary : "transparent" }}>
             <Text style={{ fontSize: 13, fontWeight: "700",
-              color: activeTab === tab ? "#1E3A8A" : colors.mutedForeground }}>
+              color: activeTab === tab ? colors.primary : colors.mutedForeground }}>
               {tab === "invoices" ? "Invoices" : "Payroll Report"}
             </Text>
           </Pressable>
@@ -375,7 +375,7 @@ export default function AdminInvoicesScreen() {
       >
         {/* ══════════════════════════════ INVOICES TAB ══════════════════════════ */}
         {activeTab === "invoices" && (<>
-        <Text style={[styles.pageTitle, { color: "#1E3A8A" }]}>Invoices</Text>
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>Invoices</Text>
         <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
           Operator payment requests for {orgName}
         </Text>
@@ -399,7 +399,7 @@ export default function AdminInvoicesScreen() {
         )}
 
         {/* ── Pending / Awaiting Payment ── */}
-        <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Awaiting Action</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Awaiting Action</Text>
 
         {pending.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -421,7 +421,7 @@ export default function AdminInvoicesScreen() {
                     <Text style={[styles.invoiceId, { color: colors.mutedForeground }]}>{inv.id}</Text>
                   </View>
                   <View>
-                    <Text style={[styles.amount, { color: "#1E3A8A" }]}>€{(inv.totalCents / 100).toFixed(2)}</Text>
+                    <Text style={[styles.amount, { color: colors.primary }]}>€{(inv.totalCents / 100).toFixed(2)}</Text>
                     <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
                       <Ionicons name={meta.icon} size={11} color={meta.text} />
                       <Text style={[styles.statusText, { color: meta.text }]}>{meta.label}</Text>
@@ -430,9 +430,9 @@ export default function AdminInvoicesScreen() {
                 </View>
 
                 {isLoading ? (
-                  <View style={[styles.payBtn, { backgroundColor: "#FBBF24", opacity: 0.85 }]}>
-                    <ActivityIndicator size="small" color={"#1E3A8A"} />
-                    <Text style={[styles.payBtnText, { color: "#1E3A8A" }]}>Processing…</Text>
+                  <View style={[styles.payBtn, { backgroundColor: colors.secondary, opacity: 0.85 }]}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={[styles.payBtnText, { color: colors.primary }]}>Processing…</Text>
                   </View>
                 ) : isPaying ? (
                   <View style={styles.confirmRow}>
@@ -451,12 +451,12 @@ export default function AdminInvoicesScreen() {
                   </View>
                 ) : (
                   <Pressable
-                    style={[styles.payBtn, { backgroundColor: "#FBBF24" }]}
+                    style={[styles.payBtn, { backgroundColor: colors.secondary }]}
                     onPress={() => { setConfirmPay(inv.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
                     disabled={!!payingId}
                   >
-                    <Ionicons name="flash" size={15} color={"#1E3A8A"} />
-                    <Text style={[styles.payBtnText, { color: "#1E3A8A" }]}>Pay Now</Text>
+                    <Ionicons name="flash" size={15} color={colors.primary} />
+                    <Text style={[styles.payBtnText, { color: colors.primary }]}>Pay Now</Text>
                   </Pressable>
                 )}
               </Animated.View>
@@ -467,7 +467,7 @@ export default function AdminInvoicesScreen() {
         {/* ── Payment History ── */}
         {history.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 8 }]}>History</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>History</Text>
             {history.map(inv => {
               const meta = STATUS_META[inv.status];
               return (
@@ -495,7 +495,7 @@ export default function AdminInvoicesScreen() {
 
         {/* ══════════════════════════════ PAYROLL REPORT TAB ══════════════════════ */}
         {activeTab === "payroll" && (<>
-          <Text style={[styles.pageTitle, { color: "#1E3A8A" }]}>Payroll Report</Text>
+          <Text style={[styles.pageTitle, { color: colors.primary }]}>Payroll Report</Text>
           <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
             Per-operator earnings breakdown · real DB data
           </Text>
@@ -505,13 +505,13 @@ export default function AdminInvoicesScreen() {
             backgroundColor: colors.card, borderRadius: 14, padding: 12, marginBottom: 16,
             borderWidth: 1, borderColor: colors.border }}>
             <Pressable onPress={prevMonth} style={{ padding: 6 }}>
-              <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
+              <Ionicons name="chevron-back" size={20} color={colors.primary} />
             </Pressable>
             <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>
               {fmtPayrollMonth(payrollMonth)}
             </Text>
             <Pressable onPress={nextMonth} style={{ padding: 6 }}>
-              <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
+              <Ionicons name="chevron-forward" size={20} color={colors.primary} />
             </Pressable>
           </View>
 
@@ -519,7 +519,7 @@ export default function AdminInvoicesScreen() {
           {payrollData && (
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
               {[
-                { label: "Invoiced", cents: payrollData.total_invoiced_cents, color: "#1E3A8A" },
+                { label: "Invoiced", cents: payrollData.total_invoiced_cents, color: colors.primary },
                 { label: "Paid",     cents: payrollData.total_paid_cents,     color: "#059669" },
                 { label: "Pending",  cents: payrollData.total_pending_cents,  color: "#D97706" },
               ].map(tile => (
@@ -578,8 +578,8 @@ export default function AdminInvoicesScreen() {
               <View style={{ flexDirection: "row", gap: 6 }}>
                 <Pressable onPress={() => { setPayrollFilter(null); Haptics.selectionAsync(); }}
                   style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
-                    backgroundColor: payrollFilter === null ? "#1E3A8A" : colors.muted,
-                    borderWidth: 1, borderColor: payrollFilter === null ? "#1E3A8A" : colors.border }}>
+                    backgroundColor: payrollFilter === null ? colors.primary : colors.muted,
+                    borderWidth: 1, borderColor: payrollFilter === null ? colors.primary : colors.border }}>
                   <Text style={{ fontSize: 12, fontWeight: "700",
                     color: payrollFilter === null ? "#FFF" : colors.mutedForeground }}>All</Text>
                 </Pressable>
@@ -587,8 +587,8 @@ export default function AdminInvoicesScreen() {
                   <Pressable key={o.profile_id}
                     onPress={() => { setPayrollFilter(o.profile_id === payrollFilter ? null : o.profile_id); Haptics.selectionAsync(); }}
                     style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
-                      backgroundColor: payrollFilter === o.profile_id ? "#1E3A8A" : colors.muted,
-                      borderWidth: 1, borderColor: payrollFilter === o.profile_id ? "#1E3A8A" : colors.border }}>
+                      backgroundColor: payrollFilter === o.profile_id ? colors.primary : colors.muted,
+                      borderWidth: 1, borderColor: payrollFilter === o.profile_id ? colors.primary : colors.border }}>
                     <Text style={{ fontSize: 12, fontWeight: "700",
                       color: payrollFilter === o.profile_id ? "#FFF" : colors.mutedForeground }}>{o.name}</Text>
                   </Pressable>
@@ -600,7 +600,7 @@ export default function AdminInvoicesScreen() {
           {/* Loading state */}
           {payrollLoading && (
             <View style={{ alignItems: "center", paddingVertical: 40, gap: 10 }}>
-              <ActivityIndicator size="large" color={"#1E3A8A"} />
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Loading payroll data…</Text>
             </View>
           )}
@@ -628,7 +628,7 @@ export default function AdminInvoicesScreen() {
                   borderWidth: 1, borderColor: colors.border }}>
                 {/* Header row */}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#1E3A8A",
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary,
                     alignItems: "center", justifyContent: "center" }}>
                     <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFF" }}>{initials}</Text>
                   </View>
@@ -639,7 +639,7 @@ export default function AdminInvoicesScreen() {
                     </Text>
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
-                    <Text style={{ fontSize: 18, fontWeight: "800", color: "#1E3A8A" }}>€{invoicedEur}</Text>
+                    <Text style={{ fontSize: 18, fontWeight: "800", color: colors.primary }}>€{invoicedEur}</Text>
                     <Text style={{ fontSize: 10, color: colors.mutedForeground }}>total invoiced</Text>
                   </View>
                 </View>
@@ -650,7 +650,7 @@ export default function AdminInvoicesScreen() {
                     backgroundColor: colors.background, borderRadius: 8, padding: 8, marginBottom: 5 }}>
                     <Ionicons name="musical-notes-outline" size={13} color={colors.mutedForeground} style={{ marginRight: 6 }} />
                     <Text style={{ flex: 1, fontSize: 12, fontWeight: "600", color: colors.foreground }}>{d.discipline_name}</Text>
-                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A" }}>
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>
                       €{(d.hourly_rate_cents / 100).toFixed(0)}/h
                     </Text>
                   </View>
@@ -705,10 +705,10 @@ export default function AdminInvoicesScreen() {
                         {/* Net / employer cost */}
                         <View style={{ borderRadius: 8, padding: 8, backgroundColor: "#EFF6FF",
                           alignItems: "center", gap: 2, borderWidth: 1, borderColor: "#BFDBFE", minWidth: 72, flex: 1 }}>
-                          <Text style={{ fontSize: 9, fontWeight: "800", color: "#1E3A8A", textTransform: "uppercase" }}>
+                          <Text style={{ fontSize: 9, fontWeight: "800", color: colors.primary, textTransform: "uppercase" }}>
                             {superIncl ? "Net to Op" : "Emp Cost"}
                           </Text>
-                          <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A" }}>
+                          <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>
                             €{superIncl ? (netOp / 100).toFixed(2) : (empCost / 100).toFixed(2)}
                           </Text>
                         </View>
@@ -724,10 +724,10 @@ export default function AdminInvoicesScreen() {
           <View style={{ borderTopWidth: 1, borderTopColor: "#E5E7EB", marginTop: 24, paddingTop: 20 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="sparkles" size={15} color={"#1E3A8A"} />
+                <Ionicons name="sparkles" size={15} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E3A8A" }}>AI Deduction Editor</Text>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: colors.primary }}>AI Deduction Editor</Text>
                 <Text style={{ fontSize: 11, color: "#6B7280" }}>Natural language payroll adjustments</Text>
               </View>
             </View>
@@ -754,14 +754,14 @@ export default function AdminInvoicesScreen() {
                 finally { setAiDedLoading(false); }
               }}
               style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12,
-                paddingVertical: 12, marginTop: 10, backgroundColor: "#1E3A8A" }}>
-              {aiDedLoading ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="sparkles" size={15} color={"#FBBF24"} />}
+                paddingVertical: 12, marginTop: 10, backgroundColor: colors.primary }}>
+              {aiDedLoading ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="sparkles" size={15} color={colors.secondary} />}
               <Text style={{ fontSize: 13, fontWeight: "800", color: "#FFF" }}>Apply AI Edit</Text>
             </Pressable>
 
             {aiDedResult && (
               <View style={{ marginTop: 14 }}>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#1E3A8A", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
                   AI Suggested Deductions
                 </Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>

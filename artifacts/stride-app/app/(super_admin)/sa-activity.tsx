@@ -128,13 +128,13 @@ export default function SAActivityScreen() {
       <ScreenHeader title="Recent Activity" subtitle="Platform events & financials" />
 
       {loading ? (
-        <View style={styles.loadingBox}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
+        <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={"#1E3A8A"} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={colors.primary} />}
         >
           {/* Financial Overview */}
           <Text style={styles.sectionLabel}>FINANCIAL OVERVIEW</Text>
@@ -161,7 +161,7 @@ export default function SAActivityScreen() {
                 onPress={() => setShowBreakdown(v => !v)}
               >
                 <Text style={styles.breakdownToggleText}>Per-org breakdown</Text>
-                <Ionicons name={showBreakdown ? "chevron-up" : "chevron-down"} size={14} color={"#1E3A8A"} />
+                <Ionicons name={showBreakdown ? "chevron-up" : "chevron-down"} size={14} color={colors.primary} />
               </Pressable>
               {showBreakdown && (
                 <View style={{ marginTop: 4 }}>

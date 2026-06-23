@@ -23,8 +23,8 @@ export default function MemberDashboard() {
 
   if (isLoading || !user) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1E3A8A" }}>
-        <ActivityIndicator color={"#FBBF24"} size="large" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.primary }}>
+        <ActivityIndicator color={colors.secondary} size="large" />
       </View>
     );
   }

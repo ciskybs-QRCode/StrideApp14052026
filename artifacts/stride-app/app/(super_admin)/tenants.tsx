@@ -286,7 +286,7 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
             ) : (
               <>
                 <View style={{ alignItems: "center", padding: 24, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" }}>
-                  <View style={em.headerIcon}><Ionicons name="business" size={28} color={"#1E3A8A"} /></View>
+                  <View style={em.headerIcon}><Ionicons name="business" size={28} color={colors.primary} /></View>
                   <Text style={em.title}>Add New Tenant</Text>
                   <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Creates an organisation account + admin user with a custom trial</Text>
                 </View>
@@ -299,8 +299,8 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                 <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 24 }}>
                   {PLANS.map(p => (
                     <Pressable key={p.key} style={[inp.planBtn, plan === p.key && inp.planBtnActive]} onPress={() => setPlan(p.key)}>
-                      <Text style={[inp.planLabel, plan === p.key && { color: "#1E3A8A" }]}>{p.label}</Text>
-                      <Text style={{ fontSize: 11, color: plan === p.key ? "#1E3A8A" : "#9CA3AF", marginTop: 2 }}>{p.price}</Text>
+                      <Text style={[inp.planLabel, plan === p.key && { color: colors.primary }]}>{p.label}</Text>
+                      <Text style={{ fontSize: 11, color: plan === p.key ? colors.primary : "#9CA3AF", marginTop: 2 }}>{p.price}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -310,15 +310,15 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                   <View style={{ flexDirection: "row", flex: 1, gap: 6 }}>
                     {TRIAL_UNITS.map(u => (
                       <Pressable key={u} style={[inp.unitChip, trialUnit === u && inp.unitChipActive]} onPress={() => setTrialUnit(u)}>
-                        <Text style={[{ fontSize: 11, fontWeight: "700", color: "#6B7280" }, trialUnit === u && { color: "#1E3A8A" }]}>{u}</Text>
+                        <Text style={[{ fontSize: 11, fontWeight: "700", color: "#6B7280" }, trialUnit === u && { color: colors.primary }]}>{u}</Text>
                       </Pressable>
                     ))}
                   </View>
                 </View>
                 <Pressable style={[inp.accordionToggle]} onPress={() => setShowAdvanced(v => !v)}>
-                  <Ionicons name="settings-outline" size={16} color={"#1E3A8A"} />
-                  <Text style={{ flex: 1, fontSize: 13, fontWeight: "800", color: "#1E3A8A" }}>Advanced Options</Text>
-                  <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={16} color={"#1E3A8A"} />
+                  <Ionicons name="settings-outline" size={16} color={colors.primary} />
+                  <Text style={{ flex: 1, fontSize: 13, fontWeight: "800", color: colors.primary }}>Advanced Options</Text>
+                  <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={16} color={colors.primary} />
                 </Pressable>
                 {showAdvanced && (
                   <View style={{ marginHorizontal: 24, marginTop: 10, backgroundColor: "#FAFAFA", borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", padding: 16, gap: 12 }}>
@@ -331,7 +331,7 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       {(["none", "fixed", "percent"] as DiscountType[]).map(d => (
                         <Pressable key={d} style={[inp.unitChip, discountType === d && inp.unitChipActive, { flex: 1 }]} onPress={() => setDiscountType(d)}>
-                          <Text style={[{ fontSize: 12, fontWeight: "700", color: "#6B7280" }, discountType === d && { color: "#1E3A8A" }]}>{d}</Text>
+                          <Text style={[{ fontSize: 12, fontWeight: "700", color: "#6B7280" }, discountType === d && { color: colors.primary }]}>{d}</Text>
                         </Pressable>
                       ))}
                     </View>
@@ -347,7 +347,7 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                 )}
                 {!!error && <View style={em.errorBox}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
                 <Pressable style={({ pressed }) => [em.ctaBtn, { opacity: pressed || saving ? 0.85 : 1 }]} onPress={() => void handleCreate()} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color={"#1E3A8A"} /> : <><Ionicons name="business" size={18} color={"#1E3A8A"} /><Text style={em.ctaText}>Create Tenant</Text></>}
+                  {saving ? <ActivityIndicator size="small" color={colors.primary} /> : <><Ionicons name="business" size={18} color={colors.primary} /><Text style={em.ctaText}>Create Tenant</Text></>}
                 </Pressable>
                 <Pressable style={({ pressed }) => [em.cancelBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={onClose}>
                   <Text style={em.cancelText}>Cancel</Text>
@@ -411,13 +411,13 @@ export default function TenantsScreen() {
       />
 
       {loading ? (
-        <View style={styles.loadingBox}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
+        <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={"#1E3A8A"} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={colors.primary} />}
         >
           {/* Search */}
           <View style={styles.searchRow}>
@@ -444,7 +444,7 @@ export default function TenantsScreen() {
             onPress={() => router.push("/(super_admin)/associations" as never)}
           >
             <Text style={styles.viewAllText}>View Full Tenant Details</Text>
-            <Ionicons name="chevron-forward" size={15} color={"#1E3A8A"} />
+            <Ionicons name="chevron-forward" size={15} color={colors.primary} />
           </Pressable>
         </ScrollView>
       )}

@@ -200,7 +200,7 @@ export default function PaywallScreen() {
       >
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color={"#1E3A8A"} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Loading billing status…</Text>
           </View>
         ) : (
@@ -223,7 +223,7 @@ export default function PaywallScreen() {
             {/* Billing Breakdown Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Ionicons name="receipt-outline" size={18} color={"#1E3A8A"} />
+                <Ionicons name="receipt-outline" size={18} color={colors.primary} />
                 <Text style={styles.cardTitle}>Billing Breakdown</Text>
               </View>
 
@@ -288,10 +288,10 @@ export default function PaywallScreen() {
           disabled={launching || loading}
         >
           {launching ? (
-            <ActivityIndicator size="small" color={"#1E3A8A"} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <>
-              <Ionicons name="card-outline" size={20} color={"#1E3A8A"} />
+              <Ionicons name="card-outline" size={20} color={colors.primary} />
               <Text style={styles.ctaBtnText}>Activate System Access & Link Card</Text>
             </>
           )}
@@ -309,7 +309,7 @@ export default function PaywallScreen() {
             disabled={checking}
           >
             {checking ? (
-              <ActivityIndicator size="small" color={"#1E3A8A"} />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Text style={styles.secondaryBtnText}>Refresh Status</Text>
             )}

@@ -163,7 +163,7 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Notification Preferences" onBack={onBack} />
         <View style={styles.centred}>
-          <ActivityIndicator size="large" color={"#1E3A8A"} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
@@ -194,13 +194,13 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
             </Text>
           </View>
           {saving === "reminders" ? (
-            <ActivityIndicator size="small" color={"#1E3A8A"} style={{ marginLeft: 8 }} />
+            <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />
           ) : (
             <Switch
               value={lessonOn}
               onValueChange={handleLessonToggle}
-              trackColor={{ false: "#D1D5DB", true: "#1E3A8A" }}
-              thumbColor={lessonOn ? "#FBBF24" : "#F3F4F6"}
+              trackColor={{ false: "#D1D5DB", true: colors.primary }}
+              thumbColor={lessonOn ? colors.secondary : "#F3F4F6"}
               ios_backgroundColor="#D1D5DB"
             />
           )}
@@ -238,7 +238,7 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
               value={emergencyOn}
               onValueChange={handleEmergencyToggle}
               trackColor={{ false: "#D1D5DB", true: "#EF4444" }}
-              thumbColor={emergencyOn ? "#1E3A8A" : "#F3F4F6"}
+              thumbColor={emergencyOn ? colors.primary : "#F3F4F6"}
               ios_backgroundColor="#D1D5DB"
             />
           )}

@@ -87,7 +87,7 @@ export default function TicketScannerScreen() {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <View style={styles.permBox}>
-          <Ionicons name="camera-outline" size={52} color={"#1E3A8A"} />
+          <Ionicons name="camera-outline" size={52} color={colors.primary} />
           <Text style={[styles.permTitle, { color: colors.text }]}>Camera Access Required</Text>
           <Text style={[styles.permDesc, { color: colors.mutedForeground }]}>
             The ticket scanner needs camera access to read QR codes at the door.
@@ -103,7 +103,7 @@ export default function TicketScannerScreen() {
   const isScanning = scanState === "scanning";
 
   const stateColor: Record<ScanState, string> = {
-    scanning:  "#1E3A8A",
+    scanning:  colors.primary,
     validating:"#D97706",
     valid:     "#059669",
     used:      "#6B7280",
@@ -184,7 +184,7 @@ export default function TicketScannerScreen() {
 
         {ticket && scanState !== "scanning" && scanState !== "validating" && (
           <View style={styles.ticketInfo}>
-            <Text style={[styles.ticketEventTitle, { color: "#1E3A8A" }]} numberOfLines={1}>
+            <Text style={[styles.ticketEventTitle, { color: colors.primary }]} numberOfLines={1}>
               {ticket.event_title ?? "Event"}
             </Text>
             {ticket.ticket_type_name ? (
@@ -256,7 +256,7 @@ export default function TicketScannerScreen() {
               style={({ pressed }) => [styles.scanAgainBtn, { opacity: pressed ? 0.8 : 1 }]}
               onPress={reset}
             >
-              <Ionicons name="qr-code-outline" size={16} color={"#1E3A8A"} />
+              <Ionicons name="qr-code-outline" size={16} color={colors.primary} />
               <Text style={styles.scanAgainText}>Scan Next Ticket</Text>
             </Pressable>
           )}
@@ -268,8 +268,6 @@ export default function TicketScannerScreen() {
 
 const CORNER_SIZE = 28;
 const CORNER_THICK = 4;
-const CORNER_COLOR = "#FBBF24";
-
 const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 20, paddingVertical: 14 },
@@ -288,10 +286,10 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
     marginLeft: -110, marginTop: -110,
   },
   corner: { position: "absolute", width: CORNER_SIZE, height: CORNER_SIZE },
-  tl: { top: 0, left: 0, borderTopWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderColor: CORNER_COLOR, borderTopLeftRadius: 6 },
-  tr: { top: 0, right: 0, borderTopWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderColor: CORNER_COLOR, borderTopRightRadius: 6 },
-  bl: { bottom: 0, left: 0, borderBottomWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderColor: CORNER_COLOR, borderBottomLeftRadius: 6 },
-  br: { bottom: 0, right: 0, borderBottomWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderColor: CORNER_COLOR, borderBottomRightRadius: 6 },
+  tl: { top: 0, left: 0, borderTopWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderColor: secondary, borderTopLeftRadius: 6 },
+  tr: { top: 0, right: 0, borderTopWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderColor: secondary, borderTopRightRadius: 6 },
+  bl: { bottom: 0, left: 0, borderBottomWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderColor: secondary, borderBottomLeftRadius: 6 },
+  br: { bottom: 0, right: 0, borderBottomWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderColor: secondary, borderBottomRightRadius: 6 },
 
   statusBar: { paddingVertical: 10, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", gap: 8 },
   statusText: { color: "#FFF", fontWeight: "700", fontSize: 14 },

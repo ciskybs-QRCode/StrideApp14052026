@@ -67,7 +67,7 @@ export default function GovernanceScreen() {
     return (
       <View style={[styles.restricted, { backgroundColor: colors.background }]}>
         <Ionicons name="lock-closed" size={48} color="#9CA3AF" />
-        <Text style={[styles.restrictedText, { color: "#FBBF24" }]}>
+        <Text style={[styles.restrictedText, { color: colors.secondary }]}>
           Access restricted to Super Administrators.
         </Text>
       </View>
@@ -144,13 +144,13 @@ export default function GovernanceScreen() {
           </View>
           <View style={styles.switchWrap}>
             {toggling ? (
-              <ActivityIndicator size="small" color={"#1E3A8A"} />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Switch
                 value={isOn}
                 onValueChange={handleMarketplaceToggle}
-                trackColor={{ false: "#D1D5DB", true: "#1E3A8A" }}
-                thumbColor={isOn ? "#FBBF24" : "#F9FAFB"}
+                trackColor={{ false: "#D1D5DB", true: colors.primary }}
+                thumbColor={isOn ? colors.secondary : "#F9FAFB"}
                 ios_backgroundColor="#D1D5DB"
               />
             )}
@@ -179,7 +179,7 @@ export default function GovernanceScreen() {
         </Text>
 
         {eventsLoading ? (
-          <ActivityIndicator color={"#1E3A8A"} style={{ marginTop: 20 }} />
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
         ) : events.length === 0 ? (
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
             No governance actions recorded yet.

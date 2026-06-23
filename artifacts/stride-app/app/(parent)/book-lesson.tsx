@@ -80,19 +80,19 @@ function StepIndicator({ current }: { current: Step }) {
         <React.Fragment key={s.key}>
           <View style={stepStyles.stepCol}>
             <View style={[stepStyles.dot, {
-              backgroundColor: i < idx ? "#1E3A8A" : i === idx ? "#FBBF24" : colors.muted,
-              borderColor: i <= idx ? "#1E3A8A" : colors.border,
+              backgroundColor: i < idx ? colors.primary : i === idx ? colors.secondary : colors.muted,
+              borderColor: i <= idx ? colors.primary : colors.border,
             }]}>
               {i < idx ? (
-                <Ionicons name="checkmark" size={12} color={"#1E3A8A"} />
+                <Ionicons name="checkmark" size={12} color={colors.primary} />
               ) : (
-                <Ionicons name={s.icon} size={12} color={i === idx ? "#1E3A8A" : colors.mutedForeground} />
+                <Ionicons name={s.icon} size={12} color={i === idx ? colors.primary : colors.mutedForeground} />
               )}
             </View>
-            <Text style={[stepStyles.stepLabel, { color: i <= idx ? "#1E3A8A" : colors.mutedForeground }]}>{s.label}</Text>
+            <Text style={[stepStyles.stepLabel, { color: i <= idx ? colors.primary : colors.mutedForeground }]}>{s.label}</Text>
           </View>
           {i < STEPS.length - 1 && (
-            <View style={[stepStyles.line, { backgroundColor: i < idx ? "#1E3A8A" : colors.border }]} />
+            <View style={[stepStyles.line, { backgroundColor: i < idx ? colors.primary : colors.border }]} />
           )}
         </React.Fragment>
       ))}
@@ -289,13 +289,13 @@ export default function BookLessonScreen() {
 
   if (confirmed) {
     return (
-      <View style={[styles.container, { backgroundColor: "#1E3A8A" }]}>
+      <View style={[styles.container, { backgroundColor: colors.primary }]}>
         <ScrollView
           contentContainerStyle={[styles.confirmedScroll, { paddingTop: insets.top > 0 ? insets.top + 40 : (Platform.OS === "ios" ? 88 : 68), paddingBottom: insets.bottom + 40 }]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.confirmedIcon, { backgroundColor: "#FBBF24" }]}>
-            <Ionicons name="checkmark-circle" size={56} color={"#1E3A8A"} />
+          <View style={[styles.confirmedIcon, { backgroundColor: colors.secondary }]}>
+            <Ionicons name="checkmark-circle" size={56} color={colors.primary} />
           </View>
           <Text style={styles.confirmedTitle}>Lesson Booked!</Text>
           <Text style={styles.confirmedSub}>Your request has been sent. You'll be notified when the operator confirms.</Text>
@@ -319,8 +319,8 @@ export default function BookLessonScreen() {
 
           {confirmed.qr_token && (
             <View style={[styles.qrBox, { backgroundColor: "#FFF" }]}>
-              <Ionicons name="qr-code" size={60} color={"#1E3A8A"} />
-              <Text style={[styles.qrLabel, { color: "#1E3A8A" }]}>Show this at your lesson</Text>
+              <Ionicons name="qr-code" size={60} color={colors.primary} />
+              <Text style={[styles.qrLabel, { color: colors.primary }]}>Show this at your lesson</Text>
               <Text style={[styles.qrToken, { color: "#6B7280" }]} selectable>{confirmed.qr_token}</Text>
             </View>
           )}
@@ -328,11 +328,11 @@ export default function BookLessonScreen() {
           <Text style={styles.cartNote}>This lesson has been added to your cart for payment.</Text>
 
           <Pressable
-            style={[styles.confirmedBtn, { backgroundColor: "#FBBF24" }]}
+            style={[styles.confirmedBtn, { backgroundColor: colors.secondary }]}
             onPress={() => router.replace("/(parent)/cart")}
           >
-            <Ionicons name="cart-outline" size={18} color={"#1E3A8A"} />
-            <Text style={[styles.confirmedBtnText, { color: "#1E3A8A" }]}>Go to Cart to Pay</Text>
+            <Ionicons name="cart-outline" size={18} color={colors.primary} />
+            <Text style={[styles.confirmedBtnText, { color: colors.primary }]}>Go to Cart to Pay</Text>
           </Pressable>
           <Pressable style={[styles.confirmedBtn, { backgroundColor: "rgba(255,255,255,0.15)", marginTop: 10 }]} onPress={() => router.replace("/(parent)/home")}>
             <Ionicons name="home-outline" size={18} color="#FFF" />
@@ -348,7 +348,7 @@ export default function BookLessonScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={"#1E3A8A"} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Loading available slots…</Text>
       </View>
     );
@@ -381,25 +381,25 @@ export default function BookLessonScreen() {
             {operators.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="person-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Operators Available</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Operators Available</Text>
                 <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Check back soon — operators haven't submitted availability yet.</Text>
               </View>
             ) : (
               operators.map(op => (
                 <Pressable
                   key={op.profileId}
-                  style={[styles.optionCard, { backgroundColor: colors.card, borderColor: selectedOperator?.profileId === op.profileId ? "#1E3A8A" : "transparent", borderWidth: 2 }]}
+                  style={[styles.optionCard, { backgroundColor: colors.card, borderColor: selectedOperator?.profileId === op.profileId ? colors.primary : "transparent", borderWidth: 2 }]}
                   onPress={() => { setSelectedOperator(op); setSelectedDiscipline(null); setSelectedLocation(null); setSelectedSlot(null); setStep("style"); }}
                 >
-                  <View style={[styles.avatarCircle, { backgroundColor: `"#FBBF24"80` }]}>
-                    <Ionicons name="person" size={26} color={"#1E3A8A"} />
+                  <View style={[styles.avatarCircle, { backgroundColor: `colors.secondary80` }]}>
+                    <Ionicons name="person" size={26} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.optionTitle, { color: colors.foreground }]}>{op.name}</Text>
                     {op.bio ? <Text style={[styles.optionSub, { color: colors.mutedForeground }]} numberOfLines={2}>{op.bio}</Text> : null}
                     <View style={[styles.profileTypeBadge, { backgroundColor: op.profileType === "paid" ? "#FEF9C3" : "#EFF6FF" }]}>
-                      <Ionicons name={op.profileType === "paid" ? "cash-outline" : "heart-outline"} size={11} color={op.profileType === "paid" ? "#1E3A8A" : "#FBBF24"} />
-                      <Text style={[styles.profileTypeText, { color: op.profileType === "paid" ? "#1E3A8A" : "#B45309" }]}>
+                      <Ionicons name={op.profileType === "paid" ? "cash-outline" : "heart-outline"} size={11} color={op.profileType === "paid" ? colors.primary : colors.secondary} />
+                      <Text style={[styles.profileTypeText, { color: op.profileType === "paid" ? colors.primary : "#B45309" }]}>
                         {op.profileType === "paid" ? "Professional" : "Volunteer"}
                       </Text>
                     </View>
@@ -417,23 +417,23 @@ export default function BookLessonScreen() {
             {disciplinesForOp.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="musical-notes-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Styles Available</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Styles Available</Text>
                 <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>This operator has no approved slots for any discipline.</Text>
               </View>
             ) : (
               disciplinesForOp.map(d => (
                 <Pressable
                   key={d.id}
-                  style={[styles.optionCard, { backgroundColor: colors.card, borderColor: selectedDiscipline?.id === d.id ? "#1E3A8A" : "transparent", borderWidth: 2 }]}
+                  style={[styles.optionCard, { backgroundColor: colors.card, borderColor: selectedDiscipline?.id === d.id ? colors.primary : "transparent", borderWidth: 2 }]}
                   onPress={() => { setSelectedDiscipline(d); setSelectedLocation(null); setSelectedSlot(null); setStep("location"); }}
                 >
-                  <View style={[styles.disciplineCircle, { backgroundColor: `"#FBBF24"60` }]}>
-                    <Ionicons name="musical-notes" size={24} color={"#1E3A8A"} />
+                  <View style={[styles.disciplineCircle, { backgroundColor: `colors.secondary60` }]}>
+                    <Ionicons name="musical-notes" size={24} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.optionTitle, { color: colors.foreground }]}>{d.name}</Text>
                     {d.description ? <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>{d.description}</Text> : null}
-                    <Text style={[styles.slotCount, { color: "#1E3A8A" }]}>
+                    <Text style={[styles.slotCount, { color: colors.primary }]}>
                       {filteredByOperator.filter(s => s.discipline?.id === d.id).length} available slot{filteredByOperator.filter(s => s.discipline?.id === d.id).length !== 1 ? "s" : ""}
                     </Text>
                   </View>
@@ -450,7 +450,7 @@ export default function BookLessonScreen() {
             {locationsForStyle.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="location-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Locations Available</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Locations Available</Text>
               </View>
             ) : (
               locationsForStyle.map(loc => {
@@ -458,15 +458,15 @@ export default function BookLessonScreen() {
                 return (
                   <Pressable
                     key={loc}
-                    style={[styles.optionCard, { backgroundColor: colors.card, borderColor: selectedLocation === loc ? "#1E3A8A" : "transparent", borderWidth: 2 }]}
+                    style={[styles.optionCard, { backgroundColor: colors.card, borderColor: selectedLocation === loc ? colors.primary : "transparent", borderWidth: 2 }]}
                     onPress={() => { setSelectedLocation(loc); setSelectedSlot(null); setStep("time"); }}
                   >
                     <View style={[styles.locationCircle, { backgroundColor: "#EFF6FF" }]}>
-                      <Ionicons name="location" size={24} color={"#1E3A8A"} />
+                      <Ionicons name="location" size={24} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.optionTitle, { color: colors.foreground }]}>{loc}</Text>
-                      <Text style={[styles.slotCount, { color: "#1E3A8A" }]}>{count} available slot{count !== 1 ? "s" : ""}</Text>
+                      <Text style={[styles.slotCount, { color: colors.primary }]}>{count} available slot{count !== 1 ? "s" : ""}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
                   </Pressable>
@@ -482,7 +482,7 @@ export default function BookLessonScreen() {
             {slotsForTime.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="time-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Time Slots Available</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Time Slots Available</Text>
               </View>
             ) : (
               slotsForTime.map(s => {
@@ -490,12 +490,12 @@ export default function BookLessonScreen() {
                 return (
                   <Pressable
                     key={s.id}
-                    style={[styles.timeCard, { backgroundColor: colors.card, borderColor: selectedSlot?.id === s.id ? "#1E3A8A" : "transparent", borderWidth: 2 }]}
+                    style={[styles.timeCard, { backgroundColor: colors.card, borderColor: selectedSlot?.id === s.id ? colors.primary : "transparent", borderWidth: 2 }]}
                     onPress={() => { setSelectedSlot(s); setStep("student"); }}
                   >
-                    <View style={[styles.timeBadge, { backgroundColor: `"#FBBF24"60` }]}>
-                      <Text style={[styles.timeHour, { color: "#1E3A8A" }]}>{fmtTime(s.start_time)}</Text>
-                      <Text style={[styles.timeDuration, { color: "#1E3A8A" }]}>{durationMins}min</Text>
+                    <View style={[styles.timeBadge, { backgroundColor: `colors.secondary60` }]}>
+                      <Text style={[styles.timeHour, { color: colors.primary }]}>{fmtTime(s.start_time)}</Text>
+                      <Text style={[styles.timeDuration, { color: colors.primary }]}>{durationMins}min</Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.optionTitle, { color: colors.foreground }]}>{fmtDate(s.slot_date)}</Text>
@@ -504,7 +504,7 @@ export default function BookLessonScreen() {
                       </Text>
                     </View>
                     <View style={{ alignItems: "flex-end", gap: 4 }}>
-                      <Text style={[styles.slotPrice, { color: "#1E3A8A" }]}>
+                      <Text style={[styles.slotPrice, { color: colors.primary }]}>
                         {s.parent_price_cents != null ? fmt(s.parent_price_cents) : "—"}
                       </Text>
                       <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
@@ -521,8 +521,8 @@ export default function BookLessonScreen() {
           <>
             {/* Summary card */}
             {selectedSlot && (
-              <View style={[styles.summaryCard, { backgroundColor: `"#FBBF24"30`, borderColor: "#1E3A8A", borderWidth: 1.5 }]}>
-                <Text style={[styles.summaryTitle, { color: "#1E3A8A" }]}>Booking Summary</Text>
+              <View style={[styles.summaryCard, { backgroundColor: `colors.secondary30`, borderColor: colors.primary, borderWidth: 1.5 }]}>
+                <Text style={[styles.summaryTitle, { color: colors.primary }]}>Booking Summary</Text>
                 {[
                   ["Operator", selectedOperator?.name ?? "—"],
                   ["Style", selectedDiscipline?.name ?? "—"],
@@ -539,23 +539,23 @@ export default function BookLessonScreen() {
               </View>
             )}
 
-            <Text style={[styles.sectionLabel, { color: "#1E3A8A" }]}>Select participants</Text>
+            <Text style={[styles.sectionLabel, { color: colors.primary }]}>Select participants</Text>
             <Text style={[styles.participantHint, { color: colors.mutedForeground }]}>Tap to select one or more people attending this session.</Text>
 
             {/* Parent — book for myself */}
             {user && (
               <Pressable
-                style={[styles.optionCard, { backgroundColor: selectedParticipants.has("self") ? `"#1E3A8A"12` : `"#FBBF24"18`, borderColor: selectedParticipants.has("self") ? "#1E3A8A" : "#FBBF24", borderWidth: 2 }]}
+                style={[styles.optionCard, { backgroundColor: selectedParticipants.has("self") ? `colors.primary12` : `colors.secondary18`, borderColor: selectedParticipants.has("self") ? colors.primary : colors.secondary, borderWidth: 2 }]}
                 onPress={() => toggleParticipant("self")}
               >
-                <View style={[styles.avatarCircle, { backgroundColor: selectedParticipants.has("self") ? "#1E3A8A" : "#FBBF24" }]}>
-                  <Ionicons name="person" size={22} color={selectedParticipants.has("self") ? "#FFF" : "#1E3A8A"} />
+                <View style={[styles.avatarCircle, { backgroundColor: selectedParticipants.has("self") ? colors.primary : colors.secondary }]}>
+                  <Ionicons name="person" size={22} color={selectedParticipants.has("self") ? "#FFF" : colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.optionTitle, { color: colors.foreground }]}>{user.name}</Text>
                   <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>Book for myself</Text>
                 </View>
-                <View style={[styles.checkbox, { borderColor: selectedParticipants.has("self") ? "#1E3A8A" : colors.border, backgroundColor: selectedParticipants.has("self") ? "#1E3A8A" : "transparent" }]}>
+                <View style={[styles.checkbox, { borderColor: selectedParticipants.has("self") ? colors.primary : colors.border, backgroundColor: selectedParticipants.has("self") ? colors.primary : "transparent" }]}>
                   {selectedParticipants.has("self") && <Ionicons name="checkmark" size={14} color="#FFF" />}
                 </View>
               </Pressable>
@@ -564,7 +564,7 @@ export default function BookLessonScreen() {
             {children.length === 0 && !user ? (
               <View style={styles.emptyCard}>
                 <Ionicons name="people-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Dependent Members Added</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Dependent Members Added</Text>
                 <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>Add a dependent member in "My Members" first.</Text>
               </View>
             ) : (
@@ -573,17 +573,17 @@ export default function BookLessonScreen() {
                 return (
                   <Pressable
                     key={child.id}
-                    style={[styles.optionCard, { backgroundColor: checked ? `"#1E3A8A"12` : colors.card, borderColor: checked ? "#1E3A8A" : "transparent", borderWidth: 2 }]}
+                    style={[styles.optionCard, { backgroundColor: checked ? `colors.primary12` : colors.card, borderColor: checked ? colors.primary : "transparent", borderWidth: 2 }]}
                     onPress={() => toggleParticipant(child.id)}
                   >
-                    <View style={[styles.avatarCircle, { backgroundColor: checked ? "#1E3A8A" : `"#FBBF24"60` }]}>
-                      <Ionicons name="person" size={22} color={checked ? "#FFF" : "#1E3A8A"} />
+                    <View style={[styles.avatarCircle, { backgroundColor: checked ? colors.primary : `colors.secondary60` }]}>
+                      <Ionicons name="person" size={22} color={checked ? "#FFF" : colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.optionTitle, { color: colors.foreground }]}>{child.name}</Text>
                       <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>Age {child.age} · {child.skillLevel ?? "Beginner"}</Text>
                     </View>
-                    <View style={[styles.checkbox, { borderColor: checked ? "#1E3A8A" : colors.border, backgroundColor: checked ? "#1E3A8A" : "transparent" }]}>
+                    <View style={[styles.checkbox, { borderColor: checked ? colors.primary : colors.border, backgroundColor: checked ? colors.primary : "transparent" }]}>
                       {checked && <Ionicons name="checkmark" size={14} color="#FFF" />}
                     </View>
                   </Pressable>
@@ -593,14 +593,14 @@ export default function BookLessonScreen() {
 
             {selectedParticipants.size > 0 && (
               <>
-                <View style={[styles.participantSummaryBox, { backgroundColor: `"#FBBF24"30`, borderColor: "#1E3A8A" }]}>
-                  <Ionicons name="people" size={16} color={"#1E3A8A"} />
-                  <Text style={[styles.participantSummaryText, { color: "#1E3A8A" }]}>
+                <View style={[styles.participantSummaryBox, { backgroundColor: `colors.secondary30`, borderColor: colors.primary }]}>
+                  <Ionicons name="people" size={16} color={colors.primary} />
+                  <Text style={[styles.participantSummaryText, { color: colors.primary }]}>
                     {selectedParticipants.size} participant{selectedParticipants.size !== 1 ? "s" : ""} · Total {selectedSlot?.parent_price_cents != null ? fmt(selectedSlot.parent_price_cents * selectedParticipants.size) : ""}
                   </Text>
                 </View>
                 <Pressable
-                  style={[styles.bookBtn, { backgroundColor: booking ? colors.border : "#1E3A8A" }]}
+                  style={[styles.bookBtn, { backgroundColor: booking ? colors.border : colors.primary }]}
                   onPress={handleBook}
                   disabled={booking}
                 >

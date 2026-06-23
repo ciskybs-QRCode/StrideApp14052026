@@ -194,7 +194,7 @@ export default function BeaconsScreen() {
   if (loading) {
     return (
       <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={"#1E3A8A"} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading BLE data…</Text>
       </View>
     );
@@ -355,10 +355,10 @@ export default function BeaconsScreen() {
                 disabled={isSimulating}
               >
                 {isSimulating
-                  ? <ActivityIndicator size="small" color={"#1E3A8A"} />
-                  : <Ionicons name="flash" size={14} color={"#1E3A8A"} />
+                  ? <ActivityIndicator size="small" color={colors.primary} />
+                  : <Ionicons name="flash" size={14} color={colors.primary} />
                 }
-                <Text style={[S.simulateBtnText, { color: "#1E3A8A" }]}>
+                <Text style={[S.simulateBtnText, { color: colors.primary }]}>
                   {isSimulating ? "Detecting…" : "Simulate Signal"}
                 </Text>
               </Pressable>
@@ -384,7 +384,7 @@ export default function BeaconsScreen() {
           const childName = student?.first_name ?? student?.name ?? `Child ${e.child_id}`;
           return (
             <View key={e.id} style={[S.recentRow, { backgroundColor: colors.card }]}>
-              <View style={[S.recentDot, { backgroundColor: "#1E3A8A" }]} />
+              <View style={[S.recentDot, { backgroundColor: colors.primary }]} />
               <View style={{ flex: 1 }}>
                 <Text style={[S.recentChild, { color: colors.foreground }]}>{childName}</Text>
                 <Text style={[S.recentMeta, { color: colors.mutedForeground }]}>
@@ -397,7 +397,7 @@ export default function BeaconsScreen() {
               </View>
               <View style={{ alignItems: "flex-end", gap: 4 }}>
                 <View style={[S.bleBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Text style={[S.bleBadgeText, { color: "#1E3A8A" }]}>BLE AUTO</Text>
+                  <Text style={[S.bleBadgeText, { color: colors.primary }]}>BLE AUTO</Text>
                 </View>
                 <Text style={[S.recentTime, { color: colors.mutedForeground }]}>{relTime(e.timestamp)}</Text>
               </View>
@@ -457,7 +457,7 @@ export default function BeaconsScreen() {
               {ZONES.map(z => (
                 <Pressable
                   key={z}
-                  style={[S.zoneChip, { backgroundColor: bZone === z ? "#1E3A8A" : colors.background, borderColor: bZone === z ? "#1E3A8A" : colors.border }]}
+                  style={[S.zoneChip, { backgroundColor: bZone === z ? colors.primary : colors.background, borderColor: bZone === z ? colors.primary : colors.border }]}
                   onPress={() => setBZone(z)}
                 >
                   <Text style={[S.zoneChipText, { color: bZone === z ? "#FFF" : colors.foreground }]}>{z}</Text>

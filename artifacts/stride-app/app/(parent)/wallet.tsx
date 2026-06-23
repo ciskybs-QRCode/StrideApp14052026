@@ -281,13 +281,13 @@ export default function WalletScreen() {
         {/* ── Pending Fee Events ── */}
         {(feesLoading || pendingFees.length > 0) && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Pending Fees</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Pending Fees</Text>
             {feesLoading ? (
-              <ActivityIndicator color={"#1E3A8A"} style={{ marginVertical: 10 }} />
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />
             ) : pendingFees.map(fee => (
               <View
                 key={fee.id}
-                style={[feeStyles.card, { backgroundColor: colors.card, borderColor: fee.read_at ? colors.border : "#1E3A8A", borderWidth: fee.read_at ? StyleSheet.hairlineWidth : 1.5 }]}
+                style={[feeStyles.card, { backgroundColor: colors.card, borderColor: fee.read_at ? colors.border : colors.primary, borderWidth: fee.read_at ? StyleSheet.hairlineWidth : 1.5 }]}
               >
                 {!fee.read_at && (
                   <View style={feeStyles.unreadDot} />
@@ -301,7 +301,7 @@ export default function WalletScreen() {
                   <View style={feeStyles.header}>
                     <View style={{ flex: 1 }}>
                       <Text style={[feeStyles.title, { color: colors.foreground }]}>{fee.title}</Text>
-                      <Text style={[feeStyles.amount, { color: "#1E3A8A" }]}>
+                      <Text style={[feeStyles.amount, { color: colors.primary }]}>
                         {fmtFee(fee.total_amount_cents, fee.currency)}
                         {fee.payment_type === "installments" ? "  (installments)" : ""}
                       </Text>
@@ -326,12 +326,12 @@ export default function WalletScreen() {
                         {fee.line_items.map((li, i) => (
                           <View key={i} style={[feeStyles.tableRow, { borderBottomColor: colors.border, borderBottomWidth: i < fee.line_items.length - 1 ? StyleSheet.hairlineWidth : 0 }]}>
                             <Text style={[feeStyles.tableDesc, { color: colors.foreground }]}>{li.description}</Text>
-                            <Text style={[feeStyles.tableAmt, { color: "#1E3A8A" }]}>{fmtFee(li.amount_cents, fee.currency)}</Text>
+                            <Text style={[feeStyles.tableAmt, { color: colors.primary }]}>{fmtFee(li.amount_cents, fee.currency)}</Text>
                           </View>
                         ))}
                         <View style={[feeStyles.tableRow, { borderTopColor: colors.border, borderTopWidth: 1 }]}>
                           <Text style={[feeStyles.tableDesc, { color: colors.foreground, fontWeight: "700" }]}>Total</Text>
-                          <Text style={[feeStyles.tableAmt, { color: "#1E3A8A", fontWeight: "800" }]}>{fmtFee(fee.total_amount_cents, fee.currency)}</Text>
+                          <Text style={[feeStyles.tableAmt, { color: colors.primary, fontWeight: "800" }]}>{fmtFee(fee.total_amount_cents, fee.currency)}</Text>
                         </View>
                       </View>
                     )}
@@ -351,7 +351,7 @@ export default function WalletScreen() {
                               {ins.label ?? `Installment ${ins.installment_num}`}
                             </Text>
                             <Text style={[feeStyles.instDate, { color: colors.mutedForeground }]}>{ins.due_date}</Text>
-                            <Text style={[feeStyles.instAmt, { color: "#1E3A8A" }]}>{fmtFee(ins.amount_cents, fee.currency)}</Text>
+                            <Text style={[feeStyles.instAmt, { color: colors.primary }]}>{fmtFee(ins.amount_cents, fee.currency)}</Text>
                           </View>
                         ))}
                         <Text style={[feeStyles.dueNote, { color: colors.mutedForeground, marginTop: 6 }]}>
@@ -361,7 +361,7 @@ export default function WalletScreen() {
                     )}
 
                     {fee.free_tickets_per_member > 0 && (
-                      <View style={[feeStyles.ticketNote, { backgroundColor: "#FEF9EE", borderLeftColor: "#FBBF24" }]}>
+                      <View style={[feeStyles.ticketNote, { backgroundColor: "#FEF9EE", borderLeftColor: colors.secondary }]}>
                         <Text style={{ color: "#92400e", fontSize: 13 }}>
                           🎟 {fee.free_tickets_per_member} complimentary ticket{fee.free_tickets_per_member > 1 ? "s" : ""} included upon payment.
                         </Text>
@@ -370,10 +370,10 @@ export default function WalletScreen() {
 
                     {fee.payment_status !== "paid" && (
                       <Pressable
-                        style={[feeStyles.payBtn, { backgroundColor: "#1E3A8A" }]}
+                        style={[feeStyles.payBtn, { backgroundColor: colors.primary }]}
                         onPress={() => router.push("/(parent)/cart" as never)}
                       >
-                        <Ionicons name="card-outline" size={16} color={"#FBBF24"} />
+                        <Ionicons name="card-outline" size={16} color={colors.secondary} />
                         <Text style={feeStyles.payBtnText}>Go to Cart & Pay</Text>
                       </Pressable>
                     )}
@@ -420,7 +420,7 @@ export default function WalletScreen() {
                   <Ionicons
                     name={bankDetails.format === "au" ? "business-outline" : "globe-outline"}
                     size={20}
-                    color={"#1E3A8A"}
+                    color={colors.primary}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -432,14 +432,14 @@ export default function WalletScreen() {
                       <Text style={[styles.bankValue, { color: colors.foreground }]}>
                         BSB: {maskBSB(bankDetails.bsb ?? "")}  ·  Acc: {maskAccountNumber(bankDetails.accountNumber ?? "")}
                       </Text>
-                      <Text style={[styles.bankAccName, { color: "#1E3A8A" }]}>{bankDetails.accountName}</Text>
+                      <Text style={[styles.bankAccName, { color: colors.primary }]}>{bankDetails.accountName}</Text>
                     </>
                   ) : (
                     <Text style={[styles.bankValue, { color: colors.foreground }]}>{maskIBAN(bankDetails.iban ?? "")}</Text>
                   )}
                 </View>
                 <Pressable style={[styles.bankEditBtn, { backgroundColor: colors.muted }]} onPress={openBankModal}>
-                  <Ionicons name="pencil" size={14} color={"#1E3A8A"} />
+                  <Ionicons name="pencil" size={14} color={colors.primary} />
                 </Pressable>
               </View>
               <View style={[styles.bankSecureRow, { backgroundColor: "#F0FDF4" }]}>
@@ -450,10 +450,10 @@ export default function WalletScreen() {
           ) : (
             <Pressable style={styles.bankAddRow} onPress={openBankModal}>
               <View style={[styles.bankIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                <Ionicons name="add-circle-outline" size={20} color={"#1E3A8A"} />
+                <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.bankAddTitle, { color: "#1E3A8A" }]}>Add Bank Details</Text>
+                <Text style={[styles.bankAddTitle, { color: colors.primary }]}>Add Bank Details</Text>
                 <Text style={[styles.bankAddSub, { color: colors.mutedForeground }]}>
                   Used for refunds and payouts. Automatically detects Australian or international IBAN format.
                 </Text>
@@ -491,7 +491,7 @@ export default function WalletScreen() {
         {/* ── Active Subscriptions (backend-driven) ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Active Subscriptions</Text>
         {subsLoading ? (
-          <ActivityIndicator color={"#1E3A8A"} style={{ marginVertical: 10 }} />
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 10 }} />
         ) : subscriptions.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
             <Ionicons name="calendar-outline" size={28} color={colors.mutedForeground} />
@@ -513,17 +513,17 @@ export default function WalletScreen() {
             >
               <View style={styles.subCardLeft}>
                 <View style={[styles.subIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Ionicons name="calendar-outline" size={20} color={"#1E3A8A"} />
+                  <Ionicons name="calendar-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.subName, { color: "#1E3A8A" }]}>{sub.item_name ?? "Subscription"}</Text>
+                  <Text style={[styles.subName, { color: colors.primary }]}>{sub.item_name ?? "Subscription"}</Text>
                   {sub.participant_name ? (
                     <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>For: {sub.participant_name}</Text>
                   ) : null}
                   <Text style={[styles.subRenewal, { color: colors.mutedForeground }]}>
                     {willEnd ? "Ends" : "Renews"} {nextDate}
                   </Text>
-                  <Text style={[styles.subPrice, { color: "#FBBF24" }]}>{amtStr}{cycle}</Text>
+                  <Text style={[styles.subPrice, { color: colors.secondary }]}>{amtStr}{cycle}</Text>
                   {willEnd && (
                     <Text style={{ fontSize: 11, color: "#EF4444", fontWeight: "600", marginTop: 2 }}>
                       Cancels at period end
@@ -553,13 +553,13 @@ export default function WalletScreen() {
         {/* Pending */}
         {pending.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Pending</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Pending</Text>
             {pending.map(payment => (
               <View key={payment.id} style={[styles.transactionCard, { backgroundColor: "#FFF7ED", borderLeftColor: "#F59E0B", borderLeftWidth: 4 }]}>
                 <View style={styles.transactionLeft}>
                   <Ionicons name="time-outline" size={18} color="#F59E0B" />
                   <View style={{ marginLeft: 10 }}>
-                    <Text style={[styles.transactionDesc, { color: "#1E3A8A" }]}>{payment.description}</Text>
+                    <Text style={[styles.transactionDesc, { color: colors.primary }]}>{payment.description}</Text>
                     <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>{payment.date}</Text>
                   </View>
                 </View>
@@ -576,14 +576,14 @@ export default function WalletScreen() {
             <View style={styles.transactionLeft}>
               <Ionicons name="checkmark-circle" size={18} color="#10B981" />
               <View style={{ marginLeft: 10 }}>
-                <Text style={[styles.transactionDesc, { color: "#1E3A8A" }]}>{payment.description}</Text>
+                <Text style={[styles.transactionDesc, { color: colors.primary }]}>{payment.description}</Text>
                 <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>{payment.date}</Text>
               </View>
             </View>
             <View style={styles.transactionRight}>
               <Text style={[styles.transactionAmount, { color: "#10B981" }]}>{"\u20AC"}{payment.amount}</Text>
               <Pressable style={styles.receiptBtn} onPress={() => handleDownloadReceipt(payment)}>
-                <Ionicons name="download-outline" size={16} color={"#1E3A8A"} />
+                <Ionicons name="download-outline" size={16} color={colors.primary} />
               </Pressable>
             </View>
           </View>
@@ -610,17 +610,17 @@ export default function WalletScreen() {
 
               {gpsLoading ? (
                 <View style={[styles.bankGpsBanner, { backgroundColor: "#EFF6FF" }]}>
-                  <ActivityIndicator size="small" color={"#1E3A8A"} />
-                  <Text style={[styles.bankGpsText, { color: "#1E3A8A" }]}>Detecting your location…</Text>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.bankGpsText, { color: colors.primary }]}>Detecting your location…</Text>
                 </View>
               ) : (
                 <View style={[styles.bankGpsBanner, { backgroundColor: detectedFormat === "au" ? "#EFF6FF" : "#FFF7ED" }]}>
                   <Ionicons
                     name="location"
                     size={14}
-                    color={detectedFormat === "au" ? "#1E3A8A" : "#D97706"}
+                    color={detectedFormat === "au" ? colors.primary : "#D97706"}
                   />
-                  <Text style={[styles.bankGpsText, { color: detectedFormat === "au" ? "#1E3A8A" : "#D97706" }]}>
+                  <Text style={[styles.bankGpsText, { color: detectedFormat === "au" ? colors.primary : "#D97706" }]}>
                     {detectedFormat === "au" ? "Australia detected — using BSB + Account Number format"
                       : "IBAN format — select your region below"}
                   </Text>
@@ -632,7 +632,7 @@ export default function WalletScreen() {
                 {([["au", "\uD83C\uDDE6\uD83C\uDDFA Australia"], ["other", "\uD83C\uDF10 IBAN (International)"]] as [BankFormat, string][]).map(([f, label]) => (
                   <Pressable
                     key={f}
-                    style={[styles.formatTab, draftFormat === f && { backgroundColor: "#1E3A8A" }]}
+                    style={[styles.formatTab, draftFormat === f && { backgroundColor: colors.primary }]}
                     onPress={() => setDraftFormat(f)}
                   >
                     <Text style={[styles.formatTabText, draftFormat === f && { color: "#FFF" }]}>{label}</Text>
@@ -642,7 +642,7 @@ export default function WalletScreen() {
 
               {draftFormat === "au" ? (
                 <>
-                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>BSB Number</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>BSB Number</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
                     value={formatBSB(draftBSB)}
@@ -654,7 +654,7 @@ export default function WalletScreen() {
                   />
                   <Text style={[styles.bankHint, { color: colors.mutedForeground }]}>6-digit bank branch code (e.g. 062-000 for CBA)</Text>
 
-                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Account Number</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Account Number</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
                     value={draftAccNumber}
@@ -665,7 +665,7 @@ export default function WalletScreen() {
                     maxLength={9}
                   />
 
-                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Account Name</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Account Name</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
                     value={draftAccName}
@@ -677,7 +677,7 @@ export default function WalletScreen() {
                 </>
               ) : (
                 <>
-                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>IBAN</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>IBAN</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
                     value={draftIBAN}
@@ -727,14 +727,14 @@ export default function WalletScreen() {
                 <View style={[styles.warningCircle, { backgroundColor: "#FEF3C7" }]}>
                   <Ionicons name="warning" size={32} color="#F59E0B" />
                 </View>
-                <Text style={[styles.modalTitle, { color: "#1E3A8A", textAlign: "center" }]}>Cancel Renewal?</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Cancel Renewal?</Text>
                 <Text style={[styles.modalDesc, { color: colors.mutedForeground, textAlign: "center" }]}>
                   You are about to cancel automatic renewal{cancelledCourse ? ` for "${cancelledCourse.name}"` : " for this subscription"}.
                   {"\n\n"}A 14-day notice period applies. Access continues until the end of the current period.
                 </Text>
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
                   <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setCancelId(null)}>
-                    <Text style={[styles.modalBtnText, { color: "#1E3A8A" }]}>Back</Text>
+                    <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.modalBtn, { flex: 1, backgroundColor: "#EF4444" }]}
@@ -749,7 +749,7 @@ export default function WalletScreen() {
                 <View style={[styles.warningCircle, { backgroundColor: "#FEE2E2" }]}>
                   <Ionicons name="heart-dislike-outline" size={32} color="#EF4444" />
                 </View>
-                <Text style={[styles.modalTitle, { color: "#1E3A8A", textAlign: "center" }]}>Final Confirmation</Text>
+                <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Final Confirmation</Text>
                 <Text style={[styles.modalDesc, { color: colors.mutedForeground, textAlign: "center", marginBottom: 16 }]}>
                   This action will permanently cancel the renewal. It cannot be undone.
                 </Text>
@@ -765,7 +765,7 @@ export default function WalletScreen() {
                 />
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                   <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setCancelStep(1)}>
-                    <Text style={[styles.modalBtnText, { color: "#1E3A8A" }]}>Back</Text>
+                    <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
                   </Pressable>
                   <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: "#DC2626" }]} onPress={handleFinalCancel}>
                     <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Cancellation</Text>

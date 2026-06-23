@@ -544,25 +544,25 @@ export default function ParentHome() {
               {childForLesson?.name ? (
                 <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 2 }}>{childForLesson.name}</Text>
               ) : null}
-              <Text style={{ fontSize: 17, fontWeight: "800", color: "#1E3A8A", marginBottom: 6 }}>{nextCourse.name}</Text>
+              <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary, marginBottom: 6 }}>{nextCourse.name}</Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <Ionicons name="time-outline" size={14} color={"#1E3A8A"} />
+                <Ionicons name="time-outline" size={14} color={colors.primary} />
                 <Text style={{ fontSize: 13, color: colors.foreground }}>{nextLesson.startTime} – {nextLesson.endTime}</Text>
               </View>
               {lessonLocation ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                  <Ionicons name="location-outline" size={14} color={"#1E3A8A"} />
+                  <Ionicons name="location-outline" size={14} color={colors.primary} />
                   <Text style={{ fontSize: 13, color: colors.foreground }}>
                     {nextLesson.location}{nextLesson.room ? ` · ${nextLesson.room}` : ""}
                   </Text>
                 </View>
               ) : null}
               <Pressable
-                style={({ pressed }) => [styles.navigateBtn, { backgroundColor: `"#1E3A8A"12`, borderColor: `"#1E3A8A"25`, borderWidth: 1 }, pressed && { opacity: 0.8 }]}
+                style={({ pressed }) => [styles.navigateBtn, { backgroundColor: `colors.primary12`, borderColor: `colors.primary25`, borderWidth: 1 }, pressed && { opacity: 0.8 }]}
                 onPress={handleNavigate}
               >
-                <Ionicons name="navigate" size={14} color={"#1E3A8A"} />
-                <Text style={[styles.navigateBtnText, { color: "#1E3A8A" }]}>NAVIGATE</Text>
+                <Ionicons name="navigate" size={14} color={colors.primary} />
+                <Text style={[styles.navigateBtnText, { color: colors.primary }]}>NAVIGATE</Text>
               </Pressable>
             </>
           ) : (
@@ -573,7 +573,7 @@ export default function ParentHome() {
         {/* ── ⭐ Star Leaderboard ── */}
         {children.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 8 }]}>⭐ Star Leaderboard</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>⭐ Star Leaderboard</Text>
             <View style={{ backgroundColor: colors.card, borderRadius: 18, overflow: "hidden", marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
               {[...children]
                 .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0))
@@ -598,8 +598,8 @@ export default function ParentHome() {
                         }
                       </View>
                       {/* Avatar */}
-                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `"#1E3A8A"12`, alignItems: "center", justifyContent: "center" }}>
-                        <Text style={{ fontSize: 15, fontWeight: "800", color: "#1E3A8A" }}>{child.name.charAt(0)}</Text>
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `colors.primary12`, alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ fontSize: 15, fontWeight: "800", color: colors.primary }}>{child.name.charAt(0)}</Text>
                       </View>
                       {/* Name */}
                       <View style={{ flex: 1 }}>
@@ -609,7 +609,7 @@ export default function ParentHome() {
                         )}
                       </View>
                       {/* Stars */}
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: idx === 0 ? "#FEF3C7" : `"#1E3A8A"08`, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: idx === 0 ? "#FEF3C7" : `colors.primary08`, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
                         <Ionicons name="star" size={14} color="#F59E0B" />
                         <Text style={{ fontSize: 15, fontWeight: "900", color: "#92400E" }}>{child.stars ?? 0}</Text>
                       </View>
@@ -623,7 +623,7 @@ export default function ParentHome() {
         {/* Upcoming Private Sessions — shown only after payment */}
         {paidLessons.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Upcoming Private Sessions</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Upcoming Private Sessions</Text>
             {paidLessons.map(lesson => {
               const schedParts = lesson.courseSchedule.split(" · ");
               const dateTime = schedParts[0] ?? "";
@@ -633,14 +633,14 @@ export default function ParentHome() {
               return (
                 <Pressable
                   key={lesson.cartItemId}
-                  style={({ pressed }) => [styles.paidLessonCard, { backgroundColor: colors.card, borderColor: "#1E3A8A", opacity: pressed ? 0.9 : 1 }]}
+                  style={({ pressed }) => [styles.paidLessonCard, { backgroundColor: colors.card, borderColor: colors.primary, opacity: pressed ? 0.9 : 1 }]}
                   onPress={() => setSelectedLesson(lesson)}
                 >
-                  <View style={[styles.paidLessonIcon, { backgroundColor: `"#1E3A8A"15` }]}>
-                    <Ionicons name="star" size={20} color={"#1E3A8A"} />
+                  <View style={[styles.paidLessonIcon, { backgroundColor: `colors.primary15` }]}>
+                    <Ionicons name="star" size={20} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.paidLessonTitle, { color: "#1E3A8A" }]} numberOfLines={1}>{discipline}</Text>
+                    <Text style={[styles.paidLessonTitle, { color: colors.primary }]} numberOfLines={1}>{discipline}</Text>
                     {operator && (
                       <Text style={[styles.paidLessonSub, { color: colors.mutedForeground }]} numberOfLines={1}>with {operator}</Text>
                     )}
@@ -668,7 +668,7 @@ export default function ParentHome() {
           >
             <View style={styles.marketplaceBannerLeft}>
               <View style={styles.marketplaceBannerIcon}>
-                <Ionicons name="storefront" size={24} color={"#1E3A8A"} />
+                <Ionicons name="storefront" size={24} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.marketplaceBannerTitle}>Stride Marketplace</Text>
@@ -684,7 +684,7 @@ export default function ParentHome() {
 
         {/* ── Events Banner (only when org has published events + plan) ── */}
         {hasPublishedEvents && planCan("events") && <Pressable
-          style={({ pressed }) => [styles.marketplaceBanner, { backgroundColor: "#1E3A8A", transform: pressed ? [{ scale: 0.98 }] : [] }]}
+          style={({ pressed }) => [styles.marketplaceBanner, { backgroundColor: colors.primary, transform: pressed ? [{ scale: 0.98 }] : [] }]}
           onPress={() => router.push("/(parent)/events" as Parameters<typeof router.push>[0])}
         >
           <View style={styles.marketplaceBannerLeft}>
@@ -719,8 +719,8 @@ export default function ParentHome() {
                     Linking.openURL(`https://wa.me/${num}`);
                   }}
                 >
-                  <Ionicons name="logo-whatsapp" size={22} color={"#1E3A8A"} />
-                  <Text style={[styles.contactBtnText, { color: "#1E3A8A" }]}>WhatsApp</Text>
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
+                  <Text style={[styles.contactBtnText, { color: colors.primary }]}>WhatsApp</Text>
                 </Pressable>
               )}
               {!!orgContactEmail && (
@@ -728,8 +728,8 @@ export default function ParentHome() {
                   style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]}
                   onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
                 >
-                  <Ionicons name="mail" size={22} color={"#1E3A8A"} />
-                  <Text style={[styles.contactBtnText, { color: "#1E3A8A" }]}>Email</Text>
+                  <Ionicons name="mail" size={22} color={colors.primary} />
+                  <Text style={[styles.contactBtnText, { color: colors.primary }]}>Email</Text>
                 </Pressable>
               )}
               {!!orgContactPhone && (
@@ -737,8 +737,8 @@ export default function ParentHome() {
                   style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]}
                   onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
                 >
-                  <Ionicons name="call" size={22} color={"#1E3A8A"} />
-                  <Text style={[styles.contactBtnText, { color: "#1E3A8A" }]}>Call</Text>
+                  <Ionicons name="call" size={22} color={colors.primary} />
+                  <Text style={[styles.contactBtnText, { color: colors.primary }]}>Call</Text>
                 </Pressable>
               )}
             </View>
@@ -782,15 +782,15 @@ export default function ParentHome() {
                 <View style={styles.pulseActions}>
                   {/* Primary — Safe */}
                   <Pressable
-                    style={[styles.pulseActionBtn, { backgroundColor: "#FBBF24" }]}
+                    style={[styles.pulseActionBtn, { backgroundColor: colors.secondary }]}
                     onPress={() => void handlePulseAck("safe")}
                     disabled={ackSubmitting}
                   >
                     {ackSubmitting
-                      ? <ActivityIndicator color={"#1E3A8A"} size="small" />
+                      ? <ActivityIndicator color={colors.primary} size="small" />
                       : <>
-                          <Ionicons name="checkmark" size={16} color={"#1E3A8A"} />
-                          <Text style={[styles.pulseActionText, { color: "#1E3A8A" }]}>
+                          <Ionicons name="checkmark" size={16} color={colors.primary} />
+                          <Text style={[styles.pulseActionText, { color: colors.primary }]}>
                             {pulseContent.primaryLabel}
                           </Text>
                         </>
@@ -799,15 +799,15 @@ export default function ParentHome() {
 
                   {/* Secondary — Escalate */}
                   <Pressable
-                    style={[styles.pulseActionBtn, { backgroundColor: "transparent", borderWidth: 1, borderColor: `"#FBBF24"55` }]}
+                    style={[styles.pulseActionBtn, { backgroundColor: "transparent", borderWidth: 1, borderColor: `colors.secondary55` }]}
                     onPress={() => void handlePulseAck("missing")}
                     disabled={ackSubmitting}
                   >
                     {ackSubmitting
-                      ? <ActivityIndicator color={"#FBBF24"} size="small" />
+                      ? <ActivityIndicator color={colors.secondary} size="small" />
                       : <>
-                          <Ionicons name="alert-outline" size={16} color={"#FBBF24"} />
-                          <Text style={[styles.pulseActionText, { color: "#FBBF24" }]}>
+                          <Ionicons name="alert-outline" size={16} color={colors.secondary} />
+                          <Text style={[styles.pulseActionText, { color: colors.secondary }]}>
                             {pulseContent.secondaryLabel}
                           </Text>
                         </>
@@ -822,15 +822,15 @@ export default function ParentHome() {
             ) : (
               <View style={styles.pulseAckConfirm}>
                 <View style={[styles.pulseAckIcon, {
-                  backgroundColor: ackStatus === "safe" ? `"#FBBF24"20` : "rgba(220,38,38,0.15)",
+                  backgroundColor: ackStatus === "safe" ? `colors.secondary20` : "rgba(220,38,38,0.15)",
                 }]}>
                   <Ionicons
                     name={ackStatus === "safe" ? "checkmark" : "alert-outline"}
                     size={26}
-                    color={ackStatus === "safe" ? "#FBBF24" : "#DC2626"}
+                    color={ackStatus === "safe" ? colors.secondary : "#DC2626"}
                   />
                 </View>
-                <Text style={[styles.pulseAckTitle, { color: ackStatus === "safe" ? "#FBBF24" : "#DC2626" }]}>
+                <Text style={[styles.pulseAckTitle, { color: ackStatus === "safe" ? colors.secondary : "#DC2626" }]}>
                   {ackStatus === "safe" ? "Status Confirmed" : "Assistance Requested"}
                 </Text>
                 <Text style={styles.pulseAckSub}>
@@ -885,7 +885,7 @@ export default function ParentHome() {
                 {children.map(c => (
                   <Pressable
                     key={c.id}
-                    style={[styles.qrChildTab, qrTarget === c.id && { backgroundColor: "#1E3A8A" }]}
+                    style={[styles.qrChildTab, qrTarget === c.id && { backgroundColor: colors.primary }]}
                     onPress={() => setQrTarget(c.id)}
                   >
                     <Text style={[styles.qrChildTabText, qrTarget === c.id && { color: "#FFF" }]}>
@@ -963,8 +963,8 @@ export default function ParentHome() {
               return (
                 <ScrollView style={{ width: "100%" }} showsVerticalScrollIndicator={false} bounces={false}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <Ionicons name="star" size={22} color={"#FBBF24"} />
-                    <Text style={[styles.modalTitle, { color: "#1E3A8A" }]}>Private Session</Text>
+                    <Ionicons name="star" size={22} color={colors.secondary} />
+                    <Text style={[styles.modalTitle, { color: colors.primary }]}>Private Session</Text>
                   </View>
                   <View style={[styles.paidBadge, { backgroundColor: "#D1FAE5", marginBottom: 18, alignSelf: "flex-start" }]}>
                     <Ionicons name="checkmark-circle" size={12} color="#10B981" />
@@ -973,7 +973,7 @@ export default function ParentHome() {
                   {rows.map(row => (
                     <View key={row.label} style={styles.detailRow}>
                       <View style={styles.detailRowLeft}>
-                        <Ionicons name={row.icon as never} size={16} color={"#1E3A8A"} />
+                        <Ionicons name={row.icon as never} size={16} color={colors.primary} />
                         <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
                       </View>
                       <Text style={[styles.detailValue, { color: colors.foreground }]} numberOfLines={2}>{row.value}</Text>
@@ -989,7 +989,7 @@ export default function ParentHome() {
                         else { Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(location)}`); }
                       }}
                     >
-                      <Ionicons name="navigate" size={16} color={"#1E3A8A"} />
+                      <Ionicons name="navigate" size={16} color={colors.primary} />
                       <Text style={styles.navigateBtnText}>Navigate via GPS</Text>
                     </Pressable>
                   )}
@@ -1029,7 +1029,7 @@ export default function ParentHome() {
                   return (
                     <Pressable
                       key={label}
-                      style={[styles.absSegTab, absMode === mode && { backgroundColor: "#1E3A8A" }]}
+                      style={[styles.absSegTab, absMode === mode && { backgroundColor: colors.primary }]}
                       onPress={() => { setAbsMode(mode); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                     >
                       <Ionicons name={idx === 0 ? "today" : "calendar"} size={13} color={absMode === mode ? "#FFF" : colors.mutedForeground} />
@@ -1041,35 +1041,35 @@ export default function ParentHome() {
 
               {absMode === "today" ? (
                 <>
-                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Reporting for</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Reporting for</Text>
                   <View style={styles.childRow}>
-                    <Pressable style={[styles.childOption, selectedChild === "self" && { backgroundColor: "#1E3A8A" }]} onPress={() => setSelectedChild("self")}>
+                    <Pressable style={[styles.childOption, selectedChild === "self" && { backgroundColor: colors.primary }]} onPress={() => setSelectedChild("self")}>
                       <Text style={[styles.childOptionText, selectedChild === "self" && { color: "#FFF" }]}>{user?.name?.split(" ")[0] ?? "Myself"} (me)</Text>
                     </Pressable>
                     {children.map(child => (
-                      <Pressable key={child.id} style={[styles.childOption, selectedChild === child.id && { backgroundColor: "#1E3A8A" }]} onPress={() => setSelectedChild(child.id)}>
+                      <Pressable key={child.id} style={[styles.childOption, selectedChild === child.id && { backgroundColor: colors.primary }]} onPress={() => setSelectedChild(child.id)}>
                         <Text style={[styles.childOptionText, selectedChild === child.id && { color: "#FFF" }]}>{child.name}</Text>
                       </Pressable>
                     ))}
                   </View>
                   {children.length === 0 && (
                     <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, marginBottom: 4 }} onPress={() => { setShowAbsence(false); router.push("/(parent)/children"); }}>
-                      <Ionicons name="add-circle-outline" size={15} color={"#1E3A8A"} />
-                      <Text style={{ color: "#1E3A8A", fontSize: 13, fontWeight: "600" }}>Link a member</Text>
+                      <Ionicons name="add-circle-outline" size={15} color={colors.primary} />
+                      <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>Link a member</Text>
                     </Pressable>
                   )}
-                  <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 12 }]}>Report type</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Report type</Text>
                   {ABSENCE_OPTIONS.map(opt => (
-                    <Pressable key={opt.value} style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]} onPress={() => setAbsenceType(opt.value)}>
-                      <Ionicons name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === opt.value ? "#FFF" : "#1E3A8A"} />
+                    <Pressable key={opt.value} style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => setAbsenceType(opt.value)}>
+                      <Ionicons name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === opt.value ? "#FFF" : colors.primary} />
                       <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
                     </Pressable>
                   ))}
                   <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                     <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsence(false)}>
-                      <Text style={[styles.closeBtnText, { color: "#1E3A8A" }]}>Cancel</Text>
+                      <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
                     </Pressable>
-                    <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#1E3A8A" }]} onPress={handleSendAbsence}>
+                    <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSendAbsence}>
                       <Text style={styles.closeBtnText}>Send</Text>
                     </Pressable>
                   </View>
@@ -1086,26 +1086,26 @@ export default function ParentHome() {
                     </View>
                   ) : (
                     <>
-                      <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Reporting for</Text>
+                      <Text style={[styles.fieldLabel, { color: colors.primary }]}>Reporting for</Text>
                       <View style={[styles.childRow, { marginBottom: 12 }]}>
-                        <Pressable style={[styles.childOption, selectedChild === "self" && { backgroundColor: "#1E3A8A" }]} onPress={() => setSelectedChild("self")}>
+                        <Pressable style={[styles.childOption, selectedChild === "self" && { backgroundColor: colors.primary }]} onPress={() => setSelectedChild("self")}>
                           <Text style={[styles.childOptionText, selectedChild === "self" && { color: "#FFF" }]}>{user?.name?.split(" ")[0] ?? "Myself"} (me)</Text>
                         </Pressable>
                         {children.map(child => (
-                          <Pressable key={child.id} style={[styles.childOption, selectedChild === child.id && { backgroundColor: "#1E3A8A" }]} onPress={() => setSelectedChild(child.id)}>
+                          <Pressable key={child.id} style={[styles.childOption, selectedChild === child.id && { backgroundColor: colors.primary }]} onPress={() => setSelectedChild(child.id)}>
                             <Text style={[styles.childOptionText, selectedChild === child.id && { color: "#FFF" }]}>{child.name}</Text>
                           </Pressable>
                         ))}
                       </View>
-                      <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Absence Type</Text>
+                      <Text style={[styles.fieldLabel, { color: colors.primary }]}>Absence Type</Text>
                       <View style={[styles.childRow, { marginBottom: 14 }]}>
                         {(["single", "range"] as const).map(mode => (
-                          <Pressable key={mode} style={[styles.childOption, futureAbsRangeMode === mode && { backgroundColor: "#1E3A8A" }]} onPress={() => setFutureAbsRangeMode(mode)}>
+                          <Pressable key={mode} style={[styles.childOption, futureAbsRangeMode === mode && { backgroundColor: colors.primary }]} onPress={() => setFutureAbsRangeMode(mode)}>
                             <Text style={[styles.childOptionText, futureAbsRangeMode === mode && { color: "#FFF" }]}>{mode === "single" ? "Single Date" : "Date Range"}</Text>
                           </Pressable>
                         ))}
                       </View>
-                      <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>{futureAbsRangeMode === "range" ? "Start Date" : "Absence Date"}</Text>
+                      <Text style={[styles.fieldLabel, { color: colors.primary }]}>{futureAbsRangeMode === "range" ? "Start Date" : "Absence Date"}</Text>
                       <View style={styles.absDateRow}>
                         <TextInput style={[styles.absDateCell, { borderColor: colors.border, color: colors.foreground }]} value={futureAbsDay} onChangeText={t => setFutureAbsDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
                         <Text style={[styles.absDateSep, { color: colors.mutedForeground }]}>/</Text>
@@ -1115,7 +1115,7 @@ export default function ParentHome() {
                       </View>
                       {futureAbsRangeMode === "range" && (
                         <>
-                          <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 12 }]}>End Date</Text>
+                          <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>End Date</Text>
                           <View style={styles.absDateRow}>
                             <TextInput style={[styles.absDateCell, { borderColor: colors.border, color: colors.foreground }]} value={futureAbsEndDay} onChangeText={t => setFutureAbsEndDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" maxLength={2} />
                             <Text style={[styles.absDateSep, { color: colors.mutedForeground }]}>/</Text>
@@ -1125,7 +1125,7 @@ export default function ParentHome() {
                           </View>
                         </>
                       )}
-                      <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 12 }]}>Note (Optional)</Text>
+                      <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Note (Optional)</Text>
                       <TextInput style={[styles.absenceOption, { borderColor: colors.border, color: colors.foreground, height: 68, textAlignVertical: "top", paddingTop: 10 }]} value={futureAbsNote} onChangeText={setFutureAbsNote} placeholder="e.g. Family holiday, Medical..." placeholderTextColor={colors.mutedForeground} multiline />
                       <View style={[styles.absKioskNote, { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0", marginTop: 10 }]}>
                         <Ionicons name="shield-checkmark-outline" size={13} color="#10B981" />
@@ -1133,10 +1133,10 @@ export default function ParentHome() {
                       </View>
                       <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                         <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => { setShowAbsence(false); resetFutureAbsForm(); }}>
-                          <Text style={[styles.closeBtnText, { color: "#1E3A8A" }]}>Cancel</Text>
+                          <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
                         </Pressable>
-                        <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#FBBF24" }]} onPress={handlePlanFutureAbsence}>
-                          <Text style={[styles.closeBtnText, { color: "#1E3A8A" }]}>Schedule</Text>
+                        <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: colors.secondary }]} onPress={handlePlanFutureAbsence}>
+                          <Text style={[styles.closeBtnText, { color: colors.primary }]}>Schedule</Text>
                         </Pressable>
                       </View>
                     </>

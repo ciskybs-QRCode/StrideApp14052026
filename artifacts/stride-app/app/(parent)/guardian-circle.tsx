@@ -508,17 +508,17 @@ function GuardianCard({
               <Ionicons
                 name={isUsed ? "checkmark-done" : "key"}
                 size={11}
-                color={isUsed ? "#9CA3AF" : "#1E3A8A"}
+                color={isUsed ? "#9CA3AF" : colors.primary}
               />
-              <Text style={[styles.iqrBadgeText, isUsed ? { color: "#9CA3AF" } : { color: "#1E3A8A" }]}>
+              <Text style={[styles.iqrBadgeText, isUsed ? { color: "#9CA3AF" } : { color: colors.primary }]}>
                 {isUsed ? `Used ${formatDate(entry.used_at!)}` : "Single Use"}
               </Text>
             </View>
           )}
           {hasWindow && (
             <View style={[styles.iqrBadge, { backgroundColor: "#EFF6FF" }]}>
-              <Ionicons name="time-outline" size={11} color={"#1E3A8A"} />
-              <Text style={[styles.iqrBadgeText, { color: "#1E3A8A" }]}>
+              <Ionicons name="time-outline" size={11} color={colors.primary} />
+              <Text style={[styles.iqrBadgeText, { color: colors.primary }]}>
                 {entry.pickup_window_start}–{entry.pickup_window_end}
                 {entry.pickup_days && entry.pickup_days.length > 0 && (
                   ` · ${entry.pickup_days.map(d => d.slice(0, 3)).join(", ")}`

@@ -552,7 +552,7 @@ export default function OperatorPrivateLessonsScreen() {
     return { pending: "#FEF3C7", approved: "#D1FAE5", rejected: "#FEE2E2", booked: "#EFF6FF" }[s];
   }
   function slotStatusText(s: ApiAvailabilitySlot["status"]) {
-    return { pending: "#92400E", approved: "#065F46", rejected: "#991B1B", booked: "#1E3A8A" }[s];
+    return { pending: "#92400E", approved: "#065F46", rejected: "#991B1B", booked: colors.primary }[s];
   }
   function slotStatusIcon(s: ApiAvailabilitySlot["status"]): React.ComponentProps<typeof Ionicons>["name"] {
     const map: Record<ApiAvailabilitySlot["status"], React.ComponentProps<typeof Ionicons>["name"]> = {
@@ -564,13 +564,13 @@ export default function OperatorPrivateLessonsScreen() {
     return map[s];
   }
   function slotBorderColor(s: ApiAvailabilitySlot["status"]) {
-    return { pending: "#F59E0B", approved: "#10B981", rejected: "#EF4444", booked: "#1E3A8A" }[s];
+    return { pending: "#F59E0B", approved: "#10B981", rejected: "#EF4444", booked: colors.primary }[s];
   }
   function bookingStatusColor(s: ApiPrivateBooking["status"]) {
     return { pending: "#FEF9C3", confirmed: "#D1FAE5", cancelled: "#FEE2E2", completed: "#EFF6FF" }[s];
   }
   function bookingStatusTextColor(s: ApiPrivateBooking["status"]) {
-    return { pending: "#92400E", confirmed: "#065F46", cancelled: "#991B1B", completed: "#1E3A8A" }[s];
+    return { pending: "#92400E", confirmed: "#065F46", cancelled: "#991B1B", completed: colors.primary }[s];
   }
 
   // Computed for form
@@ -598,10 +598,10 @@ export default function OperatorPrivateLessonsScreen() {
         onBack={() => router.navigate("/(operator)/dashboard")}
         right={
           <Pressable
-            style={[styles.qrBtn, { backgroundColor: "#FBBF24" }]}
+            style={[styles.qrBtn, { backgroundColor: colors.secondary }]}
             onPress={() => setShowQrEntry(true)}
           >
-            <Ionicons name="qr-code-outline" size={20} color={"#1E3A8A"} />
+            <Ionicons name="qr-code-outline" size={20} color={colors.primary} />
           </Pressable>
         }
       />
@@ -621,8 +621,8 @@ export default function OperatorPrivateLessonsScreen() {
                 style={[styles.tabBtn, tab === key && styles.tabBtnActive]}
                 onPress={() => setTab(key)}
               >
-                <Ionicons name={cfg[key].icon} size={13} color={tab === key ? "#1E3A8A" : "rgba(255,255,255,0.65)"} />
-                <Text style={[styles.tabBtnText, tab === key && { color: "#1E3A8A" }]}>{cfg[key].label}</Text>
+                <Ionicons name={cfg[key].icon} size={13} color={tab === key ? colors.primary : "rgba(255,255,255,0.65)"} />
+                <Text style={[styles.tabBtnText, tab === key && { color: colors.primary }]}>{cfg[key].label}</Text>
                 {badge > 0 && (
                   <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{badge}</Text></View>
                 )}
@@ -646,15 +646,15 @@ export default function OperatorPrivateLessonsScreen() {
             {bookings.length === 0 && (
               <View style={styles.emptyCard}>
                 <Ionicons name="calendar-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Bookings Yet</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Bookings Yet</Text>
                 <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>When parents book your available slots, they'll appear here.</Text>
               </View>
             )}
             {bookings.map(b => (
               <View key={b.id} style={[styles.card, { backgroundColor: colors.card }]}>
-                <View style={[styles.bookingDateBox, { backgroundColor: `"#FBBF24"50` }]}>
-                  <Text style={[styles.bookingDay,    { color: "#1E3A8A" }]}>{fmtDate(b.slot_date).split(" ")[0]}</Text>
-                  <Text style={[styles.bookingDayNum, { color: "#1E3A8A" }]}>{fmtDate(b.slot_date).split(" ")[1]}</Text>
+                <View style={[styles.bookingDateBox, { backgroundColor: `colors.secondary50` }]}>
+                  <Text style={[styles.bookingDay,    { color: colors.primary }]}>{fmtDate(b.slot_date).split(" ")[0]}</Text>
+                  <Text style={[styles.bookingDayNum, { color: colors.primary }]}>{fmtDate(b.slot_date).split(" ")[1]}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.cardTitle, { color: colors.foreground }]}>{b.child?.name ?? "Member"}</Text>
@@ -666,7 +666,7 @@ export default function OperatorPrivateLessonsScreen() {
                     <View style={[styles.statusBadge, { backgroundColor: bookingStatusColor(b.status) }]}>
                       <Text style={[styles.statusText, { color: bookingStatusTextColor(b.status) }]}>{b.status}</Text>
                     </View>
-                    <Text style={[styles.bookingPrice, { color: "#1E3A8A" }]}>{fmt(b.price_cents)}</Text>
+                    <Text style={[styles.bookingPrice, { color: colors.primary }]}>{fmt(b.price_cents)}</Text>
                   </View>
                   {b.earnings_cents != null && b.earnings_cents > 0 && (
                     <Text style={[styles.earningsText, { color: "#059669" }]}>Earned: {fmt(b.earnings_cents)}</Text>
@@ -694,7 +694,7 @@ export default function OperatorPrivateLessonsScreen() {
                     availMode === m && { backgroundColor: colors.card, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 }]}
                   onPress={() => setAvailMode(m)}
                 >
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: availMode === m ? "#1E3A8A" : colors.mutedForeground }}>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: availMode === m ? colors.primary : colors.mutedForeground }}>
                     {m === "private" ? "📋 My Availability" : "📅 Regular Courses"}
                   </Text>
                 </Pressable>
@@ -705,9 +705,9 @@ export default function OperatorPrivateLessonsScreen() {
             {availMode === "private" && (
               <>
                 {/* Info banner */}
-                <View style={{ backgroundColor: `"#1E3A8A"10`, borderRadius: 14, padding: 14, marginBottom: 18, flexDirection: "row", gap: 10 }}>
-                  <Ionicons name="information-circle-outline" size={20} color={"#1E3A8A"} style={{ marginTop: 1 }} />
-                  <Text style={{ flex: 1, fontSize: 13, color: "#1E3A8A", lineHeight: 19 }}>
+                <View style={{ backgroundColor: `colors.primary10`, borderRadius: 14, padding: 14, marginBottom: 18, flexDirection: "row", gap: 10 }}>
+                  <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 1 }} />
+                  <Text style={{ flex: 1, fontSize: 13, color: colors.primary, lineHeight: 19 }}>
                     Tell the admin when you are available and for which activity types. The AI will help build the roster.
                   </Text>
                 </View>
@@ -757,11 +757,11 @@ export default function OperatorPrivateLessonsScreen() {
                           key={`loc-${loc.id}`}
                           onPress={() => setPlLocation(loc.name)}
                           style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5,
-                            borderColor: plLocation === loc.name ? "#1E3A8A" : colors.border,
-                            backgroundColor: plLocation === loc.name ? `"#1E3A8A"12` : colors.card }}
+                            borderColor: plLocation === loc.name ? colors.primary : colors.border,
+                            backgroundColor: plLocation === loc.name ? `colors.primary12` : colors.card }}
                         >
                           <Text style={{ fontSize: 13, fontWeight: "600",
-                            color: plLocation === loc.name ? "#1E3A8A" : colors.mutedForeground }}>
+                            color: plLocation === loc.name ? colors.primary : colors.mutedForeground }}>
                             {loc.name}
                           </Text>
                         </Pressable>
@@ -772,11 +772,11 @@ export default function OperatorPrivateLessonsScreen() {
                           key={`room-${room}`}
                           onPress={() => setPlLocation(room)}
                           style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5,
-                            borderColor: plLocation === room ? "#1E3A8A" : colors.border,
-                            backgroundColor: plLocation === room ? `"#1E3A8A"12` : colors.card }}
+                            borderColor: plLocation === room ? colors.primary : colors.border,
+                            backgroundColor: plLocation === room ? `colors.primary12` : colors.card }}
                         >
                           <Text style={{ fontSize: 13, fontWeight: "600",
-                            color: plLocation === room ? "#1E3A8A" : colors.mutedForeground }}>
+                            color: plLocation === room ? colors.primary : colors.mutedForeground }}>
                             {room}
                           </Text>
                         </Pressable>
@@ -811,7 +811,7 @@ export default function OperatorPrivateLessonsScreen() {
                         slotRecurring === rec && { backgroundColor: colors.card, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 }]}
                       onPress={() => { setSlotRecurring(rec); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: "700", color: slotRecurring === rec ? "#1E3A8A" : colors.mutedForeground }}>
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: slotRecurring === rec ? colors.primary : colors.mutedForeground }}>
                         {rec ? "Weekly (Recurring)" : "One-time"}
                       </Text>
                     </Pressable>
@@ -833,7 +833,7 @@ export default function OperatorPrivateLessonsScreen() {
                             key={idx}
                             onPress={() => toggleRecurringDay(dow)}
                             style={{ flex: 1, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center",
-                              backgroundColor: active ? "#1E3A8A" : colors.muted }}
+                              backgroundColor: active ? colors.primary : colors.muted }}
                           >
                             <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>
                               {lbl}
@@ -857,9 +857,9 @@ export default function OperatorPrivateLessonsScreen() {
                         <View key={dow} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10,
                           backgroundColor: colors.card, borderRadius: 14, padding: 12,
                           borderWidth: 1, borderColor: colors.border }}>
-                          <View style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: `"#1E3A8A"15`,
+                          <View style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: `colors.primary15`,
                             alignItems: "center", justifyContent: "center" }}>
-                            <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A" }}>{DAYS_EN[dow]}</Text>
+                            <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>{DAYS_EN[dow]}</Text>
                           </View>
                           {/* FROM */}
                           <View style={{ flex: 1 }}>
@@ -1012,7 +1012,7 @@ export default function OperatorPrivateLessonsScreen() {
                     <Pressable
                       onPress={() => { if (avCalMonth === 0) { setAvCalMonth(11); setAvCalYear(y => y - 1); } else setAvCalMonth(m => m - 1); }}
                       style={{ padding: 6 }}>
-                      <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
+                      <Ionicons name="chevron-back" size={20} color={colors.primary} />
                     </Pressable>
                     <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>
                       {MONTH_NAMES_FULL[avCalMonth]} {avCalYear}
@@ -1020,7 +1020,7 @@ export default function OperatorPrivateLessonsScreen() {
                     <Pressable
                       onPress={() => { if (avCalMonth === 11) { setAvCalMonth(0); setAvCalYear(y => y + 1); } else setAvCalMonth(m => m + 1); }}
                       style={{ padding: 6 }}>
-                      <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
+                      <Ionicons name="chevron-forward" size={20} color={colors.primary} />
                     </Pressable>
                   </View>
                   {/* Day-of-week headers */}
@@ -1046,17 +1046,17 @@ export default function OperatorPrivateLessonsScreen() {
                           Haptics.selectionAsync();
                         }}
                         style={{ flexDirection: "row", borderRadius: 10, marginBottom: 3, overflow: "hidden",
-                          backgroundColor: isActive ? `"#1E3A8A"15` : "transparent",
-                          borderWidth: isActive ? 1 : 0, borderColor: isActive ? "#1E3A8A" : "transparent" }}>
+                          backgroundColor: isActive ? `colors.primary15` : "transparent",
+                          borderWidth: isActive ? 1 : 0, borderColor: isActive ? colors.primary : "transparent" }}>
                         {week.map((date, di) => {
                           const isToday = date && date.toDateString() === todayNow.toDateString();
                           return (
                             <View key={di} style={{ flex: 1, alignItems: "center", paddingVertical: 7 }}>
                               {date ? (
                                 <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center",
-                                  backgroundColor: isToday ? "#1E3A8A" : "transparent" }}>
+                                  backgroundColor: isToday ? colors.primary : "transparent" }}>
                                   <Text style={{ fontSize: 13, fontWeight: isActive ? "700" : "400",
-                                    color: isToday ? "#FFF" : (isActive ? "#1E3A8A" : colors.foreground) }}>
+                                    color: isToday ? "#FFF" : (isActive ? colors.primary : colors.foreground) }}>
                                     {date.getDate()}
                                   </Text>
                                 </View>
@@ -1095,7 +1095,7 @@ export default function OperatorPrivateLessonsScreen() {
 
                 {/* ── Submit ── */}
                 <Pressable
-                  style={{ backgroundColor: "#1E3A8A", borderRadius: 14, padding: 16,
+                  style={{ backgroundColor: colors.primary, borderRadius: 14, padding: 16,
                     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
                     marginBottom: 26, opacity: saving ? 0.7 : 1 }}
                   disabled={saving}
@@ -1125,7 +1125,7 @@ export default function OperatorPrivateLessonsScreen() {
                         <View key={s.id} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 10,
                           borderWidth: 1, borderLeftWidth: 4, borderColor: actInfo?.color ?? colors.border }}>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                            <Ionicons name={actInfo?.icon ?? "time-outline"} size={16} color={actInfo?.color ?? "#1E3A8A"} />
+                            <Ionicons name={actInfo?.icon ?? "time-outline"} size={16} color={actInfo?.color ?? colors.primary} />
                             <Text style={{ flex: 1, fontSize: 14, fontWeight: "800", color: colors.foreground }}>{s.activityLabel}</Text>
                             <View style={{ backgroundColor: s.synced ? "#D1FAE5" : "#FEF3C7", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
                               <Text style={{ fontSize: 10, fontWeight: "700", color: s.synced ? "#065F46" : "#92400E" }}>
@@ -1166,9 +1166,9 @@ export default function OperatorPrivateLessonsScreen() {
             {/* ── MODE B: Regular course weekly availability ── */}
             {availMode === "courses" && (
               <>
-                <View style={{ backgroundColor: `"#1E3A8A"10`, borderRadius: 14, padding: 14, marginBottom: 16, flexDirection: "row", gap: 10 }}>
-                  <Ionicons name="information-circle-outline" size={20} color={"#1E3A8A"} style={{ marginTop: 1 }} />
-                  <Text style={{ flex: 1, fontSize: 13, color: "#1E3A8A", lineHeight: 18 }}>
+                <View style={{ backgroundColor: `colors.primary10`, borderRadius: 14, padding: 14, marginBottom: 16, flexDirection: "row", gap: 10 }}>
+                  <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 1 }} />
+                  <Text style={{ flex: 1, fontSize: 13, color: colors.primary, lineHeight: 18 }}>
                     Select the disciplines you can teach as a regular weekly course and which days work for you. Admins will use this data to schedule courses.
                   </Text>
                 </View>
@@ -1176,7 +1176,7 @@ export default function OperatorPrivateLessonsScreen() {
                 {disciplines.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Ionicons name="barbell-outline" size={40} color={colors.mutedForeground} />
-                    <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No disciplines</Text>
+                    <Text style={[styles.emptyTitle, { color: colors.primary }]}>No disciplines</Text>
                     <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>No disciplines are configured yet. Contact the admin.</Text>
                   </View>
                 ) : (
@@ -1187,14 +1187,14 @@ export default function OperatorPrivateLessonsScreen() {
                     const DOW_SHORT  = ["Su","Mo","Tu","We","Th","Fr","Sa"];
                     const DOW_FULL   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
                     return (
-                      <View key={disc.id} style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: hasAnyDay ? "#1E3A8A" : colors.border }}>
+                      <View key={disc.id} style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: hasAnyDay ? colors.primary : colors.border }}>
                         {/* Header */}
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                          <Ionicons name="barbell-outline" size={18} color={"#1E3A8A"} />
-                          <Text style={{ flex: 1, fontSize: 16, fontWeight: "800", color: "#1E3A8A" }}>{disc.name}</Text>
+                          <Ionicons name="barbell-outline" size={18} color={colors.primary} />
+                          <Text style={{ flex: 1, fontSize: 16, fontWeight: "800", color: colors.primary }}>{disc.name}</Text>
                           {hasAnyDay && (
-                            <View style={{ backgroundColor: `"#1E3A8A"18`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
-                              <Text style={{ fontSize: 11, color: "#1E3A8A", fontWeight: "700" }}>{activeDays.length}d/wk</Text>
+                            <View style={{ backgroundColor: `colors.primary18`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
+                              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "700" }}>{activeDays.length}d/wk</Text>
                             </View>
                           )}
                         </View>
@@ -1218,7 +1218,7 @@ export default function OperatorPrivateLessonsScreen() {
                                     return { ...prev, [disc.id]: { daySlots: newSlots } };
                                   });
                                 }}
-                                style={{ flex: 1, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: active ? "#1E3A8A" : colors.muted }}
+                                style={{ flex: 1, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: active ? colors.primary : colors.muted }}
                               >
                                 <Text style={{ fontSize: 11, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{lbl}</Text>
                               </Pressable>
@@ -1236,8 +1236,8 @@ export default function OperatorPrivateLessonsScreen() {
                                 borderTopWidth: i === 0 ? 1 : 0, borderTopColor: colors.border }}
                             >
                               {/* Day label chip */}
-                              <View style={{ width: 88, backgroundColor: `"#1E3A8A"12`, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8, alignItems: "center" }}>
-                                <Text style={{ fontSize: 13, fontWeight: "800", color: "#1E3A8A" }}>{DOW_FULL[dow]}</Text>
+                              <View style={{ width: 88, backgroundColor: `colors.primary12`, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8, alignItems: "center" }}>
+                                <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary }}>{DOW_FULL[dow]}</Text>
                               </View>
 
                               {/* Start time */}
@@ -1282,7 +1282,7 @@ export default function OperatorPrivateLessonsScreen() {
                 )}
 
                 <Pressable
-                  style={{ backgroundColor: "#1E3A8A", borderRadius: 14, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, opacity: courseAvailSaving ? 0.7 : 1, marginTop: 8, marginBottom: 8 }}
+                  style={{ backgroundColor: colors.primary, borderRadius: 14, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, opacity: courseAvailSaving ? 0.7 : 1, marginTop: 8, marginBottom: 8 }}
                   onPress={saveCourseAvail}
                   disabled={courseAvailSaving}
                 >
@@ -1307,29 +1307,29 @@ export default function OperatorPrivateLessonsScreen() {
                   setNotifications(prev => prev.map(n => ({ ...n, read: true })));
                 }}
               >
-                <Ionicons name="checkmark-done-outline" size={14} color={"#1E3A8A"} />
-                <Text style={[styles.markAllText, { color: "#1E3A8A" }]}>Mark all read</Text>
+                <Ionicons name="checkmark-done-outline" size={14} color={colors.primary} />
+                <Text style={[styles.markAllText, { color: colors.primary }]}>Mark all read</Text>
               </Pressable>
             )}
             {notifications.length === 0 && (
               <View style={styles.emptyCard}>
                 <Ionicons name="notifications-off-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Notifications</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Notifications</Text>
               </View>
             )}
             {notifications.map(n => (
               <Pressable
                 key={n.id}
                 style={[styles.notifCard, {
-                  backgroundColor: n.read ? colors.card : `"#FBBF24"40`,
-                  borderLeftColor: "#1E3A8A",
+                  backgroundColor: n.read ? colors.card : `colors.secondary40`,
+                  borderLeftColor: colors.primary,
                 }]}
                 onPress={async () => {
                   await api.markNotificationRead(n.id).catch(() => {});
                   setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
                 }}
               >
-                {!n.read && <View style={[styles.unreadDot, { backgroundColor: "#1E3A8A" }]} />}
+                {!n.read && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.notifTitle, { color: colors.foreground }]}>{n.title}</Text>
                   <Text style={[styles.notifBody,  { color: colors.mutedForeground }]}>{n.body}</Text>
@@ -1377,13 +1377,13 @@ export default function OperatorPrivateLessonsScreen() {
                   {disciplines.filter(d => d.active).map(d => (
                     <Pressable
                       key={d.id}
-                      style={[styles.pickerOption, slotDisciplineId === d.id && { backgroundColor: `"#FBBF24"80` }]}
+                      style={[styles.pickerOption, slotDisciplineId === d.id && { backgroundColor: `colors.secondary80` }]}
                       onPress={() => setSlotDisciplineId(d.id)}
                     >
                       <Ionicons
                         name={slotDisciplineId === d.id ? "checkmark-circle" : "musical-notes-outline"}
                         size={15}
-                        color={slotDisciplineId === d.id ? "#1E3A8A" : colors.mutedForeground}
+                        color={slotDisciplineId === d.id ? colors.primary : colors.mutedForeground}
                       />
                       <Text style={[styles.pickerOptionText, { color: colors.foreground }]}>{d.name}</Text>
                     </Pressable>
@@ -1400,16 +1400,16 @@ export default function OperatorPrivateLessonsScreen() {
                 {locations.filter(l => l.active).map(l => (
                   <Pressable
                     key={l.id}
-                    style={[styles.pickerOption, slotLocation === l.name && { backgroundColor: `"#FBBF24"80` }]}
+                    style={[styles.pickerOption, slotLocation === l.name && { backgroundColor: `colors.secondary80` }]}
                     onPress={() => { setSlotLocation(l.name); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                   >
                     <Ionicons
                       name={slotLocation === l.name ? "checkmark-circle" : "location-outline"}
                       size={18}
-                      color={slotLocation === l.name ? "#1E3A8A" : colors.mutedForeground}
+                      color={slotLocation === l.name ? colors.primary : colors.mutedForeground}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.pickerOptionText, { color: slotLocation === l.name ? "#1E3A8A" : colors.foreground }]}>{l.name}</Text>
+                      <Text style={[styles.pickerOptionText, { color: slotLocation === l.name ? colors.primary : colors.foreground }]}>{l.name}</Text>
                       {!!l.description && <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>{l.description}</Text>}
                     </View>
                   </Pressable>
@@ -1446,7 +1446,7 @@ export default function OperatorPrivateLessonsScreen() {
                         return (
                           <Pressable
                             key={dayIdx}
-                            style={[styles.dowChip, { borderColor: sel ? "#1E3A8A" : colors.border, backgroundColor: sel ? "#1E3A8A" : colors.muted }]}
+                            style={[styles.dowChip, { borderColor: sel ? colors.primary : colors.border, backgroundColor: sel ? colors.primary : colors.muted }]}
                             onPress={() => toggleRecurringDay(dayIdx)}
                           >
                             <Text style={[styles.dowChipText, { color: sel ? "#FFF" : colors.foreground }]}>{label}</Text>
@@ -1464,7 +1464,7 @@ export default function OperatorPrivateLessonsScreen() {
                       return (
                         <View key={day} style={[styles.daySlotCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
                           <Pressable style={styles.daySlotHeader} onPress={() => setActiveDayEdit(expanded ? null : day)}>
-                            <View style={[styles.daySlotDot, { backgroundColor: "#1E3A8A" }]}>
+                            <View style={[styles.daySlotDot, { backgroundColor: colors.primary }]}>
                               <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "800" }}>{dayLabel}</Text>
                             </View>
                             <Text style={[styles.daySlotLabel, { color: colors.foreground }]}>
@@ -1479,7 +1479,7 @@ export default function OperatorPrivateLessonsScreen() {
                                 {ALL_TIME_SLOTS.map(t => (
                                   <Pressable
                                     key={t}
-                                    style={[styles.timeChip, { borderColor: ts.start === t ? "#1E3A8A" : colors.border, backgroundColor: ts.start === t ? "#1E3A8A" : colors.muted }]}
+                                    style={[styles.timeChip, { borderColor: ts.start === t ? colors.primary : colors.border, backgroundColor: ts.start === t ? colors.primary : colors.muted }]}
                                     onPress={() => setDayTimeSlots(s => ({ ...s, [day]: { ...s[day], start: t, end: (s[day]?.end && s[day].end > t) ? s[day].end : "" } }))}
                                   >
                                     <Text style={[styles.timeChipText, { color: ts.start === t ? "#FFF" : colors.foreground }]}>{t}</Text>
@@ -1503,9 +1503,9 @@ export default function OperatorPrivateLessonsScreen() {
                                 </ScrollView>
                               )}
                               {ts.start && ts.end && (
-                                <View style={[styles.durationRow, { backgroundColor: `"#FBBF24"30`, borderColor: "#FBBF24", marginTop: 8 }]}>
-                                  <Ionicons name="time-outline" size={13} color={"#1E3A8A"} />
-                                  <Text style={[styles.durationText, { color: "#1E3A8A" }]}>{ts.start} – {ts.end}</Text>
+                                <View style={[styles.durationRow, { backgroundColor: `colors.secondary30`, borderColor: colors.secondary, marginTop: 8 }]}>
+                                  <Ionicons name="time-outline" size={13} color={colors.primary} />
+                                  <Text style={[styles.durationText, { color: colors.primary }]}>{ts.start} – {ts.end}</Text>
                                 </View>
                               )}
                             </View>
@@ -1515,8 +1515,8 @@ export default function OperatorPrivateLessonsScreen() {
                     })}
                     {recurringDays.length > 0 && (
                       <View style={[styles.durationRow, { backgroundColor: "#EFF6FF", borderColor: "#93C5FD", marginTop: 4 }]}>
-                        <Ionicons name="refresh-outline" size={13} color={"#1E3A8A"} />
-                        <Text style={[styles.durationText, { color: "#1E3A8A" }]}>
+                        <Ionicons name="refresh-outline" size={13} color={colors.primary} />
+                        <Text style={[styles.durationText, { color: colors.primary }]}>
                           {recurringDays.length * 4} slot{recurringDays.length * 4 !== 1 ? "s" : ""} will be created (4 weeks)
                         </Text>
                       </View>
@@ -1534,7 +1534,7 @@ export default function OperatorPrivateLessonsScreen() {
                       {UPCOMING_DATES.map((d, i) => {
                         const isSelected = slotDate ? toISODate(d) === toISODate(slotDate) : false;
                         return (
-                          <Pressable key={i} style={[styles.dateChip, { borderColor: isSelected ? "#1E3A8A" : colors.border, backgroundColor: isSelected ? "#1E3A8A" : colors.muted }]} onPress={() => setSlotDate(d)}>
+                          <Pressable key={i} style={[styles.dateChip, { borderColor: isSelected ? colors.primary : colors.border, backgroundColor: isSelected ? colors.primary : colors.muted }]} onPress={() => setSlotDate(d)}>
                             <Text style={[styles.dateChipDay, { color: isSelected ? "rgba(255,255,255,0.8)" : colors.mutedForeground }]}>{i === 0 ? "Today" : DAY_NAMES[d.getDay()]}</Text>
                             <Text style={[styles.dateChipNum, { color: isSelected ? "#FFF" : colors.foreground }]}>{d.getDate()}</Text>
                             <Text style={[styles.dateChipMon, { color: isSelected ? "rgba(255,255,255,0.7)" : colors.mutedForeground }]}>{MONTH_SHORT[d.getMonth()]}</Text>
@@ -1547,7 +1547,7 @@ export default function OperatorPrivateLessonsScreen() {
                     <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>Start Time *</Text>
                     <View style={styles.timeGrid}>
                       {ALL_TIME_SLOTS.map(t => (
-                        <Pressable key={t} style={[styles.timeChip, { borderColor: slotStart === t ? "#1E3A8A" : colors.border, backgroundColor: slotStart === t ? "#1E3A8A" : colors.muted }]}
+                        <Pressable key={t} style={[styles.timeChip, { borderColor: slotStart === t ? colors.primary : colors.border, backgroundColor: slotStart === t ? colors.primary : colors.muted }]}
                           onPress={() => { setSlotStart(t); if (slotEnd && slotEnd <= t) setSlotEnd(""); }}>
                           <Text style={[styles.timeChipText, { color: slotStart === t ? "#FFF" : colors.foreground }]}>{t}</Text>
                         </Pressable>
@@ -1571,9 +1571,9 @@ export default function OperatorPrivateLessonsScreen() {
 
                     {/* Duration indicator */}
                     {slotStart && slotEnd && (
-                      <View style={[styles.durationRow, { backgroundColor: `"#FBBF24"30`, borderColor: "#FBBF24" }]}>
-                        <Ionicons name="time-outline" size={14} color={"#1E3A8A"} />
-                        <Text style={[styles.durationText, { color: "#1E3A8A" }]}>
+                      <View style={[styles.durationRow, { backgroundColor: `colors.secondary30`, borderColor: colors.secondary }]}>
+                        <Ionicons name="time-outline" size={14} color={colors.primary} />
+                        <Text style={[styles.durationText, { color: colors.primary }]}>
                           {slotStart} – {slotEnd}{" · "}
                           {(() => {
                             const [sh, sm] = slotStart.split(":").map(Number);

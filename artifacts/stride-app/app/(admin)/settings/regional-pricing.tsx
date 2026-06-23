@@ -155,7 +155,7 @@ function PriceModal({
                 {isActive ? "This region is used in checkout" : "Region is disabled"}
               </Text>
             </View>
-            <View style={[styles.togglePill, { backgroundColor: isActive ? "#1E3A8A" : colors.border }]}>
+            <View style={[styles.togglePill, { backgroundColor: isActive ? colors.primary : colors.border }]}>
               <View style={[styles.toggleThumb, { transform: [{ translateX: isActive ? 18 : 2 }] }]} />
             </View>
           </Pressable>
@@ -297,7 +297,7 @@ export default function RegionalPricingScreen() {
                 style={[styles.chip, { backgroundColor: orgRegionCode === p.region_code ? "#FFF" : "rgba(255,255,255,0.15)" }]}
                 onPress={() => handleSetOrgRegion(p.region_code)}
               >
-                <Text style={[styles.chipText, { color: orgRegionCode === p.region_code ? "#1E3A8A" : "#fff" }]}>
+                <Text style={[styles.chipText, { color: orgRegionCode === p.region_code ? colors.primary : "#fff" }]}>
                   {p.region_code}
                 </Text>
               </Pressable>
@@ -310,7 +310,7 @@ export default function RegionalPricingScreen() {
 
         {/* Loading */}
         {loading && (
-          <ActivityIndicator color={"#1E3A8A"} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
         )}
 
         {/* Region rows */}
@@ -326,7 +326,7 @@ export default function RegionalPricingScreen() {
             ]}
           >
             <View style={[styles.regionBadge, { backgroundColor: item.is_active ? "rgba(30,58,138,0.1)" : colors.muted }]}>
-              <Text style={[styles.regionCode, { color: item.is_active ? "#1E3A8A" : colors.mutedForeground }]}>
+              <Text style={[styles.regionCode, { color: item.is_active ? colors.primary : colors.mutedForeground }]}>
                 {item.region_code}
               </Text>
             </View>
@@ -354,7 +354,7 @@ export default function RegionalPricingScreen() {
                   setModal({ visible: true, mode: "edit", item });
                 }}
               >
-                <Ionicons name="pencil-outline" size={18} color={"#1E3A8A"} />
+                <Ionicons name="pencil-outline" size={18} color={colors.primary} />
               </Pressable>
               <Pressable hitSlop={8} onPress={() => handleDelete(item)}>
                 <Ionicons name="trash-outline" size={18} color="#EF4444" />
@@ -380,7 +380,7 @@ export default function RegionalPricingScreen() {
       {/* Floating Add Button for better UX since we removed the header one */}
       {!loading && !modal.visible && (
         <Pressable
-          style={[styles.floatingAddBtn, { backgroundColor: "#1E3A8A", bottom: insets.bottom + 20 + (Platform.OS === "web" ? 84 : 49) }]}
+          style={[styles.floatingAddBtn, { backgroundColor: colors.primary, bottom: insets.bottom + 20 + (Platform.OS === "web" ? 84 : 49) }]}
           onPress={() => setModal({ visible: true, mode: "create" })}
         >
           <Ionicons name="add" size={28} color="#FFF" />

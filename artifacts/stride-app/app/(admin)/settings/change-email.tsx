@@ -162,7 +162,7 @@ export default function ChangeEmailPage() {
         <Pressable
           style={({ pressed }) => [
             styles.saveBtn,
-            { backgroundColor: "#1E3A8A", opacity: pressed || loading ? 0.8 : 1 },
+            { backgroundColor: colors.primary, opacity: pressed || loading ? 0.8 : 1 },
           ]}
           onPress={handleSave}
           disabled={loading}

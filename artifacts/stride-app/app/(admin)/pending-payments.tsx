@@ -168,7 +168,7 @@ export default function PendingPaymentsScreen() {
       >
         {loading && (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={"#1E3A8A"} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Loading pending payments...</Text>
           </View>
         )}
@@ -191,7 +191,7 @@ export default function PendingPaymentsScreen() {
                 <View style={[styles.statusBadge, { backgroundColor: `${status.color}15` }]}>
                   <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
                 </View>
-                <Text style={[styles.amount, { color: "#1E3A8A" }]}>
+                <Text style={[styles.amount, { color: colors.primary }]}>
                   {(p.amount_cents / 100).toFixed(2)} {p.currency?.toUpperCase() ?? "EUR"}
                 </Text>
               </View>
@@ -231,15 +231,15 @@ export default function PendingPaymentsScreen() {
 
               {p.status === "pending_cash" && (
                 <Pressable
-                  style={[styles.confirmBtn, { backgroundColor: "#FBBF24" }]} 
+                  style={[styles.confirmBtn, { backgroundColor: colors.secondary }]} 
                   onPress={() => confirmCash(p.session_id)}
                   disabled={isProcessing}
                 >
                   {isProcessing ? (
-                    <ActivityIndicator size="small" color={"#1E3A8A"} />
+                    <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <>
-                      <Ionicons name="cash-outline" size={16} color={"#1E3A8A"} />
+                      <Ionicons name="cash-outline" size={16} color={colors.primary} />
                       <Text style={styles.confirmBtnText}>Confirm Cash Received</Text>
                     </>
                   )}
@@ -248,7 +248,7 @@ export default function PendingPaymentsScreen() {
 
               {p.status === "pending_bank" && (
                 <Pressable
-                  style={[styles.confirmBtn, { backgroundColor: "#1E3A8A" }]}
+                  style={[styles.confirmBtn, { backgroundColor: colors.primary }]}
                   onPress={() => confirmBank(p.session_id)}
                   disabled={isProcessing}
                 >

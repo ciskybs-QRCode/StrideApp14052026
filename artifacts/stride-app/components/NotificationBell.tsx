@@ -62,7 +62,7 @@ function NotifRow({ item, onRead }: { item: PrivateNotification; onRead: (id: nu
       style={[
         styles.row,
         {
-          backgroundColor: item.read ? colors.background : ("#1E3A8A" + "0D"),
+          backgroundColor: item.read ? colors.background : (colors.primary + "0D"),
           borderColor: colors.border,
         },
       ]}
@@ -83,7 +83,7 @@ function NotifRow({ item, onRead }: { item: PrivateNotification; onRead: (id: nu
         </Text>
       </View>
       {!item.read && (
-        <View style={[styles.unreadDot, { backgroundColor: "#1E3A8A" }]} />
+        <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />
       )}
     </Pressable>
   );
@@ -168,14 +168,14 @@ export function NotificationBell({ light = false }: { light?: boolean }) {
                 Notifications
               </Text>
               {unreadCount > 0 && (
-                <View style={[styles.countBadge, { backgroundColor: "#1E3A8A" }]}>
+                <View style={[styles.countBadge, { backgroundColor: colors.primary }]}>
                   <Text style={styles.countBadgeText}>{unreadCount}</Text>
                 </View>
               )}
             </View>
             {unreadCount > 0 && (
               <Pressable onPress={handleMarkAllRead} hitSlop={8}>
-                <Text style={[styles.markAllText, { color: "#1E3A8A" }]}>
+                <Text style={[styles.markAllText, { color: colors.primary }]}>
                   Mark all read
                 </Text>
               </Pressable>

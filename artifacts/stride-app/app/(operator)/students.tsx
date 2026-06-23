@@ -172,11 +172,11 @@ export default function OperatorStudents() {
         title="Members"
         right={
           <Pressable
-            style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#1E3A8A", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}
+            style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}
             onPress={() => router.push("/(operator)/pdf-badges" as Parameters<typeof router.push>[0])}
           >
-            <Ionicons name="print-outline" size={15} color={"#FBBF24"} />
-            <Text style={{ color: "#FBBF24", fontWeight: "700", fontSize: 12 }}>Badge PDF</Text>
+            <Ionicons name="print-outline" size={15} color={colors.secondary} />
+            <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 12 }}>Badge PDF</Text>
           </Pressable>
         }
       />
@@ -187,8 +187,8 @@ export default function OperatorStudents() {
           <RefreshControl
             refreshing={isLoadingData}
             onRefresh={refreshData}
-            tintColor={"#1E3A8A"}
-            colors={["#1E3A8A"]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       >
@@ -207,7 +207,7 @@ export default function OperatorStudents() {
             <Text style={styles.statLabel}>Absent</Text>
           </View>
           {pendingCount > 0 && (
-            <View style={[styles.statCard, { backgroundColor: "#1E3A8A" }]}>
+            <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
               <Text style={styles.statNumber}>{pendingCount}</Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
@@ -231,7 +231,7 @@ export default function OperatorStudents() {
           {FILTERS.map(f => (
             <Pressable
               key={f.key}
-              style={[styles.filterBtn, filter === f.key && { backgroundColor: "#1E3A8A" }]}
+              style={[styles.filterBtn, filter === f.key && { backgroundColor: colors.primary }]}
               onPress={() => setFilter(f.key)}
             >
               <Text style={[styles.filterText, filter === f.key && { color: "#FFF" }]}>{f.label}</Text>
@@ -244,13 +244,13 @@ export default function OperatorStudents() {
           <>
             {loadingApprovals ? (
               <View style={styles.loadingBox}>
-                <ActivityIndicator size="large" color={"#1E3A8A"} />
+                <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Loading requests…</Text>
               </View>
             ) : approvalRequests.length === 0 ? (
               <View style={[styles.emptyBox, { backgroundColor: colors.card }]}>
                 <Ionicons name="checkmark-done-circle-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No requests</Text>
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No requests</Text>
                 <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
                   Enrollment approval requests from parents will appear here.
                 </Text>
@@ -278,16 +278,16 @@ export default function OperatorStudents() {
                       </Text>
                     </View>
 
-                    <Text style={[styles.approvalCourse, { color: "#1E3A8A" }]}>{req.course_name}</Text>
+                    <Text style={[styles.approvalCourse, { color: colors.primary }]}>{req.course_name}</Text>
                     <View style={styles.approvalMeta}>
                       <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
-                        <Ionicons name="person-outline" size={13} color={"#1E3A8A"} />
+                        <Ionicons name="person-outline" size={13} color={colors.primary} />
                       </View>
                       <Text style={[styles.approvalMetaText, { color: colors.mutedForeground }]}>{req.participant_name}</Text>
                       {req.participant_age !== undefined && (
                         <>
                           <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
-                            <Ionicons name="calendar-outline" size={13} color={"#1E3A8A"} />
+                            <Ionicons name="calendar-outline" size={13} color={colors.primary} />
                           </View>
                           <Text style={[styles.approvalMetaText, { color: colors.mutedForeground }]}>Age {req.participant_age}</Text>
                         </>
@@ -295,7 +295,7 @@ export default function OperatorStudents() {
                       {req.participant_skill_level && (
                         <>
                           <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
-                            <Ionicons name="star-outline" size={13} color={"#1E3A8A"} />
+                            <Ionicons name="star-outline" size={13} color={colors.primary} />
                           </View>
                           <Text style={[styles.approvalMetaText, { color: colors.mutedForeground }]}>{req.participant_skill_level}</Text>
                         </>
@@ -315,7 +315,7 @@ export default function OperatorStudents() {
                           {req.package_type === "fixedBlock" ? "Full Package" : "Single Lesson"}
                         </Text>
                       </View>
-                      <Text style={[styles.approvalPrice, { color: "#1E3A8A" }]}>{cur}{req.price}</Text>
+                      <Text style={[styles.approvalPrice, { color: colors.primary }]}>{cur}{req.price}</Text>
                     </View>
 
                     {isPending && (
@@ -363,14 +363,14 @@ export default function OperatorStudents() {
                 </Text>
               </View>
               <View style={styles.studentInfo}>
-                <Text style={[styles.studentName, { color: "#1E3A8A" }]}>{s.name}</Text>
+                <Text style={[styles.studentName, { color: colors.primary }]}>{s.name}</Text>
                 {!!s.preferredName && (
                   <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>Called: {s.preferredName}</Text>
                 )}
                 <Text style={[styles.studentCourse, { color: colors.mutedForeground }]}>{s.courses.join(", ")}</Text>
                 <View style={styles.studentMeta}>
                   <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
-                    <Ionicons name="star" size={12} color={"#FBBF24"} />
+                    <Ionicons name="star" size={12} color={colors.secondary} />
                   </View>
                   <Text style={[styles.studentStars, { color: colors.mutedForeground }]}>{s.stars}</Text>
                   {s.allergies !== "None" && s.allergies !== "Nessuna" && s.allergies !== "" && (
@@ -410,7 +410,7 @@ export default function OperatorStudents() {
       </ScrollView>
 
       {snack !== null && (
-        <View style={[styles.snack, { backgroundColor: "#1E3A8A", bottom: insets.bottom + 20 }]}>
+        <View style={[styles.snack, { backgroundColor: colors.primary, bottom: insets.bottom + 20 }]}>
           <Text style={styles.snackText}>{snack}</Text>
         </View>
       )}
@@ -440,8 +440,8 @@ export default function OperatorStudents() {
                   style={[styles.qcPhoneRow, { backgroundColor: colors.muted }]}
                   onPress={() => openPhone(quickContact.phone, "call")}
                 >
-                  <Ionicons name="call" size={18} color={"#1E3A8A"} />
-                  <Text style={[styles.qcPhoneNumber, { color: "#1E3A8A" }]}>{quickContact.phone}</Text>
+                  <Ionicons name="call" size={18} color={colors.primary} />
+                  <Text style={[styles.qcPhoneNumber, { color: colors.primary }]}>{quickContact.phone}</Text>
                 </Pressable>
 
                 {/* Action buttons */}
@@ -451,8 +451,8 @@ export default function OperatorStudents() {
                     <Text style={[styles.qcBtnText, { color: "#10B981" }]}>Chiama</Text>
                   </Pressable>
                   <Pressable style={[styles.qcBtn, { backgroundColor: "#EEF2FF", flex: 1 }]} onPress={() => openPhone(quickContact.phone, "sms")}>
-                    <Ionicons name="chatbubble" size={20} color={"#1E3A8A"} />
-                    <Text style={[styles.qcBtnText, { color: "#1E3A8A" }]}>SMS</Text>
+                    <Ionicons name="chatbubble" size={20} color={colors.primary} />
+                    <Text style={[styles.qcBtnText, { color: colors.primary }]}>SMS</Text>
                   </Pressable>
                   <Pressable style={[styles.qcBtn, { backgroundColor: "#DCFCE7", flex: 1 }]} onPress={() => openPhone(quickContact.phone, "whatsapp")}>
                     <Ionicons name="logo-whatsapp" size={20} color="#25D366" />

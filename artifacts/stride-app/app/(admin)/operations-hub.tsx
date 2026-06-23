@@ -83,8 +83,8 @@ export default function OperationsHub() {
             icon="sparkles"
             title="Smart Rostering"
             description="AI substitute matching, auto-notify, conflict detection"
-            iconBg={"#1E3A8A"}
-            iconColor={"#FBBF24"}
+            iconBg={colors.primary}
+            iconColor={colors.secondary}
             onPress={() => router.push("/(admin)/smart-roster" as never)}
           />
         )}
@@ -94,7 +94,7 @@ export default function OperationsHub() {
             title="Admin Copilot"
             description="Ask data questions in plain English"
             iconBg="#050F2E"
-            iconColor={"#FBBF24"}
+            iconColor={colors.secondary}
             onPress={() => router.push("/(admin)/copilot" as never)}
           />
         )}
@@ -122,7 +122,7 @@ export default function OperationsHub() {
             title="Marketplace"
             description="Products, shop links and platform commission"
             iconBg="#DBEAFE"
-            iconColor={"#1E3A8A"}
+            iconColor={colors.primary}
             onPress={() => router.push("/(admin)/marketplace" as never)}
           />
         )}
@@ -139,8 +139,8 @@ export default function OperationsHub() {
             icon="cash-outline"
             title="Fee Events"
             description="One-off payment events with line items, installments and AI email"
-            iconBg={"#1E3A8A"}
-            iconColor={"#FBBF24"}
+            iconBg={colors.primary}
+            iconColor={colors.secondary}
             onPress={() => router.push("/(admin)/fee-events" as never)}
           />
         )}
@@ -152,16 +152,16 @@ export default function OperationsHub() {
               icon="shield-checkmark-outline"
               title="System Governance"
               description="Platform-wide controls and organisation oversight"
-              iconBg={"#1E3A8A"}
-              iconColor={"#FBBF24"}
+              iconBg={colors.primary}
+              iconColor={colors.secondary}
               onPress={() => router.push("/(admin)/governance" as never)}
             />
             <HubCard
               icon="headset-outline"
               title="Support Tickets"
               description="View and respond to association support requests"
-              iconBg={"#1E3A8A"}
-              iconColor={"#FBBF24"}
+              iconBg={colors.primary}
+              iconColor={colors.secondary}
               onPress={() => router.push("/(admin)/sa-support-tickets" as never)}
             />
           </>

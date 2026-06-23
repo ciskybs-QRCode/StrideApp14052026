@@ -19,14 +19,14 @@ import {
   type StrideEvent, type EventDate, type EventTicketType, type EventTicket,
 } from "@/lib/api";
 
-const CATEGORIES: Record<string, { icon: string; color: string }> = {
-  general:   { icon: "calendar-outline",   color: "#1E3A8A" },
-  concert:   { icon: "musical-notes",      color: "#1E3A8A" },
+const getCategories = (primary: string, secondary: string): Record<string, { icon: string; color: string }> => ({
+  general:   { icon: "calendar-outline",   color: primary },
+  concert:   { icon: "musical-notes",      color: primary },
   sports:    { icon: "football-outline",   color: "#059669" },
   seminar:   { icon: "school-outline",     color: "#D97706" },
-  social:    { icon: "people-outline",     color: "#FBBF24" },
-  workshop:  { icon: "construct-outline",  color: "#1E3A8A" },
-};
+  social:    { icon: "people-outline",     color: secondary },
+  workshop:  { icon: "construct-outline",  color: primary },
+});
 
 function fmtDate(d: string) {
   try { return new Date(d + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" }); }
@@ -42,6 +42,7 @@ function fmtPrice(cents: number, currency?: string) {
 // ── Ticket Card (My Tickets tab) ──────────────────────────────────────────────
 function TicketCard({ ticket, onDownload }: { ticket: EventTicket; onDownload: (t: EventTicket) => void }) {
   const colors = useColors();
+  const CATEGORIES = getCategories(colors.primary, colors.secondary);
   const styles = make_styles(colors.primary, colors.secondary);
   const statusColor = ticket.status === "used" ? "#6B7280" : ticket.status === "cancelled" ? "#EF4444" : "#059669";
 
@@ -93,7 +94,7 @@ function TicketCard({ ticket, onDownload }: { ticket: EventTicket; onDownload: (
               style={({ pressed }) => [styles.downloadBtn, { opacity: pressed ? 0.75 : 1 }]}
               onPress={() => onDownload(ticket)}
             >
-              <Ionicons name="download-outline" size={14} color={"#1E3A8A"} />
+              <Ionicons name="download-outline" size={14} color={colors.primary} />
               <Text style={styles.downloadBtnText}>Save PDF</Text>
             </Pressable>
           ) : null}
@@ -221,10 +222,10 @@ function PurchaseModal({
                       <Pressable
                         key={d.id}
                         onPress={() => setSelectedDate(d)}
-                        style={[styles.dateChip, sel && styles.dateChipSel, { borderColor: sel ? "#1E3A8A" : colors.border }]}
+                        style={[styles.dateChip, sel && styles.dateChipSel, { borderColor: sel ? colors.primary : colors.border }]}
                       >
-                        <Text style={[styles.dateChipText, { color: sel ? "#1E3A8A" : colors.text }]}>{fmtDate(d.date)}</Text>
-                        {d.start_time ? <Text style={[styles.dateChipSub, { color: sel ? "#1E3A8A" : colors.mutedForeground }]}>{d.start_time}</Text> : null}
+                        <Text style={[styles.dateChipText, { color: sel ? colors.primary : colors.text }]}>{fmtDate(d.date)}</Text>
+                        {d.start_time ? <Text style={[styles.dateChipSub, { color: sel ? colors.primary : colors.mutedForeground }]}>{d.start_time}</Text> : null}
                         {d.capacity > 0 ? (
                           <Text style={[styles.dateChipSub, { color: d.tickets_sold >= d.capacity ? "#EF4444" : "#059669" }]}>
                             {d.tickets_sold >= d.capacity ? "FULL" : `${d.capacity - d.tickets_sold} left`}
@@ -246,10 +247,10 @@ function PurchaseModal({
                   <Pressable
                     key={t.id}
                     onPress={() => { setSelectedType(t); setQuantity(1); }}
-                    style={[styles.typeCard, sel && styles.typeCardSel, { borderColor: sel ? "#1E3A8A" : colors.border, backgroundColor: sel ? "#EFF6FF" : colors.card }]}
+                    style={[styles.typeCard, sel && styles.typeCardSel, { borderColor: sel ? colors.primary : colors.border, backgroundColor: sel ? "#EFF6FF" : colors.card }]}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.typeName, { color: sel ? "#1E3A8A" : colors.text }]}>{t.name}</Text>
+                      <Text style={[styles.typeName, { color: sel ? colors.primary : colors.text }]}>{t.name}</Text>
                       {t.description ? <Text style={[styles.typeDesc, { color: colors.mutedForeground }]}>{t.description}</Text> : null}
                       {t.member_free_qty > 0 ? (
                         <View style={styles.freeTag}>
@@ -258,10 +259,10 @@ function PurchaseModal({
                         </View>
                       ) : null}
                     </View>
-                    <Text style={[styles.typePrice, { color: sel ? "#1E3A8A" : colors.text }]}>
+                    <Text style={[styles.typePrice, { color: sel ? colors.primary : colors.text }]}>
                       {fmtPrice(t.price_cents, event.currency)}
                     </Text>
-                    {sel && <Ionicons name="checkmark-circle" size={20} color={"#1E3A8A"} style={{ marginLeft: 8 }} />}
+                    {sel && <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={{ marginLeft: 8 }} />}
                   </Pressable>
                 );
               })}
@@ -318,7 +319,7 @@ function PurchaseModal({
               )}
               <View style={[styles.summaryRow, { marginTop: 4 }]}>
                 <Text style={[styles.summaryLabel, { fontWeight: "700" }]}>Total</Text>
-                <Text style={[styles.summaryValue, { fontWeight: "800", color: "#1E3A8A" }]}>{fmtPrice(totalCents, event.currency)}</Text>
+                <Text style={[styles.summaryValue, { fontWeight: "800", color: colors.primary }]}>{fmtPrice(totalCents, event.currency)}</Text>
               </View>
               {totalCents > 0 && (
                 <Text style={styles.stripeNote}>You will be redirected to Stripe Checkout.</Text>
@@ -352,6 +353,7 @@ function PurchaseModal({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function ParentEventsScreen() {
   const colors  = useColors();
+  const CATEGORIES = getCategories(colors.primary, colors.secondary);
   const styles = make_styles(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
   const { user } = useAuth();
@@ -386,14 +388,14 @@ export default function ParentEventsScreen() {
   const handleDownloadPDF = async (ticket: EventTicket) => {
     try {
       const QRCodeLib = (await import("qrcode")).default;
-      const qrDataUrl = await QRCodeLib.toDataURL(ticket.qr_code, { width: 400, margin: 2, color: { dark: "#1E3A8A" } });
+      const qrDataUrl = await QRCodeLib.toDataURL(ticket.qr_code, { width: 400, margin: 2, color: { dark: colors.primary } });
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
         body { font-family: -apple-system, Helvetica, Arial, sans-serif; background: #F8FAFC; margin: 0; padding: 24px; }
         .ticket { background: #fff; border-radius: 16px; max-width: 420px; margin: 0 auto;
                   box-shadow: 0 4px 24px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: "#1E3A8A"; padding: 28px 24px 20px; }
-        .org    { color: "#FBBF24"; font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 6px; }
+        .header { background: colors.primary; padding: 28px 24px 20px; }
+        .org    { color: colors.secondary; font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 6px; }
         .title  { color: #fff; font-size: 22px; font-weight: 900; margin: 0; }
         .body   { padding: 24px; }
         .row    { display: flex; align-items: center; margin-bottom: 10px; color: #374151; font-size: 13px; }
@@ -440,7 +442,7 @@ export default function ParentEventsScreen() {
   if (loading) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={"#1E3A8A"} style={{ marginTop: 80 }} />
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} />
       </View>
     );
   }
@@ -457,7 +459,7 @@ export default function ParentEventsScreen() {
               <Ionicons
                 name={t === "browse" ? "calendar" : "ticket"}
                 size={14}
-                color={tab === t ? "#1E3A8A" : "rgba(255,255,255,0.7)"}
+                color={tab === t ? colors.primary : "rgba(255,255,255,0.7)"}
               />
               <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
                 {t === "browse" ? "Browse" : `My Tickets${myTickets.length > 0 ? ` (${myTickets.length})` : ""}`}
@@ -470,7 +472,7 @@ export default function ParentEventsScreen() {
       {tab === "browse" ? (
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} tintColor={"#1E3A8A"} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
         >
           {events.length === 0 ? (
@@ -510,7 +512,7 @@ export default function ParentEventsScreen() {
                       )}
                       {minPrice !== null && (
                         <View style={[styles.eventTag, { backgroundColor: "#EFF6FF" }]}>
-                          <Text style={[styles.eventTagText, { color: "#1E3A8A" }]}>
+                          <Text style={[styles.eventTagText, { color: colors.primary }]}>
                             {minPrice === 0 ? "Free" : `From ${fmtPrice(minPrice, e.currency)}`}
                           </Text>
                         </View>
@@ -526,7 +528,7 @@ export default function ParentEventsScreen() {
       ) : (
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} tintColor={"#1E3A8A"} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
         >
           {myTickets.length === 0 ? (

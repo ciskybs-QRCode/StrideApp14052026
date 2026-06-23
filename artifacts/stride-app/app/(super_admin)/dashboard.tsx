@@ -304,7 +304,7 @@ export default function SuperAdminDashboard() {
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color={"#1E3A8A"} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <ScrollView
@@ -315,7 +315,7 @@ export default function SuperAdminDashboard() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); void loadMetrics(true); }}
-              tintColor={"#1E3A8A"}
+              tintColor={colors.primary}
             />
           }
         >

@@ -465,10 +465,10 @@ export default function AdminHome() {
         {/* ── Super-admin platform banner ── */}
         {user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId) && (
           <View style={{ backgroundColor: "#EFF6FF", borderRadius: 14, padding: 14, marginBottom: 14, borderWidth: 1.5, borderColor: "#BFDBFE" }}>
-            <Text style={{ fontSize: 13, fontWeight: "800", color: "#1E3A8A" }}>
+            <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary }}>
               Stride Platform Manager
             </Text>
-            <Text style={{ fontSize: 11, color: "#1E3A8A", marginTop: 2, lineHeight: 16 }}>
+            <Text style={{ fontSize: 11, color: colors.primary, marginTop: 2, lineHeight: 16 }}>
               You are managing the Stride platform. No association is linked to your account.
             </Text>
           </View>
@@ -493,9 +493,9 @@ export default function AdminHome() {
         {/* ── Super Admin without org: show only platform CTA ── */}
         {user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId) && (
           <Pressable
-            style={[styles.ctaCard, { backgroundColor: "#1E3A8A", marginBottom: 16 }]}            onPress={() => { router.push("/(super_admin)/dashboard" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            style={[styles.ctaCard, { backgroundColor: colors.primary, marginBottom: 16 }]}            onPress={() => { router.push("/(super_admin)/dashboard" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <Ionicons name="shield-checkmark" size={28} color={"#FBBF24"} />
+            <Ionicons name="shield-checkmark" size={28} color={colors.secondary} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.ctaTitle}>Super Admin Dashboard</Text>
               <Text style={styles.ctaSub}>Manage platform, associations, and users</Text>
@@ -507,7 +507,7 @@ export default function AdminHome() {
         {/* ── QUICK ACTIONS (hidden for super_admin without org) ── */}
         {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Quick Actions</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
             <View style={{ gap: 12, marginBottom: 16 }}>
 
               {/* 1. SOS Emergency */}
@@ -519,17 +519,17 @@ export default function AdminHome() {
                 onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               >
                 <View style={[styles.qrMiniBox, { backgroundColor: "#EFF6FF" }]}>
-                  <QRCode value={qrValue} size={72} color={"#1E3A8A"} backgroundColor="transparent" />
+                  <QRCode value={qrValue} size={72} color={colors.primary} backgroundColor="transparent" />
                 </View>
                 <View style={styles.qrPanelRight}>
-                  <Text style={[styles.qrPanelTitle, { color: "#1E3A8A" }]}>ADMIN PASS</Text>
+                  <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>ADMIN PASS</Text>
                   <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Admin"}</Text>
                   <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>
                     {user?.role === "super_admin" ? "Super Admin" : "Admin"} · {orgName || user?.schoolName || ""}
                   </Text>
                   <View style={[styles.qrActiveBadge, { backgroundColor: "#DBEAFE" }]}>
-                    <Ionicons name="shield-checkmark" size={12} color={"#1E3A8A"} />
-                    <Text style={[styles.qrActiveBadgeText, { color: "#1E3A8A" }]}>Active Credential</Text>
+                    <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
+                    <Text style={[styles.qrActiveBadgeText, { color: colors.primary }]}>Active Credential</Text>
                   </View>
                 </View>
                 <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
@@ -559,40 +559,40 @@ export default function AdminHome() {
             {/* Label + Month/Year toggle in same row */}
             <View style={styles.heroTopRow}>
               <Text style={[styles.heroLabel, { color: colors.mutedForeground }]}>{period === "month" ? "Monthly" : "Annual"} Revenue</Text>
-              <View style={[styles.heroPeriodToggle, { backgroundColor: ("#1E3A8A" + "18") }]}>
+              <View style={[styles.heroPeriodToggle, { backgroundColor: (colors.primary + "18") }]}>
                 <Pressable
-                  style={[styles.heroPeriodBtn, period === "month" && { backgroundColor: "#1E3A8A" }]}
+                  style={[styles.heroPeriodBtn, period === "month" && { backgroundColor: colors.primary }]}
                   onPress={() => setPeriod("month")}
                 >
                   <Text style={[styles.heroPeriodBtnText, { color: period === "month" ? "#FFFFFF" : colors.mutedForeground }]}>Month</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.heroPeriodBtn, period === "year" && { backgroundColor: "#1E3A8A" }]}
+                  style={[styles.heroPeriodBtn, period === "year" && { backgroundColor: colors.primary }]}
                   onPress={() => setPeriod("year")}
                 >
                   <Text style={[styles.heroPeriodBtnText, { color: period === "year" ? "#FFFFFF" : colors.mutedForeground }]}>Year</Text>
                 </Pressable>
               </View>
             </View>
-            <Text style={[styles.heroValue, { color: "#1E3A8A" }]}>{cur}{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
+            <Text style={[styles.heroValue, { color: colors.primary }]}>{cur}{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
             <View style={styles.heroTrend}>
-              <Ionicons name="trending-up" size={16} color={"#FBBF24"} />
+              <Ionicons name="trending-up" size={16} color={colors.secondary} />
               <Text style={styles.heroTrendText}>+12.4% vs last month</Text>
             </View>
           </View>
           <View style={[styles.heroSide, { borderTopColor: colors.border }]}>
             <View style={styles.heroSideItem}>
-              <Text style={[styles.heroSideValue, { color: "#1E3A8A" }]}>{totalStudents}</Text>
+              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{totalStudents}</Text>
               <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Members</Text>
             </View>
             <View style={[styles.heroSideDivider, { backgroundColor: colors.border }]} />
             <View style={styles.heroSideItem}>
-              <Text style={[styles.heroSideValue, { color: "#1E3A8A" }]}>{courses.length}</Text>
+              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{courses.length}</Text>
               <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Courses</Text>
             </View>
             <View style={[styles.heroSideDivider, { backgroundColor: colors.border }]} />
             <View style={styles.heroSideItem}>
-              <Text style={[styles.heroSideValue, { color: "#1E3A8A" }]}>{avgOccupancy}%</Text>
+              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{avgOccupancy}%</Text>
               <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Occupancy</Text>
             </View>
           </View>
@@ -603,16 +603,16 @@ export default function AdminHome() {
         {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
         <View style={styles.kpiRow}>
           {[
-            { label: "Outstanding", value: `${cur}${pendingRevenue.toLocaleString()}`,  icon: "time-outline"    as const, color: "#1E3A8A", bg: "#EFF6FF" },
-            { label: "Avg/Member",  value: `${cur}${avgPerStudent.toLocaleString()}`,  icon: "person-outline"  as const, color: "#1E3A8A", bg: "#DBEAFE" },
-            { label: "Renewal Rate",value: "87%",                icon: "refresh-outline" as const, color: "#1E3A8A", bg: "#EFF6FF" },
-            { label: "NPS Score",   value: "4.8★",               icon: "star-outline"    as const, color: "#FBBF24", bg: "#1E3A8A" },
+            { label: "Outstanding", value: `${cur}${pendingRevenue.toLocaleString()}`,  icon: "time-outline"    as const, color: colors.primary, bg: "#EFF6FF" },
+            { label: "Avg/Member",  value: `${cur}${avgPerStudent.toLocaleString()}`,  icon: "person-outline"  as const, color: colors.primary, bg: "#DBEAFE" },
+            { label: "Renewal Rate",value: "87%",                icon: "refresh-outline" as const, color: colors.primary, bg: "#EFF6FF" },
+            { label: "NPS Score",   value: "4.8★",               icon: "star-outline"    as const, color: colors.secondary, bg: colors.primary },
           ].map(k => (
             <View key={k.label} style={[styles.kpiCard, { backgroundColor: colors.card }]}>
               <View style={[styles.kpiIcon, { backgroundColor: k.bg }]}>
                 <Ionicons name={k.icon} size={18} color={k.color} />
               </View>
-              <Text style={[styles.kpiValue, { color: "#1E3A8A" }]}>{k.value}</Text>
+              <Text style={[styles.kpiValue, { color: colors.primary }]}>{k.value}</Text>
               <Text style={[styles.kpiLabel, { color: colors.mutedForeground }]}>{k.label}</Text>
             </View>
           ))}
@@ -622,7 +622,7 @@ export default function AdminHome() {
         {/* ── Contact the Office (hidden for super_admin without org) ── */}
         {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
         <>
-        <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 24, marginBottom: 10 }]}>
+        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 24, marginBottom: 10 }]}>
           Contact the Office
         </Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
@@ -630,29 +630,29 @@ export default function AdminHome() {
             <View style={{ flexDirection: "row", gap: 10 }}>
               {!!orgContactPhone && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `colors.primary12` }}
                   onPress={() => Linking.openURL(`https://wa.me/${orgContactPhone.replace(/\D/g, "")}`)}
                 >
-                  <Ionicons name="logo-whatsapp" size={22} color={"#1E3A8A"} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>WhatsApp</Text>
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>WhatsApp</Text>
                 </Pressable>
               )}
               {!!orgContactEmail && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `colors.primary12` }}
                   onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
                 >
-                  <Ionicons name="mail" size={22} color={"#1E3A8A"} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>Email</Text>
+                  <Ionicons name="mail" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Email</Text>
                 </Pressable>
               )}
               {!!orgContactPhone && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `colors.primary12` }}
                   onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
                 >
-                  <Ionicons name="call" size={22} color={"#1E3A8A"} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>Call</Text>
+                  <Ionicons name="call" size={22} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Call</Text>
                 </Pressable>
               )}
             </View>

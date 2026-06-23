@@ -551,10 +551,10 @@ export default function KioskScreen() {
 
             {/* Operator clock badge */}
             {(feedback.type === "clock_in" || feedback.type === "clock_out") && (
-              <View style={[styles.clockBadge, { backgroundColor: feedback.type === "clock_in" ? "#FBBF24" : "rgba(255,255,255,0.2)" }]}>
+              <View style={[styles.clockBadge, { backgroundColor: feedback.type === "clock_in" ? colors.secondary : "rgba(255,255,255,0.2)" }]}>
                 <Ionicons name={feedback.type === "clock_in" ? "time-outline" : "checkmark-circle-outline"} size={16}
-                  color={feedback.type === "clock_in" ? "#1E3A8A" : "#FFF"} />
-                <Text style={[styles.clockBadgeText, { color: feedback.type === "clock_in" ? "#1E3A8A" : "#FFF" }]}>
+                  color={feedback.type === "clock_in" ? colors.primary : "#FFF"} />
+                <Text style={[styles.clockBadgeText, { color: feedback.type === "clock_in" ? colors.primary : "#FFF" }]}>
                   {feedback.type === "clock_in" ? "Payroll Timer Started" : "Payroll Record Saved"}
                 </Text>
               </View>

@@ -131,7 +131,7 @@ export default function SettingsIndex() {
           <View style={styles.profileInfo}>
             <Text style={[styles.profileName, { color: colors.primary }]} numberOfLines={1}>{user?.name ?? "Administrator"}</Text>
             {!!user?.schoolName && (
-              <Text style={[styles.profileSchool, { color: "#FBBF24" }]} numberOfLines={1}>{user.schoolName}</Text>
+              <Text style={[styles.profileSchool, { color: colors.secondary }]} numberOfLines={1}>{user.schoolName}</Text>
             )}
             {!!user?.email && (
               <Text style={[styles.profileMeta, { color: colors.mutedForeground }]} numberOfLines={1}>{user.email}</Text>

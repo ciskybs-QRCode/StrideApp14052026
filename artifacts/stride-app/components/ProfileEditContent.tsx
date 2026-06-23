@@ -163,11 +163,11 @@ function SectionHeader({
   colors: ReturnType<typeof useColors>;
 }) {
   return (
-    <View style={[sectionHeaderStyles.row, { borderLeftColor: "#1E3A8A" }]}>
-      <View style={[sectionHeaderStyles.iconBox, { backgroundColor: `"#1E3A8A"18` }]}>
-        <Ionicons name={icon} size={16} color={"#1E3A8A"} />
+    <View style={[sectionHeaderStyles.row, { borderLeftColor: colors.primary }]}>
+      <View style={[sectionHeaderStyles.iconBox, { backgroundColor: `colors.primary18` }]}>
+        <Ionicons name={icon} size={16} color={colors.primary} />
       </View>
-      <Text style={[sectionHeaderStyles.text, { color: "#1E3A8A" }]}>{title}</Text>
+      <Text style={[sectionHeaderStyles.text, { color: colors.primary }]}>{title}</Text>
     </View>
   );
 }
@@ -522,8 +522,8 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
                   style={[
                     styles.genderPill,
                     {
-                      borderColor: active ? "#1E3A8A" : colors.border,
-                      backgroundColor: active ? "#1E3A8A" : colors.background,
+                      borderColor: active ? colors.primary : colors.border,
+                      backgroundColor: active ? colors.primary : colors.background,
                     },
                   ]}
                   onPress={() => {
@@ -575,8 +575,8 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
           disabled={locating}
         >
           {locating
-            ? <ActivityIndicator size="small" color={"#1E3A8A"} />
-            : <Ionicons name="locate-outline" size={14} color={"#1E3A8A"} />
+            ? <ActivityIndicator size="small" color={colors.primary} />
+            : <Ionicons name="locate-outline" size={14} color={colors.primary} />
           }
           <Text style={[styles.locateBtnText, { color: colors.primary }]}>
             {locating ? "Locating…" : "Use My Location"}
@@ -711,8 +711,8 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
                     style={[
                       styles.stateChip,
                       {
-                        borderColor: active ? "#1E3A8A" : colors.border,
-                        backgroundColor: active ? "#1E3A8A" : colors.background,
+                        borderColor: active ? colors.primary : colors.border,
+                        backgroundColor: active ? colors.primary : colors.background,
                       },
                     ]}
                   >
@@ -734,9 +734,9 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
           <SectionHeader icon="briefcase-outline" title="Business & Fiscal" colors={colors} />
 
           {/* Info banner */}
-          <View style={[styles.infoBanner, { backgroundColor: `"#1E3A8A"10`, borderLeftColor: "#1E3A8A" }]}>
-            <Ionicons name="information-circle-outline" size={16} color={"#1E3A8A"} />
-            <Text style={[styles.infoText, { color: "#1E3A8A" }]}>
+          <View style={[styles.infoBanner, { backgroundColor: `colors.primary10`, borderLeftColor: colors.primary }]}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.primary }]}>
               {"Business numbers are optional. Only fill in what applies to your organisation."}
             </Text>
           </View>
@@ -805,7 +805,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
       <Pressable
         style={[
           styles.saveBtn,
-          { backgroundColor: saved ? "#10B981" : "#1E3A8A", opacity: saving ? 0.75 : 1 },
+          { backgroundColor: saved ? "#10B981" : colors.primary, opacity: saving ? 0.75 : 1 },
         ]}
         onPress={handleSave}
         disabled={saving}

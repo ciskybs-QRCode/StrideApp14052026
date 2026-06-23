@@ -216,10 +216,10 @@ export default function AdminAnalytics() {
               {(["revenue", "members"] as const).map(m => (
                 <Pressable
                   key={m}
-                  style={[styles.metricBtn, chartMetric === m && { backgroundColor: "#FBBF24" }]}
+                  style={[styles.metricBtn, chartMetric === m && { backgroundColor: colors.secondary }]}
                   onPress={() => setChartMetric(m)}
                 >
-                  <Text style={[styles.metricBtnText, { color: chartMetric === m ? "#1E3A8A" : colors.mutedForeground }]}>
+                  <Text style={[styles.metricBtnText, { color: chartMetric === m ? colors.primary : colors.mutedForeground }]}>
                     {m === "revenue" ? "Revenue" : "Members"}
                   </Text>
                 </Pressable>
@@ -230,7 +230,7 @@ export default function AdminAnalytics() {
           <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
             {trendsLoading ? (
               <View style={styles.chartSkeleton}>
-                <ActivityIndicator color={"#1E3A8A"} />
+                <ActivityIndicator color={colors.primary} />
                 <Text style={[styles.chartSkeletonText, { color: colors.mutedForeground }]}>
                   Loading live data…
                 </Text>
@@ -259,11 +259,11 @@ export default function AdminAnalytics() {
                         <View style={styles.chartBarWrap}>
                           <View style={[styles.chartBarFill, {
                             height: `${Math.max(pct, val > 0 ? 4 : 0)}%` as `${number}%`,
-                            backgroundColor: last ? "#FBBF24" : "#1E3A8A",
+                            backgroundColor: last ? colors.secondary : colors.primary,
                             opacity: last ? 1 : 0.55 + i * 0.09,
                           }]} />
                         </View>
-                        <Text style={[styles.chartMonth, { color: last ? "#1E3A8A" : colors.mutedForeground, fontWeight: last ? "800" : "600" }]}>
+                        <Text style={[styles.chartMonth, { color: last ? colors.primary : colors.mutedForeground, fontWeight: last ? "800" : "600" }]}>
                           {data.label}
                         </Text>
                       </View>
@@ -347,7 +347,7 @@ export default function AdminAnalytics() {
               return (
                 <View key={c.id} style={[styles.occRow, i < courses.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
                   <View style={styles.occLeft}>
-                    <Text style={[styles.occName, { color: "#1E3A8A" }]}>{c.name}</Text>
+                    <Text style={[styles.occName, { color: colors.primary }]}>{c.name}</Text>
                     <View style={[styles.occBarBg, { backgroundColor: colors.muted }]}>
                       <View style={[styles.occBarFill, { width: `${pct}%` as `${number}%`, backgroundColor: barColor }]} />
                     </View>
@@ -407,7 +407,7 @@ export default function AdminAnalytics() {
                   <Ionicons name={r.icon} size={20} color={r.color} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.actName, { color: "#1E3A8A" }]}>{r.name}</Text>
+                  <Text style={[styles.actName, { color: colors.primary }]}>{r.name}</Text>
                   <Text style={[styles.actAction, { color: colors.mutedForeground }]}>{r.action} · {r.time}</Text>
                 </View>
                 <Text style={[styles.actAmount, { color: r.color }]}>{r.amount}</Text>
@@ -439,10 +439,10 @@ export default function AdminAnalytics() {
                 onPress={() => void handleExport(item.label)}
               >
                 <View style={[styles.exportIconWrap, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Ionicons name={item.icon} size={22} color={"#1E3A8A"} />
+                  <Ionicons name={item.icon} size={22} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.exportLabel, { color: "#1E3A8A" }]}>{item.label}</Text>
+                  <Text style={[styles.exportLabel, { color: colors.primary }]}>{item.label}</Text>
                   <Text style={[styles.exportDesc, { color: colors.mutedForeground }]}>{item.desc}</Text>
                 </View>
                 <View style={styles.exportBadge}>

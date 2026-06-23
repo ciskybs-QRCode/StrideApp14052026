@@ -185,7 +185,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
                 style={{
                   alignSelf: isMe ? "flex-end" : "flex-start",
                   maxWidth: "80%",
-                  backgroundColor: isMe ? "#1E3A8A" : cardBg,
+                  backgroundColor: isMe ? colors.primary : cardBg,
                   borderRadius: 14,
                   padding: 12,
                   borderWidth: isMe ? 0 : 1,
@@ -193,7 +193,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
                 }}
               >
                 {m.subject && (
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: isMe ? "#FBBF24" : "#1E3A8A", marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: isMe ? colors.secondary : colors.primary, marginBottom: 4 }}>
                     {m.subject}
                   </Text>
                 )}
@@ -208,9 +208,9 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
                         onPress={() => {
                           if (Platform.OS === "web" && a.url) window.open(a.url, "_blank");
                         }}
-                        style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: isMe ? ("#1E3A8A" + "80") : "#F3F4F6", padding: 6, borderRadius: 8 }}
+                        style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: isMe ? (colors.primary + "80") : "#F3F4F6", padding: 6, borderRadius: 8 }}
                       >
-                        <Ionicons name="attach-outline" size={14} color={isMe ? "#FBBF24" : "#1E3A8A"} />
+                        <Ionicons name="attach-outline" size={14} color={isMe ? colors.secondary : colors.primary} />
                         <Text style={{ fontSize: 11, color: isMe ? "#FFF" : colors.foreground, flex: 1 }} numberOfLines={1}>{a.name}</Text>
                       </Pressable>
                     ))}
@@ -236,7 +236,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
             onPress={sendReply}
             disabled={replying || !replyText.trim()}
             style={({ pressed }) => ({
-              backgroundColor: "#1E3A8A",
+              backgroundColor: colors.primary,
               borderRadius: 10,
               padding: 10,
               opacity: (replying || !replyText.trim()) ? 0.5 : pressed ? 0.8 : 1,
@@ -266,9 +266,9 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
             <Pressable
               key={t}
               onPress={() => setTab(t)}
-              style={{ flex: 1, alignItems: "center", paddingVertical: 12, borderBottomWidth: active ? 2 : 0, borderBottomColor: "#1E3A8A" }}
+              style={{ flex: 1, alignItems: "center", paddingVertical: 12, borderBottomWidth: active ? 2 : 0, borderBottomColor: colors.primary }}
             >
-              <Text style={{ fontSize: 12, fontWeight: active ? "700" : "500", color: active ? "#1E3A8A" : colors.mutedForeground }}>
+              <Text style={{ fontSize: 12, fontWeight: active ? "700" : "500", color: active ? colors.primary : colors.mutedForeground }}>
                 {t === "inbox" ? `Inbox${unread > 0 ? ` (${unread})` : ""}` : t === "sent" ? "Sent" : "Compose"}
               </Text>
             </Pressable>
@@ -297,7 +297,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
                   opacity: pressed ? 0.85 : 1,
                 })}
               >
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#1E3A8A", alignItems: "center", justifyContent: "center" }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}>
                   <Text style={{ fontSize: 14, fontWeight: "700", color: "#FFF" }}>{t.other_name?.charAt(0) ?? "?"}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
@@ -310,8 +310,8 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
                 <View style={{ alignItems: "flex-end" }}>
                   <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{timeAgo(t.last_at)}</Text>
                   {t.unread_count > 0 && (
-                    <View style={{ backgroundColor: "#FBBF24", borderRadius: 10, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", marginTop: 4 }}>
-                      <Text style={{ fontSize: 10, fontWeight: "800", color: "#1E3A8A" }}>{t.unread_count}</Text>
+                    <View style={{ backgroundColor: colors.secondary, borderRadius: 10, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", marginTop: 4 }}>
+                      <Text style={{ fontSize: 10, fontWeight: "800", color: colors.primary }}>{t.unread_count}</Text>
                     </View>
                   )}
                 </View>
@@ -336,7 +336,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
                 <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground }}>To: {m.recipient?.name ?? "Unknown"}</Text>
                 <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{timeAgo(m.created_at)}</Text>
               </View>
-              {m.subject && <Text style={{ fontSize: 12, color: "#1E3A8A", marginTop: 2 }}>{m.subject}</Text>}
+              {m.subject && <Text style={{ fontSize: 12, color: colors.primary, marginTop: 2 }}>{m.subject}</Text>}
               <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }} numberOfLines={2}>{m.body}</Text>
             </Pressable>
           ))}
@@ -350,7 +350,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
             <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>To</Text>
             {selectedRecipient ? (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EFF6FF", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
-                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#1E3A8A", alignItems: "center", justifyContent: "center" }}>
+                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}>
                   <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>{selectedRecipient.name?.charAt(0)}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
@@ -379,7 +379,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
                         onPress={() => { setSelectedRecipient(u); setSearchResults([]); setSearchText(""); }}
                         style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: border }}
                       >
-                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#1E3A8A", alignItems: "center", justifyContent: "center" }}>
+                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}>
                           <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>{u.name?.charAt(0)}</Text>
                         </View>
                         <View>
@@ -424,7 +424,7 @@ export default function DirectMessagesScreen({ onBack }: { onBack?: () => void }
             onPress={sendMessage}
             disabled={sending || !selectedRecipient || !composeBody.trim()}
             style={({ pressed }) => ({
-              backgroundColor: "#1E3A8A",
+              backgroundColor: colors.primary,
               borderRadius: 12,
               padding: 14,
               alignItems: "center",

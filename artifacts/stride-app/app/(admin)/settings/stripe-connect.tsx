@@ -166,7 +166,7 @@ export default function StripeConnectScreen() {
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <ActivityIndicator style={{ marginTop: 60 }} color={"#1E3A8A"} />
+          <ActivityIndicator style={{ marginTop: 60 }} color={colors.primary} />
         ) : (
           <>
             {/* ── STATUS CARD ── */}
@@ -210,7 +210,7 @@ export default function StripeConnectScreen() {
 
             {/* ── INFORMATION BOX ── */}
             <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="information-circle-outline" size={20} color={"#1E3A8A"} style={{ marginBottom: 6 }} />
+              <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginBottom: 6 }} />
               <Text style={[styles.infoTitle, { color: colors.foreground }]}>How it works</Text>
               <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>
                 When you link your own Stripe account, every membership payment made by your families is processed
@@ -221,7 +221,7 @@ export default function StripeConnectScreen() {
                 style={styles.stripeLink}
                 onPress={() => void Linking.openURL("https://dashboard.stripe.com/apikeys")}
               >
-                <Ionicons name="open-outline" size={14} color={"#1E3A8A"} />
+                <Ionicons name="open-outline" size={14} color={colors.primary} />
                 <Text style={styles.stripeLinkText}>Get your API key from Stripe Dashboard</Text>
               </Pressable>
             </View>
@@ -276,9 +276,9 @@ export default function StripeConnectScreen() {
                   disabled={saving || !secretKey.trim()}
                 >
                   {saving
-                    ? <ActivityIndicator color={"#1E3A8A"} size="small" />
+                    ? <ActivityIndicator color={colors.primary} size="small" />
                     : <>
-                        <Ionicons name="link-outline" size={18} color={"#1E3A8A"} />
+                        <Ionicons name="link-outline" size={18} color={colors.primary} />
                         <Text style={styles.connectBtnText}>Connect Stripe Account</Text>
                       </>
                   }
@@ -299,10 +299,10 @@ export default function StripeConnectScreen() {
 
               <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Primary Colour (hex)</Text>
               <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                <View style={[styles.colourDot, { backgroundColor: primaryCol || "#1E3A8A" }]} />
+                <View style={[styles.colourDot, { backgroundColor: primaryCol || colors.primary }]} />
                 <TextInput
                   style={[styles.input, { color: colors.foreground, flex: 1 }]}
-                  placeholder={"#1E3A8A"}
+                  placeholder={colors.primary}
                   placeholderTextColor={colors.mutedForeground}
                   value={primaryCol}
                   onChangeText={setPrimaryCol}
@@ -328,18 +328,18 @@ export default function StripeConnectScreen() {
               <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Logo (optional)</Text>
               <View style={styles.logoTabRow}>
                 <Pressable
-                  style={[styles.logoTab, { borderColor: logoMode === "url" ? "#1E3A8A" : colors.border, backgroundColor: logoMode === "url" ? "#EFF6FF" : colors.background }]}
+                  style={[styles.logoTab, { borderColor: logoMode === "url" ? colors.primary : colors.border, backgroundColor: logoMode === "url" ? "#EFF6FF" : colors.background }]}
                   onPress={() => setLogoMode("url")}
                 >
-                  <Ionicons name="link-outline" size={14} color={logoMode === "url" ? "#1E3A8A" : colors.mutedForeground} />
-                  <Text style={[styles.logoTabText, { color: logoMode === "url" ? "#1E3A8A" : colors.mutedForeground }]}>Paste URL</Text>
+                  <Ionicons name="link-outline" size={14} color={logoMode === "url" ? colors.primary : colors.mutedForeground} />
+                  <Text style={[styles.logoTabText, { color: logoMode === "url" ? colors.primary : colors.mutedForeground }]}>Paste URL</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.logoTab, { borderColor: logoMode === "file" ? "#1E3A8A" : colors.border, backgroundColor: logoMode === "file" ? "#EFF6FF" : colors.background }]}
+                  style={[styles.logoTab, { borderColor: logoMode === "file" ? colors.primary : colors.border, backgroundColor: logoMode === "file" ? "#EFF6FF" : colors.background }]}
                   onPress={() => setLogoMode("file")}
                 >
-                  <Ionicons name="cloud-upload-outline" size={14} color={logoMode === "file" ? "#1E3A8A" : colors.mutedForeground} />
-                  <Text style={[styles.logoTabText, { color: logoMode === "file" ? "#1E3A8A" : colors.mutedForeground }]}>Upload File</Text>
+                  <Ionicons name="cloud-upload-outline" size={14} color={logoMode === "file" ? colors.primary : colors.mutedForeground} />
+                  <Text style={[styles.logoTabText, { color: logoMode === "file" ? colors.primary : colors.mutedForeground }]}>Upload File</Text>
                 </Pressable>
               </View>
               {logoMode === "url" ? (
@@ -374,8 +374,8 @@ export default function StripeConnectScreen() {
                     </>
                   ) : (
                     <>
-                      <Ionicons name="image-outline" size={20} color={"#1E3A8A"} />
-                      <Text style={[styles.logoUploadText, { color: "#1E3A8A" }]}>Choose from photo library</Text>
+                      <Ionicons name="image-outline" size={20} color={colors.primary} />
+                      <Text style={[styles.logoUploadText, { color: colors.primary }]}>Choose from photo library</Text>
                     </>
                   )}
                 </Pressable>
@@ -384,15 +384,15 @@ export default function StripeConnectScreen() {
               <Pressable
                 style={({ pressed }) => [styles.saveBtn, {
                   opacity: pressed || brandSaving ? 0.75 : 1,
-                  borderColor: "#1E3A8A",
+                  borderColor: colors.primary,
                 }]}
                 onPress={handleSaveBranding}
                 disabled={brandSaving}
               >
                 {brandSaving
-                  ? <ActivityIndicator color={"#1E3A8A"} size="small" />
+                  ? <ActivityIndicator color={colors.primary} size="small" />
                   : <>
-                      <Ionicons name="color-palette-outline" size={18} color={"#1E3A8A"} />
+                      <Ionicons name="color-palette-outline" size={18} color={colors.primary} />
                       <Text style={styles.saveBtnText}>Save Branding</Text>
                     </>
                 }

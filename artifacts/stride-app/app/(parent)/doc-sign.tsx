@@ -126,8 +126,8 @@ export default function DocSignScreen() {
           disabled={!hasScrolledToBottom}
         >
           <View style={[s.checkbox, {
-            borderColor: checkboxTicked ? "#1E3A8A" : colors.border,
-            backgroundColor: checkboxTicked ? "#1E3A8A" : "transparent",
+            borderColor: checkboxTicked ? colors.primary : colors.border,
+            backgroundColor: checkboxTicked ? colors.primary : "transparent",
           }]}>
             {checkboxTicked && <Ionicons name="checkmark" size={14} color="#FFF" />}
           </View>

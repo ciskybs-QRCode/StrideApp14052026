@@ -223,7 +223,7 @@ export default function AppConfigurationPage() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
-        <ActivityIndicator size="large" color={"#1E3A8A"} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -312,7 +312,7 @@ export default function AppConfigurationPage() {
           />
         </View>
         {settings.waitlist_enabled && (
-          <View style={[styles.infoBox, { backgroundColor: "rgba(251,191,36,0.1)", borderLeftWidth: 3, borderLeftColor: "#FBBF24", marginBottom: 20 }]}>
+          <View style={[styles.infoBox, { backgroundColor: "rgba(251,191,36,0.1)", borderLeftWidth: 3, borderLeftColor: colors.secondary, marginBottom: 20 }]}>
             <Ionicons name="information-circle-outline" size={16} color="#92740A" />
             <Text style={[styles.infoText, { color: "#92740A", fontSize: 12 }]}>
               When waitlists are enabled, each course can have its own capacity and threshold. When a spot opens the first person on the list has 24 hours to accept before it passes to the next.
@@ -323,7 +323,7 @@ export default function AppConfigurationPage() {
         {/* ── DOCUMENTS REQUIRED ── */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>DOCUMENTS REQUIRED</Text>
         <View style={[{ borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
-          { backgroundColor: "rgba(251,191,36,0.08)", borderLeftWidth: 3, borderLeftColor: "#FBBF24" }]}>
+          { backgroundColor: "rgba(251,191,36,0.08)", borderLeftWidth: 3, borderLeftColor: colors.secondary }]}>
           <Text style={{ fontSize: 12, color: "#92740A", lineHeight: 18 }}>
             <Text style={{ fontWeight: "700" }}>Dependants</Text> are enrolled participants (children or anyone registered under a member account).{" "}
             <Text style={{ fontWeight: "700" }}>Adult Members</Text> who only accompany a dependant do not need to provide their own certificate — enable their switch only if they also participate in courses.
@@ -380,7 +380,7 @@ export default function AppConfigurationPage() {
                 returnKeyType="done"
               />
               <Pressable
-                style={[styles.saveBtn, { backgroundColor: "#1E3A8A", paddingHorizontal: 20, marginTop: 0, flex: 0 }]}
+                style={[styles.saveBtn, { backgroundColor: colors.primary, paddingHorizontal: 20, marginTop: 0, flex: 0 }]}
                 onPress={saveCertGraceDays}
               >
                 {isSaving("cert_grace_days") ? (
@@ -404,7 +404,7 @@ export default function AppConfigurationPage() {
               placeholderTextColor={colors.mutedForeground}
             />
             <Pressable
-              style={[styles.saveBtn, { backgroundColor: certMsgSaved ? "#1E3A8A" : "#1E3A8A", opacity: savingCertMsg ? 0.7 : 1 }]}
+              style={[styles.saveBtn, { backgroundColor: certMsgSaved ? colors.primary : colors.primary, opacity: savingCertMsg ? 0.7 : 1 }]}
               onPress={saveCertMsg}
               disabled={savingCertMsg}
             >
@@ -478,9 +478,9 @@ export default function AppConfigurationPage() {
           />
         </View>
         {settings.allow_one_time_grace_access && (
-          <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.07)", borderLeftWidth: 3, borderLeftColor: "#1E3A8A", marginBottom: 20 }]}>
-            <Ionicons name="warning-outline" size={16} color={"#1E3A8A"} />
-            <Text style={[styles.infoText, { color: "#1E3A8A", fontSize: 12 }]}>
+          <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.07)", borderLeftWidth: 3, borderLeftColor: colors.primary, marginBottom: 20 }]}>
+            <Ionicons name="warning-outline" size={16} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.primary, fontSize: 12 }]}>
               Grace Access is ON. Members whose subscriptions have expired will be admitted once. On that entry the app automatically sends them a payment reminder warning that the next visit will be blocked.
             </Text>
           </View>
@@ -532,17 +532,17 @@ export default function AppConfigurationPage() {
                 {/* Chip label input */}
                 <TextInput
                   style={{
-                    flex: 1, borderRadius: 20, borderWidth: 1.5, borderColor: "#1E3A8A",
-                    backgroundColor: "#1E3A8A" + "18",
+                    flex: 1, borderRadius: 20, borderWidth: 1.5, borderColor: colors.primary,
+                    backgroundColor: colors.primary + "18",
                     paddingHorizontal: 14, paddingVertical: 7,
-                    fontSize: 13, fontWeight: "700", color: "#1E3A8A",
+                    fontSize: 13, fontWeight: "700", color: colors.primary,
                     textAlign: "center",
                   }}
                   value={ded.label}
                   onChangeText={v => updateDeductionField(idx, "label", v)}
                   onBlur={() => void saveDeductions(payrollDeductions)}
                   placeholder="IVA"
-                  placeholderTextColor={"#1E3A8A" + "80"}
+                  placeholderTextColor={colors.primary + "80"}
                   autoCapitalize="characters"
                   returnKeyType="next"
                 />
@@ -620,7 +620,7 @@ export default function AppConfigurationPage() {
             <Pressable
               onPress={addDeduction}
               style={{ flexDirection: "row", alignItems: "center", gap: 8,
-                borderRadius: 12, borderWidth: 1.5, borderColor: "#1E3A8A",
+                borderRadius: 12, borderWidth: 1.5, borderColor: colors.primary,
                 borderStyle: "dashed", paddingVertical: 10, paddingHorizontal: 14,
                 marginTop: 4, alignSelf: "flex-start" }}
             >
@@ -688,9 +688,9 @@ export default function AppConfigurationPage() {
                   onPress={() => saveKey("absence_policy", option)}
                   style={{
                     flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center",
-                    backgroundColor: (settings.absence_policy ?? "substitute") === option ? "#1E3A8A" : colors.muted,
+                    backgroundColor: (settings.absence_policy ?? "substitute") === option ? colors.primary : colors.muted,
                     borderWidth: 1,
-                    borderColor: (settings.absence_policy ?? "substitute") === option ? "#1E3A8A" : colors.border,
+                    borderColor: (settings.absence_policy ?? "substitute") === option ? colors.primary : colors.border,
                   }}
                 >
                   <Text style={{ fontSize: 12, fontWeight: "700",
@@ -727,13 +727,13 @@ export default function AppConfigurationPage() {
                     onPress={() => saveKey("absence_cancel_refund_type", opt)}
                     style={{
                       flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center",
-                      backgroundColor: (settings.absence_cancel_refund_type ?? "credit") === opt ? "#FBBF24" : colors.muted,
+                      backgroundColor: (settings.absence_cancel_refund_type ?? "credit") === opt ? colors.secondary : colors.muted,
                       borderWidth: 1,
-                      borderColor: (settings.absence_cancel_refund_type ?? "credit") === opt ? "#FBBF24" : colors.border,
+                      borderColor: (settings.absence_cancel_refund_type ?? "credit") === opt ? colors.secondary : colors.border,
                     }}
                   >
                     <Text style={{ fontSize: 12, fontWeight: "700",
-                      color: (settings.absence_cancel_refund_type ?? "credit") === opt ? "#1E3A8A" : colors.mutedForeground,
+                      color: (settings.absence_cancel_refund_type ?? "credit") === opt ? colors.primary : colors.mutedForeground,
                       textTransform: "capitalize",
                     }}>
                       {opt}
@@ -864,7 +864,7 @@ function SwitchRow({ icon, label, description, value, saving, onToggle, colors }
         <Text style={[styles.rowDesc,  { color: colors.mutedForeground }]}>{description}</Text>
       </View>
       {saving ? (
-        <ActivityIndicator size="small" color={"#1E3A8A"} />
+        <ActivityIndicator size="small" color={colors.primary} />
       ) : (
         <Switch
           value={value}

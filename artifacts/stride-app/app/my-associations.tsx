@@ -24,14 +24,13 @@ import { getMyOrgs, type OrgEntry } from "@/lib/api";
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
 
-const ROLE_META: Record<string, { label: string; color: string; icon: string }> = {
-  admin:       { label: "Admin",    color: "#1E3A8A", icon: "shield-checkmark" },
-  operator:    { label: "Operator", color: "#FBBF24", icon: "briefcase-outline" },
-  parent:      { label: "Member",   color: "#6B7280", icon: "person" },
-  super_admin: { label: "Platform", color: "#1E3A8A", icon: "globe-outline" },
-};
-
-function roleMeta(role: string) {
+function roleMeta(role: string, primary: string, secondary: string) {
+  const ROLE_META: Record<string, { label: string; color: string; icon: string }> = {
+    admin:       { label: "Admin",    color: primary,    icon: "shield-checkmark" },
+    operator:    { label: "Operator", color: secondary,  icon: "briefcase-outline" },
+    parent:      { label: "Member",   color: "#6B7280",  icon: "person" },
+    super_admin: { label: "Platform", color: primary,    icon: "globe-outline" },
+  };
   return ROLE_META[role] ?? { label: role, color: "#6B7280", icon: "person-outline" };
 }
 
@@ -89,7 +88,7 @@ export default function MyAssociationsScreen() {
 
       {loading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color={"#1E3A8A"} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <ScrollView
@@ -98,7 +97,7 @@ export default function MyAssociationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); void load(); }}
-              tintColor={"#1E3A8A"}
+              tintColor={colors.primary}
             />
           }
         >
@@ -110,7 +109,7 @@ export default function MyAssociationsScreen() {
                 Join an association using an invite code or by scanning an org QR code.
               </Text>
               <Pressable
-                style={[s.joinBtn, { backgroundColor: "#1E3A8A" }]}
+                style={[s.joinBtn, { backgroundColor: colors.primary }]}
                 onPress={() => router.push("/join-org" as never)}
               >
                 <Ionicons name="add-circle-outline" size={18} color="#fff" />
@@ -123,8 +122,8 @@ export default function MyAssociationsScreen() {
                 <View key={org.orgId} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   {/* Org name + join date */}
                   <View style={s.cardHead}>
-                    <View style={[s.orgIcon, { backgroundColor: `"#1E3A8A"15` }]}>
-                      <Ionicons name="business" size={20} color={"#1E3A8A"} />
+                    <View style={[s.orgIcon, { backgroundColor: `colors.primary15` }]}>
+                      <Ionicons name="business" size={20} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[s.orgName, { color: colors.foreground }]} numberOfLines={1}>
@@ -141,7 +140,7 @@ export default function MyAssociationsScreen() {
                   {/* Role chips — one per role; tap to enter that context */}
                   <View style={s.rolesRow}>
                     {org.roles.map(role => {
-                      const meta    = roleMeta(role);
+                      const meta    = roleMeta(role, colors.primary, colors.secondary);
                       const active  = isCurrentContext(org, role);
                       const key     = `${org.orgId}:${role}`;
                       const loading = switching === key;
@@ -184,8 +183,8 @@ export default function MyAssociationsScreen() {
                 style={[s.addRow, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push("/join-org" as never)}
               >
-                <Ionicons name="add-circle-outline" size={22} color={"#1E3A8A"} />
-                <Text style={[s.addRowText, { color: "#1E3A8A" }]}>Join Another Association</Text>
+                <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+                <Text style={[s.addRowText, { color: colors.primary }]}>Join Another Association</Text>
               </Pressable>
             </>
           )}

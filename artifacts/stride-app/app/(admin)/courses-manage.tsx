@@ -274,10 +274,10 @@ export default function AdminCoursesManageScreen() {
               <View style={S.cardActions}>
                 <View style={{ flex: 1 }} />
                 <Pressable
-                  style={[S.actionBtn, { backgroundColor: `"#1E3A8A"12` }]}
+                  style={[S.actionBtn, { backgroundColor: `colors.primary12` }]}
                   onPress={() => openEdit(c)}
                 >
-                  <Ionicons name="pencil-outline" size={15} color={"#1E3A8A"} />
+                  <Ionicons name="pencil-outline" size={15} color={colors.primary} />
                 </Pressable>
                 <Pressable
                   style={[S.actionBtn, { backgroundColor: "#FEE2E2" }]}
@@ -329,8 +329,8 @@ export default function AdminCoursesManageScreen() {
                         key={d.id}
                         onPress={() => setFDiscipline(d.name)}
                         style={[S.chip, {
-                          backgroundColor: active ? "#1E3A8A" : colors.card,
-                          borderColor: active ? "#1E3A8A" : colors.border,
+                          backgroundColor: active ? colors.primary : colors.card,
+                          borderColor: active ? colors.primary : colors.border,
                         }]}
                       >
                         <Text style={[S.chipText, { color: active ? "#FFF" : colors.foreground }]}>
@@ -358,8 +358,8 @@ export default function AdminCoursesManageScreen() {
                     key={l}
                     onPress={() => setFLevel(l)}
                     style={[S.chip, {
-                      backgroundColor: active ? "#1E3A8A" : colors.card,
-                      borderColor:     active ? "#1E3A8A" : colors.border,
+                      backgroundColor: active ? colors.primary : colors.card,
+                      borderColor:     active ? colors.primary : colors.border,
                     }]}
                   >
                     <Text style={[S.chipText, { color: active ? "#FFF" : colors.foreground }]}>
@@ -416,8 +416,8 @@ export default function AdminCoursesManageScreen() {
                     key={day}
                     onPress={() => { const n = [...fDays]; n[i] = !n[i]; setFDays(n); }}
                     style={[S.dayBtn, {
-                      backgroundColor: active ? "#1E3A8A" : colors.card,
-                      borderColor:     active ? "#1E3A8A" : colors.border,
+                      backgroundColor: active ? colors.primary : colors.card,
+                      borderColor:     active ? colors.primary : colors.border,
                     }]}
                   >
                     <Text style={[S.dayBtnText, { color: active ? "#FFF" : colors.mutedForeground }]}>

@@ -107,8 +107,8 @@ export function AccountSettingsCard() {
       icon: "mail-outline",
       label: "Change Email",
       sub: user?.email,
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       textColor: colors.foreground,
       onPress: () => { setNewEmail(user?.email ?? ""); setShowEmail(true); },
     },
@@ -116,8 +116,8 @@ export function AccountSettingsCard() {
       icon: "lock-closed-outline",
       label: "Change Password",
       sub: undefined,
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       textColor: colors.foreground,
       onPress: () => { setPwCurrent(""); setPwNew(""); setPwConfirm(""); setShowPassword(true); },
     },
@@ -125,8 +125,8 @@ export function AccountSettingsCard() {
       icon: "log-out-outline",
       label: "Log Out",
       sub: undefined,
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       textColor: colors.foreground,
       onPress: () => setShowLogout(true),
     },
@@ -134,8 +134,8 @@ export function AccountSettingsCard() {
       icon: "trash-outline",
       label: "Delete Account",
       sub: undefined,
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       textColor: "#EF4444",
       onPress: () => { setDeleteText(""); setShowDelete(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); },
     },
@@ -246,7 +246,7 @@ export function AccountSettingsCard() {
               const mismatch = i > 0 && pwNew.length > 0 && pwConfirm.length > 0 && pwNew !== pwConfirm;
               return (
                 <View key={f.label} style={{ marginBottom: 14 }}>
-                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>{f.label}</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>{f.label}</Text>
                   <View style={[styles.pwRow, { borderColor: mismatch ? "#EF4444" : colors.border, backgroundColor: colors.background }]}>
                     <Ionicons name="lock-closed-outline" size={16} color={colors.mutedForeground} />
                     <TextInput
@@ -348,7 +348,7 @@ export function AccountSettingsCard() {
                 { icon: "calendar-outline"      as const, text: "All bookings will be cancelled" },
               ].map(item => (
                 <View key={item.text} style={[styles.consequenceRow, { borderColor: colors.border }]}>
-                  <View style={[styles.consequenceIcon, { backgroundColor: ("#1E3A8A" + "12") }]}>
+                  <View style={[styles.consequenceIcon, { backgroundColor: (colors.primary + "12") }]}>
                     <Ionicons name={item.icon} size={14} color="#EF4444" />
                   </View>
                   <Text style={[styles.consequenceText, { color: colors.foreground }]}>{item.text}</Text>

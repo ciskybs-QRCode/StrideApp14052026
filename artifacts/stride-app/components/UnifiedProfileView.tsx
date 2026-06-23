@@ -323,13 +323,13 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               onPress={() => nav("/(admin)/setup")}
             >
               <View style={s.featIconNavy}>
-                <Ionicons name="qr-code-outline" size={22} color={"#FBBF24"} />
+                <Ionicons name="qr-code-outline" size={22} color={colors.secondary} />
               </View>
               <View style={s.featText}>
                 <Text style={s.featTitleNavy} numberOfLines={1}>Setup & Member QR</Text>
                 <Text style={s.featDescNavy}  numberOfLines={1}>Branding, colours and invite code</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={"#FBBF24"} />
+              <Ionicons name="chevron-forward" size={18} color={colors.secondary} />
             </Pressable>
 
             {/* Promo Codes */}
@@ -383,8 +383,8 @@ export default function UnifiedProfileView({ currentRole }: Props) {
             <Text style={[s.groupLabel, { color: colors.mutedForeground, marginTop: 10 }]}>
               PROFESSIONAL PROFILE
             </Text>
-            <View style={[s.infoBox, { backgroundColor: `"#1E3A8A"08`, borderColor: `"#1E3A8A"20`, borderWidth: 1, marginBottom: 10 }]}>
-              <Ionicons name="information-circle-outline" size={14} color={"#1E3A8A"} />
+            <View style={[s.infoBox, { backgroundColor: `colors.primary08`, borderColor: `colors.primary20`, borderWidth: 1, marginBottom: 10 }]}>
+              <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
               <Text style={[s.infoText, { color: colors.mutedForeground }]}>
                 As an Admin, you can provision additional roles on your own account — to teach classes or enroll dependents — without creating a separate account.
               </Text>
@@ -515,8 +515,8 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               >
                 <Ionicons name="people-outline" size={28} color={colors.mutedForeground} />
                 <Text style={[s.emptyTitle, { color: colors.mutedForeground }]}>No dependents added yet</Text>
-                <View style={[s.emptyBtn, { borderColor: "#1E3A8A" }]}>
-                  <Text style={[s.emptyBtnText, { color: "#1E3A8A" }]}>Manage Dependents</Text>
+                <View style={[s.emptyBtn, { borderColor: colors.primary }]}>
+                  <Text style={[s.emptyBtnText, { color: colors.primary }]}>Manage Dependents</Text>
                 </View>
               </Pressable>
             ) : (
@@ -567,10 +567,10 @@ export default function UnifiedProfileView({ currentRole }: Props) {
 
                 {children.length > 4 && (
                   <Pressable style={s.seeAllRow} onPress={() => nav("/(parent)/children")}>
-                    <Text style={[s.seeAllText, { color: "#1E3A8A" }]}>
+                    <Text style={[s.seeAllText, { color: colors.primary }]}>
                       See all {children.length} dependents
                     </Text>
-                    <Ionicons name="chevron-forward" size={14} color={"#1E3A8A"} />
+                    <Ionicons name="chevron-forward" size={14} color={colors.primary} />
                   </Pressable>
                 )}
               </>
@@ -600,7 +600,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
                 <Switch
                   value={noshowEnabled}
                   onValueChange={handleNoshowToggle}
-                  trackColor={{ false: "#EF4444", true: "#1E3A8A" }}
+                  trackColor={{ false: "#EF4444", true: colors.primary }}
                   thumbColor="#FFF"
                 />
               </View>
@@ -639,7 +639,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               />
               <Pressable
                 style={({ pressed }) => ({
-                  backgroundColor: "#1E3A8A",
+                  backgroundColor: colors.primary,
                   borderRadius: 12, paddingVertical: 13, alignItems: "center",
                   opacity: pressed ? 0.85 : 1,
                 })}
@@ -697,8 +697,8 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               )}
 
               <View style={[s.docCardFooter, { borderTopColor: colors.border }]}>
-                <Text style={[s.docCardAction, { color: "#1E3A8A" }]}>View all documents</Text>
-                <Ionicons name="chevron-forward" size={14} color={"#1E3A8A"} />
+                <Text style={[s.docCardAction, { color: colors.primary }]}>View all documents</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.primary} />
               </View>
             </Pressable>
           </>
@@ -721,7 +721,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "center", alignItems: "center", padding: 20 }}>
           <View style={{
             backgroundColor: colors.card, borderRadius: 20, padding: 24,
-            borderColor: "#FBBF24", borderWidth: 2, width: "100%", maxWidth: 420,
+            borderColor: colors.secondary, borderWidth: 2, width: "100%", maxWidth: 420,
           }}>
             <View style={{ alignItems: "center", marginBottom: 16 }}>
               <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>

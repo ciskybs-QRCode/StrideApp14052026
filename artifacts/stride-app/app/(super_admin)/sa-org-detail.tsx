@@ -275,7 +275,7 @@ export default function SAOrgDetailScreen() {
                   </Text>
                 </View>
                 <View style={[s.statPill, { backgroundColor: "#EFF6FF" }]}>
-                  <Text style={[s.statPillText, { color: "#1E3A8A" }]}>
+                  <Text style={[s.statPillText, { color: colors.primary }]}>
                     {org.plan_tier.charAt(0).toUpperCase() + org.plan_tier.slice(1)}
                   </Text>
                 </View>

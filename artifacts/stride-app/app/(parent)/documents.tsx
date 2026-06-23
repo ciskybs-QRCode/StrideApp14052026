@@ -341,7 +341,7 @@ export default function DocumentsScreen() {
               <View key={doc.id} style={[styles.docCard, { backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444", borderLeftWidth: 4, borderRadius: 12, marginBottom: 8 }]}>
                 <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#EF4444" />
                 <View style={styles.docInfo}>
-                  <Text style={[styles.docTitle, { color: "#1E3A8A" }]}>{doc.title}</Text>
+                  <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
                   <Text style={[styles.docStatus, { color: "#EF4444" }]}>Signature required</Text>
                 </View>
                 <Pressable style={styles.signBtn} onPress={() => router.push({ pathname: "/(parent)/doc-sign", params: { docId: doc.id } })}>
@@ -360,7 +360,7 @@ export default function DocumentsScreen() {
               onPress={() => setExpandedSection(expandedSection === "new" ? null : "new")}
             >
               <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                <Ionicons name="document-text-outline" size={22} color={"#1E3A8A"} />
+                <Ionicons name="document-text-outline" size={22} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Association Notices</Text>
@@ -373,15 +373,15 @@ export default function DocumentsScreen() {
               <View style={styles.docTileBody}>
                 {newDocs.map(doc => (
                   <Pressable key={doc.id} style={[styles.docCard, { backgroundColor: colors.background }]} onPress={() => handlePreview(doc)}>
-                    <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={"#1E3A8A"} />
+                    <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={colors.primary} />
                     <View style={styles.docInfo}>
-                      <Text style={[styles.docTitle, { color: "#1E3A8A" }]}>{doc.title}</Text>
+                      <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
                       <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>
                         From {doc.sentBy === "admin" ? "Administration" : "Association"} · {doc.sentAt}
                       </Text>
                     </View>
-                    <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? "#1E3A8A" + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
-                      <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? "#1E3A8A" : colors.mutedForeground} />
+                    <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
+                      <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? colors.primary : colors.mutedForeground} />
                     </Pressable>
                   </Pressable>
                 ))}
@@ -452,17 +452,17 @@ export default function DocumentsScreen() {
                     </View>
                   ) : null}
                   <Pressable onPress={() => setCertResult(null)} style={[styles.certUploadAgainBtn, { borderColor: colors.border }]}>
-                    <Ionicons name="cloud-upload-outline" size={14} color={"#1E3A8A"} />
-                    <Text style={[styles.certUploadAgainText, { color: "#1E3A8A" }]}>Upload another</Text>
+                    <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
+                    <Text style={[styles.certUploadAgainText, { color: colors.primary }]}>Upload another</Text>
                   </Pressable>
                 </View>
               ) : (
                 <Pressable
-                  style={[styles.certUploadBtn, { borderColor: "#1E3A8A" + "33", backgroundColor: colors.background }]}
+                  style={[styles.certUploadBtn, { borderColor: colors.primary + "33", backgroundColor: colors.background }]}
                   onPress={handleUploadCertificate}
                 >
                   <View style={[styles.certUploadIconBox, { backgroundColor: "#EFF6FF" }]}>
-                    <Ionicons name="cloud-upload-outline" size={20} color={"#1E3A8A"} />
+                    <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.certUploadBtnTitle, { color: colors.foreground }]}>Upload Medical Certificate</Text>
@@ -497,7 +497,7 @@ export default function DocumentsScreen() {
               >
                 <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#10B981" />
                 <View style={styles.docInfo}>
-                  <Text style={[styles.docTitle, { color: "#1E3A8A" }]}>{doc.title}</Text>
+                  <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
                   <Text style={[styles.docStatus, { color: "#10B981" }]}>Signed on {doc.signedDate}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
@@ -654,7 +654,7 @@ export default function DocumentsScreen() {
                 <React.Fragment key={c.id}>
                   {i > 0 && <View style={[styles.formDivider, { backgroundColor: colors.border }]} />}
                   <View style={styles.childFormRow}>
-                    <View style={[styles.childFormAvatar, { backgroundColor: "#1E3A8A" }]}>
+                    <View style={[styles.childFormAvatar, { backgroundColor: colors.primary }]}>
                       <Text style={styles.childFormAvatarText}>{c.name.charAt(0)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>

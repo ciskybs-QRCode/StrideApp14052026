@@ -356,18 +356,18 @@ export default function AdminLessonsScreen() {
             >
               <View style={styles.tabBtnInner}>
                 <View style={{ position: "relative" }}>
-                  <Ionicons name={t.icon} size={20} color={active ? "#1E3A8A" : colors.mutedForeground} />
+                  <Ionicons name={t.icon} size={20} color={active ? colors.primary : colors.mutedForeground} />
                   {t.key === "availability" && pendingSlots.length > 0 && (
                     <View style={styles.tabBadge}>
                       <Text style={styles.tabBadgeText}>{pendingSlots.length}</Text>
                     </View>
                   )}
                 </View>
-                <Text style={[styles.tabBtnText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>
+                <Text style={[styles.tabBtnText, { color: active ? colors.primary : colors.mutedForeground }]}>
                   {t.label}
                 </Text>
               </View>
-              {active && <View style={[styles.tabUnderline, { backgroundColor: "#1E3A8A" }]} />}
+              {active && <View style={[styles.tabUnderline, { backgroundColor: colors.primary }]} />}
             </Pressable>
           );
         })}
@@ -384,7 +384,7 @@ export default function AdminLessonsScreen() {
         {/* ══ OPERATORS TAB ══ */}
         {tab === "operators" && (
           <>
-            <Pressable style={[styles.addBtn, { backgroundColor: "#1E3A8A" }]} onPress={openNewProfile}>
+            <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openNewProfile}>
               <Ionicons name="person-add-outline" size={18} color="#FFF" />
               <Text style={styles.addBtnText}>Add Operator Profile</Text>
             </Pressable>
@@ -401,14 +401,14 @@ export default function AdminLessonsScreen() {
                 {/* Row: avatar + name/email + type badge */}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }}>
                   <View style={[styles.profileAvatar, { backgroundColor: "rgba(30,58,138,0.08)" }]}>
-                    <Ionicons name="person" size={20} color={"#1E3A8A"} />
+                    <Ionicons name="person" size={20} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.cardTitle, { color: colors.foreground }]}>{p.user?.name ?? `User #${p.user_id}`}</Text>
                     <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{p.user?.email}</Text>
                   </View>
                   <View style={[styles.typeBadge, { backgroundColor: p.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF" }]}>
-                    <Text style={[styles.typeBadgeText, { color: p.profile_type === "paid" ? "#92400E" : "#1E3A8A" }]}>
+                    <Text style={[styles.typeBadgeText, { color: p.profile_type === "paid" ? "#92400E" : colors.primary }]}>
                       {p.profile_type === "paid" ? "Paid" : "Volunteer"}
                     </Text>
                   </View>
@@ -435,7 +435,7 @@ export default function AdminLessonsScreen() {
                   <View style={styles.cardActions}>
                     <Text style={{ fontSize: 12, color: "#DC2626", fontWeight: "700", flex: 1 }}>Remove this operator?</Text>
                     <Pressable style={[styles.actionChip, { backgroundColor: colors.muted }]} onPress={() => setConfirmDeleteProfileId(null)}>
-                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" }}>Cancel</Text>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Cancel</Text>
                     </Pressable>
                     <Pressable style={[styles.actionChip, { backgroundColor: "#EF4444" }]} onPress={() => deleteProfile(p)}>
                       <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>Delete</Text>
@@ -449,8 +449,8 @@ export default function AdminLessonsScreen() {
                       </View>
                     )}
                     <View style={{ flex: 1 }} />
-                    <Pressable style={[styles.discActionBtn, { backgroundColor: `"#1E3A8A"12` }]} onPress={() => openEditProfile(p)}>
-                      <Ionicons name="pencil-outline" size={15} color={"#1E3A8A"} />
+                    <Pressable style={[styles.discActionBtn, { backgroundColor: `colors.primary12` }]} onPress={() => openEditProfile(p)}>
+                      <Ionicons name="pencil-outline" size={15} color={colors.primary} />
                     </Pressable>
                     <Pressable style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => setConfirmDeleteProfileId(p.id)}>
                       <Ionicons name="trash-outline" size={15} color="#991B1B" />
@@ -465,7 +465,7 @@ export default function AdminLessonsScreen() {
         {/* ══ DISCIPLINES TAB ══ */}
         {tab === "disciplines" && (
           <>
-            <Pressable style={[styles.addBtn, { backgroundColor: "#1E3A8A" }]} onPress={openNewDisc}>
+            <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openNewDisc}>
               <Ionicons name="add-circle-outline" size={18} color="#FFF" />
               <Text style={styles.addBtnText}>Add Discipline</Text>
             </Pressable>
@@ -502,7 +502,7 @@ export default function AdminLessonsScreen() {
                     <View style={styles.cardActions}>
                       <Text style={{ fontSize: 12, color: "#DC2626", fontWeight: "700", flex: 1 }}>Remove this activity?</Text>
                       <Pressable style={[styles.actionChip, { backgroundColor: colors.muted }]} onPress={() => setConfirmDeleteDiscId(null)}>
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" }}>Cancel</Text>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Cancel</Text>
                       </Pressable>
                       <Pressable style={[styles.actionChip, { backgroundColor: "#EF4444" }]} onPress={() => confirmDeleteDisc(d)}>
                         <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>Delete</Text>
@@ -511,8 +511,8 @@ export default function AdminLessonsScreen() {
                   ) : (
                     <View style={styles.cardActions}>
                       <View style={{ flex: 1 }} />
-                      <Pressable style={[styles.discActionBtn, { backgroundColor: `"#1E3A8A"12` }]} onPress={() => openEditDisc(d)}>
-                        <Ionicons name="pencil-outline" size={15} color={"#1E3A8A"} />
+                      <Pressable style={[styles.discActionBtn, { backgroundColor: `colors.primary12` }]} onPress={() => openEditDisc(d)}>
+                        <Ionicons name="pencil-outline" size={15} color={colors.primary} />
                       </Pressable>
                       <Pressable style={[styles.discActionBtn, { backgroundColor: d.active ? "#FEF3C7" : "#D1FAE5" }]} onPress={() => toggleDiscActive(d)}>
                         <Ionicons name={d.active ? "pause-circle-outline" : "play-circle-outline"} size={15} color={d.active ? "#92400E" : "#065F46"} />
@@ -533,7 +533,7 @@ export default function AdminLessonsScreen() {
           <>
             {pendingSlots.length > 0 && (
               <>
-                <Text style={[styles.sectionHeader, { color: "#1E3A8A" }]}>Pending Approval ({pendingSlots.length})</Text>
+                <Text style={[styles.sectionHeader, { color: colors.primary }]}>Pending Approval ({pendingSlots.length})</Text>
                 {pendingSlots.map(s => (
                   <View key={s.id} style={[styles.card, { backgroundColor: "#FEF3C7", borderWidth: 1.5, borderColor: "#F59E0B" }]}>
                     <View style={{ flex: 1 }}>
@@ -545,7 +545,7 @@ export default function AdminLessonsScreen() {
                       <Text style={[styles.cardSub, { color: "#92400E" }]}>{s.discipline?.name} · {s.location}</Text>
                       {s.notes ? <Text style={[styles.cardSub, { color: "#B45309" }]} numberOfLines={1}>"{s.notes}"</Text> : null}
                     </View>
-                    <Pressable style={[styles.reviewBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => openReview(s)}>
+                    <Pressable style={[styles.reviewBtn, { backgroundColor: colors.primary }]} onPress={() => openReview(s)}>
                       <Text style={styles.reviewBtnText}>Review</Text>
                     </Pressable>
                   </View>
@@ -555,7 +555,7 @@ export default function AdminLessonsScreen() {
 
             {approvedSlots.length > 0 && (
               <>
-                <Text style={[styles.sectionHeader, { color: "#1E3A8A" }]}>Approved & Live ({approvedSlots.length})</Text>
+                <Text style={[styles.sectionHeader, { color: colors.primary }]}>Approved & Live ({approvedSlots.length})</Text>
                 {approvedSlots.map(s => (
                   <View key={s.id} style={[styles.card, { backgroundColor: "#D1FAE5", borderWidth: 1, borderColor: "#10B981" }]}>
                     <View style={{ flex: 1 }}>
@@ -617,7 +617,7 @@ export default function AdminLessonsScreen() {
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <View style={styles.availToggleIcon}>
-                  <Ionicons name="people-outline" size={15} color={"#1E3A8A"} />
+                  <Ionicons name="people-outline" size={15} color={colors.primary} />
                 </View>
                 <Text style={[styles.availToggleLabel, { color: colors.foreground }]}>
                   Staff Availability{courseAvailTemplates.length > 0 ? ` · ${courseAvailTemplates.length} slots` : ""}
@@ -637,7 +637,7 @@ export default function AdminLessonsScreen() {
                         <Pressable
                           key={String(d)}
                           onPress={() => setScFilterDay(d)}
-                          style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: active ? "#1E3A8A" : colors.muted }}
+                          style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: active ? colors.primary : colors.muted }}
                         >
                           <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{label}</Text>
                         </Pressable>
@@ -679,8 +679,8 @@ export default function AdminLessonsScreen() {
                               setShowAvailSection(false);
                             }}
                           >
-                            <Text style={[styles.useSlotBtnText, { color: "#1E3A8A" }]}>Use</Text>
-                            <Ionicons name="arrow-forward" size={12} color={"#1E3A8A"} />
+                            <Text style={[styles.useSlotBtnText, { color: colors.primary }]}>Use</Text>
+                            <Ionicons name="arrow-forward" size={12} color={colors.primary} />
                           </Pressable>
                         </View>
                       );
@@ -705,7 +705,7 @@ export default function AdminLessonsScreen() {
                     <Pressable
                       key={d.id}
                       onPress={() => setScDisciplineId(d.id)}
-                      style={[styles.formChip, { backgroundColor: scDisciplineId === d.id ? "#1E3A8A" : colors.muted }]}
+                      style={[styles.formChip, { backgroundColor: scDisciplineId === d.id ? colors.primary : colors.muted }]}
                     >
                       <Text style={[styles.formChipText, { color: scDisciplineId === d.id ? "#FFF" : colors.mutedForeground }]}>
                         {d.name}
@@ -752,7 +752,7 @@ export default function AdminLessonsScreen() {
                   <Pressable
                     key={idx}
                     onPress={() => setScDayOfWeek(idx)}
-                    style={[styles.dayBtn, { backgroundColor: scDayOfWeek === idx ? "#1E3A8A" : colors.muted }]}
+                    style={[styles.dayBtn, { backgroundColor: scDayOfWeek === idx ? colors.primary : colors.muted }]}
                   >
                     <Text style={{ fontSize: 11, fontWeight: "700", color: scDayOfWeek === idx ? "#FFF" : colors.mutedForeground }}>{lbl}</Text>
                   </Pressable>
@@ -765,7 +765,7 @@ export default function AdminLessonsScreen() {
                   <Text style={[styles.formSubLabel, { color: colors.mutedForeground }]}>Start</Text>
                   <Pressable
                     onPress={() => { setShowStartPicker(v => !v); setShowEndPicker(false); }}
-                    style={[styles.timePickerBtn, { borderColor: showStartPicker ? "#1E3A8A" : colors.border, backgroundColor: colors.background }]}
+                    style={[styles.timePickerBtn, { borderColor: showStartPicker ? colors.primary : colors.border, backgroundColor: colors.background }]}
                   >
                     <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
                     <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: colors.foreground }}>{scStartTime}</Text>
@@ -794,7 +794,7 @@ export default function AdminLessonsScreen() {
                       return (
                         <Pressable key={t}
                           onPress={() => { setScStartTime(t); setShowStartPicker(false); }}
-                          style={[styles.timeChip, { backgroundColor: active ? "#1E3A8A" : colors.muted }]}>
+                          style={[styles.timeChip, { backgroundColor: active ? colors.primary : colors.muted }]}>
                           <Text style={{ fontSize: 11, fontWeight: "700", color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
                         </Pressable>
                       );
@@ -851,9 +851,9 @@ export default function AdminLessonsScreen() {
                   <Pressable
                     key={lvl}
                     onPress={() => setScSkillLevel(lvl)}
-                    style={[styles.formChip, { flex: 1, justifyContent: "center", backgroundColor: scSkillLevel === lvl ? "#FBBF24" : colors.muted }]}
+                    style={[styles.formChip, { flex: 1, justifyContent: "center", backgroundColor: scSkillLevel === lvl ? colors.secondary : colors.muted }]}
                   >
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: scSkillLevel === lvl ? "#1E3A8A" : colors.mutedForeground, textAlign: "center" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: scSkillLevel === lvl ? colors.primary : colors.mutedForeground, textAlign: "center" }}>
                       {lvl === "intermediate" ? "Inter." : lvl.charAt(0).toUpperCase() + lvl.slice(1)}
                     </Text>
                   </Pressable>
@@ -873,7 +873,7 @@ export default function AdminLessonsScreen() {
                   <Pressable
                     key={opt.value}
                     onPress={() => setScWeekInterval(opt.value)}
-                    style={[styles.formChip, { flex: 1, justifyContent: "center", backgroundColor: scWeekInterval === opt.value ? "#1E3A8A" : colors.muted }]}
+                    style={[styles.formChip, { flex: 1, justifyContent: "center", backgroundColor: scWeekInterval === opt.value ? colors.primary : colors.muted }]}
                   >
                     <Text style={{ fontSize: 12, fontWeight: "700", color: scWeekInterval === opt.value ? "#FFF" : colors.mutedForeground, textAlign: "center" }}>
                       {opt.label}
@@ -908,10 +908,10 @@ export default function AdminLessonsScreen() {
                       key={opt.value}
                       onPress={() => setScPaymentType(opt.value)}
                       style={[styles.formChip, { flex: 1, justifyContent: "center", alignItems: "center", gap: 4,
-                        backgroundColor: sel ? "#FBBF24" : colors.muted }]}
+                        backgroundColor: sel ? colors.secondary : colors.muted }]}
                     >
-                      <Ionicons name={opt.icon} size={13} color={sel ? "#1E3A8A" : colors.mutedForeground} />
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: sel ? "#1E3A8A" : colors.mutedForeground, textAlign: "center" }}>
+                      <Ionicons name={opt.icon} size={13} color={sel ? colors.primary : colors.mutedForeground} />
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: sel ? colors.primary : colors.mutedForeground, textAlign: "center" }}>
                         {opt.label}
                       </Text>
                     </Pressable>
@@ -1022,7 +1022,7 @@ export default function AdminLessonsScreen() {
                                 alignItems: "center",
                                 justifyContent: "center",
                                 borderRadius: 8,
-                                backgroundColor: sel ? "#1E3A8A" : colors.muted,
+                                backgroundColor: sel ? colors.primary : colors.muted,
                               }}
                             >
                               <Text style={{ fontSize: 12, fontWeight: sel ? "800" : "400", color: sel ? "#FFF" : colors.foreground }}>
@@ -1042,9 +1042,9 @@ export default function AdminLessonsScreen() {
                   <View>
                     <Pressable
                       onPress={() => setScShowEndDateCalendar(v => !v)}
-                      style={[styles.timePickerBtn, { borderColor: scBillingEndDate ? "#1E3A8A" : colors.border, backgroundColor: colors.background }]}
+                      style={[styles.timePickerBtn, { borderColor: scBillingEndDate ? colors.primary : colors.border, backgroundColor: colors.background }]}
                     >
-                      <Ionicons name="calendar-outline" size={14} color={scBillingEndDate ? "#1E3A8A" : colors.mutedForeground} />
+                      <Ionicons name="calendar-outline" size={14} color={scBillingEndDate ? colors.primary : colors.mutedForeground} />
                       <Text style={{ flex: 1, fontSize: 14, fontWeight: scBillingEndDate ? "700" : "400", color: scBillingEndDate ? colors.foreground : colors.mutedForeground }}>
                         {scBillingEndDate
                           ? `Last billing: ${(() => { try { return new Date(scBillingEndDate + "T00:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" }); } catch { return scBillingEndDate; } })()} `
@@ -1070,9 +1070,9 @@ export default function AdminLessonsScreen() {
                               }
                             }}
                           >
-                            <Ionicons name="chevron-back" size={18} color={"#1E3A8A"} />
+                            <Ionicons name="chevron-back" size={18} color={colors.primary} />
                           </Pressable>
-                          <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A" }}>
+                          <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>
                             {new Date(scEndDateDisplayMonth.year, scEndDateDisplayMonth.month, 1)
                               .toLocaleDateString("it-IT", { month: "long", year: "numeric" })
                               .replace(/^\w/, c => c.toUpperCase())}
@@ -1085,7 +1085,7 @@ export default function AdminLessonsScreen() {
                               return { year: prev.year, month: prev.month + 1 };
                             })}
                           >
-                            <Ionicons name="chevron-forward" size={18} color={"#1E3A8A"} />
+                            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
                           </Pressable>
                         </View>
 
@@ -1123,7 +1123,7 @@ export default function AdminLessonsScreen() {
                                     key={col}
                                     disabled={disabled}
                                     onPress={() => { setScBillingEndDate(iso); setScShowEndDateCalendar(false); }}
-                                    style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, margin: 1, backgroundColor: selected ? "#1E3A8A" : "transparent" }}
+                                    style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, margin: 1, backgroundColor: selected ? colors.primary : "transparent" }}
                                   >
                                     <Text style={{ fontSize: 13, fontWeight: selected ? "700" : "400", color: selected ? "#FFF" : disabled ? colors.border : colors.foreground }}>
                                       {day}
@@ -1165,7 +1165,7 @@ export default function AdminLessonsScreen() {
               </Pressable>
             )}
             <Pressable
-              style={[styles.addBtn, { backgroundColor: scSaving ? colors.mutedForeground : "#1E3A8A", marginTop: 4 }]}
+              style={[styles.addBtn, { backgroundColor: scSaving ? colors.mutedForeground : colors.primary, marginTop: 4 }]}
               disabled={scSaving}
               onPress={async () => {
                 if (!scDisciplineId) { Alert.alert("Missing", "Please select an activity."); return; }
@@ -1243,8 +1243,8 @@ export default function AdminLessonsScreen() {
                   const payIcon = pt === "monthly_billing" ? "calendar-outline" as const
                     : pt === "package" ? "layers-outline" as const
                     : "ticket-outline" as const;
-                  const payColor = pt === "monthly_billing" ? "#1E3A8A"
-                    : pt === "package" ? "#1E3A8A"
+                  const payColor = pt === "monthly_billing" ? colors.primary
+                    : pt === "package" ? colors.primary
                     : colors.mutedForeground;
                   return (
                     <View key={sc.id} style={[styles.cleanCard, { backgroundColor: colors.card }]}>
@@ -1302,9 +1302,9 @@ export default function AdminLessonsScreen() {
                                 setScBillingDay(sc.billing_day_of_month ?? 1);
                                 setScBillingEndDate(sc.billing_end_date ?? "");
                               }}
-                              style={{ padding: 6, backgroundColor: `"#1E3A8A"18`, borderRadius: 8 }}
+                              style={{ padding: 6, backgroundColor: `colors.primary18`, borderRadius: 8 }}
                             >
-                              <Ionicons name="pencil-outline" size={14} color={"#1E3A8A"} />
+                              <Ionicons name="pencil-outline" size={14} color={colors.primary} />
                             </Pressable>
                             <Pressable
                               onPress={() => {
@@ -1394,10 +1394,10 @@ export default function AdminLessonsScreen() {
                         operatorUsers.map(u => (
                           <Pressable
                             key={u.id}
-                            style={[styles.pickerOption, profileUserId === String(u.id) && { backgroundColor: `"#FBBF24"60` }]}
+                            style={[styles.pickerOption, profileUserId === String(u.id) && { backgroundColor: `colors.secondary60` }]}
                             onPress={() => setProfileUserId(String(u.id))}
                           >
-                            <View style={[styles.pickerAvatar, { backgroundColor: profileUserId === String(u.id) ? "#1E3A8A" : colors.border }]}>
+                            <View style={[styles.pickerAvatar, { backgroundColor: profileUserId === String(u.id) ? colors.primary : colors.border }]}>
                               <Text style={styles.pickerAvatarText}>{String(u.name).charAt(0)}</Text>
                             </View>
                             <View style={{ flex: 1 }}>
@@ -1405,7 +1405,7 @@ export default function AdminLessonsScreen() {
                               <Text style={[styles.pickerOptionEmail, { color: colors.mutedForeground }]}>{u.email}</Text>
                             </View>
                             {profileUserId === String(u.id) && (
-                              <Ionicons name="checkmark-circle" size={20} color={"#1E3A8A"} />
+                              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                             )}
                           </Pressable>
                         ))
@@ -1421,8 +1421,8 @@ export default function AdminLessonsScreen() {
                   <Pressable
                     style={[
                       styles.typeCard,
-                      { borderColor: !isVolunteer ? "#1E3A8A" : colors.border,
-                        backgroundColor: !isVolunteer ? `"#1E3A8A"10` : colors.background },
+                      { borderColor: !isVolunteer ? colors.primary : colors.border,
+                        backgroundColor: !isVolunteer ? `colors.primary10` : colors.background },
                     ]}
                     onPress={() => setIsVolunteer(false)}
                   >
@@ -1438,7 +1438,7 @@ export default function AdminLessonsScreen() {
                       </Text>
                     </View>
                     <View style={[styles.typeRadio, { borderColor: !isVolunteer ? colors.primary : colors.border,
-                      backgroundColor: !isVolunteer ? "#1E3A8A" : "transparent" }]}>
+                      backgroundColor: !isVolunteer ? colors.primary : "transparent" }]}>
                       {!isVolunteer && <Ionicons name="checkmark" size={13} color="#FFF" />}
                     </View>
                   </Pressable>
@@ -1447,7 +1447,7 @@ export default function AdminLessonsScreen() {
                   <Pressable
                     style={[
                       styles.typeCard,
-                      { borderColor: isVolunteer ? "#1E3A8A" : colors.border,
+                      { borderColor: isVolunteer ? colors.primary : colors.border,
                         backgroundColor: isVolunteer ? "#EFF6FF" : colors.background },
                     ]}
                     onPress={() => setIsVolunteer(true)}
@@ -1464,7 +1464,7 @@ export default function AdminLessonsScreen() {
                       </Text>
                     </View>
                     <View style={[styles.typeRadio, { borderColor: isVolunteer ? colors.primary : colors.border,
-                      backgroundColor: isVolunteer ? "#1E3A8A" : "transparent" }]}>
+                      backgroundColor: isVolunteer ? colors.primary : "transparent" }]}>
                       {isVolunteer && <Ionicons name="checkmark" size={13} color="#FFF" />}
                     </View>
                   </Pressable>
@@ -1487,8 +1487,8 @@ export default function AdminLessonsScreen() {
                       <Switch
                         value={volReimburse}
                         onValueChange={v => { setVolReimburse(v); }}
-                        trackColor={{ false: "#CBD5E1", true: "#FBBF24" }}
-                        thumbColor={"#1E3A8A"}
+                        trackColor={{ false: "#CBD5E1", true: colors.secondary }}
+                        thumbColor={colors.primary}
                       />
                     </View>
 
@@ -1535,8 +1535,8 @@ export default function AdminLessonsScreen() {
                           <Switch
                             value={volReimburseRecurring}
                             onValueChange={setVolReimburseRecurring}
-                            trackColor={{ false: "#CBD5E1", true: "#FBBF24" }}
-                            thumbColor={"#1E3A8A"}
+                            trackColor={{ false: "#CBD5E1", true: colors.secondary }}
+                            thumbColor={colors.primary}
                           />
                         </View>
 
@@ -1546,8 +1546,8 @@ export default function AdminLessonsScreen() {
                               <Pressable key={f}
                                 style={{ flex: 1, borderWidth: 1.5, borderRadius: 8, paddingVertical: 8,
                                   alignItems: "center",
-                                  borderColor: volReimburseFreq === f ? "#1E3A8A" : colors.border,
-                                  backgroundColor: volReimburseFreq === f ? "#1E3A8A" : colors.card }}
+                                  borderColor: volReimburseFreq === f ? colors.primary : colors.border,
+                                  backgroundColor: volReimburseFreq === f ? colors.primary : colors.card }}
                                 onPress={() => setVolReimburseFreq(f)}>
                                 <Text style={{ fontSize: 12, fontWeight: "700",
                                   color: volReimburseFreq === f ? "#fff" : colors.foreground,
@@ -1642,11 +1642,11 @@ export default function AdminLessonsScreen() {
                           key={d.id}
                           style={[
                             styles.checkboxRow,
-                            checked && { backgroundColor: `"#FBBF24"30` },
+                            checked && { backgroundColor: `colors.secondary30` },
                           ]}
                           onPress={() => toggleDiscSelection(d.id)}
                         >
-                          <View style={[styles.checkbox, { borderColor: checked ? "#1E3A8A" : colors.border, backgroundColor: checked ? "#1E3A8A" : "transparent" }]}>
+                          <View style={[styles.checkbox, { borderColor: checked ? colors.primary : colors.border, backgroundColor: checked ? colors.primary : "transparent" }]}>
                             {checked && <Ionicons name="checkmark" size={13} color="#FFF" />}
                           </View>
                           <Text style={[styles.checkboxLabel, { color: colors.foreground }]}>{d.name}</Text>
@@ -1667,8 +1667,8 @@ export default function AdminLessonsScreen() {
                     <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Badge Preview</Text>
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                       {activeDiscs.filter(d => selectedDiscs.has(d.id)).map(d => (
-                        <View key={d.id} style={[styles.rateChip, { backgroundColor: `"#FBBF24"40` }]}>
-                          <Text style={[styles.rateChipText, { color: "#1E3A8A" }]}>{d.name}</Text>
+                        <View key={d.id} style={[styles.rateChip, { backgroundColor: `colors.secondary40` }]}>
+                          <Text style={[styles.rateChipText, { color: colors.primary }]}>{d.name}</Text>
                         </View>
                       ))}
                     </View>
@@ -1699,7 +1699,7 @@ export default function AdminLessonsScreen() {
                               <Text style={styles.rateRequired}>Required *</Text>
                             )}
                           </View>
-                          <View style={[styles.rateInputWrap, { borderColor: profileRates[d.id]?.trim() ? "#1E3A8A" : colors.border, backgroundColor: colors.muted }]}>
+                          <View style={[styles.rateInputWrap, { borderColor: profileRates[d.id]?.trim() ? colors.primary : colors.border, backgroundColor: colors.muted }]}>
                             <Text style={[styles.rateCurrency, { color: colors.mutedForeground }]}>$</Text>
                             <TextInput
                               style={[styles.rateInput, { color: colors.foreground }]}
@@ -1864,7 +1864,7 @@ export default function AdminLessonsScreen() {
                         <View style={[styles.typePill, {
                           backgroundColor: reviewSlot.operator_profile.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF",
                         }]}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: reviewSlot.operator_profile.profile_type === "paid" ? "#92400E" : "#1E3A8A" }}>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: reviewSlot.operator_profile.profile_type === "paid" ? "#92400E" : colors.primary }}>
                             {reviewSlot.operator_profile.profile_type === "paid" ? "Paid Operator" : "Volunteer"}
                           </Text>
                         </View>
@@ -1885,7 +1885,7 @@ export default function AdminLessonsScreen() {
                   <View style={styles.priceInputRow}>
                     <Text style={[styles.rateCurrency, { color: colors.mutedForeground }]}>$</Text>
                     <TextInput
-                      style={[styles.flexInput, { borderColor: reviewPrice.trim() ? "#1E3A8A" : colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
+                      style={[styles.flexInput, { borderColor: reviewPrice.trim() ? colors.primary : colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
                       value={reviewPrice}
                       onChangeText={setReviewPrice}
                       placeholder="e.g. 80.00"

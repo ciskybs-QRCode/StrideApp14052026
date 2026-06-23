@@ -447,7 +447,7 @@ export default function AdminCommunications() {
     const m = a.mimeType; const n = a.name;
     if (m === "text/uri-list")                                         return { icon: "link-outline",          color: "#3B82F6" };
     if (m.startsWith("image/"))                                        return { icon: "image-outline",        color: "#3B82F6" };
-    if (m.startsWith("video/"))                                        return { icon: "videocam-outline",     color: "#1E3A8A" };
+    if (m.startsWith("video/"))                                        return { icon: "videocam-outline",     color: colors.primary };
     if (m.startsWith("audio/"))                                        return { icon: "musical-note-outline", color: "#F59E0B" };
     if (m.includes("pdf"))                                             return { icon: "document-text-outline", color: "#EF4444" };
     if (m.includes("spreadsheet") || /\.(xls|xlsx)/i.test(n))         return { icon: "grid-outline",          color: "#16A34A" };
@@ -473,19 +473,19 @@ export default function AdminCommunications() {
 
         {commTab === "messages" && (
           <Pressable
-            style={[styles.composeBtn, { backgroundColor: "#1E3A8A" }]}
+            style={[styles.composeBtn, { backgroundColor: colors.primary }]}
             onPress={() => { resetCompose(); setShowCompose(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
           >
             <View style={styles.composeBtnLeft}>
               <View style={styles.composeBtnIconBox}>
-                <Ionicons name="create-outline" size={20} color={"#1E3A8A"} />
+                <Ionicons name="create-outline" size={20} color={colors.primary} />
               </View>
               <View>
                 <Text style={styles.composeBtnTitle}>New Message</Text>
                 <Text style={styles.composeBtnSub}>Broadcast, group or individual</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={"#FBBF24"} />
+            <Ionicons name="chevron-forward" size={18} color={colors.secondary} />
           </Pressable>
         )}
 
@@ -493,7 +493,7 @@ export default function AdminCommunications() {
         <View style={[styles.commTabBar, { backgroundColor: colors.card }]}>
           {(["messages", "receipts"] as const).map(t => (
             <Pressable key={t} onPress={() => setCommTab(t)}
-              style={[styles.commTabBtn, t === commTab && { backgroundColor: "#1E3A8A" }]}>
+              style={[styles.commTabBtn, t === commTab && { backgroundColor: colors.primary }]}>
               <Ionicons
                 name={t === "messages" ? "mail-outline" : "eye-outline"}
                 size={14} color={t === commTab ? "#FFF" : colors.mutedForeground}
@@ -529,7 +529,7 @@ export default function AdminCommunications() {
         {/* ── MESSAGES TAB ── */}
         {commTab === "messages" && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Send History</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Send History</Text>
             {sentMessages.map(item => (
               <Pressable
                 key={item.id}
@@ -539,7 +539,7 @@ export default function AdminCommunications() {
                 <View style={styles.commHeader}>
                   <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
                     {item.urgent && <Ionicons name="warning" size={14} color="#EF4444" />}
-                    <Text style={[styles.commTitle, { color: "#1E3A8A" }]} numberOfLines={1}>{item.title}</Text>
+                    <Text style={[styles.commTitle, { color: colors.primary }]} numberOfLines={1}>{item.title}</Text>
                   </View>
                   <Text style={[styles.commDate, { color: colors.mutedForeground }]}>{item.date}</Text>
                 </View>
@@ -555,8 +555,8 @@ export default function AdminCommunications() {
                   </View>
                   {item.signatureRequired && (
                     <View style={styles.commStat}>
-                      <Ionicons name="create-outline" size={13} color={"#1E3A8A"} />
-                      <Text style={[styles.commStatText, { color: "#1E3A8A" }]}>Sig. req.</Text>
+                      <Ionicons name="create-outline" size={13} color={colors.primary} />
+                      <Text style={[styles.commStatText, { color: colors.primary }]}>Sig. req.</Text>
                     </View>
                   )}
                   {item.attachments.length > 0 && (
@@ -583,15 +583,15 @@ export default function AdminCommunications() {
                       opacity: pressed ? 0.7 : 1,
                     })}
                   >
-                    <Ionicons name="bar-chart-outline" size={12} color={"#1E3A8A"} />
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>Report</Text>
+                    <Ionicons name="bar-chart-outline" size={12} color={colors.primary} />
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Report</Text>
                   </Pressable>
                 </View>
               </Pressable>
             ))}
 
             {/* ── AUTOMATED MESSAGES ──────────────────────────────────────── */}
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 8 }]}>Automated Messages</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>Automated Messages</Text>
 
             {/* Birthday Messages Card */}
             <View style={[autoStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -608,8 +608,8 @@ export default function AdminCommunications() {
                 <Switch
                   value={birthdayEnabled}
                   onValueChange={v => { setBirthdayEnabled(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                  trackColor={{ false: colors.border, true: "#1E3A8A" + "88" }}
-                  thumbColor={birthdayEnabled ? "#1E3A8A" : "#D1D5DB"}
+                  trackColor={{ false: colors.border, true: colors.primary + "88" }}
+                  thumbColor={birthdayEnabled ? colors.primary : "#D1D5DB"}
                   ios_backgroundColor={colors.border}
                 />
               </View>
@@ -635,8 +635,8 @@ export default function AdminCommunications() {
                     style={({ pressed }) => [autoStyles.editBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
                     onPress={() => setEditBirthday(v => !v)}
                   >
-                    <Ionicons name={editBirthday ? "checkmark-outline" : "create-outline"} size={14} color={"#1E3A8A"} />
-                    <Text style={[autoStyles.editBtnText, { color: "#1E3A8A" }]}>
+                    <Ionicons name={editBirthday ? "checkmark-outline" : "create-outline"} size={14} color={colors.primary} />
+                    <Text style={[autoStyles.editBtnText, { color: colors.primary }]}>
                       {editBirthday ? "Save Template" : "Edit Template"}
                     </Text>
                   </Pressable>
@@ -653,8 +653,8 @@ export default function AdminCommunications() {
             {/* New Operator Onboarding Card */}
             <View style={[autoStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={autoStyles.cardHeader}>
-                <View style={[autoStyles.iconWrap, { backgroundColor: ("#FBBF24" + "18") }]}>
-                  <Ionicons name="people-circle-outline" size={18} color={"#FBBF24"} />
+                <View style={[autoStyles.iconWrap, { backgroundColor: (colors.secondary + "18") }]}>
+                  <Ionicons name="people-circle-outline" size={18} color={colors.secondary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[autoStyles.cardTitle, { color: colors.foreground }]}>New Operator Welcome</Text>
@@ -665,8 +665,8 @@ export default function AdminCommunications() {
                 <Switch
                   value={onboardingEnabled}
                   onValueChange={v => { setOnboardingEnabled(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                  trackColor={{ false: colors.border, true: "#1E3A8A" + "88" }}
-                  thumbColor={onboardingEnabled ? "#1E3A8A" : "#D1D5DB"}
+                  trackColor={{ false: colors.border, true: colors.primary + "88" }}
+                  thumbColor={onboardingEnabled ? colors.primary : "#D1D5DB"}
                   ios_backgroundColor={colors.border}
                 />
               </View>
@@ -675,7 +675,7 @@ export default function AdminCommunications() {
                 <>
                   {/* How it works */}
                   <View style={[autoStyles.stepsBox, { backgroundColor: colors.muted }]}>
-                    <Text style={[autoStyles.stepsTitle, { color: "#1E3A8A" }]}>HOW IT WORKS</Text>
+                    <Text style={[autoStyles.stepsTitle, { color: colors.primary }]}>HOW IT WORKS</Text>
                     {[
                       { n: "1", text: "Operator selects their venue when they first log in" },
                       { n: "2", text: "App shows available time slots for that venue" },
@@ -684,7 +684,7 @@ export default function AdminCommunications() {
                       { n: "5", text: "Welcome message sent automatically on approval" },
                     ].map(step => (
                       <View key={step.n} style={autoStyles.stepRow}>
-                        <View style={[autoStyles.stepBadge, { backgroundColor: "#1E3A8A" }]}>
+                        <View style={[autoStyles.stepBadge, { backgroundColor: colors.primary }]}>
                           <Text style={autoStyles.stepNum}>{step.n}</Text>
                         </View>
                         <Text style={[autoStyles.stepText, { color: colors.foreground }]}>{step.text}</Text>
@@ -712,8 +712,8 @@ export default function AdminCommunications() {
                     style={({ pressed }) => [autoStyles.editBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
                     onPress={() => setEditWelcome(v => !v)}
                   >
-                    <Ionicons name={editWelcome ? "checkmark-outline" : "create-outline"} size={14} color={"#1E3A8A"} />
-                    <Text style={[autoStyles.editBtnText, { color: "#1E3A8A" }]}>
+                    <Ionicons name={editWelcome ? "checkmark-outline" : "create-outline"} size={14} color={colors.primary} />
+                    <Text style={[autoStyles.editBtnText, { color: colors.primary }]}>
                       {editWelcome ? "Save Message" : "Customize Welcome Message"}
                     </Text>
                   </Pressable>
@@ -764,11 +764,11 @@ export default function AdminCommunications() {
             </View>
 
             {/* ── ROLE ASSIGNMENT EMAIL TEMPLATE ── */}
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 8 }]}>Role Assignment Email</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>Role Assignment Email</Text>
             <View style={[autoStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={autoStyles.cardHeader}>
                 <View style={[autoStyles.iconWrap, { backgroundColor: "#DBEAFE" }]}>
-                  <Ionicons name="mail-outline" size={18} color={"#1E3A8A"} />
+                  <Ionicons name="mail-outline" size={18} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[autoStyles.cardTitle, { color: colors.foreground }]}>Role Update Notification</Text>
@@ -780,14 +780,14 @@ export default function AdminCommunications() {
 
               {/* Variables hint */}
               <View style={[autoStyles.stepsBox, { backgroundColor: colors.muted, marginTop: 8 }]}>
-                <Text style={[autoStyles.stepsTitle, { color: "#1E3A8A" }]}>TEMPLATE VARIABLES</Text>
+                <Text style={[autoStyles.stepsTitle, { color: colors.primary }]}>TEMPLATE VARIABLES</Text>
                 {[
                   { v: "{name}",     desc: "Recipient's full name" },
                   { v: "{org_name}", desc: "Your association name" },
                   { v: "{roles}",    desc: "Updated roles, e.g. Member, Operator" },
                 ].map(item => (
                   <View key={item.v} style={autoStyles.stepRow}>
-                    <View style={[autoStyles.stepBadge, { backgroundColor: "#1E3A8A" }]}>
+                    <View style={[autoStyles.stepBadge, { backgroundColor: colors.primary }]}>
                       <Text style={autoStyles.stepNum}>·</Text>
                     </View>
                     <Text style={[autoStyles.stepText, { color: colors.foreground }]}>
@@ -834,14 +834,14 @@ export default function AdminCommunications() {
                   style={({ pressed }) => [autoStyles.editBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1, flex: 1 }]}
                   onPress={() => setEditRoleEmail(v => !v)}
                 >
-                  <Ionicons name={editRoleEmail ? "close-outline" : "create-outline"} size={14} color={"#1E3A8A"} />
-                  <Text style={[autoStyles.editBtnText, { color: "#1E3A8A" }]}>
+                  <Ionicons name={editRoleEmail ? "close-outline" : "create-outline"} size={14} color={colors.primary} />
+                  <Text style={[autoStyles.editBtnText, { color: colors.primary }]}>
                     {editRoleEmail ? "Cancel" : "Customize Template"}
                   </Text>
                 </Pressable>
                 {editRoleEmail && (
                   <Pressable
-                    style={({ pressed }) => [autoStyles.editBtn, { borderColor: "#1E3A8A", backgroundColor: "#1E3A8A", opacity: pressed ? 0.8 : 1 }]}
+                    style={({ pressed }) => [autoStyles.editBtn, { borderColor: colors.primary, backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
                     onPress={saveRoleEmailTemplate}
                     disabled={savingRoleEmail}
                   >
@@ -860,13 +860,13 @@ export default function AdminCommunications() {
         {/* ── READ RECEIPTS TAB ── */}
         {commTab === "receipts" && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Notification Tracking</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notification Tracking</Text>
 
             {/* Filter chips */}
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
               {(["all", "read", "unread"] as const).map(f => (
                 <Pressable key={f} onPress={() => setReceiptFilter(f)}
-                  style={[styles.receiptFilterChip, { backgroundColor: receiptFilter === f ? "#1E3A8A" : colors.card, borderColor: receiptFilter === f ? "#1E3A8A" : colors.border }]}>
+                  style={[styles.receiptFilterChip, { backgroundColor: receiptFilter === f ? colors.primary : colors.card, borderColor: receiptFilter === f ? colors.primary : colors.border }]}>
                   <Text style={{ fontSize: 12, fontWeight: "700", color: receiptFilter === f ? "#FFF" : colors.mutedForeground }}>
                     {f === "all" ? `All (${receipts.length})` : f === "read" ? `Read (${readCount})` : `Unread (${unreadCount})`}
                   </Text>
@@ -881,7 +881,7 @@ export default function AdminCommunications() {
               </View>
             ) : (
               filteredReceipts.map(r => {
-                const roleColors = { parent: { bg: "#DBEAFE", text: "#1E3A8A" }, operator: { bg: "#EFF6FF", text: "#1E3A8A" }, student: { bg: "#D1FAE5", text: "#059669" } };
+                const roleColors = { parent: { bg: "#DBEAFE", text: colors.primary }, operator: { bg: "#EFF6FF", text: colors.primary }, student: { bg: "#D1FAE5", text: "#059669" } };
                 const rc = roleColors[r.recipientRole];
                 const sentDate = new Date(r.sentAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
                 const readDate = r.readAt ? new Date(r.readAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
@@ -919,7 +919,7 @@ export default function AdminCommunications() {
                           style={{ backgroundColor: "#DBEAFE", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
                           onPress={() => markReceiptRead(r.id)}
                         >
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>Mark Read</Text>
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Mark Read</Text>
                         </Pressable>
                       )}
                     </View>
@@ -962,14 +962,14 @@ export default function AdminCommunications() {
                 {QUICK_TEMPLATES.map(tpl => (
                   <Pressable key={tpl.label} style={[styles.templateItem, { borderBottomColor: colors.border }]} onPress={() => applyTemplate(tpl)}>
                     <View style={[styles.templateIconBox, { backgroundColor: colors.muted }]}>
-                      <Ionicons name={tpl.icon} size={16} color={"#1E3A8A"} />
+                      <Ionicons name={tpl.icon} size={16} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.templateItemLabel, { color: "#1E3A8A" }]}>{tpl.label}</Text>
+                      <Text style={[styles.templateItemLabel, { color: colors.primary }]}>{tpl.label}</Text>
                       <Text style={[styles.templateItemPreview, { color: colors.mutedForeground }]} numberOfLines={1}>{tpl.title}</Text>
                     </View>
                     {tpl.urgent && <Ionicons name="warning" size={14} color="#EF4444" />}
-                    {tpl.signatureRequired && <Ionicons name="create-outline" size={14} color={"#1E3A8A"} />}
+                    {tpl.signatureRequired && <Ionicons name="create-outline" size={14} color={colors.primary} />}
                   </Pressable>
                 ))}
               </View>
@@ -1079,7 +1079,7 @@ export default function AdminCommunications() {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   }}
                   style={({ pressed }) => ({
-                    backgroundColor: "#1E3A8A",
+                    backgroundColor: colors.primary,
                     borderRadius: 10,
                     paddingHorizontal: 14,
                     paddingVertical: 10,
@@ -1092,7 +1092,7 @@ export default function AdminCommunications() {
             )}
             {uploading && (
               <View style={[styles.attachedItem, { backgroundColor: colors.muted, marginTop: 4 }]}>
-                <ActivityIndicator size="small" color={"#1E3A8A"} />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={[styles.attachedItemText, { color: colors.mutedForeground }]}>Uploading...</Text>
               </View>
             )}
@@ -1103,7 +1103,7 @@ export default function AdminCommunications() {
                   return (
                     <View key={i} style={styles.attachedItem}>
                       <Ionicons name={icon} size={14} color={color} />
-                      <Text style={[styles.attachedItemText, { color: "#1E3A8A" }]} numberOfLines={1}>{a.name}</Text>
+                      <Text style={[styles.attachedItemText, { color: colors.primary }]} numberOfLines={1}>{a.name}</Text>
                       <Pressable onPress={() => setAttachments(prev => prev.filter((_, j) => j !== i))}>
                         <Ionicons name="close-circle" size={16} color="#EF4444" />
                       </Pressable>
@@ -1160,7 +1160,7 @@ export default function AdminCommunications() {
               {(["quick", "course", "people"] as const).map(tab => (
                 <Pressable
                   key={tab}
-                  style={[styles.pickerTab, recipientTab === tab && { backgroundColor: "#1E3A8A" }]}
+                  style={[styles.pickerTab, recipientTab === tab && { backgroundColor: colors.primary }]}
                   onPress={() => setRecipientTab(tab)}
                 >
                   <Text style={[styles.pickerTabText, { color: recipientTab === tab ? "#FFF" : colors.mutedForeground }]}>
@@ -1175,9 +1175,9 @@ export default function AdminCommunications() {
               {recipientTab === "quick" && (
                 <>
                   {[
-                    { sel: { mode: "all" as const },                                        label: "All Users",      sub: userCounts.total ? `${userCounts.total} users registered` : "All members, operators and dependent members", icon: "people" as const, bg: "#DBEAFE", color: "#1E3A8A" },
+                    { sel: { mode: "all" as const },                                        label: "All Users",      sub: userCounts.total ? `${userCounts.total} users registered` : "All members, operators and dependent members", icon: "people" as const, bg: "#DBEAFE", color: colors.primary },
                     { sel: { mode: "group" as const, groupRole: "parents" as const },       label: "All Members",    sub: `${userCounts.parents} members registered`,    icon: "person" as const,       bg: "#D1FAE5", color: "#10B981" },
-                    { sel: { mode: "group" as const, groupRole: "operators" as const },     label: "All Operators",  sub: `${userCounts.operators} operators registered`, icon: "briefcase" as const,    bg: "#EFF6FF", color: "#1E3A8A" },
+                    { sel: { mode: "group" as const, groupRole: "operators" as const },     label: "All Operators",  sub: `${userCounts.operators} operators registered`, icon: "briefcase" as const,    bg: "#EFF6FF", color: colors.primary },
                     { sel: { mode: "group" as const, groupRole: "students" as const },      label: "All Dependent Members", sub: `${userCounts.students} dependent members registered`, icon: "people" as const, bg: "#FEF3C7", color: "#F59E0B" },
                   ].map(({ sel, label, sub, icon, bg, color }) => (
                     <Pressable
@@ -1213,7 +1213,7 @@ export default function AdminCommunications() {
                       onPress={() => selectCourse(course)}
                     >
                       <View style={[styles.pickerGroupIcon, { backgroundColor: "#DBEAFE" }]}>
-                        <Ionicons name="musical-notes-outline" size={18} color={"#1E3A8A"} />
+                        <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.pickerGroupLabel, { color: colors.foreground }]}>{course.name}</Text>
@@ -1244,7 +1244,7 @@ export default function AdminCommunications() {
                     return (
                       <Pressable
                         key={user.id}
-                        style={[styles.pickerPersonRow, { borderColor: checked ? "#1E3A8A" : colors.border, backgroundColor: checked ? "#DBEAFE" : colors.background }]}
+                        style={[styles.pickerPersonRow, { borderColor: checked ? colors.primary : colors.border, backgroundColor: checked ? "#DBEAFE" : colors.background }]}
                         onPress={() => toggleIndividual(user.id)}
                       >
                         <View style={[styles.pickerPersonAvatar, { backgroundColor: rc.bg }]}>
@@ -1261,14 +1261,14 @@ export default function AdminCommunications() {
                             )}
                           </View>
                         </View>
-                        <View style={[styles.pickerCheckbox, { borderColor: checked ? "#1E3A8A" : colors.border, backgroundColor: checked ? "#1E3A8A" : "transparent" }]}>
+                        <View style={[styles.pickerCheckbox, { borderColor: checked ? colors.primary : colors.border, backgroundColor: checked ? colors.primary : "transparent" }]}>
                           {checked && <Ionicons name="checkmark" size={14} color="#FFF" />}
                         </View>
                       </Pressable>
                     );
                   })}
                   <Pressable
-                    style={[styles.confirmIndividualsBtn, { backgroundColor: "#1E3A8A" }]}
+                    style={[styles.confirmIndividualsBtn, { backgroundColor: colors.primary }]}
                     onPress={confirmIndividuals}
                   >
                     <Ionicons name="checkmark-circle" size={18} color="#FFF" />
@@ -1299,7 +1299,7 @@ export default function AdminCommunications() {
                         <Text style={styles.urgentBadgeText}>URGENT</Text>
                       </View>
                     )}
-                    <Text style={[styles.detailTitle, { color: "#1E3A8A" }]}>{showDetail.title}</Text>
+                    <Text style={[styles.detailTitle, { color: colors.primary }]}>{showDetail.title}</Text>
                     <Text style={[styles.detailMeta, { color: colors.mutedForeground }]}>
                       {showDetail.date} · {showDetail.recipients} recipients · {showDetail.read} read
                     </Text>
@@ -1342,10 +1342,10 @@ export default function AdminCommunications() {
                 </ScrollView>
                 <View style={{ flexDirection: "row", gap: 12, padding: 16, paddingBottom: 24 }}>
                   <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => handleCopy(showDetail.body)}>
-                    <Ionicons name="copy-outline" size={16} color={"#1E3A8A"} />
-                    <Text style={[styles.modalBtnText, { color: "#1E3A8A" }]}>Copy Text</Text>
+                    <Ionicons name="copy-outline" size={16} color={colors.primary} />
+                    <Text style={[styles.modalBtnText, { color: colors.primary }]}>Copy Text</Text>
                   </Pressable>
-                  <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: "#1E3A8A" }]} onPress={() => setShowDetail(null)}>
+                  <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.primary }]} onPress={() => setShowDetail(null)}>
                     <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Close</Text>
                   </Pressable>
                 </View>
@@ -1387,7 +1387,7 @@ export default function AdminCommunications() {
 
             {reportLoading ? (
               <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                <ActivityIndicator size="large" color={"#1E3A8A"} />
+                <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 13 }}>
                   Loading data…
                 </Text>
@@ -1404,7 +1404,7 @@ export default function AdminCommunications() {
                 {/* Stats Cards */}
                 <View style={styles.reportStatsRow}>
                   {[
-                    { label: "Sent",    value: reportData.stats.total,   icon: "paper-plane",    bg: "#1E3A8A" },
+                    { label: "Sent",    value: reportData.stats.total,   icon: "paper-plane",    bg: colors.primary },
                     { label: "Read",    value: reportData.stats.read,    icon: "checkmark-done", bg: "#16A34A" },
                     { label: "Skipped", value: reportData.stats.skipped, icon: "close-circle",   bg: "#DC2626" },
                     { label: "Pending", value: reportData.stats.pending, icon: "time",           bg: "#D97706" },
@@ -1478,7 +1478,7 @@ export default function AdminCommunications() {
 
                 <Pressable
                   onPress={() => setShowReport(null)}
-                  style={[styles.modalBtn, { backgroundColor: "#1E3A8A", marginTop: 16 }]}
+                  style={[styles.modalBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
                 >
                   <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Close</Text>
                 </Pressable>

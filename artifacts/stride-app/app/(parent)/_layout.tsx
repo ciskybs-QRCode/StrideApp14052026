@@ -27,6 +27,7 @@ import { useUnread } from "@/context/UnreadContext";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 
 function DocsTabIcon({ color, size }: { color: string; size: number }) {
+  const colors = useColors();
   const { hasUnreadDocs } = useUnread();
   return (
     <View style={{ position: "relative" }}>
@@ -35,7 +36,7 @@ function DocsTabIcon({ color, size }: { color: string; size: number }) {
         <View style={{
           position: "absolute", top: -3, right: -6,
           width: 8, height: 8, borderRadius: 4,
-          backgroundColor: "#FBBF24", borderWidth: 1.5, borderColor: "#FFFFFF",
+          backgroundColor: colors.secondary, borderWidth: 1.5, borderColor: "#FFFFFF",
         }} />
       )}
     </View>
@@ -165,7 +166,7 @@ export default function ParentTabLayout() {
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#1E3A8A",
+          tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.mutedForeground,
           headerShown: false,
           tabBarStyle: {
@@ -242,7 +243,7 @@ export default function ParentTabLayout() {
               </Pressable>
             ) : (
               <View style={styles.headerBack}>
-                <Ionicons name="lock-closed" size={20} color={"#FBBF24"} />
+                <Ionicons name="lock-closed" size={20} color={colors.secondary} />
               </View>
             )}
 
@@ -314,7 +315,7 @@ export default function ParentTabLayout() {
               {gatePhase === "index" && (
                 <>
                   <View style={styles.indexIntro}>
-                    <Ionicons name="shield-checkmark" size={36} color={"#1E3A8A"} />
+                    <Ionicons name="shield-checkmark" size={36} color={colors.primary} />
                     <Text style={styles.indexTitle}>Documents Awaiting Signature</Text>
                     <Text style={styles.indexSubtitle}>
                       You must read and sign all mandatory documents before accessing the app. Each document requires your affirmation and biometric signature.
@@ -327,7 +328,7 @@ export default function ParentTabLayout() {
                         <Ionicons
                           name={doc.highPriority ? "alert-circle" : "document-text-outline"}
                           size={22}
-                          color={doc.highPriority ? "#EF4444" : "#1E3A8A"}
+                          color={doc.highPriority ? "#EF4444" : colors.primary}
                         />
                       </View>
                       <View style={{ flex: 1 }}>
@@ -338,7 +339,7 @@ export default function ParentTabLayout() {
                         <View style={styles.docCardMeta}>
                           {doc.has_options && (
                             <View style={styles.optionsBadge}>
-                              <Ionicons name="list-outline" size={10} color={"#1E3A8A"} />
+                              <Ionicons name="list-outline" size={10} color={colors.primary} />
                               <Text style={styles.optionsBadgeText}>Options required</Text>
                             </View>
                           )}
@@ -355,7 +356,7 @@ export default function ParentTabLayout() {
                         onPress={() => openSigningDoc(idx)}
                       >
                         <Text style={styles.reviewBtnText}>Review{"\n"}&amp; Sign</Text>
-                        <Ionicons name="chevron-forward" size={14} color={"#1E3A8A"} />
+                        <Ionicons name="chevron-forward" size={14} color={colors.primary} />
                       </Pressable>
                     </View>
                   ))}
@@ -372,11 +373,11 @@ export default function ParentTabLayout() {
                   {/* Document Contents */}
                   <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                      <Ionicons name="document-text-outline" size={16} color={"#1E3A8A"} />
+                      <Ionicons name="document-text-outline" size={16} color={colors.primary} />
                       <Text style={styles.sectionTitle}>Document Contents</Text>
                       {!hasScrolled && (
                         <View style={styles.scrollHint}>
-                          <Ionicons name="arrow-down" size={12} color={"#FBBF24"} />
+                          <Ionicons name="arrow-down" size={12} color={colors.secondary} />
                           <Text style={styles.scrollHintText}>Scroll to read</Text>
                         </View>
                       )}
@@ -398,8 +399,8 @@ export default function ParentTabLayout() {
                   {currentDoc.has_options && (
                     <View style={styles.section}>
                       <View style={styles.sectionHeader}>
-                        <Ionicons name="list-outline" size={16} color={"#1E3A8A"} />
-                        <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Select Your Option</Text>
+                        <Ionicons name="list-outline" size={16} color={colors.primary} />
+                        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Select Your Option</Text>
                         <Text style={styles.requiredTag}>Required</Text>
                       </View>
                       {OPTION_KEYS.map(key => {
@@ -429,7 +430,7 @@ export default function ParentTabLayout() {
                   {/* Affirmation Checkbox */}
                   <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                      <Ionicons name="checkbox-outline" size={16} color={"#1E3A8A"} />
+                      <Ionicons name="checkbox-outline" size={16} color={colors.primary} />
                       <Text style={styles.sectionTitle}>Affirmation</Text>
                       <Text style={styles.requiredTag}>Required</Text>
                     </View>
@@ -440,7 +441,7 @@ export default function ParentTabLayout() {
                       <View style={[styles.checkbox, checkboxTicked && styles.checkboxChecked]}>
                         {checkboxTicked && <Ionicons name="checkmark" size={14} color="#FFF" />}
                       </View>
-                      <Text style={[styles.checkboxLabel, checkboxTicked && { color: "#1E3A8A" }]}>
+                      <Text style={[styles.checkboxLabel, checkboxTicked && { color: colors.primary }]}>
                         I confirm that I am the legal guardian of all enrolled members, and I have explicitly read, understood, and accept this document in full.
                       </Text>
                     </Pressable>
@@ -471,7 +472,7 @@ export default function ParentTabLayout() {
                           if (!has) setSignatureSvg(null);
                         }}
                         onSave={(svg) => setSignatureSvg(svg)}
-                        strokeColor={"#1E3A8A"}
+                        strokeColor={colors.primary}
                       />
                     </View>
                   </View>

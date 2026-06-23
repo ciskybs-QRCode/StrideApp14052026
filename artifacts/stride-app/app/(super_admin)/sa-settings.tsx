@@ -16,8 +16,8 @@ export default function SASettingsScreen() {
           icon: "key-outline" as const,
           label: "Platform Credentials",
           desc: "Change the platform owner email and password",
-          iconBg: ("#1E3A8A" + "12"),
-          iconColor: "#1E3A8A",
+          iconBg: (colors.primary + "12"),
+          iconColor: colors.primary,
           onPress: () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push("/(super_admin)/owner-settings" as never);

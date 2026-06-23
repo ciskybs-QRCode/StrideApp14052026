@@ -170,7 +170,7 @@ const DEFAULT_INFO: SchoolInfo = {
 
   const campusTypeInfo = (type: CampusType) => {
     const base = CAMPUS_TYPES.find(t => t.value === type) ?? CAMPUS_TYPES[4];
-    return { ...base, color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" };
+    return { ...base, color: colors.primary, bg: "rgba(30,58,138,0.1)" };
   };
 
   // Loading state for initial data fetch
@@ -381,7 +381,7 @@ const DEFAULT_INFO: SchoolInfo = {
         {/* Loading banner — shown while fetching from Supabase + AsyncStorage */}
         {loadingOrg && (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FEF3C7", borderRadius: 12, padding: 12, marginBottom: 8 }}>
-            <ActivityIndicator size="small" color={"#FBBF24"} />
+            <ActivityIndicator size="small" color={colors.secondary} />
             <Text style={{ fontSize: 13, fontWeight: "600", color: "#92400E" }}>
               Loading organisation data…
             </Text>
@@ -396,8 +396,8 @@ const DEFAULT_INFO: SchoolInfo = {
           </View>
           {!editingInfo && (
             <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => { setDraftInfo(info); setEditingInfo(true); }}>
-              <Ionicons name="pencil-outline" size={14} color={"#1E3A8A"} />
-              <Text style={[styles.editBtnText, { color: "#1E3A8A" }]}>Edit</Text>
+              <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+              <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit</Text>
             </Pressable>
           )}
         </View>
@@ -415,14 +415,14 @@ const DEFAULT_INFO: SchoolInfo = {
                 ]}
               >
                 <View style={[styles.fieldIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Ionicons name={field.icon} size={16} color={"#1E3A8A"} />
+                  <Ionicons name={field.icon} size={16} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{dynLabel}</Text>
                   {editingInfo ? (
                     <>
                       <TextInput
-                        style={[styles.fieldInput, { color: colors.foreground, borderBottomColor: "#1E3A8A" }]}
+                        style={[styles.fieldInput, { color: colors.foreground, borderBottomColor: colors.primary }]}
                         value={draftInfo[field.key]}
                         onChangeText={t => setDraftInfo(prev => ({ ...prev, [field.key]: t }))}
                         placeholder={dynPh}
@@ -447,7 +447,7 @@ const DEFAULT_INFO: SchoolInfo = {
               <Pressable style={[styles.cancelBtn, { borderColor: colors.border }]} onPress={() => { setDraftInfo(info); setEditingInfo(false); }}>
                 <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.saveBtn, { backgroundColor: "#1E3A8A" }]} onPress={handleSaveInfo}>
+              <Pressable style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSaveInfo}>
                 <Ionicons name="checkmark-circle" size={16} color="#FFF" />
                 <Text style={styles.saveBtnText}>Save Changes</Text>
               </Pressable>
@@ -460,15 +460,15 @@ const DEFAULT_INFO: SchoolInfo = {
           <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Social Media</Text>
           {!editingSocial ? (
             <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => { setDraftSocial({ ...social }); setEditingSocial(true); }}>
-              <Ionicons name="pencil-outline" size={14} color={"#1E3A8A"} />
-              <Text style={[styles.editBtnText, { color: "#1E3A8A" }]}>Edit</Text>
+              <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+              <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit</Text>
             </Pressable>
           ) : (
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => { setDraftSocial({ ...social }); setEditingSocial(false); }}>
                 <Text style={[styles.editBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.editBtn, { backgroundColor: "#1E3A8A" }]} onPress={handleSaveSocial}>
+              <Pressable style={[styles.editBtn, { backgroundColor: colors.primary }]} onPress={handleSaveSocial}>
                 <Ionicons name="checkmark" size={14} color="#FFF" />
                 <Text style={[styles.editBtnText, { color: "#FFF" }]}>Save</Text>
               </Pressable>
@@ -488,13 +488,13 @@ const DEFAULT_INFO: SchoolInfo = {
                 ]}
               >
                 <View style={[styles.fieldIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Ionicons name={field.icon} size={16} color={"#1E3A8A"} />
+                  <Ionicons name={field.icon} size={16} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{field.label}</Text>
                   {editingSocial ? (
                     <TextInput
-                      style={[styles.fieldInput, { color: colors.foreground, borderBottomColor: "#1E3A8A" }]}
+                      style={[styles.fieldInput, { color: colors.foreground, borderBottomColor: colors.primary }]}
                       value={draftSocial[field.key]}
                       onChangeText={t => setDraftSocial(prev => ({ ...prev, [field.key]: t }))}
                       placeholder={field.placeholder}
@@ -544,7 +544,7 @@ const DEFAULT_INFO: SchoolInfo = {
                   <Text style={[styles.campusRowName, { color: colors.foreground }]} numberOfLines={1}>{campus.name}</Text>
                   {campus.isMain && (
                     <View style={[styles.mainBadge, { backgroundColor: "#FEF3C7" }]}>
-                      <Ionicons name="star" size={9} color={"#FBBF24"} />
+                      <Ionicons name="star" size={9} color={colors.secondary} />
                       <Text style={[styles.mainBadgeText, { color: "#92400E" }]}>Main</Text>
                     </View>
                   )}
@@ -559,7 +559,7 @@ const DEFAULT_INFO: SchoolInfo = {
                   onPress={() => openEditCampus(campus)}
                   hitSlop={6}
                 >
-                  <Ionicons name="pencil-outline" size={14} color={"#1E3A8A"} />
+                  <Ionicons name="pencil-outline" size={14} color={colors.primary} />
                 </Pressable>
                 <Pressable
                   style={[styles.iconBtn, { backgroundColor: "#FEE2E2" }]}
@@ -577,7 +577,7 @@ const DEFAULT_INFO: SchoolInfo = {
           <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="map-outline" size={32} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No campuses added yet</Text>
-            <Pressable style={[styles.addEmptyBtn, { backgroundColor: "#1E3A8A" }]} onPress={openAddCampus}>
+            <Pressable style={[styles.addEmptyBtn, { backgroundColor: colors.primary }]} onPress={openAddCampus}>
               <Ionicons name="add" size={16} color="#FFF" />
               <Text style={styles.addEmptyBtnText}>Add First Campus</Text>
             </Pressable>
@@ -592,15 +592,15 @@ const DEFAULT_INFO: SchoolInfo = {
           </View>
           {!editingHours ? (
             <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => { setHoursDraft([...hours.map(h => ({ ...h }))]); setEditingHours(true); }}>
-              <Ionicons name="pencil-outline" size={14} color={"#1E3A8A"} />
-              <Text style={[styles.editBtnText, { color: "#1E3A8A" }]}>Edit</Text>
+              <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+              <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit</Text>
             </Pressable>
           ) : (
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Pressable style={[styles.editBtn, { backgroundColor: colors.muted }]} onPress={() => setEditingHours(false)}>
                 <Text style={[styles.editBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.editBtn, { backgroundColor: "#1E3A8A" }]} onPress={handleSaveHours}>
+              <Pressable style={[styles.editBtn, { backgroundColor: colors.primary }]} onPress={handleSaveHours}>
                 <Ionicons name="checkmark" size={14} color="#FFF" />
                 <Text style={[styles.editBtnText, { color: "#FFF" }]}>Save</Text>
               </Pressable>
@@ -610,12 +610,12 @@ const DEFAULT_INFO: SchoolInfo = {
 
         {editingHours && (
           <View style={[styles.quickSetRow, { backgroundColor: "#DBEAFE" }]}>
-            <Ionicons name="flash-outline" size={14} color={"#1E3A8A"} />
-            <Text style={[styles.quickSetLabel, { color: "#1E3A8A" }]}>Quick set all open times:</Text>
-            <Pressable style={[styles.quickSetBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => { applyToAll("openTime", "09:00"); applyToAll("closeTime", "18:00"); }}>
+            <Ionicons name="flash-outline" size={14} color={colors.primary} />
+            <Text style={[styles.quickSetLabel, { color: colors.primary }]}>Quick set all open times:</Text>
+            <Pressable style={[styles.quickSetBtn, { backgroundColor: colors.primary }]} onPress={() => { applyToAll("openTime", "09:00"); applyToAll("closeTime", "18:00"); }}>
               <Text style={styles.quickSetBtnText}>9–6</Text>
             </Pressable>
-            <Pressable style={[styles.quickSetBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => { applyToAll("openTime", "10:00"); applyToAll("closeTime", "20:00"); }}>
+            <Pressable style={[styles.quickSetBtn, { backgroundColor: colors.primary }]} onPress={() => { applyToAll("openTime", "10:00"); applyToAll("closeTime", "20:00"); }}>
               <Text style={styles.quickSetBtnText}>10–8</Text>
             </Pressable>
           </View>
@@ -765,11 +765,11 @@ const DEFAULT_INFO: SchoolInfo = {
               {CAMPUS_TYPES.map(t => (
                 <Pressable
                   key={t.value}
-                  style={[styles.typeChip, campusDraft.type === t.value && { borderColor: "#1E3A8A", backgroundColor: "rgba(30,58,138,0.1)" }]}
+                  style={[styles.typeChip, campusDraft.type === t.value && { borderColor: colors.primary, backgroundColor: "rgba(30,58,138,0.1)" }]}
                   onPress={() => setCampusDraft(p => ({ ...p, type: t.value }))}
                 >
-                  <Ionicons name={t.icon} size={16} color={campusDraft.type === t.value ? "#1E3A8A" : "#9CA3AF"} />
-                  <Text style={[styles.typeChipText, { color: campusDraft.type === t.value ? "#1E3A8A" : "#9CA3AF" }]}>{t.label}</Text>
+                  <Ionicons name={t.icon} size={16} color={campusDraft.type === t.value ? colors.primary : "#9CA3AF"} />
+                  <Text style={[styles.typeChipText, { color: campusDraft.type === t.value ? colors.primary : "#9CA3AF" }]}>{t.label}</Text>
                 </Pressable>
               ))}
             </View>

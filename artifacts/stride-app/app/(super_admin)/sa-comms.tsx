@@ -99,11 +99,12 @@ const TEMPLATES = [
   },
 ];
 
-const URGENCY_CONFIG = {
-  normal:   { label: "Normal",   color: "#1E3A8A", bg: "#EFF6FF", icon: "information-circle-outline" as const },
-  urgent:   { label: "Urgent",   color: "#D97706", bg: "#FEF3C7", icon: "warning-outline" as const },
-  critical: { label: "Critical", color: "#DC2626", bg: "#FEE2E2", icon: "alert-circle-outline" as const },
-};
+const getUrgencyConfig = (primary: string) => ({
+  normal:   { label: "Normal",   color: primary,    bg: "#EFF6FF", icon: "information-circle-outline" as const },
+  urgent:   { label: "Urgent",   color: "#D97706",  bg: "#FEF3C7", icon: "warning-outline" as const },
+  critical: { label: "Critical", color: "#DC2626",  bg: "#FEE2E2", icon: "alert-circle-outline" as const },
+});
+type UrgencyConfig = ReturnType<typeof getUrgencyConfig>;
 
 const CHANNEL_CONFIG = {
   in_app: { label: "In-App Bell",    icon: "notifications-outline" as const, desc: "Appears in the admin notification bell" },
@@ -114,7 +115,7 @@ const CHANNEL_CONFIG = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function urgencyBadge(urgency: PlatformMessage["urgency"]) {
-  const cfg = URGENCY_CONFIG[urgency];
+  const cfg = getUrgencyConfig("#1E3A8A")[urgency];
   return (
     <View style={[b.badge, { backgroundColor: cfg.bg }]}>
       <Ionicons name={cfg.icon} size={11} color={cfg.color} />
@@ -132,6 +133,7 @@ const b = StyleSheet.create({
 
 export default function SACommunications() {
   const colors  = useColors();
+  const URGENCY_CONFIG = getUrgencyConfig(colors.primary);
   const s = make_s(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
@@ -326,7 +328,7 @@ export default function SACommunications() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color={"#1E3A8A"} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
         ) : messages.length === 0 ? (
           <View style={s.emptyState}>
             <Ionicons name="chatbubble-outline" size={48} color="#D1D5DB" />
@@ -465,8 +467,8 @@ export default function SACommunications() {
                       }}
                       style={[s.targetPill, active ? s.targetPillActive : s.targetPillInactive]}
                     >
-                      <Ionicons name={t === "all_admins" ? "globe-outline" : "business-outline"} size={13} color={active ? "#FFF" : "#1E3A8A"} />
-                      <Text style={[s.targetPillText, { color: active ? "#FFF" : "#1E3A8A" }]}>
+                      <Ionicons name={t === "all_admins" ? "globe-outline" : "business-outline"} size={13} color={active ? "#FFF" : colors.primary} />
+                      <Text style={[s.targetPillText, { color: active ? "#FFF" : colors.primary }]}>
                         {t === "all_admins" ? "All Admins" : "Specific Org"}
                       </Text>
                     </Pressable>
@@ -479,7 +481,7 @@ export default function SACommunications() {
                   style={[s.orgPickerBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => setShowOrgPicker(true)}
                 >
-                  <Ionicons name="business-outline" size={16} color={"#1E3A8A"} />
+                  <Ionicons name="business-outline" size={16} color={colors.primary} />
                   <Text style={[s.orgPickerText, { color: selectedOrg ? "#111827" : "#9CA3AF" }]}>
                     {selectedOrg ? selectedOrg.name : "Select organisation…"}
                   </Text>
@@ -496,7 +498,7 @@ export default function SACommunications() {
                 return (
                   <View key={ch} style={[s.channelRow, { borderColor: colors.border }]}>
                     <View style={[s.channelIcon, { backgroundColor: value ? "#EFF6FF" : "#F3F4F6" }]}>
-                      <Ionicons name={cfg.icon} size={16} color={value ? "#1E3A8A" : "#9CA3AF"} />
+                      <Ionicons name={cfg.icon} size={16} color={value ? colors.primary : "#9CA3AF"} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[s.channelLabel, { color: value ? "#111827" : "#6B7280" }]}>{cfg.label}</Text>
@@ -505,7 +507,7 @@ export default function SACommunications() {
                     <Switch
                       value={value}
                       onValueChange={v => { setter(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                      trackColor={{ true: "#1E3A8A", false: "#D1D5DB" }}
+                      trackColor={{ true: colors.primary, false: "#D1D5DB" }}
                       thumbColor="#FFF"
                     />
                   </View>
@@ -575,9 +577,9 @@ export default function SACommunications() {
                   style={[s.orgRow, { borderColor: colors.border, backgroundColor: targetOrgId === org.id ? "#EFF6FF" : colors.card }]}
                   onPress={() => { setTargetOrgId(org.id); setShowOrgPicker(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 >
-                  <Ionicons name="business-outline" size={16} color={"#1E3A8A"} />
+                  <Ionicons name="business-outline" size={16} color={colors.primary} />
                   <Text style={[s.orgRowText, { color: "#111827" }]}>{org.name}</Text>
-                  {targetOrgId === org.id && <Ionicons name="checkmark-circle" size={18} color={"#1E3A8A"} />}
+                  {targetOrgId === org.id && <Ionicons name="checkmark-circle" size={18} color={colors.primary} />}
                 </Pressable>
               ))}
             </ScrollView>
@@ -602,7 +604,7 @@ export default function SACommunications() {
             </View>
             {reportLoading ? (
               <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                <ActivityIndicator color={"#1E3A8A"} size="large" />
+                <ActivityIndicator color={colors.primary} size="large" />
                 <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 13 }}>Loading report…</Text>
               </View>
             ) : reportMsg ? (
@@ -624,11 +626,11 @@ export default function SACommunications() {
                 {/* Stats */}
                 <View style={s.reportStatsRow}>
                   {[
-                    { label: "Total",   value: reportMsg.stats.total,    icon: "people-outline" as const,           color: "#1E3A8A" },
+                    { label: "Total",   value: reportMsg.stats.total,    icon: "people-outline" as const,           color: colors.primary },
                     { label: "Read",    value: reportMsg.stats.read,     icon: "eye-outline" as const,              color: "#059669" },
-                    { label: "Email",   value: reportMsg.stats.emailSent, icon: "mail-outline" as const,            color: "#1E3A8A" },
+                    { label: "Email",   value: reportMsg.stats.emailSent, icon: "mail-outline" as const,            color: colors.primary },
                     { label: "Push",    value: reportMsg.stats.pushSent,  icon: "phone-portrait-outline" as const,  color: "#D97706" },
-                    { label: "In-App",  value: reportMsg.stats.inAppSent, icon: "notifications-outline" as const,   color: "#1E3A8A" },
+                    { label: "In-App",  value: reportMsg.stats.inAppSent, icon: "notifications-outline" as const,   color: colors.primary },
                   ].map(stat => (
                     <View key={stat.label} style={[s.reportStat, { backgroundColor: stat.color + "10" }]}>
                       <Ionicons name={stat.icon} size={14} color={stat.color} />
@@ -664,7 +666,7 @@ export default function SACommunications() {
                     <View style={s.recipientChannels}>
                       {r.in_app_sent && <Ionicons name="notifications-outline" size={12} color={r.read_at ? "#059669" : "#9CA3AF"} />}
                       {r.push_sent   && <Ionicons name="phone-portrait-outline" size={12} color="#D97706" />}
-                      {r.email_sent  && <Ionicons name="mail-outline" size={12} color={"#1E3A8A"} />}
+                      {r.email_sent  && <Ionicons name="mail-outline" size={12} color={colors.primary} />}
                     </View>
                     {r.read_at && (
                       <Text style={{ fontSize: 10, color: "#059669" }}>

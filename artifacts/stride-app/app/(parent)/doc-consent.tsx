@@ -60,15 +60,16 @@ By signing this form, you confirm that you have read and understood all three op
 
 type ConsentOption = "full" | "internal" | "none";
 
-const OPTIONS: { key: ConsentOption; label: string; labelEn: string; icon: "camera" | "shield-outline" | "eye-off"; color: string; bg: string }[] = [
-  { key: "full",     label: "Full Public & Promotional",  labelEn: "Full public & promotional use",    icon: "camera",  color: "#1E3A8A", bg: "rgba(30,58,138,0.08)" },
-  { key: "internal", label: "Internal & Educational Only", labelEn: "Internal & educational use only",  icon: "shield-outline",  color: "#1E3A8A", bg: "rgba(30,58,138,0.08)" },
+const getOptions = (primary: string): { key: ConsentOption; label: string; labelEn: string; icon: "camera" | "shield-outline" | "eye-off"; color: string; bg: string }[] => [
+  { key: "full",     label: "Full Public & Promotional",  labelEn: "Full public & promotional use",    icon: "camera",  color: primary, bg: "#DBEAFE" },
+  { key: "internal", label: "Internal & Educational Only", labelEn: "Internal & educational use only",  icon: "shield-outline",  color: primary, bg: "#DBEAFE" },
   { key: "none",     label: "No Consent — Opt-Out",       labelEn: "No consent — full opt-out",        icon: "eye-off", color: "#DC2626", bg: "rgba(220,38,38,0.08)" },
-];
+];;
 
 export default function DocConsentScreen() {
   const { mediaConsent, setMediaConsent } = useAppData();
   const colors = useColors();
+  const OPTIONS = getOptions(colors.primary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -179,8 +180,8 @@ export default function DocConsentScreen() {
               <Pressable
                 key={opt.key}
                 style={[s.optionCard, {
-                  backgroundColor: selected ? "#1E3A8A" : colors.card,
-                  borderColor: selected ? "#1E3A8A" : colors.border,
+                  backgroundColor: selected ? colors.primary : colors.card,
+                  borderColor: selected ? colors.primary : colors.border,
                 }]}
                 onPress={() => handleSelectOption(opt.key)}
               >
@@ -194,7 +195,7 @@ export default function DocConsentScreen() {
                 <Ionicons
                   name={selected ? "radio-button-on" : "radio-button-off"}
                   size={20}
-                  color={selected ? "#FBBF24" : colors.mutedForeground}
+                  color={selected ? colors.secondary : colors.mutedForeground}
                 />
               </Pressable>
             );

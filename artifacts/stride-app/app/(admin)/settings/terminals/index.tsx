@@ -46,7 +46,7 @@ function KioskRow({
   return (
     <View style={[styles.kioskRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.kioskIconBox, { backgroundColor: "#EFF6FF" }]}>
-        <Ionicons name="tablet-landscape-outline" size={22} color={"#1E3A8A"} />
+        <Ionicons name="tablet-landscape-outline" size={22} color={colors.primary} />
       </View>
 
       <View style={styles.kioskInfo}>
@@ -302,7 +302,7 @@ export default function TerminalsScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.pinSaveBtn,
-                { backgroundColor: pinSaved ? "#059669" : "#1E3A8A", opacity: pressed || pinSaving ? 0.8 : 1 },
+                { backgroundColor: pinSaved ? "#059669" : colors.primary, opacity: pressed || pinSaving ? 0.8 : 1 },
               ]}
               onPress={handleSavePin}
               disabled={pinSaving}
@@ -356,7 +356,7 @@ export default function TerminalsScreen() {
         {/* ── LIST ── */}
         {loading ? (
           <View style={styles.centeredState}>
-            <ActivityIndicator size="large" color={"#1E3A8A"} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={[styles.stateText, { color: colors.mutedForeground }]}>Loading terminals…</Text>
           </View>
         ) : fetchError ? (
@@ -370,14 +370,14 @@ export default function TerminalsScreen() {
                 Check your connection and try again.
               </Text>
             </View>
-            <Pressable onPress={loadKiosks} style={[styles.retryBtn, { backgroundColor: "#1E3A8A" }]}>
+            <Pressable onPress={loadKiosks} style={[styles.retryBtn, { backgroundColor: colors.primary }]}>
               <Text style={[styles.retryBtnText, { color: "#FFF" }]}>Retry</Text>
             </Pressable>
           </View>
         ) : kiosks.length === 0 ? (
           <View style={styles.centeredState}>
             <View style={[styles.emptyIconCircle, { backgroundColor: "#EFF6FF" }]}>
-              <Ionicons name="tablet-landscape-outline" size={32} color={"#1E3A8A"} />
+              <Ionicons name="tablet-landscape-outline" size={32} color={colors.primary} />
             </View>
             <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No terminals yet</Text>
             <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
@@ -443,7 +443,7 @@ export default function TerminalsScreen() {
                 <View style={styles.modalContent}>
                   <View style={styles.modalHeader}>
                     <View style={styles.modalIconCircle}>
-                      <Ionicons name="tablet-landscape" size={26} color={"#1E3A8A"} />
+                      <Ionicons name="tablet-landscape" size={26} color={colors.primary} />
                     </View>
                     <Text style={[styles.modalTitle, { color: colors.foreground }]}>
                       Provision New Kiosk
@@ -521,10 +521,10 @@ export default function TerminalsScreen() {
                     disabled={provisioning}
                   >
                     {provisioning ? (
-                      <ActivityIndicator size="small" color={"#1E3A8A"} />
+                      <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
                       <>
-                        <Ionicons name="flash" size={17} color={"#1E3A8A"} />
+                        <Ionicons name="flash" size={17} color={colors.primary} />
                         <Text style={styles.generateBtnText}>Generate Kiosk Account</Text>
                       </>
                     )}

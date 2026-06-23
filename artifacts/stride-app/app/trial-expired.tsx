@@ -101,7 +101,7 @@ export default function TrialExpiredScreen() {
             </Text>
 
             {loadingBilling ? (
-              <ActivityIndicator color={"#FBBF24"} style={{ marginBottom: 24 }} />
+              <ActivityIndicator color={colors.secondary} style={{ marginBottom: 24 }} />
             ) : billing ? (
               <View style={styles.planBox}>
                 {/* QR code count */}
@@ -138,10 +138,10 @@ export default function TrialExpiredScreen() {
               disabled={subscribing}
             >
               {subscribing ? (
-                <ActivityIndicator color={"#1E3A8A"} />
+                <ActivityIndicator color={colors.primary} />
               ) : (
                 <>
-                  <Ionicons name="card-outline" size={20} color={"#1E3A8A"} />
+                  <Ionicons name="card-outline" size={20} color={colors.primary} />
                   <Text style={styles.subscribeBtnText}>Subscribe Now</Text>
                 </>
               )}
@@ -149,7 +149,7 @@ export default function TrialExpiredScreen() {
 
             {polling && (
               <View style={styles.pollingRow}>
-                <ActivityIndicator size="small" color={"#FBBF24"} />
+                <ActivityIndicator size="small" color={colors.secondary} />
                 <Text style={styles.pollingText}>Waiting for payment confirmation…</Text>
               </View>
             )}

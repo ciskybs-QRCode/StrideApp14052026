@@ -177,12 +177,12 @@ function Dropdown({
   const [open, setOpen] = useState(false);
   return (
     <View style={{ marginBottom: 14 }}>
-      <Text style={[ddStyles.label, { color: "#1E3A8A" }]}>{label}</Text>
+      <Text style={[ddStyles.label, { color: colors.primary }]}>{label}</Text>
       <Pressable
-        style={[ddStyles.trigger, { borderColor: disabled ? colors.border : "#1E3A8A", backgroundColor: disabled ? colors.muted : "#FFF", opacity: disabled ? 0.6 : 1 }]}
+        style={[ddStyles.trigger, { borderColor: disabled ? colors.border : colors.primary, backgroundColor: disabled ? colors.muted : "#FFF", opacity: disabled ? 0.6 : 1 }]}
         onPress={() => { if (!disabled) setOpen(true); }}
       >
-        <Text style={[ddStyles.triggerText, { color: value ? "#1E3A8A" : colors.mutedForeground }]}>
+        <Text style={[ddStyles.triggerText, { color: value ? colors.primary : colors.mutedForeground }]}>
           {value || placeholder}
         </Text>
         <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
@@ -190,16 +190,16 @@ function Dropdown({
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={ddStyles.overlay} onPress={() => setOpen(false)}>
           <View style={[ddStyles.sheet, { backgroundColor: "#FFF" }]}>
-            <Text style={[ddStyles.sheetTitle, { color: "#1E3A8A" }]}>{label}</Text>
+            <Text style={[ddStyles.sheetTitle, { color: colors.primary }]}>{label}</Text>
             <ScrollView>
               {options.map(opt => (
                 <Pressable
                   key={opt}
-                  style={[ddStyles.option, value === opt && { backgroundColor: `"#1E3A8A"15` }]}
+                  style={[ddStyles.option, value === opt && { backgroundColor: `colors.primary15` }]}
                   onPress={() => { onSelect(opt); setOpen(false); }}
                 >
-                  <Text style={[ddStyles.optionText, { color: "#1E3A8A" }, value === opt && { fontWeight: "700" }]}>{opt}</Text>
-                  {value === opt && <Ionicons name="checkmark" size={16} color={"#1E3A8A"} />}
+                  <Text style={[ddStyles.optionText, { color: colors.primary }, value === opt && { fontWeight: "700" }]}>{opt}</Text>
+                  {value === opt && <Ionicons name="checkmark" size={16} color={colors.primary} />}
                 </Pressable>
               ))}
             </ScrollView>
@@ -275,11 +275,11 @@ function MeetingCalendar({
     <View style={{ borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, padding: 12 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <Pressable onPress={() => { if (canPrev) onMonthChange(-1); }} hitSlop={12} style={{ padding: 6, opacity: canPrev ? 1 : 0.25 }}>
-          <Ionicons name="chevron-back" size={18} color={"#1E3A8A"} />
+          <Ionicons name="chevron-back" size={18} color={colors.primary} />
         </Pressable>
-        <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A" }}>{monthLabel}</Text>
+        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>{monthLabel}</Text>
         <Pressable onPress={() => { if (canNext) onMonthChange(1); }} hitSlop={12} style={{ padding: 6, opacity: canNext ? 1 : 0.25 }}>
-          <Ionicons name="chevron-forward" size={18} color={"#1E3A8A"} />
+          <Ionicons name="chevron-forward" size={18} color={colors.primary} />
         </Pressable>
       </View>
       <View style={{ flexDirection: "row", marginBottom: 6 }}>
@@ -302,13 +302,13 @@ function MeetingCalendar({
                 key={col}
                 onPress={() => { if (!disabled) { onSelect(iso); void Haptics.selectionAsync(); } }}
                 disabled={disabled}
-                style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, margin: 1, backgroundColor: selected ? "#1E3A8A" : "transparent" }}
+                style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, margin: 1, backgroundColor: selected ? colors.primary : "transparent" }}
               >
-                <Text style={{ fontSize: 13, fontWeight: selected || isToday ? "700" : "400", color: selected ? "#FFF" : disabled ? colors.border : isToday ? "#FBBF24" : colors.foreground }}>
+                <Text style={{ fontSize: 13, fontWeight: selected || isToday ? "700" : "400", color: selected ? "#FFF" : disabled ? colors.border : isToday ? colors.secondary : colors.foreground }}>
                   {day}
                 </Text>
                 {isToday && !selected && (
-                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: "#FBBF24", position: "absolute", bottom: 3 }} />
+                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.secondary, position: "absolute", bottom: 3 }} />
                 )}
               </Pressable>
             );
@@ -334,7 +334,7 @@ function TimeSlotGrid({
   for (let i = 0; i < slots.length; i += 2) rows.push(slots.slice(i, i + 2));
   return (
     <View>
-      <Text style={[ddStyles.label, { color: "#1E3A8A", marginBottom: 10 }]}>Available Times</Text>
+      <Text style={[ddStyles.label, { color: colors.primary, marginBottom: 10 }]}>Available Times</Text>
       {rows.map((row, ri) => (
         <View key={ri} style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
           {row.map(slot => {
@@ -343,7 +343,7 @@ function TimeSlotGrid({
               <Pressable
                 key={slot}
                 onPress={() => { onSelect(slot); void Haptics.selectionAsync(); }}
-                style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 12, borderWidth: 1.5, borderColor: selected ? "#1E3A8A" : colors.border, backgroundColor: selected ? "#1E3A8A" : colors.card, alignItems: "center" }}
+                style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 12, borderWidth: 1.5, borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primary : colors.card, alignItems: "center" }}
               >
                 <Text style={{ fontSize: 13, fontWeight: "600", color: selected ? "#FFF" : colors.foreground }}>{slot}</Text>
               </Pressable>
@@ -649,8 +649,8 @@ export default function CoursesScreen() {
           <Pressable style={[styles.cartIconBtn, { backgroundColor: colors.card }]} onPress={() => router.push("/(parent)/cart")}>
             <Ionicons name="cart-outline" size={22} color={colors.primary} />
             {cartCount > 0 && (
-              <View style={[styles.cartBadge, { backgroundColor: "#FBBF24" }]}>
-                <Text style={[styles.cartBadgeText, { color: "#1E3A8A" }]}>{cartCount}</Text>
+              <View style={[styles.cartBadge, { backgroundColor: colors.secondary }]}>
+                <Text style={[styles.cartBadgeText, { color: colors.primary }]}>{cartCount}</Text>
               </View>
             )}
           </Pressable>
@@ -668,9 +668,9 @@ export default function CoursesScreen() {
                 <Ionicons
                   name={tab === "courses" ? "musical-notes-outline" : "person-outline"}
                   size={20}
-                  color={active ? "#1E3A8A" : colors.mutedForeground}
+                  color={active ? colors.primary : colors.mutedForeground}
                 />
-                <Text style={[styles.tabText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>
+                <Text style={[styles.tabText, { color: active ? colors.primary : colors.mutedForeground }]}>
                   {tab === "courses" ? "Courses & Workshops" : "Private Lessons"}
                 </Text>
               </Pressable>
@@ -683,28 +683,28 @@ export default function CoursesScreen() {
             {/* Enrolled courses — prominent with full details */}
             {enrolledCourses.length > 0 && (
               <>
-                <Text style={[styles.sectionHeading, { color: "#1E3A8A" }]}>Your Upcoming Sessions</Text>
+                <Text style={[styles.sectionHeading, { color: colors.primary }]}>Your Upcoming Sessions</Text>
                 {enrolledCourses.map(c => {
                   const participant = getParticipantForCourse(c.id);
                   return (
-                    <View key={c.id} style={[styles.enrolledCard, { backgroundColor: colors.card, borderColor: "#FBBF24" }]}>
+                    <View key={c.id} style={[styles.enrolledCard, { backgroundColor: colors.card, borderColor: colors.secondary }]}>
                       <View style={styles.enrolledCardTop}>
-                        <View style={[styles.enrolledBadge, { backgroundColor: "#FBBF24" }]}>
-                          <Ionicons name="checkmark-circle" size={14} color={"#1E3A8A"} />
-                          <Text style={[styles.enrolledBadgeText, { color: "#1E3A8A" }]}>Enrolled</Text>
+                        <View style={[styles.enrolledBadge, { backgroundColor: colors.secondary }]}>
+                          <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
+                          <Text style={[styles.enrolledBadgeText, { color: colors.primary }]}>Enrolled</Text>
                         </View>
                         <View style={[styles.levelBadge, { backgroundColor: colors.muted }]}>
-                          <Text style={[styles.levelText, { color: "#1E3A8A" }]}>{c.level}</Text>
+                          <Text style={[styles.levelText, { color: colors.primary }]}>{c.level}</Text>
                         </View>
                       </View>
 
-                      <Text style={[styles.courseName, { color: "#1E3A8A" }]}>{c.name}</Text>
+                      <Text style={[styles.courseName, { color: colors.primary }]}>{c.name}</Text>
 
                       <View style={styles.detailList}>
                         <View style={styles.detailItem}>
-                          <Ionicons name="person-circle-outline" size={15} color={"#1E3A8A"} />
+                          <Ionicons name="person-circle-outline" size={15} color={colors.primary} />
                           <Text style={[styles.detailItemLabel, { color: colors.mutedForeground }]}>Participant</Text>
-                          <Text style={[styles.detailItemValue, { color: "#1E3A8A" }]}>{participant}</Text>
+                          <Text style={[styles.detailItemValue, { color: colors.primary }]}>{participant}</Text>
                         </View>
                         <View style={styles.detailItem}>
                           <Ionicons name="person-outline" size={15} color={colors.mutedForeground} />
@@ -728,7 +728,7 @@ export default function CoursesScreen() {
                       <View style={styles.enrolledActions}>
                         {c.location ? (
                           <Pressable
-                            style={[styles.navigateBtn, { backgroundColor: "#1E3A8A" }]}
+                            style={[styles.navigateBtn, { backgroundColor: colors.primary }]}
                             onPress={() => openNavigate(c.location)}
                           >
                             <Ionicons name="navigate" size={16} color="#FFF" />
@@ -736,11 +736,11 @@ export default function CoursesScreen() {
                           </Pressable>
                         ) : null}
                         <Pressable
-                          style={[styles.materialsBtn, { backgroundColor: "#FBBF24", flex: c.location ? 1 : undefined }]}
+                          style={[styles.materialsBtn, { backgroundColor: colors.secondary, flex: c.location ? 1 : undefined }]}
                           onPress={() => setSelectedCourse(c.id)}
                         >
-                          <Ionicons name="information-circle-outline" size={16} color={"#1E3A8A"} />
-                          <Text style={[styles.materialsBtnText, { color: "#1E3A8A" }]}>Details</Text>
+                          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+                          <Text style={[styles.materialsBtnText, { color: colors.primary }]}>Details</Text>
                         </Pressable>
                         <Pressable
                           style={[styles.materialsBtn, { backgroundColor: colors.muted, borderWidth: 1, borderColor: colors.border }]}
@@ -759,15 +759,15 @@ export default function CoursesScreen() {
             {/* Available courses */}
             {availableCourses.length > 0 && (
               <>
-                <Text style={[styles.sectionHeading, { color: "#1E3A8A", marginTop: enrolledCourses.length > 0 ? 8 : 0 }]}>Available Courses</Text>
+                <Text style={[styles.sectionHeading, { color: colors.primary, marginTop: enrolledCourses.length > 0 ? 8 : 0 }]}>Available Courses</Text>
                 {availableCourses.map(c => (
                   <View key={c.id} style={[styles.courseCard, { backgroundColor: colors.card }]}>
                     <View style={styles.courseTop}>
                       <View style={[styles.levelBadge, { backgroundColor: colors.muted }]}>
-                        <Text style={[styles.levelText, { color: "#1E3A8A" }]}>{c.level}</Text>
+                        <Text style={[styles.levelText, { color: colors.primary }]}>{c.level}</Text>
                       </View>
                     </View>
-                    <Text style={[styles.courseName, { color: "#1E3A8A" }]}>{c.name}</Text>
+                    <Text style={[styles.courseName, { color: colors.primary }]}>{c.name}</Text>
                     <Text style={[styles.courseInstructor, { color: colors.mutedForeground }]}>
                       <Ionicons name="person" size={13} /> {c.instructor}
                     </Text>
@@ -790,9 +790,9 @@ export default function CoursesScreen() {
                         </View>
                       )}
                       {c.fixedBlockEnabled && (
-                        <View style={[styles.pricePill, { backgroundColor: c.fixedBlockPrice === 0 ? "#DCFCE7" : "#FBBF24" }]}>
-                          <Text style={[styles.pricePillLabel, { color: c.fixedBlockPrice === 0 ? "#16A34A" : "#1E3A8A" }]}>Pack ×{c.fixedBlockLessons}</Text>
-                          <Text style={[styles.pricePillAmount, { color: c.fixedBlockPrice === 0 ? "#16A34A" : "#1E3A8A" }]}>
+                        <View style={[styles.pricePill, { backgroundColor: c.fixedBlockPrice === 0 ? "#DCFCE7" : colors.secondary }]}>
+                          <Text style={[styles.pricePillLabel, { color: c.fixedBlockPrice === 0 ? "#16A34A" : colors.primary }]}>Pack ×{c.fixedBlockLessons}</Text>
+                          <Text style={[styles.pricePillAmount, { color: c.fixedBlockPrice === 0 ? "#16A34A" : colors.primary }]}>
                             {c.fixedBlockPrice === 0 ? "Free" : `${c.currency ?? ""}${c.fixedBlockPrice}`}
                           </Text>
                         </View>
@@ -800,7 +800,7 @@ export default function CoursesScreen() {
                     </View>
                     <View style={styles.courseActions}>
                       <Pressable style={[styles.infoBtn, { borderColor: colors.border }]} onPress={() => setSelectedCourse(c.id)}>
-                        <Text style={[styles.infoBtnText, { color: "#1E3A8A" }]}>COURSE INFO</Text>
+                        <Text style={[styles.infoBtnText, { color: colors.primary }]}>COURSE INFO</Text>
                       </Pressable>
                       {c.capacity > 0 && c.enrolled >= c.capacity ? (
                         // Course is FULL — show waitlist flow
@@ -826,8 +826,8 @@ export default function CoursesScreen() {
                                 onPress={() => handleLeaveWaitlist(c.id)}
                                 disabled={waitlistLoading === c.id}
                               >
-                                <Ionicons name="time-outline" size={14} color={"#1E3A8A"} />
-                                <Text style={[styles.enrollBtnText, { color: "#1E3A8A" }]}>#{ws.position} IN LINE</Text>
+                                <Ionicons name="time-outline" size={14} color={colors.primary} />
+                                <Text style={[styles.enrollBtnText, { color: colors.primary }]}>#{ws.position} IN LINE</Text>
                               </Pressable>
                             );
                           }
@@ -844,12 +844,12 @@ export default function CoursesScreen() {
                           );
                         })()
                       ) : isInCart(c.id) ? (
-                        <Pressable style={[styles.enrollBtn, { backgroundColor: "#FBBF24" }]} onPress={() => router.push("/(parent)/cart")}>
-                          <Ionicons name="cart" size={14} color={"#1E3A8A"} />
-                          <Text style={[styles.enrollBtnText, { color: "#1E3A8A" }]}>IN CART</Text>
+                        <Pressable style={[styles.enrollBtn, { backgroundColor: colors.secondary }]} onPress={() => router.push("/(parent)/cart")}>
+                          <Ionicons name="cart" size={14} color={colors.primary} />
+                          <Text style={[styles.enrollBtnText, { color: colors.primary }]}>IN CART</Text>
                         </Pressable>
                       ) : (
-                        <Pressable style={[styles.enrollBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => handleOpenEnroll(c)}>
+                        <Pressable style={[styles.enrollBtn, { backgroundColor: colors.primary }]} onPress={() => handleOpenEnroll(c)}>
                           <Ionicons name="cart-outline" size={14} color="#FFF" />
                           <Text style={styles.enrollBtnText}>ENROLL</Text>
                         </Pressable>
@@ -871,13 +871,13 @@ export default function CoursesScreen() {
           <View style={styles.privateSection}>
             {/* Private Lessons Card */}
             <View style={[styles.privateCard, { backgroundColor: colors.card }]}>
-              <Ionicons name="star" size={32} color={"#FBBF24"} />
-              <Text style={[styles.privateTitle, { color: "#1E3A8A" }]}>Private Lessons</Text>
+              <Ionicons name="star" size={32} color={colors.secondary} />
+              <Text style={[styles.privateTitle, { color: colors.primary }]}>Private Lessons</Text>
               <Text style={[styles.privateDesc, { color: colors.mutedForeground }]}>
                 Choose your operator and book a personalised one-on-one session. Availability is filtered in real time.
               </Text>
               <Pressable
-                style={[styles.bookPrivateBtn, { backgroundColor: "#1E3A8A" }]}
+                style={[styles.bookPrivateBtn, { backgroundColor: colors.primary }]}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/private-lesson-book"); }}
               >
                 <Ionicons name="calendar" size={18} color="#FFF" />
@@ -887,15 +887,15 @@ export default function CoursesScreen() {
                 style={[styles.bookPrivateBtn, { backgroundColor: colors.muted, marginTop: 8 }]}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/my-private-lessons" as never); }}
               >
-                <Ionicons name="list-outline" size={18} color={"#1E3A8A"} />
-                <Text style={[styles.bookPrivateBtnText, { color: "#1E3A8A" }]}>MY BOOKED LESSONS</Text>
+                <Ionicons name="list-outline" size={18} color={colors.primary} />
+                <Text style={[styles.bookPrivateBtnText, { color: colors.primary }]}>MY BOOKED LESSONS</Text>
               </Pressable>
             </View>
 
             {/* Office Meeting Card */}
             <View style={[styles.privateCard, { backgroundColor: colors.card, marginTop: 12 }]}>
-              <Ionicons name="briefcase-outline" size={32} color={"#1E3A8A"} />
-              <Text style={[styles.privateTitle, { color: "#1E3A8A" }]}>Office Meeting</Text>
+              <Ionicons name="briefcase-outline" size={32} color={colors.primary} />
+              <Text style={[styles.privateTitle, { color: colors.primary }]}>Office Meeting</Text>
               <Text style={[styles.privateDesc, { color: colors.mutedForeground }]}>
                 Book an appointment with our admin team for any enquiry — fees, enrollment changes and more.
               </Text>
@@ -903,8 +903,8 @@ export default function CoursesScreen() {
                 style={[styles.bookPrivateBtn, { backgroundColor: colors.muted }]}
                 onPress={() => { setShowMeetingModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               >
-                <Ionicons name="calendar-outline" size={18} color={"#1E3A8A"} />
-                <Text style={[styles.bookPrivateBtnText, { color: "#1E3A8A" }]}>BOOK MEETING</Text>
+                <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+                <Text style={[styles.bookPrivateBtnText, { color: colors.primary }]}>BOOK MEETING</Text>
               </Pressable>
             </View>
 
@@ -926,7 +926,7 @@ export default function CoursesScreen() {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingTop: 0, gap: 0 }}>
               {course && (
                 <>
-                  <Text style={[styles.modalTitle, { color: "#1E3A8A" }]}>{course.name}</Text>
+                  <Text style={[styles.modalTitle, { color: colors.primary }]}>{course.name}</Text>
                   <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{course.description}</Text>
                   <View style={styles.detailRows}>
                     {[
@@ -939,7 +939,7 @@ export default function CoursesScreen() {
                       <View key={row.label} style={[styles.detailRow, { borderBottomColor: colors.border }]}>
                         <Ionicons name={row.icon as "person"} size={16} color={colors.mutedForeground} />
                         <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
-                        <Text style={[styles.detailValue, { color: "#1E3A8A" }]}>{row.value}</Text>
+                        <Text style={[styles.detailValue, { color: colors.primary }]}>{row.value}</Text>
                       </View>
                     ))}
                   </View>
@@ -948,8 +948,8 @@ export default function CoursesScreen() {
                   {isEnrolled(course.id) && (
                     <View style={{ marginTop: 16, gap: 10 }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <Ionicons name="folder-open-outline" size={16} color={"#1E3A8A"} />
-                        <Text style={{ fontSize: 13, fontWeight: "800", color: "#1E3A8A", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
+                        <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.5 }}>
                           Course Materials
                         </Text>
                       </View>
@@ -984,14 +984,14 @@ export default function CoursesScreen() {
 
                   {course.location ? (
                     <Pressable
-                      style={[styles.navigateFullBtn, { backgroundColor: "#FBBF24", marginTop: 16, marginBottom: 0 }]}
+                      style={[styles.navigateFullBtn, { backgroundColor: colors.secondary, marginTop: 16, marginBottom: 0 }]}
                       onPress={() => openNavigate(course.location)}
                     >
-                      <Ionicons name="navigate" size={16} color={"#1E3A8A"} />
-                      <Text style={[styles.navigateFullBtnText, { color: "#1E3A8A" }]}>Navigate to Studio</Text>
+                      <Ionicons name="navigate" size={16} color={colors.primary} />
+                      <Text style={[styles.navigateFullBtnText, { color: colors.primary }]}>Navigate to Studio</Text>
                     </Pressable>
                   ) : null}
-                  <Pressable style={[styles.closeBtn, { backgroundColor: "#1E3A8A", marginTop: 12 }]} onPress={() => setSelectedCourse(null)}>
+                  <Pressable style={[styles.closeBtn, { backgroundColor: colors.primary, marginTop: 12 }]} onPress={() => setSelectedCourse(null)}>
                     <Text style={styles.closeBtnText}>Close</Text>
                   </Pressable>
                 </>
@@ -1026,7 +1026,7 @@ export default function CoursesScreen() {
                   <Pressable
                     style={[
                       styles.participantRow,
-                      { borderColor: enrollPackage === "dropIn" ? "#1E3A8A" : colors.border,
+                      { borderColor: enrollPackage === "dropIn" ? colors.primary : colors.border,
                         backgroundColor: enrollPackage === "dropIn" ? colors.muted : colors.background },
                     ]}
                     onPress={() => setEnrollPackage("dropIn")}
@@ -1034,20 +1034,20 @@ export default function CoursesScreen() {
                     <Ionicons
                       name={enrollPackage === "dropIn" ? "radio-button-on" : "radio-button-off"}
                       size={18}
-                      color={enrollPackage === "dropIn" ? "#1E3A8A" : colors.mutedForeground}
+                      color={enrollPackage === "dropIn" ? colors.primary : colors.mutedForeground}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.participantName, { color: colors.foreground }]}>Single Lesson</Text>
                       <Text style={[styles.detailLabel, { color: colors.mutedForeground, marginTop: 2 }]}>One lesson, no commitment</Text>
                     </View>
-                    <Text style={[styles.participantName, { color: "#1E3A8A", fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.dropInPrice}</Text>
+                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.dropInPrice}</Text>
                   </Pressable>
                 )}
                 {enrollCourse?.fixedBlockEnabled && (
                   <Pressable
                     style={[
                       styles.participantRow,
-                      { borderColor: enrollPackage === "fixedBlock" ? "#1E3A8A" : colors.border,
+                      { borderColor: enrollPackage === "fixedBlock" ? colors.primary : colors.border,
                         backgroundColor: enrollPackage === "fixedBlock" ? colors.muted : colors.background,
                         marginTop: 8 },
                     ]}
@@ -1056,7 +1056,7 @@ export default function CoursesScreen() {
                     <Ionicons
                       name={enrollPackage === "fixedBlock" ? "radio-button-on" : "radio-button-off"}
                       size={18}
-                      color={enrollPackage === "fixedBlock" ? "#1E3A8A" : colors.mutedForeground}
+                      color={enrollPackage === "fixedBlock" ? colors.primary : colors.mutedForeground}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.participantName, { color: colors.foreground }]}>
@@ -1064,14 +1064,14 @@ export default function CoursesScreen() {
                       </Text>
                       <Text style={[styles.detailLabel, { color: "#10B981", marginTop: 2 }]}>Discounted bundle</Text>
                     </View>
-                    <Text style={[styles.participantName, { color: "#1E3A8A", fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.fixedBlockPrice}</Text>
+                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.fixedBlockPrice}</Text>
                   </Pressable>
                 )}
                 {enrollCourse?.monthlyEnabled && (
                   <Pressable
                     style={[
                       styles.participantRow,
-                      { borderColor: enrollPackage === "monthlyBilling" ? "#1E3A8A" : colors.border,
+                      { borderColor: enrollPackage === "monthlyBilling" ? colors.primary : colors.border,
                         backgroundColor: enrollPackage === "monthlyBilling" ? colors.muted : colors.background,
                         marginTop: 8 },
                     ]}
@@ -1080,7 +1080,7 @@ export default function CoursesScreen() {
                     <Ionicons
                       name={enrollPackage === "monthlyBilling" ? "radio-button-on" : "radio-button-off"}
                       size={18}
-                      color={enrollPackage === "monthlyBilling" ? "#1E3A8A" : colors.mutedForeground}
+                      color={enrollPackage === "monthlyBilling" ? colors.primary : colors.mutedForeground}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.participantName, { color: colors.foreground }]}>Monthly Subscription</Text>
@@ -1088,14 +1088,14 @@ export default function CoursesScreen() {
                         Billed on the {enrollCourse.monthlyPayDay ?? 1}{["th","st","nd","rd"][(enrollCourse.monthlyPayDay ?? 1) <= 3 ? (enrollCourse.monthlyPayDay ?? 1) : 0]} each month
                       </Text>
                     </View>
-                    <Text style={[styles.participantName, { color: "#1E3A8A", fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.monthlyPrice ?? 0}/mo</Text>
+                    <Text style={[styles.participantName, { color: colors.primary, fontWeight: "800" }]}>{enrollCourse.currency ?? ""}{enrollCourse.monthlyPrice ?? 0}/mo</Text>
                   </Pressable>
                 )}
                 {enrollCourse?.annualEnabled && (
                   <Pressable
                     style={[
                       styles.participantRow,
-                      { borderColor: enrollPackage === "annual" ? "#FBBF24" : colors.border,
+                      { borderColor: enrollPackage === "annual" ? colors.secondary : colors.border,
                         backgroundColor: enrollPackage === "annual" ? "#FEF3C7" : colors.background,
                         marginTop: 8 },
                     ]}
@@ -1104,7 +1104,7 @@ export default function CoursesScreen() {
                     <Ionicons
                       name={enrollPackage === "annual" ? "radio-button-on" : "radio-button-off"}
                       size={18}
-                      color={enrollPackage === "annual" ? "#FBBF24" : colors.mutedForeground}
+                      color={enrollPackage === "annual" ? colors.secondary : colors.mutedForeground}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.participantName, { color: colors.foreground }]}>Annual Subscription</Text>
@@ -1125,7 +1125,7 @@ export default function CoursesScreen() {
                       key={name}
                       style={[
                         styles.participantRow,
-                        { borderColor: checked ? "#1E3A8A" : colors.border,
+                        { borderColor: checked ? colors.primary : colors.border,
                           backgroundColor: checked ? colors.muted : colors.background,
                           marginTop: idx > 0 ? 8 : 0 },
                       ]}
@@ -1134,7 +1134,7 @@ export default function CoursesScreen() {
                       <Ionicons
                         name={checked ? "checkbox" : "square-outline"}
                         size={20}
-                        color={checked ? "#1E3A8A" : colors.mutedForeground}
+                        color={checked ? colors.primary : colors.mutedForeground}
                       />
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.participantName, { color: colors.foreground }]}>{name}</Text>
@@ -1145,8 +1145,8 @@ export default function CoursesScreen() {
                         )}
                       </View>
                       {idx === 0 && (
-                        <View style={[styles.youBadge, { backgroundColor: "#FBBF24" }]}>
-                          <Text style={[styles.youBadgeText, { color: "#1E3A8A" }]}>You</Text>
+                        <View style={[styles.youBadge, { backgroundColor: colors.secondary }]}>
+                          <Text style={[styles.youBadgeText, { color: colors.primary }]}>You</Text>
                         </View>
                       )}
                     </Pressable>
@@ -1322,12 +1322,12 @@ export default function CoursesScreen() {
 
               {/* Confirmation summary */}
               {meetDate && meetSlot && (
-                <View style={{ borderRadius: 12, padding: 14, backgroundColor: `"#1E3A8A"12`, marginBottom: 18, gap: 3 }}>
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Appointment Summary</Text>
+                <View style={{ borderRadius: 12, padding: 14, backgroundColor: `colors.primary12`, marginBottom: 18, gap: 3 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Appointment Summary</Text>
                   <Text style={{ fontSize: 14, color: colors.foreground }}>
                     {new Date(`${meetDate}T00:00:00`).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                   </Text>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A" }}>{meetSlot}</Text>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>{meetSlot}</Text>
                 </View>
               )}
 

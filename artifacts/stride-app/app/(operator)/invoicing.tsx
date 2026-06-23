@@ -215,13 +215,13 @@ function buildInvoiceHtml(opts: {
       return entries.map((e, ei) => `
         <tr style="background:${rowBg}">
           ${ei === 0
-            ? `<td rowspan="${entries.length}" style="font-weight:700;color:"#1E3A8A";white-space:nowrap;border-right:1px solid #E5E7EB;vertical-align:middle">${formatDate(date)}</td>`
+            ? `<td rowspan="${entries.length}" style="font-weight:700;color:colors.primary;white-space:nowrap;border-right:1px solid #E5E7EB;vertical-align:middle">${formatDate(date)}</td>`
             : ""}
           <td>${e.discipline}</td>
           <td style="text-align:center">${e.hours}h</td>
           <td style="text-align:center">€${(e.rateCents / 100).toFixed(2)}/h</td>
           ${ei === 0
-            ? `<td rowspan="${entries.length}" style="text-align:right;font-weight:700;color:"#1E3A8A";border-left:1px solid #E5E7EB;vertical-align:middle">€${(dayTotal / 100).toFixed(2)}</td>`
+            ? `<td rowspan="${entries.length}" style="text-align:right;font-weight:700;color:colors.primary;border-left:1px solid #E5E7EB;vertical-align:middle">€${(dayTotal / 100).toFixed(2)}</td>`
             : ""}
         </tr>`);
     })
@@ -238,24 +238,24 @@ function buildInvoiceHtml(opts: {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Helvetica,Arial,sans-serif;padding:40px 44px;color:#1a202c;font-size:13px}
-.top-band{background:"#1E3A8A";color:white;padding:22px 28px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:flex-start}
+.top-band{background:colors.primary;color:white;padding:22px 28px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:flex-start}
 .brand-name{font-size:28px;font-weight:900;letter-spacing:-0.5px}
 .brand-tag{font-size:11px;opacity:0.75;margin-top:3px}
-.inv-label{font-size:22px;font-weight:800;color:"#FBBF24";text-align:right}
+.inv-label{font-size:22px;font-weight:800;color:colors.secondary;text-align:right}
 .inv-meta{font-size:11px;opacity:0.8;text-align:right;margin-top:3px}
 .parties-band{background:#F0F4FF;border:1px solid #DBEAFE;border-top:none;border-radius:0 0 10px 10px;display:flex;margin-bottom:28px}
 .party{flex:1;padding:18px 22px}
 .party+.party{border-left:1px solid #DBEAFE}
 .party-label{font-size:9px;font-weight:700;color:#6B7280;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
-.party-name{font-size:15px;font-weight:800;color:"#1E3A8A"}
+.party-name{font-size:15px;font-weight:800;color:colors.primary}
 .party-sub{font-size:11px;color:#4B5563;margin-top:3px}
-.sh{font-size:11px;font-weight:800;color:"#1E3A8A";text-transform:uppercase;letter-spacing:1px;margin:22px 0 8px;padding-bottom:4px;border-bottom:2px solid #DBEAFE}
+.sh{font-size:11px;font-weight:800;color:colors.primary;text-transform:uppercase;letter-spacing:1px;margin:22px 0 8px;padding-bottom:4px;border-bottom:2px solid #DBEAFE}
 table{width:100%;border-collapse:collapse;font-size:12px}
-thead th{background:"#1E3A8A";color:white;font-size:10px;font-weight:700;padding:9px 12px;text-align:left;letter-spacing:0.3px}
+thead th{background:colors.primary;color:white;font-size:10px;font-weight:700;padding:9px 12px;text-align:left;letter-spacing:0.3px}
 thead th:nth-child(3),thead th:nth-child(4){text-align:center}
 thead th:last-child{text-align:right}
 tbody td{padding:9px 12px;border-bottom:1px solid #E5E7EB;vertical-align:middle}
-.total-band{background:"#1E3A8A";color:white}
+.total-band{background:colors.primary;color:white}
 .total-band td{padding:13px 12px;font-size:14px;font-weight:800;border-bottom:none}
 .notes-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:14px 16px;margin-top:20px;font-size:12px;color:#92400E}
 .footer{margin-top:44px;padding-top:18px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:flex-end}
@@ -309,10 +309,10 @@ tbody td{padding:9px 12px;border-bottom:1px solid #E5E7EB;vertical-align:middle}
     </tr>`).join("");
       return `${deductRows}
     <tr style="background:#EFF6FF">
-      <td colspan="2" style="padding:12px;color:"#1E3A8A";font-size:13px;font-weight:800">
+      <td colspan="2" style="padding:12px;color:colors.primary;font-size:13px;font-weight:800">
         ${superIncluded ? "NET DUE TO OPERATOR" : "TOTAL EMPLOYER COST (incl. contributions)"}
       </td>
-      <td colspan="3" style="text-align:right;padding:12px;color:"#1E3A8A";font-weight:800">
+      <td colspan="3" style="text-align:right;padding:12px;color:colors.primary;font-weight:800">
         €${superIncluded
           ? ((totalCents - totalDeduct) / 100).toFixed(2)
           : ((totalCents + totalDeduct) / 100).toFixed(2)}
@@ -411,7 +411,7 @@ function InAppBanner({ message, type, onDismiss }: { message: string; type: "suc
   const colors = useColors();
   if (type === "warning") {
     return (
-      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: "#FBBF24", backgroundColor: "#FFFBEB" }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: colors.secondary, backgroundColor: "#FFFBEB" }}>
         <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
           <Ionicons name="warning" size={20} color="#D97706" />
         </View>
@@ -990,7 +990,7 @@ export default function OperatorInvoicing() {
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   {breakdown.map((d, i) => (
                     <View key={i} style={{ minWidth: 80, flex: 1 }}>
-                      <Text style={{ color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>
+                      <Text style={{ color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>
                         {d.label} ({d.rate.toFixed(1)}%)
                       </Text>
                       <Text style={{ color: "#FFF", fontSize: 13, fontWeight: "800" }}>
@@ -999,7 +999,7 @@ export default function OperatorInvoicing() {
                     </View>
                   ))}
                   <View style={{ minWidth: 80, flex: 1 }}>
-                    <Text style={{ color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>
+                    <Text style={{ color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>
                       {superIncl ? "NET DUE" : "EMPLOYER COST"}
                     </Text>
                     <Text style={{ color: "#FFF", fontSize: 13, fontWeight: "800" }}>
@@ -1017,15 +1017,15 @@ export default function OperatorInvoicing() {
         {/* ── Private Lesson Bookings ── */}
         {(loadingPLB || activePLB.length > 0 || pastPLB.length > 0) && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Private Lesson Bookings</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Private Lesson Bookings</Text>
             {loadingPLB ? (
               <View style={{ alignItems: "center", paddingVertical: 20 }}>
-                <ActivityIndicator color={"#1E3A8A"} />
+                <ActivityIndicator color={colors.primary} />
               </View>
             ) : (
               <>
                 {activePLB.map(b => (
-                  <View key={b.id} style={[styles.plbCard, { backgroundColor: colors.card, borderColor: b.status === "booked" ? "#FBBF24" : "#10B981" }]}>
+                  <View key={b.id} style={[styles.plbCard, { backgroundColor: colors.card, borderColor: b.status === "booked" ? colors.secondary : "#10B981" }]}>
                     <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
                       <View style={[styles.plbIcon, { backgroundColor: b.status === "booked" ? "#FEF9C3" : "#D1FAE5" }]}>
                         <Ionicons name={b.status === "booked" ? "time-outline" : "checkmark-circle-outline"} size={20} color={b.status === "booked" ? "#92400E" : "#059669"} />
@@ -1041,7 +1041,7 @@ export default function OperatorInvoicing() {
                           {b.status === "booked" && (
                             <>
                               <Pressable
-                                style={[styles.plbBtn, { backgroundColor: "#1E3A8A" }]}
+                                style={[styles.plbBtn, { backgroundColor: colors.primary }]}
                                 onPress={() => handlePLBStatus(b.id, "confirmed")}
                                 disabled={updatingPLB === b.id}
                               >
@@ -1119,7 +1119,7 @@ export default function OperatorInvoicing() {
             {MONTHS.map(m => (
               <Pressable
                 key={m.key}
-                style={[styles.periodBtn, selectedMonth === m.key && { backgroundColor: "#1E3A8A" }]}
+                style={[styles.periodBtn, selectedMonth === m.key && { backgroundColor: colors.primary }]}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedMonth(m.key); }}
               >
                 <Text style={[styles.periodBtnText, { color: selectedMonth === m.key ? "#FFF" : colors.foreground }]}>{m.label}</Text>
@@ -1133,7 +1133,7 @@ export default function OperatorInvoicing() {
           <Pressable
             onPress={() => router.push("/(operator)/contract" as never)}
             style={{ flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 14,
-              backgroundColor: "#FFFBEB", borderWidth: 1.5, borderColor: "#FBBF24" }}>
+              backgroundColor: "#FFFBEB", borderWidth: 1.5, borderColor: colors.secondary }}>
             <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="document-text-outline" size={20} color="#92400E" />
             </View>
@@ -1152,8 +1152,8 @@ export default function OperatorInvoicing() {
           <View style={{ backgroundColor: "#EFF6FF", borderRadius: 14, padding: 14, marginBottom: 14,
             borderWidth: 1, borderColor: "#BFDBFE" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <Ionicons name="trending-up" size={15} color={"#1E3A8A"} />
-              <Text style={{ fontSize: 11, fontWeight: "800", color: "#1E3A8A", textTransform: "uppercase", letterSpacing: 0.8 }}>
+              <Ionicons name="trending-up" size={15} color={colors.primary} />
+              <Text style={{ fontSize: 11, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 0.8 }}>
                 {ytd.year} Year to Date
               </Text>
             </View>
@@ -1170,7 +1170,7 @@ export default function OperatorInvoicing() {
                   <Text style={{ fontSize: 9, fontWeight: "700", color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
                     {t.label}
                   </Text>
-                  <Text style={{ fontSize: 14, fontWeight: "900", color: "#1E3A8A", marginTop: 2 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "900", color: colors.primary, marginTop: 2 }}>
                     {t.val}
                   </Text>
                 </View>
@@ -1183,12 +1183,12 @@ export default function OperatorInvoicing() {
         {myContract?.employment_type === "contractor" && (
           <View style={{ borderRadius: 14, borderWidth: 1, borderColor: "#BFDBFE", backgroundColor: "#EFF6FF", padding: 14, marginBottom: 14 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <Ionicons name="download-outline" size={16} color={"#1E3A8A"} />
-              <Text style={{ fontSize: 13, fontWeight: "800", color: "#1E3A8A" }}>Contractor CSV Export</Text>
+              <Ionicons name="download-outline" size={16} color={colors.primary} />
+              <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary }}>Contractor CSV Export</Text>
               <Pressable onPress={() => router.push("/(operator)/contract" as never)}
                 style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>View Contract</Text>
-                <Ionicons name="chevron-forward" size={12} color={"#1E3A8A"} />
+                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>View Contract</Text>
+                <Ionicons name="chevron-forward" size={12} color={colors.primary} />
               </Pressable>
             </View>
             <Text style={{ fontSize: 11, color: "#1E40AF", marginBottom: 10, lineHeight: 16 }}>
@@ -1212,10 +1212,10 @@ export default function OperatorInvoicing() {
             </View>
             <Pressable onPress={() => { void handleContractorCsvExport(); }}
               style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 10,
-                paddingVertical: 10, backgroundColor: "#1E3A8A" }}>
+                paddingVertical: 10, backgroundColor: colors.primary }}>
               {csvGenning
                 ? <ActivityIndicator size="small" color="#FFF" />
-                : <Ionicons name="document-outline" size={15} color={"#FBBF24"} />}
+                : <Ionicons name="document-outline" size={15} color={colors.secondary} />}
               <Text style={{ fontSize: 12, fontWeight: "800", color: "#FFF" }}>
                 {csvGenning ? "Generating…" : "Download CSV"}
               </Text>
@@ -1229,7 +1229,7 @@ export default function OperatorInvoicing() {
                   {myContract.contractor_extra_chips.map((chip, i) => (
                     <View key={i} style={{ backgroundColor: "#FFF", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
                       borderWidth: 1, borderColor: "#BFDBFE" }}>
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>{chip.label} {chip.rate}%</Text>
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{chip.label} {chip.rate}%</Text>
                     </View>
                   ))}
                 </View>
@@ -1302,7 +1302,7 @@ export default function OperatorInvoicing() {
 
           {loading ? (
             <View style={styles.logLoadingRow}>
-              <ActivityIndicator size="small" color={"#1E3A8A"} />
+              <ActivityIndicator size="small" color={colors.primary} />
               <Text style={[styles.logLoadingText, { color: colors.mutedForeground }]}>Loading log…</Text>
             </View>
           ) : dailyGroups.length === 0 ? (
@@ -1315,20 +1315,20 @@ export default function OperatorInvoicing() {
               <View
                 key={group.date}
                 style={[
-                  { backgroundColor: gi % 2 === 0 ? colors.card : `"#1E3A8A"06` },
+                  { backgroundColor: gi % 2 === 0 ? colors.card : `colors.primary06` },
                   gi < dailyGroups.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                 ]}
               >
                 {/* Date separator row — full-width, space-between */}
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingTop: 10, paddingBottom: 5 }}>
-                  <View style={[styles.logDateBadge, { backgroundColor: `"#1E3A8A"15` }]}>
-                    <Ionicons name="calendar-outline" size={11} color={"#1E3A8A"} />
-                    <Text style={[styles.logDateText, { color: "#1E3A8A" }]}>{formatDate(group.date)}</Text>
+                  <View style={[styles.logDateBadge, { backgroundColor: `colors.primary15` }]}>
+                    <Ionicons name="calendar-outline" size={11} color={colors.primary} />
+                    <Text style={[styles.logDateText, { color: colors.primary }]}>{formatDate(group.date)}</Text>
                     {group.entries.length > 1 && (
                       <Text style={{ fontSize: 10, color: colors.mutedForeground, marginLeft: 2 }}>· {group.entries.length} sess.</Text>
                     )}
                   </View>
-                  <Text style={{ fontSize: 13, fontWeight: "900", color: "#1E3A8A" }}>€{(group.dayTotalCents / 100).toFixed(2)}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "900", color: colors.primary }}>€{(group.dayTotalCents / 100).toFixed(2)}</Text>
                 </View>
 
                 {/* Entry rows — aligned to 3-column header */}
@@ -1340,7 +1340,7 @@ export default function OperatorInvoicing() {
                       style={[styles.logEntryRow, { borderTopWidth: 1, borderTopColor: `${colors.border}50`, opacity: absent ? 0.6 : 1 }]}
                     >
                       <View style={{ flex: 3, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <View style={[styles.logDisciplineDot, { backgroundColor: absent ? "#EF4444" : "#FBBF24" }]} />
+                        <View style={[styles.logDisciplineDot, { backgroundColor: absent ? "#EF4444" : colors.secondary }]} />
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={[styles.logDisciplineName, { color: absent ? "#DC2626" : colors.foreground }]} numberOfLines={1}>{entry.discipline}</Text>
                           {absent && (
@@ -1352,7 +1352,7 @@ export default function OperatorInvoicing() {
                         </View>
                       </View>
                       <Text style={[styles.logEntryCell, { flex: 1, color: absent ? "#9CA3AF" : colors.mutedForeground, textAlign: "center", textDecorationLine: absent ? "line-through" : "none" }]}>{entry.hours}h</Text>
-                      <Text style={[styles.logEntryCell, { flex: 1.2, color: absent ? "#9CA3AF" : "#1E3A8A", fontWeight: "700", textAlign: "right", textDecorationLine: absent ? "line-through" : "none" }]}>€{(entry.totalCents / 100).toFixed(2)}</Text>
+                      <Text style={[styles.logEntryCell, { flex: 1.2, color: absent ? "#9CA3AF" : colors.primary, fontWeight: "700", textAlign: "right", textDecorationLine: absent ? "line-through" : "none" }]}>€{(entry.totalCents / 100).toFixed(2)}</Text>
                     </View>
                   );
                 })}
@@ -1361,7 +1361,7 @@ export default function OperatorInvoicing() {
           )}
 
           {!loading && dailyGroups.length > 0 && (
-            <View style={[styles.logGrandTotal, { backgroundColor: "#1E3A8A" }]}>
+            <View style={[styles.logGrandTotal, { backgroundColor: colors.primary }]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.logGrandTotalLabel}>TOTAL DUE</Text>
                 <Text style={styles.logGrandTotalSub}>{filteredTotalHours}h · {filteredDailyLog.length} sessions</Text>
@@ -1425,18 +1425,18 @@ export default function OperatorInvoicing() {
             </Pressable>
           ) : (
             <Pressable
-              style={[styles.submitBtn, { backgroundColor: "#1E3A8A", opacity: submitting ? 0.6 : 1 }]}
+              style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.6 : 1 }]}
               onPress={handleSubmitToAdmin}
               disabled={submitting || loading}
             >
               {submitting ? (
                 <>
-                  <ActivityIndicator size="small" color={"#FBBF24"} />
+                  <ActivityIndicator size="small" color={colors.secondary} />
                   <Text style={styles.submitBtnText}>SENDING…</Text>
                 </>
               ) : (
                 <>
-                  <Ionicons name="paper-plane-outline" size={16} color={"#FBBF24"} />
+                  <Ionicons name="paper-plane-outline" size={16} color={colors.secondary} />
                   <Text style={styles.submitBtnText}>SEND INVOICE TO ADMIN</Text>
                 </>
               )}
@@ -1496,14 +1496,14 @@ export default function OperatorInvoicing() {
               <Pressable
                 onPress={handleConfigureBankAccount}
                 disabled={stripeLoading}
-                style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#FBBF24", borderRadius: 12, paddingVertical: 13, opacity: stripeLoading ? 0.7 : 1 }}
+                style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.secondary, borderRadius: 12, paddingVertical: 13, opacity: stripeLoading ? 0.7 : 1 }}
               >
                 {stripeLoading ? (
-                  <ActivityIndicator size="small" color={"#1E3A8A"} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Ionicons name="flash" size={16} color={"#1E3A8A"} />
+                  <Ionicons name="flash" size={16} color={colors.primary} />
                 )}
-                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E3A8A" }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: colors.primary }}>
                   {stripeLoading ? "Opening Secure Setup…" : "Configure Bank Account"}
                 </Text>
               </Pressable>
@@ -1514,13 +1514,13 @@ export default function OperatorInvoicing() {
         {/* ── Substitution Ledger ── */}
         {alerts.length > 0 && (
           <View style={{ marginTop: 8 }}>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginBottom: 10 }]}>Substitution Ledger</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 10 }]}>Substitution Ledger</Text>
             <View style={{ borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: colors.border }}>
-              <View style={{ flexDirection: "row", backgroundColor: "#1E3A8A", paddingHorizontal: 12, paddingVertical: 8 }}>
-                <Text style={{ flex: 1.5, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Date</Text>
-                <Text style={{ flex: 2, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Class</Text>
-                <Text style={{ flex: 1.5, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Status</Text>
-                <Text style={{ flex: 1, color: "#FBBF24", fontSize: 10, fontWeight: "800", textTransform: "uppercase", textAlign: "right" }}>Hours</Text>
+              <View style={{ flexDirection: "row", backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 8 }}>
+                <Text style={{ flex: 1.5, color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Date</Text>
+                <Text style={{ flex: 2, color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Class</Text>
+                <Text style={{ flex: 1.5, color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Status</Text>
+                <Text style={{ flex: 1, color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase", textAlign: "right" }}>Hours</Text>
               </View>
               {alerts.slice(0, 10).map((a, idx) => {
                 const isCovered = a.resolved && a.resolution === "sub_found";
@@ -1623,10 +1623,10 @@ export default function OperatorInvoicing() {
                   <Pressable
                     key={opt.value}
                     onPress={() => setPayoutMethod(opt.value)}
-                    style={{ flex: 1, alignItems: "center", gap: 4, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: payoutMethod === opt.value ? "#1E3A8A" : colors.border, backgroundColor: payoutMethod === opt.value ? "#EFF6FF" : colors.muted }}
+                    style={{ flex: 1, alignItems: "center", gap: 4, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: payoutMethod === opt.value ? colors.primary : colors.border, backgroundColor: payoutMethod === opt.value ? "#EFF6FF" : colors.muted }}
                   >
-                    <Ionicons name={opt.icon} size={16} color={payoutMethod === opt.value ? "#1E3A8A" : colors.mutedForeground} />
-                    <Text style={{ fontSize: 10, fontWeight: "700", color: payoutMethod === opt.value ? "#1E3A8A" : colors.mutedForeground, textAlign: "center" }}>{opt.label}</Text>
+                    <Ionicons name={opt.icon} size={16} color={payoutMethod === opt.value ? colors.primary : colors.mutedForeground} />
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: payoutMethod === opt.value ? colors.primary : colors.mutedForeground, textAlign: "center" }}>{opt.label}</Text>
                   </Pressable>
                 ))}
               </View>

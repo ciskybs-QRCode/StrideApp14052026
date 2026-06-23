@@ -106,7 +106,7 @@ export default function FinanceHub() {
             title="Marketplace Revenue"
             description="Commission earnings and product performance"
             iconBg="#DBEAFE"
-            iconColor={"#1E3A8A"}
+            iconColor={colors.primary}
             onPress={() => router.push("/(admin)/marketplace" as never)}
           />
         )}

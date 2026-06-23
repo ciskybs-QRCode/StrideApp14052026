@@ -262,7 +262,7 @@ function SettingsTabIcon({ color, size }: { color: string; size: number }) {
           width: 8,
           height: 8,
           borderRadius: 4,
-          backgroundColor: "#FBBF24",
+          backgroundColor: colors.secondary,
           borderWidth: 1.5,
           borderColor: "#FFFFFF",
         }} />
@@ -284,7 +284,7 @@ export default function AdminTabLayout() {
     <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#1E3A8A",
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {

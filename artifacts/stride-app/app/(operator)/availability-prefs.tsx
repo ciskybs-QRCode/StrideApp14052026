@@ -109,7 +109,7 @@ export default function AvailabilityPrefsScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScreenHeader title="My Availability" onBack={() => router.back()} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color={"#1E3A8A"} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
@@ -220,8 +220,8 @@ export default function AvailabilityPrefsScreen() {
                 style={[
                   styles.dayChip,
                   {
-                    backgroundColor: slot.active ? "#1E3A8A" : colors.muted,
-                    borderColor: slot.active ? "#1E3A8A" : colors.border,
+                    backgroundColor: slot.active ? colors.primary : colors.muted,
+                    borderColor: slot.active ? colors.primary : colors.border,
                   },
                 ]}
               >

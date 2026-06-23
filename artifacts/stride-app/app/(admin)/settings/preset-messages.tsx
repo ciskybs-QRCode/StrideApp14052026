@@ -94,7 +94,7 @@ export default function PresetMessagesPage() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
-        <ActivityIndicator size="large" color={"#1E3A8A"} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -123,7 +123,7 @@ export default function PresetMessagesPage() {
 
           return (
             <View key={group} style={{ marginBottom: 8 }}>
-              <Text style={[styles.sectionLabel, { color: "#1E3A8A" }]}>{group.toUpperCase()}</Text>
+              <Text style={[styles.sectionLabel, { color: colors.primary }]}>{group.toUpperCase()}</Text>
               <View style={[styles.card, { backgroundColor: colors.card }]}>
                 {keys.map((key, i) => {
                   const draft = drafts[key];
@@ -138,14 +138,14 @@ export default function PresetMessagesPage() {
                       {/* Header row */}
                       <Pressable style={styles.msgHeader} onPress={() => setExpanded(isExpanded ? null : key)}>
                         <View style={[styles.msgIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                          <Ionicons name={meta.icon} size={16} color={"#1E3A8A"} />
+                          <Ionicons name={meta.icon} size={16} color={colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.msgLabel, { color: colors.foreground }]}>{meta.label}</Text>
                           <View style={styles.channelRow}>
-                            {draft.channel_inapp  && <ChipTag label="In-app"  color={"#1E3A8A"} />}
-                            {draft.channel_push   && <ChipTag label="Push"    color={"#1E3A8A"} />}
-                            {draft.channel_email  && <ChipTag label="Email"   color={"#1E3A8A"} />}
+                            {draft.channel_inapp  && <ChipTag label="In-app"  color={colors.primary} />}
+                            {draft.channel_push   && <ChipTag label="Push"    color={colors.primary} />}
+                            {draft.channel_email  && <ChipTag label="Email"   color={colors.primary} />}
                           </View>
                         </View>
                         <Ionicons
@@ -166,7 +166,7 @@ export default function PresetMessagesPage() {
                               icon="notifications-outline"
                               value={draft.channel_inapp}
                               onChange={v => updateDraft(key, "channel_inapp", v)}
-                              color={"#1E3A8A"}
+                              color={colors.primary}
                               sw={brandSwitch(draft.channel_inapp)}
                             />
                             <ChannelToggle
@@ -187,7 +187,7 @@ export default function PresetMessagesPage() {
                                   updateDraft(key, "channel_push", false);
                                 }
                               }}
-                              color={"#1E3A8A"}
+                              color={colors.primary}
                               sw={brandSwitch(draft.channel_push)}
                             />
                             <ChannelToggle
@@ -195,7 +195,7 @@ export default function PresetMessagesPage() {
                               icon="mail-outline"
                               value={draft.channel_email}
                               onChange={v => updateDraft(key, "channel_email", v)}
-                              color={"#1E3A8A"}
+                              color={colors.primary}
                               sw={brandSwitch(draft.channel_email)}
                             />
                           </View>
@@ -224,7 +224,7 @@ export default function PresetMessagesPage() {
 
                           {/* Save */}
                           <Pressable
-                            style={[styles.saveBtn, { backgroundColor: "#1E3A8A", opacity: saving === key ? 0.7 : 1 }]}
+                            style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: saving === key ? 0.7 : 1 }]}
                             onPress={() => save(key)}
                             disabled={saving === key}
                           >

@@ -200,8 +200,8 @@ export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantN
                   </>
                 ) : (
                   <>
-                    <Ionicons name="cloud-upload-outline" size={20} color={"#1E3A8A"} />
-                    <Text style={[formStyles.uploadBtnText, { color: "#1E3A8A" }]}>Upload JPG / PDF</Text>
+                    <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
+                    <Text style={[formStyles.uploadBtnText, { color: colors.primary }]}>Upload JPG / PDF</Text>
                   </>
                 )}
               </Pressable>
@@ -466,7 +466,7 @@ export default function AdminReimbursementsScreen() {
                     )}
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 6 }}>
-                    <Text style={[styles.amount, { color: "#1E3A8A" }]}>
+                    <Text style={[styles.amount, { color: colors.primary }]}>
                       {formatAmount(req.amountCents, orgCurrency)}
                     </Text>
                     <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
@@ -523,7 +523,7 @@ export default function AdminReimbursementsScreen() {
         {/* ── History ── */}
         {history.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 8 }]}>History</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>History</Text>
             {history.map(req => {
               const meta = STATUS_META[req.status];
               return (
@@ -579,17 +579,17 @@ export default function AdminReimbursementsScreen() {
                 <Pressable
                   key={m}
                   style={{ flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: "center", borderWidth: 2,
-                    borderColor: payMethod === m ? "#1E3A8A" : colors.border,
-                    backgroundColor: payMethod === m ? "#1E3A8A" + "15" : colors.background }}
+                    borderColor: payMethod === m ? colors.primary : colors.border,
+                    backgroundColor: payMethod === m ? colors.primary + "15" : colors.background }}
                   onPress={() => { setPayMethod(m); Haptics.selectionAsync(); }}
                 >
                   <Ionicons
                     name={m === "cash" ? "cash-outline" : m === "iban" ? "business-outline" : "card-outline"}
                     size={18}
-                    color={payMethod === m ? "#1E3A8A" : colors.mutedForeground}
+                    color={payMethod === m ? colors.primary : colors.mutedForeground}
                   />
                   <Text style={{ fontSize: 11, fontWeight: "700", marginTop: 4,
-                    color: payMethod === m ? "#1E3A8A" : colors.mutedForeground }}>
+                    color: payMethod === m ? colors.primary : colors.mutedForeground }}>
                     {m === "cash" ? "Cash" : m === "iban" ? bankConfig.label : "Stripe"}
                   </Text>
                 </Pressable>
@@ -651,9 +651,9 @@ export default function AdminReimbursementsScreen() {
                     style={{ borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 13, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }}
                   />
                 </View>
-                <View style={{ backgroundColor: "#1E3A8A" + "10", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8, alignItems: "center" }}>
-                  <Ionicons name="information-circle-outline" size={15} color={"#1E3A8A"} />
-                  <Text style={{ flex: 1, fontSize: 11, color: "#1E3A8A", lineHeight: 16 }}>
+                <View style={{ backgroundColor: colors.primary + "10", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8, alignItems: "center" }}>
+                  <Ionicons name="information-circle-outline" size={15} color={colors.primary} />
+                  <Text style={{ flex: 1, fontSize: 11, color: colors.primary, lineHeight: 16 }}>
                     {bankConfig.type === "iban" ? "SEPA transfer" : bankConfig.type === "bsb" ? "BSB transfer" : bankConfig.type === "sort_code" ? "Faster Payments" : "Wire transfer"} · {bankConfig.currencySymbol} {orgCurrency}. Member notified immediately.
                   </Text>
                 </View>
@@ -680,7 +680,7 @@ export default function AdminReimbursementsScreen() {
               </Pressable>
               <Pressable
                 style={{ flex: 2, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-                  borderRadius: 14, paddingVertical: 14, backgroundColor: "#1E3A8A", opacity: paying ? 0.7 : 1 }}
+                  borderRadius: 14, paddingVertical: 14, backgroundColor: colors.primary, opacity: paying ? 0.7 : 1 }}
                 onPress={handlePay}
                 disabled={paying}
               >

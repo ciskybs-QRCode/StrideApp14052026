@@ -122,7 +122,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
                   key={m}
                   style={[
                     styles.chip,
-                    selectedDelay === m && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
+                    selectedDelay === m && { backgroundColor: colors.primary, borderColor: colors.primary },
                   ]}
                   onPress={() => { setSelectedDelay(m); Haptics.selectionAsync(); }}
                 >
@@ -135,7 +135,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
           </ScrollView>
 
           <Pressable style={styles.submitBtn} onPress={handleSubmitDelay}>
-            <Ionicons name="time-outline" size={16} color={"#1E3A8A"} />
+            <Ionicons name="time-outline" size={16} color={colors.primary} />
             <Text style={styles.submitBtnText}>Confirm {selectedDelay} min delay</Text>
           </Pressable>
         </>
@@ -234,7 +234,7 @@ export default function ParentAlerts() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   <Pressable
-                    style={[styles.reportChip, reportWho === "self" && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
+                    style={[styles.reportChip, reportWho === "self" && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => { setReportWho("self"); Haptics.selectionAsync(); }}
                   >
                     <Text style={[styles.reportChipText, reportWho === "self" && { color: "#FFF" }]}>
@@ -244,7 +244,7 @@ export default function ParentAlerts() {
                   {children.map(c => (
                     <Pressable
                       key={c.id}
-                      style={[styles.reportChip, reportWho === c.id && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
+                      style={[styles.reportChip, reportWho === c.id && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                       onPress={() => { setReportWho(c.id); Haptics.selectionAsync(); }}
                     >
                       <Text style={[styles.reportChipText, reportWho === c.id && { color: "#FFF" }]}>
@@ -263,7 +263,7 @@ export default function ParentAlerts() {
                     style={[
                       styles.reportChip,
                       { flex: 1, justifyContent: "center" },
-                      reportType === t && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
+                      reportType === t && { backgroundColor: colors.primary, borderColor: colors.primary },
                     ]}
                     onPress={() => { setReportType(t); Haptics.selectionAsync(); }}
                   >
@@ -282,7 +282,7 @@ export default function ParentAlerts() {
                       {DELAY_OPTIONS.map(m => (
                         <Pressable
                           key={m}
-                          style={[styles.chip, reportDelay === m && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
+                          style={[styles.chip, reportDelay === m && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                           onPress={() => { setReportDelay(m); Haptics.selectionAsync(); }}
                         >
                           <Text style={[styles.chipText, reportDelay === m && { color: "#FFF" }]}>{m} min</Text>
@@ -297,7 +297,7 @@ export default function ParentAlerts() {
                 <Ionicons
                   name={reportType === "delay" ? "time-outline" : "close-circle-outline"}
                   size={16}
-                  color={"#1E3A8A"}
+                  color={colors.primary}
                 />
                 <Text style={styles.submitBtnText}>
                   {reportType === "delay" ? `Confirm ${reportDelay} min delay` : "Report Absence"}

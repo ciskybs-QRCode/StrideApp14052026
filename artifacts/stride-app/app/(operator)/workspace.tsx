@@ -82,10 +82,10 @@ function ProposeDiscountModal({
         <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
           <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB", alignSelf: "center", marginBottom: 20 }} />
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: ("#FBBF24" + "15"), alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="pricetag" size={20} color={"#1E3A8A"} />
+            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: (colors.secondary + "15"), alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="pricetag" size={20} color={colors.primary} />
             </View>
-            <Text style={{ fontSize: 20, fontWeight: "700", color: "#1E3A8A" }}>Propose Discount</Text>
+            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.primary }}>Propose Discount</Text>
           </View>
           <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 18, lineHeight: 18 }}>
             Suggest a fee reduction for a member — sent directly to the Admin for approval.
@@ -106,7 +106,7 @@ function ProposeDiscountModal({
                 { key: "discountPct" as const, label: "Discount (%)",     placeholder: "e.g. 20",               keyboard: "decimal-pad" as const },
               ]).map(f => (
                 <View key={f.key} style={{ marginBottom: 14 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A", marginBottom: 6 }}>{f.label}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.primary, marginBottom: 6 }}>{f.label}</Text>
                   <TextInput
                     style={{ borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }}
                     placeholder={f.placeholder}
@@ -118,7 +118,7 @@ function ProposeDiscountModal({
                 </View>
               ))}
               <View style={{ marginBottom: 14 }}>
-                <Text style={{ fontSize: 13, fontWeight: "600", color: "#1E3A8A", marginBottom: 6 }}>Reason / Notes</Text>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: colors.primary, marginBottom: 6 }}>Reason / Notes</Text>
                 <TextInput
                   style={{ borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, minHeight: 72, textAlignVertical: "top" }}
                   placeholder="e.g. Single parent, financial hardship..."
@@ -134,12 +134,12 @@ function ProposeDiscountModal({
                   <Text style={{ fontWeight: "700", fontSize: 14, color: colors.mutedForeground }}>Cancel</Text>
                 </Pressable>
                 <Pressable
-                  style={{ flex: 2, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 14, borderRadius: 14, backgroundColor: "#1E3A8A", opacity: submitting ? 0.7 : 1 }}
+                  style={{ flex: 2, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 14, borderRadius: 14, backgroundColor: colors.primary, opacity: submitting ? 0.7 : 1 }}
                   onPress={handleSubmit}
                   disabled={submitting}
                 >
-                  <Ionicons name="send-outline" size={15} color={"#FBBF24"} />
-                  <Text style={{ fontWeight: "700", fontSize: 14, color: "#FBBF24" }}>{submitting ? "Sending…" : "Send Proposal"}</Text>
+                  <Ionicons name="send-outline" size={15} color={colors.secondary} />
+                  <Text style={{ fontWeight: "700", fontSize: 14, color: colors.secondary }}>{submitting ? "Sending…" : "Send Proposal"}</Text>
                 </Pressable>
               </View>
             </>
@@ -171,32 +171,32 @@ export default function OperatorWorkspaceScreen() {
       icon: "chatbubble-ellipses-outline",
       label: "Send Message",
       desc: "Broadcast announcements and files to members or courses",
-      iconBg: ("#FBBF24" + "15"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.secondary + "15"),
+      iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/communications" as never); },
     },
     {
       icon: "briefcase-outline",
       label: "Payroll",
       desc: "View earnings, export payslips and manage billing",
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/invoicing" as never); },
     },
     {
       icon: "pricetag-outline",
       label: "Propose Discount / Scholarship",
       desc: "Suggest a fee reduction for a member — sent to Admin",
-      iconBg: ("#FBBF24" + "15"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.secondary + "15"),
+      iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowProposal(true); },
     },
     {
       icon: "shield-checkmark-outline",
       label: "Protocols & Directives",
       desc: "Emergency SOS, staff protocols and safety procedures",
-      iconBg: ("#1E3A8A" + "12"),
-      iconColor: "#1E3A8A",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
       chevronColor: "#D4AF37",
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/support" as never); },
     },

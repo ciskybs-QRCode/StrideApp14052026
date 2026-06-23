@@ -155,7 +155,7 @@ export default function MembershipScreen() {
       <View style={[S.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Membership" onBack={() => router.back()} />
         <View style={S.centerBox}>
-          <ActivityIndicator size="large" color={"#1E3A8A"} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading plans…</Text>
         </View>
       </View>
@@ -296,7 +296,7 @@ export default function MembershipScreen() {
               <Text style={[S.priceLbl, { color: colors.mutedForeground }]}>
                 {billingCycle === "annual" ? "Annual fee per member" : "Monthly fee per member"}
               </Text>
-              <Text style={[S.priceVal, { color: "#1E3A8A" }]}>{fmtAmt(feeCents, currency)}</Text>
+              <Text style={[S.priceVal, { color: colors.primary }]}>{fmtAmt(feeCents, currency)}</Text>
               {billingCycle === "annual" && plans.monthly_fee_cents > 0 && (
                 <Text style={[S.priceNote, { color: colors.mutedForeground }]}>
                   ≈ {fmtAmt(Math.round(plans.annual_fee_cents / 12), currency)}/mo
@@ -316,12 +316,12 @@ export default function MembershipScreen() {
                 <View style={S.memberRow}>
                   <View style={S.memberLeft}>
                     <View style={[S.avatar, { backgroundColor: "rgba(30,58,138,0.12)" }]}>
-                      <Ionicons name="person" size={17} color={"#1E3A8A"} />
+                      <Ionicons name="person" size={17} color={colors.primary} />
                     </View>
                     <View>
                       <Text style={[S.memberName, { color: colors.foreground }]}>
                         {user?.name ?? "You"}
-                        {"  "}<Text style={[S.youBadge, { color: "#1E3A8A" }]}>(you)</Text>
+                        {"  "}<Text style={[S.youBadge, { color: colors.primary }]}>(you)</Text>
                       </Text>
                       <Text style={[S.memberSub, { color: colors.mutedForeground }]}>Primary account holder</Text>
                     </View>
@@ -329,7 +329,7 @@ export default function MembershipScreen() {
                   <Switch
                     value={selfSelected}
                     onValueChange={setSelfSelected}
-                    trackColor={{ true: "#1E3A8A" }}
+                    trackColor={{ true: colors.primary }}
                   />
                 </View>
               )}
@@ -344,7 +344,7 @@ export default function MembershipScreen() {
                 >
                   <View style={S.memberLeft}>
                     <View style={[S.avatar, { backgroundColor: "rgba(251,191,36,0.15)" }]}>
-                      <Ionicons name="people" size={17} color={"#FBBF24"} />
+                      <Ionicons name="people" size={17} color={colors.secondary} />
                     </View>
                     <View>
                       <Text style={[S.memberName, { color: colors.foreground }]}>{dep.name}</Text>
@@ -354,7 +354,7 @@ export default function MembershipScreen() {
                   <Switch
                     value={selectedDeps.has(String(dep.id))}
                     onValueChange={() => toggleDep(String(dep.id))}
-                    trackColor={{ true: "#1E3A8A" }}
+                    trackColor={{ true: colors.primary }}
                   />
                 </View>
               ))}
@@ -371,10 +371,10 @@ export default function MembershipScreen() {
             {/* Total */}
             {selectedCount > 0 && (
               <View style={[S.totalRow, { backgroundColor: "rgba(30,58,138,0.07)", borderColor: "rgba(30,58,138,0.2)" }]}>
-                <Text style={[S.totalLbl, { color: "#1E3A8A" }]}>
+                <Text style={[S.totalLbl, { color: colors.primary }]}>
                   Total · {selectedCount} member{selectedCount > 1 ? "s" : ""}
                 </Text>
-                <Text style={[S.totalVal, { color: "#1E3A8A" }]}>
+                <Text style={[S.totalVal, { color: colors.primary }]}>
                   {fmtAmt(feeCents * selectedCount, currency)}
                   {billingCycle === "annual" ? "/yr" : "/mo"}
                 </Text>
