@@ -29,6 +29,46 @@ async function notifyUser(
   });
 }
 
+/**
+ * Fire-and-forget: sends `type`/`title`/`body` to every parent with a child
+ * enrolled in the given course. Deduplicates by parent_id.
+ */
+async function notifyEnrolledParents(
+  orgId: number,
+  courseId: number,
+  type: string,
+  title: string,
+  body: string,
+): Promise<void> {
+  const { data: enrolled } = await supabase
+    .from("enrollments")
+    .select("child_id")
+    .eq("course_id", courseId);
+
+  if (!enrolled?.length) return;
+
+  const childIds = (enrolled as { child_id: number }[]).map(e => e.child_id);
+  const { rows: childRows } = await pool.query<{ parent_id: number | null }>(
+    `SELECT DISTINCT parent_id FROM children WHERE id = ANY($1) AND parent_id IS NOT NULL`,
+    [childIds],
+  );
+
+  const seen = new Set<number>();
+  for (const row of childRows) {
+    const pid = row.parent_id;
+    if (!pid || seen.has(pid)) continue;
+    seen.add(pid);
+    await supabase.from("private_notifications").insert({
+      organization_id: orgId,
+      recipient_id:    pid,
+      type,
+      title,
+      body,
+      read: false,
+    }).then(undefined, () => {});
+  }
+}
+
 async function notifyAdmins(
   orgId: number,
   type: string,
@@ -319,14 +359,16 @@ router.post("/scheduled-courses/:id/decline", requireAuth, requireRole("operator
 
 // ── PATCH /scheduled-courses/:id ─────────────────────────────────────────────
 // Admin can update a scheduled course (reassign operator, change time, etc.)
+// If day_of_week / start_time / end_time change, enrolled parents are notified.
 
 router.patch("/scheduled-courses/:id", requireAuth, requireRole("admin"), async (req, res) => {
   const user = (req as AuthReq).user;
   const id = parseInt(String(req.params.id));
 
+  // Read BEFORE update so we can diff the schedule fields
   const { data: existing } = await supabase
     .from("scheduled_courses")
-    .select("id")
+    .select("id, day_of_week, start_time, end_time, discipline:disciplines!discipline_id(name)")
     .eq("id", id)
     .eq("organization_id", user.orgId)
     .single();
@@ -355,7 +397,7 @@ router.patch("/scheduled-courses/:id", requireAuth, requireRole("admin"), async 
 
   if (error) { res.status(500).json({ error: error.message }); return; }
 
-  // Notify operator if reassigned
+  // ── Notify operator if reassigned ────────────────────────────────────────
   if ("operator_profile_id" in updates && updates["operator_profile_id"]) {
     const opId = updates["operator_profile_id"] as number;
     const { data: opProfile } = await supabase
@@ -375,7 +417,73 @@ router.patch("/scheduled-courses/:id", requireAuth, requireRole("admin"), async 
     }
   }
 
+  // ── Notify enrolled parents if schedule changed (fire-and-forget) ─────────
+  const scheduleChanged =
+    ("day_of_week" in updates && updates["day_of_week"] !== existing.day_of_week) ||
+    ("start_time"  in updates && updates["start_time"]  !== existing.start_time)  ||
+    ("end_time"    in updates && updates["end_time"]    !== existing.end_time);
+
+  if (scheduleChanged) {
+    const discName = (existing.discipline as { name?: string } | null)?.name ?? "course";
+    const oldDay   = DAY_NAMES[existing.day_of_week as number] ?? "scheduled day";
+    const oldTime  = String(existing.start_time).slice(0, 5);
+    const newDay   = DAY_NAMES[(updates["day_of_week"] ?? existing.day_of_week) as number] ?? oldDay;
+    const newTime  = String(updates["start_time"] ?? existing.start_time).slice(0, 5);
+
+    notifyEnrolledParents(
+      user.orgId,
+      id,
+      "course_rescheduled",
+      "Class Rescheduled",
+      `Your ${discName} class has been rescheduled from ${oldDay} at ${oldTime} to ${newDay} at ${newTime}.`,
+    ).catch(() => {});
+  }
+
   res.json(data);
+});
+
+// ── POST /scheduled-courses/:id/delay ────────────────────────────────────────
+// Admin signals a one-off delay for today's session.
+// Only triggers a parent notification when delay_minutes > 20.
+
+router.post("/scheduled-courses/:id/delay", requireAuth, requireRole("admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const id = parseInt(String(req.params.id));
+
+  const { delay_minutes, note } = req.body as {
+    delay_minutes: number;
+    note?: string;
+  };
+
+  if (!delay_minutes || typeof delay_minutes !== "number" || delay_minutes < 1) {
+    res.status(400).json({ error: "delay_minutes must be a positive number" });
+    return;
+  }
+
+  const { data: course } = await supabase
+    .from("scheduled_courses")
+    .select("id, day_of_week, start_time, discipline:disciplines!discipline_id(name)")
+    .eq("id", id)
+    .eq("organization_id", user.orgId)
+    .single();
+  if (!course) { res.status(404).json({ error: "Course not found" }); return; }
+
+  const discName = (course.discipline as { name?: string } | null)?.name ?? "course";
+  const dayName  = DAY_NAMES[course.day_of_week as number] ?? "scheduled day";
+  const timeStr  = String(course.start_time).slice(0, 5);
+
+  if (delay_minutes > 20) {
+    const noteText = note ? ` ${note}` : "";
+    notifyEnrolledParents(
+      user.orgId,
+      id,
+      "course_delayed",
+      "Class Delayed",
+      `Your ${discName} class (${dayName} at ${timeStr}) is running approximately ${delay_minutes} minutes late.${noteText}`,
+    ).catch(() => {});
+  }
+
+  res.json({ ok: true, delay_minutes, parents_notified: delay_minutes > 20 });
 });
 
 // ── DELETE /scheduled-courses/:id ─────────────────────────────────────────────
@@ -422,42 +530,17 @@ router.delete("/scheduled-courses/:id", requireAuth, requireRole("admin"), async
     }
   }
 
-  // Notify enrolled members' parents about the cancellation (fire-and-forget)
-  ;(async () => {
-    try {
-      const discNameForParent = (course.discipline as { name?: string } | null)?.name ?? "course";
-      const dayNameForParent  = DAY_NAMES[course.day_of_week as number] ?? "scheduled day";
-      const timeStrForParent  = String(course.start_time).slice(0, 5);
-
-      const { data: enrolled } = await supabase
-        .from("enrollments")
-        .select("child_id")
-        .eq("course_id", id);
-
-      if (!enrolled?.length) return;
-
-      const childIds = (enrolled as { child_id: number }[]).map(e => e.child_id);
-      const { rows: childRows } = await pool.query<{ parent_id: number | null }>(
-        `SELECT DISTINCT parent_id FROM children WHERE id = ANY($1) AND parent_id IS NOT NULL`,
-        [childIds],
-      );
-
-      const notifiedParents = new Set<number>();
-      for (const row of childRows) {
-        const parentId = row.parent_id;
-        if (!parentId || notifiedParents.has(parentId)) continue;
-        notifiedParents.add(parentId);
-        await supabase.from("private_notifications").insert({
-          organization_id: user.orgId,
-          recipient_id:    parentId,
-          type:            "course_cancelled",
-          title:           "Class Cancelled",
-          body:            `Your ${discNameForParent} class (${dayNameForParent} at ${timeStrForParent}) has been cancelled by the admin. Please check the app for updates.`,
-          read:            false,
-        }).then(undefined, () => {});
-      }
-    } catch { /* enrollments may be empty or schema differs */ }
-  })();
+  // Notify enrolled parents about the cancellation (fire-and-forget)
+  const discNameForParent = (course.discipline as { name?: string } | null)?.name ?? "course";
+  const dayNameForParent  = DAY_NAMES[course.day_of_week as number] ?? "scheduled day";
+  const timeStrForParent  = String(course.start_time).slice(0, 5);
+  notifyEnrolledParents(
+    user.orgId,
+    id,
+    "course_cancelled",
+    "Class Cancelled",
+    `Your ${discNameForParent} class (${dayNameForParent} at ${timeStrForParent}) has been cancelled by the admin. Please check the app for updates.`,
+  ).catch(() => {});
 
   res.status(204).send();
 });
