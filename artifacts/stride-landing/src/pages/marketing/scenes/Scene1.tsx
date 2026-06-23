@@ -90,7 +90,7 @@ export function Scene1() {
           animate={phase >= 4 ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
-          Managing a dance association<br />
+          Managing a sports association<br />
           <span className="text-red-400">shouldn't feel like this.</span>
         </motion.h1>
       </motion.div>

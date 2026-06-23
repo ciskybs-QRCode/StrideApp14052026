@@ -85,7 +85,7 @@ export function Scene5() {
 
       {/* Progress Bars */}
       <div className="w-full max-w-[60vw] mt-12 space-y-6">
-        {['Ballet Basics', 'Hip Hop Adv', 'Contemporary'].map((course, i) => (
+        {['Gymnastics Basics', 'Swimming Adv.', 'Athletics'].map((course, i) => (
           <div key={course}>
             <div className="flex justify-between text-white mb-2 text-[1.2vw]">
               <span>{course}</span>

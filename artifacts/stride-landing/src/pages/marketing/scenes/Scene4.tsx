@@ -57,7 +57,7 @@ export function Scene4() {
         >
           {/* Dashboard Header */}
           <div className="h-[20%] p-6 text-white flex flex-col justify-end border-b border-gray-800">
-            <div className="text-[1.8vw] font-bold">Contemporary Adv.</div>
+            <div className="text-[1.8vw] font-bold">Advanced Training</div>
             <div className="text-[1vw] text-[#FBBF24]">18:00 - 19:30</div>
           </div>
 
@@ -77,7 +77,7 @@ export function Scene4() {
             {/* Roll Call */}
             <div className="space-y-3">
               <div className="text-[1vw] text-gray-400 font-semibold mb-2">ROLL CALL (24/25)</div>
-              {['Sofia R.', 'Marco B.', 'Elena V.'].map((name, i) => (
+              {['Sofia R.', 'Marcus B.', 'Ella V.'].map((name, i) => (
                 <motion.div
                   key={name}
                   className="flex justify-between items-center bg-gray-800 p-4 rounded-xl"

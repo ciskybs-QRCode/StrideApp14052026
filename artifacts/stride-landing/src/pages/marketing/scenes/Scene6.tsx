@@ -35,7 +35,7 @@ export function Scene6() {
         initial={{ opacity: 0, y: -20 }}
         animate={phase >= 1 ? { opacity: 1, y: 0 } : {}}
       >
-        Everything a dance association needs.<br />
+        Everything a sports association needs.<br />
         <span className="text-[#FBBF24] opacity-80 text-[2.5vw]">Nothing it doesn't.</span>
       </motion.h2>
 
