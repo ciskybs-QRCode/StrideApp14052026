@@ -471,9 +471,8 @@ router.post("/waitlist/notify-new-slot", requireAuth, requireRole("admin"), asyn
 
     for (const w of waitlisted) {
       await pool.query(
-        `INSERT INTO notifications (organization_id, user_id, type, title, body, read, created_at)
-         VALUES ($1, $2, 'workshop_created', $3, $4, false, NOW())
-         ON CONFLICT DO NOTHING`,
+        `INSERT INTO private_notifications (organization_id, recipient_id, type, title, body)
+         VALUES ($1, $2, 'booking_confirmed', $3, $4)`,
         [user.orgId ?? 1, w.user_id, "New Class Available — Waitlist Priority", msg],
       ).catch(() => {});
       notified++;

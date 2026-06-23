@@ -328,9 +328,16 @@ export default function AdminReimbursementsScreen() {
 
   const handleReject = async (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "rejected" as const } : r));
+    const prev = requests.find(r => r.id === id);
+    setRequests(reqs => reqs.map(r => r.id === id ? { ...r, status: "rejected" as const } : r));
     setConfirmReject(null);
-    try { await api.updateReimbursement(id, { status: "rejected" }); } catch { /* optimistic */ }
+    try {
+      await api.updateReimbursement(id, { status: "rejected" });
+    } catch {
+      // Revert optimistic update and show error
+      if (prev) setRequests(reqs => reqs.map(r => r.id === id ? prev : r));
+      Alert.alert("Rejection Failed", "Could not update the request. Please check your connection and try again.");
+    }
   };
 
   const openPayModal = (req: ReimbursementRequest) => {

@@ -1093,16 +1093,15 @@ router.post("/super-admin/orgs/:id/access-grants", requireAuth, requireOwnerOrSu
     // Notify org admins
     try {
       await pool.query(
-        `INSERT INTO notifications (user_id, org_id, type, title, body, data)
-         SELECT u.id, $1, 'admin_broadcast',
-                '🎉 Free Access Activated',
-                $2, $3::jsonb
+        `INSERT INTO private_notifications (recipient_id, organization_id, type, title, body)
+         SELECT u.id, $1, 'broadcast',
+                'Free Access Activated',
+                $2
          FROM users u
          WHERE u.organization_id = $1 AND u.role IN ('admin','super_admin')`,
         [
           orgId,
           `Your organisation has been granted free ${plan_tier} access${end_date ? ` until ${new Date(end_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}` : " indefinitely"} by the platform team.`,
-          JSON.stringify({ type: "access_grant", plan_tier, end_date }),
         ],
       );
     } catch { /* non-critical */ }
@@ -1190,16 +1189,14 @@ router.post("/super-admin/orgs/:id/send-promo", requireAuth, requireOwnerOrSuper
         : `You received a €${dval / 100} discount promo code (${code})! Applied automatically at your next payment.`;
 
     await pool.query(
-      `INSERT INTO notifications (user_id, org_id, type, title, body, data)
-       SELECT id, $1, 'promo_received',
-              '🎁 You have a promo!',
-              $2,
-              $3::jsonb
-       FROM users WHERE organization_id = $1 AND id = ANY($4)`,
+      `INSERT INTO private_notifications (recipient_id, organization_id, type, title, body)
+       SELECT id, $1, 'promo',
+              'You have a promo!',
+              $2
+       FROM users WHERE organization_id = $1 AND id = ANY($3)`,
       [
         orgId,
         notifBody,
-        JSON.stringify({ type: "promo", code, discount_type, discount_value: dval, valid_until: validUntil }),
         targetUsers.map(u => u.id),
       ],
     ).catch(() => {});

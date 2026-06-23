@@ -322,14 +322,22 @@ router.post("/operator-invoices", requireAuth, requireRole("operator"), async (r
 
     // Notify admin
     try {
-      await supabase.from("notifications").insert({
-        organization_id: orgId,
-        type:            "payroll",
-        title:           "New Payroll Invoice",
-        body:            `${user.email} submitted invoice for ${periodLabel} — ${(totalCents / 100).toFixed(2)}`,
-        read:            false,
-        created_at:      new Date().toISOString(),
-      });
+      // Notify all admins in the org
+      const { data: admins } = await supabase.from("users").select("id")
+        .eq("organization_id", orgId).eq("role", "admin");
+      if (admins?.length) {
+        await supabase.from("private_notifications").insert(
+          (admins as { id: number }[]).map(a => ({
+            recipient_id:    a.id,
+            organization_id: orgId,
+            type:            "payroll",
+            title:           "New Payroll Invoice",
+            body:            `${user.email} submitted invoice for ${periodLabel} — ${(totalCents / 100).toFixed(2)}`,
+            read:            false,
+            created_at:      new Date().toISOString(),
+          }))
+        );
+      }
     } catch { /* notification may fail */ }
 
     req.log.info({ orgId, userId: user.id, periodMonth }, "operator invoice submitted");

@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import * as Notifications from "expo-notifications";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -86,6 +87,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     try {
       await api.markAllNotificationsRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      Notifications.setBadgeCountAsync(0).catch(() => {});
     } catch { }
   }, []);
 
@@ -101,6 +103,11 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   const notifUnreadCount = notifications.filter(n => !n.read).length;
   const unreadCount = notifUnreadCount + directUnreadCount;
+
+  // Sync app-icon badge with total unread count (iOS + Android)
+  useEffect(() => {
+    Notifications.setBadgeCountAsync(unreadCount).catch(() => {});
+  }, [unreadCount]);
 
   return (
     <Ctx.Provider value={{ notifications, unreadCount, unreadDirectCount: directUnreadCount, loading, refresh, markRead, markAllRead }}>

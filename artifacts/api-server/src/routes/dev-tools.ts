@@ -53,7 +53,7 @@ async function logEvent(
   recipientId: number = 1,
 ): Promise<void> {
   await pool.query(
-    `INSERT INTO notifications (organization_id, recipient_id, type, title, body)
+    `INSERT INTO private_notifications (organization_id, recipient_id, type, title, body)
      VALUES ($1, $2, $3, $4, $5)`,
     [SANDBOX_ORG_ID, recipientId, type, title, body],
   );
@@ -88,7 +88,7 @@ router.get("/dev/sandbox/status", async (req: Request, res: Response) => {
     ]);
 
     const { rows: courseRows } = await pool.query<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM notifications WHERE organization_id = $1`,
+      `SELECT COUNT(*) AS count FROM private_notifications WHERE organization_id = $1`,
       [SANDBOX_ORG_ID],
     ).catch(() => ({ rows: [{ count: "0" }] }));
 
@@ -494,8 +494,8 @@ router.post("/dev/trigger/push-notification", async (req: Request, res: Response
 
     for (const user of recipients) {
       await pool.query(
-        `INSERT INTO notifications (organization_id, recipient_id, type, title, body)
-         VALUES ($1, $2, 'broadcast', '🔔 Test Push Notification', $3)`,
+        `INSERT INTO private_notifications (organization_id, recipient_id, type, title, body)
+         VALUES ($1, $2, 'broadcast', 'Test Push Notification', $3)`,
         [
           SANDBOX_ORG_ID,
           user.id,
@@ -529,8 +529,8 @@ router.post("/dev/trigger/payment-received", async (req: Request, res: Response)
     const amount = Math.floor(Math.random() * 120) + 30;
 
     await pool.query(
-      `INSERT INTO notifications (organization_id, recipient_id, type, title, body)
-       VALUES ($1, $2, 'reimbursement', '💳 Payment Received', $3)`,
+      `INSERT INTO private_notifications (organization_id, recipient_id, type, title, body)
+       VALUES ($1, $2, 'payment_received', 'Payment Received', $3)`,
       [SANDBOX_ORG_ID, parent.id, `Dev · ${parent.name} paid $${amount}.00 AUD for Sandbox Course`],
     );
 

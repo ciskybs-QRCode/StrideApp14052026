@@ -111,9 +111,9 @@ router.post("/reimbursements", requireAuth, async (req, res) => {
     const { data: admins } = await supabase.from("users").select("id")
       .eq("organization_id", user.orgId).eq("role", "admin");
     if (admins?.length) {
-      await supabase.from("notifications").insert(
+      await supabase.from("private_notifications").insert(
         (admins as { id: number }[]).map(a => ({
-          user_id: a.id, organization_id: user.orgId, type: "reimbursement",
+          recipient_id: a.id, organization_id: user.orgId, type: "reimbursement",
           title: "New Reimbursement Request",
           body: `${claimantName} requested €${(amountCents / 100).toFixed(2)} — ${description}`,
           read: false, created_at: new Date().toISOString(),
@@ -178,11 +178,10 @@ router.patch("/reimbursements/:id", requireAuth, requireRole("admin"), async (re
     void amt;
     if (notifBody) {
       try {
-        await supabase.from("notifications").insert({
-          user_id: claimantId, organization_id: user.orgId, type: "reimbursement",
+        await supabase.from("private_notifications").insert({
+          recipient_id: claimantId, organization_id: user.orgId, type: "reimbursement",
           title: notifTitle, body: notifBody, read: false,
           created_at: new Date().toISOString(),
-          data: JSON.stringify({ reimbursementId: id }),
         });
       } catch { /* optional */ }
     }
@@ -222,9 +221,9 @@ router.post("/reimbursements/:id/confirm-cash", requireAuth, async (req, res) =>
     const { data: admins } = await supabase.from("users").select("id")
       .eq("organization_id", user.orgId).eq("role", "admin");
     if (admins?.length) {
-      await supabase.from("notifications").insert(
+      await supabase.from("private_notifications").insert(
         (admins as { id: number }[]).map(a => ({
-          user_id: a.id, organization_id: user.orgId, type: "reimbursement",
+          recipient_id: a.id, organization_id: user.orgId, type: "reimbursement",
           title: "Cash Receipt Confirmed",
           body: `${user.email} confirmed receipt of €${Number(rec.amount).toFixed(2)} cash for "${rec.description}".`,
           read: false, created_at: now,

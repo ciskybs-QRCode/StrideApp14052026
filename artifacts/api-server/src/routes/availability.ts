@@ -183,7 +183,7 @@ router.post("/availability/resign", requireAuth, requireRole("operator"), async 
       title:           "Operator Resignation",
       body:            `${opName} has submitted a resignation with ${noticeLabel} notice.${penaltyWeeks > 0 ? ` A ${penaltyWeeks}-week pay deduction applies.` : ""} AI is searching for a replacement.`,
     }));
-    await supabase.from("notifications").insert(notifRows);
+    await supabase.from("private_notifications").insert(notifRows);
   }
 
   res.json({ success: true, message: "Resignation submitted", notice_period, penalty_weeks: penaltyWeeks });

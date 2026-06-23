@@ -168,20 +168,18 @@ router.patch("/payroll/accountant/orders/:id/mark-paid", requireAuth, requireRol
       const amount   = (order.amount_cents / 100).toFixed(2);
       // Find operator's push token via their name match in users
       await pool.query(
-        `INSERT INTO notifications (user_id, org_id, type, title, body, data)
+        `INSERT INTO private_notifications (recipient_id, organization_id, type, title, body)
          SELECT u.id, $1, 'payment_received',
                 'Payment Received',
-                $2,
-                $3::jsonb
+                $2
          FROM users u
          WHERE u.organization_id = $1
            AND u.role IN ('operator')
-           AND u.name ILIKE $4
+           AND u.name ILIKE $3
          LIMIT 1`,
         [
           order.org_id,
           `Your payment of ${order.currency} ${amount} was successfully processed on ${paidDate} at ${paidTime}.`,
-          JSON.stringify({ orderId, amount, currency: order.currency }),
           `%${order.payee_name.split(" ")[0] ?? order.payee_name}%`,
         ],
       ).catch(() => {});
@@ -213,20 +211,18 @@ router.patch("/payroll/accountant/orders/:id/mark-failed", requireAuth, requireR
        VALUES ($1,'failed',$2,$3)`,
       [orderId, reason ?? "Payment failed", Number(user.id)],
     );
-    // Notify all admins in the org via notifications table
+    // Notify all admins in the org via private_notifications
     await pool.query(
-      `INSERT INTO notifications (user_id, org_id, type, title, body, data)
-       SELECT u.id, $1, 'payment_failed',
-              '⚠️ Payment Failed — Action Required',
-              $2,
-              $3::jsonb
+      `INSERT INTO private_notifications (recipient_id, organization_id, type, title, body)
+       SELECT u.id, $1, 'payment_received',
+              'Payment Failed — Action Required',
+              $2
        FROM users u
        WHERE u.organization_id = $1
          AND u.role IN ('admin','super_admin')`,
       [
         orgId,
-        `Payment of ${(rows[0] as { currency: string; amount_cents: number }).currency} ${((rows[0] as { amount_cents: number }).amount_cents / 100).toFixed(2)} to ${(rows[0] as { payee_name: string }).payee_name} FAILED. Reason: ${reason ?? "Unknown"}. Please act immediately to avoid penalties.`,
-        JSON.stringify({ orderId, reason }),
+        `Payment of ${(rows[0] as { currency: string; amount_cents: number }).currency} ${((rows[0] as { amount_cents: number }).amount_cents / 100).toFixed(2)} to ${(rows[0] as { payee_name: string }).payee_name} FAILED. Reason: ${reason ?? "Unknown"}. Please act immediately.`,
       ],
     ).catch(() => {});
     res.json({ order: rows[0] });
