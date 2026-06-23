@@ -1229,6 +1229,11 @@ export const api = {
       "POST", "/emergency/pulse", data,
     ),
 
+  triggerSilentAlarm: (data: { location_label?: string }) =>
+    request<{ ok: boolean; notified: number }>(
+      "POST", "/emergency/silent-alarm", data,
+    ),
+
   getMembersPresent: () =>
     request<{ members: Array<{
       id:                      string;

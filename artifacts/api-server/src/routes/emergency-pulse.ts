@@ -434,4 +434,88 @@ router.patch("/emergency/pulse/:id/resolve", requireAuth, async (req: Request, r
   res.json({ ok: true, resolved: true });
 });
 
+// ── POST /emergency/silent-alarm ─────────────────────────────────────────────
+// Silent alarm: notifies admins + currently clocked-in operators only.
+// No broadcast to parents/members. Designed for discreet danger situations.
+// The triggering device receives no visible/audible confirmation.
+router.post("/emergency/silent-alarm", requireAuth, async (req: Request, res: Response) => {
+  const user = (req as AuthedReq).user;
+  const { location_label } = req.body as { location_label?: string };
+  const orgId        = (user as { org_id?: number }).org_id ?? 1;
+  const locationLabel = (location_label ?? "").trim() || "Association";
+  const triggeredAt  = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  const title = "🔕 Silent Alert";
+  const body  = `Silent alarm triggered at ${locationLabel} at ${triggeredAt}. Respond discreetly.`;
+
+  // ── Collect recipients: admins + clocked-in operators ────────────────────
+  const recipientIds: Set<string> = new Set();
+
+  // Org admins (always included, even if not clocked in)
+  try {
+    const { rows } = await pool.query<{ user_id: string }>(
+      `SELECT user_id::text FROM organization_members
+       WHERE organization_id = $1 AND role IN ('admin', 'super_admin')`,
+      [orgId],
+    );
+    rows.forEach(r => recipientIds.add(r.user_id));
+  } catch { /* table may not exist */ }
+
+  // Currently clocked-in operators
+  try {
+    const { rows } = await pool.query<{ user_id: string }>(
+      `SELECT DISTINCT op.user_id::text AS user_id
+       FROM operator_clock_records ocr
+       JOIN operator_profiles op ON op.id = ocr.operator_id
+       WHERE ocr.org_id = $1
+         AND ocr.clock_in > NOW() - INTERVAL '12 hours'
+         AND ocr.clock_out IS NULL`,
+      [orgId],
+    );
+    rows.forEach(r => recipientIds.add(r.user_id));
+  } catch { /* operator_clock_records may have no data */ }
+
+  // Remove the triggering user — they already know
+  recipientIds.delete(String(user.id));
+
+  const ids = [...recipientIds];
+
+  // ── Send push to device tokens ────────────────────────────────────────────
+  if (ids.length > 0) {
+    EmergencyPushService.sendEmergencyPush({
+      orgId,
+      category:       "MEDICAL" as EmergencyCategory,
+      title,
+      body,
+      triggeredBy:    user.id,
+      targetParentIds: ids,
+      data:           { silent_alarm: true, location_label: locationLabel },
+    }).catch(err => req.log.error(err, "silent-alarm: push failed"));
+  }
+
+  // ── DB audit: private_notifications for each recipient ───────────────────
+  ;(async () => {
+    for (const recipId of ids) {
+      const { data: nd } = await supabase.from("private_notifications").insert({
+        organization_id: orgId,
+        recipient_id:    parseInt(recipId),
+        type:            "silent_alarm",
+        title,
+        body,
+        read:            false,
+      }).select("id").single();
+      if (nd?.id) {
+        await pool.query(
+          `INSERT INTO notification_delivery_log (notification_id, recipient_id, organization_id, source, push_sent)
+           VALUES ($1, $2, $3, 'silent_alarm', true)`,
+          [nd.id, parseInt(recipId), orgId],
+        ).catch(() => {});
+      }
+    }
+  })().catch(err => req.log.error(err, "silent-alarm: audit insert failed"));
+
+  // Return minimal response — no details that could betray activation
+  res.status(200).json({ ok: true, notified: ids.length });
+});
+
 export default router;

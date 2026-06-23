@@ -312,6 +312,12 @@ export default function ParentHome() {
     setShowQR(true);
   };
 
+  const handleSilentAlarm = () => {
+    // Fire-and-forget — absolutely no UI feedback on the triggering device.
+    // Only haptics (already fired by SOSButton before this callback).
+    api.triggerSilentAlarm({ location_label: user?.schoolName ?? "Association" }).catch(() => {});
+  };
+
   const handleMemberSOS = async () => {
     if (!sosType) {
       Alert.alert("Select Emergency Type", "Please select Fire, Police, or Medical before activating SOS.");
@@ -558,7 +564,7 @@ export default function ParentHome() {
               onChangeText={setSosPatientName}
             />
           )}
-          <SOSButton onConfirm={handleMemberSOS} />
+          <SOSButton onConfirm={handleMemberSOS} onSilentAlarm={handleSilentAlarm} />
         </View>
 
         {/* ── Private Lessons ── */}

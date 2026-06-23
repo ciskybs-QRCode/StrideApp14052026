@@ -1,9 +1,10 @@
 /**
- * SOSButton — Identical SOS / Emergency trigger used across Admin,
- * Operator, and any sub-screen that needs emergency access.
+ * SOSButton — Emergency trigger used across Parent, Operator, and Admin.
  *
- * Requires 2 presses within 3 s to fire — identical logic to both
- * existing dashboard implementations, now consolidated here.
+ * Normal press (×2 within 3 s)  → onConfirm()   — full visible SOS broadcast
+ * Long press (hold 3+ seconds)  → onSilentAlarm() — vibration only, no UI feedback
+ *   The long-press path is intentionally invisible so bystanders cannot tell
+ *   an alarm was sent. Useful when the user cannot safely shout for help.
  */
 
 import { Ionicons } from "@expo/vector-icons";
@@ -13,11 +14,12 @@ import { Alert, Animated, Pressable, StyleSheet, Text, View } from "react-native
 import { useColors } from "@/hooks/useColors";
 
 interface SOSButtonProps {
-  onConfirm: () => void;
-  compact?: boolean;
+  onConfirm:       () => void;
+  onSilentAlarm?:  () => void;
+  compact?:        boolean;
 }
 
-export function SOSButton({ onConfirm, compact = false }: SOSButtonProps) {
+export function SOSButton({ onConfirm, onSilentAlarm, compact = false }: SOSButtonProps) {
   const colors       = useColors();
   const [count, setCount] = useState(0);
   const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -47,11 +49,23 @@ export function SOSButton({ onConfirm, compact = false }: SOSButtonProps) {
     }
   };
 
+  const handleLongPress = () => {
+    if (!onSilentAlarm) return;
+    // Three rapid heavy pulses — feels like a "confirmed" vibration pattern.
+    // No sound, no alert, no UI change. Invisible to bystanders.
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 120);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 240);
+    onSilentAlarm();
+  };
+
   if (compact) {
     return (
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <Pressable
           onPress={handlePress}
+          onLongPress={onSilentAlarm ? handleLongPress : undefined}
+          delayLongPress={3000}
           style={({ pressed }) => [
             styles.compactBtn,
             { opacity: pressed ? 0.78 : 1 },
@@ -70,6 +84,8 @@ export function SOSButton({ onConfirm, compact = false }: SOSButtonProps) {
     <Animated.View style={[styles.btnWrap, { transform: [{ scale: scaleAnim }] }]}>
       <Pressable
         onPress={handlePress}
+        onLongPress={onSilentAlarm ? handleLongPress : undefined}
+        delayLongPress={3000}
         style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.85 : 1 }]}
         accessibilityRole="button"
         accessibilityLabel="SOS Emergency"
@@ -79,7 +95,7 @@ export function SOSButton({ onConfirm, compact = false }: SOSButtonProps) {
         </View>
         <View style={styles.textWrap}>
           <Text style={styles.labelText}>SOS Emergency</Text>
-          <Text style={styles.sublabel}>Press twice to activate</Text>
+          <Text style={styles.sublabel}>Press twice · Hold 3s for silent alarm</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
       </Pressable>
