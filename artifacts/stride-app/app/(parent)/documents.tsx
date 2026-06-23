@@ -26,7 +26,6 @@ import { useUnread } from "@/context/UnreadContext";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 import { HubCard } from "@/components/HubCard";
-import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { api } from "@/lib/api";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 
@@ -316,7 +315,6 @@ export default function DocumentsScreen() {
 
         {/* ── Account Controls ── */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
-        <RoleSwitcherRow />
         <HubCard
           icon="person-circle-outline"
           title="Account"

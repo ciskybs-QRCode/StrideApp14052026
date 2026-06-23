@@ -295,33 +295,33 @@ export function RoleSwitcherRow() {
         </Pressable>
       )}
 
-      {/* My Associations — multi-org hub */}
-      <Pressable
-        style={({ pressed }) => [
-          row.container,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            opacity: pressed ? 0.8 : 1,
-          },
-        ]}
-        onPress={() => router.push("/my-associations" as never)}
-        accessibilityLabel="My Associations"
-        accessibilityRole="button"
-      >
-        <View style={[row.iconBox, { backgroundColor: `${colors.primary}15` }]}>
-          <Ionicons name="business-outline" size={20} color={colors.primary} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[row.label, { color: colors.foreground }]}>My Associations</Text>
-          <Text style={[row.sub, { color: colors.mutedForeground }]}>
-            {showMultiOrg
-              ? `Member of ${orgCount} associations`
-              : "View & switch between your associations"}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-      </Pressable>
+      {/* My Associations — multi-org hub (only visible to users in 2+ orgs) */}
+      {showMultiOrg && (
+        <Pressable
+          style={({ pressed }) => [
+            row.container,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
+          onPress={() => router.push("/my-associations" as never)}
+          accessibilityLabel="My Associations"
+          accessibilityRole="button"
+        >
+          <View style={[row.iconBox, { backgroundColor: `${colors.primary}15` }]}>
+            <Ionicons name="business-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[row.label, { color: colors.foreground }]}>My Associations</Text>
+            <Text style={[row.sub, { color: colors.mutedForeground }]}>
+              {`Member of ${orgCount} associations`}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </Pressable>
+      )}
 
     </>
   );
