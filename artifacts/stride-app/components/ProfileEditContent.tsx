@@ -138,15 +138,6 @@ type ErrorMap = Partial<Record<keyof ProfileExtra, string>>;
 
 function validate(form: ProfileExtra, businessRequired: boolean): ErrorMap {
   const e: ErrorMap = {};
-  if (!form.firstName.trim())      e.firstName      = "Required";
-  if (!form.lastName.trim())       e.lastName       = "Required";
-  if (!form.dateOfBirth.trim())    e.dateOfBirth    = "Required";
-  if (!form.gender)                e.gender         = "Please select one";
-  if (!form.phone.trim())          e.phone          = "Required";
-  if (!form.addressStreet.trim())  e.addressStreet  = "Required";
-  if (!form.addressCity.trim())    e.addressCity    = "Required";
-  if (!form.addressPostcode.trim()) e.addressPostcode = "Required";
-  if (!form.addressState.trim())   e.addressState   = "Required";
   if (businessRequired && !form.taxId.trim()) e.taxId = "Required";
   return e;
 }
@@ -429,8 +420,9 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
       setSaved(true);
       setErrors({});
       setTimeout(() => setSaved(false), 2500);
-    } catch {
+    } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Save Failed", "Could not save your profile. Please check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -461,7 +453,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
 
         <View style={styles.row2}>
           <View style={{ flex: 1 }}>
-            <FieldLabel label="First Name" required colors={colors} />
+            <FieldLabel label="First Name" colors={colors} />
             <FieldInput
               value={form.firstName}
               onChangeText={set("firstName")}
@@ -472,7 +464,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
             />
           </View>
           <View style={{ flex: 1 }}>
-            <FieldLabel label="Last Name" required colors={colors} />
+            <FieldLabel label="Last Name" colors={colors} />
             <FieldInput
               value={form.lastName}
               onChangeText={set("lastName")}
@@ -487,7 +479,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
         <View style={[styles.divider, { borderTopColor: colors.border, marginTop: 14 }]} />
 
         <View style={styles.fieldBlock}>
-          <FieldLabel label="Date of Birth" required colors={colors} />
+          <FieldLabel label="Date of Birth" colors={colors} />
           <View style={styles.iconField}>
             <Ionicons name="calendar-outline" size={16} color={colors.mutedForeground} style={styles.iconPfx} />
             <TextInput
@@ -546,7 +538,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
       <SectionHeader icon="call-outline" title="Contact" colors={colors} />
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.fieldBlock}>
-          <FieldLabel label="Phone Number" required colors={colors} />
+          <FieldLabel label="Phone Number" colors={colors} />
           <View style={styles.iconField}>
             <Ionicons name="call-outline" size={16} color={colors.mutedForeground} style={styles.iconPfx} />
             <TextInput
@@ -587,7 +579,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
 
         {/* Street */}
         <View style={styles.fieldBlock}>
-          <FieldLabel label={addrLabels.street} required colors={colors} />
+          <FieldLabel label={addrLabels.street} colors={colors} />
           <View style={styles.iconField}>
             <Ionicons name="home-outline" size={16} color={colors.mutedForeground} style={styles.iconPfx} />
             <TextInput
@@ -633,7 +625,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
 
         {/* City */}
         <View style={styles.fieldBlock}>
-          <FieldLabel label={addrLabels.city} required colors={colors} />
+          <FieldLabel label={addrLabels.city} colors={colors} />
           <TextInput
             style={[styles.textInput, {
               borderColor: errors.addressCity ? "#EF4444" : colors.border,
@@ -654,7 +646,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
         {/* Postcode + State side by side */}
         <View style={styles.row2}>
           <View style={{ flex: 1 }}>
-            <FieldLabel label={addrLabels.postcode} required colors={colors} />
+            <FieldLabel label={addrLabels.postcode} colors={colors} />
             <TextInput
               style={[styles.textInput, {
                 borderColor: errors.addressPostcode ? "#EF4444" : colors.border,
@@ -674,7 +666,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
           {/* State — text input for most countries */}
           {!addrLabels.stateChips && (
             <View style={{ flex: 1.4 }}>
-              <FieldLabel label={addrLabels.state} required colors={colors} />
+              <FieldLabel label={addrLabels.state} colors={colors} />
               <TextInput
                 style={[styles.textInput, {
                   borderColor: errors.addressState ? "#EF4444" : colors.border,
@@ -696,7 +688,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
         {addrLabels.stateChips && (
           <View>
             <View style={[styles.divider, { borderTopColor: colors.border, marginBottom: 14 }]} />
-            <FieldLabel label={addrLabels.state} required colors={colors} />
+            <FieldLabel label={addrLabels.state} colors={colors} />
             <View style={styles.stateChipGrid}>
               {addrLabels.stateChips.map(chip => {
                 const active = form.addressState === chip;
