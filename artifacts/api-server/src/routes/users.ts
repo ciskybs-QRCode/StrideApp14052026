@@ -57,31 +57,27 @@ router.get("/users/:id/profile", requireAuth, requireRole("admin"), async (req, 
   const targetId = parseInt(String(req.params["id"] ?? ""), 10);
   if (isNaN(targetId)) { res.status(400).json({ error: "Invalid user id" }); return; }
 
-  // Verify the target user belongs to this org
-  const { data: scopeCheck } = await supabase
-    .from("users")
-    .select("id")
-    .eq("id", targetId)
-    .eq("organization_id", orgId)
-    .maybeSingle();
+  // Verify the target user belongs to this org via pool (bypasses schema cache)
+  const { rows: scopeRows } = await pool.query(
+    `SELECT id FROM users WHERE id = $1 AND organization_id = $2 LIMIT 1`,
+    [targetId, orgId],
+  );
 
-  if (!scopeCheck) {
+  if (!scopeRows.length) {
     res.status(404).json({ error: "User not found in this organization" });
     return;
   }
 
-  const { data, error } = await supabase
-    .from("users")
-    .select(
-      "id, name, email, phone, role, created_at," +
-      "address_street, address_city, address_zip, address_state, address_country," +
-      "emergency_contact_name, emergency_contact_phone, emergency_contact_relationship",
-    )
-    .eq("id", targetId)
-    .maybeSingle();
+  const { rows } = await pool.query(
+    `SELECT id, name, email, phone, role, created_at,
+            address_street, address_city, address_zip, address_state, address_country,
+            emergency_contact_name, emergency_contact_phone, emergency_contact_relationship
+     FROM users WHERE id = $1 LIMIT 1`,
+    [targetId],
+  );
 
-  if (error || !data) { res.status(404).json({ error: "User not found" }); return; }
-  res.json(data);
+  if (!rows.length) { res.status(404).json({ error: "User not found" }); return; }
+  res.json(rows[0]);
 });
 
 // ── PATCH /users/:id/status ───────────────────────────────────────────────────

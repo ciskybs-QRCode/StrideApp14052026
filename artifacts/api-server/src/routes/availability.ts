@@ -1,4 +1,5 @@
 import { Router, type Request } from "express";
+import { pool } from "../lib/pg.js";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
@@ -8,39 +9,41 @@ type AuthReq = Request & { user: TokenPayload };
 // GET /availability — approved slots visible to parents; all for admin/operator
 router.get("/availability", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
-  let query = supabase
-    .from("operator_availability")
-    .select(`
-      *,
-      operator_profile:operator_profiles!operator_profile_id(
-        id, profile_type,
-        user:users!user_id(id, name)
-      ),
-      discipline:disciplines!discipline_id(id, name)
-    `)
-    .eq("organization_id", user.orgId)
-    .order("slot_date")
-    .order("start_time");
-
-  if (user.role === "parent") {
-    query = query.eq("status", "approved");
-  } else if (user.role === "operator") {
-    // Operators see their own availability
-    const { data: profile } = await supabase
-      .from("operator_profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("organization_id", user.orgId)
-      .single();
-    if (profile) query = query.eq("operator_profile_id", profile.id);
+  try {
+    const params: unknown[] = [user.orgId];
+    let roleFilter = "";
+    if (user.role === "parent") {
+      roleFilter = " AND oa.status = 'approved'";
+    } else if (user.role === "operator") {
+      // operators see only their own slots
+      const { data: profile } = await supabase
+        .from("operator_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("organization_id", user.orgId)
+        .single();
+      if (profile) {
+        roleFilter = ` AND oa.operator_profile_id = $${params.push(profile.id)}`;
+      }
+    }
+    const { rows } = await pool.query(
+      `SELECT oa.*,
+              op.id AS op_id, op.profile_type,
+              u.id AS op_user_id, u.name AS op_user_name,
+              d.id AS disc_id, d.name AS disc_name
+       FROM operator_availability oa
+       LEFT JOIN operator_profiles op ON op.id = oa.operator_profile_id
+       LEFT JOIN users u ON u.id = op.user_id
+       LEFT JOIN disciplines d ON d.id = oa.discipline_id
+       WHERE oa.organization_id = $1${roleFilter}
+       ORDER BY oa.slot_date, oa.start_time`,
+      params,
+    );
+    res.json(rows);
+  } catch (err) {
+    req.log.error(err, "GET /availability failed");
+    res.status(500).json({ error: "Failed to fetch availability" });
   }
-
-  const { data, error } = await query;
-  if (error) {
-    if ((error as { code?: string }).code === "PGRST205") { res.json([]); return; }
-    res.status(500).json({ error: error.message }); return;
-  }
-  res.json(data ?? []);
 });
 
 // POST /availability — operator submits an availability slot

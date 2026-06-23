@@ -79,7 +79,7 @@ router.get("/legal/signed-ids", requireAuth, async (req, res) => {
 
 router.get("/legal/audit-log", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
-  if (user.role !== "admin") {
+  if (user.role !== "admin" && user.role !== "super_admin") {
     res.status(403).json({ error: "Forbidden" });
     return;
   }

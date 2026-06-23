@@ -56,13 +56,17 @@ router.post("/private-notifications/:id/skip", requireAuth, async (req, res) => 
 // POST /private-notifications/read-all
 router.post("/private-notifications/read-all", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
-  const { error } = await supabase
-    .from("private_notifications")
-    .update({ read: true })
-    .eq("recipient_id", user.id)
-    .eq("read", false);
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json({ ok: true });
+  try {
+    await pool.query(
+      `UPDATE private_notifications SET read = true
+       WHERE recipient_id = $1 AND read = false`,
+      [parseInt(user.id)],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err, "read-all failed");
+    res.status(500).json({ error: "Failed" });
+  }
 });
 
 export default router;

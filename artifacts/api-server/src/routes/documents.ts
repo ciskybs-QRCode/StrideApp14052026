@@ -301,8 +301,8 @@ router.get("/documents/my-medical-cert", requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, member_id, expiration_date, certificate_type, status,
-              potential_anomaly_detected, anomaly_reasons, uploaded_at
-       FROM member_medical_certs WHERE member_id = $1 ORDER BY uploaded_at DESC LIMIT 1`,
+              potential_anomaly_detected, anomaly_reasons, analyzed_at
+       FROM member_medical_certs WHERE member_id = $1 ORDER BY analyzed_at DESC LIMIT 1`,
       [userId],
     );
     res.json(rows[0] ?? null);

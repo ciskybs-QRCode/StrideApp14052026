@@ -19,9 +19,10 @@ router.post("/delegates", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
   const body = req.body as Record<string, unknown>;
   const pin = String(Math.floor(100000 + Math.random() * 900000));
+  const qr_payload = `DEL-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
   const { data, error } = await supabase
     .from("delegates")
-    .insert({ ...body, parent_id: parseInt(user.id), pin })
+    .insert({ ...body, parent_id: parseInt(user.id), pin, qr_payload })
     .select()
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }

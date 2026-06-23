@@ -260,8 +260,8 @@ router.put("/operator-bank-details", requireAuth, requireRole("operator", "admin
   };
   try {
     await pool.query(
-      `INSERT INTO operator_profiles (user_id, organization_id, bank_account_name, bank_iban, bank_swift, bank_notes, payout_method)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO operator_profiles (user_id, organization_id, profile_type, bank_account_name, bank_iban, bank_swift, bank_notes, payout_method)
+       VALUES ($1, $2, 'paid', $3, $4, $5, $6, $7)
        ON CONFLICT (user_id, organization_id) DO UPDATE
          SET bank_account_name = EXCLUDED.bank_account_name,
              bank_iban         = EXCLUDED.bank_iban,

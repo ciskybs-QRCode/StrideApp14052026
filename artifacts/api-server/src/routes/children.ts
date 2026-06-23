@@ -161,10 +161,21 @@ router.patch("/members/:id", requireAuth, requireRole("admin", "operator"), asyn
     return;
   }
 
-  const { data, error } = await supabase
-    .from("members").update(patch).eq("id", parseInt(String(id), 10)).select().single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
-  res.json(data);
+  // Use pool.query() to bypass Supabase schema cache (columns added via ALTER TABLE)
+  const keys = Object.keys(patch);
+  const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`).join(", ");
+  const values = [...keys.map(k => patch[k]), parseInt(String(id), 10)];
+  try {
+    const { rows } = await pool.query(
+      `UPDATE members SET ${setClauses} WHERE id = $${keys.length + 1} AND organization_id = $${keys.length + 2} RETURNING *`,
+      [...values.slice(0, -1), parseInt(String(id), 10), (req as AuthReq).user.orgId]
+    );
+    if (!rows[0]) { res.status(404).json({ error: "Member not found" }); return; }
+    res.json(rows[0]);
+  } catch (err) {
+    req.log.error(err, "PATCH /members/:id");
+    res.status(500).json({ error: "Update failed" });
+  }
 });
 
 router.delete("/members/:id", requireAuth, requireRole("admin"), async (req, res) => {

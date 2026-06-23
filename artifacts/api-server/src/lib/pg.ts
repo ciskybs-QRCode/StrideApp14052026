@@ -1793,5 +1793,15 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_opr_profile ON operator_profile_rates(operator_profile_id);
   `).catch(() => {});
 
+  // ── members — extra columns added after initial schema ────────────────────
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS first_name       TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS last_name        TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS phone            TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS emergency_contact TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS allergies        TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS photo_uri        TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS medical_notes    TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS status           TEXT NOT NULL DEFAULT 'active'`).catch(() => {});
+
   initialized = true;
 }

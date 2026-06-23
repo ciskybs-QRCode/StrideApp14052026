@@ -97,7 +97,7 @@ router.post("/auth/login", authLimiter, async (req, res) => {
     }
   }
 
-  const resolvedOrgId = effectiveRole === "super_admin" ? 0 : (user.organization_id ?? 1);
+  const resolvedOrgId = user.organization_id ?? 1;
   const globalUserId = await resolveGlobalUserId(
     user.email,
     user.name ?? user.email,

@@ -21,7 +21,9 @@ router.get("/enrollment-requests", requireAuth, async (req, res) => {
   const { data, error } = await query;
   if (error) {
     req.log.error(error);
-    if ((error as { code?: string }).code === "42P01") { res.json([]); return; }
+    if ((error as { code?: string }).code === "42P01" ||
+        (error.message ?? "").includes("schema cache") ||
+        (error.message ?? "").includes("not in the schema")) { res.json([]); return; }
     res.status(500).json({ error: error.message });
     return;
   }

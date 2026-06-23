@@ -7,7 +7,9 @@ const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
 // ── GET /employment/:profileId ────────────────────────────────────────────────
-router.get("/employment/:profileId", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+router.get("/employment/:profileId", requireAuth, requireRole("admin", "operator"), async (req, res, next) => {
+  // Let named sub-routes (my-contract, etc.) fall through to their own handlers
+  if (req.params["profileId"] === "my-contract") { next("route"); return; }
   const profileId = parseInt(String(req.params["profileId"]), 10);
   if (isNaN(profileId)) { res.status(400).json({ error: "Invalid profileId" }); return; }
   try {

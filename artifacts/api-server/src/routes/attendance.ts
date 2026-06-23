@@ -178,9 +178,10 @@ router.get("/sessions/today", requireAuth, requireRole("admin", "operator"), asy
 
   const { data: courses, error } = await supabase
     .from("scheduled_courses")
-    .select("id, name, start_time, end_time, discipline_id, organization_id, disciplines(name)")
+    .select("id, start_time, end_time, discipline_id, organization_id, status, disciplines(name)")
     .eq("day_of_week", dayOfWeek)
-    .eq("is_active", true);
+    .eq("organization_id", (req as AuthReq).user.orgId)
+    .neq("status", "cancelled");
 
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(courses ?? []);
