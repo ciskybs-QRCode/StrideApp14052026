@@ -35,10 +35,10 @@ const TEMPLATE_META: Record<string, { label: string; icon: React.ComponentProps<
 
 const GROUPS = ["Members", "Waitlist", "Certificates", "Access", "Payments"];
 
-function brandSwitch(on: boolean) {
+function brandSwitch(on: boolean, primary: string, secondary: string) {
   return {
-    trackColor: { false: "#D1D5DB", true: "#FBBF24" },
-    thumbColor: on ? "#1E3A8A" : "#9CA3AF",
+    trackColor: { false: "#D1D5DB", true: secondary },
+    thumbColor: on ? primary : "#9CA3AF",
   } as const;
 }
 
@@ -167,7 +167,7 @@ export default function PresetMessagesPage() {
                               value={draft.channel_inapp}
                               onChange={v => updateDraft(key, "channel_inapp", v)}
                               color={colors.primary}
-                              sw={brandSwitch(draft.channel_inapp)}
+                              sw={brandSwitch(draft.channel_inapp, colors.primary, colors.secondary)}
                             />
                             <ChannelToggle
                               label="Push"
@@ -188,7 +188,7 @@ export default function PresetMessagesPage() {
                                 }
                               }}
                               color={colors.primary}
-                              sw={brandSwitch(draft.channel_push)}
+                              sw={brandSwitch(draft.channel_push, colors.primary, colors.secondary)}
                             />
                             <ChannelToggle
                               label="Email"
@@ -196,7 +196,7 @@ export default function PresetMessagesPage() {
                               value={draft.channel_email}
                               onChange={v => updateDraft(key, "channel_email", v)}
                               color={colors.primary}
-                              sw={brandSwitch(draft.channel_email)}
+                              sw={brandSwitch(draft.channel_email, colors.primary, colors.secondary)}
                             />
                           </View>
 

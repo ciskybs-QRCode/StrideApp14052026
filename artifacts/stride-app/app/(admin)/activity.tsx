@@ -225,19 +225,19 @@ function isoToDisplay(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
-const TYPE_CONFIG: Record<ActivityType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  lesson:   { label: "Lesson",   icon: "musical-notes",   color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-  seminar:  { label: "Seminar",  icon: "mic-outline",     color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+const getTypeConfig = (primary: string): Record<ActivityType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> => ({
+  lesson:   { label: "Lesson",   icon: "musical-notes",   color: primary, bg: `rgba(${parseInt(primary.slice(1,3),16)},${parseInt(primary.slice(3,5),16)},${parseInt(primary.slice(5,7),16)},0.1)` },
+  seminar:  { label: "Seminar",  icon: "mic-outline",     color: primary, bg: `rgba(${parseInt(primary.slice(1,3),16)},${parseInt(primary.slice(3,5),16)},${parseInt(primary.slice(5,7),16)},0.1)` },
   meeting:  { label: "Meeting",  icon: "people",          color: "#0D9488", bg: "rgba(13,148,136,0.1)" },
   workshop: { label: "Workshop", icon: "construct",       color: "#D97706", bg: "rgba(217,119,6,0.1)" },
   custom:   { label: "Other",    icon: "star-outline",    color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
-};
+});
 
-const ADMIN_TYPE_CONFIG: Record<AdminItemType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  secretary_hours:  { label: "Secretary Hours",       icon: "time",         color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-  staff_meeting:    { label: "Staff Meeting",         icon: "people",       color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-  parent_teacher:   { label: "Member Consultation",   icon: "chatbubbles",  color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
-};
+const buildAdminTypeCfg = (primary: string): Record<AdminItemType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> => ({
+  secretary_hours:  { label: "Secretary Hours",       icon: "time",         color: primary, bg: `rgba(${parseInt(primary.slice(1,3),16)},${parseInt(primary.slice(3,5),16)},${parseInt(primary.slice(5,7),16)},0.1)` },
+  staff_meeting:    { label: "Staff Meeting",         icon: "people",       color: primary, bg: `rgba(${parseInt(primary.slice(1,3),16)},${parseInt(primary.slice(3,5),16)},${parseInt(primary.slice(5,7),16)},0.1)` },
+  parent_teacher:   { label: "Member Consultation",   icon: "chatbubbles",  color: primary, bg: `rgba(${parseInt(primary.slice(1,3),16)},${parseInt(primary.slice(3,5),16)},${parseInt(primary.slice(5,7),16)},0.1)` },
+});
 
 const STATUS_CONFIG: Record<ActivityStatus, { label: string; color: string; bg: string }> = {
   active:   { label: "Active",   color: "#10B981", bg: "#D1FAE5" },
@@ -267,7 +267,7 @@ const INITIAL_ACTIVITIES: Activity[] = [
     teacherId: "t1", teacherName: "Emma Wilson",
     duration: 60, capacity: 15, enrolled: 11, status: "active",
     enrollment: { waitlistEnabled: true, memberOnly: false, requireApproval: false, enrolmentOpenDate: "", enrolmentCloseDate: "", currencyCode: "EUR", trialEnabled: false, trialSessions: 1, dropIn: true, dropInPrice: 25, fixedBlock: true, fixedBlockLessons: 10, fixedBlockPrice: 200, monthly: false, monthlyPrice: 0, monthlyEndDate: "", monthlyPayDay: 1, annual: false, annualPrice: 0, annualEndDate: "", annualPayDay: 1 },
-    color: "#1E3A8A",
+    color: "#1E3A8A",  // mock
   },
   {
     id: "a2", title: "Workshop — Advanced", type: "workshop",
@@ -341,17 +341,17 @@ const BLANK_ADMIN_ITEM = (): Omit<AdminScheduleItem, "id"> => ({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const TYPE_COLORS = ["#1E3A8A","#FBBF24","#0D9488","#D97706","#10B981","#EF4444"];
-const nextColor = (i: number) => TYPE_COLORS[i % TYPE_COLORS.length];
+const getTypeColors = (primary: string, secondary: string) => [primary, secondary, "#0D9488", "#D97706", "#10B981", "#EF4444"];
+const nextColor = (i: number, primary: string, secondary: string) => getTypeColors(primary, secondary)[i % 6];
 
 const fmtDuration = (min: number) =>
   min < 60 ? `${min}m` : min % 60 === 0 ? `${min / 60}h` : `${Math.floor(min / 60)}h ${min % 60}m`;
 
-const adminStatusConfig: Record<AdminItemStatus, { color: string; bg: string; label: string }> = {
-  scheduled:  { color: "#1E3A8A", bg: "#DBEAFE", label: "Scheduled" },
+const getAdminStatusConfig = (primary: string): Record<AdminItemStatus, { color: string; bg: string; label: string }> => ({
+  scheduled:  { color: primary, bg: "#DBEAFE", label: "Scheduled" },
   completed:  { color: "#10B981", bg: "#D1FAE5", label: "Completed" },
   cancelled:  { color: "#EF4444", bg: "#FEE2E2", label: "Cancelled" },
-};
+});
 
 // ── Drum Scroll Picker ────────────────────────────────────────────────────────
 
@@ -423,6 +423,9 @@ function AgePicker({
 
 export default function ActivityScreen() {
   const colors = useColors();
+  const TYPE_CONFIG = getTypeConfig(colors.primary);
+  const ADMIN_TYPE_CONFIG = buildAdminTypeCfg(colors.primary);
+  const adminStatusConfig = getAdminStatusConfig(colors.primary);
   const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -991,7 +994,7 @@ export default function ActivityScreen() {
         ...draft,
         id: Date.now().toString(),
         enrolled: 0,
-        color: nextColor(activities.length),
+        color: nextColor(activities.length, colors.primary, colors.secondary),
       };
       setActivities(prev => [...prev, newA]);
     }

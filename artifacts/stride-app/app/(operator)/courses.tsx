@@ -102,11 +102,11 @@ export function getTypeBg(type: MaterialType): string {
   return "#DBEAFE";
 }
 
-export function getTypeColor(type: MaterialType): string {
-  if (type === "video")    return "#1E3A8A";
+export function getTypeColor(type: MaterialType, primary: string): string {
+  if (type === "video")    return primary;
   if (type === "audio")    return "#059669";
   if (type === "image")    return "#D97706";
-  return "#1E3A8A";
+  return primary;
 }
 
 export function fmtSize(bytes: number): string {
@@ -251,7 +251,7 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
         materials.map(m => (
           <View key={m.id} style={[pm.materialRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[pm.typeIconBox, { backgroundColor: getTypeBg(m.type) }]}>
-              <Ionicons name={getTypeIcon(m.type)} size={18} color={getTypeColor(m.type)} />
+              <Ionicons name={getTypeIcon(m.type)} size={18} color={getTypeColor(m.type, colors.primary)} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[pm.materialName, { color: colors.foreground }]} numberOfLines={1}>{m.name}</Text>

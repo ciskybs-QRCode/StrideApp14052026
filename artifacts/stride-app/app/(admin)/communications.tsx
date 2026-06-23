@@ -99,14 +99,14 @@ const QUICK_TEMPLATES = [
   { label: "Accountant Review",  icon: "briefcase-outline" as const,  title: "Employment Contract Review Request — [Operator Name]", body: "Dear [Accountant Name],\n\nWe are in the process of engaging a new operator at our association and would appreciate your professional review of the attached employment arrangement.\n\nDetails:\n- Operator: [Name]\n- Employment Type: On Wages ([Sub-type])\n- Country/Jurisdiction: [Country]\n- Proposed Rate: [Rate]\n\nThe attached draft contract has been generated as a preliminary reference. We kindly ask you to review:\n1. Whether this contract structure is legally sound for our jurisdiction.\n2. Which deduction items should be included or excluded (e.g. INPS, INAIL, TFR, superannuation, etc.).\n3. The correct tax rates and payment schedules.\n4. Any leave entitlements or overtime clauses we may have missed.\n5. Any other compliance obligations we should be aware of.\n\nPlease reply with your recommendations. We will apply your guidance directly to our payroll configuration.\n\nKind regards,\n[Admin Name]\n[Association Name]", urgent: false, signatureRequired: false },
 ];
 
-const ATTACHMENT_TYPES: { type: AttachmentType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { type: "pdf",   label: "PDF",   icon: "document-outline",      color: "#1E3A8A" },
-  { type: "image", label: "Image", icon: "image-outline",         color: "#1E3A8A" },
-  { type: "video", label: "Video", icon: "videocam-outline",      color: "#1E3A8A" },
-  { type: "audio", label: "Audio", icon: "musical-note-outline",  color: "#1E3A8A" },
-  { type: "doc",   label: "Word",  icon: "document-text-outline", color: "#1E3A8A" },
-  { type: "excel", label: "Excel", icon: "grid-outline",          color: "#1E3A8A" },
-  { type: "link",  label: "Link",  icon: "link-outline",          color: "#1E3A8A" },
+const getAttachmentTypes = (primary: string): { type: AttachmentType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] => [
+  { type: "pdf",   label: "PDF",   icon: "document-outline",      color: primary },
+  { type: "image", label: "Image", icon: "image-outline",         color: primary },
+  { type: "video", label: "Video", icon: "videocam-outline",      color: primary },
+  { type: "audio", label: "Audio", icon: "musical-note-outline",  color: primary },
+  { type: "doc",   label: "Word",  icon: "document-text-outline", color: primary },
+  { type: "excel", label: "Excel", icon: "grid-outline",          color: primary },
+  { type: "link",  label: "Link",  icon: "link-outline",          color: primary },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -139,17 +139,19 @@ function getRecipientCount(r: RecipientSelection, counts: UserCounts): number {
   }
 }
 
-const ROLE_COLORS: Record<CommUser["role"], { bg: string; text: string }> = {
-  parent:   { bg: "rgba(30,58,138,0.1)", text: "#1E3A8A" },
-  operator: { bg: "rgba(30,58,138,0.1)", text: "#1E3A8A" },
-  student:  { bg: "rgba(30,58,138,0.1)", text: "#1E3A8A" },
-};
+const getRoleColors = (primary: string): Record<CommUser["role"], { bg: string; text: string }> => ({
+  parent:   { bg: `rgba(${parseInt(primary.slice(1,3),16)},${parseInt(primary.slice(3,5),16)},${parseInt(primary.slice(5,7),16)},0.1)`, text: primary },
+  operator: { bg: `rgba(${parseInt(primary.slice(1,3),16)},${parseInt(primary.slice(3,5),16)},${parseInt(primary.slice(5,7),16)},0.1)`, text: primary },
+  student:  { bg: `rgba(${parseInt(primary.slice(1,3),16)},${parseInt(primary.slice(3,5),16)},${parseInt(primary.slice(5,7),16)},0.1)`, text: primary },
+});
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AdminCommunications() {
   const { addDocument, courses } = useAppData();
   const colors = useColors();
+  const ATTACHMENT_TYPES = getAttachmentTypes(colors.primary);
+  const ROLE_COLORS = getRoleColors(colors.primary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
 

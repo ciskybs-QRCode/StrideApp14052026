@@ -51,6 +51,7 @@ function fmtTime(t: string): string {
 }
 
 function StatusBadge({ status, method }: { status: RosterStatus; method: CheckInMethod }) {
+  const colors = useColors();
   if (status === "signed_out") {
     return (
       <View style={[badge.pill, { backgroundColor: "#F3F4F6" }]}>
@@ -63,8 +64,8 @@ function StatusBadge({ status, method }: { status: RosterStatus; method: CheckIn
     const isQr = method === "qr";
     return (
       <View style={[badge.pill, { backgroundColor: isQr ? "#DCFCE7" : "#EFF6FF" }]}>
-        <Ionicons name={isQr ? "qr-code" : "hand-left"} size={11} color={isQr ? "#15803D" : "#1E3A8A"} />
-        <Text style={[badge.text, { color: isQr ? "#15803D" : "#1E3A8A" }]}>
+        <Ionicons name={isQr ? "qr-code" : "hand-left"} size={11} color={isQr ? "#15803D" : colors.primary} />
+        <Text style={[badge.text, { color: isQr ? "#15803D" : colors.primary }]}>
           {isQr ? "QR Check-In" : "Manual"}
         </Text>
       </View>

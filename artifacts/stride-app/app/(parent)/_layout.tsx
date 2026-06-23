@@ -44,16 +44,17 @@ function DocsTabIcon({ color, size }: { color: string; size: number }) {
 }
 
 function CartTabIcon({ color, size, count }: { color: string; size: number; count: number }) {
+  const colors = useColors();
   return (
     <View>
       <Ionicons name="cart" size={size} color={color} />
       {count > 0 && (
         <View style={{
           position: "absolute", top: -4, right: -8, minWidth: 16, height: 16,
-          borderRadius: 8, backgroundColor: "#FBBF24", borderWidth: 2,
+          borderRadius: 8, backgroundColor: colors.secondary, borderWidth: 2,
           borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center", paddingHorizontal: 2,
         }}>
-          <Text style={{ color: "#1E3A8A", fontSize: 8, fontWeight: "800", lineHeight: 12 }}>
+          <Text style={{ color: colors.primary, fontSize: 8, fontWeight: "800", lineHeight: 12 }}>
             {count > 9 ? "9+" : String(count)}
           </Text>
         </View>

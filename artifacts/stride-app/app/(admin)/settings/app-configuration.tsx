@@ -21,10 +21,10 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import type { ApiAdminSettings } from "@/lib/api";
 
 // Brand-colour helper for every Switch on this page
-function brandSwitch(on: boolean) {
+function brandSwitch(on: boolean, primary: string, secondary: string) {
   return {
-    trackColor: { false: "#D1D5DB", true: "#FBBF24" },
-    thumbColor: on ? "#1E3A8A" : "#9CA3AF",
+    trackColor: { false: "#D1D5DB", true: secondary },
+    thumbColor: on ? primary : "#9CA3AF",
   } as const;
 }
 
@@ -853,7 +853,7 @@ interface SwitchRowProps {
 }
 
 function SwitchRow({ icon, label, description, value, saving, onToggle, colors }: SwitchRowProps) {
-  const sw = brandSwitch(value);
+  const sw = brandSwitch(value, colors.primary, colors.secondary);
   return (
     <View style={styles.row}>
       <View style={[styles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>

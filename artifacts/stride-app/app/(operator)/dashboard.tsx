@@ -223,8 +223,8 @@ const DELAY_OPTIONS: { value: AbsenceType; label: string; delayMins: number }[] 
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-function notifIconForType(type: string): { icon: IoniconName; color: string } {
-  return { icon: "notifications", color: "#1E3A8A" };
+function notifIconForType(type: string, primary: string): { icon: IoniconName; color: string } {
+  return { icon: "notifications", color: primary };
 }
 
 function fmtTimeAgo(iso: string): string {
@@ -272,7 +272,7 @@ function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOp
       </View>
 
       {unread.map(n => {
-        const { icon, color } = notifIconForType(n.type);
+        const { icon, color } = notifIconForType(n.type, colors.primary);
         return (
           <Pressable
             key={n.id}

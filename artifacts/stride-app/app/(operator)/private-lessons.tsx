@@ -58,16 +58,16 @@ function fmtDate(d: string) {
 
 // ── Activity types ─────────────────────────────────────────────────────────────
 
-const ACTIVITY_TYPES = [
-  { id: "group_class",    label: "Group Class",         icon: "people-outline" as const,                     color: "#1E3A8A" },
-  { id: "private_lesson", label: "Private Lesson",      icon: "person-outline" as const,                     color: "#1E3A8A" },
+const getActivityTypes = (primary: string, secondary: string) => [
+  { id: "group_class",    label: "Group Class",         icon: "people-outline" as const,                     color: primary },
+  { id: "private_lesson", label: "Private Lesson",      icon: "person-outline" as const,                     color: primary },
   { id: "workshop",       label: "Workshop / Seminar",  icon: "school-outline" as const,                     color: "#F59E0B" },
   { id: "parent_meeting", label: "Parent Meeting",      icon: "chatbubble-ellipses-outline" as const,        color: "#10B981" },
   { id: "staff_meeting",  label: "Staff Meeting",       icon: "business-outline" as const,                   color: "#EF4444" },
-  { id: "special_event",  label: "Special Event",       icon: "star-outline" as const,                       color: "#FBBF24" },
+  { id: "special_event",  label: "Special Event",       icon: "star-outline" as const,                       color: secondary },
   { id: "extra_hours",    label: "Extra Hours / Cover", icon: "add-circle-outline" as const,                 color: "#6B7280" },
   { id: "other",          label: "Other",               icon: "ellipsis-horizontal-circle-outline" as const, color: "#9CA3AF" },
-] as const;
+];
 
 const AVAIL_STORAGE_KEY = "stride_operator_availability";
 const ROOMS_KEY         = "stride_association_rooms";
@@ -136,6 +136,7 @@ type Tab = "availability" | "bookings" | "notifications";
 
 export default function OperatorPrivateLessonsScreen() {
   const colors = useColors();
+  const ACTIVITY_TYPES = getActivityTypes(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { openTab } = useLocalSearchParams<{ openTab?: string }>();

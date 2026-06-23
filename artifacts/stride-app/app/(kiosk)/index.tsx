@@ -113,16 +113,16 @@ const TONE_FOR: Record<FeedbackType, "success" | "warning" | "denied"> = {
 
 // ── Overlay colours ───────────────────────────────────────────────────────────
 
-const FEEDBACK_COLORS: Record<FeedbackType, { bg: string; icon: string }> = {
+const getFeedbackColors = (secondary: string): Record<FeedbackType, { bg: string; icon: string }> => ({
   success:     { bg: "rgba(5,150,105,0.97)",   icon: "#FFFFFF" },
   warning:     { bg: "rgba(217,119,6,0.97)",   icon: "#FFFFFF" },
   denied:      { bg: "rgba(220,38,38,0.97)",   icon: "#FFFFFF" },
-  blacklisted: { bg: "rgba(30,58,138,0.97)",   icon: "#FBBF24" },
-  clock_in:    { bg: "rgba(30,58,138,0.97)",   icon: "#FBBF24" },
+  blacklisted: { bg: "rgba(30,58,138,0.97)",   icon: secondary },
+  clock_in:    { bg: "rgba(30,58,138,0.97)",   icon: secondary },
   clock_out:   { bg: "rgba(109,40,217,0.97)",  icon: "#FFFFFF" },
   ticket_ok:   { bg: "rgba(5,150,105,0.97)",   icon: "#FFFFFF" },
   ticket_fail: { bg: "rgba(220,38,38,0.97)",   icon: "#FFFFFF" },
-};
+});
 
 const FEEDBACK_ICONS: Record<FeedbackType, keyof typeof Ionicons.glyphMap> = {
   success:     "checkmark-circle",
@@ -203,6 +203,7 @@ function mapAccessToFeedback(res: AccessResponse): FeedbackState {
 
 export default function KioskScreen() {
   const colors = useColors();
+  const FEEDBACK_COLORS = getFeedbackColors(colors.secondary);
   const styles = make_styles(colors.primary, colors.secondary);
   const { logout } = useAuth();
   const router      = useRouter();

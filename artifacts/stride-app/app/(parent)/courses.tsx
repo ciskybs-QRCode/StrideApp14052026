@@ -967,7 +967,7 @@ export default function CoursesScreen() {
                             style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
                           >
                             <View style={{ width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: getTypeBg(m.type) }}>
-                              <Ionicons name={getTypeIcon(m.type)} size={18} color={getTypeColor(m.type)} />
+                              <Ionicons name={getTypeIcon(m.type)} size={18} color={getTypeColor(m.type, colors.primary)} />
                             </View>
                             <View style={{ flex: 1, minWidth: 0 }}>
                               <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground }} numberOfLines={1}>{m.name}</Text>

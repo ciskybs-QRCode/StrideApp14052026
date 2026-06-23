@@ -34,11 +34,11 @@ interface SentEntry {
   attachments: ApiAttachmentItem[];
 }
 
-function attachmentIcon(a: ApiAttachmentItem): { icon: keyof typeof Ionicons.glyphMap; color: string } {
+function attachmentIcon(a: ApiAttachmentItem, primary: string): { icon: keyof typeof Ionicons.glyphMap; color: string } {
   const m = a.mimeType;
   if (m === "text/uri-list")                               return { icon: "link-outline",          color: "#3B82F6" };
   if (m.startsWith("image/"))                              return { icon: "image-outline",        color: "#3B82F6" };
-  if (m.startsWith("video/"))                              return { icon: "videocam-outline",     color: "#1E3A8A" };
+  if (m.startsWith("video/"))                              return { icon: "videocam-outline",     color: primary };
   if (m.startsWith("audio/"))                              return { icon: "musical-note-outline", color: "#F59E0B" };
   if (m.includes("pdf"))                                   return { icon: "document-text-outline", color: "#EF4444" };
   if (m.includes("spreadsheet") || /\.(xls|xlsx)/i.test(a.name)) return { icon: "grid-outline", color: "#16A34A" };
@@ -230,7 +230,7 @@ export default function OperatorCommunications() {
                   {s.attachments.length > 0 && (
                     <View style={styles.msgAttachRow}>
                       {s.attachments.slice(0, 3).map((a, i) => {
-                        const { icon, color } = attachmentIcon(a);
+                        const { icon, color } = attachmentIcon(a, colors.primary);
                         return (
                           <Pressable key={i} style={styles.msgAttachChip} onPress={() => openAttachment(a)}>
                             <Ionicons name={icon} size={12} color={color} />
@@ -448,7 +448,7 @@ export default function OperatorCommunications() {
             {attachments.length > 0 && (
               <View style={styles.attachList}>
                 {attachments.map((a, i) => {
-                  const { icon, color } = attachmentIcon(a);
+                  const { icon, color } = attachmentIcon(a, colors.primary);
                   return (
                     <View key={i} style={[styles.attachRow, { backgroundColor: colors.card }]}>
                       <View style={[styles.attachIconWrap, { backgroundColor: color + "18" }]}>

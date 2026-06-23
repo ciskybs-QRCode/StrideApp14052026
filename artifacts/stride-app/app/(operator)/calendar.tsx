@@ -42,14 +42,14 @@ function getMonthMatrix(year: number, month: number): (Date | null)[][] {
   return matrix;
 }
 
-function lessonColor(courseName: string): string {
+function lessonColor(courseName: string, primary: string, secondary: string): string {
   const n = courseName.toLowerCase();
   if (n.includes("yoga") || n.includes("wellness"))    return "#10B981";
   if (n.includes("martial") || n.includes("karate"))   return "#EF4444";
   if (n.includes("swimming") || n.includes("aqua"))    return "#0EA5E9";
   if (n.includes("music") || n.includes("choir"))      return "#F59E0B";
-  if (n.includes("art") || n.includes("painting"))     return "#FBBF24";
-  if (n.includes("sport") || n.includes("football"))   return "#1E3A8A";
+  if (n.includes("art") || n.includes("painting"))     return secondary;
+  if (n.includes("sport") || n.includes("football"))   return primary;
   return "#6B7BA4";
 }
 
@@ -661,7 +661,7 @@ export default function OperatorCalendar() {
                               {dayLessons.slice(0, 2).map((l, li) => (
                                 <View
                                   key={`l${li}`}
-                                  style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: lessonColor(l.course) }}
+                                  style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: lessonColor(l.course, colors.primary, colors.secondary) }}
                                 />
                               ))}
                               {dayEvents.map(ev => (
@@ -1210,8 +1210,8 @@ export default function OperatorCalendar() {
                   <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
                     {/* Lessons */}
                     {dayDetail.lessons.map((lesson, i) => (
-                      <View key={i} style={{ marginTop: 12, borderRadius: 12, borderWidth: 1.5, borderColor: lessonColor(lesson.course), overflow: "hidden" }}>
-                        <View style={{ height: 4, backgroundColor: lessonColor(lesson.course) }} />
+                      <View key={i} style={{ marginTop: 12, borderRadius: 12, borderWidth: 1.5, borderColor: lessonColor(lesson.course, colors.primary, colors.secondary), overflow: "hidden" }}>
+                        <View style={{ height: 4, backgroundColor: lessonColor(lesson.course, colors.primary, colors.secondary) }} />
                         <View style={{ padding: 12, gap: 6 }}>
                           <Text style={{ fontSize: 15, fontWeight: "800", color: colors.foreground }}>{lesson.course}</Text>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
