@@ -11,6 +11,7 @@
  */
 
 import { pool } from "./pg.js";
+import { supabase } from "./supabase.js";
 import { RosterOptimizer } from "./RosterOptimizer.js";
 import { ReliabilityService } from "./ReliabilityService.js";
 import { logger } from "./logger.js";
@@ -190,6 +191,54 @@ export class RescueCascadeService {
         [operatorUserId, contact.cascade_id],
       );
       cascadeStatus = "resolved";
+
+      // Notify enrolled members' parents that a substitute was found (fire-and-forget)
+      ;(async () => {
+        try {
+          const { rows: cascadeRows } = await pool.query<{
+            org_id: number; course_name: string | null; absent_operator_name: string | null; discipline_id: number | null;
+          }>(
+            `SELECT org_id, course_name, absent_operator_name, discipline_id FROM rescue_cascades WHERE id = $1`,
+            [contact.cascade_id],
+          );
+          const cascade = cascadeRows[0];
+          if (!cascade) return;
+
+          const { rows: subRows } = await pool.query<{ name: string }>(
+            `SELECT u.name FROM users u WHERE u.id = $1`,
+            [operatorUserId],
+          );
+          const substituteName = subRows[0]?.name ?? "a substitute instructor";
+
+          const courseName = cascade.course_name ?? "your scheduled class";
+
+          // Get enrolled children for this discipline/org
+          const { rows: enrolledRows } = await pool.query<{ parent_id: number | null }>(
+            `SELECT DISTINCT c.parent_id
+             FROM enrollments e
+             JOIN children c ON c.id = e.child_id
+             WHERE c.organization_id = $1 AND c.parent_id IS NOT NULL`,
+            [cascade.org_id],
+          );
+
+          const notifiedParents = new Set<number>();
+          for (const row of enrolledRows) {
+            const parentId = row.parent_id;
+            if (!parentId || notifiedParents.has(parentId)) continue;
+            notifiedParents.add(parentId);
+            await supabase.from("private_notifications").insert({
+              organization_id: cascade.org_id,
+              recipient_id:    parentId,
+              type:            "substitute_found",
+              title:           "Class Update — Substitute Instructor",
+              body:            `${substituteName} will be covering ${courseName}. The class will proceed as scheduled.`,
+              read:            false,
+            }).then(undefined, () => {});
+          }
+        } catch (err) {
+          logger.warn(err, "RescueCascadeService: failed to notify enrolled parents after resolve");
+        }
+      })();
     }
 
     // Fire-and-forget reliability update

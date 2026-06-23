@@ -1,5 +1,6 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
 const router = Router();
@@ -420,6 +421,43 @@ router.delete("/scheduled-courses/:id", requireAuth, requireRole("admin"), async
       }).then(undefined, () => {});
     }
   }
+
+  // Notify enrolled members' parents about the cancellation (fire-and-forget)
+  ;(async () => {
+    try {
+      const discNameForParent = (course.discipline as { name?: string } | null)?.name ?? "course";
+      const dayNameForParent  = DAY_NAMES[course.day_of_week as number] ?? "scheduled day";
+      const timeStrForParent  = String(course.start_time).slice(0, 5);
+
+      const { data: enrolled } = await supabase
+        .from("enrollments")
+        .select("child_id")
+        .eq("course_id", id);
+
+      if (!enrolled?.length) return;
+
+      const childIds = (enrolled as { child_id: number }[]).map(e => e.child_id);
+      const { rows: childRows } = await pool.query<{ parent_id: number | null }>(
+        `SELECT DISTINCT parent_id FROM children WHERE id = ANY($1) AND parent_id IS NOT NULL`,
+        [childIds],
+      );
+
+      const notifiedParents = new Set<number>();
+      for (const row of childRows) {
+        const parentId = row.parent_id;
+        if (!parentId || notifiedParents.has(parentId)) continue;
+        notifiedParents.add(parentId);
+        await supabase.from("private_notifications").insert({
+          organization_id: user.orgId,
+          recipient_id:    parentId,
+          type:            "course_cancelled",
+          title:           "Class Cancelled",
+          body:            `Your ${discNameForParent} class (${dayNameForParent} at ${timeStrForParent}) has been cancelled by the admin. Please check the app for updates.`,
+          read:            false,
+        }).then(undefined, () => {});
+      }
+    } catch { /* enrollments may be empty or schema differs */ }
+  })();
 
   res.status(204).send();
 });

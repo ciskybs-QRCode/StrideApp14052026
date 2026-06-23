@@ -33,19 +33,25 @@ const router = Router();
 
 function categoryTitle(cat: string): string {
   switch (cat) {
-    case "FIRE":    return "🔥 Emergenza Incendio";
-    case "MEDICAL": return "🏥 Emergenza Medica";
-    case "POLICE":  return "🚔 Emergenza Polizia";
-    default:        return "🚨 Allerta Emergenza";
+    case "FIRE":    return "🔥 FIRE EMERGENCY — Evacuate Now";
+    case "MEDICAL": return "🚑 MEDICAL EMERGENCY";
+    case "POLICE":  return "🚔 SECURITY ALERT — Follow Instructions";
+    default:        return "🚨 EMERGENCY ALERT";
   }
 }
 
-function categoryBody(cat: string, location: string): string {
+function categoryBody(cat: string, location: string, patientName?: string): string {
   switch (cat) {
-    case "FIRE":    return `Incendio segnalato presso ${location}. Evacuate immediatamente e aspettate istruzioni.`;
-    case "MEDICAL": return `Emergenza medica presso ${location}. Contattate la scuola per aggiornamenti.`;
-    case "POLICE":  return `Allerta sicurezza presso ${location}. Seguite le istruzioni della scuola.`;
-    default:        return `Emergenza segnalata presso ${location}. Controllate l'app Stride.`;
+    case "FIRE":
+      return `Fire reported at ${location}. Evacuate immediately and await further instructions from staff.`;
+    case "MEDICAL":
+      return patientName
+        ? `Medical emergency involving ${patientName} at ${location}. Emergency services have been notified.`
+        : `Medical emergency at ${location}. Emergency services have been notified.`;
+    case "POLICE":
+      return `Security alert at ${location}. Please follow instructions from staff and do not leave until cleared.`;
+    default:
+      return `Emergency reported at ${location}. Please check the Stride app for updates.`;
   }
 }
 
@@ -59,11 +65,13 @@ router.post("/emergency/pulse", requireAuth, requireRole("operator", "admin", "s
     location_label,
     category = "FIRE",
     target_member_ids,
+    patient_name,
   } = req.body as {
     org_id?:            number | null;
     location_label?:    string;
     category?:          string;
     target_member_ids?: string[];
+    patient_name?:      string;
   };
 
   const resolvedOrgId   = org_id ?? (user as { org_id?: number }).org_id ?? 1;
@@ -90,52 +98,126 @@ router.post("/emergency/pulse", requireAuth, requireRole("operator", "admin", "s
   } catch { /* table may not have data yet */ }
 
   const { rows } = await pool.query<{ id: string; triggered_at: string }>(
-    `INSERT INTO emergency_pulses (org_id, triggered_by, location_label)
-     VALUES ($1, $2, $3)
+    `INSERT INTO emergency_pulses (org_id, triggered_by, location_label, category, patient_name)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id, triggered_at`,
-    [resolvedOrgId, user.id, locationLabel],
+    [resolvedOrgId, user.id, locationLabel, safeCategory, patient_name ?? null],
   );
   const pulseId      = rows[0]!.id;
   const triggeredAt  = rows[0]!.triggered_at;
 
   // ── Resolve targetParentIds for MEDICAL targeted alerts ───────────────────
+  // MEDICAL: notify parent(s) + next-of-kin + clocked-in operators + admins (NOT all parents)
+  // FIRE / POLICE: broadcast to entire org (targetParentIds stays undefined → all tokens)
   let targetParentIds: string[] | undefined;
-  if (safeCategory === "MEDICAL" && Array.isArray(target_member_ids) && target_member_ids.length > 0) {
+  const notifTitle = categoryTitle(safeCategory);
+  const notifBody  = categoryBody(safeCategory, locationLabel, patient_name ?? undefined);
+
+  if (safeCategory === "MEDICAL") {
+    const collected: string[] = [];
+
+    // 1. Direct member targets + parents of dependants
+    if (Array.isArray(target_member_ids) && target_member_ids.length > 0) {
+      try {
+        const { rows: depRows } = await pool.query<{ id: string }>(
+          `SELECT DISTINCT parent_user_id::text AS id FROM member_dependents WHERE dependent_id = ANY($1)`,
+          [target_member_ids],
+        );
+        const { rows: directRows } = await pool.query<{ id: string }>(
+          `SELECT id::text FROM users WHERE id = ANY($1)`,
+          [target_member_ids],
+        );
+        collected.push(...depRows.map(r => r.id), ...directRows.map(r => r.id));
+
+        // Also grab next-of-kin contacts for each direct user
+        const { rows: kinRows } = await pool.query<{
+          id: string; next_of_kin_name: string | null; next_of_kin_phone: string | null; next_of_kin_email: string | null;
+        }>(
+          `SELECT id::text, next_of_kin_name, next_of_kin_phone, next_of_kin_email FROM users WHERE id = ANY($1)`,
+          [target_member_ids],
+        );
+        // Log next-of-kin contacts for admin awareness (Twilio/email fallback already handles phones)
+        for (const kin of kinRows) {
+          if (kin.next_of_kin_name || kin.next_of_kin_phone) {
+            req.log.info({ userId: kin.id, kin_name: kin.next_of_kin_name, kin_phone: kin.next_of_kin_phone }, "emergency-pulse: next-of-kin on record");
+          }
+        }
+      } catch { /* tables may not exist */ }
+    }
+
+    // 2. Currently clocked-in operators
     try {
-      // Look up parents via member_dependents table (dependent_id → parent_user_id)
-      const { rows: depRows } = await pool.query<{ id: string }>(
-        `SELECT DISTINCT parent_user_id AS id
-         FROM member_dependents
-         WHERE dependent_id = ANY($1)`,
-        [target_member_ids],
+      const { rows: opRows } = await pool.query<{ user_id: string }>(
+        `SELECT DISTINCT op.user_id::text AS user_id
+         FROM operator_clock_records ocr
+         JOIN operator_profiles op ON op.id = ocr.operator_id
+         WHERE ocr.org_id = $1
+           AND ocr.clock_in > NOW() - INTERVAL '12 hours'
+           AND ocr.clock_out IS NULL`,
+        [resolvedOrgId],
       );
-      // Also treat any selected IDs that are themselves registered users as direct targets
-      const { rows: directRows } = await pool.query<{ id: string }>(
-        `SELECT id FROM users WHERE id = ANY($1)`,
-        [target_member_ids],
+      collected.push(...opRows.map(r => r.user_id));
+    } catch { /* operator_clock_records may not have data */ }
+
+    // 3. Org admins always get MEDICAL alerts
+    try {
+      const { rows: adminRows } = await pool.query<{ user_id: string }>(
+        `SELECT user_id::text FROM organization_members
+         WHERE organization_id = $1 AND role IN ('admin', 'super_admin')`,
+        [resolvedOrgId],
       );
-      const allIds = [
-        ...depRows.map(r => r.id),
-        ...directRows.map(r => r.id),
-      ];
-      const unique = [...new Set(allIds)];
-      if (unique.length > 0) targetParentIds = unique;
-    } catch { /* tables may not exist — fall back to broadcast */ }
+      collected.push(...adminRows.map(r => r.user_id));
+    } catch { /* tables may not exist */ }
+
+    const unique = [...new Set(collected)];
+    if (unique.length > 0) targetParentIds = unique;
   }
 
   // ── Fire critical push (non-blocking — pulse already saved) ──────────────
   EmergencyPushService.sendEmergencyPush({
     orgId:          resolvedOrgId,
     category:       safeCategory,
-    title:          categoryTitle(safeCategory),
-    body:           categoryBody(safeCategory, locationLabel),
+    title:          notifTitle,
+    body:           notifBody,
     triggeredBy:    user.id,
     targetParentIds,
-    data:           { pulse_id: pulseId, location_label: locationLabel },
+    data:           { pulse_id: pulseId, location_label: locationLabel, patient_name: patient_name ?? null },
   }).catch(err => {
-    // Log but don't fail the request — the pulse DB record is already created
-    console.error("EmergencyPushService.sendEmergencyPush failed:", err);
+    req.log.error(err, "EmergencyPushService.sendEmergencyPush failed");
   });
+
+  // ── DB audit: insert private_notifications for every target ──────────────
+  // This ensures every person notified has a DB record — proof of delivery.
+  (async () => {
+    try {
+      const recipientIds: string[] = targetParentIds
+        ? targetParentIds
+        : (await pool.query<{ user_id: string }>(
+            `SELECT user_id::text FROM organization_members WHERE organization_id = $1`,
+            [resolvedOrgId],
+          )).rows.map(r => r.user_id);
+
+      for (const recipId of recipientIds) {
+        const { data: nd } = await supabase.from("private_notifications").insert({
+          organization_id: resolvedOrgId,
+          recipient_id:    parseInt(recipId),
+          type:            `emergency_${safeCategory.toLowerCase()}`,
+          title:           notifTitle,
+          body:            notifBody,
+          read:            false,
+        }).select("id").single();
+        if (nd?.id) {
+          await pool.query(
+            `INSERT INTO notification_delivery_log (notification_id, recipient_id, organization_id, source, push_sent)
+             VALUES ($1, $2, $3, 'emergency_pulse', true)`,
+            [nd.id, parseInt(recipId), resolvedOrgId],
+          ).catch(() => {});
+        }
+      }
+    } catch (err) {
+      req.log.error(err, "emergency-pulse: failed to insert audit notifications");
+    }
+  })();
 
   res.status(201).json({
     pulse_id:          pulseId,

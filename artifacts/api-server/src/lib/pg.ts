@@ -1803,5 +1803,29 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS medical_notes    TEXT`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS status           TEXT NOT NULL DEFAULT 'active'`).catch(() => {});
 
+  // ── emergency_pulses — category + patient_name columns ─────────────────────
+  await pool.query(`ALTER TABLE emergency_pulses ADD COLUMN IF NOT EXISTS category     TEXT NOT NULL DEFAULT 'FIRE'`).catch(() => {});
+  await pool.query(`ALTER TABLE emergency_pulses ADD COLUMN IF NOT EXISTS patient_name TEXT`).catch(() => {});
+
+  // ── notification_delivery_log — per-notification audit (deliver/open/read/dismiss) ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notification_delivery_log (
+      id              SERIAL      PRIMARY KEY,
+      notification_id INTEGER,
+      recipient_id    INTEGER     NOT NULL,
+      organization_id INTEGER,
+      source          TEXT        NOT NULL DEFAULT 'system',
+      delivered_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      opened_at       TIMESTAMPTZ,
+      read_at         TIMESTAMPTZ,
+      dismissed_at    TIMESTAMPTZ,
+      push_sent       BOOLEAN     NOT NULL DEFAULT FALSE
+    )
+  `).catch(() => {});
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_ndl_recipient ON notification_delivery_log(recipient_id);
+    CREATE INDEX IF NOT EXISTS idx_ndl_notif     ON notification_delivery_log(notification_id);
+  `).catch(() => {});
+
   initialized = true;
 }

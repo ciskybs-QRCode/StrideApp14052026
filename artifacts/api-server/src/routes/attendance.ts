@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
+import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { SecurityObserver } from "../lib/SecurityObserver.js";
 
@@ -86,6 +87,32 @@ router.post("/attendance", requireAuth, requireRole("admin", "operator"), async 
     session_id,
     status,
   });
+
+  // Fire-and-forget: notify parent/member that check-in was recorded
+  pool.query<{ parent_id: number | null; first_name: string | null; last_name: string | null }>(
+    `SELECT parent_id, first_name, last_name FROM children WHERE id = $1`,
+    [child_id],
+  ).then(async ({ rows }) => {
+    const child = rows[0];
+    if (!child?.parent_id) return;
+    const name  = [child.first_name, child.last_name].filter(Boolean).join(" ") || "Your child";
+    const now   = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    const { data: notifData } = await supabase.from("private_notifications").insert({
+      organization_id: user.orgId,
+      recipient_id:    child.parent_id,
+      type:            "checkin_confirmation",
+      title:           "Check-In Confirmed ✅",
+      body:            `${name} has been checked in at ${now}.`,
+      read:            false,
+    }).select("id").single();
+    if (notifData?.id) {
+      await pool.query(
+        `INSERT INTO notification_delivery_log (notification_id, recipient_id, organization_id, source, push_sent)
+         VALUES ($1, $2, $3, 'checkin', false)`,
+        [notifData.id, child.parent_id, user.orgId ?? null],
+      ).catch(() => {});
+    }
+  }).catch(() => {});
 });
 
 router.patch("/attendance/:id", requireAuth, requireRole("admin", "operator"), async (req, res) => {

@@ -1216,6 +1216,8 @@ export const api = {
     category?:          string;
     /** For MEDICAL: user/dependant IDs whose parents to notify */
     target_member_ids?: string[];
+    /** For MEDICAL: name of the patient (logged and included in notification body) */
+    patient_name?:      string;
   }) =>
     request<{
       pulse_id:          string;
