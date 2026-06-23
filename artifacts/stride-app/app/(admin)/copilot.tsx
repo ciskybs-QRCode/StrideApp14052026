@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { adminCopilotQuery, type CopilotResponse } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -114,6 +115,8 @@ const QUICK_PROMPTS = [
 // ─── Metric Grid ─ member_summary ─────────────────────────────────────────────
 
 function MetricGrid({ rows }: { rows: string[][] }) {
+  const colors = useColors();
+  const mg = make_mg(colors.primary, colors.secondary);
   return (
     <View style={mg.grid}>
       {rows.map(([label, value], i) => (
@@ -126,7 +129,7 @@ function MetricGrid({ rows }: { rows: string[][] }) {
   );
 }
 
-const mg = StyleSheet.create({
+const make_mg = (primary: string, secondary: string) => StyleSheet.create({
   grid:  { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   tile:  {
     flex: 1, minWidth: "44%",
@@ -136,13 +139,15 @@ const mg = StyleSheet.create({
     paddingVertical: 11, paddingHorizontal: 12,
     alignItems: "center",
   },
-  value: { color: "#1E3A8A", fontSize: 24, fontWeight: "800", lineHeight: 28 },
+  value: { color: primary, fontSize: 24, fontWeight: "800", lineHeight: 28 },
   label: { color: "#6B7BA4", fontSize: 10, fontWeight: "600", marginTop: 3, textAlign: "center" },
 });
 
 // ─── Revenue Rows ─ revenue_summary ───────────────────────────────────────────
 
 function RevenueRows({ rows }: { rows: string[][] }) {
+  const colors = useColors();
+  const rr = make_rr(colors.primary, colors.secondary);
   if (!rows.length) return null;
   const amounts = rows.map(r => parseFloat((r[1] ?? "0").replace(/[^0-9.]/g, "")) || 0);
   const maxAmt  = Math.max(...amounts, 1);
@@ -165,17 +170,19 @@ function RevenueRows({ rows }: { rows: string[][] }) {
   );
 }
 
-const rr = StyleSheet.create({
+const make_rr = (primary: string, secondary: string) => StyleSheet.create({
   row:      { flexDirection: "row", alignItems: "center", gap: 8 },
   month:    { color: "#6B7BA4", fontSize: 11, width: 58, flexShrink: 0 },
   barTrack: { flex: 1, flexDirection: "row", height: 5, borderRadius: 3, backgroundColor: "rgba(30,58,138,0.06)", overflow: "hidden" },
-  bar:      { backgroundColor: "#1E3A8A", borderRadius: 3 },
-  amount:   { color: "#1E3A8A", fontSize: 11, fontWeight: "700", width: 68, textAlign: "right", flexShrink: 0 },
+  bar:      { backgroundColor: primary, borderRadius: 3 },
+  amount:   { color: primary, fontSize: 11, fontWeight: "700", width: 68, textAlign: "right", flexShrink: 0 },
 });
 
 // ─── Data Table ───────────────────────────────────────────────────────────────
 
 function DataTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
+  const colors = useColors();
+  const tbl = make_tbl(colors.primary, colors.secondary);
   if (!columns.length || !rows.length) return null;
   const COL_CHAR_PX = 7.8;
   const colW = columns.map((c, ci) =>
@@ -206,8 +213,8 @@ function DataTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
   );
 }
 
-const tbl = StyleSheet.create({
-  hCell:   { color: "#1E3A8A", fontSize: 9, fontWeight: "800", letterSpacing: 0.7, paddingHorizontal: 6, paddingVertical: 5 },
+const make_tbl = (primary: string, secondary: string) => StyleSheet.create({
+  hCell:   { color: primary, fontSize: 9, fontWeight: "800", letterSpacing: 0.7, paddingHorizontal: 6, paddingVertical: 5 },
   divider: { height: 1, backgroundColor: "rgba(30,58,138,0.1)", marginBottom: 2 },
   rowAlt:  { backgroundColor: "rgba(30,58,138,0.03)", borderRadius: 4 },
   cell:    { color: "#6B7BA4", fontSize: 11, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 3.5 },
@@ -216,6 +223,9 @@ const tbl = StyleSheet.create({
 // ─── Typing indicator ─────────────────────────────────────────────────────────
 
 function TypingIndicator() {
+  const colors = useColors();
+  const ty = make_ty(colors.primary, colors.secondary);
+  const abStyles = make_ab(colors.primary, colors.secondary);
   const [phase, setPhase] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setPhase(p => (p + 1) % 3), 400);
@@ -224,8 +234,8 @@ function TypingIndicator() {
   return (
     <View style={{ alignItems: "flex-start", marginBottom: 14 }}>
       <View style={{ flexDirection: "row", alignItems: "stretch", width: "68%" }}>
-        <View style={[ab.accent, { backgroundColor: CLR.gold }]} />
-        <View style={[ab.bubble, { paddingVertical: 14, paddingHorizontal: 16 }]}>
+        <View style={[abStyles.accent, { backgroundColor: CLR.gold }]} />
+        <View style={[abStyles.bubble, { paddingVertical: 14, paddingHorizontal: 16 }]}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {[0, 1, 2].map(i => (
               <View
@@ -247,14 +257,16 @@ function TypingIndicator() {
   );
 }
 
-const ty = StyleSheet.create({
-  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: "#1E3A8A" },
+const make_ty = (primary: string, secondary: string) => StyleSheet.create({
+  dot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: primary },
   label: { color: "#6B7BA4", fontSize: 11.5, marginLeft: 2 },
 });
 
 // ─── Message bubble ───────────────────────────────────────────────────────────
 
 function MessageBubble({ msg }: { msg: Message }) {
+  const colors = useColors();
+  const ab = make_ab(colors.primary, colors.secondary);
   const isUser  = msg.role === "user";
   const isError = msg.role === "error";
   const r       = msg.response;
@@ -380,7 +392,7 @@ const ub = StyleSheet.create({
 });
 
 /* AI bubble shared styles */
-const ab = StyleSheet.create({
+const make_ab = (primary: string, secondary: string) => StyleSheet.create({
   accent: {
     width: 3, borderRadius: 2,
     flexShrink: 0, marginRight: 10,
@@ -396,12 +408,12 @@ const ab = StyleSheet.create({
   },
   header:       { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 9 },
   copilotBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(30,58,138,0.1)", borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2.5 },
-  copilotText:  { color: "#1E3A8A", fontSize: 8, fontWeight: "800", letterSpacing: 1.2 },
+  copilotText:  { color: primary, fontSize: 8, fontWeight: "800", letterSpacing: 1.2 },
   badge:        { flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2.5 },
   badgeText:    { fontSize: 8, fontWeight: "800", letterSpacing: 1 },
   intentBadge:  { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 5, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2.5 },
   intentText:   { fontSize: 10, fontWeight: "700" },
-  summary:      { color: "#1E3A8A", fontSize: 13.5, lineHeight: 20 },
+  summary:      { color: primary, fontSize: 13.5, lineHeight: 20 },
   footer:       { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(30,58,138,0.1)" },
   footerText:   { color: "#6B7BA4", fontSize: 10 },
   ts:           { color: CLR.textDim, fontSize: 10, marginTop: 4, marginLeft: 13 },
@@ -412,10 +424,11 @@ const ab = StyleSheet.create({
 // ─── Welcome banner ───────────────────────────────────────────────────────────
 
 function WelcomeBanner() {
+  const colors = useColors();
   return (
     <View style={wb.card}>
       <View style={wb.iconWrap}>
-        <Ionicons name="sparkles" size={22} color="#1E3A8A" />
+        <Ionicons name="sparkles" size={22} color={colors.primary} />
       </View>
       <Text style={wb.title}>Admin Copilot</Text>
       <Text style={wb.body}>

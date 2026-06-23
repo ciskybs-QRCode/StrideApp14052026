@@ -43,9 +43,10 @@ function AlertCard({ alert, onDelay, onDismiss }: {
   onDelay: (alertId: string, minutes: number) => void;
   onDismiss: (alertId: string) => void;
 }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const [selectedDelay, setSelectedDelay] = useState<(typeof DELAY_OPTIONS)[number]>(15);
   const [delaySubmitted, setDelaySubmitted] = useState(false);
-  const colors = useColors();
 
   const phaseColor = PHASE_COLOR[alert.phase] ?? "#9CA3AF";
   const isAlarm    = alert.phase === 3;
@@ -134,7 +135,7 @@ function AlertCard({ alert, onDelay, onDismiss }: {
           </ScrollView>
 
           <Pressable style={styles.submitBtn} onPress={handleSubmitDelay}>
-            <Ionicons name="time-outline" size={16} color="#1E3A8A" />
+            <Ionicons name="time-outline" size={16} color={"#1E3A8A"} />
             <Text style={styles.submitBtnText}>Confirm {selectedDelay} min delay</Text>
           </Pressable>
         </>
@@ -162,10 +163,11 @@ function AlertCard({ alert, onDelay, onDismiss }: {
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function ParentAlerts() {
+  const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { activeAlerts, alerts, submitDelay, dismissAlert, maxPhase } = useSecurityEscalation();
   const { children } = useAppData();
   const { user } = useAuth();
-  const colors  = useColors();
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
 
@@ -232,7 +234,7 @@ export default function ParentAlerts() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   <Pressable
-                    style={[styles.reportChip, reportWho === "self" && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    style={[styles.reportChip, reportWho === "self" && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
                     onPress={() => { setReportWho("self"); Haptics.selectionAsync(); }}
                   >
                     <Text style={[styles.reportChipText, reportWho === "self" && { color: "#FFF" }]}>
@@ -242,7 +244,7 @@ export default function ParentAlerts() {
                   {children.map(c => (
                     <Pressable
                       key={c.id}
-                      style={[styles.reportChip, reportWho === c.id && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                      style={[styles.reportChip, reportWho === c.id && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
                       onPress={() => { setReportWho(c.id); Haptics.selectionAsync(); }}
                     >
                       <Text style={[styles.reportChipText, reportWho === c.id && { color: "#FFF" }]}>
@@ -261,7 +263,7 @@ export default function ParentAlerts() {
                     style={[
                       styles.reportChip,
                       { flex: 1, justifyContent: "center" },
-                      reportType === t && { backgroundColor: colors.primary, borderColor: colors.primary },
+                      reportType === t && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
                     ]}
                     onPress={() => { setReportType(t); Haptics.selectionAsync(); }}
                   >
@@ -295,7 +297,7 @@ export default function ParentAlerts() {
                 <Ionicons
                   name={reportType === "delay" ? "time-outline" : "close-circle-outline"}
                   size={16}
-                  color="#1E3A8A"
+                  color={"#1E3A8A"}
                 />
                 <Text style={styles.submitBtnText}>
                   {reportType === "delay" ? `Confirm ${reportDelay} min delay` : "Report Absence"}
@@ -355,7 +357,7 @@ export default function ParentAlerts() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20, gap: 0 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 24 },
@@ -413,18 +415,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 14,
     paddingVertical: 13,
   },
-  submitBtnText: { color: "#1E3A8A", fontWeight: "800", fontSize: 14 },
+  submitBtnText: { color: primary, fontWeight: "800", fontSize: 14 },
 
   callBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     borderRadius: 14,
     paddingVertical: 13,
   },

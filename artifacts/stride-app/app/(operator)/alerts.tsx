@@ -28,7 +28,8 @@ const PHASE_LABEL: Record<number, string> = { 1: "Phase 1", 2: "CRITICAL", 3: "A
 // ── Alert Row ─────────────────────────────────────────────────────────────────
 
 function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () => void }) {
-  const colors     = useColors();
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const phaseColor = PHASE_COLOR[alert.phase] ?? "#9CA3AF";
   const minsAgo    = Math.floor((Date.now() - alert.triggeredAt) / 60000);
 
@@ -80,7 +81,7 @@ function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =>
             onResolve();
           }}
         >
-          <Ionicons name="checkmark" size={14} color="#1E3A8A" />
+          <Ionicons name="checkmark" size={14} color={colors.primary} />
           <Text style={styles.resolveBtnText}>Resolve</Text>
         </Pressable>
         <Pressable style={styles.callBtnSmall} onPress={handleCall}>
@@ -95,6 +96,7 @@ function AlertRow({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =>
 
 function StatsBar({ active, resolved, maxPhase }: { active: number; resolved: number; maxPhase: number }) {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <View style={[styles.statsBar, { backgroundColor: colors.card }]}>
       <View style={styles.statItem}>
@@ -120,8 +122,9 @@ function StatsBar({ active, resolved, maxPhase }: { active: number; resolved: nu
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function OperatorAlerts() {
-  const { activeAlerts, alerts, dismissAlert, maxPhase } = useSecurityEscalation();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
+  const { activeAlerts, alerts, dismissAlert, maxPhase } = useSecurityEscalation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -223,7 +226,7 @@ export default function OperatorAlerts() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll:    { paddingHorizontal: 20, gap: 0 },
   header:   { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
@@ -279,17 +282,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  resolveBtnText: { color: "#1E3A8A", fontWeight: "800", fontSize: 11 },
+  resolveBtnText: { color: primary, fontWeight: "800", fontSize: 11 },
   callBtnSmall: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     alignItems: "center",
     justifyContent: "center",
   },

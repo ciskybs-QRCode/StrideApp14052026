@@ -169,7 +169,7 @@ export default function MyPrivateLessonsScreen() {
 
       {loading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={"#1E3A8A"} />
         </View>
       ) : (
         <ScrollView
@@ -177,7 +177,7 @@ export default function MyPrivateLessonsScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* ── Active bookings ── */}
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Active Bookings</Text>
+          <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Active Bookings</Text>
 
           {activeBookings.length === 0 && (
             <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -197,7 +197,7 @@ export default function MyPrivateLessonsScreen() {
                 {/* Header row */}
                 <View style={styles.cardHeader}>
                   <View style={[styles.disciplineIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                    <Ionicons name="musical-notes-outline" size={18} color={colors.primary} />
+                    <Ionicons name="musical-notes-outline" size={18} color={"#1E3A8A"} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.disciplineName, { color: colors.foreground }]}>{b.discipline_name}</Text>
@@ -209,7 +209,7 @@ export default function MyPrivateLessonsScreen() {
                     <View style={[styles.statusPill, { backgroundColor: `${statusColor}20` }]}>
                       <Text style={[styles.statusText, { color: statusColor }]}>{STATUS_LABEL[b.status]}</Text>
                     </View>
-                    <Text style={[styles.price, { color: colors.primary }]}>{cur}{(b.member_price_cents / 100).toFixed(2)}</Text>
+                    <Text style={[styles.price, { color: "#1E3A8A" }]}>{cur}{(b.member_price_cents / 100).toFixed(2)}</Text>
                   </View>
                 </View>
 
@@ -254,11 +254,11 @@ export default function MyPrivateLessonsScreen() {
                 {/* Actions */}
                 <View style={styles.actions}>
                   <Pressable
-                    style={[styles.actionBtn, { backgroundColor: "rgba(30,58,138,0.08)", borderColor: colors.primary }]}
+                    style={[styles.actionBtn, { backgroundColor: "rgba(30,58,138,0.08)", borderColor: "#1E3A8A" }]}
                     onPress={() => openReschedule(b)}
                   >
-                    <Ionicons name="calendar-outline" size={14} color={colors.primary} />
-                    <Text style={[styles.actionBtnText, { color: colors.primary }]}>Reschedule</Text>
+                    <Ionicons name="calendar-outline" size={14} color={"#1E3A8A"} />
+                    <Text style={[styles.actionBtnText, { color: "#1E3A8A" }]}>Reschedule</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.actionBtn, { backgroundColor: "#FFF1F2", borderColor: "#FECACA" }]}
@@ -275,7 +275,7 @@ export default function MyPrivateLessonsScreen() {
           {/* ── Past bookings ── */}
           {pastBookings.length > 0 && (
             <>
-              <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>History</Text>
+              <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 8 }]}>History</Text>
               {pastBookings.slice(0, 10).map(b => (
                 <View key={b.id} style={[styles.bookingCard, styles.pastCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.cardHeader}>

@@ -261,7 +261,7 @@ export default function PromoCodesPage() {
         title="Promo Codes"
         onBack={() => router.push("/(admin)/finance-hub" as never)}
         right={
-          <Pressable style={[styles.createBtn, { backgroundColor: colors.primary }]} onPress={() => { resetCreate(); setShowCreate(true); }}>
+          <Pressable style={[styles.createBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => { resetCreate(); setShowCreate(true); }}>
             <Ionicons name="add" size={18} color="#FFF" />
             <Text style={styles.createBtnText}>Create</Text>
           </Pressable>
@@ -274,7 +274,7 @@ export default function PromoCodesPage() {
           {[
             { label: "Active", value: activeCount, color: "#10B981", bg: "#D1FAE5" },
             { label: "Expired", value: promos.filter(p => isExpired(p)).length, color: "#EF4444", bg: "#FEE2E2" },
-            { label: "Total Uses", value: promos.reduce((s, p) => s + p.usedCount, 0), color: colors.primary, bg: "#DBEAFE" },
+            { label: "Total Uses", value: promos.reduce((s, p) => s + p.usedCount, 0), color: "#1E3A8A", bg: "#DBEAFE" },
           ].map(s => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
               <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
@@ -301,7 +301,7 @@ export default function PromoCodesPage() {
                   <Ionicons name={DISCOUNT_ICON[p.discountType]} size={18} color={p.discountType === "percent" ? "#1E3A8A" : p.discountType === "lessons" ? "#10B981" : "#F59E0B"} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.promoCode, { color: colors.primary }]}>{p.code}</Text>
+                  <Text style={[styles.promoCode, { color: "#1E3A8A" }]}>{p.code}</Text>
                   <Text style={[styles.promoDiscount, { color: colors.mutedForeground }]}>{formatDiscount(p)}</Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: expired ? "#FEE2E2" : "#D1FAE5" }]}>
@@ -319,8 +319,8 @@ export default function PromoCodesPage() {
 
               <View style={styles.promoActions}>
                 <Pressable style={[styles.actionChip, { backgroundColor: colors.muted }]} onPress={() => handleCopy(p.code)}>
-                  <Ionicons name="copy-outline" size={13} color={colors.primary} />
-                  <Text style={[styles.actionChipText, { color: colors.primary }]}>Copy</Text>
+                  <Ionicons name="copy-outline" size={13} color={"#1E3A8A"} />
+                  <Text style={[styles.actionChipText, { color: "#1E3A8A" }]}>Copy</Text>
                 </Pressable>
                 {expired && (
                   <Pressable style={[styles.actionChip, { backgroundColor: "#D1FAE5" }]} onPress={() => { handleToggle(p.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}>
@@ -330,7 +330,7 @@ export default function PromoCodesPage() {
                 )}
                 {p.targetType !== "all" && (
                   <View style={[styles.actionChip, { backgroundColor: "#EFF6FF" }]}>
-                    <Ionicons name="people-outline" size={13} color="#1E3A8A" />
+                    <Ionicons name="people-outline" size={13} color={"#1E3A8A"} />
                     <Text style={[styles.actionChipText, { color: "#1E3A8A" }]} numberOfLines={1}>
                       {p.targetType === "student" ? (p.targetStudentName ?? secondaryRoleName) : p.targetType === "courses" ? "Courses" : p.targetType === "locations" ? "Locations" : (p.targetParentNames?.length ? p.targetParentNames[0] : primaryRoleName + "s")}
                     </Text>
@@ -375,7 +375,7 @@ export default function PromoCodesPage() {
             {/* Discount type */}
             <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 16 }]}>Discount Type</Text>
             <View style={styles.typeRow}>
-              {([{ type: "percent" as DiscountType, label: "% Discount", icon: "pricetag-outline" as const, color: "#1E3A8A", bg: "#DBEAFE" }, { type: "lessons" as DiscountType, label: "Free Lessons", icon: "musical-notes-outline" as const, color: "#10B981", bg: "#D1FAE5" }, { type: "months_free" as DiscountType, label: "Free Months", icon: "calendar-outline" as const, color: "#F59E0B", bg: "#FEF3C7" }]).map(t => (
+              {([{ type: "percent" as DiscountType, label: "% Discount", icon: "pricetag-outline" as const, color: colors.primary, bg: "#DBEAFE" }, { type: "lessons" as DiscountType, label: "Free Lessons", icon: "musical-notes-outline" as const, color: "#10B981", bg: "#D1FAE5" }, { type: "months_free" as DiscountType, label: "Free Months", icon: "calendar-outline" as const, color: "#F59E0B", bg: "#FEF3C7" }]).map(t => (
                 <Pressable key={t.type} style={[styles.typeBtn, newDiscountType === t.type && { borderColor: t.color, backgroundColor: t.bg }]} onPress={() => setNewDiscountType(t.type)}>
                   <Ionicons name={t.icon} size={16} color={newDiscountType === t.type ? t.color : "#9CA3AF"} />
                   <Text style={[styles.typeBtnText, { color: newDiscountType === t.type ? t.color : "#9CA3AF" }]}>{t.label}</Text>
@@ -405,7 +405,7 @@ export default function PromoCodesPage() {
                 { v: "locations" as TargetType, l: "Locations", i: "location-outline" as const },
                 { v: "student" as TargetType, l: `${secondaryRoleName}s`, i: "person-add-outline" as const },
               ]).map(t => (
-                <Pressable key={t.v} style={[styles.targetChip, targetType === t.v && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => { setTargetType(t.v); setTargetStudentId(null); setTargetStudentSearch(""); setTargetCourseIds([]); setTargetLocations([]); setTargetParentSearch(""); setTargetParentNames([]); setTargetMemberCourseIds([]); }}>
+                <Pressable key={t.v} style={[styles.targetChip, targetType === t.v && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]} onPress={() => { setTargetType(t.v); setTargetStudentId(null); setTargetStudentSearch(""); setTargetCourseIds([]); setTargetLocations([]); setTargetParentSearch(""); setTargetParentNames([]); setTargetMemberCourseIds([]); }}>
                   <Ionicons name={t.i} size={13} color={targetType === t.v ? "#FFF" : colors.mutedForeground} />
                   <Text style={[styles.targetChipText, { color: targetType === t.v ? "#FFF" : colors.mutedForeground }]}>{t.l}</Text>
                 </Pressable>
@@ -413,15 +413,15 @@ export default function PromoCodesPage() {
             </View>
 
             {targetType === "courses" && courses.map(c => (
-              <Pressable key={c.id} style={[styles.checkRow, { borderColor: targetCourseIds.includes(c.id) ? colors.primary : colors.border, backgroundColor: targetCourseIds.includes(c.id) ? "#EEF2FF" : colors.card }]} onPress={() => setTargetCourseIds(prev => prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id])}>
-                <Ionicons name={targetCourseIds.includes(c.id) ? "checkbox" : "square-outline"} size={18} color={targetCourseIds.includes(c.id) ? colors.primary : colors.mutedForeground} />
+              <Pressable key={c.id} style={[styles.checkRow, { borderColor: targetCourseIds.includes(c.id) ? "#1E3A8A" : colors.border, backgroundColor: targetCourseIds.includes(c.id) ? "#EEF2FF" : colors.card }]} onPress={() => setTargetCourseIds(prev => prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id])}>
+                <Ionicons name={targetCourseIds.includes(c.id) ? "checkbox" : "square-outline"} size={18} color={targetCourseIds.includes(c.id) ? "#1E3A8A" : colors.mutedForeground} />
                 <Text style={[styles.checkRowText, { color: colors.foreground }]}>{c.name}</Text>
               </Pressable>
             ))}
 
             {targetType === "locations" && LOCATIONS.map(loc => (
-              <Pressable key={loc} style={[styles.checkRow, { borderColor: targetLocations.includes(loc) ? colors.primary : colors.border, backgroundColor: targetLocations.includes(loc) ? "#EEF2FF" : colors.card }]} onPress={() => setTargetLocations(prev => prev.includes(loc) ? prev.filter(x => x !== loc) : [...prev, loc])}>
-                <Ionicons name={targetLocations.includes(loc) ? "checkbox" : "square-outline"} size={18} color={targetLocations.includes(loc) ? colors.primary : colors.mutedForeground} />
+              <Pressable key={loc} style={[styles.checkRow, { borderColor: targetLocations.includes(loc) ? "#1E3A8A" : colors.border, backgroundColor: targetLocations.includes(loc) ? "#EEF2FF" : colors.card }]} onPress={() => setTargetLocations(prev => prev.includes(loc) ? prev.filter(x => x !== loc) : [...prev, loc])}>
+                <Ionicons name={targetLocations.includes(loc) ? "checkbox" : "square-outline"} size={18} color={targetLocations.includes(loc) ? "#1E3A8A" : colors.mutedForeground} />
                 <Text style={[styles.checkRowText, { color: colors.foreground }]}>{loc}</Text>
               </Pressable>
             ))}
@@ -439,13 +439,13 @@ export default function PromoCodesPage() {
                   </View>
                 ) : (
                   filteredParents.map(name => (
-                    <Pressable key={name} style={[styles.checkRow, { borderColor: targetParentNames.includes(name) ? colors.primary : colors.border, backgroundColor: targetParentNames.includes(name) ? "#EEF2FF" : colors.card }]} onPress={() => setTargetParentNames(prev => prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name])}>
-                      <Ionicons name={targetParentNames.includes(name) ? "checkbox" : "square-outline"} size={18} color={targetParentNames.includes(name) ? colors.primary : colors.mutedForeground} />
+                    <Pressable key={name} style={[styles.checkRow, { borderColor: targetParentNames.includes(name) ? "#1E3A8A" : colors.border, backgroundColor: targetParentNames.includes(name) ? "#EEF2FF" : colors.card }]} onPress={() => setTargetParentNames(prev => prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name])}>
+                      <Ionicons name={targetParentNames.includes(name) ? "checkbox" : "square-outline"} size={18} color={targetParentNames.includes(name) ? "#1E3A8A" : colors.mutedForeground} />
                       <Text style={[styles.checkRowText, { color: colors.foreground }]}>{name}</Text>
                     </Pressable>
                   ))
                 )}
-                <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Restrict to Courses (optional)</Text>
+                <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 14 }]}>Restrict to Courses (optional)</Text>
                 {courses.map(c => (
                   <Pressable key={c.id} style={[styles.checkRow, { borderColor: targetMemberCourseIds.includes(c.id) ? "#1E3A8A" : colors.border, backgroundColor: targetMemberCourseIds.includes(c.id) ? "#EFF6FF" : colors.card }]} onPress={() => setTargetMemberCourseIds(prev => prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id])}>
                     <Ionicons name={targetMemberCourseIds.includes(c.id) ? "checkbox" : "square-outline"} size={18} color={targetMemberCourseIds.includes(c.id) ? "#1E3A8A" : colors.mutedForeground} />
@@ -471,8 +471,8 @@ export default function PromoCodesPage() {
                   <TextInput style={[styles.searchInput, { color: colors.foreground }]} value={targetStudentSearch} onChangeText={setTargetStudentSearch} placeholder="Member name..." placeholderTextColor={colors.mutedForeground} />
                 </View>
                 {filteredStudents.map(s => (
-                  <Pressable key={s.id} style={[styles.checkRow, { borderColor: targetStudentId === s.id ? colors.primary : colors.border, backgroundColor: targetStudentId === s.id ? "#EEF2FF" : colors.card }]} onPress={() => setTargetStudentId(targetStudentId === s.id ? null : s.id)}>
-                    <Ionicons name={targetStudentId === s.id ? "checkmark-circle" : "ellipse-outline"} size={18} color={targetStudentId === s.id ? colors.primary : colors.mutedForeground} />
+                  <Pressable key={s.id} style={[styles.checkRow, { borderColor: targetStudentId === s.id ? "#1E3A8A" : colors.border, backgroundColor: targetStudentId === s.id ? "#EEF2FF" : colors.card }]} onPress={() => setTargetStudentId(targetStudentId === s.id ? null : s.id)}>
+                    <Ionicons name={targetStudentId === s.id ? "checkmark-circle" : "ellipse-outline"} size={18} color={targetStudentId === s.id ? "#1E3A8A" : colors.mutedForeground} />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.checkRowText, { color: colors.foreground }]}>{s.name}</Text>
                       <Text style={[styles.checkRowSub, { color: colors.mutedForeground }]}>{s.parentName} · {s.courses.join(", ")}</Text>
@@ -520,10 +520,10 @@ export default function PromoCodesPage() {
                     <Pressable onPress={() => setShowDetail(null)}><Ionicons name="close" size={24} color={colors.mutedForeground} /></Pressable>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8 }}>
-                    <Text style={[styles.detailCode, { color: colors.primary, flex: 1 }]}>{p.code}</Text>
+                    <Text style={[styles.detailCode, { color: "#1E3A8A", flex: 1 }]}>{p.code}</Text>
                     <Pressable style={[styles.copyChip, { backgroundColor: colors.muted }]} onPress={() => handleCopy(p.code)}>
-                      <Ionicons name="copy-outline" size={14} color={colors.primary} />
-                      <Text style={[styles.actionChipText, { color: colors.primary }]}>Copy</Text>
+                      <Ionicons name="copy-outline" size={14} color={"#1E3A8A"} />
+                      <Text style={[styles.actionChipText, { color: "#1E3A8A" }]}>Copy</Text>
                     </Pressable>
                   </View>
                   <Text style={[styles.detailDiscount, { color: colors.mutedForeground }]}>{formatDiscount(p)}</Text>

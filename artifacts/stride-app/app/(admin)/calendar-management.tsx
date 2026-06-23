@@ -340,7 +340,7 @@ export default function CalendarManagementScreen() {
               style={{ flexDirection: "row", alignItems: "center", gap: 5,
                 backgroundColor: "#1E3A8A", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}
             >
-              <Ionicons name="sparkles" size={14} color="#FBBF24" />
+              <Ionicons name="sparkles" size={14} color={"#FBBF24"} />
               <Text style={{ fontSize: 12, fontWeight: "700", color: "#FBBF24" }}>AI Roster</Text>
             </Pressable>
             <Pressable
@@ -358,12 +358,12 @@ export default function CalendarManagementScreen() {
               style={{ flexDirection: "row", alignItems: "center", gap: 4,
                 backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 }}
             >
-              <Ionicons name="calendar-outline" size={14} color="#1E3A8A" />
+              <Ionicons name="calendar-outline" size={14} color={"#1E3A8A"} />
               <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" }}>iCal</Text>
             </Pressable>
             <Pressable
               onPress={() => openNew()}
-              style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary,
+              style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#1E3A8A",
                 alignItems: "center", justifyContent: "center" }}
             >
               <Ionicons name="add" size={20} color="#FFF" />
@@ -404,7 +404,7 @@ export default function CalendarManagementScreen() {
 
         {/* ── Calendar grid ── */}
         {loading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
+          <ActivityIndicator style={{ marginTop: 40 }} color={"#1E3A8A"} />
         ) : (
           <View style={styles.grid}>
             {cells.map((day, i) => {
@@ -419,14 +419,14 @@ export default function CalendarManagementScreen() {
                 <Pressable
                   key={dateStr}
                   onPress={() => setSelectedDay(isSel ? null : dateStr)}
-                  style={[styles.cell, isSel && { backgroundColor: colors.primary + "22", borderRadius: 8 }]}
+                  style={[styles.cell, isSel && { backgroundColor: "#1E3A8A" + "22", borderRadius: 8 }]}
                 >
                   <View style={[styles.dayCircle,
-                    isToday && { backgroundColor: colors.primary },
+                    isToday && { backgroundColor: "#1E3A8A" },
                   ]}>
                     <Text style={[styles.dayNum,
                       { color: isToday ? "#FFF" : colors.foreground },
-                      isSel && !isToday && { color: colors.primary, fontWeight: "800" },
+                      isSel && !isToday && { color: "#1E3A8A", fontWeight: "800" },
                     ]}>{day}</Text>
                   </View>
                   {hasCourse && (
@@ -446,7 +446,7 @@ export default function CalendarManagementScreen() {
         {/* ── Legend ── */}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 8, marginBottom: 4, paddingHorizontal: 2 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#FBBF24" }} />
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.secondary }} />
             <Text style={{ fontSize: 10, color: colors.mutedForeground }}>Recurring course</Text>
           </View>
           {EVENT_TYPES.map(et => (
@@ -465,10 +465,10 @@ export default function CalendarManagementScreen() {
               <Pressable
                 onPress={() => openNew(selectedDay)}
                 style={{ flexDirection: "row", alignItems: "center", gap: 4,
-                  backgroundColor: colors.primary + "18", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}
+                  backgroundColor: "#1E3A8A" + "18", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}
               >
-                <Ionicons name="add-circle-outline" size={14} color={colors.primary} />
-                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Add Event</Text>
+                <Ionicons name="add-circle-outline" size={14} color={"#1E3A8A"} />
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" }}>Add Event</Text>
               </Pressable>
             </View>
 
@@ -481,7 +481,7 @@ export default function CalendarManagementScreen() {
                 const interval = (c as ApiScheduledCourse & { week_interval?: number }).week_interval ?? 1;
                 const freqLabel = interval === 1 ? "Weekly" : interval === 2 ? "Bi-weekly" : "Monthly";
                 return (
-                  <View key={`course-${c.id}`} style={[styles.eventRow, { backgroundColor: "#FBBF2415" }]}>
+                  <View key={`course-${c.id}`} style={[styles.eventRow, { backgroundColor: ("#FBBF24" + "15") }]}>
                     <View style={[styles.typeDot, { backgroundColor: "#FBBF24" }]} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground }}>{discName}</Text>
@@ -489,7 +489,7 @@ export default function CalendarManagementScreen() {
                         {fmtTime(c.start_time)}–{fmtTime(c.end_time)} · {freqLabel} · {c.skill_level}
                       </Text>
                     </View>
-                    <View style={{ backgroundColor: "#FBBF2420", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <View style={{ backgroundColor: ("#FBBF24" + "20"), borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
                       <Text style={{ fontSize: 10, fontWeight: "700", color: "#B45309" }}>Recurring</Text>
                     </View>
                   </View>
@@ -527,7 +527,7 @@ export default function CalendarManagementScreen() {
                       <Ionicons name="pencil-outline" size={16} color={colors.mutedForeground} />
                     </Pressable>
                     <Pressable onPress={() => void sendReminders(evt)}>
-                      <Ionicons name="notifications-outline" size={16} color={colors.primary} />
+                      <Ionicons name="notifications-outline" size={16} color={"#1E3A8A"} />
                     </Pressable>
                     <Pressable onPress={() => void deleteEvent(evt)}>
                       <Ionicons name="trash-outline" size={16} color="#EF4444" />
@@ -577,7 +577,7 @@ export default function CalendarManagementScreen() {
                   <Ionicons name="pencil-outline" size={16} color={colors.mutedForeground} />
                 </Pressable>
                 <Pressable onPress={() => void sendReminders(evt)}>
-                  <Ionicons name="notifications-outline" size={16} color={colors.primary} />
+                  <Ionicons name="notifications-outline" size={16} color={"#1E3A8A"} />
                 </Pressable>
                 <Pressable onPress={() => void deleteEvent(evt)}>
                   <Ionicons name="trash-outline" size={16} color="#EF4444" />
@@ -602,8 +602,8 @@ export default function CalendarManagementScreen() {
             </Text>
             <Pressable onPress={() => void saveEvent()} disabled={saving}>
               {saving
-                ? <ActivityIndicator size="small" color={colors.primary} />
-                : <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primary }}>Save</Text>}
+                ? <ActivityIndicator size="small" color={"#1E3A8A"} />
+                : <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>Save</Text>}
             </Pressable>
           </View>
 
@@ -702,7 +702,7 @@ export default function CalendarManagementScreen() {
                     key={a.value}
                     onPress={() => setForm(f => ({ ...f, target_audience: a.value }))}
                     style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center",
-                      backgroundColor: form.target_audience === a.value ? colors.primary : colors.muted }}
+                      backgroundColor: form.target_audience === a.value ? "#1E3A8A" : colors.muted }}
                   >
                     <Text style={{ fontSize: 13, fontWeight: "600",
                       color: form.target_audience === a.value ? "#FFF" : colors.mutedForeground }}>
@@ -808,8 +808,8 @@ export default function CalendarManagementScreen() {
             {/* ══ ROSTER TAB ══ */}
             {activeRosterTab === "roster" && (<>
             {/* Intro banner */}
-            <View style={{ backgroundColor: "#1E3A8A15", borderRadius: 14, padding: 16, flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
-              <Ionicons name="sparkles" size={22} color="#1E3A8A" />
+            <View style={{ backgroundColor: ("#1E3A8A" + "15"), borderRadius: 14, padding: 16, flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
+              <Ionicons name="sparkles" size={22} color={"#1E3A8A"} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A", marginBottom: 4 }}>AI-powered scheduling</Text>
                 <Text style={{ fontSize: 13, color: "#1E3A8A", lineHeight: 18 }}>
@@ -860,7 +860,7 @@ export default function CalendarManagementScreen() {
             >
               {generating
                 ? <ActivityIndicator size="small" color="#FFF" />
-                : <Ionicons name="sparkles" size={16} color="#FBBF24" />}
+                : <Ionicons name="sparkles" size={16} color={"#FBBF24"} />}
               <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFF" }}>
                 {generating ? "Generating…" : "Generate Roster"}
               </Text>
@@ -901,7 +901,7 @@ export default function CalendarManagementScreen() {
                         onPress={() => void acceptSuggestion(idx, sugg)}
                         disabled={isAccepted || isAccepting}
                         style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
-                          backgroundColor: isAccepted ? "#10B981" : isAccepting ? colors.muted : colors.primary }}
+                          backgroundColor: isAccepted ? "#10B981" : isAccepting ? colors.muted : "#1E3A8A" }}
                       >
                         {isAccepting
                           ? <ActivityIndicator size="small" color="#FFF" />
@@ -930,7 +930,7 @@ export default function CalendarManagementScreen() {
             {/* ══ WAITLIST REORG TAB ══ */}
             {activeRosterTab === "waitlist" && (<>
               {/* Banner */}
-              <View style={{ backgroundColor: "#FBBF2415", borderRadius: 14, padding: 16, flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
+              <View style={{ backgroundColor: ("#FBBF24" + "15"), borderRadius: 14, padding: 16, flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
                 <Ionicons name="people" size={22} color="#D97706" />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 14, fontWeight: "700", color: "#D97706", marginBottom: 4 }}>AI Waitlist Optimiser</Text>
@@ -959,8 +959,8 @@ export default function CalendarManagementScreen() {
                   flexDirection: "row", justifyContent: "center", gap: 8 }}
               >
                 {waitlistLoading
-                  ? <ActivityIndicator size="small" color="#1E3A8A" />
-                  : <Ionicons name="analytics-outline" size={16} color="#1E3A8A" />}
+                  ? <ActivityIndicator size="small" color={"#1E3A8A"} />
+                  : <Ionicons name="analytics-outline" size={16} color={"#1E3A8A"} />}
                 <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E3A8A" }}>
                   {waitlistLoading ? "Analysing…" : "Analyse & Suggest Slots"}
                 </Text>

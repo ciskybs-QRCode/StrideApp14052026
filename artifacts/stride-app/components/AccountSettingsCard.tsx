@@ -107,8 +107,8 @@ export function AccountSettingsCard() {
       icon: "mail-outline",
       label: "Change Email",
       sub: user?.email,
-      iconBg: "#1E3A8A12",
-      iconColor: colors.primary,
+      iconBg: ("#1E3A8A" + "12"),
+      iconColor: "#1E3A8A",
       textColor: colors.foreground,
       onPress: () => { setNewEmail(user?.email ?? ""); setShowEmail(true); },
     },
@@ -116,8 +116,8 @@ export function AccountSettingsCard() {
       icon: "lock-closed-outline",
       label: "Change Password",
       sub: undefined,
-      iconBg: "#1E3A8A12",
-      iconColor: colors.primary,
+      iconBg: ("#1E3A8A" + "12"),
+      iconColor: "#1E3A8A",
       textColor: colors.foreground,
       onPress: () => { setPwCurrent(""); setPwNew(""); setPwConfirm(""); setShowPassword(true); },
     },
@@ -125,8 +125,8 @@ export function AccountSettingsCard() {
       icon: "log-out-outline",
       label: "Log Out",
       sub: undefined,
-      iconBg: "#1E3A8A12",
-      iconColor: colors.primary,
+      iconBg: ("#1E3A8A" + "12"),
+      iconColor: "#1E3A8A",
       textColor: colors.foreground,
       onPress: () => setShowLogout(true),
     },
@@ -134,8 +134,8 @@ export function AccountSettingsCard() {
       icon: "trash-outline",
       label: "Delete Account",
       sub: undefined,
-      iconBg: "#1E3A8A12",
-      iconColor: colors.primary,
+      iconBg: ("#1E3A8A" + "12"),
+      iconColor: "#1E3A8A",
       textColor: "#EF4444",
       onPress: () => { setDeleteText(""); setShowDelete(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); },
     },
@@ -187,7 +187,7 @@ export function AccountSettingsCard() {
           <View style={[styles.sheet, { backgroundColor: colors.card }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.modalTitleRow}>
-              <View style={[styles.modalIconBox, { backgroundColor: "#1E3A8A12" }]}>
+              <View style={[styles.modalIconBox, { backgroundColor: (colors.primary + "12") }]}>
                 <Ionicons name="mail" size={20} color={colors.primary} />
               </View>
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Change Email</Text>
@@ -229,7 +229,7 @@ export function AccountSettingsCard() {
           <View style={[styles.sheet, { backgroundColor: colors.card }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.modalTitleRow}>
-              <View style={[styles.modalIconBox, { backgroundColor: "#1E3A8A12" }]}>
+              <View style={[styles.modalIconBox, { backgroundColor: (colors.primary + "12") }]}>
                 <Ionicons name="lock-closed" size={20} color={colors.primary} />
               </View>
               <Text style={[styles.modalTitle, { color: colors.primary }]}>Change Password</Text>
@@ -246,7 +246,7 @@ export function AccountSettingsCard() {
               const mismatch = i > 0 && pwNew.length > 0 && pwConfirm.length > 0 && pwNew !== pwConfirm;
               return (
                 <View key={f.label} style={{ marginBottom: 14 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>{f.label}</Text>
+                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>{f.label}</Text>
                   <View style={[styles.pwRow, { borderColor: mismatch ? "#EF4444" : colors.border, backgroundColor: colors.background }]}>
                     <Ionicons name="lock-closed-outline" size={16} color={colors.mutedForeground} />
                     <TextInput
@@ -290,7 +290,7 @@ export function AccountSettingsCard() {
       >
         <View style={styles.centreOverlay}>
           <View style={[styles.centreCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.centreIconBox, { backgroundColor: "#1E3A8A12" }]}>
+            <View style={[styles.centreIconBox, { backgroundColor: (colors.primary + "12") }]}>
               <Ionicons name="log-out-outline" size={28} color={colors.primary} />
             </View>
             <Text style={[styles.modalTitle, { color: colors.foreground, textAlign: "center" }]}>Log Out?</Text>
@@ -324,7 +324,7 @@ export function AccountSettingsCard() {
             showsVerticalScrollIndicator={false}
           >
             <View style={[styles.centreCard, { backgroundColor: colors.card }]}>
-              <View style={[styles.centreIconBox, { backgroundColor: "#1E3A8A12" }]}>
+              <View style={[styles.centreIconBox, { backgroundColor: (colors.primary + "12") }]}>
                 <Ionicons name="trash-outline" size={28} color="#EF4444" />
               </View>
               <Text style={[styles.modalTitle, { color: "#EF4444", textAlign: "center" }]}>
@@ -348,7 +348,7 @@ export function AccountSettingsCard() {
                 { icon: "calendar-outline"      as const, text: "All bookings will be cancelled" },
               ].map(item => (
                 <View key={item.text} style={[styles.consequenceRow, { borderColor: colors.border }]}>
-                  <View style={[styles.consequenceIcon, { backgroundColor: "#1E3A8A12" }]}>
+                  <View style={[styles.consequenceIcon, { backgroundColor: ("#1E3A8A" + "12") }]}>
                     <Ionicons name={item.icon} size={14} color="#EF4444" />
                   </View>
                   <Text style={[styles.consequenceText, { color: colors.foreground }]}>{item.text}</Text>

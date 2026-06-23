@@ -39,7 +39,7 @@ export default function FinanceHub() {
           title="Association Expenses"
           description="Manage all outgoing payments, recurring costs and supplier records"
           iconBg="#EFF6FF"
-          iconColor="#1E3A8A"
+          iconColor={colors.primary}
           onPress={() => router.push("/(admin)/expenses" as never)}
         />
         <HubCard
@@ -106,7 +106,7 @@ export default function FinanceHub() {
             title="Marketplace Revenue"
             description="Commission earnings and product performance"
             iconBg="#DBEAFE"
-            iconColor="#1E3A8A"
+            iconColor={"#1E3A8A"}
             onPress={() => router.push("/(admin)/marketplace" as never)}
           />
         )}

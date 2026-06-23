@@ -37,6 +37,7 @@ import {
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <View style={styles.sectionHeader}>
       <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{title}</Text>
@@ -59,23 +60,24 @@ function OptionCard<T extends string>({
   onPress: (v: T) => void;
 }) {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <Pressable
       onPress={() => { Haptics.selectionAsync(); onPress(value); }}
       style={[
         styles.optionCard,
         {
-          borderColor: selected ? colors.primary : colors.border,
-          backgroundColor: selected ? `${colors.primary}10` : colors.card,
+          borderColor: selected ? "#1E3A8A" : colors.border,
+          backgroundColor: selected ? `"#1E3A8A"10` : colors.card,
         },
       ]}
     >
       <View style={styles.optionCardRow}>
         <View style={[
           styles.optionRadio,
-          { borderColor: selected ? colors.primary : colors.border },
+          { borderColor: selected ? "#1E3A8A" : colors.border },
         ]}>
-          {selected && <View style={[styles.optionRadioInner, { backgroundColor: colors.primary }]} />}
+          {selected && <View style={[styles.optionRadioInner, { backgroundColor: "#1E3A8A" }]} />}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.optionLabel, { color: colors.foreground }]}>{label}</Text>
@@ -103,8 +105,9 @@ function PickerModal<T extends string | number>({
   onSelect: (v: T) => void;
   onClose: () => void;
 }) {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.modalBackdrop} onPress={onClose} />
@@ -120,7 +123,7 @@ function PickerModal<T extends string | number>({
             >
               <Text style={[styles.modalItemText, { color: colors.foreground }]}>{opt.label}</Text>
               {opt.value === selected && (
-                <Ionicons name="checkmark" size={18} color={colors.primary} />
+                <Ionicons name="checkmark" size={18} color={"#1E3A8A"} />
               )}
             </Pressable>
           ))}
@@ -133,8 +136,9 @@ function PickerModal<T extends string | number>({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function FeeSettingsScreen() {
-  const router   = useRouter();
   const colors   = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
+  const router   = useRouter();
   const insets   = useSafeAreaInsets();
   const cur      = useOrgCurrency();
 
@@ -229,7 +233,7 @@ export default function FeeSettingsScreen() {
   if (loading) {
     return (
       <View style={[styles.loader, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={"#1E3A8A"} />
       </View>
     );
   }
@@ -352,9 +356,9 @@ export default function FeeSettingsScreen() {
             : "What a new member pays when they join part-way through a cycle."}
         />
         {isJoiningDateBasis ? (
-          <View style={[styles.infoBox, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
-            <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
-            <Text style={[styles.infoText, { color: colors.primary }]}>
+          <View style={[styles.infoBox, { backgroundColor: `"#1E3A8A"12`, borderColor: `"#1E3A8A"30` }]}>
+            <Ionicons name="information-circle-outline" size={18} color={"#1E3A8A"} />
+            <Text style={[styles.infoText, { color: "#1E3A8A" }]}>
               Since each member's cycle starts on their own joining date, there is no mid-cycle
               scenario. The member always pays the full amount from day one.
             </Text>
@@ -453,7 +457,7 @@ export default function FeeSettingsScreen() {
           disabled={saving}
           style={({ pressed }) => [
             styles.saveBtn,
-            { backgroundColor: saved ? "#10B981" : colors.primary, opacity: pressed ? 0.88 : 1 },
+            { backgroundColor: saved ? "#10B981" : "#1E3A8A", opacity: pressed ? 0.88 : 1 },
           ]}
         >
           {saving ? (
@@ -498,7 +502,7 @@ export default function FeeSettingsScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   loader:    { flex: 1, alignItems: "center", justifyContent: "center" },
   scroll:    { paddingHorizontal: 20, gap: 4 },
@@ -570,7 +574,7 @@ const styles = StyleSheet.create({
   previewRow:  { flexDirection: "row", alignItems: "center", gap: 14 },
   previewIcon: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   previewLabel:  { fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: "600", letterSpacing: 0.5 },
-  previewAmount: { fontSize: 28, fontWeight: "900", color: "#FBBF24", marginTop: 2 },
+  previewAmount: { fontSize: 28, fontWeight: "900", color: secondary, marginTop: 2 },
   previewDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.15)", marginVertical: 16 },
   previewGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   previewCell:      { width: "45%", minWidth: 120 },

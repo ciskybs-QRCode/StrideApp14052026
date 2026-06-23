@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
+import { useColors } from "@/hooks/useColors";
 import {
   getSupportTickets,
   submitSupportTicket,

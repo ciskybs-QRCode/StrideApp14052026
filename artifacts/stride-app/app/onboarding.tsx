@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { SignaturePad } from "@/components/SignaturePad";
 import { api, type ApiDocument } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 // ── Country / dial-code list ───────────────────────────────────────────────────
 interface Country {
@@ -132,6 +133,8 @@ function Field({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function OnboardingScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { user, updateUser } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -658,7 +661,7 @@ const fieldSt = StyleSheet.create({
 });
 
 // ── Main styles ───────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -697,7 +700,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     gap: 14,
-    shadowColor: "#1E3A8A",
+    shadowColor: primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 10,

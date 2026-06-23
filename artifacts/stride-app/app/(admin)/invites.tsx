@@ -142,7 +142,7 @@ export default function AdminInvitesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => { setRefreshing(true); void load(); }}
-            tintColor={colors.primary}
+            tintColor={"#1E3A8A"}
           />
         }
       >
@@ -173,10 +173,10 @@ export default function AdminInvitesScreen() {
           {(["parent", "operator", "admin"] as const).map(r => (
             <Pressable
               key={r}
-              style={[s.roleChip, { borderColor: colors.primary, backgroundColor: role === r ? colors.primary : "transparent" }]}
+              style={[s.roleChip, { borderColor: "#1E3A8A", backgroundColor: role === r ? "#1E3A8A" : "transparent" }]}
               onPress={() => setRole(r)}
             >
-              <Text style={[s.roleChipText, { color: role === r ? "#fff" : colors.primary }]}>
+              <Text style={[s.roleChipText, { color: role === r ? "#fff" : "#1E3A8A" }]}>
                 {r === "parent" ? "Member" : r === "operator" ? "Operator" : "Admin"}
               </Text>
             </Pressable>
@@ -202,7 +202,7 @@ export default function AdminInvitesScreen() {
               key={String(d)}
               style={[s.optChip, {
                 borderColor: colors.border,
-                backgroundColor: expiresInDays === d ? colors.primary : colors.background,
+                backgroundColor: expiresInDays === d ? "#1E3A8A" : colors.background,
               }]}
               onPress={() => setExpiry(d)}
             >
@@ -221,7 +221,7 @@ export default function AdminInvitesScreen() {
               key={String(n)}
               style={[s.optChip, {
                 borderColor: colors.border,
-                backgroundColor: maxUses === n ? colors.primary : colors.background,
+                backgroundColor: maxUses === n ? "#1E3A8A" : colors.background,
               }]}
               onPress={() => setMaxUses(n)}
             >
@@ -235,7 +235,7 @@ export default function AdminInvitesScreen() {
         <Pressable
           style={({ pressed }) => [
             s.generateBtn,
-            { backgroundColor: colors.primary, opacity: generating ? 0.6 : pressed ? 0.85 : 1 },
+            { backgroundColor: "#1E3A8A", opacity: generating ? 0.6 : pressed ? 0.85 : 1 },
           ]}
           onPress={handleGenerate}
           disabled={generating}
@@ -250,11 +250,11 @@ export default function AdminInvitesScreen() {
 
         {/* Last generated code */}
         {lastCode && (
-          <View style={[s.lastCodeBox, { backgroundColor: `${colors.primary}10`, borderColor: colors.primary }]}>
+          <View style={[s.lastCodeBox, { backgroundColor: `"#1E3A8A"10`, borderColor: "#1E3A8A" }]}>
             <Text style={[s.lastCodeLabel, { color: colors.mutedForeground }]}>New invite code</Text>
-            <Text style={[s.lastCodeValue, { color: colors.primary }]}>{lastCode.code}</Text>
+            <Text style={[s.lastCodeValue, { color: "#1E3A8A" }]}>{lastCode.code}</Text>
             <Pressable
-              style={[s.copyBtn, { backgroundColor: colors.primary }]}
+              style={[s.copyBtn, { backgroundColor: "#1E3A8A" }]}
               onPress={() => void copyCode(lastCode.code)}
             >
               <Ionicons name="copy-outline" size={14} color="#fff" />
@@ -271,7 +271,7 @@ export default function AdminInvitesScreen() {
         </Text>
 
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 12 }} />
+          <ActivityIndicator color={"#1E3A8A"} style={{ marginTop: 12 }} />
         ) : codes.length === 0 ? (
           <Text style={[s.empty, { color: colors.mutedForeground }]}>No active codes yet.</Text>
         ) : (
@@ -283,8 +283,8 @@ export default function AdminInvitesScreen() {
               <View style={{ flex: 1 }}>
                 <View style={s.codeRowHead}>
                   <Text style={[s.codeVal, { color: colors.foreground }]}>{code.code}</Text>
-                  <View style={[s.roleBadge, { backgroundColor: `${colors.primary}15` }]}>
-                    <Text style={[s.roleBadgeText, { color: colors.primary }]}>
+                  <View style={[s.roleBadge, { backgroundColor: `"#1E3A8A"15` }]}>
+                    <Text style={[s.roleBadgeText, { color: "#1E3A8A" }]}>
                       {code.role === "parent" ? "Member" : code.role}
                     </Text>
                   </View>
@@ -297,7 +297,7 @@ export default function AdminInvitesScreen() {
               </View>
               <View style={s.codeActions}>
                 <Pressable onPress={() => void copyCode(code.code)} hitSlop={8}>
-                  <Ionicons name="copy-outline" size={18} color={colors.primary} />
+                  <Ionicons name="copy-outline" size={18} color={"#1E3A8A"} />
                 </Pressable>
                 <Pressable onPress={() => handleRevoke(code)} hitSlop={8}>
                   <Ionicons name="trash-outline" size={18} color="#EF4444" />

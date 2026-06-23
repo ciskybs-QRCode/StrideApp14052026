@@ -17,8 +17,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { api, setToken } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 export default function JoinScreen() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { updateUser } = useAuth();
@@ -32,8 +34,8 @@ export default function JoinScreen() {
 
   const orgSlug   = params.org      ?? "";
   const assocName = params.brand  ? decodeURIComponent(params.brand) : "the Association";
-  const primary   = params.primary  ? decodeURIComponent(params.primary)   : "#1E3A8A";
-  const secondary = params.secondary ? decodeURIComponent(params.secondary) : "#FBBF24";
+  const primary   = params.primary  ? decodeURIComponent(params.primary)   : colors.primary;
+  const secondary = params.secondary ? decodeURIComponent(params.secondary) : colors.secondary;
 
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");

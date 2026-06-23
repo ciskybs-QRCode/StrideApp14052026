@@ -89,7 +89,7 @@ export default function MyAssociationsScreen() {
 
       {loading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={"#1E3A8A"} />
         </View>
       ) : (
         <ScrollView
@@ -98,7 +98,7 @@ export default function MyAssociationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); void load(); }}
-              tintColor={colors.primary}
+              tintColor={"#1E3A8A"}
             />
           }
         >
@@ -110,7 +110,7 @@ export default function MyAssociationsScreen() {
                 Join an association using an invite code or by scanning an org QR code.
               </Text>
               <Pressable
-                style={[s.joinBtn, { backgroundColor: colors.primary }]}
+                style={[s.joinBtn, { backgroundColor: "#1E3A8A" }]}
                 onPress={() => router.push("/join-org" as never)}
               >
                 <Ionicons name="add-circle-outline" size={18} color="#fff" />
@@ -123,8 +123,8 @@ export default function MyAssociationsScreen() {
                 <View key={org.orgId} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   {/* Org name + join date */}
                   <View style={s.cardHead}>
-                    <View style={[s.orgIcon, { backgroundColor: `${colors.primary}15` }]}>
-                      <Ionicons name="business" size={20} color={colors.primary} />
+                    <View style={[s.orgIcon, { backgroundColor: `"#1E3A8A"15` }]}>
+                      <Ionicons name="business" size={20} color={"#1E3A8A"} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[s.orgName, { color: colors.foreground }]} numberOfLines={1}>
@@ -184,8 +184,8 @@ export default function MyAssociationsScreen() {
                 style={[s.addRow, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push("/join-org" as never)}
               >
-                <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
-                <Text style={[s.addRowText, { color: colors.primary }]}>Join Another Association</Text>
+                <Ionicons name="add-circle-outline" size={22} color={"#1E3A8A"} />
+                <Text style={[s.addRowText, { color: "#1E3A8A" }]}>Join Another Association</Text>
               </Pressable>
             </>
           )}

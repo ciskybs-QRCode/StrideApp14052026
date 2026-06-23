@@ -153,7 +153,7 @@ export default function PrivateLessonsSettings() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Private Lessons" onBack={() => router.push("/(admin)/settings" as never)} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={"#1E3A8A"} />
         </View>
       </View>
     );
@@ -230,17 +230,17 @@ export default function PrivateLessonsSettings() {
                 <Switch
                   value={cfg.enabled}
                   onValueChange={v => toggleConfig(cfg, v)}
-                  trackColor={{ true: colors.primary, false: colors.border }}
+                  trackColor={{ true: "#1E3A8A", false: colors.border }}
                   thumbColor="#FFF"
                   style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }], marginLeft: -6 }}
                 />
               </View>
-              <Text style={[styles.configPrice, { color: colors.primary, flex: 1 }]}>{cents(cfg.member_price_cents, cur)}</Text>
+              <Text style={[styles.configPrice, { color: "#1E3A8A", flex: 1 }]}>{cents(cfg.member_price_cents, cur)}</Text>
               <Text style={[styles.configPrice, { color: "#059669", flex: 1 }]}>{cents(cfg.operator_payout_cents, cur)}</Text>
               <Text style={[styles.configPrice, { color: colors.mutedForeground, flex: 1 }]}>{cfg.duration_minutes}m</Text>
               <View style={{ flexDirection: "row", gap: 2, width: 60, justifyContent: "flex-end" }}>
                 <Pressable onPress={() => openEdit(cfg)} style={styles.iconBtn}>
-                  <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+                  <Ionicons name="pencil-outline" size={16} color={"#1E3A8A"} />
                 </Pressable>
                 <Pressable onPress={() => deleteConfig(cfg)} style={styles.iconBtn}>
                   <Ionicons name="trash-outline" size={16} color="#EF4444" />
@@ -261,12 +261,12 @@ export default function PrivateLessonsSettings() {
 
           {/* ── FORM ── */}
           {isForm && (
-            <View style={[styles.form, { backgroundColor: "#F0F4FF", borderColor: colors.primary }]}>
-              <Text style={[styles.formTitle, { color: colors.primary }]}>
+            <View style={[styles.form, { backgroundColor: "#F0F4FF", borderColor: "#1E3A8A" }]}>
+              <Text style={[styles.formTitle, { color: "#1E3A8A" }]}>
                 {editRow ? "Edit Lesson Type" : "New Lesson Type"}
               </Text>
 
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Discipline Name *</Text>
+              <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Discipline Name *</Text>
               <TextInput
                 style={[styles.input, { borderColor: colors.border, color: colors.foreground }]}
                 value={fName} onChangeText={setFName}
@@ -277,7 +277,7 @@ export default function PrivateLessonsSettings() {
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>Member price ({cur || "€"})</Text>
+                  <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Member price ({cur || "€"})</Text>
                   <TextInput
                     style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
                     value={fMember} onChangeText={setFMember}
@@ -308,8 +308,8 @@ export default function PrivateLessonsSettings() {
               {/* Margin preview */}
               {parseCents(fMember) > 0 && parseCents(fOperator) >= 0 && (
                 <View style={[styles.marginPreview, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
-                  <Ionicons name="pie-chart-outline" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 12, color: colors.primary }}>
+                  <Ionicons name="pie-chart-outline" size={14} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 12, color: "#1E3A8A" }}>
                     Association margin:{" "}
                     <Text style={{ fontWeight: "800" }}>
                       {cents(Math.max(0, parseCents(fMember) - parseCents(fOperator)), cur)}
@@ -327,7 +327,7 @@ export default function PrivateLessonsSettings() {
                   <Text style={[styles.btnText, { color: colors.mutedForeground }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.btn, { flex: 1, backgroundColor: colors.primary }]}
+                  style={[styles.btn, { flex: 1, backgroundColor: "#1E3A8A" }]}
                   onPress={saveConfig} disabled={saving}>
                   {saving
                     ? <ActivityIndicator size="small" color="#FFF" />
@@ -340,10 +340,10 @@ export default function PrivateLessonsSettings() {
 
           {!isForm && (
             <Pressable
-              style={[styles.btn, { backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.primary, borderStyle: "dashed", marginTop: 10 }]}
+              style={[styles.btn, { backgroundColor: colors.background, borderWidth: 1.5, borderColor: "#1E3A8A", borderStyle: "dashed", marginTop: 10 }]}
               onPress={openAdd}>
-              <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
-              <Text style={[styles.btnText, { color: colors.primary }]}>Add Lesson Type</Text>
+              <Ionicons name="add-circle-outline" size={18} color={"#1E3A8A"} />
+              <Text style={[styles.btnText, { color: "#1E3A8A" }]}>Add Lesson Type</Text>
             </Pressable>
           )}
         </View>

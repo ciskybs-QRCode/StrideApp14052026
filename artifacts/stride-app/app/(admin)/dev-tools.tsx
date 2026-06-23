@@ -170,6 +170,7 @@ function timeAgo(iso: string): string {
 // ── Section header ─────────────────────────────────────────────────────────────
 
 function SectionLabel({ label, colors }: { label: string; colors: ReturnType<typeof useColors> }) {
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{label}</Text>
   );
@@ -190,6 +191,7 @@ function SandboxCard({
   onReset: () => void;
   colors: ReturnType<typeof useColors>;
 }) {
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <View style={[styles.sandboxCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       {/* Status row */}
@@ -221,7 +223,7 @@ function SandboxCard({
             { label: "Courses",  value: status.courseCount },
           ].map(c => (
             <View key={c.label} style={[styles.countChip, { backgroundColor: colors.background }]}>
-              <Text style={[styles.countNum, { color: colors.primary }]}>{c.value}</Text>
+              <Text style={[styles.countNum, { color: "#1E3A8A" }]}>{c.value}</Text>
               <Text style={[styles.countLbl, { color: colors.mutedForeground }]}>{c.label}</Text>
             </View>
           ))}
@@ -277,6 +279,7 @@ function TriggerBtn({
   onPress: () => void;
   colors: ReturnType<typeof useColors>;
 }) {
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <Pressable
       style={({ pressed }) => [
@@ -310,6 +313,7 @@ function TriggerBtn({
 // ── Event row ─────────────────────────────────────────────────────────────────
 
 function EventRow({ event, colors }: { event: LogEvent; colors: ReturnType<typeof useColors> }) {
+  const styles = make_styles(colors.primary, colors.secondary);
   const tbadge = typeBadgeCfg(event.type);
   const chCfg  = channelCfg(event.channel);
   return (
@@ -351,6 +355,7 @@ function EventRow({ event, colors }: { event: LogEvent; colors: ReturnType<typeo
 
 export default function DevToolsScreen() {
   const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
 
@@ -561,7 +566,7 @@ export default function DevToolsScreen() {
                 <RefreshControl
                   refreshing={logRefreshing}
                   onRefresh={() => fetchLog(true)}
-                  tintColor={colors.primary}
+                  tintColor={"#1E3A8A"}
                 />
               }
             />
@@ -578,7 +583,7 @@ export default function DevToolsScreen() {
             { icon: "lock-closed-outline" as const, text: "All /dev/* endpoints return 403 in production. The screen itself renders a hard block outside __DEV__." },
           ].map((item, i) => (
             <View key={i} style={[styles.auditRow, i < 3 ? { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth } : {}]}>
-              <Ionicons name={item.icon} size={16} color={colors.primary} style={styles.auditIcon} />
+              <Ionicons name={item.icon} size={16} color={"#1E3A8A"} style={styles.auditIcon} />
               <Text style={[styles.auditText, { color: colors.mutedForeground }]}>{item.text}</Text>
             </View>
           ))}
@@ -594,7 +599,7 @@ export default function DevToolsScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:   { flex: 1 },
   scroll:      { paddingHorizontal: 16, paddingTop: 8 },
 
@@ -640,7 +645,7 @@ const styles = StyleSheet.create({
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
     gap: 8, borderRadius: 12, paddingVertical: 12,
   },
-  seedBtn:    { backgroundColor: "#1E3A8A" },
+  seedBtn:    { backgroundColor: primary },
   resetBtn:   { backgroundColor: "transparent", borderWidth: 1 },
   actionBtnText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
 

@@ -21,6 +21,7 @@ const FALLBACK_DOC_IDS  = ["ld1", "ld2", "ld3", "ld4"];
 
 function DocReminderModal() {
   const colors  = useColors();
+  const ss = make_ss(colors.primary, colors.secondary);
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
   const { legalAdminDocs } = useAppData();
@@ -153,6 +154,8 @@ const dr = StyleSheet.create({
 // ── Account Suspension Hard-Lockout ───────────────────────────────────────────
 
 function SuspensionScreen() {
+  const colors = useColors();
+  const ss = make_ss(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const { refresh } = useBillingStatus();
 
@@ -161,7 +164,7 @@ function SuspensionScreen() {
       <ScrollView contentContainerStyle={ss.scroll} showsVerticalScrollIndicator={false}>
         {/* Lock icon */}
         <View style={ss.iconRing}>
-          <Ionicons name="lock-closed" size={52} color="#FBBF24" />
+          <Ionicons name="lock-closed" size={52} color={colors.secondary} />
         </View>
 
         <Text style={ss.eyebrow}>STRIDE PLATFORM</Text>
@@ -197,7 +200,7 @@ function SuspensionScreen() {
             )
           }
         >
-          <Ionicons name="mail-outline" size={18} color="#1E3A8A" />
+          <Ionicons name="mail-outline" size={18} color={colors.primary} />
           <Text style={ss.ctaText}>Contact Stride to Reactivate</Text>
         </Pressable>
 
@@ -212,8 +215,8 @@ function SuspensionScreen() {
   );
 }
 
-const ss = StyleSheet.create({
-  container:     { flex: 1, backgroundColor: "#1E3A8A" },
+const make_ss = (primary: string, secondary: string) => StyleSheet.create({
+  container:     { flex: 1, backgroundColor: primary },
   scroll:        { paddingHorizontal: 32, alignItems: "center", paddingTop: 20 },
   iconRing:      {
     width: 108, height: 108, borderRadius: 54,
@@ -221,24 +224,24 @@ const ss = StyleSheet.create({
     backgroundColor: "rgba(251,191,36,0.08)",
     alignItems: "center", justifyContent: "center", marginBottom: 24,
   },
-  eyebrow:  { fontSize: 11, fontWeight: "800", letterSpacing: 2.5, color: "#FBBF24", marginBottom: 12 },
+  eyebrow:  { fontSize: 11, fontWeight: "800", letterSpacing: 2.5, color: secondary, marginBottom: 12 },
   title:    { fontSize: 36, fontWeight: "900", color: "#FFF", textAlign: "center", lineHeight: 42, marginBottom: 16 },
-  divider:  { width: 48, height: 3, backgroundColor: "#FBBF24", borderRadius: 2, marginBottom: 16 },
+  divider:  { width: 48, height: 3, backgroundColor: secondary, borderRadius: 2, marginBottom: 16 },
   message:  { fontSize: 14, color: "rgba(255,255,255,0.72)", textAlign: "center", lineHeight: 22, marginBottom: 24 },
   tiersCard: {
     backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 16, padding: 16,
     width: "100%", marginBottom: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
   },
-  tiersTitle:    { fontSize: 11, fontWeight: "800", letterSpacing: 1, color: "#FBBF24", marginBottom: 10 },
+  tiersTitle:    { fontSize: 11, fontWeight: "800", letterSpacing: 1, color: secondary, marginBottom: 10 },
   tierRow:       { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
   tierLabel:     { fontSize: 13, color: "rgba(255,255,255,0.75)" },
   tierRate:      { fontSize: 13, fontWeight: "700", color: "#FFF" },
   tiersFreeNote: { fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 8, textAlign: "center" },
   ctaBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: "#FBBF24", borderRadius: 16, paddingVertical: 16, width: "100%", marginBottom: 12,
+    backgroundColor: secondary, borderRadius: 16, paddingVertical: 16, width: "100%", marginBottom: 12,
   },
-  ctaText:   { color: "#1E3A8A", fontSize: 15, fontWeight: "900" },
+  ctaText:   { color: primary, fontSize: 15, fontWeight: "900" },
   retryBtn:  { paddingVertical: 12 },
   retryText: { color: "rgba(255,255,255,0.55)", fontSize: 13 },
 });
@@ -246,6 +249,7 @@ const ss = StyleSheet.create({
 // ── Settings tab icon ─────────────────────────────────────────────────────────
 
 function SettingsTabIcon({ color, size }: { color: string; size: number }) {
+  const colors = useColors();
   const { hasUnreadInvoices } = useUnread();
   return (
     <View style={{ position: "relative" }}>
@@ -280,7 +284,7 @@ export default function AdminTabLayout() {
     <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: "#1E3A8A",
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {

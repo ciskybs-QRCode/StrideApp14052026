@@ -11,8 +11,11 @@ import {
   getOwnerSettings, updateOwnerEmail, updateOwnerPassword, setToken,
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 
 export default function OwnerSettingsScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { user, isOwner } = useAuth();
 
   if (!isOwner()) return <Redirect href="/(super_admin)/dashboard" />;
@@ -81,7 +84,7 @@ export default function OwnerSettingsScreen() {
 
         {/* Owner badge */}
         <View style={styles.ownerBadge}>
-          <Ionicons name="shield-checkmark" size={16} color="#1E3A8A" />
+          <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
           <Text style={styles.ownerBadgeText}>Platform Owner — {ownerEmail}</Text>
         </View>
 
@@ -171,18 +174,18 @@ export default function OwnerSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:    { flex: 1, backgroundColor: "#F8FAFC" },
   scroll:       { flex: 1 },
   content:      { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 48 },
   ownerBadge:   { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EFF6FF", borderRadius: 12, padding: 14, marginBottom: 24, borderWidth: 1, borderColor: "#BFDBFE" },
-  ownerBadgeText: { fontSize: 13, fontWeight: "700", color: "#1E3A8A", flex: 1 },
+  ownerBadgeText: { fontSize: 13, fontWeight: "700", color: primary, flex: 1 },
   sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#9CA3AF", marginBottom: 10 },
   card:         { backgroundColor: "#FFF", borderRadius: 14, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "#E2E8F0" },
   fieldRow:     { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F0F4FF", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: "#D1D9F0" },
-  fieldInput:   { flex: 1, fontSize: 14, color: "#1E3A8A", padding: 0 },
+  fieldInput:   { flex: 1, fontSize: 14, color: primary, padding: 0 },
   msgBox:       { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 8, padding: 10, marginTop: 10 },
   msgText:      { fontSize: 12, flex: 1 },
-  saveBtn:      { backgroundColor: "#1E3A8A", borderRadius: 10, height: 44, alignItems: "center", justifyContent: "center", marginTop: 14 },
+  saveBtn:      { backgroundColor: primary, borderRadius: 10, height: 44, alignItems: "center", justifyContent: "center", marginTop: 14 },
   saveBtnText:  { color: "#FFF", fontWeight: "700", fontSize: 14, letterSpacing: 0.5 },
 });

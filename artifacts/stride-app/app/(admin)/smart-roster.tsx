@@ -243,8 +243,8 @@ export default function SmartRosterScreen() {
         {/* ── ANNUAL ROSTER PLANNING ───────────────────────────────────────── */}
         <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={s.cardHeader}>
-            <View style={[s.iconWrap, { backgroundColor: "#FBBF2418" }]}>
-              <Ionicons name="calendar-outline" size={20} color="#FBBF24" />
+            <View style={[s.iconWrap, { backgroundColor: (colors.secondary + "18") }]}>
+              <Ionicons name="calendar-outline" size={20} color={colors.secondary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.cardTitle, { color: colors.foreground }]}>Annual Roster Planning</Text>
@@ -256,7 +256,7 @@ export default function SmartRosterScreen() {
 
           {rosterPhase === "idle" && (
             <Pressable
-              style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [s.primaryBtn, { backgroundColor: "#1E3A8A", opacity: pressed ? 0.85 : 1 }]}
               onPress={handleGenerateRoster}
             >
               <Ionicons name="sparkles" size={16} color="#FFF" />
@@ -266,7 +266,7 @@ export default function SmartRosterScreen() {
 
           {rosterPhase === "generating" && (
             <View style={[s.generatingBox, { backgroundColor: colors.muted }]}>
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={"#1E3A8A"} />
               <View style={{ flex: 1 }}>
                 <Text style={[s.genTitle, { color: colors.foreground }]}>AI is building rosters…</Text>
                 <Text style={[s.genSub, { color: colors.mutedForeground }]}>
@@ -304,11 +304,11 @@ export default function SmartRosterScreen() {
                 </View>
               ) : (
                 <Pressable
-                  style={({ pressed }) => [s.notifyBtn, { borderColor: colors.primary, opacity: pressed ? 0.75 : 1 }]}
+                  style={({ pressed }) => [s.notifyBtn, { borderColor: "#1E3A8A", opacity: pressed ? 0.75 : 1 }]}
                   onPress={handleNotifyTeam}
                 >
-                  <Ionicons name="send-outline" size={15} color={colors.primary} />
-                  <Text style={[s.notifyBtnText, { color: colors.primary }]}>
+                  <Ionicons name="send-outline" size={15} color={"#1E3A8A"} />
+                  <Text style={[s.notifyBtnText, { color: "#1E3A8A" }]}>
                     Notify Admin & Operators of Available Slots
                   </Text>
                 </Pressable>
@@ -371,11 +371,11 @@ export default function SmartRosterScreen() {
               (Skill Match × 0.6) + (Reliability × 0.4)
             </Text>
             <View style={s.formulaRow}>
-              <View style={[s.formulaChip, { borderColor: "#1E3A8A33", backgroundColor: "#1E3A8A0A", flex: 1 }]}>
-                <Ionicons name="school-outline" size={13} color="#1E3A8A" />
+              <View style={[s.formulaChip, { borderColor: (colors.primary + "33"), backgroundColor: (colors.primary + "0A"), flex: 1 }]}>
+                <Ionicons name="school-outline" size={13} color={colors.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.formulaChipPct, { color: "#1E3A8A" }]}>60%</Text>
-                  <Text style={[s.formulaChipTxt, { color: "#1E3A8A" }]} numberOfLines={1}>Skill Match</Text>
+                  <Text style={[s.formulaChipPct, { color: colors.primary }]}>60%</Text>
+                  <Text style={[s.formulaChipTxt, { color: colors.primary }]} numberOfLines={1}>Skill Match</Text>
                 </View>
               </View>
               <View style={[s.formulaChip, { borderColor: "#10B98133", backgroundColor: "#10B9810A", flex: 1 }]}>
@@ -406,7 +406,7 @@ export default function SmartRosterScreen() {
           </View>
 
           {cascadesLoading ? (
-            <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+            <ActivityIndicator color={"#1E3A8A"} style={{ marginVertical: 16 }} />
           ) : cascades.length === 0 ? (
             <View style={s.emptyState}>
               <Ionicons name="checkmark-circle-outline" size={32} color={colors.muted} />
@@ -429,8 +429,8 @@ export default function SmartRosterScreen() {
                         {c.absent_operator_name ?? `Operator #${c.absent_operator_id}`}
                       </Text>
                       {c.auto_triggered && (
-                        <View style={[s.autoBadge, { backgroundColor: colors.primary + "15" }]}>
-                          <Text style={[s.autoBadgeText, { color: colors.primary }]}>AUTO</Text>
+                        <View style={[s.autoBadge, { backgroundColor: "#1E3A8A" + "15" }]}>
+                          <Text style={[s.autoBadgeText, { color: "#1E3A8A" }]}>AUTO</Text>
                         </View>
                       )}
                     </View>
@@ -490,8 +490,8 @@ export default function SmartRosterScreen() {
         {!committed ? (
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={s.cardHeader}>
-              <View style={[s.iconWrap, { backgroundColor: "#FBBF2418" }]}>
-                <Ionicons name="sparkles" size={20} color="#FBBF24" />
+              <View style={[s.iconWrap, { backgroundColor: ("#FBBF24" + "18") }]}>
+                <Ionicons name="sparkles" size={20} color={"#FBBF24"} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.cardTitle, { color: colors.foreground }]}>AI Query Optimizer</Text>
@@ -502,7 +502,7 @@ export default function SmartRosterScreen() {
             </View>
 
             {/* Absent Operator */}
-            <Text style={[s.fieldLabel, { color: colors.primary }]}>ABSENT OPERATOR</Text>
+            <Text style={[s.fieldLabel, { color: "#1E3A8A" }]}>ABSENT OPERATOR</Text>
             {liveOperators.length === 0 ? (
               <Text style={[s.emptyHint, { color: colors.mutedForeground }]}>No operator profiles found — add them in Lessons → Operators.</Text>
             ) : (
@@ -516,14 +516,14 @@ export default function SmartRosterScreen() {
                       style={[
                         s.chip,
                         { borderColor: colors.border, backgroundColor: colors.muted },
-                        missingOpId === oid && { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0E" },
+                        missingOpId === oid && { borderColor: "#1E3A8A" + "55", backgroundColor: "#1E3A8A" + "0E" },
                       ]}
                       onPress={() => { setMissingOpId(oid); setMissingOpName(name); }}
                     >
                       {missingOpId === oid && (
-                        <Ionicons name="person-circle" size={13} color={colors.primary} />
+                        <Ionicons name="person-circle" size={13} color={"#1E3A8A"} />
                       )}
-                      <Text style={[s.chipText, { color: colors.mutedForeground }, missingOpId === oid && { color: colors.primary }]}>
+                      <Text style={[s.chipText, { color: colors.mutedForeground }, missingOpId === oid && { color: "#1E3A8A" }]}>
                         {name}
                       </Text>
                     </Pressable>
@@ -533,7 +533,7 @@ export default function SmartRosterScreen() {
             )}
 
             {/* Course */}
-            <Text style={[s.fieldLabel, { color: colors.primary }]}>COURSE / DISCIPLINE</Text>
+            <Text style={[s.fieldLabel, { color: "#1E3A8A" }]}>COURSE / DISCIPLINE</Text>
             {liveDisciplines.length === 0 ? (
               <Text style={[s.emptyHint, { color: colors.mutedForeground }]}>No disciplines found — add them in Lessons → Disciplines.</Text>
             ) : (
@@ -546,14 +546,14 @@ export default function SmartRosterScreen() {
                       style={[
                         s.chip,
                         { borderColor: colors.border, backgroundColor: colors.muted },
-                        disciplineId === did && { borderColor: colors.primary + "55", backgroundColor: colors.primary + "0E" },
+                        disciplineId === did && { borderColor: "#1E3A8A" + "55", backgroundColor: "#1E3A8A" + "0E" },
                       ]}
                       onPress={() => { setDisciplineId(did); setCourseName(d.name); }}
                     >
                       {disciplineId === did && (
-                        <Ionicons name="musical-notes" size={13} color={colors.primary} />
+                        <Ionicons name="musical-notes" size={13} color={"#1E3A8A"} />
                       )}
-                      <Text style={[s.chipText, { color: colors.mutedForeground }, disciplineId === did && { color: colors.primary }]}>
+                      <Text style={[s.chipText, { color: colors.mutedForeground }, disciplineId === did && { color: "#1E3A8A" }]}>
                         {d.name}
                       </Text>
                     </Pressable>
@@ -563,7 +563,7 @@ export default function SmartRosterScreen() {
             )}
 
             {/* Date + Time */}
-            <Text style={[s.fieldLabel, { color: colors.primary }]}>SCHEDULED CLASS DATE & TIME</Text>
+            <Text style={[s.fieldLabel, { color: "#1E3A8A" }]}>SCHEDULED CLASS DATE & TIME</Text>
             <Text style={[s.cardSub, { color: colors.mutedForeground, marginBottom: 4, marginTop: -4 }]}>
               When is the lesson that needs a substitute?
             </Text>
@@ -586,11 +586,11 @@ export default function SmartRosterScreen() {
                 style={({ pressed }) => [s.aiBtn, { backgroundColor: "#FBBF24", opacity: pressed ? 0.85 : 1, flex: 1 }]}
                 onPress={handleRun}
               >
-                <Ionicons name="sparkles" size={16} color="#1E3A8A" />
+                <Ionicons name="sparkles" size={16} color={"#1E3A8A"} />
                 <Text style={[s.aiBtnText, { color: "#1E3A8A" }]}>AI Analysis</Text>
               </Pressable>
               <Pressable
-                style={({ pressed }) => [s.cascadeBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [s.cascadeBtn, { backgroundColor: "#1E3A8A", opacity: pressed ? 0.85 : 1 }]}
                 onPress={handleManualCascade}
                 disabled={triggering}
               >
@@ -613,7 +613,7 @@ export default function SmartRosterScreen() {
             <Text style={[s.editBarText, { color: colors.mutedForeground }]} numberOfLines={1}>
               {missingOpName} · {courseName} · {new Date(classDatetime).toLocaleDateString("en-AU", { weekday: "short", month: "short", day: "numeric" })}
             </Text>
-            <Text style={[s.editBarChange, { color: colors.primary }]}>Change</Text>
+            <Text style={[s.editBarChange, { color: "#1E3A8A" }]}>Change</Text>
           </Pressable>
         )}
 
@@ -633,7 +633,7 @@ export default function SmartRosterScreen() {
         {committed && (
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={s.cardHeader}>
-              <Ionicons name="analytics-outline" size={18} color={colors.primary} />
+              <Ionicons name="analytics-outline" size={18} color={"#1E3A8A"} />
               <Text style={[s.cardTitle, { color: colors.foreground }]}>How Scores Are Calculated</Text>
             </View>
             {[

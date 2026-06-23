@@ -246,6 +246,7 @@ interface NotificationInboxProps {
 }
 
 function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOpenNotif, onViewAll }: NotificationInboxProps) {
+  const inboxStyles = make_inboxStyles(colors.primary, colors.secondary);
   const unread = notifications.filter(n => !n.read).slice(0, 3);
 
   return (
@@ -253,7 +254,7 @@ function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOp
       <View style={inboxStyles.header}>
         <View style={inboxStyles.headerLeft}>
           <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name="notifications" size={16} color="#1E3A8A" />
+            <Ionicons name="notifications" size={16} color={colors.primary} />
           </View>
           <Text style={[inboxStyles.title, { color: colors.foreground }]}>Notifications</Text>
           <View style={inboxStyles.badge}>
@@ -265,7 +266,7 @@ function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOp
             <Text style={[inboxStyles.linkText, { color: colors.mutedForeground }]}>Mark all read</Text>
           </Pressable>
           <Pressable onPress={onViewAll}>
-            <Text style={[inboxStyles.linkText, { color: "#1E3A8A" }]}>View all →</Text>
+            <Text style={[inboxStyles.linkText, { color: colors.primary }]}>View all →</Text>
           </Pressable>
         </View>
       </View>
@@ -279,7 +280,7 @@ function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOp
             onPress={() => onOpenNotif(n.id)}
           >
             <View style={[inboxStyles.rowIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-              <Ionicons name={icon} size={18} color="#1E3A8A" />
+              <Ionicons name={icon} size={18} color={"#1E3A8A"} />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={[inboxStyles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>{n.title}</Text>
@@ -293,13 +294,13 @@ function NotificationInbox({ notifications, unreadCount, colors, onMarkAll, onOp
   );
 }
 
-const inboxStyles = StyleSheet.create({
+const make_inboxStyles = (primary: string, secondary: string) => StyleSheet.create({
   card:      { borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
   header:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   headerLeft:{ flexDirection: "row", alignItems: "center", gap: 6 },
   title:     { fontSize: 15, fontWeight: "800" },
-  badge:     { backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
-  badgeText: { fontSize: 11, fontWeight: "800", color: "#1E3A8A" },
+  badge:     { backgroundColor: secondary, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 },
+  badgeText: { fontSize: 11, fontWeight: "800", color: primary },
   linkText:  { fontSize: 12, fontWeight: "700" },
   row:       { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.06)" },
   rowIcon:   { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -318,6 +319,7 @@ export default function OperatorDashboard() {
   const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts, triggerAccessAlert } = useSecurityEscalation();
   const { isOnline, enqueue, pendingCount: offlinePendingCount } = useOfflineSync();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -1225,7 +1227,7 @@ export default function OperatorDashboard() {
     if (t === "success") return "#10B981";
     if (t === "warning") return "#F59E0B";
     if (t === "error")   return "#EF4444";
-    return colors.primary;
+    return "#1E3A8A";
   };
   const logTypeIcon = (t: LogEntry["type"]): keyof typeof Ionicons.glyphMap => {
     if (t === "success") return "checkmark-circle-outline";
@@ -1313,7 +1315,7 @@ export default function OperatorDashboard() {
 
         {/* ── Current Lesson Card — same style as Parent's lessonCard ── */}
         {currentLesson && (
-          <View style={[styles.lessonCard, { backgroundColor: colors.primary }]}>
+          <View style={[styles.lessonCard, { backgroundColor: "#1E3A8A" }]}>
             <View style={styles.lessonCardTop}>
               <View style={styles.lessonBadge}>
                 <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
@@ -1323,11 +1325,11 @@ export default function OperatorDashboard() {
             <Text style={styles.lessonCourseName}>{currentLesson.courseName}</Text>
             <View style={styles.lessonMeta}>
               <View style={styles.lessonMetaItem}>
-                <Ionicons name="time-outline" size={14} color="#FBBF24" />
+                <Ionicons name="time-outline" size={14} color={"#FBBF24"} />
                 <Text style={styles.lessonMetaText}>{currentLesson.startTime} – {currentLesson.endTime}</Text>
               </View>
               <View style={styles.lessonMetaItem}>
-                <Ionicons name="location-outline" size={14} color="#FBBF24" />
+                <Ionicons name="location-outline" size={14} color={"#FBBF24"} />
                 <Text style={styles.lessonMetaText}>{currentLesson.room} · {currentLesson.location}</Text>
               </View>
             </View>
@@ -1385,7 +1387,7 @@ export default function OperatorDashboard() {
           <View style={{ backgroundColor: "#0F2561", borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1.5, borderColor: "#1E3A8A" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: "rgba(30,58,138,0.2)", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="git-network-outline" size={16} color="#FBBF24" />
+                <Ionicons name="git-network-outline" size={16} color={"#FBBF24"} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFF" }}>
@@ -1685,29 +1687,29 @@ export default function OperatorDashboard() {
             <View style={{ flexDirection: "row", gap: 10 }}>
               {!!orgContactPhone && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
                   onPress={() => Linking.openURL(`https://wa.me/${orgContactPhone.replace(/\D/g, "")}`)}
                 >
-                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>WhatsApp</Text>
+                  <Ionicons name="logo-whatsapp" size={22} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>WhatsApp</Text>
                 </Pressable>
               )}
               {!!orgContactEmail && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
                   onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
                 >
-                  <Ionicons name="mail" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Email</Text>
+                  <Ionicons name="mail" size={22} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>Email</Text>
                 </Pressable>
               )}
               {!!orgContactPhone && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
                   onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
                 >
-                  <Ionicons name="call" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Call</Text>
+                  <Ionicons name="call" size={22} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>Call</Text>
                 </Pressable>
               )}
             </View>
@@ -1744,14 +1746,14 @@ export default function OperatorDashboard() {
                     <Ionicons name="log-out-outline" size={28} color="#D97706" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.modalTitle, { color: colors.primary, marginBottom: 2 }]}>Clock Out</Text>
+                    <Text style={[styles.modalTitle, { color: "#1E3A8A", marginBottom: 2 }]}>Clock Out</Text>
                     <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Your schedule will be checked automatically</Text>
                   </View>
                 </View>
                 <View style={{ backgroundColor: "#F0F4FF", borderRadius: 14, padding: 14, marginBottom: 20, gap: 6 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>How it works</Text>
+                    <Ionicons name="information-circle-outline" size={16} color={"#1E3A8A"} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" }}>How it works</Text>
                   </View>
                   <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 17 }}>
                     If you leave 1 hour or more before your last scheduled class ends, that session will be automatically marked as Absent in your Payroll log and the earning nullified.
@@ -1774,7 +1776,7 @@ export default function OperatorDashboard() {
 
             {clockOutStatus === "confirming" && (
               <View style={{ alignItems: "center", paddingVertical: 32, gap: 12 }}>
-                <ActivityIndicator size="large" color={colors.primary} />
+                <ActivityIndicator size="large" color={"#1E3A8A"} />
                 <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>Checking your schedule…</Text>
               </View>
             )}
@@ -1784,12 +1786,12 @@ export default function OperatorDashboard() {
                 <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#D1FAE5", alignItems: "center", justifyContent: "center" }}>
                   <Ionicons name="checkmark-circle" size={44} color="#059669" />
                 </View>
-                <Text style={{ fontSize: 19, fontWeight: "900", color: colors.primary }}>Clock-Out Logged</Text>
+                <Text style={{ fontSize: 19, fontWeight: "900", color: "#1E3A8A" }}>Clock-Out Logged</Text>
                 <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", lineHeight: 18 }}>
                   You left on time. No Payroll adjustments needed. Have a great rest of your day!
                 </Text>
                 <Pressable
-                  style={{ backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40, marginTop: 8 }}
+                  style={{ backgroundColor: "#1E3A8A", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40, marginTop: 8 }}
                   onPress={() => setShowClockOutModal(false)}
                 >
                   <Text style={{ color: "#FBBF24", fontWeight: "800", fontSize: 15 }}>DONE</Text>
@@ -1825,7 +1827,7 @@ export default function OperatorDashboard() {
                   This record has been saved. It will appear in your Payroll log. Contact Admin if you believe this is an error.
                 </Text>
                 <Pressable
-                  style={{ backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 }}
+                  style={{ backgroundColor: "#1E3A8A", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 }}
                   onPress={() => setShowClockOutModal(false)}
                 >
                   <Text style={{ color: "#FBBF24", fontWeight: "800", fontSize: 15 }}>UNDERSTOOD</Text>
@@ -1869,8 +1871,8 @@ export default function OperatorDashboard() {
               { icon: "cash-outline"     as const, label: "Fee",      value: selectedBooking ? `${cur}${((selectedBooking.price_cents ?? 0) / 100).toFixed(2)}` : "—" },
             ].map(({ icon, label, value }) => (
               <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
-                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${colors.primary}10`, alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name={icon} size={18} color={colors.primary} />
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `"#1E3A8A"10`, alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name={icon} size={18} color={"#1E3A8A"} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: "600" }}>{label}</Text>
@@ -1910,10 +1912,10 @@ export default function OperatorDashboard() {
                   <Ionicons
                     name={absenceType === "absent" ? "warning" : "time-outline"}
                     size={36}
-                    color={colors.primary}
+                    color={"#1E3A8A"}
                   />
                 </View>
-                <Text style={[styles.sentTitle, { color: colors.primary }]}>
+                <Text style={[styles.sentTitle, { color: "#1E3A8A" }]}>
                   {absenceType === "absent" ? "Absence Reported" : "Delay Reported"}
                 </Text>
                 <Text style={[styles.sentSub, { color: colors.mutedForeground }]}>
@@ -1924,7 +1926,7 @@ export default function OperatorDashboard() {
               </View>
             ) : (
               <>
-                <Text style={[styles.modalTitle, { color: colors.primary }]}>Report Absence / Delay</Text>
+                <Text style={[styles.modalTitle, { color: "#1E3A8A" }]}>Report Absence / Delay</Text>
 
                 {/* TODAY / FUTURE tab selector */}
                 <View style={[styles.absSegControl, { backgroundColor: "#F0F4FF" }]}>
@@ -1933,7 +1935,7 @@ export default function OperatorDashboard() {
                     return (
                       <Pressable
                         key={label}
-                        style={[styles.absSegTab, absMode === mode && { backgroundColor: colors.primary }]}
+                        style={[styles.absSegTab, absMode === mode && { backgroundColor: "#1E3A8A" }]}
                         onPress={() => { setAbsMode(mode); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                       >
                         <Ionicons name={idx === 0 ? "today" : "calendar"} size={13} color={absMode === mode ? "#FFF" : "#6B7280"} />
@@ -1947,29 +1949,29 @@ export default function OperatorDashboard() {
                   <>
                     {/* Reporting for self only */}
                     <View style={[styles.selfOnlyBanner, { backgroundColor: "#DBEAFE", borderColor: "#93C5FD" }]}>
-                      <Ionicons name="person-circle-outline" size={18} color="#1E3A8A" />
+                      <Ionicons name="person-circle-outline" size={18} color={"#1E3A8A"} />
                       <Text style={[styles.selfOnlyText, { color: "#1E3A8A" }]}>
                         Reporting as: <Text style={{ fontWeight: "800" }}>{user?.name ?? "You"}</Text>
                       </Text>
                     </View>
 
                     {/* ── Dual Full-Absence Buttons ── */}
-                    <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 14 }]}>Full Absence</Text>
+                    <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 14 }]}>Full Absence</Text>
                     <Pressable style={({ pressed }) => [styles.absenceBigBtn, { backgroundColor: "#FBBF24", opacity: pressed ? 0.88 : 1, marginBottom: 10 }]} onPress={() => handleSendAbsenceReport("single_class")}>
-                      <Ionicons name="calendar-outline" size={20} color="#1E3A8A" />
+                      <Ionicons name="calendar-outline" size={20} color={"#1E3A8A"} />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.absenceBigBtnTitle}>Full Absence – First Lesson Only</Text>
                         <Text style={styles.absenceBigBtnHint}>Substitution cascade starts for this session</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
+                      <Ionicons name="chevron-forward" size={18} color={"#1E3A8A"} />
                     </Pressable>
                     <Pressable style={({ pressed }) => [styles.absenceBigBtn, { backgroundColor: "#1E3A8A", opacity: pressed ? 0.88 : 1, marginBottom: 16 }]} onPress={() => handleSendAbsenceReport("full_day")}>
-                      <Ionicons name="warning-outline" size={20} color="#FBBF24" />
+                      <Ionicons name="warning-outline" size={20} color={"#FBBF24"} />
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.absenceBigBtnTitle, { color: "#FBBF24" }]}>Full Absence – Entire Day</Text>
                         <Text style={[styles.absenceBigBtnHint, { color: "rgba(251,191,36,0.8)" }]}>Cascade triggers for all today's sessions</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
+                      <Ionicons name="chevron-forward" size={18} color={"#FBBF24"} />
                     </Pressable>
 
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -1979,8 +1981,8 @@ export default function OperatorDashboard() {
                     </View>
 
                     {DELAY_OPTIONS.map(opt => (
-                      <Pressable key={opt.value} style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => setAbsenceType(opt.value)}>
-                        <Ionicons name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === opt.value ? "#FFF" : colors.primary} />
+                      <Pressable key={opt.value} style={[styles.absenceOption, absenceType === opt.value && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]} onPress={() => setAbsenceType(opt.value)}>
+                        <Ionicons name={absenceType === opt.value ? "radio-button-on" : "radio-button-off"} size={18} color={absenceType === opt.value ? "#FFF" : "#1E3A8A"} />
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.absenceOptionText, absenceType === opt.value && { color: "#FFF" }]}>{opt.label}</Text>
                           <Text style={[styles.absenceOptionHint, absenceType === opt.value && { color: "rgba(255,255,255,0.75)" }]}>Triggers Smart Rescheduling for Admin</Text>
@@ -1990,7 +1992,7 @@ export default function OperatorDashboard() {
 
                     <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                       <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => setShowAbsenceModal(false)}>
-                        <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                        <Text style={[styles.closeBtnText, { color: "#1E3A8A" }]}>Cancel</Text>
                       </Pressable>
                       <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F59E0B" }]} onPress={() => handleSendAbsenceReport()}>
                         <Text style={styles.closeBtnText}>Report Delay</Text>
@@ -2010,46 +2012,46 @@ export default function OperatorDashboard() {
                     ) : (
                       <>
                         <View style={[styles.selfOnlyBanner, { backgroundColor: "#DBEAFE", borderColor: "#93C5FD", marginBottom: 12 }]}>
-                          <Ionicons name="person-circle-outline" size={18} color="#1E3A8A" />
+                          <Ionicons name="person-circle-outline" size={18} color={"#1E3A8A"} />
                           <Text style={[styles.selfOnlyText, { color: "#1E3A8A" }]}>Scheduling for: <Text style={{ fontWeight: "800" }}>{user?.name ?? "You"}</Text></Text>
                         </View>
-                        <Text style={[styles.fieldLabel, { color: colors.primary }]}>Absence Type</Text>
+                        <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Absence Type</Text>
                         <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
                           {(["single", "range"] as const).map(mode => (
-                            <Pressable key={mode} style={[{ flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.primary, alignItems: "center" }, futureAbsRangeMode === mode && { backgroundColor: colors.primary }]} onPress={() => setFutureAbsRangeMode(mode)}>
-                              <Text style={[{ fontSize: 13, fontWeight: "700", color: colors.primary }, futureAbsRangeMode === mode && { color: "#FFF" }]}>{mode === "single" ? "Single Date" : "Date Range"}</Text>
+                            <Pressable key={mode} style={[{ flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: "#1E3A8A", alignItems: "center" }, futureAbsRangeMode === mode && { backgroundColor: "#1E3A8A" }]} onPress={() => setFutureAbsRangeMode(mode)}>
+                              <Text style={[{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" }, futureAbsRangeMode === mode && { color: "#FFF" }]}>{mode === "single" ? "Single Date" : "Date Range"}</Text>
                             </Pressable>
                           ))}
                         </View>
-                        <Text style={[styles.fieldLabel, { color: colors.primary }]}>{futureAbsRangeMode === "range" ? "Start Date" : "Absence Date"}</Text>
+                        <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>{futureAbsRangeMode === "range" ? "Start Date" : "Absence Date"}</Text>
                         <View style={styles.absDateRow}>
-                          <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsDay} onChangeText={t => setFutureAbsDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
+                          <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: "#1E3A8A" }]} value={futureAbsDay} onChangeText={t => setFutureAbsDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
                           <Text style={[styles.absDateSep, { color: "#9CA3AF" }]}>/</Text>
-                          <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsMonth} onChangeText={t => setFutureAbsMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
+                          <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: "#1E3A8A" }]} value={futureAbsMonth} onChangeText={t => setFutureAbsMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
                           <Text style={[styles.absDateSep, { color: "#9CA3AF" }]}>/</Text>
-                          <TextInput style={[styles.absDateCellWide, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsYear} onChangeText={t => setFutureAbsYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={4} />
+                          <TextInput style={[styles.absDateCellWide, { borderColor: "#D1D9F0", color: "#1E3A8A" }]} value={futureAbsYear} onChangeText={t => setFutureAbsYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={4} />
                         </View>
                         {futureAbsRangeMode === "range" && (
                           <>
-                            <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>End Date</Text>
+                            <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 12 }]}>End Date</Text>
                             <View style={styles.absDateRow}>
-                              <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsEndDay} onChangeText={t => setFutureAbsEndDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
+                              <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: "#1E3A8A" }]} value={futureAbsEndDay} onChangeText={t => setFutureAbsEndDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
                               <Text style={[styles.absDateSep, { color: "#9CA3AF" }]}>/</Text>
-                              <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsEndMonth} onChangeText={t => setFutureAbsEndMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
+                              <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: "#1E3A8A" }]} value={futureAbsEndMonth} onChangeText={t => setFutureAbsEndMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
                               <Text style={[styles.absDateSep, { color: "#9CA3AF" }]}>/</Text>
-                              <TextInput style={[styles.absDateCellWide, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsEndYear} onChangeText={t => setFutureAbsEndYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={4} />
+                              <TextInput style={[styles.absDateCellWide, { borderColor: "#D1D9F0", color: "#1E3A8A" }]} value={futureAbsEndYear} onChangeText={t => setFutureAbsEndYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={4} />
                             </View>
                           </>
                         )}
-                        <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Note (Optional)</Text>
-                        <TextInput style={[styles.absenceOption, { borderColor: "#D1D9F0", color: colors.primary, height: 68, textAlignVertical: "top", paddingTop: 10 }]} value={futureAbsNote} onChangeText={setFutureAbsNote} placeholder="e.g. Conference, Medical leave..." placeholderTextColor="#9CA3AF" multiline />
+                        <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 12 }]}>Note (Optional)</Text>
+                        <TextInput style={[styles.absenceOption, { borderColor: "#D1D9F0", color: "#1E3A8A", height: 68, textAlignVertical: "top", paddingTop: 10 }]} value={futureAbsNote} onChangeText={setFutureAbsNote} placeholder="e.g. Conference, Medical leave..." placeholderTextColor="#9CA3AF" multiline />
                         <View style={[styles.absKioskNote, { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0", marginTop: 10 }]}>
                           <Ionicons name="shield-checkmark-outline" size={13} color="#10B981" />
                           <Text style={styles.absKioskNoteText}>Admin is notified and the substitution cascade will be pre-staged for the target date.</Text>
                         </View>
                         <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                           <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#F0F4FF" }]} onPress={() => { setShowAbsenceModal(false); resetFutureAbsForm(); }}>
-                            <Text style={[styles.closeBtnText, { color: colors.primary }]}>Cancel</Text>
+                            <Text style={[styles.closeBtnText, { color: "#1E3A8A" }]}>Cancel</Text>
                           </Pressable>
                           <Pressable style={[styles.closeBtn, { flex: 1, backgroundColor: "#FBBF24" }]} onPress={handlePlanFutureAbsence}>
                             <Text style={[styles.closeBtnText, { color: "#1E3A8A" }]}>Schedule</Text>
@@ -2456,7 +2458,7 @@ export default function OperatorDashboard() {
               <Text style={styles.lessonScanTitle}>Lesson Completed ✓</Text>
               <Text style={styles.lessonScanSub}>{lessonScanResult.student} · {lessonScanResult.discipline}</Text>
               <View style={styles.lessonScanEarnings}>
-                <Ionicons name="cash-outline" size={18} color="#FBBF24" />
+                <Ionicons name="cash-outline" size={18} color={"#FBBF24"} />
                 <Text style={styles.lessonScanEarningsText}>
                   {cur}{(lessonScanResult.earnings_cents / 100).toFixed(2)} earned
                 </Text>
@@ -2531,7 +2533,7 @@ export default function OperatorDashboard() {
               <Image source={{ uri: logoSource }} style={styles.qrFullLogo} contentFit="contain" />
             ) : (
               <View style={[styles.qrFullLogo, { alignItems: "center", justifyContent: "center", backgroundColor: colors.muted, borderRadius: 16 }]}>
-                <Ionicons name="school-outline" size={40} color={colors.primary} />
+                <Ionicons name="school-outline" size={40} color={"#1E3A8A"} />
               </View>
             )}
             <Text style={[styles.qrFullTitle, { color: colors.primary }]}>Operator Pass</Text>
@@ -2570,7 +2572,7 @@ export default function OperatorDashboard() {
 
             {ecLoading ? (
               <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                <ActivityIndicator size="large" color="#1E3A8A" />
+                <ActivityIndicator size="large" color={"#1E3A8A"} />
                 <Text style={{ marginTop: 12, color: "#6B7280" }}>Loading contacts…</Text>
               </View>
             ) : (
@@ -2924,7 +2926,7 @@ export default function OperatorDashboard() {
 
 // ── Styles — identical tokens to Parent view ──────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
 
@@ -2944,7 +2946,7 @@ const styles = StyleSheet.create({
   alertBannerSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2 },
 
   // Lesson card — exact copy of Parent's lessonCard
-  lessonCard: { borderRadius: 20, padding: 18, marginBottom: 24, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 },
+  lessonCard: { borderRadius: 20, padding: 18, marginBottom: 24, shadowColor: primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 8 },
   lessonCardTop: { marginBottom: 8 },
   lessonBadge: { flexDirection: "row", alignItems: "center", gap: 5 },
   lessonBadgeText: { fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: "700", letterSpacing: 0.5 },
@@ -3018,14 +3020,14 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontWeight: "600", marginBottom: 8 },
   teacherRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   teacherChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D1D9F0" },
-  teacherChipText: { fontSize: 12, fontWeight: "600", color: "#1E3A8A" },
+  teacherChipText: { fontSize: 12, fontWeight: "600", color: primary },
   selfOnlyBanner: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 4 },
   selfOnlyText: { fontSize: 13, fontWeight: "500" },
   absenceOption: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 8, width: "100%" },
-  absenceOptionText: { fontSize: 14, fontWeight: "600", color: "#1E3A8A" },
+  absenceOptionText: { fontSize: 14, fontWeight: "600", color: primary },
   absenceOptionHint: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
   absenceBigBtn: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, width: "100%" },
-  absenceBigBtnTitle: { fontSize: 14, fontWeight: "800", color: "#1E3A8A" },
+  absenceBigBtnTitle: { fontSize: 14, fontWeight: "800", color: primary },
   absenceBigBtnHint: { fontSize: 11, color: "rgba(30,58,138,0.65)", marginTop: 2 },
   closeBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   closeBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
@@ -3045,7 +3047,7 @@ const styles = StyleSheet.create({
   // Cascade modal
   cascadeCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, width: "100%", maxHeight: "80%" as unknown as number },
   cascadeHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 16 },
-  cascadeTitle: { fontSize: 18, fontWeight: "800", color: "#1E3A8A" },
+  cascadeTitle: { fontSize: 18, fontWeight: "800", color: primary },
   cascadeSubtitle: { fontSize: 13, color: "#6B7BA4", marginTop: 2 },
   cascadeTimer: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 14, alignSelf: "flex-start" },
   cascadeTimerText: { fontSize: 13, fontWeight: "700" },
@@ -3054,7 +3056,7 @@ const styles = StyleSheet.create({
   subRow: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 10 },
   subNumBadge: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   subNumText: { color: "#FFF", fontWeight: "800", fontSize: 14 },
-  subName: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },
+  subName: { fontSize: 14, fontWeight: "700", color: primary },
   subSpecialty: { fontSize: 11, marginTop: 1 },
   subStatus: { fontSize: 12, fontWeight: "600", marginTop: 3 },
   subBtns: { gap: 6 },
@@ -3079,7 +3081,7 @@ const styles = StyleSheet.create({
   scannerTitle: { color: "#FFF", fontSize: 16, fontWeight: "700" },
   scannerPreview: { flex: 1, alignItems: "center", justifyContent: "center" },
   scannerOverlay: { flex: 1, alignItems: "center", justifyContent: "center" },
-  scannerFrame: { width: 220, height: 220, borderWidth: 2, borderColor: "#FBBF24", borderRadius: 16 },
+  scannerFrame: { width: 220, height: 220, borderWidth: 2, borderColor: secondary, borderRadius: 16 },
   camFlipBtn: {
     position: "absolute", bottom: 32, right: 24,
     width: 52, height: 52, borderRadius: 26,
@@ -3097,8 +3099,8 @@ const styles = StyleSheet.create({
   offlineSavedText: { color: "rgba(255,255,255,0.9)", fontSize: 11, flex: 1 },
   offlineBadge: { position: "absolute", top: -6, right: -6, backgroundColor: "#EF4444", borderRadius: 8, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
   offlineBadgeText: { color: "#FFF", fontSize: 9, fontWeight: "800" },
-  simulateBtn: { marginTop: 20, backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  simulateBtnText: { color: "#1E3A8A", fontWeight: "700" },
+  simulateBtn: { marginTop: 20, backgroundColor: secondary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  simulateBtnText: { color: primary, fontWeight: "700" },
   scannerFooter: { padding: 20, alignItems: "center", gap: 12 },
 
   // Guardian pickup result panel
@@ -3143,7 +3145,7 @@ const styles = StyleSheet.create({
   lessonScanTitle: { color: "#FFF", fontSize: 20, fontWeight: "800" },
   lessonScanSub: { color: "rgba(255,255,255,0.75)", fontSize: 14 },
   lessonScanEarnings: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(251,191,36,0.15)", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, marginTop: 4 },
-  lessonScanEarningsText: { color: "#FBBF24", fontSize: 20, fontWeight: "800" },
+  lessonScanEarningsText: { color: secondary, fontSize: 20, fontWeight: "800" },
   lessonScanInvoice: { color: "rgba(255,255,255,0.45)", fontSize: 11, letterSpacing: 0.5, marginTop: 4 },
 
   // SOS modal

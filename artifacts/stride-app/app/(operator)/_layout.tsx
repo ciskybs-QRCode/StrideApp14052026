@@ -19,6 +19,8 @@ function BookingBanner({ notif, onView, onDismiss }: {
   onView: () => void;
   onDismiss: () => void;
 }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const slideY = useRef(new Animated.Value(-180)).current;
   const prevId = useRef<string | null>(null);
@@ -103,7 +105,7 @@ export default function OperatorTabLayout() {
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: colors.primary,
+          tabBarActiveTintColor: "#1E3A8A",
           tabBarInactiveTintColor: colors.mutedForeground,
           headerShown: false,
           tabBarStyle: {
@@ -178,13 +180,13 @@ export default function OperatorTabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   banner: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     zIndex: 9999,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
@@ -215,9 +217,9 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderWidth: 1.5,
-    borderColor: "#1E3A8A",
+    borderColor: primary,
   },
   bannerTitle: { color: "#FFF", fontSize: 13, fontWeight: "800" },
   bannerBody: { color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: "600" },
@@ -225,12 +227,12 @@ const styles = StyleSheet.create({
   bannerLoc: { color: "rgba(255,255,255,0.6)", fontSize: 10 },
   bannerActions: { flexDirection: "row", alignItems: "center", gap: 6, paddingTop: 4 },
   viewBtn: {
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  viewBtnText: { color: "#1E3A8A", fontWeight: "800", fontSize: 12 },
+  viewBtnText: { color: primary, fontWeight: "800", fontSize: 12 },
   dismissBtn: {
     width: 32,
     height: 32,

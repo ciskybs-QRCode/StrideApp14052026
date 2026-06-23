@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
+import { useColors } from "@/hooks/useColors";
 
 // ── Menu card definition ───────────────────────────────────────────────────────
 
@@ -100,20 +101,21 @@ const pt = StyleSheet.create({
 });
 
 function PlanBreakdown({ metrics, onPlanPress }: { metrics: SuperAdminPlanMetrics | null; onPlanPress: (tier: string) => void }) {
+  const colors = useColors();
   if (!metrics) return null;
   const tiles = [
     { key: "trial",   label: "TRIAL",   value: metrics.trialing,        accent: "#D97706", bg: "#FFFBEB" },
-    { key: "core",    label: "CORE",    value: metrics.by_plan.core,    accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "core",    label: "CORE",    value: metrics.by_plan.core,    accent: colors.primary, bg: "#EFF6FF" },
     { key: "plus",    label: "PLUS",    value: metrics.by_plan.plus,    accent: "#2563EB", bg: "#DBEAFE" },
-    { key: "premium", label: "PREMIUM", value: metrics.by_plan.premium, accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "premium", label: "PREMIUM", value: metrics.by_plan.premium, accent: colors.primary, bg: "#EFF6FF" },
   ];
   return (
     <View style={{ marginBottom: 14 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
-          <Ionicons name="layers-outline" size={16} color="#1E3A8A" />
+          <Ionicons name="layers-outline" size={16} color={colors.primary} />
         </View>
-        <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#1E3A8A" }}>PLAN BREAKDOWN</Text>
+        <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: colors.primary }}>PLAN BREAKDOWN</Text>
         {metrics.granted > 0 && (
           <View style={{ marginLeft: "auto", backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
             <Text style={{ fontSize: 10, fontWeight: "800", color: "#059669" }}>🎁 {metrics.granted} free</Text>
@@ -143,6 +145,7 @@ type MetricItem = {
 };
 
 function MetricGrid({ metrics }: { metrics: PlatformMetrics | null }) {
+  const colors = useColors();
   if (!metrics) return null;
 
   const health = metrics.totalOrgs > 0
@@ -150,9 +153,9 @@ function MetricGrid({ metrics }: { metrics: PlatformMetrics | null }) {
     : "—";
 
   const topItems: MetricItem[] = [
-    { key: "schools", icon: "business",         label: "TOTAL ORGS",     value: metrics.totalOrgs,    accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "schools", icon: "business",         label: "TOTAL ORGS",     value: metrics.totalOrgs,    accent: colors.primary, bg: "#EFF6FF" },
     { key: "active",  icon: "checkmark-circle",  label: "ACTIVE SUBS",   value: metrics.activeCount,  accent: "#D4AF37", bg: "#FFFBEB" },
-    { key: "members", icon: "people",            label: "GLOBAL MEMBERS", value: metrics.totalMembers, accent: "#1E3A8A", bg: "#EFF6FF" },
+    { key: "members", icon: "people",            label: "GLOBAL MEMBERS", value: metrics.totalMembers, accent: colors.primary, bg: "#EFF6FF" },
     { key: "health",  icon: "pulse-outline",     label: "HEALTH",         value: health,               accent: "#059669", bg: "#ECFDF5" },
   ];
 
@@ -206,24 +209,27 @@ const mg = StyleSheet.create({
 // ── Statistics sub-header ─────────────────────────────────────────────────────
 
 function StatsHeader() {
+  const colors = useColors();
+  const sh = make_sh(colors.primary, colors.secondary);
   return (
     <View style={sh.row}>
       <View style={sh.iconBox}>
-        <Ionicons name="bar-chart-outline" size={16} color="#1E3A8A" />
+        <Ionicons name="bar-chart-outline" size={16} color={colors.primary} />
       </View>
       <Text style={sh.label}>PLATFORM STATISTICS</Text>
     </View>
   );
 }
-const sh = StyleSheet.create({
+const make_sh = (primary: string, secondary: string) => StyleSheet.create({
   row:    { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   iconBox:{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" },
-  label:  { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#1E3A8A" },
+  label:  { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: primary },
 });
 
 // ── Nav card ──────────────────────────────────────────────────────────────────
 
 function NavCard({ card, onPress }: { card: MenuCard; onPress: () => void }) {
+  const colors = useColors();
   return (
     <Pressable
       style={({ pressed }) => [nc.card, { opacity: pressed ? 0.88 : 1 }]}
@@ -231,7 +237,7 @@ function NavCard({ card, onPress }: { card: MenuCard; onPress: () => void }) {
       accessibilityRole="button"
     >
       <View style={nc.iconBox}>
-        <Ionicons name={card.icon} size={22} color="#1E3A8A" />
+        <Ionicons name={card.icon} size={22} color={colors.primary} />
       </View>
       <View style={nc.textBlock}>
         <Text style={nc.title}>{card.title}</Text>
@@ -260,6 +266,8 @@ const nc2 = StyleSheet.create({
 // ── Main Dashboard Hub ─────────────────────────────────────────────────────────
 
 export default function SuperAdminDashboard() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { user } = useAuth();
   const router   = useRouter();
 
@@ -296,7 +304,7 @@ export default function SuperAdminDashboard() {
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#1E3A8A" />
+          <ActivityIndicator size="large" color={"#1E3A8A"} />
         </View>
       ) : (
         <ScrollView
@@ -307,7 +315,7 @@ export default function SuperAdminDashboard() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); void loadMetrics(true); }}
-              tintColor="#1E3A8A"
+              tintColor={"#1E3A8A"}
             />
           }
         >
@@ -374,7 +382,7 @@ export default function SuperAdminDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:    { flex: 1, backgroundColor: "#F8FAFC" },
   loadingBox:   { flex: 1, alignItems: "center", justifyContent: "center" },
   scroll:       { flex: 1 },
@@ -382,6 +390,6 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.4, color: "#9CA3AF", marginBottom: 12 },
   divider:      { height: 1, backgroundColor: "#F1F5F9", marginVertical: 10 },
   accountRow:   { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 18, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: "#FFF", borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0" },
-  accountIcon:  { width: 38, height: 38, borderRadius: 11, backgroundColor: "#1E3A8A", alignItems: "center", justifyContent: "center" },
+  accountIcon:  { width: 38, height: 38, borderRadius: 11, backgroundColor: primary, alignItems: "center", justifyContent: "center" },
   accountLabel: { flex: 1, fontSize: 14, fontWeight: "700", color: "#111827" },
 });

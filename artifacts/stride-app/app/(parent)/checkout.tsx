@@ -108,6 +108,7 @@ type BatchStatus = {
 export default function CheckoutScreen() {
   const router    = useRouter();
   const colors    = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets    = useSafeAreaInsets();
   const { items, removeItem } = useCart();
   const { children, addDocument } = useAppData();
@@ -223,15 +224,15 @@ export default function CheckoutScreen() {
         const html =
           `<!DOCTYPE html><html><head><meta charset="utf-8"/>` +
           `<style>*{box-sizing:border-box;margin:0;padding:0}` +
-          `body{font-family:Arial,sans-serif;padding:40px;color:#1E3A8A}` +
-          `.header{border-bottom:3px solid #FBBF24;padding-bottom:16px;margin-bottom:24px}` +
+          `body{font-family:Arial,sans-serif;padding:40px;color:"#1E3A8A"}` +
+          `.header{border-bottom:3px solid "#FBBF24";padding-bottom:16px;margin-bottom:24px}` +
           `.org{font-size:24px;font-weight:800}.sub{font-size:14px;color:#6B7280;margin-top:4px}` +
           `.meta{display:flex;justify-content:space-between;margin-bottom:24px;font-size:13px}` +
           `.lbl{color:#9CA3AF}.val{font-weight:600}` +
           `table{width:100%;border-collapse:collapse}` +
-          `th{background:#1E3A8A;color:#fff;padding:10px 12px;text-align:left;font-size:13px}` +
+          `th{background:"#1E3A8A";color:#fff;padding:10px 12px;text-align:left;font-size:13px}` +
           `td{padding:10px 12px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151}` +
-          `.tot{margin-top:16px;text-align:right;font-size:16px;font-weight:800;color:#1E3A8A}` +
+          `.tot{margin-top:16px;text-align:right;font-size:16px;font-weight:800;color:"#1E3A8A"}` +
           `.foot{margin-top:40px;text-align:center;font-size:11px;color:#9CA3AF;border-top:1px solid #E5E7EB;padding-top:16px}` +
           `</style></head><body>` +
           `<div class="header"><div class="org">${orgTitle}</div><div class="sub">Payment Receipt</div></div>` +
@@ -595,8 +596,8 @@ export default function CheckoutScreen() {
         <View style={styles.emptyCenter}>
           <Ionicons name="cart-outline" size={56} color={colors.mutedForeground} />
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No items ready for checkout.</Text>
-          <Pressable style={[styles.outlineBtn, { borderColor: colors.primary }]} onPress={() => router.navigate("/(parent)/cart" as never)}>
-            <Text style={[styles.outlineBtnText, { color: colors.primary }]}>Go Back</Text>
+          <Pressable style={[styles.outlineBtn, { borderColor: "#1E3A8A" }]} onPress={() => router.navigate("/(parent)/cart" as never)}>
+            <Text style={[styles.outlineBtnText, { color: "#1E3A8A" }]}>Go Back</Text>
           </Pressable>
         </View>
       </View>
@@ -667,7 +668,7 @@ export default function CheckoutScreen() {
                   <View key={item.id} style={[styles.bookingCard, idx > 0 && { marginTop: 12 }]}>
                     {isPrivate && (
                       <View style={styles.bookingCardHeader}>
-                        <Ionicons name="person-circle-outline" size={16} color="#FBBF24" />
+                        <Ionicons name="person-circle-outline" size={16} color={"#FBBF24"} />
                         <Text style={styles.bookingCardType}>Private Lesson</Text>
                       </View>
                     )}
@@ -691,7 +692,7 @@ export default function CheckoutScreen() {
                     ))}
                     {location && (
                       <Pressable style={styles.gpsBtn} onPress={() => handleGpsNavigate(location)}>
-                        <Ionicons name="navigate" size={16} color="#1E3A8A" />
+                        <Ionicons name="navigate" size={16} color={"#1E3A8A"} />
                         <Text style={styles.gpsBtnText}>Navigate via GPS</Text>
                       </Pressable>
                     )}
@@ -718,7 +719,7 @@ export default function CheckoutScreen() {
           </Text>
 
           <Pressable style={[styles.successBtn, { backgroundColor: "#FFF" }]} onPress={() => router.replace("/(parent)/documents")}>
-            <Ionicons name="document-text-outline" size={18} color="#1E3A8A" />
+            <Ionicons name="document-text-outline" size={18} color={"#1E3A8A"} />
             <Text style={[styles.successBtnText, { color: "#1E3A8A" }]}>View Invoice in Documents</Text>
           </Pressable>
           <Pressable style={[styles.successBtn, { backgroundColor: "rgba(255,255,255,0.15)", marginTop: 10 }]} onPress={() => router.replace("/(parent)/home")}>
@@ -775,8 +776,8 @@ export default function CheckoutScreen() {
         {/* ── Loading quote ── */}
         {quoteFetching && (
           <View style={[styles.quoteLoadingCard, { backgroundColor: colors.card }]}>
-            <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 16 }} />
-            <Text style={[styles.quoteLoadingTitle, { color: colors.primary }]}>Calculating your order…</Text>
+            <ActivityIndicator size="large" color={"#1E3A8A"} style={{ marginBottom: 16 }} />
+            <Text style={[styles.quoteLoadingTitle, { color: "#1E3A8A" }]}>Calculating your order…</Text>
             <Text style={[styles.quoteLoadingSub, { color: colors.mutedForeground }]}>Verifying prices securely on the server</Text>
           </View>
         )}
@@ -811,8 +812,8 @@ export default function CheckoutScreen() {
                       {sess.position < batchCurrentPos ? "✓" : `${sess.position}`}
                     </Text>
                   </View>
-                  <Text style={[styles.summaryTitle, { color: colors.primary, flex: 1 }]}>{sess.orgName}</Text>
-                  <Text style={[styles.batchAmount, { color: colors.primary }]}>
+                  <Text style={[styles.summaryTitle, { color: "#1E3A8A", flex: 1 }]}>{sess.orgName}</Text>
+                  <Text style={[styles.batchAmount, { color: "#1E3A8A" }]}>
                     {formatCents(sess.amountCents, sess.currency)}
                   </Text>
                 </View>
@@ -834,11 +835,11 @@ export default function CheckoutScreen() {
                 Tapping below opens Stripe for payment {batchCurrentPos} of {batchQuote.totalSessions}. Return here after each payment to continue.
               </Text>
               <Pressable style={[styles.payBtn, { backgroundColor: "#FBBF24" }]} onPress={openPaymentPage}>
-                <Ionicons name="lock-closed" size={18} color="#1E3A8A" />
+                <Ionicons name="lock-closed" size={18} color={"#1E3A8A"} />
                 <Text style={styles.payBtnText}>
                   Pay {activeBatchSession ? formatCents(activeBatchSession.amountCents, activeBatchSession.currency) : ""} to {activeBatchSession?.orgName ?? "Organisation"} →
                 </Text>
-                <Ionicons name="open-outline" size={16} color="#1E3A8A" />
+                <Ionicons name="open-outline" size={16} color={"#1E3A8A"} />
               </Pressable>
               <Text style={[styles.payCardNote, { color: colors.mutedForeground }]}>
                 Payment {batchCurrentPos} of {batchQuote.totalSessions} · Next payments open automatically after each confirmation.
@@ -859,8 +860,8 @@ export default function CheckoutScreen() {
 
             <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
               <View style={styles.summaryHeader}>
-                <Ionicons name="receipt-outline" size={18} color={colors.primary} />
-                <Text style={[styles.summaryTitle, { color: colors.primary }]}>Itemized Summary</Text>
+                <Ionicons name="receipt-outline" size={18} color={"#1E3A8A"} />
+                <Text style={[styles.summaryTitle, { color: "#1E3A8A" }]}>Itemized Summary</Text>
                 <View style={[styles.serverBadge, { backgroundColor: "#EFF6FF" }]}>
                   <Text style={[styles.serverBadgeText, { color: "#1D4ED8" }]}>Server-calculated</Text>
                 </View>
@@ -891,7 +892,7 @@ export default function CheckoutScreen() {
                         {formatCurrency(item.unitPrice, quote.currency)}
                       </Text>
                     )}
-                    <Text style={[styles.lineItemFinalPrice, { color: item.discount > 0 ? "#059669" : colors.primary }]}>
+                    <Text style={[styles.lineItemFinalPrice, { color: item.discount > 0 ? "#059669" : "#1E3A8A" }]}>
                       {formatCurrency(item.finalPrice, quote.currency)}
                     </Text>
                     {item.discount > 0 && (
@@ -918,8 +919,8 @@ export default function CheckoutScreen() {
               )}
 
               <View style={styles.totalRow}>
-                <Text style={[styles.totalLabel, { color: colors.primary }]}>Total Due</Text>
-                <Text style={[styles.totalAmount, { color: colors.primary }]}>
+                <Text style={[styles.totalLabel, { color: "#1E3A8A" }]}>Total Due</Text>
+                <Text style={[styles.totalAmount, { color: "#1E3A8A" }]}>
                   {formatCurrency(quote.calculatedTotal, quote.currency)}
                 </Text>
               </View>
@@ -961,7 +962,7 @@ export default function CheckoutScreen() {
                       }]}
                       onPress={() => setSelectedPaymentMethod(method.id)}
                     >
-                      <Ionicons name={method.icon} size={18} color={selectedPaymentMethod === method.id ? "#FFF" : colors.primary} />
+                      <Ionicons name={method.icon} size={18} color={selectedPaymentMethod === method.id ? "#FFF" : "#1E3A8A"} />
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontWeight: "700", fontSize: 13, color: selectedPaymentMethod === method.id ? "#FFF" : colors.foreground }}>
                           {method.label}
@@ -979,7 +980,7 @@ export default function CheckoutScreen() {
                 style={[styles.payBtn, { backgroundColor: "#FBBF24" }]} 
                 onPress={selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay" ? openPaymentPage : handleManualPayment}
               >
-                <Ionicons name={selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay" ? "lock-closed" : "cash-outline"} size={18} color="#1E3A8A" />
+                <Ionicons name={selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay" ? "lock-closed" : "cash-outline"} size={18} color={"#1E3A8A"} />
                 <Text style={styles.payBtnText}>
                   {selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay"
                     ? `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} Securely Online`
@@ -990,7 +991,7 @@ export default function CheckoutScreen() {
                     : `Pay ${formatCurrency(quote.calculatedTotal, quote.currency)} via PayPal`
                   }
                 </Text>
-                <Ionicons name="open-outline" size={16} color="#1E3A8A" />
+                <Ionicons name="open-outline" size={16} color={"#1E3A8A"} />
               </Pressable>
               <Text style={[styles.payCardNote, { color: colors.mutedForeground }]}>
                 {selectedPaymentMethod === "stripe_card" || selectedPaymentMethod === "apple_pay" || selectedPaymentMethod === "google_pay"
@@ -1007,11 +1008,11 @@ export default function CheckoutScreen() {
         {/* ── Waiting for payment ── */}
         {waitingForReturn && (
           <View style={[styles.waitingCard, { backgroundColor: colors.card }]}>
-            <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 16 }} />
+            <ActivityIndicator size="large" color={"#1E3A8A"} style={{ marginBottom: 16 }} />
 
             {batchQuote ? (
               <>
-                <Text style={[styles.waitingTitle, { color: colors.primary }]}>
+                <Text style={[styles.waitingTitle, { color: "#1E3A8A" }]}>
                   Payment {batchCurrentPos} of {batchQuote.totalSessions}
                 </Text>
                 <Text style={[styles.waitingSub, { color: colors.mutedForeground }]}>
@@ -1019,7 +1020,7 @@ export default function CheckoutScreen() {
                 </Text>
                 {activeBatchSession && (
                   <View style={[styles.waitingAmountBadge, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.waitingAmountText, { color: colors.primary }]}>
+                    <Text style={[styles.waitingAmountText, { color: "#1E3A8A" }]}>
                       {formatCents(activeBatchSession.amountCents, activeBatchSession.currency)} · {activeBatchSession.orgName}
                     </Text>
                   </View>
@@ -1043,13 +1044,13 @@ export default function CheckoutScreen() {
               </>
             ) : (
               <>
-                <Text style={[styles.waitingTitle, { color: colors.primary }]}>Waiting for payment…</Text>
+                <Text style={[styles.waitingTitle, { color: "#1E3A8A" }]}>Waiting for payment…</Text>
                 <Text style={[styles.waitingSub, { color: colors.mutedForeground }]}>
                   Complete payment in the browser window that just opened. This screen updates automatically when done.
                 </Text>
                 {quote && (
                   <View style={[styles.waitingAmountBadge, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.waitingAmountText, { color: colors.primary }]}>
+                    <Text style={[styles.waitingAmountText, { color: "#1E3A8A" }]}>
                       {formatCurrency(quote.calculatedTotal, quote.currency)} pending
                     </Text>
                   </View>
@@ -1058,14 +1059,14 @@ export default function CheckoutScreen() {
             )}
 
             <Pressable
-              style={[styles.outlineBtn, { borderColor: colors.primary, marginTop: 16 }]}
+              style={[styles.outlineBtn, { borderColor: "#1E3A8A", marginTop: 16 }]}
               onPress={() => {
                 if (batchQuote) { void checkBatchStatus(); }
                 else if (pendingSessionId) { void checkSession(pendingSessionId); }
               }}
             >
-              <Ionicons name="refresh" size={15} color={colors.primary} />
-              <Text style={[styles.outlineBtnText, { color: colors.primary }]}>  Check Status Now</Text>
+              <Ionicons name="refresh" size={15} color={"#1E3A8A"} />
+              <Text style={[styles.outlineBtnText, { color: "#1E3A8A" }]}>  Check Status Now</Text>
             </Pressable>
 
             <Pressable
@@ -1085,7 +1086,7 @@ export default function CheckoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:   { flex: 1 },
   header:      { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1 },
   backBtn:     { padding: 6, width: 38 },
@@ -1163,7 +1164,7 @@ const styles = StyleSheet.create({
   methodChip:  { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   methodChipText: { fontSize: 12, fontWeight: "600" },
   payBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 17 },
-  payBtnText:  { fontWeight: "800", fontSize: 16, color: "#1E3A8A" },
+  payBtnText:  { fontWeight: "800", fontSize: 16, color: primary },
   payCardNote: { fontSize: 11, textAlign: "center", marginTop: 12, lineHeight: 16 },
   paymentMethodsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 14 },
 
@@ -1177,7 +1178,7 @@ const styles = StyleSheet.create({
   progressDot:        { width: 10, height: 10, borderRadius: 5 },
 
   // Success
-  successBg:     { backgroundColor: "#1E3A8A" },
+  successBg:     { backgroundColor: primary },
   successScroll: { alignItems: "center", paddingHorizontal: 24, paddingTop: 48, paddingBottom: 40 },
 
   realtimeBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(16,185,129,0.2)", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, marginBottom: 28, borderWidth: 1, borderColor: "rgba(16,185,129,0.4)" },
@@ -1190,13 +1191,13 @@ const styles = StyleSheet.create({
 
   bookingCard:       { width: "100%", backgroundColor: "rgba(255,255,255,0.11)", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)", marginBottom: 4 },
   bookingCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 14 },
-  bookingCardType:   { fontSize: 12, fontWeight: "800", color: "#FBBF24", textTransform: "uppercase", letterSpacing: 0.5 },
+  bookingCardType:   { fontSize: 12, fontWeight: "800", color: secondary, textTransform: "uppercase", letterSpacing: 0.5 },
   bookingRow:        { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
   bookingRowLeft:    { flexDirection: "row", alignItems: "center", gap: 6, minWidth: 100 },
   bookingLabel:      { fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: "600" },
   bookingValue:      { fontSize: 13, color: "#FFF", fontWeight: "600", flex: 1, textAlign: "right" },
-  gpsBtn:            { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#FBBF24", borderRadius: 12, paddingVertical: 12, marginTop: 14 },
-  gpsBtnText:        { color: "#1E3A8A", fontWeight: "800", fontSize: 14 },
+  gpsBtn:            { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: secondary, borderRadius: 12, paddingVertical: 12, marginTop: 14 },
+  gpsBtnText:        { color: primary, fontWeight: "800", fontSize: 14 },
 
   successSummaryCard: { width: "100%", borderRadius: 16, padding: 20, marginTop: 16, marginBottom: 20 },
   successRow:         { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },

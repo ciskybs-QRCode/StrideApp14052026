@@ -3,8 +3,10 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { AccountHubPage } from "@/components/AccountHubPage";
 import { useAuth } from "@/context/AuthContext";
+import { useColors } from "@/hooks/useColors";
 
 export default function SASettingsScreen() {
+  const colors = useColors();
   const { isOwner } = useAuth();
   const router = useRouter();
 
@@ -14,7 +16,7 @@ export default function SASettingsScreen() {
           icon: "key-outline" as const,
           label: "Platform Credentials",
           desc: "Change the platform owner email and password",
-          iconBg: "#1E3A8A12",
+          iconBg: ("#1E3A8A" + "12"),
           iconColor: "#1E3A8A",
           onPress: () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

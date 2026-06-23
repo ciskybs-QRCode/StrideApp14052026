@@ -15,14 +15,16 @@
 import { Redirect } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useColors } from "@/hooks/useColors";
 
 export default function MemberDashboard() {
+  const colors = useColors();
   const { user, isLoading } = useAuth();
 
   if (isLoading || !user) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1E3A8A" }}>
-        <ActivityIndicator color="#FBBF24" size="large" />
+        <ActivityIndicator color={"#FBBF24"} size="large" />
       </View>
     );
   }

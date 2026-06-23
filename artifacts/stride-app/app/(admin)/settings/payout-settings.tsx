@@ -187,8 +187,8 @@ export default function PayoutSettingsScreen() {
                   style={[
                     styles.freqChip,
                     {
-                      backgroundColor: active ? colors.primary : colors.background,
-                      borderColor:     active ? colors.primary : colors.border,
+                      backgroundColor: active ? "#1E3A8A" : colors.background,
+                      borderColor:     active ? "#1E3A8A" : colors.border,
                     },
                   ]}
                 >
@@ -343,7 +343,7 @@ export default function PayoutSettingsScreen() {
                   <Pressable
                     onPress={() => handleAction("paid")}
                     disabled={actionLoading}
-                    style={[styles.actionBtn, { backgroundColor: colors.primary, marginTop: 8 }]}
+                    style={[styles.actionBtn, { backgroundColor: "#1E3A8A", marginTop: 8 }]}
                   >
                     <Ionicons name="cash-outline" size={18} color="#fff" />
                     <Text style={[styles.actionBtnText, { color: "#fff" }]}>Mark as Paid</Text>

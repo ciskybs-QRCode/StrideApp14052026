@@ -16,8 +16,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as api from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 export default function ResetPasswordScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
   const [email,           setEmail]           = useState("");
@@ -71,7 +74,7 @@ export default function ResetPasswordScreen() {
 
           <View style={styles.headerRow}>
             <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-              <Ionicons name="chevron-back" size={24} color="#1E3A8A" />
+              <Ionicons name="chevron-back" size={24} color={colors.primary} />
             </Pressable>
           </View>
 
@@ -80,7 +83,7 @@ export default function ResetPasswordScreen() {
               <Ionicons
                 name={done ? "checkmark-circle-outline" : "key-outline"}
                 size={40}
-                color={done ? "#16A34A" : "#1E3A8A"}
+                color={done ? "#16A34A" : colors.primary}
               />
             </View>
           </View>
@@ -194,7 +197,7 @@ export default function ResetPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:      { flex: 1, backgroundColor: "#FFFFFF" },
   scroll:         { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 40 },
   headerRow:      { marginTop: 8, marginBottom: 4 },
@@ -202,16 +205,16 @@ const styles = StyleSheet.create({
   iconWrap:       { alignItems: "center", marginTop: 28, marginBottom: 28 },
   iconCircle:     { width: 88, height: 88, borderRadius: 44, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#DBEAFE" },
   iconCircleDone: { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" },
-  title:          { fontSize: 26, fontWeight: "800", color: "#1E3A8A", textAlign: "center", marginBottom: 10 },
+  title:          { fontSize: 26, fontWeight: "800", color: primary, textAlign: "center", marginBottom: 10 },
   subtitle:       { fontSize: 14, color: "#6B7BA4", textAlign: "center", lineHeight: 22, marginBottom: 28, paddingHorizontal: 8 },
   fieldLabel:     { fontSize: 11, fontWeight: "700", color: "#6B7BA4", letterSpacing: 0.8, marginBottom: 8 },
   inputWrapper:   { flexDirection: "row", alignItems: "center", backgroundColor: "#F0F4FF", borderRadius: 14, paddingHorizontal: 14, height: 52, borderWidth: 1.5, borderColor: "#D1D9F0", marginBottom: 2 },
   inputIcon:      { marginRight: 10 },
-  input:          { flex: 1, fontSize: 15, color: "#1E3A8A" },
-  codeInput:      { fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", fontSize: 20, fontWeight: "700", letterSpacing: 8, color: "#1E3A8A" },
+  input:          { flex: 1, fontSize: 15, color: primary },
+  codeInput:      { fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", fontSize: 20, fontWeight: "700", letterSpacing: 8, color: primary },
   errorBox:       { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 10, marginTop: 10, marginBottom: 4 },
   errorText:      { color: "#EF4444", fontSize: 13, flex: 1 },
-  resetBtn:       { backgroundColor: "#1E3A8A", borderRadius: 14, height: 52, alignItems: "center", justifyContent: "center", marginTop: 16, marginBottom: 14, shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8 },
+  resetBtn:       { backgroundColor: primary, borderRadius: 14, height: 52, alignItems: "center", justifyContent: "center", marginTop: 16, marginBottom: 14, shadowColor: primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 8 },
   resetBtnText:   { color: "#FFFFFF", fontWeight: "700", fontSize: 15, letterSpacing: 1.2 },
   bottomLink:     { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8 },
   bottomLinkText: { fontSize: 13, color: "#6B7BA4" },

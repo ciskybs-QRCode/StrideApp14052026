@@ -90,6 +90,7 @@ const badge = StyleSheet.create({
 
 export default function SessionsScreen() {
   const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
 
@@ -250,7 +251,7 @@ export default function SessionsScreen() {
         return (
           <Pressable
             key={s.id}
-            style={[styles.sessionTab, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+            style={[styles.sessionTab, active && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
             onPress={() => setSelectedId(s.id)}
           >
             <Text style={[styles.sessionTabDisc, { color: active ? "#FBBF24" : colors.mutedForeground }]}>
@@ -310,7 +311,7 @@ export default function SessionsScreen() {
               </View>
             ) : null}
             <View style={styles.starsBadge}>
-              <Ionicons name="star" size={10} color="#FBBF24" />
+              <Ionicons name="star" size={10} color={"#FBBF24"} />
               <Text style={styles.starsText}>{child.gold_stars}</Text>
             </View>
           </View>
@@ -341,7 +342,7 @@ export default function SessionsScreen() {
   if (sessionsLoading) {
     return (
       <View style={[styles.centred, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={"#1E3A8A"} />
         <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 13 }}>Loading sessions…</Text>
       </View>
     );
@@ -358,7 +359,7 @@ export default function SessionsScreen() {
             There are no scheduled classes for today.
           </Text>
           <Pressable
-            style={[styles.goCalBtn, { backgroundColor: colors.primary }]}
+            style={[styles.goCalBtn, { backgroundColor: "#1E3A8A" }]}
             onPress={() => router.push("/(operator)/calendar")}
           >
             <Ionicons name="calendar" size={16} color="#FFF" />
@@ -389,7 +390,7 @@ export default function SessionsScreen() {
               </View>
               <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
               <View style={styles.summaryItem}>
-                <Text style={[styles.summaryNum, { color: colors.primary }]}>{roster.length}</Text>
+                <Text style={[styles.summaryNum, { color: "#1E3A8A" }]}>{roster.length}</Text>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Enrolled</Text>
               </View>
             </View>
@@ -398,14 +399,14 @@ export default function SessionsScreen() {
           {/* Roster list */}
           {rosterLoading ? (
             <View style={[styles.centred, { flex: 1 }]}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <ActivityIndicator size="large" color={"#1E3A8A"} />
             </View>
           ) : (
             <ScrollView
               style={{ flex: 1 }}
               contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 140 }]}
               showsVerticalScrollIndicator={false}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={"#1E3A8A"} />}
             >
               {roster.length === 0 ? (
                 <View style={[styles.centred, { paddingVertical: 60 }]}>
@@ -437,9 +438,9 @@ export default function SessionsScreen() {
                 disabled={signingOut}
               >
                 {signingOut ? (
-                  <ActivityIndicator size="small" color="#1E3A8A" />
+                  <ActivityIndicator size="small" color={"#1E3A8A"} />
                 ) : (
-                  <Ionicons name="exit-outline" size={20} color="#1E3A8A" />
+                  <Ionicons name="exit-outline" size={20} color={"#1E3A8A"} />
                 )}
                 <Text style={styles.signOutBtnText}>
                   {signingOut ? "Signing Out…" : `Session Sign-Out (${presentCount} Active)`}
@@ -463,7 +464,7 @@ export default function SessionsScreen() {
         >
           <Pressable style={[styles.confirmCard, { backgroundColor: colors.card }]} onPress={() => {}}>
             <View style={styles.confirmIcon}>
-              <Ionicons name="hand-left" size={28} color="#1E3A8A" />
+              <Ionicons name="hand-left" size={28} color={colors.primary} />
             </View>
             <Text style={[styles.confirmTitle, { color: colors.foreground }]}>
               Mark Present Manually?
@@ -508,7 +509,7 @@ export default function SessionsScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   root:   { flex: 1 },
   centred: { alignItems: "center", justifyContent: "center", gap: 10, padding: 24 },
 
@@ -611,14 +612,14 @@ const styles = StyleSheet.create({
   signOutBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     gap: 10, height: 54, borderRadius: 16,
-    backgroundColor: "#FBBF24",
-    shadowColor: "#FBBF24",
+    backgroundColor: secondary,
+    shadowColor: secondary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 6,
   },
-  signOutBtnText: { fontSize: 16, fontWeight: "800", color: "#1E3A8A" },
+  signOutBtnText: { fontSize: 16, fontWeight: "800", color: primary },
 
   emptyTitle: { fontSize: 18, fontWeight: "800", textAlign: "center", marginTop: 8 },
   emptySub:   { fontSize: 13, textAlign: "center", lineHeight: 18 },
@@ -661,7 +662,7 @@ const styles = StyleSheet.create({
   confirmBtnCancelText: { fontWeight: "700", fontSize: 15 },
   confirmBtnOk: {
     flex: 1, height: 50, borderRadius: 12,
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
   },
   confirmBtnOkText: { color: "#FFF", fontWeight: "700", fontSize: 15 },

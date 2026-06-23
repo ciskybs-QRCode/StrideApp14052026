@@ -66,6 +66,7 @@ export default function DocumentsScreen() {
   const { documents, signDocument, mediaConsent, setMediaConsent, children, addChild, removeChild } = useAppData();
   const { user, updateUser } = useAuth();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const { secondaryRoleName } = useTerminology();
   const { markDocsRead } = useUnread();
@@ -302,13 +303,13 @@ export default function DocumentsScreen() {
               <Text style={[styles.profileName, { color: colors.foreground }]} numberOfLines={1}>{user?.name ?? "Member"}</Text>
               {user?.email ? <Text style={[styles.profileEmail, { color: colors.mutedForeground }]} numberOfLines={1}>{user.email}</Text> : null}
               <View style={styles.roleBadge}>
-                <Ionicons name="person" size={11} color="#1E3A8A" />
+                <Ionicons name="person" size={11} color={colors.primary} />
                 <Text style={styles.roleBadgeText}>Member</Text>
               </View>
             </View>
             <Pressable style={[styles.editProfileBtn, { backgroundColor: "rgba(30,58,138,0.08)", borderWidth: 1, borderColor: "rgba(30,58,138,0.2)" }]} onPress={openEditProfile} hitSlop={8}>
-              <Ionicons name="pencil-outline" size={14} color="#1E3A8A" />
-              <Text style={[styles.editProfileBtnText, { color: "#1E3A8A" }]}>Edit</Text>
+              <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+              <Text style={[styles.editProfileBtnText, { color: colors.primary }]}>Edit</Text>
             </Pressable>
           </View>
         </View>
@@ -340,7 +341,7 @@ export default function DocumentsScreen() {
               <View key={doc.id} style={[styles.docCard, { backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444", borderLeftWidth: 4, borderRadius: 12, marginBottom: 8 }]}>
                 <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#EF4444" />
                 <View style={styles.docInfo}>
-                  <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                  <Text style={[styles.docTitle, { color: "#1E3A8A" }]}>{doc.title}</Text>
                   <Text style={[styles.docStatus, { color: "#EF4444" }]}>Signature required</Text>
                 </View>
                 <Pressable style={styles.signBtn} onPress={() => router.push({ pathname: "/(parent)/doc-sign", params: { docId: doc.id } })}>
@@ -359,7 +360,7 @@ export default function DocumentsScreen() {
               onPress={() => setExpandedSection(expandedSection === "new" ? null : "new")}
             >
               <View style={[styles.docTileIconBox, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+                <Ionicons name="document-text-outline" size={22} color={"#1E3A8A"} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.docTileTitle, { color: colors.foreground }]}>Association Notices</Text>
@@ -372,15 +373,15 @@ export default function DocumentsScreen() {
               <View style={styles.docTileBody}>
                 {newDocs.map(doc => (
                   <Pressable key={doc.id} style={[styles.docCard, { backgroundColor: colors.background }]} onPress={() => handlePreview(doc)}>
-                    <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={colors.primary} />
+                    <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color={"#1E3A8A"} />
                     <View style={styles.docInfo}>
-                      <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                      <Text style={[styles.docTitle, { color: "#1E3A8A" }]}>{doc.title}</Text>
                       <Text style={[styles.docStatus, { color: colors.mutedForeground }]}>
                         From {doc.sentBy === "admin" ? "Administration" : "Association"} · {doc.sentAt}
                       </Text>
                     </View>
-                    <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
-                      <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? colors.primary : colors.mutedForeground} />
+                    <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? "#1E3A8A" + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
+                      <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? "#1E3A8A" : colors.mutedForeground} />
                     </Pressable>
                   </Pressable>
                 ))}
@@ -451,17 +452,17 @@ export default function DocumentsScreen() {
                     </View>
                   ) : null}
                   <Pressable onPress={() => setCertResult(null)} style={[styles.certUploadAgainBtn, { borderColor: colors.border }]}>
-                    <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
-                    <Text style={[styles.certUploadAgainText, { color: colors.primary }]}>Upload another</Text>
+                    <Ionicons name="cloud-upload-outline" size={14} color={"#1E3A8A"} />
+                    <Text style={[styles.certUploadAgainText, { color: "#1E3A8A" }]}>Upload another</Text>
                   </Pressable>
                 </View>
               ) : (
                 <Pressable
-                  style={[styles.certUploadBtn, { borderColor: colors.primary + "33", backgroundColor: colors.background }]}
+                  style={[styles.certUploadBtn, { borderColor: "#1E3A8A" + "33", backgroundColor: colors.background }]}
                   onPress={handleUploadCertificate}
                 >
                   <View style={[styles.certUploadIconBox, { backgroundColor: "#EFF6FF" }]}>
-                    <Ionicons name="cloud-upload-outline" size={20} color="#1E3A8A" />
+                    <Ionicons name="cloud-upload-outline" size={20} color={"#1E3A8A"} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.certUploadBtnTitle, { color: colors.foreground }]}>Upload Medical Certificate</Text>
@@ -496,7 +497,7 @@ export default function DocumentsScreen() {
               >
                 <Ionicons name={docTypeIcon(doc.type) as "document-text"} size={20} color="#10B981" />
                 <View style={styles.docInfo}>
-                  <Text style={[styles.docTitle, { color: colors.primary }]}>{doc.title}</Text>
+                  <Text style={[styles.docTitle, { color: "#1E3A8A" }]}>{doc.title}</Text>
                   <Text style={[styles.docStatus, { color: "#10B981" }]}>Signed on {doc.signedDate}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
@@ -551,7 +552,7 @@ export default function DocumentsScreen() {
         <View style={[styles.fullScreenModal, { backgroundColor: colors.background }]}>
           <View style={[styles.fullScreenHeader, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable onPress={() => setShowProfile(false)} style={styles.headerBack} hitSlop={12}>
-              <Ionicons name="chevron-back" size={24} color="#FBBF24" />
+              <Ionicons name="chevron-back" size={24} color={colors.secondary} />
             </Pressable>
             <Text style={[styles.headerTitle, { color: colors.primary }]}>Edit Profile</Text>
             <Pressable onPress={handleSaveProfile} style={[styles.headerSave, { backgroundColor: colors.primary }]}>
@@ -573,8 +574,8 @@ export default function DocumentsScreen() {
                     </Text>
                   )}
                 </View>
-                <View style={[styles.editAvatarBadge, { backgroundColor: "#FBBF24", borderColor: colors.background }]}>
-                  <Ionicons name="camera" size={13} color="#1E3A8A" />
+                <View style={[styles.editAvatarBadge, { backgroundColor: colors.secondary, borderColor: colors.background }]}>
+                  <Ionicons name="camera" size={13} color={colors.primary} />
                 </View>
               </Pressable>
               <Text style={[styles.editHeroName, { color: colors.primary }]}>
@@ -653,7 +654,7 @@ export default function DocumentsScreen() {
                 <React.Fragment key={c.id}>
                   {i > 0 && <View style={[styles.formDivider, { backgroundColor: colors.border }]} />}
                   <View style={styles.childFormRow}>
-                    <View style={[styles.childFormAvatar, { backgroundColor: colors.primary }]}>
+                    <View style={[styles.childFormAvatar, { backgroundColor: "#1E3A8A" }]}>
                       <Text style={styles.childFormAvatarText}>{c.name.charAt(0)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
@@ -711,7 +712,7 @@ export default function DocumentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 16 },
@@ -727,7 +728,7 @@ const styles = StyleSheet.create({
   downloadBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   consentCard: { borderRadius: 16, padding: 16, marginBottom: 20, gap: 10 },
   consentOption: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#D1D9F0" },
-  consentText: { flex: 1, fontSize: 14, fontWeight: "500", color: "#1E3A8A" },
+  consentText: { flex: 1, fontSize: 14, fontWeight: "500", color: primary },
 
   // Profile photo row (kept for edit modal usage)
   profilePhotoRow: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 14, marginBottom: 12 },
@@ -749,13 +750,13 @@ const styles = StyleSheet.create({
   avatarWrap: { position: "relative" },
   avatarCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" },
   avatarPhoto: { width: 54, height: 54, borderRadius: 27 },
-  avatarInitial: { color: "#1E3A8A", fontSize: 22, fontWeight: "700" },
+  avatarInitial: { color: primary, fontSize: 22, fontWeight: "700" },
   cameraOverlay: { position: "absolute", bottom: 0, right: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
   profileInfo: { flex: 1, minWidth: 0 },
   profileName: { fontSize: 16, fontWeight: "700", marginBottom: 2 },
   profileEmail: { fontSize: 12, marginBottom: 6 },
-  roleBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FBBF24", alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
-  roleBadgeText: { fontSize: 10, fontWeight: "700", color: "#1E3A8A" },
+  roleBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: secondary, alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  roleBadgeText: { fontSize: 10, fontWeight: "700", color: primary },
   editProfileBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8 },
   editProfileBtnText: { fontSize: 12, fontWeight: "700" },
 
@@ -765,7 +766,7 @@ const styles = StyleSheet.create({
   docTileIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   docTileTitle: { fontSize: 15, fontWeight: "700" },
   docTileSub: { fontSize: 12, marginTop: 2 },
-  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#FBBF24", marginRight: 4 },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: secondary, marginRight: 4 },
   docTileBody: { paddingHorizontal: 16, paddingBottom: 16 },
   subSectionLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase" as const, letterSpacing: 0.5, marginBottom: 8, marginTop: 2 },
   emptyTileText: { fontSize: 13, textAlign: "center" as const, paddingVertical: 12 },

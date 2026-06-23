@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { LayoutAnimation, Platform, Pressable, Text, UIManager, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useColors } from "@/hooks/useColors";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -59,6 +60,7 @@ const ITEMS: ChecklistItem[] = [
 
 export function SetupChecklist() {
   const router = useRouter();
+  const colors = useColors();
   const { user } = useAuth();
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState(false);
@@ -106,7 +108,7 @@ export function SetupChecklist() {
         borderRadius: 14,
         overflow: "hidden",
         borderWidth: 1,
-        borderColor: "#FBBF2450",
+        borderColor: ("#FBBF24" + "50"),
       }}
     >
       {/* ── Collapsed header bar ── */}
@@ -124,7 +126,7 @@ export function SetupChecklist() {
           opacity: pressed ? 0.85 : 1,
         })}
       >
-        <Ionicons name="checkmark-done-circle-outline" size={20} color="#FBBF24" />
+        <Ionicons name="checkmark-done-circle-outline" size={20} color={colors.secondary} />
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 12, fontWeight: "700", color: "#92400E" }}>
             Association setup — {doneCount}/{ITEMS.length} complete

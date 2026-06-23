@@ -17,6 +17,7 @@ import { useBranding } from "@/context/BrandingContext";
 import { api } from "@/lib/api";
 import type { OrgSearchResult } from "@/lib/api";
 import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 
 const C = colors.light;
 
@@ -31,6 +32,8 @@ function AssociationRow({
   isActive: boolean;
   onSwitch: () => void;
 }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <Pressable
       style={[styles.card, isActive && { borderColor: C.primary, borderWidth: 2 }]}
@@ -70,6 +73,8 @@ function AssociationRow({
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function OrgSearch() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { user, updateUser }         = useAuth();
   const { loadBrandingForOrg }       = useBranding();
 
@@ -212,7 +217,7 @@ export default function OrgSearch() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   root:      { flex: 1, backgroundColor: C.background },
 
   searchRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
@@ -260,7 +265,7 @@ const styles = StyleSheet.create({
 
   reviewsHeader:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
   reviewsTitle:   { fontSize: 14, fontWeight: "900", color: C.text },
-  avgRatingText:  { fontSize: 13, fontWeight: "700", color: "#FBBF24" },
+  avgRatingText:  { fontSize: 13, fontWeight: "700", color: secondary },
   noReviews:      { fontSize: 13, color: C.mutedForeground, textAlign: "center", marginVertical: 16 },
 
   reviewCard:     { borderRadius: 12, borderWidth: 1, borderColor: C.border, padding: 12, marginBottom: 10 },

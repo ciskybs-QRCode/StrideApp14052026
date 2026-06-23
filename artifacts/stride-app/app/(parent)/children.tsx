@@ -56,6 +56,7 @@ export default function ChildrenScreen() {
   const { children, delegates, addDelegate, removeDelegate, updateChild, addChild, removeChild } = useAppData();
   const { user } = useAuth();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const { primaryRoleName, secondaryRoleName } = useTerminology();
 
@@ -552,10 +553,10 @@ export default function ChildrenScreen() {
 
         {children.length === 0 && (
           <View style={{ alignItems: "center", paddingVertical: 40, gap: 14 }}>
-            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: `${colors.primary}12`, alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="people-circle-outline" size={48} color={colors.primary} />
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: `"#1E3A8A"12`, alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="people-circle-outline" size={48} color={"#1E3A8A"} />
             </View>
-            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.primary }}>No dependents linked</Text>
+            <Text style={{ fontSize: 17, fontWeight: "700", color: "#1E3A8A" }}>No dependents linked</Text>
             <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", paddingHorizontal: 16 }}>
               Add a dependent to manage medical information, consents and authorised pick-ups.
             </Text>
@@ -568,7 +569,7 @@ export default function ChildrenScreen() {
               {children.map(c => (
                 <Pressable
                   key={c.id}
-                  style={[styles.childTab, selectedChild === c.id && { backgroundColor: colors.primary }]}
+                  style={[styles.childTab, selectedChild === c.id && { backgroundColor: "#1E3A8A" }]}
                   onPress={() => {
                     setSelectedChild(c.id);
                     setAllergies(c.allergies);
@@ -595,7 +596,7 @@ export default function ChildrenScreen() {
             <View style={[styles.childCard, { backgroundColor: colors.card }]}>
               <View style={styles.childCardHeader}>
                 <Pressable
-                  style={[styles.childBigAvatar, { backgroundColor: child.photoUrl ? "transparent" : colors.primary, overflow: "hidden" }]}
+                  style={[styles.childBigAvatar, { backgroundColor: child.photoUrl ? "transparent" : "#1E3A8A", overflow: "hidden" }]}
                   onPress={pickExistingChildPhoto}
                 >
                   {child.photoUrl ? (
@@ -608,7 +609,7 @@ export default function ChildrenScreen() {
                   </View>
                 </Pressable>
                 <View style={styles.childCardInfo}>
-                  <Text style={[styles.childName, { color: colors.primary }]}>{child.name}</Text>
+                  <Text style={[styles.childName, { color: "#1E3A8A" }]}>{child.name}</Text>
                   {!!child.preferredName && (
                     <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>Called: {child.preferredName}</Text>
                   )}
@@ -616,8 +617,8 @@ export default function ChildrenScreen() {
                     {child.dateOfBirth ? calcAgeFromDob(child.dateOfBirth) : child.age} yrs
                   </Text>
                   <View style={styles.starsRow}>
-                    <Ionicons name="star" size={16} color="#FBBF24" />
-                    <Text style={[styles.starsCount, { color: colors.primary }]}>{child.stars} Gold Stars</Text>
+                    <Ionicons name="star" size={16} color={"#FBBF24"} />
+                    <Text style={[styles.starsCount, { color: "#1E3A8A" }]}>{child.stars} Gold Stars</Text>
                   </View>
                 </View>
               </View>
@@ -682,8 +683,8 @@ export default function ChildrenScreen() {
                 style={[styles.actionBtn, { backgroundColor: colors.muted }]}
                 onPress={() => setShowMedical(true)}
               >
-                <Ionicons name="medical-outline" size={18} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Edit Medical Info</Text>
+                <Ionicons name="medical-outline" size={18} color={"#1E3A8A"} />
+                <Text style={[styles.actionBtnText, { color: "#1E3A8A" }]}>Edit Medical Info</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
@@ -691,8 +692,8 @@ export default function ChildrenScreen() {
                 style={[styles.actionBtn, { backgroundColor: colors.muted, marginTop: 4 }]}
                 onPress={() => router.push({ pathname: "/(parent)/pickup-audit", params: { childId: child.id } })}
               >
-                <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Pickup History</Text>
+                <Ionicons name="shield-checkmark-outline" size={18} color={"#1E3A8A"} />
+                <Text style={[styles.actionBtnText, { color: "#1E3A8A" }]}>Pickup History</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
@@ -700,8 +701,8 @@ export default function ChildrenScreen() {
                 style={[styles.actionBtn, { backgroundColor: colors.muted, marginTop: 4 }]}
                 onPress={() => router.push({ pathname: "/(parent)/guardian-circle", params: { childId: child.id } })}
               >
-                <Ionicons name="people-circle-outline" size={18} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Guardian Circle</Text>
+                <Ionicons name="people-circle-outline" size={18} color={"#1E3A8A"} />
+                <Text style={[styles.actionBtnText, { color: "#1E3A8A" }]}>Guardian Circle</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
@@ -719,12 +720,12 @@ export default function ChildrenScreen() {
                     disabled={medCertAnalyzing}
                   >
                     {medCertAnalyzing ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
+                      <ActivityIndicator size="small" color={"#1E3A8A"} />
                     ) : (
-                      <Ionicons name="document-text-outline" size={18} color={cert ? certColor : colors.primary} />
+                      <Ionicons name="document-text-outline" size={18} color={cert ? certColor : "#1E3A8A"} />
                     )}
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.actionBtnText, { flex: 0, color: cert ? certColor : colors.primary }]}>
+                      <Text style={[styles.actionBtnText, { flex: 0, color: cert ? certColor : "#1E3A8A" }]}>
                         {cert ? "Medical Certificate" : "Upload Medical Certificate"}
                       </Text>
                       {cert?.expiry ? (
@@ -815,7 +816,7 @@ export default function ChildrenScreen() {
                       style={[styles.confirmBtn, { backgroundColor: colors.muted, flex: 1 }]}
                       onPress={() => setShowDeleteConfirm(false)}
                     >
-                      <Text style={[styles.confirmBtnText, { color: colors.primary }]}>Cancel</Text>
+                      <Text style={[styles.confirmBtnText, { color: "#1E3A8A" }]}>Cancel</Text>
                     </Pressable>
                     <Pressable
                       style={[styles.confirmBtn, { backgroundColor: "#EF4444", flex: 1 }]}
@@ -829,9 +830,9 @@ export default function ChildrenScreen() {
             </View>
 
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.primary }]}>Smart Pick-Up</Text>
+              <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Smart Pick-Up</Text>
               <Pressable
-                style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                style={[styles.addBtn, { backgroundColor: "#1E3A8A" }]}
                 onPress={() => setShowAddDelegate(true)}
               >
                 <Ionicons name="add" size={18} color="#FFF" />
@@ -851,11 +852,11 @@ export default function ChildrenScreen() {
                     {delegate.photoUrl ? (
                       <Image source={{ uri: delegate.photoUrl }} style={{ width: 40, height: 40, borderRadius: 20 }} />
                     ) : (
-                      <Ionicons name="person" size={20} color={colors.primary} />
+                      <Ionicons name="person" size={20} color={"#1E3A8A"} />
                     )}
                   </View>
                   <View style={styles.delegateInfo}>
-                    <Text style={[styles.delegateName, { color: colors.primary }]}>{delegate.name} {delegate.surname}</Text>
+                    <Text style={[styles.delegateName, { color: "#1E3A8A" }]}>{delegate.name} {delegate.surname}</Text>
                     <Text style={[styles.delegatePhone, { color: colors.mutedForeground }]}>{delegate.phone}</Text>
                     {delegate.approved && (
                       <View style={styles.approvedBadge}>
@@ -865,11 +866,11 @@ export default function ChildrenScreen() {
                     )}
                   </View>
                   <View style={styles.delegateActions}>
-                    <Pressable style={[styles.delegateBtn, { backgroundColor: colors.secondary }]} onPress={() => setShowQRPass(delegate.id)}>
-                      <Ionicons name="qr-code" size={16} color={colors.primary} />
+                    <Pressable style={[styles.delegateBtn, { backgroundColor: "#FBBF24" }]} onPress={() => setShowQRPass(delegate.id)}>
+                      <Ionicons name="qr-code" size={16} color={"#1E3A8A"} />
                     </Pressable>
                     <Pressable style={[styles.delegateBtn, { backgroundColor: colors.muted }]} onPress={() => handleSharePass(delegate)}>
-                      <Ionicons name="share-social-outline" size={16} color={colors.primary} />
+                      <Ionicons name="share-social-outline" size={16} color={"#1E3A8A"} />
                     </Pressable>
                     <Pressable style={[styles.delegateBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => removeDelegate(delegate.id)}>
                       <Ionicons name="trash-outline" size={16} color="#EF4444" />
@@ -880,7 +881,7 @@ export default function ChildrenScreen() {
             )}
           {/* Privacy & Notification Settings */}
           <View style={[styles.childCard, { backgroundColor: colors.card, marginTop: 8 }]}>
-            <Text style={[styles.childName, { color: colors.primary, fontSize: 16, marginBottom: 4 }]}>
+            <Text style={[styles.childName, { color: "#1E3A8A", fontSize: 16, marginBottom: 4 }]}>
               🔔  Safety & Notification Settings
             </Text>
             <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 14, lineHeight: 16 }}>
@@ -916,7 +917,7 @@ export default function ChildrenScreen() {
                   <Switch
                     value={isOn}
                     onValueChange={v => { void handleNoshowToggle(child.id, child.name, v); }}
-                    trackColor={{ false: "#EF4444", true: colors.primary }}
+                    trackColor={{ false: "#EF4444", true: "#1E3A8A" }}
                     thumbColor="#FFF"
                   />
                 </View>
@@ -935,7 +936,7 @@ export default function ChildrenScreen() {
               <Switch
                 value={emergencyContactVisible}
                 onValueChange={toggleEmergencyContact}
-                trackColor={{ false: "#D1D5DB", true: colors.primary }}
+                trackColor={{ false: "#D1D5DB", true: "#1E3A8A" }}
                 thumbColor="#FFF"
               />
             </View>
@@ -952,7 +953,7 @@ export default function ChildrenScreen() {
         onRequestClose={() => { if (!liabilitySaving) setShowLiabilityModal(false); }}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { borderColor: "#FBBF24", borderWidth: 2, maxHeight: "85%", paddingTop: 28 }]}>
+          <View style={[styles.modalCard, { borderColor: colors.secondary, borderWidth: 2, maxHeight: "85%", paddingTop: 28 }]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
               {/* Warning header */}
               <View style={{ alignItems: "center", marginBottom: 18 }}>
@@ -1062,7 +1063,7 @@ export default function ChildrenScreen() {
                     </Text>
                   </View>
 
-                  <Text style={[styles.modalLabel, { color: colors.primary }]}>
+                  <Text style={[styles.modalLabel, { color: "#1E3A8A" }]}>
                     {promoteChildName}&apos;s new login email
                   </Text>
                   <TextInput
@@ -1078,9 +1079,9 @@ export default function ChildrenScreen() {
 
                   <View style={{ flexDirection: "row", gap: 12 }}>
                     <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setShowPromoteModal(false)}>
-                      <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+                      <Text style={[styles.modalBtnText, { color: "#1E3A8A" }]}>Cancel</Text>
                     </Pressable>
-                    <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handlePromote}>
+                    <Pressable style={[styles.modalBtn, { backgroundColor: "#1E3A8A", flex: 1 }]} onPress={handlePromote}>
                       <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Next</Text>
                     </Pressable>
                   </View>
@@ -1094,7 +1095,7 @@ export default function ChildrenScreen() {
                     </Text>
                   </View>
 
-                  <Text style={[styles.modalLabel, { color: colors.primary }]}>Your Current Password</Text>
+                  <Text style={[styles.modalLabel, { color: "#1E3A8A" }]}>Your Current Password</Text>
                   <TextInput
                     style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground, marginBottom: 20 }]}
                     value={promotePassword}
@@ -1107,7 +1108,7 @@ export default function ChildrenScreen() {
 
                   <View style={{ flexDirection: "row", gap: 12 }}>
                     <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => setPromoteStep(1)}>
-                      <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
+                      <Text style={[styles.modalBtnText, { color: "#1E3A8A" }]}>Back</Text>
                     </Pressable>
                     <Pressable
                       style={[styles.modalBtn, { backgroundColor: promoteLoading ? "#6B7280" : "#15803D", flex: 1 }]}
@@ -1184,7 +1185,7 @@ export default function ChildrenScreen() {
                     ]}
                     onPress={() => setMedicalWaiver(opt)}
                   >
-                    <Ionicons name={isSel ? "radio-button-on" : "radio-button-off"} size={18} color={isSel ? cfg.color : colors.primary} />
+                    <Ionicons name={isSel ? "radio-button-on" : "radio-button-off"} size={18} color={isSel ? cfg.color : "#1E3A8A"} />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.waiverText, { color: isSel ? cfg.color : colors.foreground }]}>{cfg.label}</Text>
                       <Text style={[styles.waiverHint, { color: colors.mutedForeground }]}>{cfg.hint}</Text>
@@ -1257,10 +1258,10 @@ export default function ChildrenScreen() {
 
               {/* Security photo tip */}
               <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#EFF6FF", borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: "#BFDBFE" }}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#1E3A8A" style={{ marginTop: 1 }} />
+                <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} style={{ marginTop: 1 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A", marginBottom: 3 }}>Safety tip: add a photo</Text>
-                  <Text style={{ fontSize: 11, color: "#1E3A8A", lineHeight: 16, opacity: 0.8 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary, marginBottom: 3 }}>Safety tip: add a photo</Text>
+                  <Text style={{ fontSize: 11, color: colors.primary, lineHeight: 16, opacity: 0.8 }}>
                     Adding a photo of the person authorised to collect your dependent reduces the risk of them being released to the wrong person. Operators will see it when scanning the collection pass.
                   </Text>
                 </View>
@@ -1278,12 +1279,12 @@ export default function ChildrenScreen() {
                 }}
                 style={{ alignSelf: "center", marginBottom: 16 }}
               >
-                <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: delegatePhoto ? "transparent" : "#DBEAFE", alignItems: "center", justifyContent: "center", overflow: "hidden", borderWidth: 2, borderColor: "#1E3A8A", borderStyle: delegatePhoto ? "solid" : "dashed" }}>
+                <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: delegatePhoto ? "transparent" : "#DBEAFE", alignItems: "center", justifyContent: "center", overflow: "hidden", borderWidth: 2, borderColor: colors.primary, borderStyle: delegatePhoto ? "solid" : "dashed" }}>
                   {delegatePhoto ? (
                     <Image source={{ uri: delegatePhoto }} style={{ width: 72, height: 72, borderRadius: 36 }} />
                   ) : (
                     <View style={{ alignItems: "center", gap: 4 }}>
-                      <Ionicons name="camera-outline" size={24} color="#1E3A8A" />
+                      <Ionicons name="camera-outline" size={24} color={"#1E3A8A"} />
                       <Text style={{ fontSize: 9, color: "#1E3A8A", fontWeight: "700" }}>ADD PHOTO</Text>
                     </View>
                   )}
@@ -1299,7 +1300,7 @@ export default function ChildrenScreen() {
                 { label: "Phone",      value: delegatePhone,   setter: setDelegatePhone,   placeholder: "+1 555 123 4567", keyboard: "phone-pad" as const },
               ].map(field => (
                 <View key={field.label} style={{ marginBottom: 12 }}>
-                  <Text style={[styles.modalLabel, { color: colors.primary }]}>{field.label}</Text>
+                  <Text style={[styles.modalLabel, { color: "#1E3A8A" }]}>{field.label}</Text>
                   <TextInput
                     style={[styles.modalInput, { borderColor: colors.border }]}
                     value={field.value}
@@ -1455,7 +1456,7 @@ export default function ChildrenScreen() {
                     <Ionicons
                       name={newChildHasAllergies === opt ? "radio-button-on" : "radio-button-off"}
                       size={18}
-                      color={newChildHasAllergies === opt ? (opt ? "#F59E0B" : "#10B981") : colors.primary}
+                      color={newChildHasAllergies === opt ? (opt ? "#F59E0B" : "#10B981") : "#1E3A8A"}
                     />
                     <Text style={[styles.waiverText, { color: newChildHasAllergies === opt ? (opt ? "#F59E0B" : "#10B981") : colors.foreground }]}>
                       {opt ? "Yes" : "No"}
@@ -1466,7 +1467,7 @@ export default function ChildrenScreen() {
 
               {newChildHasAllergies && (
                 <>
-                  <Text style={[styles.modalLabel, { color: colors.primary }]}>Which allergies? <Text style={{ color: "#EF4444" }}>*</Text></Text>
+                  <Text style={[styles.modalLabel, { color: "#1E3A8A" }]}>Which allergies? <Text style={{ color: "#EF4444" }}>*</Text></Text>
                   <TextInput
                     style={[styles.modalInput, { borderColor: "#F59E0B", color: colors.foreground, marginBottom: 14 }]}
                     value={newChildAllergies}
@@ -1519,7 +1520,7 @@ export default function ChildrenScreen() {
                     <Ionicons
                       name={isSel ? "radio-button-on" : "radio-button-off"}
                       size={18}
-                      color={isSel ? cfg.color : colors.primary}
+                      color={isSel ? cfg.color : "#1E3A8A"}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.waiverText, { color: isSel ? cfg.color : colors.foreground }]}>{cfg.label}</Text>
@@ -1614,11 +1615,11 @@ export default function ChildrenScreen() {
                   }}
                 >
                   {medCertAnalyzing ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
+                    <ActivityIndicator size="small" color={"#1E3A8A"} />
                   ) : (
                     <>
-                      <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
-                      <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>Upload medical certificate</Text>
+                      <Ionicons name="cloud-upload-outline" size={20} color={"#1E3A8A"} />
+                      <Text style={{ fontSize: 13, color: "#1E3A8A", fontWeight: "600" }}>Upload medical certificate</Text>
                     </>
                   )}
                 </Pressable>
@@ -1658,10 +1659,10 @@ export default function ChildrenScreen() {
                       <QRCode
                         value={qrPayload}
                         size={180}
-                        color={colors.primary}
+                        color={"#1E3A8A"}
                         backgroundColor="transparent"
                       />
-                      <Text style={{ marginTop: 14, fontSize: 24, fontWeight: "800", letterSpacing: 8, color: colors.primary }}>{del.pin}</Text>
+                      <Text style={{ marginTop: 14, fontSize: 24, fontWeight: "800", letterSpacing: 8, color: "#1E3A8A" }}>{del.pin}</Text>
                       <Text style={{ color: colors.mutedForeground, marginTop: 4, fontSize: 12 }}>6-digit PIN</Text>
                     </View>
                   </>
@@ -1678,7 +1679,7 @@ export default function ChildrenScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
@@ -1700,8 +1701,8 @@ const styles = StyleSheet.create({
   addChildSubtitle: { fontSize: 13, lineHeight: 18, marginBottom: 16 },
   childTab: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 50, marginRight: 10, backgroundColor: "#E8EDF8" },
   childAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#D1D9F0", alignItems: "center", justifyContent: "center" },
-  childAvatarText: { color: "#1E3A8A", fontWeight: "700", fontSize: 13 },
-  childTabText: { fontWeight: "600", fontSize: 14, color: "#1E3A8A" },
+  childAvatarText: { color: primary, fontWeight: "700", fontSize: 13 },
+  childTabText: { fontWeight: "600", fontSize: 14, color: primary },
   childCard: { borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 },
   childCardHeader: { flexDirection: "row", gap: 16, marginBottom: 12 },
   childBigAvatar: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
@@ -1750,9 +1751,9 @@ const styles = StyleSheet.create({
   modalCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 24, margin: 16 },
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 16 },
   modalLabel: { fontSize: 13, fontWeight: "600", marginBottom: 8 },
-  modalInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: "#1E3A8A" },
+  modalInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: primary },
   waiverOption: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#D1D9F0", marginBottom: 10 },
-  waiverText: { fontSize: 13, fontWeight: "600", color: "#1E3A8A" },
+  waiverText: { fontSize: 13, fontWeight: "600", color: primary },
   waiverHint: { fontSize: 11, marginTop: 2, lineHeight: 15 },
   fieldHint: { fontSize: 12, marginBottom: 10, lineHeight: 16 },
   sectionDivider: { borderTopWidth: 1, marginVertical: 16 },

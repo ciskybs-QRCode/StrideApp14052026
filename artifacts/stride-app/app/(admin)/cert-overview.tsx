@@ -30,6 +30,8 @@ function statusSort(a: string, b: string) {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const meta = STATUS_META[status] ?? { label: status, bg: "#E5E7EB", text: "#374151" };
   return (
     <View style={[styles.badge, { backgroundColor: meta.bg }]}>
@@ -39,8 +41,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function CertOverviewPage() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const router   = useRouter();
-  const colors   = useColors();
   const insets   = useSafeAreaInsets();
 
   const [loading, setLoading]   = useState(true);
@@ -132,7 +135,7 @@ export default function CertOverviewPage() {
       <ScreenHeader title="Certificate Status" onBack={() => router.navigate("/(admin)/operations-hub" as never)} />
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color="#1E3A8A" /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
       ) : (
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
@@ -154,7 +157,7 @@ export default function CertOverviewPage() {
           {/* ── Pending Review Banner ── */}
           {hasPending && (
             <View style={[styles.alert, { backgroundColor: "#EFF6FF", borderLeftColor: "#1E3A8A" }]}>
-              <Ionicons name="time-outline" size={18} color="#1E3A8A" />
+              <Ionicons name="time-outline" size={18} color={"#1E3A8A"} />
               <Text style={[styles.alertBody, { color: "#1E3A8A", flex: 1 }]}>
                 {pendingMedical.length + pendingFirstAid.length} certificate{pendingMedical.length + pendingFirstAid.length !== 1 ? "s" : ""} need your review — scroll to find them or switch tabs.
               </Text>
@@ -301,11 +304,11 @@ export default function CertOverviewPage() {
                 <Text style={[styles.modalBtnText, { color: colors.foreground }]}>Cancel</Text>
               </Pressable>
               <Pressable
-                style={[styles.modalBtn, { backgroundColor: "#1E3A8A", flex: 1, opacity: actionLoading ? 0.7 : 1 }]}
+                style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1, opacity: actionLoading ? 0.7 : 1 }]}
                 onPress={handleExtend}
                 disabled={!!actionLoading}
               >
-                {actionLoading ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={[styles.modalBtnText, { color: "#FBBF24" }]}>Extend</Text>}
+                {actionLoading ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={[styles.modalBtnText, { color: colors.secondary }]}>Extend</Text>}
               </Pressable>
             </View>
           </View>
@@ -366,6 +369,7 @@ function MedicalRow({ entry, isLast, colors, actionLoading, onExtend, onReview }
   onExtend: () => void;
   onReview: (action: "approve" | "reject") => void;
 }) {
+  const styles = make_styles(colors.primary, colors.secondary);
   const isPending = entry.cert_status === "pending_review";
   return (
     <View style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
@@ -389,7 +393,7 @@ function MedicalRow({ entry, isLast, colors, actionLoading, onExtend, onReview }
       </View>
       <View style={styles.rowActions}>
         <Pressable style={[styles.actionBtn, { borderColor: "#1E3A8A" }]} onPress={onExtend}>
-          <Ionicons name="time-outline" size={12} color="#1E3A8A" />
+          <Ionicons name="time-outline" size={12} color={"#1E3A8A"} />
           <Text style={[styles.actionBtnText, { color: "#1E3A8A" }]}>Extend</Text>
         </Pressable>
         {isPending && entry.cert_id && (
@@ -425,6 +429,7 @@ function FirstAidRow({ entry, isLast, colors, actionLoading, onReview }: {
   actionLoading: string | null;
   onReview: (action: "approve" | "reject") => void;
 }) {
+  const styles = make_styles(colors.primary, colors.secondary);
   const isPending = entry.cert_status === "pending_review";
   return (
     <View style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
@@ -464,7 +469,7 @@ function FirstAidRow({ entry, isLast, colors, actionLoading, onReview }: {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:     { flex: 1 },
   scroll:        { paddingHorizontal: 16, paddingTop: 12 },
   center:        { flex: 1, alignItems: "center", justifyContent: "center" },
@@ -478,8 +483,8 @@ const styles = StyleSheet.create({
   tabRow:        { flexDirection: "row", borderRadius: 14, padding: 4, marginBottom: 12, gap: 4 },
   tabBtn:        { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 10 },
   tabLabel:      { fontSize: 13, fontWeight: "700" },
-  tabDot:        { backgroundColor: "#FBBF24", borderRadius: 8, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
-  tabDotText:    { fontSize: 10, fontWeight: "800", color: "#1E3A8A" },
+  tabDot:        { backgroundColor: secondary, borderRadius: 8, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  tabDotText:    { fontSize: 10, fontWeight: "800", color: primary },
   card:          { borderRadius: 16, overflow: "hidden", marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
   row:           { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14 },
   rowName:       { fontSize: 14, fontWeight: "700", marginBottom: 4 },

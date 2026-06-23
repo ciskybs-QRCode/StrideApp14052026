@@ -1,7 +1,7 @@
 /**
  * SharedButton — Standardised primary action button.
  *
- * Defaults: Navy (#1E3A8A) background, Gold (#D4AF37) text/icon.
+ * Defaults: Navy ("#1E3A8A") background, Gold (#D4AF37) text/icon.
  * Colors are overridden by BrandingContext (via useColors) if the org
  * has set custom branding — the primary/secondary cascade is preserved.
  *
@@ -54,9 +54,9 @@ export function SharedButton({
   const colors = useColors();
 
   const palette = {
-    primary:   { bg: colors.primary,     fg: colors.secondary,           border: "transparent" },
-    secondary: { bg: colors.secondary,   fg: colors.primary,             border: "transparent" },
-    outline:   { bg: "transparent",      fg: colors.primary,             border: colors.primary },
+    primary:   { bg: "#1E3A8A",     fg: "#FBBF24",           border: "transparent" },
+    secondary: { bg: "#FBBF24",   fg: "#1E3A8A",             border: "transparent" },
+    outline:   { bg: "transparent",      fg: "#1E3A8A",             border: "#1E3A8A" },
     danger:    { bg: "#EF4444",           fg: "#FFFFFF",                  border: "transparent" },
     ghost:     { bg: "transparent",      fg: colors.mutedForeground,     border: "transparent" },
   }[variant];

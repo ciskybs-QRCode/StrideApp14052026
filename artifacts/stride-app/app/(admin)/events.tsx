@@ -88,16 +88,20 @@ function SectionHead({
   icon: React.ComponentProps<typeof Ionicons>["name"];
   title: string;
 }) {
+  const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   return (
     <View style={S.sectionHead}>
       <View style={S.sectionHeadLine} />
-      <Ionicons name={icon} size={14} color="#1E3A8A" />
+      <Ionicons name={icon} size={14} color={"#1E3A8A"} />
       <Text style={S.sectionHeadText}>{title}</Text>
     </View>
   );
 }
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
+  const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   return (
     <Text style={S.fieldLabel}>
       {label}{required && <Text style={{ color: "#EF4444" }}> *</Text>}
@@ -110,6 +114,8 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
 function CatChips({
   value, onChange,
 }: { value: Category; onChange: (c: Category) => void }) {
+  const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
       <View style={{ flexDirection: "row", gap: 8, paddingVertical: 4 }}>
@@ -145,10 +151,11 @@ function CatChips({
 
 function DateRow({ d, onDelete }: { d: EventDate; onDelete: () => void }) {
   const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   return (
     <View style={[S.dateRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={S.dateRowLeft}>
-        <Ionicons name="calendar" size={14} color="#1E3A8A" />
+        <Ionicons name="calendar" size={14} color={colors.primary} />
         <View style={{ flex: 1 }}>
           <Text style={[S.dateRowDate, { color: colors.foreground }]}>{fmtDate(d.date)}</Text>
           {(d.start_time || d.end_time) && (
@@ -176,10 +183,11 @@ function DateRow({ d, onDelete }: { d: EventDate; onDelete: () => void }) {
 
 function TicketTypeRow({ t, onDelete }: { t: EventTicketType; onDelete: () => void }) {
   const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   return (
     <View style={[S.ticketRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={S.ticketRowLeft}>
-        <Ionicons name="ticket-outline" size={14} color="#FBBF24" />
+        <Ionicons name="ticket-outline" size={14} color={colors.secondary} />
         <View style={{ flex: 1 }}>
           <Text style={[S.ticketName, { color: colors.foreground }]}>{t.name}</Text>
           <Text style={[S.ticketMeta, { color: colors.mutedForeground }]}>
@@ -207,6 +215,7 @@ function EventDetailSheet({
   onDeleted: () => void;
 }) {
   const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const [detail, setDetail]         = useState<StrideEvent | null>(null);
   const [loadingDetail, setLoading] = useState(false);
 
@@ -340,7 +349,7 @@ function EventDetailSheet({
           <View style={{ flexDirection: "row", gap: 16 }}>
             <Pressable onPress={handleTogglePublish} disabled={publishing} hitSlop={10}>
               {publishing
-                ? <ActivityIndicator size="small" color="#1E3A8A" />
+                ? <ActivityIndicator size="small" color={"#1E3A8A"} />
                 : <Ionicons
                     name={ev.is_active ? "eye-off-outline" : "eye-outline"}
                     size={22}
@@ -355,7 +364,7 @@ function EventDetailSheet({
         </View>
 
         {loadingDetail ? (
-          <ActivityIndicator size="large" color="#1E3A8A" style={{ marginTop: 60 }} />
+          <ActivityIndicator size="large" color={"#1E3A8A"} style={{ marginTop: 60 }} />
         ) : (
           <ScrollView
             contentContainerStyle={{ paddingBottom: 60 }}
@@ -420,7 +429,7 @@ function EventDetailSheet({
                   <SectionHead icon="location-outline" title="Location" />
                   {ev.online_event ? (
                     <View style={[S.locationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <Ionicons name="videocam-outline" size={20} color="#1E3A8A" />
+                      <Ionicons name="videocam-outline" size={20} color={"#1E3A8A"} />
                       <View style={{ flex: 1 }}>
                         <Text style={[S.locationVenue, { color: colors.foreground }]}>Online Event</Text>
                         {ev.website_url ? (
@@ -432,7 +441,7 @@ function EventDetailSheet({
                     </View>
                   ) : (
                     <View style={[S.locationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                      <Ionicons name="business-outline" size={20} color="#1E3A8A" />
+                      <Ionicons name="business-outline" size={20} color={"#1E3A8A"} />
                       <View style={{ flex: 1 }}>
                         {ev.location ? (
                           <Text style={[S.locationVenue, { color: colors.foreground }]}>{ev.location}</Text>
@@ -458,7 +467,7 @@ function EventDetailSheet({
                   style={S.websiteRow}
                   onPress={() => Linking.openURL(ev.website_url!)}
                 >
-                  <Ionicons name="link-outline" size={16} color="#1E3A8A" />
+                  <Ionicons name="link-outline" size={16} color={"#1E3A8A"} />
                   <Text style={S.websiteText} numberOfLines={1}>{ev.website_url}</Text>
                   <Ionicons name="open-outline" size={14} color="#6B7280" />
                 </Pressable>
@@ -533,7 +542,7 @@ function EventDetailSheet({
                 </View>
               ) : (
                 <Pressable style={S.addRowBtn} onPress={() => setAddDateOpen(true)}>
-                  <Ionicons name="add-circle-outline" size={16} color="#1E3A8A" />
+                  <Ionicons name="add-circle-outline" size={16} color={"#1E3A8A"} />
                   <Text style={S.addRowBtnText}>Add Date</Text>
                 </Pressable>
               )}
@@ -610,7 +619,7 @@ function EventDetailSheet({
                 </View>
               ) : (
                 <Pressable style={S.addRowBtn} onPress={() => setAddTypeOpen(true)}>
-                  <Ionicons name="add-circle-outline" size={16} color="#1E3A8A" />
+                  <Ionicons name="add-circle-outline" size={16} color={"#1E3A8A"} />
                   <Text style={S.addRowBtnText}>Add Ticket Type</Text>
                 </Pressable>
               )}
@@ -633,6 +642,7 @@ function CreateEventModal({
   onCreated: (e: StrideEvent) => void;
 }) {
   const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
 
   // Basic info
   const [title,       setTitle]       = useState("");
@@ -854,7 +864,7 @@ function CreateEventModal({
                   style={S.navigatePreviewBtn}
                   onPress={() => openMaps(address.trim() || venueName.trim())}
                 >
-                  <Ionicons name="navigate" size={14} color="#1E3A8A" />
+                  <Ionicons name="navigate" size={14} color={"#1E3A8A"} />
                   <Text style={S.navigatePreviewText}>Preview in Maps</Text>
                 </Pressable>
               ) : null}
@@ -923,7 +933,7 @@ function CreateEventModal({
               style={[S.ticketRow, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
               <View style={S.ticketRowLeft}>
-                <Ionicons name="ticket-outline" size={14} color="#FBBF24" />
+                <Ionicons name="ticket-outline" size={14} color={"#FBBF24"} />
                 <View style={{ flex: 1 }}>
                   <Text style={[S.ticketName, { color: colors.foreground }]}>{t.name}</Text>
                   <Text style={[S.ticketMeta, { color: colors.mutedForeground }]}>
@@ -988,7 +998,7 @@ function CreateEventModal({
             </View>
           ) : (
             <Pressable style={S.addRowBtn} onPress={() => setShowTicketForm(true)}>
-              <Ionicons name="add-circle-outline" size={16} color="#1E3A8A" />
+              <Ionicons name="add-circle-outline" size={16} color={"#1E3A8A"} />
               <Text style={S.addRowBtnText}>Add Ticket Type</Text>
             </Pressable>
           )}
@@ -1003,7 +1013,7 @@ function CreateEventModal({
               <ActivityIndicator color="#FFF" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#1E3A8A" />
+                <Ionicons name="checkmark-circle-outline" size={20} color={"#1E3A8A"} />
                 <Text style={S.createBtnText}>Create Event</Text>
               </>
             )}
@@ -1021,6 +1031,7 @@ function EventCard({
   event, onPress,
 }: { event: StrideEvent; onPress: () => void }) {
   const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const dates = parseInt(event.date_count ?? "0", 10);
   const minPrice = event.min_price_cents !== undefined
     ? parseInt(event.min_price_cents, 10)
@@ -1077,7 +1088,7 @@ function EventCard({
             </View>
           )}
           <View style={[S.pill, { backgroundColor: "#EFF6FF" }]}>
-            <Ionicons name={meta.icon} size={10} color="#1E3A8A" />
+            <Ionicons name={meta.icon} size={10} color={"#1E3A8A"} />
             <Text style={[S.pillText, { color: "#1E3A8A" }]}>{meta.label}</Text>
           </View>
           {dates > 0 && (
@@ -1104,6 +1115,7 @@ function EventCard({
 
 export default function AdminEventsScreen() {
   const colors   = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const insets   = useSafeAreaInsets();
   const router   = useRouter();
 
@@ -1141,7 +1153,7 @@ export default function AdminEventsScreen() {
 
       {loading ? (
         <View style={S.loader}>
-          <ActivityIndicator size="large" color="#1E3A8A" />
+          <ActivityIndicator size="large" color={"#1E3A8A"} />
         </View>
       ) : (
         <ScrollView
@@ -1150,7 +1162,7 @@ export default function AdminEventsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); void load(); }}
-              tintColor="#1E3A8A"
+              tintColor={"#1E3A8A"}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -1165,7 +1177,7 @@ export default function AdminEventsScreen() {
                 Create your first event — set dates, sell tickets, and manage attendees.
               </Text>
               <Pressable style={S.emptyCreateBtn} onPress={() => setShowCreate(true)}>
-                <Ionicons name="add-circle-outline" size={18} color="#1E3A8A" />
+                <Ionicons name="add-circle-outline" size={18} color={"#1E3A8A"} />
                 <Text style={S.emptyCreateBtnText}>Create Event</Text>
               </Pressable>
             </View>
@@ -1198,7 +1210,7 @@ export default function AdminEventsScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const S = StyleSheet.create({
+const make_S = (primary: string, secondary: string) => StyleSheet.create({
   root: { flex: 1 },
 
   // Top bar
@@ -1216,10 +1228,10 @@ const S = StyleSheet.create({
   emptyDesc: { fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 24 },
   emptyCreateBtn: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "#FBBF24", borderRadius: 12,
+    backgroundColor: secondary, borderRadius: 12,
     paddingHorizontal: 24, paddingVertical: 13,
   },
-  emptyCreateBtnText: { fontWeight: "800", fontSize: 15, color: "#1E3A8A" },
+  emptyCreateBtnText: { fontWeight: "800", fontSize: 15, color: primary },
 
   // Event cards
   card: {
@@ -1296,10 +1308,10 @@ const S = StyleSheet.create({
   },
   sectionHeadLine: {
     width: 3, height: 14, borderRadius: 2,
-    backgroundColor: "#FBBF24", marginRight: 2,
+    backgroundColor: secondary, marginRight: 2,
   },
   sectionHeadText: {
-    fontSize: 11, fontWeight: "800", color: "#1E3A8A",
+    fontSize: 11, fontWeight: "800", color: primary,
     letterSpacing: 1, textTransform: "uppercase",
   },
   sectionNote: { fontSize: 12, marginBottom: 12, marginTop: -6 },
@@ -1325,7 +1337,7 @@ const S = StyleSheet.create({
   // Navigate
   navigateBtn: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    backgroundColor: "#1E3A8A", borderRadius: 8,
+    backgroundColor: primary, borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 7,
   },
   navigateBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
@@ -1335,7 +1347,7 @@ const S = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8, marginBottom: 14,
     alignSelf: "flex-start",
   },
-  navigatePreviewText: { color: "#1E3A8A", fontSize: 12, fontWeight: "700" },
+  navigatePreviewText: { color: primary, fontSize: 12, fontWeight: "700" },
 
   // Location card
   locationCard: {
@@ -1344,12 +1356,12 @@ const S = StyleSheet.create({
   },
   locationVenue: { fontSize: 14, fontWeight: "700" },
   locationAddress: { fontSize: 12, marginTop: 2, lineHeight: 18 },
-  locationLink: { color: "#1E3A8A", fontSize: 12, textDecorationLine: "underline", marginTop: 2 },
+  locationLink: { color: primary, fontSize: 12, textDecorationLine: "underline", marginTop: 2 },
   websiteRow: {
     flexDirection: "row", alignItems: "center", gap: 8,
     paddingVertical: 10, marginTop: -4,
   },
-  websiteText: { color: "#1E3A8A", fontSize: 13, flex: 1, textDecorationLine: "underline" },
+  websiteText: { color: primary, fontSize: 13, flex: 1, textDecorationLine: "underline" },
 
   // About/description
   descText: { fontSize: 14, lineHeight: 22 },
@@ -1378,7 +1390,7 @@ const S = StyleSheet.create({
     borderWidth: 1, borderStyle: "dashed", borderColor: "#BFDBFE",
     borderRadius: 10, padding: 12, marginBottom: 8,
   },
-  addRowBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 13 },
+  addRowBtnText: { color: primary, fontWeight: "700", fontSize: 13 },
 
   // Add form (inline)
   addForm: {
@@ -1391,7 +1403,7 @@ const S = StyleSheet.create({
   },
   cancelFormBtnText: { color: "#6B7280", fontWeight: "700" },
   saveFormBtn: {
-    backgroundColor: "#1E3A8A", borderRadius: 8,
+    backgroundColor: primary, borderRadius: 8,
     paddingVertical: 11, alignItems: "center",
   },
   saveFormBtnText: { color: "#FFF", fontWeight: "800" },
@@ -1399,10 +1411,10 @@ const S = StyleSheet.create({
   // Create button
   createBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    backgroundColor: "#FBBF24", borderRadius: 14,
+    backgroundColor: secondary, borderRadius: 14,
     paddingVertical: 16,
   },
-  createBtnText: { fontSize: 16, fontWeight: "900", color: "#1E3A8A" },
+  createBtnText: { fontSize: 16, fontWeight: "900", color: primary },
 
   // Trash
   trashBtn: {

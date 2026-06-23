@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { type BillingPlan, getBillingPlan, changeBillingPlan } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
@@ -118,6 +119,7 @@ function normaliseTier(t: string): "core" | "plus" | "premium" {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ChangePlanScreen() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 

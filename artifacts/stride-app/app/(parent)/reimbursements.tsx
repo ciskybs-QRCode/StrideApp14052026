@@ -187,7 +187,7 @@ export default function ParentReimbursementsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Pressable onPress={() => router.navigate("/(parent)/wallet")} style={styles.backRow} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color="#FBBF24" />
+          <Ionicons name="chevron-back" size={24} color={colors.secondary} />
           <Text style={[styles.backLabel, { color: colors.primary }]}>Wallet</Text>
         </Pressable>
 
@@ -344,7 +344,7 @@ export default function ParentReimbursementsScreen() {
                       <Text style={[styles.detailBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
                     </View>
                     <Text style={[styles.detailDesc, { color: colors.foreground }]}>{detailItem.description}</Text>
-                    <Text style={[styles.detailAmt, { color: colors.primary }]}>{formatAmount(detailItem.amount_cents, orgCurrency)}</Text>
+                    <Text style={[styles.detailAmt, { color: "#1E3A8A" }]}>{formatAmount(detailItem.amount_cents, orgCurrency)}</Text>
                     <Text style={[styles.detailDate, { color: colors.mutedForeground }]}>
                       Submitted on {new Date(detailItem.submitted_at ?? detailItem.created_at ?? "").toLocaleDateString("en-GB")}
                     </Text>
@@ -363,7 +363,7 @@ export default function ParentReimbursementsScreen() {
                           style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
                             backgroundColor: "#854D0E", borderRadius: 12, paddingVertical: 12, marginTop: 4, opacity: confirmingCash ? 0.7 : 1 }}
                         >
-                          <Ionicons name="checkmark-circle-outline" size={18} color="#FBBF24" />
+                          <Ionicons name="checkmark-circle-outline" size={18} color={"#FBBF24"} />
                           <Text style={{ fontSize: 14, fontWeight: "800", color: "#FBBF24" }}>
                             {confirmingCash ? "Confirming…" : "Yes, I received the cash"}
                           </Text>

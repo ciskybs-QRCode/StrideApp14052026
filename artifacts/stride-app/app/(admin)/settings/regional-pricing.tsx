@@ -64,6 +64,7 @@ function PriceModal({
   onSave:  (data: { region_code: string; currency_code: string; price_per_seat_cents: number; is_active: boolean }) => Promise<void>;
 }) {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const [regionCode,  setRegionCode]  = useState(state.item?.region_code  ?? "");
   const [currencyCode, setCurrencyCode] = useState(state.item?.currency_code ?? "");
   const [priceStr,    setPriceStr]    = useState(state.item ? String(state.item.price_per_seat_cents / 100) : "");
@@ -178,8 +179,9 @@ function PriceModal({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function RegionalPricingScreen() {
-  const router = useRouter();
   const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
+  const router = useRouter();
   const insets  = useSafeAreaInsets();
 
   const [pricing,       setPricing]       = useState<RegionalPrice[]>([]);
@@ -295,7 +297,7 @@ export default function RegionalPricingScreen() {
                 style={[styles.chip, { backgroundColor: orgRegionCode === p.region_code ? "#FFF" : "rgba(255,255,255,0.15)" }]}
                 onPress={() => handleSetOrgRegion(p.region_code)}
               >
-                <Text style={[styles.chipText, { color: orgRegionCode === p.region_code ? colors.primary : "#fff" }]}>
+                <Text style={[styles.chipText, { color: orgRegionCode === p.region_code ? "#1E3A8A" : "#fff" }]}>
                   {p.region_code}
                 </Text>
               </Pressable>
@@ -308,7 +310,7 @@ export default function RegionalPricingScreen() {
 
         {/* Loading */}
         {loading && (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={"#1E3A8A"} style={{ marginTop: 40 }} />
         )}
 
         {/* Region rows */}
@@ -324,7 +326,7 @@ export default function RegionalPricingScreen() {
             ]}
           >
             <View style={[styles.regionBadge, { backgroundColor: item.is_active ? "rgba(30,58,138,0.1)" : colors.muted }]}>
-              <Text style={[styles.regionCode, { color: item.is_active ? colors.primary : colors.mutedForeground }]}>
+              <Text style={[styles.regionCode, { color: item.is_active ? "#1E3A8A" : colors.mutedForeground }]}>
                 {item.region_code}
               </Text>
             </View>
@@ -352,7 +354,7 @@ export default function RegionalPricingScreen() {
                   setModal({ visible: true, mode: "edit", item });
                 }}
               >
-                <Ionicons name="pencil-outline" size={18} color={colors.primary} />
+                <Ionicons name="pencil-outline" size={18} color={"#1E3A8A"} />
               </Pressable>
               <Pressable hitSlop={8} onPress={() => handleDelete(item)}>
                 <Ionicons name="trash-outline" size={18} color="#EF4444" />
@@ -378,7 +380,7 @@ export default function RegionalPricingScreen() {
       {/* Floating Add Button for better UX since we removed the header one */}
       {!loading && !modal.visible && (
         <Pressable
-          style={[styles.floatingAddBtn, { backgroundColor: colors.primary, bottom: insets.bottom + 20 + (Platform.OS === "web" ? 84 : 49) }]}
+          style={[styles.floatingAddBtn, { backgroundColor: "#1E3A8A", bottom: insets.bottom + 20 + (Platform.OS === "web" ? 84 : 49) }]}
           onPress={() => setModal({ visible: true, mode: "create" })}
         >
           <Ionicons name="add" size={28} color="#FFF" />
@@ -396,7 +398,7 @@ export default function RegionalPricingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll:    { paddingHorizontal: 20 },
 
@@ -475,6 +477,6 @@ const styles = StyleSheet.create({
   toggleDesc:   { fontSize: 12, marginTop: 2 },
   togglePill:   { width: 42, height: 24, borderRadius: 12, justifyContent: "center" },
   toggleThumb:  { width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff", position: "absolute" },
-  saveBtn:      { marginTop: 28, backgroundColor: "#1E3A8A", borderRadius: 14, padding: 16, alignItems: "center" },
+  saveBtn:      { marginTop: 28, backgroundColor: primary, borderRadius: 14, padding: 16, alignItems: "center" },
   saveBtnText:  { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

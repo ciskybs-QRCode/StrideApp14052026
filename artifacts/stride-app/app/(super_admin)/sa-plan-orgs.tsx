@@ -8,6 +8,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useLocalSearchParams } from "expo-router";
+import { useColors } from "@/hooks/useColors";
 import {
   getSuperAdminOrgsV2, getSuperAdminPlanMetrics,
   type SuperAdminOrg, type SuperAdminPlanMetrics,
@@ -97,7 +98,7 @@ function OrgCard({ org, onPress }: { org: SuperAdminOrg; onPress: () => void }) 
           )}
           {!!org.active_grant?.end_date && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Ionicons name="gift-outline" size={11} color="#1E3A8A" />
+              <Ionicons name="gift-outline" size={11} color={"#1E3A8A"} />
               <Text style={[oc.metaText, { color: "#1E3A8A" }]}>Free until {fmtDate(org.active_grant.end_date)}</Text>
             </View>
           )}
@@ -125,13 +126,14 @@ const oc = StyleSheet.create({
 // ── Stats mini-row ────────────────────────────────────────────────────────────
 
 function MiniStats({ metrics }: { metrics: SuperAdminPlanMetrics | null }) {
+  const colors = useColors();
   if (!metrics) return null;
   const items = [
     { label: "Total", value: metrics.total, color: "#6B7280" },
     { label: "Trial", value: metrics.trialing, color: "#D97706" },
     { label: "Core",    value: metrics.by_plan.core,    color: NAVY      },
     { label: "Plus",    value: metrics.by_plan.plus,    color: "#2563EB" },
-    { label: "Premium", value: metrics.by_plan.premium, color: "#1E3A8A" },
+    { label: "Premium", value: metrics.by_plan.premium, color: colors.primary },
     { label: "Free", value: metrics.granted, color: "#059669" },
     { label: "Expired", value: metrics.expired, color: RED },
   ];

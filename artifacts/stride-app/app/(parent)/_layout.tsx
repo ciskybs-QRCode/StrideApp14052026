@@ -65,6 +65,7 @@ const OPTION_KEYS = ["OPTION_A", "OPTION_B", "OPTION_C"] as const;
 
 export default function ParentTabLayout() {
   const colors    = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets    = useSafeAreaInsets();
   const isIOS     = Platform.OS === "ios";
   const isWeb     = Platform.OS === "web";
@@ -164,7 +165,7 @@ export default function ParentTabLayout() {
     <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: colors.primary,
+          tabBarActiveTintColor: "#1E3A8A",
           tabBarInactiveTintColor: colors.mutedForeground,
           headerShown: false,
           tabBarStyle: {
@@ -241,7 +242,7 @@ export default function ParentTabLayout() {
               </Pressable>
             ) : (
               <View style={styles.headerBack}>
-                <Ionicons name="lock-closed" size={20} color="#FBBF24" />
+                <Ionicons name="lock-closed" size={20} color={"#FBBF24"} />
               </View>
             )}
 
@@ -313,7 +314,7 @@ export default function ParentTabLayout() {
               {gatePhase === "index" && (
                 <>
                   <View style={styles.indexIntro}>
-                    <Ionicons name="shield-checkmark" size={36} color="#1E3A8A" />
+                    <Ionicons name="shield-checkmark" size={36} color={"#1E3A8A"} />
                     <Text style={styles.indexTitle}>Documents Awaiting Signature</Text>
                     <Text style={styles.indexSubtitle}>
                       You must read and sign all mandatory documents before accessing the app. Each document requires your affirmation and biometric signature.
@@ -337,7 +338,7 @@ export default function ParentTabLayout() {
                         <View style={styles.docCardMeta}>
                           {doc.has_options && (
                             <View style={styles.optionsBadge}>
-                              <Ionicons name="list-outline" size={10} color="#1E3A8A" />
+                              <Ionicons name="list-outline" size={10} color={"#1E3A8A"} />
                               <Text style={styles.optionsBadgeText}>Options required</Text>
                             </View>
                           )}
@@ -354,7 +355,7 @@ export default function ParentTabLayout() {
                         onPress={() => openSigningDoc(idx)}
                       >
                         <Text style={styles.reviewBtnText}>Review{"\n"}&amp; Sign</Text>
-                        <Ionicons name="chevron-forward" size={14} color="#1E3A8A" />
+                        <Ionicons name="chevron-forward" size={14} color={"#1E3A8A"} />
                       </Pressable>
                     </View>
                   ))}
@@ -371,11 +372,11 @@ export default function ParentTabLayout() {
                   {/* Document Contents */}
                   <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                      <Ionicons name="document-text-outline" size={16} color="#1E3A8A" />
+                      <Ionicons name="document-text-outline" size={16} color={"#1E3A8A"} />
                       <Text style={styles.sectionTitle}>Document Contents</Text>
                       {!hasScrolled && (
                         <View style={styles.scrollHint}>
-                          <Ionicons name="arrow-down" size={12} color="#FBBF24" />
+                          <Ionicons name="arrow-down" size={12} color={"#FBBF24"} />
                           <Text style={styles.scrollHintText}>Scroll to read</Text>
                         </View>
                       )}
@@ -397,7 +398,7 @@ export default function ParentTabLayout() {
                   {currentDoc.has_options && (
                     <View style={styles.section}>
                       <View style={styles.sectionHeader}>
-                        <Ionicons name="list-outline" size={16} color="#1E3A8A" />
+                        <Ionicons name="list-outline" size={16} color={"#1E3A8A"} />
                         <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Select Your Option</Text>
                         <Text style={styles.requiredTag}>Required</Text>
                       </View>
@@ -428,7 +429,7 @@ export default function ParentTabLayout() {
                   {/* Affirmation Checkbox */}
                   <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                      <Ionicons name="checkbox-outline" size={16} color="#1E3A8A" />
+                      <Ionicons name="checkbox-outline" size={16} color={"#1E3A8A"} />
                       <Text style={styles.sectionTitle}>Affirmation</Text>
                       <Text style={styles.requiredTag}>Required</Text>
                     </View>
@@ -470,7 +471,7 @@ export default function ParentTabLayout() {
                           if (!has) setSignatureSvg(null);
                         }}
                         onSave={(svg) => setSignatureSvg(svg)}
-                        strokeColor="#1E3A8A"
+                        strokeColor={"#1E3A8A"}
                       />
                     </View>
                   </View>
@@ -524,13 +525,13 @@ export default function ParentTabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   // ── Tab shell ───────────────────────────────────────────────────────────────
   // (no styles needed — all inline)
 
   // ── Gate ─────────────────────────────────────────────────────────────────────
   gateRoot: {
-    flex: 1, backgroundColor: "#1E3A8A",
+    flex: 1, backgroundColor: primary,
   },
   gateHeader: {
     flexDirection: "row", alignItems: "center", gap: 12,
@@ -541,13 +542,13 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.12)",
     alignItems: "center", justifyContent: "center",
   },
-  headerMeta:  { fontSize: 11, color: "#FBBF24", fontWeight: "600", letterSpacing: 0.5 },
+  headerMeta:  { fontSize: 11, color: secondary, fontWeight: "600", letterSpacing: 0.5 },
   headerTitle: { fontSize: 17, color: "#FFF", fontWeight: "800", marginTop: 2 },
   progressChip: {
-    backgroundColor: "#FBBF24", borderRadius: 12,
+    backgroundColor: secondary, borderRadius: 12,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  progressChipText: { fontSize: 13, fontWeight: "800", color: "#1E3A8A" },
+  progressChipText: { fontSize: 13, fontWeight: "800", color: primary },
 
   gateBody: {
     flex: 1, backgroundColor: "#F8FAFC",
@@ -558,12 +559,12 @@ const styles = StyleSheet.create({
 
   progressRow:  { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 },
   progressBar:  { flex: 1, height: 8, backgroundColor: "#E2E8F0", borderRadius: 4, overflow: "hidden" },
-  progressFill: { height: 8, backgroundColor: "#1E3A8A", borderRadius: 4 },
+  progressFill: { height: 8, backgroundColor: primary, borderRadius: 4 },
   progressLabel:{ fontSize: 12, fontWeight: "600", color: "#64748B" },
 
   // ── Index phase ──────────────────────────────────────────────────────────────
   indexIntro:    { alignItems: "center", gap: 8, marginBottom: 20, paddingHorizontal: 8 },
-  indexTitle:    { fontSize: 18, fontWeight: "800", color: "#1E3A8A", textAlign: "center" },
+  indexTitle:    { fontSize: 18, fontWeight: "800", color: primary, textAlign: "center" },
   indexSubtitle: { fontSize: 13, color: "#64748B", textAlign: "center", lineHeight: 19 },
 
   docCard: {
@@ -574,11 +575,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
   },
   docIconWrap:   { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  docCardTitle:  { fontSize: 14, fontWeight: "700", color: "#1E3A8A", marginBottom: 3 },
+  docCardTitle:  { fontSize: 14, fontWeight: "700", color: primary, marginBottom: 3 },
   docCardDesc:   { fontSize: 12, color: "#64748B", lineHeight: 17 },
   docCardMeta:   { flexDirection: "row", gap: 6, marginTop: 5, flexWrap: "wrap" },
   optionsBadge:  { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#EFF6FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  optionsBadgeText: { fontSize: 10, fontWeight: "600", color: "#1E3A8A" },
+  optionsBadgeText: { fontSize: 10, fontWeight: "600", color: primary },
   urgentBadge:   { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#FEE2E2", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   urgentBadgeText:  { fontSize: 10, fontWeight: "600", color: "#EF4444" },
 
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 8,
     borderWidth: 1.5, borderColor: "#93C5FD",
   },
-  reviewBtnText: { fontSize: 11, fontWeight: "800", color: "#1E3A8A", textAlign: "center" },
+  reviewBtnText: { fontSize: 11, fontWeight: "800", color: primary, textAlign: "center" },
 
   indexNote: {
     fontSize: 11, color: "#94A3B8", textAlign: "center",
@@ -603,9 +604,9 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12,
   },
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#1E3A8A", flex: 1 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", color: primary, flex: 1 },
   requiredTag:  {
-    fontSize: 10, fontWeight: "700", color: "#1E3A8A",
+    fontSize: 10, fontWeight: "700", color: primary,
     backgroundColor: "#EFF6FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
   scrollHint: {
@@ -625,14 +626,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC", borderRadius: 12, padding: 14,
     marginBottom: 8, borderWidth: 1.5, borderColor: "#E2E8F0",
   },
-  optionCardSelected: { borderColor: "#FBBF24", backgroundColor: "#FFFBEB" },
+  optionCardSelected: { borderColor: secondary, backgroundColor: "#FFFBEB" },
   optionRadio: {
     width: 20, height: 20, borderRadius: 10,
     borderWidth: 2, borderColor: "#CBD5E1",
     alignItems: "center", justifyContent: "center", marginTop: 1,
   },
-  optionRadioSelected: { borderColor: "#FBBF24" },
-  optionRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#FBBF24" },
+  optionRadioSelected: { borderColor: secondary },
+  optionRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: secondary },
   optionLabel: { flex: 1, fontSize: 13, color: "#374151", lineHeight: 19 },
   optionLabelSelected: { fontWeight: "700", color: "#92400E" },
 
@@ -641,24 +642,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC", borderRadius: 12, padding: 14,
     borderWidth: 1.5, borderColor: "#E2E8F0",
   },
-  checkboxRowTicked: { borderColor: "#1E3A8A", backgroundColor: "#EFF6FF" },
+  checkboxRowTicked: { borderColor: primary, backgroundColor: "#EFF6FF" },
   checkbox: {
     width: 22, height: 22, borderRadius: 6, borderWidth: 2,
     borderColor: "#CBD5E1", alignItems: "center", justifyContent: "center",
     backgroundColor: "#FFF", marginTop: 1,
   },
-  checkboxChecked: { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
+  checkboxChecked: { backgroundColor: primary, borderColor: primary },
   checkboxLabel: { flex: 1, fontSize: 13, color: "#64748B", lineHeight: 19 },
 
   padInstruction: { fontSize: 12, color: "#64748B", marginBottom: 10, lineHeight: 17 },
   padWrapper: {
     borderWidth: 2, borderColor: "#E2E8F0", borderRadius: 16, overflow: "hidden",
   },
-  padWrapperConfirmed: { borderColor: "#FBBF24" },
+  padWrapperConfirmed: { borderColor: secondary },
 
   submitSection: { marginTop: 4, gap: 12 },
   submitBtn: {
-    backgroundColor: "#1E3A8A", borderRadius: 16, height: 56,
+    backgroundColor: primary, borderRadius: 16, height: 56,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
   },
   submitBtnDisabled: { backgroundColor: "#E2E8F0" },

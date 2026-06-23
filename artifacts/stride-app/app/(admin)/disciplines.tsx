@@ -157,7 +157,7 @@ export default function DisciplinesScreen() {
   if (loading) {
     return (
       <View style={[styles.loader, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={"#1E3A8A"} />
       </View>
     );
   }
@@ -194,7 +194,7 @@ export default function DisciplinesScreen() {
             <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
               Add your first discipline — it will appear in all booking dropdowns.
             </Text>
-            <Pressable style={[styles.emptyBtn, { backgroundColor: colors.primary }]} onPress={openNew}>
+            <Pressable style={[styles.emptyBtn, { backgroundColor: "#1E3A8A" }]} onPress={openNew}>
               <Ionicons name="add-circle-outline" size={16} color="#FFF" />
               <Text style={styles.emptyBtnText}>Add Discipline</Text>
             </Pressable>
@@ -397,7 +397,7 @@ function DisciplineCard({
           onPress={onEdit}
           hitSlop={6}
         >
-          <Ionicons name="create-outline" size={18} color={colors.primary} />
+          <Ionicons name="create-outline" size={18} color={"#1E3A8A"} />
         </Pressable>
         <Pressable
           style={[styles.iconBtn, { backgroundColor: "#FEE2E2" }]}

@@ -19,10 +19,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth, UserRole } from "@/context/AuthContext";
+import { useColors } from "@/hooks/useColors";
 
 const LOGO = require("@/assets/images/stride-logo.png");
 
 export default function LoginScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { login, user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -173,7 +176,7 @@ export default function LoginScreen() {
               onPress={() => Linking.openURL(`https://${process.env["EXPO_PUBLIC_DOMAIN"] ?? "stride-platform.com"}/landing/register`)}
               style={styles.registerBtn}
             >
-              <Ionicons name="person-add-outline" size={16} color="#1E3A8A" />
+              <Ionicons name="person-add-outline" size={16} color={colors.primary} />
               <Text style={styles.registerBtnText}>Create an account</Text>
               <Ionicons name="chevron-forward" size={14} color="#6B7BA4" />
             </Pressable>
@@ -186,12 +189,12 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
   scroll: { flexGrow: 1, paddingHorizontal: 24 },
   logoArea: { alignItems: "center", marginBottom: 20 },
   logoImage: { width: 160, height: 80, marginBottom: 8 },
-  orgName: { fontSize: 22, fontWeight: "800", color: "#1E3A8A", textAlign: "center" },
+  orgName: { fontSize: 22, fontWeight: "800", color: primary, textAlign: "center" },
   tagline: { fontSize: 12, color: "#6B7BA4", marginTop: 4, letterSpacing: 1.5, textTransform: "uppercase" },
   formCard: {
     backgroundColor: "#FFFFFF",
@@ -203,9 +206,9 @@ const styles = StyleSheet.create({
     shadowRadius: 40,
     elevation: 20,
   },
-  formTitle: { fontSize: 20, fontWeight: "800", color: "#1E3A8A", marginBottom: 20, textAlign: "center" },
+  formTitle: { fontSize: 20, fontWeight: "800", color: primary, marginBottom: 20, textAlign: "center" },
   inputGroup: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: "600", color: "#1E3A8A", marginBottom: 8 },
+  label: { fontSize: 13, fontWeight: "600", color: primary, marginBottom: 8 },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -217,7 +220,7 @@ const styles = StyleSheet.create({
     borderColor: "#D1D9F0",
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 13, color: "#1E3A8A" },
+  input: { flex: 1, fontSize: 13, color: primary },
   eyeBtn: { paddingLeft: 8, paddingRight: 0, paddingVertical: 4 },
   errorBox: {
     flexDirection: "row",
@@ -230,13 +233,13 @@ const styles = StyleSheet.create({
   },
   errorText: { color: "#EF4444", fontSize: 13, flex: 1 },
   loginBtn: {
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     borderRadius: 14,
     height: 52,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
-    shadowColor: "#1E3A8A",
+    shadowColor: primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
@@ -266,5 +269,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     backgroundColor: "#F8FAFF",
   },
-  registerBtnText: { fontSize: 14, fontWeight: "600", color: "#1E3A8A", flex: 1, textAlign: "center" },
+  registerBtnText: { fontSize: 14, fontWeight: "600", color: primary, flex: 1, textAlign: "center" },
 });

@@ -131,6 +131,7 @@ function apiStudentToRecord(s: ApiStudent, childById: Map<number, ApiChild>): Us
 
 export default function AdminUsers() {
   const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
   const { primaryRoleName, secondaryRoleName } = useTerminology();
@@ -508,10 +509,10 @@ export default function AdminUsers() {
         onBack={() => router.push("/(admin)/members-hub")}
         right={
           <Pressable
-            style={[styles.badgePdfBtn, { backgroundColor: colors.primary }]}
+            style={[styles.badgePdfBtn, { backgroundColor: "#1E3A8A" }]}
             onPress={() => router.push("/(admin)/pdf-badges" as Parameters<typeof router.push>[0])}
           >
-            <Ionicons name="print-outline" size={20} color="#FBBF24" />
+            <Ionicons name="print-outline" size={20} color={"#FBBF24"} />
           </Pressable>
         }
       />
@@ -538,12 +539,12 @@ export default function AdminUsers() {
           style={[styles.importBanner, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}
           onPress={() => router.push("/(admin)/import-members" as never)}
         >
-          <Ionicons name="cloud-upload-outline" size={20} color="#1E3A8A" />
+          <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A" }}>Bulk Import Members</Text>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: "${colors.primary}" }}>Bulk Import Members</Text>
             <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 1 }}>Upload CSV or XLSX to add members in bulk</Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color="#1E3A8A" />
+          <Ionicons name="chevron-forward" size={16} color={colors.primary} />
         </Pressable>
 
         {/* ── Load error banner ── */}
@@ -569,7 +570,7 @@ export default function AdminUsers() {
         {/* Stats strip */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
           {[
-            { label: "Total",                          value: counts.total,     bg: colors.primary },
+            { label: "Total",                          value: counts.total,     bg: "#1E3A8A" },
             ...(counts.admins > 0 ? [{ label: "Admins", value: counts.admins, bg: "#B45309" }] : []),
             { label: "Operators",                      value: counts.operators, bg: "#1E3A8A" },
             { label: `${primaryRoleName}s`,            value: counts.parents,   bg: "#10B981" },
@@ -604,7 +605,7 @@ export default function AdminUsers() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
           <View style={[styles.filterBar, { backgroundColor: colors.muted }]}>
             {(["all", "admin", "operator", "parent", "student"] as const).map(f => (
-              <Pressable key={f} style={[styles.filterBtn, filter === f && { backgroundColor: colors.primary }]} onPress={() => setFilter(f)}>
+              <Pressable key={f} style={[styles.filterBtn, filter === f && { backgroundColor: "#1E3A8A" }]} onPress={() => setFilter(f)}>
                 <Text style={[styles.filterText, filter === f && { color: "#FFF" }]}>
                   {f === "all" ? "All" : f === "admin" ? "Admins" : f === "operator" ? "Operators" : f === "parent" ? `${primaryRoleName}s` : `${secondaryRoleName}s`}
                 </Text>
@@ -672,7 +673,7 @@ export default function AdminUsers() {
                   <View style={[styles.modalAvatar, { backgroundColor: rc.bg }]}>
                     <Text style={[styles.modalAvatarText, { color: rc.text }]}>{user.name.charAt(0)}</Text>
                   </View>
-                  <Text style={[styles.modalName, { color: colors.primary }]}>{user.name}</Text>
+                  <Text style={[styles.modalName, { color: "#1E3A8A" }]}>{user.name}</Text>
                   {!!user.email && <Text style={[styles.modalEmail, { color: colors.mutedForeground }]}>{user.email}</Text>}
                   {!!user.phone && <Text style={[styles.modalPhone, { color: colors.mutedForeground }]}>{user.phone}</Text>}
 
@@ -726,8 +727,8 @@ export default function AdminUsers() {
                         {(fullProfile.address_street || fullProfile.address_city) && (
                           <View style={[styles.profileSection, { borderColor: colors.border }]}>
                             <View style={styles.profileSectionHeader}>
-                              <Ionicons name="location-outline" size={14} color={colors.primary} />
-                              <Text style={[styles.profileSectionTitle, { color: colors.primary }]}>Indirizzo</Text>
+                              <Ionicons name="location-outline" size={14} color={"#1E3A8A"} />
+                              <Text style={[styles.profileSectionTitle, { color: "#1E3A8A" }]}>Indirizzo</Text>
                             </View>
                             {!!fullProfile.address_street && (
                               <Text style={[styles.profileSectionValue, { color: colors.foreground }]}>{fullProfile.address_street}</Text>
@@ -775,8 +776,8 @@ export default function AdminUsers() {
                   {user.role === "student" && (
                     <View style={[styles.safetySection, { borderColor: colors.border }]}>
                       <View style={styles.safetySectionHeader}>
-                        <Ionicons name="shield-checkmark-outline" size={15} color={colors.primary} />
-                        <Text style={[styles.safetySectionTitle, { color: colors.primary }]}>Safety & Legal</Text>
+                        <Ionicons name="shield-checkmark-outline" size={15} color={"#1E3A8A"} />
+                        <Text style={[styles.safetySectionTitle, { color: "#1E3A8A" }]}>Safety & Legal</Text>
                       </View>
 
                       {/* Allergy row */}
@@ -850,8 +851,8 @@ export default function AdminUsers() {
                   {user.role === "student" && !!user.parentName && (
                     <View style={[styles.guardianSection, { borderColor: colors.border }]}>
                       <View style={styles.safetySectionHeader}>
-                        <Ionicons name="people-outline" size={15} color={colors.primary} />
-                        <Text style={[styles.safetySectionTitle, { color: colors.primary }]}>Guardian</Text>
+                        <Ionicons name="people-outline" size={15} color={"#1E3A8A"} />
+                        <Text style={[styles.safetySectionTitle, { color: "#1E3A8A" }]}>Guardian</Text>
                       </View>
                       <View style={styles.guardianInfo}>
                         <View style={styles.guardianAvatar}>
@@ -866,7 +867,7 @@ export default function AdminUsers() {
                       </View>
                       {!!user.parentPhone && (
                         <Pressable
-                          style={[styles.guardianContactBtn, { backgroundColor: colors.primary }]}
+                          style={[styles.guardianContactBtn, { backgroundColor: "#1E3A8A" }]}
                           onPress={() => setShowGuardian(true)}
                         >
                           <Ionicons name="call-outline" size={16} color="#FFF" />
@@ -891,7 +892,7 @@ export default function AdminUsers() {
                       {/* ── Employment Type Section ── */}
                       {operatorProfile && (
                         <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, gap: 8 }}>
-                          <Text style={[styles.disciplinesSectionTitle, { color: colors.primary, marginBottom: 2 }]}>Employment Type</Text>
+                          <Text style={[styles.disciplinesSectionTitle, { color: "#1E3A8A", marginBottom: 2 }]}>Employment Type</Text>
 
                           {/* Toggle: On Wages / Contractor */}
                           <View style={{ flexDirection: "row", gap: 8 }}>
@@ -899,8 +900,8 @@ export default function AdminUsers() {
                               <Pressable key={t}
                                 onPress={() => { setEmpType(t); void Haptics.selectionAsync(); }}
                                 style={{ flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: "center", borderWidth: 2,
-                                  borderColor: empType === t ? colors.primary : colors.border,
-                                  backgroundColor: empType === t ? colors.primary : "transparent" }}>
+                                  borderColor: empType === t ? "#1E3A8A" : colors.border,
+                                  backgroundColor: empType === t ? "#1E3A8A" : "transparent" }}>
                                 <Text style={{ fontSize: 12, fontWeight: "800", color: empType === t ? "#FFF" : colors.mutedForeground }}>
                                   {t === "wages" ? "On Wages" : "Contractor"}
                                 </Text>
@@ -930,8 +931,8 @@ export default function AdminUsers() {
                                       <Pressable key={u}
                                         onPress={() => { setContractorBilling(u); void Haptics.selectionAsync(); }}
                                         style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, borderWidth: 1,
-                                          backgroundColor: contractorBilling === u ? colors.primary : "transparent",
-                                          borderColor: contractorBilling === u ? colors.primary : colors.border }}>
+                                          backgroundColor: contractorBilling === u ? "#1E3A8A" : "transparent",
+                                          borderColor: contractorBilling === u ? "#1E3A8A" : colors.border }}>
                                         <Text style={{ fontSize: 11, fontWeight: "700", color: contractorBilling === u ? "#FFF" : colors.foreground }}>{lbl}</Text>
                                       </Pressable>
                                     );
@@ -943,7 +944,7 @@ export default function AdminUsers() {
                                   {empConfig.contractor_extra_chips.map((chip, i) => (
                                     <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EFF6FF",
                                       borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#BFDBFE" }}>
-                                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{chip.label} {chip.rate}%</Text>
+                                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>{chip.label} {chip.rate}%</Text>
                                     </View>
                                   ))}
                                   <Text style={{ fontSize: 10, color: colors.mutedForeground, alignSelf: "center" }}>info chips (from AI lookup)</Text>
@@ -964,8 +965,8 @@ export default function AdminUsers() {
                                     <Pressable key={sub}
                                       onPress={() => { setEmpSubType(sub); setResearchResult(null); void Haptics.selectionAsync(); }}
                                       style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1.5,
-                                        backgroundColor: empSubType === sub ? colors.primary : "transparent",
-                                        borderColor: empSubType === sub ? colors.primary : colors.border }}>
+                                        backgroundColor: empSubType === sub ? "#1E3A8A" : "transparent",
+                                        borderColor: empSubType === sub ? "#1E3A8A" : colors.border }}>
                                       <Text style={{ fontSize: 11, fontWeight: "800", color: empSubType === sub ? "#FFF" : colors.foreground }}>{lbl}</Text>
                                     </Pressable>
                                   );
@@ -979,9 +980,9 @@ export default function AdminUsers() {
                                   backgroundColor: researchResult ? "#D1FAE5" : "#EFF6FF",
                                   borderWidth: 1, borderColor: researchResult ? "#6EE7B7" : "#BFDBFE" }}>
                                 {researchLoading
-                                  ? <ActivityIndicator size="small" color={colors.primary} />
-                                  : <Ionicons name={researchResult ? "checkmark-circle" : "search-outline"} size={14} color={researchResult ? "#059669" : colors.primary} />}
-                                <Text style={{ fontSize: 12, fontWeight: "800", color: researchResult ? "#059669" : colors.primary }}>
+                                  ? <ActivityIndicator size="small" color={"#1E3A8A"} />
+                                  : <Ionicons name={researchResult ? "checkmark-circle" : "search-outline"} size={14} color={researchResult ? "#059669" : "#1E3A8A"} />}
+                                <Text style={{ fontSize: 12, fontWeight: "800", color: researchResult ? "#059669" : "#1E3A8A" }}>
                                   {researchResult ? "Research Complete — Tap to Refresh" : "AI Research Contract Requirements"}
                                 </Text>
                               </Pressable>
@@ -991,7 +992,7 @@ export default function AdminUsers() {
                                 <View style={{ gap: 6 }}>
                                   {/* Summary */}
                                   <View style={{ backgroundColor: "#EFF6FF", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
-                                    <Text style={{ fontSize: 11, color: colors.primary, lineHeight: 16, fontStyle: "italic" }}>
+                                    <Text style={{ fontSize: 11, color: "#1E3A8A", lineHeight: 16, fontStyle: "italic" }}>
                                       {researchResult.summary}
                                     </Text>
                                   </View>
@@ -1024,7 +1025,7 @@ export default function AdminUsers() {
                                         {researchResult.leave_entitlements.map((l, i) => (
                                           <View key={i} style={{ backgroundColor: "#EFF6FF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5,
                                             borderWidth: 1, borderColor: "#BFDBFE" }}>
-                                            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>
+                                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>
                                               {l.label}{l.days_per_year ? ` · ${l.days_per_year}d/yr` : ""}
                                             </Text>
                                             <Text style={{ fontSize: 9, color: colors.mutedForeground }}>{l.note}</Text>
@@ -1041,7 +1042,7 @@ export default function AdminUsers() {
                                       {researchResult.overtime_rules.map((o, i) => (
                                         <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 8,
                                           backgroundColor: "#F9FAFB", borderRadius: 6, padding: 7, borderWidth: 1, borderColor: colors.border }}>
-                                          <View style={{ backgroundColor: colors.primary, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                          <View style={{ backgroundColor: "#1E3A8A", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
                                             <Text style={{ fontSize: 10, fontWeight: "800", color: "#FFF" }}>{o.multiplier}x</Text>
                                           </View>
                                           <View style={{ flex: 1 }}>
@@ -1098,7 +1099,7 @@ export default function AdminUsers() {
                                   {/* Send to Accountant */}
                                   <Pressable onPress={() => setShowAccountantModal(true)}
                                     style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-                                      borderRadius: 10, paddingVertical: 9, backgroundColor: colors.primary }}>
+                                      borderRadius: 10, paddingVertical: 9, backgroundColor: "#1E3A8A" }}>
                                     <Ionicons name="mail-outline" size={14} color="#FFF" />
                                     <Text style={{ fontSize: 12, fontWeight: "800", color: "#FFF" }}>Send to Accountant for Review</Text>
                                   </Pressable>
@@ -1172,14 +1173,14 @@ export default function AdminUsers() {
                             style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
                               borderRadius: 10, paddingVertical: 9, backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE" }}>
                             {jurisdictionLoading
-                              ? <ActivityIndicator size="small" color={colors.primary} />
-                              : <Ionicons name="globe-outline" size={14} color={colors.primary} />}
-                            <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>AI Jurisdiction Lookup</Text>
+                              ? <ActivityIndicator size="small" color={"#1E3A8A"} />
+                              : <Ionicons name="globe-outline" size={14} color={"#1E3A8A"} />}
+                            <Text style={{ fontSize: 12, fontWeight: "800", color: "#1E3A8A" }}>AI Jurisdiction Lookup</Text>
                           </Pressable>
 
                           <Pressable onPress={() => { void handleSaveEmployment(); }}
                             style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-                              borderRadius: 10, paddingVertical: 9, backgroundColor: colors.primary }}>
+                              borderRadius: 10, paddingVertical: 9, backgroundColor: "#1E3A8A" }}>
                             {empSaving
                               ? <ActivityIndicator size="small" color="#FFF" />
                               : <Ionicons name="checkmark-circle-outline" size={14} color="#FFF" />}
@@ -1213,7 +1214,7 @@ export default function AdminUsers() {
                         </View>
                       )}
 
-                      <Text style={[styles.disciplinesSectionTitle, { color: colors.primary, marginTop: operatorProfile ? 10 : 0 }]}>Disciplines</Text>
+                      <Text style={[styles.disciplinesSectionTitle, { color: "#1E3A8A", marginTop: operatorProfile ? 10 : 0 }]}>Disciplines</Text>
                       {!operatorProfile ? (
                         <Text style={[styles.disciplinesEmpty, { color: colors.mutedForeground }]}>No operator profile yet</Text>
                       ) : !operatorProfile.rates || operatorProfile.rates.length === 0 ? (
@@ -1221,16 +1222,16 @@ export default function AdminUsers() {
                       ) : (
                         <View style={styles.disciplinesChips}>
                           {operatorProfile.rates.filter(r => r.discipline?.name).map(r => (
-                            <View key={r.id} style={[styles.disciplineChip, { backgroundColor: colors.primary }]}>
+                            <View key={r.id} style={[styles.disciplineChip, { backgroundColor: "#1E3A8A" }]}>
                               <Text style={[styles.disciplineChipText, { color: "#FFF" }]}>{r.discipline?.name}</Text>
                               <Ionicons name="checkmark" size={11} color="#FFF" />
                             </View>
                           ))}
                         </View>
                       )}
-                      <Pressable style={[styles.manageProfileBtn, { borderColor: colors.primary }]} onPress={() => { setSelected(null); router.push("/(admin)/lessons"); }}>
-                        <Ionicons name="calendar-outline" size={14} color={colors.primary} />
-                        <Text style={[styles.manageProfileBtnText, { color: colors.primary }]}>
+                      <Pressable style={[styles.manageProfileBtn, { borderColor: "#1E3A8A" }]} onPress={() => { setSelected(null); router.push("/(admin)/lessons"); }}>
+                        <Ionicons name="calendar-outline" size={14} color={"#1E3A8A"} />
+                        <Text style={[styles.manageProfileBtnText, { color: "#1E3A8A" }]}>
                           {operatorProfile ? "Edit Profile in Activity" : "Create Profile in Activity"}
                         </Text>
                       </Pressable>
@@ -1239,7 +1240,7 @@ export default function AdminUsers() {
 
                   {/* Contact button */}
                   {user.status !== "suspended" && user.role !== "student" && !!user.phone && (
-                    <Pressable style={[styles.contactBtn, { backgroundColor: colors.primary }]} onPress={() => setShowContact(true)}>
+                    <Pressable style={[styles.contactBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => setShowContact(true)}>
                       <Ionicons name="chatbubble-ellipses" size={18} color="#FFF" />
                       <Text style={styles.contactBtnText}>Contact {user.name.split(" ")[0]}</Text>
                     </Pressable>
@@ -1324,7 +1325,7 @@ export default function AdminUsers() {
                   })()}
 
                   <Pressable style={[styles.closeBtn, { backgroundColor: colors.muted }]} onPress={() => { setConfirmAction(null); setSelected(null); }}>
-                    <Text style={[styles.closeBtnText, { color: colors.primary }]}>Close</Text>
+                    <Text style={[styles.closeBtnText, { color: "#1E3A8A" }]}>Close</Text>
                   </Pressable>
                 </ScrollView>
               );
@@ -1414,7 +1415,7 @@ export default function AdminUsers() {
                   setShowAccountantModal(false);
                 }}
                 style={{ flex: 2, borderRadius: 10, paddingVertical: 11, alignItems: "center",
-                  backgroundColor: colors.primary, flexDirection: "row", justifyContent: "center", gap: 6 }}>
+                  backgroundColor: "#1E3A8A", flexDirection: "row", justifyContent: "center", gap: 6 }}>
                 <Ionicons name="mail-outline" size={15} color="#FFF" />
                 <Text style={{ fontSize: 13, fontWeight: "800", color: "#FFF" }}>Open in Mail App</Text>
               </Pressable>
@@ -1568,6 +1569,7 @@ function UserCard({ user, colors, primaryRoleName, secondaryRoleName, onPress }:
   secondaryRoleName: string;
   onPress: () => void;
 }) {
+  const styles = make_styles(colors.primary, colors.secondary);
   const rc = ROLE_COLORS[user.role];
   const sc = STATUS_CONFIG[user.status];
 
@@ -1592,7 +1594,7 @@ function UserCard({ user, colors, primaryRoleName, secondaryRoleName, onPress }:
 
       <View style={styles.userInfo}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Text style={[styles.userName, { color: colors.primary }]}>{user.name}</Text>
+          <Text style={[styles.userName, { color: "#1E3A8A" }]}>{user.name}</Text>
           {user.status === "suspended" && <Ionicons name="ban" size={12} color="#EF4444" />}
         </View>
         {!!user.preferredName && (
@@ -1661,7 +1663,7 @@ function UserCard({ user, colors, primaryRoleName, secondaryRoleName, onPress }:
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
 
@@ -1738,7 +1740,7 @@ const styles = StyleSheet.create({
   guardianSection: { width: "88%", borderWidth: 1, borderRadius: 18, padding: 14, marginBottom: 14 },
   guardianInfo:    { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
   guardianAvatar:  { width: 36, height: 36, borderRadius: 18, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" },
-  guardianAvatarText: { fontSize: 16, fontWeight: "700", color: "#1E3A8A" },
+  guardianAvatarText: { fontSize: 16, fontWeight: "700", color: primary },
   guardianName:    { fontSize: 14, fontWeight: "700" },
   guardianPhone:   { fontSize: 12, marginTop: 2 },
   guardianContactBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, paddingVertical: 11 },

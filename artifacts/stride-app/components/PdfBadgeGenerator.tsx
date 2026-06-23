@@ -122,17 +122,17 @@ async function buildFullPageHtml(students: EnrichedStudent[], opts: BadgeOpts): 
     const safety = safetyPillsHtml(s, opts, false);
     return `
       <div style="width:210mm;min-height:297mm;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20mm;page-break-after:always;position:relative;background:white;">
-        <div style="position:absolute;top:0;left:0;right:0;height:14px;background:#1E3A8A;"></div>
-        <div style="position:absolute;top:14px;left:0;right:0;height:5px;background:#FBBF24;"></div>
-        ${opts.showPhoto ? `<div style="width:110px;height:110px;border-radius:55px;background:#DBEAFE;border:3px solid #1E3A8A;display:flex;align-items:center;justify-content:center;margin-bottom:20px;"><span style="font-size:52px;font-weight:900;color:#1E3A8A;">${first[0] ?? "?"}</span></div>` : ""}
-        <div style="font-size:64px;font-weight:900;color:#1E3A8A;text-align:center;letter-spacing:-2px;line-height:1;${opts.showLastName && last ? "margin-bottom:6px;" : opts.showPreferredName && (s as EnrichedStudent).preferredName ? "margin-bottom:6px;" : "margin-bottom:24px;"}">${first}</div>
+        <div style="position:absolute;top:0;left:0;right:0;height:14px;background:"#1E3A8A";"></div>
+        <div style="position:absolute;top:14px;left:0;right:0;height:5px;background:"#FBBF24";"></div>
+        ${opts.showPhoto ? `<div style="width:110px;height:110px;border-radius:55px;background:#DBEAFE;border:3px solid "#1E3A8A";display:flex;align-items:center;justify-content:center;margin-bottom:20px;"><span style="font-size:52px;font-weight:900;color:"#1E3A8A";">${first[0] ?? "?"}</span></div>` : ""}
+        <div style="font-size:64px;font-weight:900;color:"#1E3A8A";text-align:center;letter-spacing:-2px;line-height:1;${opts.showLastName && last ? "margin-bottom:6px;" : opts.showPreferredName && (s as EnrichedStudent).preferredName ? "margin-bottom:6px;" : "margin-bottom:24px;"}">${first}</div>
         ${opts.showLastName && last ? `<div style="font-size:36px;font-weight:600;color:#374151;text-align:center;margin-bottom:${opts.showPreferredName && (s as EnrichedStudent).preferredName ? "6px" : "24px"};">${last}</div>` : ""}
         ${opts.showPreferredName && (s as EnrichedStudent).preferredName ? `<div style="font-size:20px;color:#6B7280;text-align:center;font-style:italic;margin-bottom:20px;">Called: ${(s as EnrichedStudent).preferredName}</div>` : ""}
         <div style="width:210px;height:210px;">${qr}</div>
         ${opts.showSecondary ? `<div style="font-size:18px;color:#6B7280;text-align:center;margin-top:20px;">${course} · Age: ${s.age}</div>` : ""}
         ${safety}
         <div style="position:absolute;bottom:14mm;font-size:11px;color:#9CA3AF;text-align:center;">Stride · stride.app</div>
-        <div style="position:absolute;bottom:0;left:0;right:0;height:10px;background:#1E3A8A;"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:10px;background:"#1E3A8A";"></div>
       </div>`;
   }));
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${BASE_CSS}</style></head><body>${pages.join("")}</body></html>`;
@@ -163,10 +163,10 @@ async function buildGridHtml(students: EnrichedStudent[], gridSize: GridSize, op
       const photoCirclePx = Math.max(24, Math.round(qrPx * 0.22));
       const safety = safetyPillsHtml(s, opts, true);
       return `
-        <div style="border:2px solid #1E3A8A;border-radius:10px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;background:white;page-break-inside:avoid;break-inside:avoid;">
+        <div style="border:2px solid "#1E3A8A";border-radius:10px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;background:white;page-break-inside:avoid;break-inside:avoid;">
           <div style="width:${qrPx}px;height:${qrPx}px;">${qrSvgs[idx]}</div>
-          <div style="font-size:${namePx}px;font-weight:800;color:#1E3A8A;text-align:center;line-height:1.2;">${first}${opts.showLastName && last ? `<br/><span style="font-size:${Math.round(namePx * 0.72)}px;font-weight:600;color:#374151;">${last}</span>` : ""}${opts.showPreferredName && s.preferredName ? `<br/><span style="font-size:${Math.round(namePx * 0.65)}px;font-weight:400;color:#6B7280;font-style:italic;">Called: ${s.preferredName}</span>` : ""}</div>
-          ${opts.showPhoto ? `<div style="width:${photoCirclePx}px;height:${photoCirclePx}px;border-radius:${Math.round(photoCirclePx / 2)}px;background:#DBEAFE;border:2px solid #1E3A8A;display:flex;align-items:center;justify-content:center;"><span style="font-size:${Math.round(photoCirclePx * 0.55)}px;font-weight:900;color:#1E3A8A;">${first[0] ?? "?"}</span></div>` : ""}
+          <div style="font-size:${namePx}px;font-weight:800;color:"#1E3A8A";text-align:center;line-height:1.2;">${first}${opts.showLastName && last ? `<br/><span style="font-size:${Math.round(namePx * 0.72)}px;font-weight:600;color:#374151;">${last}</span>` : ""}${opts.showPreferredName && s.preferredName ? `<br/><span style="font-size:${Math.round(namePx * 0.65)}px;font-weight:400;color:#6B7280;font-style:italic;">Called: ${s.preferredName}</span>` : ""}</div>
+          ${opts.showPhoto ? `<div style="width:${photoCirclePx}px;height:${photoCirclePx}px;border-radius:${Math.round(photoCirclePx / 2)}px;background:#DBEAFE;border:2px solid "#1E3A8A";display:flex;align-items:center;justify-content:center;"><span style="font-size:${Math.round(photoCirclePx * 0.55)}px;font-weight:900;color:"#1E3A8A";">${first[0] ?? "?"}</span></div>` : ""}
           ${opts.showSecondary && course ? `<div style="font-size:${subPx}px;color:#6B7280;text-align:center;">${course} · Age: ${s.age}</div>` : ""}
           ${safety}
         </div>`;
@@ -174,7 +174,7 @@ async function buildGridHtml(students: EnrichedStudent[], gridSize: GridSize, op
     return `
       <div style="display:grid;grid-template-columns:repeat(${cols},1fr);grid-auto-flow:row;gap:${gap};padding:${pad};page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;background:white;align-content:start;min-height:297mm;box-sizing:border-box;">
         <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-bottom:4mm;">
-          <div style="font-size:13px;font-weight:800;color:#1E3A8A;border-left:4px solid #FBBF24;padding-left:8px;">${opts.courseName ?? "All Members"} · ${gridSize} per page</div>
+          <div style="font-size:13px;font-weight:800;color:"#1E3A8A";border-left:4px solid "#FBBF24";padding-left:8px;">${opts.courseName ?? "All Members"} · ${gridSize} per page</div>
           <div style="font-size:10px;color:#9CA3AF;">Stride</div>
         </div>
         ${cards}
@@ -199,18 +199,18 @@ async function buildBadgeHtml(students: EnrichedStudent[], opts: BadgeOpts): Pro
       const course = s.courses[0] ?? opts.courseName ?? "";
       const safety = safetyPillsHtml(s, opts, true);
       return `
-        <div style="width:85.6mm;height:54mm;border:1.5px solid #1E3A8A;border-radius:3mm;display:flex;align-items:center;padding:3mm;gap:3mm;background:white;overflow:hidden;position:relative;">
-          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#1E3A8A;"></div>
+        <div style="width:85.6mm;height:54mm;border:1.5px solid "#1E3A8A";border-radius:3mm;display:flex;align-items:center;padding:3mm;gap:3mm;background:white;overflow:hidden;position:relative;">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:"#1E3A8A";"></div>
           <div style="width:44mm;height:44mm;flex-shrink:0;">${qrSvgs[idx]}</div>
           <div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden;min-width:0;">
-            ${opts.showPhoto ? `<div style="width:26px;height:26px;border-radius:13px;background:#DBEAFE;border:1.5px solid #1E3A8A;display:flex;align-items:center;justify-content:center;margin-bottom:2px;"><span style="font-size:11px;font-weight:900;color:#1E3A8A;">${first[0] ?? "?"}</span></div>` : ""}
-            <div style="font-size:17px;font-weight:900;color:#1E3A8A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${first}</div>
+            ${opts.showPhoto ? `<div style="width:26px;height:26px;border-radius:13px;background:#DBEAFE;border:1.5px solid "#1E3A8A";display:flex;align-items:center;justify-content:center;margin-bottom:2px;"><span style="font-size:11px;font-weight:900;color:"#1E3A8A";">${first[0] ?? "?"}</span></div>` : ""}
+            <div style="font-size:17px;font-weight:900;color:"#1E3A8A";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${first}</div>
             ${opts.showLastName && last ? `<div style="font-size:12px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${last}</div>` : ""}
             ${opts.showPreferredName && s.preferredName ? `<div style="font-size:10px;color:#6B7280;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Called: ${s.preferredName}</div>` : ""}
             ${opts.showSecondary && course ? `<div style="font-size:10px;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${course}</div>` : ""}
             ${safety}
             <div style="margin-top:auto;display:flex;align-items:center;gap:3px;">
-              <div style="width:8px;height:8px;border-radius:4px;background:#FBBF24;"></div>
+              <div style="width:8px;height:8px;border-radius:4px;background:"#FBBF24";"></div>
               <span style="font-size:7px;color:#9CA3AF;letter-spacing:0.5px;">STRIDE</span>
             </div>
           </div>

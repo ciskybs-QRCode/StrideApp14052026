@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
+import { useColors } from "@/hooks/useColors";
 
 export default function NotFoundScreen() {
+  const colors = useColors();
   const router = useRouter();
 
   useEffect(() => {
@@ -11,7 +13,7 @@ export default function NotFoundScreen() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#1E3A8A" />
+      <ActivityIndicator size="large" color={colors.primary} />
       <Text style={styles.text}>Loading…</Text>
     </View>
   );

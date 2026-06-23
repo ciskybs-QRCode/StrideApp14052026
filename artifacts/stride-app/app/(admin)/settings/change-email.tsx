@@ -22,6 +22,7 @@ export default function ChangeEmailPage() {
   const router = useRouter();
   const { user, updateUser } = useAuth();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
 
   const [currentEmail, setCurrentEmail]   = useState("");
@@ -127,7 +128,7 @@ export default function ChangeEmailPage() {
 
         {/* ── Security notice ── */}
         <View style={[styles.notice, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
-          <Ionicons name="shield-checkmark-outline" size={16} color="#1E3A8A" />
+          <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
           <Text style={styles.noticeText}>
             For security, we send a notification to both your old and new address whenever email is changed. Each email contains an{" "}
             <Text style={{ fontWeight: "700" }}>Undo Changes</Text> link valid for 24 hours.
@@ -161,7 +162,7 @@ export default function ChangeEmailPage() {
         <Pressable
           style={({ pressed }) => [
             styles.saveBtn,
-            { backgroundColor: colors.primary, opacity: pressed || loading ? 0.8 : 1 },
+            { backgroundColor: "#1E3A8A", opacity: pressed || loading ? 0.8 : 1 },
           ]}
           onPress={handleSave}
           disabled={loading}
@@ -174,7 +175,7 @@ export default function ChangeEmailPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:    { flex: 1 },
   scroll:       { paddingHorizontal: 20, paddingTop: 16 },
 
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 24,
   },
-  noticeText: { flex: 1, fontSize: 13, color: "#1E3A8A", lineHeight: 19 },
+  noticeText: { flex: 1, fontSize: 13, color: primary, lineHeight: 19 },
 
   fieldWrap:  { marginBottom: 16 },
   fieldLabel: { fontSize: 13, fontWeight: "700", marginBottom: 8 },

@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { api, getKioskPin, request } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -201,6 +202,8 @@ function mapAccessToFeedback(res: AccessResponse): FeedbackState {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function KioskScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { logout } = useAuth();
   const router      = useRouter();
   const insets      = useSafeAreaInsets();
@@ -589,7 +592,7 @@ export default function KioskScreen() {
       <Modal visible={showPin} transparent animationType="fade" statusBarTranslucent>
         <View style={styles.pinBackdrop}>
           <View style={styles.pinCard}>
-            <Ionicons name="shield-checkmark-outline" size={40} color="#1E3A8A" style={{ marginBottom: 12 }} />
+            <Ionicons name="shield-checkmark-outline" size={40} color={colors.primary} style={{ marginBottom: 12 }} />
             <Text style={styles.pinTitle}>Admin Exit</Text>
             <Text style={styles.pinSub}>Enter the admin PIN to exit kiosk mode</Text>
             <TextInput
@@ -623,7 +626,7 @@ export default function KioskScreen() {
 
 const FRAME = Math.min(SW, SH) * 0.55;
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   root:            { flex: 1, backgroundColor: "#0B1F4A", overflow: "hidden" },
   cameraContainer: { ...StyleSheet.absoluteFillObject },
 
@@ -660,7 +663,7 @@ const styles = StyleSheet.create({
     alignItems: "center", paddingHorizontal: 24,
   },
   logo:     { width: 120, height: 56, marginBottom: 4 },
-  hudTitle: { color: "#FBBF24", fontSize: 13, fontWeight: "700", letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 },
+  hudTitle: { color: secondary, fontSize: 13, fontWeight: "700", letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 10 },
   statusPill: {
     flexDirection: "row", alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.12)",
@@ -678,7 +681,7 @@ const styles = StyleSheet.create({
     color: "rgba(251,191,36,0.7)", fontSize: 12, fontWeight: "600",
     letterSpacing: 0.5, textAlign: "center",
   },
-  corner: { position: "absolute", width: 32, height: 32, borderColor: "#FBBF24", borderWidth: 3 },
+  corner: { position: "absolute", width: 32, height: 32, borderColor: secondary, borderWidth: 3 },
   cornerTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 6 },
   cornerTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 6 },
   cornerBL: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 6 },
@@ -725,19 +728,19 @@ const styles = StyleSheet.create({
     shadowColor: "#000", shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.4, shadowRadius: 40, elevation: 20,
   },
-  pinTitle:  { fontSize: 22, fontWeight: "800", color: "#1E3A8A", marginBottom: 6 },
+  pinTitle:  { fontSize: 22, fontWeight: "800", color: primary, marginBottom: 6 },
   pinSub:    { fontSize: 13, color: "#6B7BA4", textAlign: "center", marginBottom: 24, lineHeight: 18 },
   pinInput: {
     width: "100%", height: 56, backgroundColor: "#F0F4FF",
     borderRadius: 14, borderWidth: 1, borderColor: "#D1D9F0",
     textAlign: "center", fontSize: 28, letterSpacing: 12,
-    color: "#1E3A8A", fontWeight: "700", marginBottom: 8,
+    color: primary, fontWeight: "700", marginBottom: 8,
   },
   pinError:   { color: "#EF4444", fontSize: 13, marginBottom: 12, textAlign: "center" },
   pinButtons: { flexDirection: "row", gap: 12, marginTop: 8, width: "100%" },
   pinCancel:  { flex: 1, height: 50, borderRadius: 12, backgroundColor: "#F0F4FF", alignItems: "center", justifyContent: "center" },
   pinCancelText:  { color: "#6B7BA4", fontWeight: "700", fontSize: 15 },
-  pinConfirm: { flex: 1, height: 50, borderRadius: 12, backgroundColor: "#1E3A8A", alignItems: "center", justifyContent: "center" },
+  pinConfirm: { flex: 1, height: 50, borderRadius: 12, backgroundColor: primary, alignItems: "center", justifyContent: "center" },
   pinConfirmText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
 
   webInputRow: { flexDirection: "row", gap: 8, width: "100%", maxWidth: 360 },
@@ -746,11 +749,11 @@ const styles = StyleSheet.create({
     borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
     paddingHorizontal: 14, color: "#FFF", fontSize: 13,
   },
-  webScanBtn: { backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" },
-  webScanBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 14 },
+  webScanBtn: { backgroundColor: secondary, borderRadius: 10, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" },
+  webScanBtnText: { color: primary, fontWeight: "700", fontSize: 14 },
 
   permissionBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, padding: 32 },
   permText: { color: "rgba(255,255,255,0.7)", fontSize: 16, fontWeight: "600", textAlign: "center" },
-  permBtn:  { backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  permBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 15 },
+  permBtn:  { backgroundColor: secondary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  permBtnText: { color: primary, fontWeight: "700", fontSize: 15 },
 });

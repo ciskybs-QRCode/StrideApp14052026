@@ -63,6 +63,7 @@ function relTime(iso: string): string {
 
 export default function BeaconsScreen() {
   const colors  = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
 
@@ -193,7 +194,7 @@ export default function BeaconsScreen() {
   if (loading) {
     return (
       <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
+        <ActivityIndicator size="large" color={"#1E3A8A"} />
         <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading BLE data…</Text>
       </View>
     );
@@ -229,8 +230,8 @@ export default function BeaconsScreen() {
                 setBleEnabled(false);
               }
             }}
-            trackColor={{ false: "#E5E7EB", true: "#1E3A8A" }}
-            thumbColor={bleEnabled ? "#FBBF24" : "#9CA3AF"}
+            trackColor={{ false: "#E5E7EB", true: colors.primary }}
+            thumbColor={bleEnabled ? colors.secondary : "#9CA3AF"}
           />
         </View>
 
@@ -354,10 +355,10 @@ export default function BeaconsScreen() {
                 disabled={isSimulating}
               >
                 {isSimulating
-                  ? <ActivityIndicator size="small" color={colors.primary} />
-                  : <Ionicons name="flash" size={14} color={colors.primary} />
+                  ? <ActivityIndicator size="small" color={"#1E3A8A"} />
+                  : <Ionicons name="flash" size={14} color={"#1E3A8A"} />
                 }
-                <Text style={[S.simulateBtnText, { color: colors.primary }]}>
+                <Text style={[S.simulateBtnText, { color: "#1E3A8A" }]}>
                   {isSimulating ? "Detecting…" : "Simulate Signal"}
                 </Text>
               </Pressable>
@@ -383,7 +384,7 @@ export default function BeaconsScreen() {
           const childName = student?.first_name ?? student?.name ?? `Child ${e.child_id}`;
           return (
             <View key={e.id} style={[S.recentRow, { backgroundColor: colors.card }]}>
-              <View style={[S.recentDot, { backgroundColor: colors.primary }]} />
+              <View style={[S.recentDot, { backgroundColor: "#1E3A8A" }]} />
               <View style={{ flex: 1 }}>
                 <Text style={[S.recentChild, { color: colors.foreground }]}>{childName}</Text>
                 <Text style={[S.recentMeta, { color: colors.mutedForeground }]}>
@@ -396,7 +397,7 @@ export default function BeaconsScreen() {
               </View>
               <View style={{ alignItems: "flex-end", gap: 4 }}>
                 <View style={[S.bleBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                  <Text style={[S.bleBadgeText, { color: colors.primary }]}>BLE AUTO</Text>
+                  <Text style={[S.bleBadgeText, { color: "#1E3A8A" }]}>BLE AUTO</Text>
                 </View>
                 <Text style={[S.recentTime, { color: colors.mutedForeground }]}>{relTime(e.timestamp)}</Text>
               </View>
@@ -420,7 +421,7 @@ export default function BeaconsScreen() {
         <View style={S.modalOverlay}>
           <View style={[S.modalCard, { backgroundColor: colors.card }]}>
             <View style={S.modalHeader}>
-              <Ionicons name="radio" size={24} color="#1E3A8A" />
+              <Ionicons name="radio" size={24} color={colors.primary} />
               <Text style={[S.modalTitle, { color: colors.foreground }]}>Register Proximity Scanner</Text>
               <Pressable onPress={() => setShowAddBeacon(false)} hitSlop={10}>
                 <Ionicons name="close" size={22} color={colors.mutedForeground} />
@@ -438,7 +439,7 @@ export default function BeaconsScreen() {
                 autoCapitalize="characters"
               />
               <Pressable onPress={() => setBUUID(generateUUID())} hitSlop={8}>
-                <Ionicons name="refresh" size={18} color="#1E3A8A" />
+                <Ionicons name="refresh" size={18} color={colors.primary} />
               </Pressable>
             </View>
 
@@ -560,7 +561,7 @@ export default function BeaconsScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const make_S = (primary: string, secondary: string) => StyleSheet.create({
   root:   { flex: 1 },
   loader: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
   loaderText: { fontSize: 14, fontWeight: "500" },
@@ -581,7 +582,7 @@ const S = StyleSheet.create({
   toggleIconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   toggleTitle:    { fontSize: 14, fontWeight: "800", marginBottom: 2 },
   toggleSub:      { fontSize: 11, lineHeight: 16 },
-  infoCard:     { backgroundColor: "#1E3A8A10", borderWidth: 1, borderColor: "#1E3A8A20", borderRadius: 16, padding: 14, marginBottom: 20 },
+  infoCard:     { backgroundColor: (primary + "10"), borderWidth: 1, borderColor: (primary + "20"), borderRadius: 16, padding: 14, marginBottom: 20 },
   infoRow:      { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   infoStep:     { flex: 1, alignItems: "center", gap: 6, borderRadius: 10, padding: 10 },
   infoStepText: { fontSize: 11, fontWeight: "600", textAlign: "center", color: "#374151" },
@@ -592,7 +593,7 @@ const S = StyleSheet.create({
   sectionLeft:   { flex: 1 },
   sectionTitle:  { fontSize: 15, fontWeight: "800" },
   sectionSub:    { fontSize: 11, marginTop: 1 },
-  addBtn:        { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#1E3A8A", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  addBtn:        { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
   addBtnText:    { color: "#FFF", fontWeight: "700", fontSize: 12 },
 
   // Item cards
@@ -614,8 +615,8 @@ const S = StyleSheet.create({
   assignCard:    { borderRadius: 14, padding: 14, marginBottom: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   uuidRow:       { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 10 },
   uuidText:      { fontFamily: "monospace" as const, fontSize: 11, color: "#6B7280" },
-  simulateBtn:   { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1.5, borderColor: "#1E3A8A", borderRadius: 10, paddingVertical: 9 },
-  simulateBtnText: { color: "#1E3A8A", fontWeight: "700", fontSize: 13 },
+  simulateBtn:   { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1.5, borderColor: primary, borderRadius: 10, paddingVertical: 9 },
+  simulateBtnText: { color: primary, fontWeight: "700", fontSize: 13 },
 
   // Recent
   recentRow:   { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, padding: 12, marginBottom: 8 },
@@ -624,7 +625,7 @@ const S = StyleSheet.create({
   recentMeta:  { fontSize: 11, marginTop: 2 },
   recentTime:  { fontSize: 10 },
   bleBadge:    { backgroundColor: "rgba(30,58,138,0.1)", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  bleBadgeText:{ color: "#1E3A8A", fontSize: 9, fontWeight: "800", letterSpacing: 0.8 },
+  bleBadgeText:{ color: primary, fontSize: 9, fontWeight: "800", letterSpacing: 0.8 },
 
   // Empty
   emptyCard: { alignItems: "center", gap: 8, borderRadius: 14, padding: 24, marginBottom: 8 },
@@ -647,6 +648,6 @@ const S = StyleSheet.create({
   childChip:     { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
   childChipText: { fontSize: 13, fontWeight: "600" },
 
-  modalPrimaryBtn:     { backgroundColor: "#1E3A8A", borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 4 },
+  modalPrimaryBtn:     { backgroundColor: primary, borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 4 },
   modalPrimaryBtnText: { color: "#FFF", fontWeight: "900", fontSize: 15 },
 });

@@ -156,10 +156,11 @@ const CURRENCY_SYMBOL_MAP: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AdminHome() {
+  const colors = useColors();
   const { user, allRoles, updateUser } = useAuth();
   const { marketplaceEnabled } = useFeatures();
   const { courses, students, payments } = useAppData();
-  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const locale = useDeviceLocale();
@@ -494,7 +495,7 @@ export default function AdminHome() {
           <Pressable
             style={[styles.ctaCard, { backgroundColor: "#1E3A8A", marginBottom: 16 }]}            onPress={() => { router.push("/(super_admin)/dashboard" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <Ionicons name="shield-checkmark" size={28} color="#FBBF24" />
+            <Ionicons name="shield-checkmark" size={28} color={"#FBBF24"} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.ctaTitle}>Super Admin Dashboard</Text>
               <Text style={styles.ctaSub}>Manage platform, associations, and users</Text>
@@ -506,7 +507,7 @@ export default function AdminHome() {
         {/* ── QUICK ACTIONS (hidden for super_admin without org) ── */}
         {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
+            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Quick Actions</Text>
             <View style={{ gap: 12, marginBottom: 16 }}>
 
               {/* 1. SOS Emergency */}
@@ -518,17 +519,17 @@ export default function AdminHome() {
                 onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               >
                 <View style={[styles.qrMiniBox, { backgroundColor: "#EFF6FF" }]}>
-                  <QRCode value={qrValue} size={72} color={colors.primary} backgroundColor="transparent" />
+                  <QRCode value={qrValue} size={72} color={"#1E3A8A"} backgroundColor="transparent" />
                 </View>
                 <View style={styles.qrPanelRight}>
-                  <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>ADMIN PASS</Text>
+                  <Text style={[styles.qrPanelTitle, { color: "#1E3A8A" }]}>ADMIN PASS</Text>
                   <Text style={[styles.qrPanelName, { color: colors.foreground }]}>{user?.name ?? "Admin"}</Text>
                   <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>
                     {user?.role === "super_admin" ? "Super Admin" : "Admin"} · {orgName || user?.schoolName || ""}
                   </Text>
                   <View style={[styles.qrActiveBadge, { backgroundColor: "#DBEAFE" }]}>
-                    <Ionicons name="shield-checkmark" size={12} color={colors.primary} />
-                    <Text style={[styles.qrActiveBadgeText, { color: colors.primary }]}>Active Credential</Text>
+                    <Ionicons name="shield-checkmark" size={12} color={"#1E3A8A"} />
+                    <Text style={[styles.qrActiveBadgeText, { color: "#1E3A8A" }]}>Active Credential</Text>
                   </View>
                 </View>
                 <Ionicons name="expand-outline" size={18} color={colors.mutedForeground} />
@@ -558,40 +559,40 @@ export default function AdminHome() {
             {/* Label + Month/Year toggle in same row */}
             <View style={styles.heroTopRow}>
               <Text style={[styles.heroLabel, { color: colors.mutedForeground }]}>{period === "month" ? "Monthly" : "Annual"} Revenue</Text>
-              <View style={[styles.heroPeriodToggle, { backgroundColor: "#1E3A8A18" }]}>
+              <View style={[styles.heroPeriodToggle, { backgroundColor: ("#1E3A8A" + "18") }]}>
                 <Pressable
-                  style={[styles.heroPeriodBtn, period === "month" && { backgroundColor: colors.primary }]}
+                  style={[styles.heroPeriodBtn, period === "month" && { backgroundColor: "#1E3A8A" }]}
                   onPress={() => setPeriod("month")}
                 >
                   <Text style={[styles.heroPeriodBtnText, { color: period === "month" ? "#FFFFFF" : colors.mutedForeground }]}>Month</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.heroPeriodBtn, period === "year" && { backgroundColor: colors.primary }]}
+                  style={[styles.heroPeriodBtn, period === "year" && { backgroundColor: "#1E3A8A" }]}
                   onPress={() => setPeriod("year")}
                 >
                   <Text style={[styles.heroPeriodBtnText, { color: period === "year" ? "#FFFFFF" : colors.mutedForeground }]}>Year</Text>
                 </Pressable>
               </View>
             </View>
-            <Text style={[styles.heroValue, { color: colors.primary }]}>{cur}{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
+            <Text style={[styles.heroValue, { color: "#1E3A8A" }]}>{cur}{(period === "year" ? totalRevenue * 12 : totalRevenue).toLocaleString()}</Text>
             <View style={styles.heroTrend}>
-              <Ionicons name="trending-up" size={16} color="#FBBF24" />
+              <Ionicons name="trending-up" size={16} color={"#FBBF24"} />
               <Text style={styles.heroTrendText}>+12.4% vs last month</Text>
             </View>
           </View>
           <View style={[styles.heroSide, { borderTopColor: colors.border }]}>
             <View style={styles.heroSideItem}>
-              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{totalStudents}</Text>
+              <Text style={[styles.heroSideValue, { color: "#1E3A8A" }]}>{totalStudents}</Text>
               <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Members</Text>
             </View>
             <View style={[styles.heroSideDivider, { backgroundColor: colors.border }]} />
             <View style={styles.heroSideItem}>
-              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{courses.length}</Text>
+              <Text style={[styles.heroSideValue, { color: "#1E3A8A" }]}>{courses.length}</Text>
               <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Courses</Text>
             </View>
             <View style={[styles.heroSideDivider, { backgroundColor: colors.border }]} />
             <View style={styles.heroSideItem}>
-              <Text style={[styles.heroSideValue, { color: colors.primary }]}>{avgOccupancy}%</Text>
+              <Text style={[styles.heroSideValue, { color: "#1E3A8A" }]}>{avgOccupancy}%</Text>
               <Text style={[styles.heroSideLabel, { color: colors.mutedForeground }]}>Occupancy</Text>
             </View>
           </View>
@@ -611,7 +612,7 @@ export default function AdminHome() {
               <View style={[styles.kpiIcon, { backgroundColor: k.bg }]}>
                 <Ionicons name={k.icon} size={18} color={k.color} />
               </View>
-              <Text style={[styles.kpiValue, { color: colors.primary }]}>{k.value}</Text>
+              <Text style={[styles.kpiValue, { color: "#1E3A8A" }]}>{k.value}</Text>
               <Text style={[styles.kpiLabel, { color: colors.mutedForeground }]}>{k.label}</Text>
             </View>
           ))}
@@ -621,7 +622,7 @@ export default function AdminHome() {
         {/* ── Contact the Office (hidden for super_admin without org) ── */}
         {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && (
         <>
-        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 24, marginBottom: 10 }]}>
+        <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 24, marginBottom: 10 }]}>
           Contact the Office
         </Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
@@ -629,29 +630,29 @@ export default function AdminHome() {
             <View style={{ flexDirection: "row", gap: 10 }}>
               {!!orgContactPhone && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
                   onPress={() => Linking.openURL(`https://wa.me/${orgContactPhone.replace(/\D/g, "")}`)}
                 >
-                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>WhatsApp</Text>
+                  <Ionicons name="logo-whatsapp" size={22} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>WhatsApp</Text>
                 </Pressable>
               )}
               {!!orgContactEmail && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
                   onPress={() => Linking.openURL(`mailto:${orgContactEmail}`)}
                 >
-                  <Ionicons name="mail" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Email</Text>
+                  <Ionicons name="mail" size={22} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>Email</Text>
                 </Pressable>
               )}
               {!!orgContactPhone && (
                 <Pressable
-                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `${colors.primary}12` }}
+                  style={{ flex: 1, alignItems: "center", borderRadius: 14, padding: 14, gap: 6, backgroundColor: `"#1E3A8A"12` }}
                   onPress={() => Linking.openURL(`tel:${orgContactPhone}`)}
                 >
-                  <Ionicons name="call" size={22} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: colors.primary }}>Call</Text>
+                  <Ionicons name="call" size={22} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E3A8A" }}>Call</Text>
                 </Pressable>
               )}
             </View>
@@ -946,7 +947,7 @@ export default function AdminHome() {
               </Pressable>
             </View>
             <View style={styles.qrFullscreenBox}>
-              <QRCode value={qrValue} size={260} color="#1E3A8A" backgroundColor="#FFFFFF" />
+              <QRCode value={qrValue} size={260} color={colors.primary} backgroundColor="#FFFFFF" />
             </View>
             <View style={styles.qrFullscreenInfo}>
               <Text style={styles.qrFullscreenName}>{user?.name}</Text>
@@ -954,8 +955,8 @@ export default function AdminHome() {
                 <Text style={styles.qrFullscreenOrg}>{orgName || user?.schoolName}</Text>
               ) : null}
               <View style={[styles.qrRoleBadge, { backgroundColor: "#DBEAFE", alignSelf: "center" }]}>
-                <Ionicons name="shield-checkmark" size={13} color="#1E3A8A" />
-                <Text style={[styles.qrRoleText, { color: "#1E3A8A" }]}>Administrator</Text>
+                <Ionicons name="shield-checkmark" size={13} color={colors.primary} />
+                <Text style={[styles.qrRoleText, { color: colors.primary }]}>Administrator</Text>
               </View>
               <Text style={styles.qrFullscreenHint}>Show this QR code to operators for access verification</Text>
             </View>
@@ -968,7 +969,7 @@ export default function AdminHome() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
 
@@ -1009,7 +1010,7 @@ const styles = StyleSheet.create({
   heroPeriodBtnText: { fontSize: 12, fontWeight: "700" },
   heroValue: { color: "#FFF", fontSize: 40, fontWeight: "800", marginTop: 4 },
   heroTrend: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
-  heroTrendText: { color: "#FBBF24", fontSize: 13, fontWeight: "600" },
+  heroTrendText: { color: secondary, fontSize: 13, fontWeight: "600" },
   heroSide: { flexDirection: "row", alignItems: "center", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.15)", paddingTop: 16 },
   heroSideItem: { flex: 1, alignItems: "center" },
   heroSideValue: { color: "#FFF", fontSize: 22, fontWeight: "800" },
@@ -1032,7 +1033,7 @@ const styles = StyleSheet.create({
   scannerTitle: { color: "#FFF", fontSize: 18, fontWeight: "700" },
   scannerPreview: { flex: 1, backgroundColor: "#111", alignItems: "center", justifyContent: "center" },
   scannerOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
-  scannerFrame: { width: 260, height: 260, borderRadius: 20, borderWidth: 3, borderColor: "#FBBF24" },
+  scannerFrame: { width: 260, height: 260, borderRadius: 20, borderWidth: 3, borderColor: secondary },
   scannerHintText: { color: "rgba(255,255,255,0.8)", marginTop: 20, fontSize: 14 },
   scanResultPanel: { padding: 20, gap: 12 },
   scanResultHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
@@ -1041,19 +1042,19 @@ const styles = StyleSheet.create({
   semaphoreItem: { alignItems: "center", gap: 6 },
   semaphoreLabel: { color: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: "600" },
   semaphoreValue: { fontSize: 13, fontWeight: "800", backgroundColor: "rgba(255,255,255,0.9)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
-  simulateBtn: { marginTop: 20, backgroundColor: "#FBBF24", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  simulateBtnText: { color: "#1E3A8A", fontWeight: "700" },
+  simulateBtn: { marginTop: 20, backgroundColor: secondary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  simulateBtnText: { color: primary, fontWeight: "700" },
   scannerFooter: { padding: 24, alignItems: "center", gap: 16 },
 
   // QR Fullscreen
   qrFullscreenOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", alignItems: "center", justifyContent: "center", padding: 24 },
   qrFullscreenCard: { backgroundColor: "#FFF", borderRadius: 28, padding: 28, width: "100%", alignItems: "center", gap: 16 },
   qrFullscreenHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" },
-  qrFullscreenTitle: { fontSize: 18, fontWeight: "700", color: "#1E3A8A" },
+  qrFullscreenTitle: { fontSize: 18, fontWeight: "700", color: primary },
   qrCloseBtn: { padding: 4 },
   qrFullscreenBox: { padding: 16, backgroundColor: "#FFF", borderRadius: 16 },
   qrFullscreenInfo: { alignItems: "center", gap: 8, width: "100%" },
-  qrFullscreenName: { fontSize: 20, fontWeight: "800", color: "#1E3A8A", textAlign: "center" },
+  qrFullscreenName: { fontSize: 20, fontWeight: "800", color: primary, textAlign: "center" },
   qrFullscreenOrg:  { fontSize: 13, fontWeight: "600", color: "#6B7BA4", textAlign: "center", letterSpacing: 0.3 },
   qrRoleBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
   qrRoleText: { fontSize: 13, fontWeight: "700" },

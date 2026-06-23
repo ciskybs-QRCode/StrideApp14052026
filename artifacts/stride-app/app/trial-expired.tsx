@@ -14,8 +14,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { getBillingStatus, createCheckoutSession, type BillingStatus } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 export default function TrialExpiredScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { logout, user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -83,7 +86,7 @@ export default function TrialExpiredScreen() {
     >
       <View style={styles.body}>
         <View style={styles.iconRing}>
-          <Ionicons name="lock-closed" size={54} color="#FBBF24" />
+          <Ionicons name="lock-closed" size={54} color={colors.secondary} />
         </View>
 
         <Text style={styles.eyebrow}>STRIDE PLATFORM</Text>
@@ -98,7 +101,7 @@ export default function TrialExpiredScreen() {
             </Text>
 
             {loadingBilling ? (
-              <ActivityIndicator color="#FBBF24" style={{ marginBottom: 24 }} />
+              <ActivityIndicator color={"#FBBF24"} style={{ marginBottom: 24 }} />
             ) : billing ? (
               <View style={styles.planBox}>
                 {/* QR code count */}
@@ -135,10 +138,10 @@ export default function TrialExpiredScreen() {
               disabled={subscribing}
             >
               {subscribing ? (
-                <ActivityIndicator color="#1E3A8A" />
+                <ActivityIndicator color={"#1E3A8A"} />
               ) : (
                 <>
-                  <Ionicons name="card-outline" size={20} color="#1E3A8A" />
+                  <Ionicons name="card-outline" size={20} color={"#1E3A8A"} />
                   <Text style={styles.subscribeBtnText}>Subscribe Now</Text>
                 </>
               )}
@@ -146,7 +149,7 @@ export default function TrialExpiredScreen() {
 
             {polling && (
               <View style={styles.pollingRow}>
-                <ActivityIndicator size="small" color="#FBBF24" />
+                <ActivityIndicator size="small" color={"#FBBF24"} />
                 <Text style={styles.pollingText}>Waiting for payment confirmation…</Text>
               </View>
             )}
@@ -163,7 +166,7 @@ export default function TrialExpiredScreen() {
             style={styles.contactRow}
             onPress={() => Linking.openURL("mailto:info@stride-ops.com")}
           >
-            <Ionicons name="mail-outline" size={16} color="#FBBF24" />
+            <Ionicons name="mail-outline" size={16} color={colors.secondary} />
             <Text style={styles.contactLink}>info@stride-ops.com</Text>
           </Pressable>
           <Pressable
@@ -174,7 +177,7 @@ export default function TrialExpiredScreen() {
               )
             }
           >
-            <Ionicons name="globe-outline" size={16} color="#FBBF24" />
+            <Ionicons name="globe-outline" size={16} color={colors.secondary} />
             <Text style={styles.contactLink}>stride.app</Text>
           </Pressable>
         </View>
@@ -184,17 +187,17 @@ export default function TrialExpiredScreen() {
         style={({ pressed }) => [styles.signOutBtn, { opacity: pressed ? 0.85 : 1 }]}
         onPress={handleLogout}
       >
-        <Ionicons name="log-out-outline" size={18} color="#1E3A8A" />
+        <Ionicons name="log-out-outline" size={18} color={colors.primary} />
         <Text style={styles.signOutText}>Sign Out</Text>
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     paddingHorizontal: 32,
     justifyContent: "space-between",
   },
@@ -219,7 +222,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 2.5,
-    color: "#FBBF24",
+    color: secondary,
     marginBottom: 14,
     textAlign: "center",
   },
@@ -234,7 +237,7 @@ const styles = StyleSheet.create({
   divider: {
     width: 56,
     height: 3,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 2,
     marginBottom: 18,
   },
@@ -256,7 +259,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(251,191,36,0.25)",
   },
   planRow: { flexDirection: "row", alignItems: "baseline", marginBottom: 8 },
-  planNum: { fontSize: 36, fontWeight: "800", color: "#FBBF24" },
+  planNum: { fontSize: 36, fontWeight: "800", color: secondary },
   planUnit: { fontSize: 15, color: "rgba(255,255,255,0.7)" },
   planDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.12)", marginBottom: 8 },
   planTotal: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
@@ -271,19 +274,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 16,
     paddingVertical: 16,
     width: "100%",
     marginBottom: 12,
   },
-  subscribeBtnText: { color: "#1E3A8A", fontSize: 16, fontWeight: "800" },
+  subscribeBtnText: { color: primary, fontSize: 16, fontWeight: "800" },
   pollingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   pollingText: { fontSize: 13, color: "rgba(255,255,255,0.6)" },
   contactBox: { gap: 10, marginTop: 8 },
   contactRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   contactLink: {
-    color: "#FBBF24",
+    color: secondary,
     fontSize: 14,
     fontWeight: "600",
     textDecorationLine: "underline",
@@ -293,9 +296,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 16,
     paddingVertical: 16,
   },
-  signOutText: { color: "#1E3A8A", fontSize: 16, fontWeight: "800" },
+  signOutText: { color: primary, fontSize: 16, fontWeight: "800" },
 });

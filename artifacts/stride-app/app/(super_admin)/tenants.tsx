@@ -13,6 +13,7 @@ import {
   type AssociationRecord, type TenantOptions,
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -39,6 +40,8 @@ function subscriptionChip(status?: string | null): SubChip {
 // ── Tenant Card ───────────────────────────────────────────────────────────────
 
 function TenantCard({ org, onExtend }: { org: AssociationRecord; onExtend: (o: AssociationRecord) => void }) {
+  const colors = useColors();
+  const tc = make_tc(colors.primary, colors.secondary);
   const chip  = subscriptionChip(org.subscription_status);
   const days  = daysUntil(org.trial_ends_at);
   const flag  = CURRENCY_FLAGS[org.currency ?? "EUR"] ?? "";
@@ -50,7 +53,7 @@ function TenantCard({ org, onExtend }: { org: AssociationRecord; onExtend: (o: A
   return (
     <View style={tc.card}>
       <View style={tc.topRow}>
-        <View style={tc.iconBox}><Ionicons name="business-outline" size={18} color="#1E3A8A" /></View>
+        <View style={tc.iconBox}><Ionicons name="business-outline" size={18} color={colors.primary} /></View>
         <View style={tc.nameBlock}>
           <Text style={tc.name} numberOfLines={1}>{org.name}</Text>
           <Text style={tc.meta}>{flag} {org.currency ?? "EUR"}{org.country ? `  ·  ${org.country.toUpperCase()}` : ""}</Text>
@@ -67,14 +70,14 @@ function TenantCard({ org, onExtend }: { org: AssociationRecord; onExtend: (o: A
           style={({ pressed }) => [tc.extendBtn, { opacity: pressed ? 0.75 : 1 }]}
           onPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onExtend(org); }}
         >
-          <Ionicons name="calendar-outline" size={13} color="#1E3A8A" />
+          <Ionicons name="calendar-outline" size={13} color={colors.primary} />
           <Text style={tc.extendBtnText}>Override Trial</Text>
         </Pressable>
       </View>
     </View>
   );
 }
-const tc = StyleSheet.create({
+const make_tc = (primary: string, secondary: string) => StyleSheet.create({
   card:         { backgroundColor: "#FFF", borderRadius: 14, padding: 14, marginBottom: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
   topRow:       { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   iconBox:      { width: 36, height: 36, borderRadius: 10, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" },
@@ -86,13 +89,16 @@ const tc = StyleSheet.create({
   bottomRow:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   trialLabel:   { fontSize: 12, color: "#6B7280", flex: 1 },
   extendBtn:    { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#EFF6FF" },
-  extendBtnText:{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" },
+  extendBtnText:{ fontSize: 12, fontWeight: "700", color: primary },
 });
 
 // ── Extend Trial Modal ────────────────────────────────────────────────────────
 
 const PRESETS = [3, 6, 9, 12];
 function ExtendModal({ org, visible, onClose, onSuccess }: { org: AssociationRecord | null; visible: boolean; onClose: () => void; onSuccess: (u: AssociationRecord) => void }) {
+  const colors = useColors();
+  const em = make_em(colors.primary, colors.secondary);
+  const inp = make_inp(colors.primary, colors.secondary);
   const [customMonths, setCustomMonths] = useState("");
   const [extending, setExtending]       = useState(false);
   const [error, setError]               = useState<string | null>(null);
@@ -138,7 +144,7 @@ function ExtendModal({ org, visible, onClose, onSuccess }: { org: AssociationRec
           <View style={em.dragHandle} />
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" bounces={false}>
             <View style={em.header}>
-              <View style={em.headerIcon}><Ionicons name="calendar" size={28} color="#1E3A8A" /></View>
+              <View style={em.headerIcon}><Ionicons name="calendar" size={28} color={colors.primary} /></View>
               <Text style={em.title}>Override Trial</Text>
               <Text style={em.orgName} numberOfLines={1}>{org?.name}</Text>
               <View style={em.metaRow}>
@@ -162,7 +168,7 @@ function ExtendModal({ org, visible, onClose, onSuccess }: { org: AssociationRec
                 <Text style={em.customUnit}>months</Text>
               </View>
               <Pressable style={({ pressed }) => [em.applyBtn, { opacity: pressed || extending ? 0.8 : 1 }]} onPress={handleCustom} disabled={extending}>
-                {extending ? <ActivityIndicator size="small" color="#1E3A8A" /> : <Text style={em.applyText}>Apply</Text>}
+                {extending ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={em.applyText}>Apply</Text>}
               </Pressable>
             </View>
             {!!error && <View style={em.errorBox}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
@@ -179,7 +185,7 @@ function ExtendModal({ org, visible, onClose, onSuccess }: { org: AssociationRec
             </View>
             {!!suspendError && <View style={em.errorBox}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{suspendError}</Text></View>}
             <Pressable style={({ pressed }) => [em.ctaBtn, { opacity: pressed || extending ? 0.85 : 1 }]} onPress={() => { if (customMonths.trim()) handleCustom(); else void handleExtend(6); }} disabled={extending}>
-              {extending ? <ActivityIndicator size="small" color="#1E3A8A" /> : <><Ionicons name="checkmark-circle" size={18} color="#1E3A8A" /><Text style={em.ctaText}>Override / Extend Trial</Text></>}
+              {extending ? <ActivityIndicator size="small" color={colors.primary} /> : <><Ionicons name="checkmark-circle" size={18} color={colors.primary} /><Text style={em.ctaText}>Override / Extend Trial</Text></>}
             </Pressable>
             <Pressable style={({ pressed }) => [em.cancelBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={onClose}>
               <Text style={em.cancelText}>Cancel</Text>
@@ -198,6 +204,9 @@ type TrialUnit = "days" | "weeks" | "months" | "years";
 type DiscountType = "none" | "fixed" | "percent";
 
 function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onClose: () => void; onSuccess: () => void }) {
+  const colors = useColors();
+  const em = make_em(colors.primary, colors.secondary);
+  const inp = make_inp(colors.primary, colors.secondary);
   const [name,  setName]  = useState("");
   const [email, setEmail] = useState("");
   const [plan,  setPlan]  = useState<Plan>("standard");
@@ -277,7 +286,7 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
             ) : (
               <>
                 <View style={{ alignItems: "center", padding: 24, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" }}>
-                  <View style={em.headerIcon}><Ionicons name="business" size={28} color="#1E3A8A" /></View>
+                  <View style={em.headerIcon}><Ionicons name="business" size={28} color={"#1E3A8A"} /></View>
                   <Text style={em.title}>Add New Tenant</Text>
                   <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Creates an organisation account + admin user with a custom trial</Text>
                 </View>
@@ -307,9 +316,9 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                   </View>
                 </View>
                 <Pressable style={[inp.accordionToggle]} onPress={() => setShowAdvanced(v => !v)}>
-                  <Ionicons name="settings-outline" size={16} color="#1E3A8A" />
+                  <Ionicons name="settings-outline" size={16} color={"#1E3A8A"} />
                   <Text style={{ flex: 1, fontSize: 13, fontWeight: "800", color: "#1E3A8A" }}>Advanced Options</Text>
-                  <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={16} color="#1E3A8A" />
+                  <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={16} color={"#1E3A8A"} />
                 </Pressable>
                 {showAdvanced && (
                   <View style={{ marginHorizontal: 24, marginTop: 10, backgroundColor: "#FAFAFA", borderRadius: 14, borderWidth: 1, borderColor: "#E5E7EB", padding: 16, gap: 12 }}>
@@ -338,7 +347,7 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                 )}
                 {!!error && <View style={em.errorBox}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
                 <Pressable style={({ pressed }) => [em.ctaBtn, { opacity: pressed || saving ? 0.85 : 1 }]} onPress={() => void handleCreate()} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color="#1E3A8A" /> : <><Ionicons name="business" size={18} color="#1E3A8A" /><Text style={em.ctaText}>Create Tenant</Text></>}
+                  {saving ? <ActivityIndicator size="small" color={"#1E3A8A"} /> : <><Ionicons name="business" size={18} color={"#1E3A8A"} /><Text style={em.ctaText}>Create Tenant</Text></>}
                 </Pressable>
                 <Pressable style={({ pressed }) => [em.cancelBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={onClose}>
                   <Text style={em.cancelText}>Cancel</Text>
@@ -355,6 +364,8 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
 // ── Tenant Management Screen ──────────────────────────────────────────────────
 
 export default function TenantsScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const router = useRouter();
   const [orgs,       setOrgs]       = useState<AssociationRecord[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -400,13 +411,13 @@ export default function TenantsScreen() {
       />
 
       {loading ? (
-        <View style={styles.loadingBox}><ActivityIndicator size="large" color="#1E3A8A" /></View>
+        <View style={styles.loadingBox}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
       ) : (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor="#1E3A8A" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={"#1E3A8A"} />}
         >
           {/* Search */}
           <View style={styles.searchRow}>
@@ -433,7 +444,7 @@ export default function TenantsScreen() {
             onPress={() => router.push("/(super_admin)/associations" as never)}
           >
             <Text style={styles.viewAllText}>View Full Tenant Details</Text>
-            <Ionicons name="chevron-forward" size={15} color="#1E3A8A" />
+            <Ionicons name="chevron-forward" size={15} color={"#1E3A8A"} />
           </Pressable>
         </ScrollView>
       )}
@@ -444,7 +455,7 @@ export default function TenantsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:   { flex: 1, backgroundColor: "#F8FAFC" },
   loadingBox:  { flex: 1, alignItems: "center", justifyContent: "center" },
   scroll:      { flex: 1 },
@@ -455,10 +466,10 @@ const styles = StyleSheet.create({
   emptyBox:    { alignItems: "center", paddingVertical: 40, gap: 10 },
   emptyText:   { fontSize: 14, color: "#6B7280", textAlign: "center" },
   viewAllRow:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 14 },
-  viewAllText: { fontSize: 13, fontWeight: "700", color: "#1E3A8A" },
+  viewAllText: { fontSize: 13, fontWeight: "700", color: primary },
 });
 
-const em = StyleSheet.create({
+const make_em = (primary: string, secondary: string) => StyleSheet.create({
   overlay:      { flex: 1, justifyContent: "flex-end" },
   backdrop:     { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)" },
   sheet:        { backgroundColor: "#FFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12 },
@@ -474,14 +485,14 @@ const em = StyleSheet.create({
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1.2, color: "#9CA3AF", marginTop: 20, marginBottom: 10, marginHorizontal: 24 },
   presetsRow:   { flexDirection: "row", gap: 10, marginHorizontal: 24 },
   presetBtn:    { flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: "#EFF6FF", borderWidth: 1.5, borderColor: "#BFDBFE" },
-  presetNum:    { fontSize: 22, fontWeight: "900", color: "#1E3A8A" },
+  presetNum:    { fontSize: 22, fontWeight: "900", color: primary },
   presetUnit:   { fontSize: 11, color: "#6B7280", marginTop: 2 },
   customRow:    { flexDirection: "row", gap: 10, marginHorizontal: 24 },
   customWrap:   { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 14, height: 52 },
   customInput:  { flex: 1, fontSize: 18, fontWeight: "700", color: "#111827" },
   customUnit:   { fontSize: 13, color: "#9CA3AF", marginLeft: 6 },
   applyBtn:     { paddingHorizontal: 22, height: 52, borderRadius: 12, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "#BFDBFE" },
-  applyText:    { fontSize: 15, fontWeight: "800", color: "#1E3A8A" },
+  applyText:    { fontSize: 15, fontWeight: "800", color: primary },
   errorBox:     { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, marginHorizontal: 24, marginTop: 8 },
   errorText:    { flex: 1, color: "#DC2626", fontSize: 12 },
   billingRow:   { flexDirection: "row", gap: 10, marginHorizontal: 24 },
@@ -490,17 +501,17 @@ const em = StyleSheet.create({
   resumeBtn:    { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 14, borderRadius: 14, backgroundColor: "#ECFDF5", borderWidth: 1.5, borderColor: "#A7F3D0" },
   resumeText:   { fontSize: 13, fontWeight: "800", color: "#059669" },
   ctaBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 20, marginBottom: 8 },
-  ctaText:      { fontSize: 15, fontWeight: "900", color: "#1E3A8A" },
+  ctaText:      { fontSize: 15, fontWeight: "900", color: primary },
   cancelBtn:    { alignItems: "center", paddingVertical: 14, marginHorizontal: 24 },
   cancelText:   { fontSize: 15, color: "#6B7280" },
 });
 
-const inp = StyleSheet.create({
+const make_inp = (primary: string, secondary: string) => StyleSheet.create({
   field:          { backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 14, height: 52, fontSize: 15, color: "#111827" },
   planBtn:        { flex: 1, alignItems: "center", paddingVertical: 12, borderRadius: 12, backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB" },
-  planBtnActive:  { backgroundColor: "#EFF6FF", borderColor: "#1E3A8A" },
+  planBtnActive:  { backgroundColor: "#EFF6FF", borderColor: primary },
   planLabel:      { fontSize: 13, fontWeight: "800", color: "#6B7280" },
   unitChip:       { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: 10, backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB" },
-  unitChipActive: { backgroundColor: "#EFF6FF", borderColor: "#1E3A8A" },
+  unitChipActive: { backgroundColor: "#EFF6FF", borderColor: primary },
   accordionToggle:{ flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 24, marginTop: 18, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: "#EFF6FF", borderWidth: 1.5, borderColor: "#BFDBFE" },
 });

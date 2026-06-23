@@ -224,9 +224,9 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
           disabled={uploading}
         >
           {uploading ? (
-            <ActivityIndicator size="small" color={colors.primary} />
+            <ActivityIndicator size="small" color={"#1E3A8A"} />
           ) : (
-            <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
+            <Ionicons name="cloud-upload-outline" size={18} color={"#1E3A8A"} />
           )}
           <Text style={[pm.uploadBtnText, { color: colors.primary }]}>
             {uploading ? "Uploading…" : "PDF / DOC / MP3"}
@@ -237,8 +237,8 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
           onPress={handlePickImage}
           disabled={uploading}
         >
-          <Ionicons name="videocam-outline" size={18} color="#1E3A8A" />
-          <Text style={[pm.uploadBtnText, { color: "#1E3A8A" }]}>Photo / Video</Text>
+          <Ionicons name="videocam-outline" size={18} color={colors.primary} />
+          <Text style={[pm.uploadBtnText, { color: colors.primary }]}>Photo / Video</Text>
         </Pressable>
       </View>
 
@@ -327,8 +327,8 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
   return (
     <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <Ionicons name="list-outline" size={15} color={colors.primary} />
-        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>Waitlist</Text>
+        <Ionicons name="list-outline" size={15} color={"#1E3A8A"} />
+        <Text style={{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" }}>Waitlist</Text>
         <View style={{ backgroundColor: "#FBBF24", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
           <Text style={{ fontSize: 11, fontWeight: "800", color: "#1E3A8A" }}>{count}</Text>
         </View>
@@ -352,7 +352,7 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
       {isFull && waitlist.every(e => e.status !== "offered") && (
         <Pressable
           style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-            backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 10, marginTop: 10,
+            backgroundColor: "#1E3A8A", borderRadius: 10, paddingVertical: 10, marginTop: 10,
             opacity: offerLoading ? 0.7 : 1 }}
           disabled={offerLoading}
           onPress={async () => {
@@ -371,8 +371,8 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
             }
           }}
         >
-          {offerLoading ? <ActivityIndicator size="small" color="#FBBF24" /> : (
-            <><Ionicons name="person-add-outline" size={15} color="#FBBF24" />
+          {offerLoading ? <ActivityIndicator size="small" color={"#FBBF24"} /> : (
+            <><Ionicons name="person-add-outline" size={15} color={"#FBBF24"} />
             <Text style={{ fontSize: 13, fontWeight: "700", color: "#FBBF24" }}>Offer Spot to Next</Text></>
           )}
         </Pressable>
@@ -401,9 +401,9 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
 }
 
 export default function OperatorCoursesScreen() {
+  const colors = useColors();
   const { courses } = useAppData();
   const { user } = useAuth();
-  const colors = useColors();
   const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
 
@@ -513,7 +513,7 @@ export default function OperatorCoursesScreen() {
                     <Ionicons name="alert-circle-outline" size={16} color="#D97706" />
                     <Text style={{ flex: 1, fontSize: 12, color: "#92400E", fontWeight: "600" }}>Pending your confirmation</Text>
                     <Pressable
-                      style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 }}
+                      style={{ backgroundColor: "#1E3A8A", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 }}
                       onPress={() => acceptAssignment(course.id, course.name)}
                     >
                       <Text style={{ fontSize: 12, fontWeight: "800", color: "#FBBF24" }}>Accept Assignment</Text>
@@ -541,8 +541,8 @@ export default function OperatorCoursesScreen() {
                     </View>
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
-                    <View style={[styles.levelBadge, { backgroundColor: `${colors.primary}18` }]}>
-                      <Text style={[styles.levelText, { color: colors.primary }]}>{course.level}</Text>
+                    <View style={[styles.levelBadge, { backgroundColor: `"#1E3A8A"18` }]}>
+                      <Text style={[styles.levelText, { color: "#1E3A8A" }]}>{course.level}</Text>
                     </View>
                     <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
                   </View>
@@ -552,8 +552,8 @@ export default function OperatorCoursesScreen() {
                 {isExpanded && (
                   <View style={[styles.materialsPanel, { borderTopColor: colors.border }]}>
                     {/* Course Details */}
-                    <Text style={[styles.detailsHeader, { color: colors.primary }]}>Course Details</Text>
-                    <View style={[styles.detailsGrid, { backgroundColor: `${colors.primary}06`, borderRadius: 12, padding: 12 }]}>
+                    <Text style={[styles.detailsHeader, { color: "#1E3A8A" }]}>Course Details</Text>
+                    <View style={[styles.detailsGrid, { backgroundColor: `"#1E3A8A"06`, borderRadius: 12, padding: 12 }]}>
                       {[
                         { icon: "calendar-outline" as const,  label: "Schedule",  value: course.schedule || "—" },
                         { icon: "location-outline" as const,  label: "Location",  value: course.location || "—" },
@@ -564,7 +564,7 @@ export default function OperatorCoursesScreen() {
                       ].map(({ icon, label, value }) => (
                         <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: `${colors.border}60` }}>
                           <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
-                            <Ionicons name={icon} size={15} color={colors.primary} />
+                            <Ionicons name={icon} size={15} color={"#1E3A8A"} />
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</Text>
@@ -578,7 +578,7 @@ export default function OperatorCoursesScreen() {
                         <View style={{ paddingTop: 8 }}>
                           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
                             <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: "600" }}>Class Capacity</Text>
-                            <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "800" }}>
+                            <Text style={{ fontSize: 11, color: "#1E3A8A", fontWeight: "800" }}>
                               {Math.round((course.enrolled / course.capacity) * 100)}% full
                             </Text>
                           </View>
@@ -586,7 +586,7 @@ export default function OperatorCoursesScreen() {
                             <View style={{
                               height: 6,
                               borderRadius: 3,
-                              backgroundColor: course.enrolled / course.capacity > 0.85 ? "#EF4444" : colors.primary,
+                              backgroundColor: course.enrolled / course.capacity > 0.85 ? "#EF4444" : "#1E3A8A",
                               width: `${Math.min(100, (course.enrolled / course.capacity) * 100)}%`,
                             }} />
                           </View>
@@ -596,8 +596,8 @@ export default function OperatorCoursesScreen() {
 
                     {/* Teaching Materials */}
                     <View style={styles.materialsPanelHeader}>
-                      <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
-                      <Text style={[styles.materialsPanelTitle, { color: colors.primary }]}>Teaching Materials</Text>
+                      <Ionicons name="folder-open-outline" size={16} color={"#1E3A8A"} />
+                      <Text style={[styles.materialsPanelTitle, { color: "#1E3A8A" }]}>Teaching Materials</Text>
                     </View>
                     <CourseMaterialsPanel courseId={course.id} courseName={course.name} colors={colors} />
 

@@ -109,7 +109,7 @@ export default function AvailabilityPrefsScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScreenHeader title="My Availability" onBack={() => router.back()} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={"#1E3A8A"} />
         </View>
       </View>
     );
@@ -139,7 +139,7 @@ export default function AvailabilityPrefsScreen() {
             <Switch
               value={prefs.available_for_substitution}
               onValueChange={v => setPrefs(p => ({ ...p, available_for_substitution: v }))}
-              trackColor={{ false: "#D1D5DB", true: "#1E3A8A" }}
+              trackColor={{ false: "#D1D5DB", true: colors.primary }}
               thumbColor="#FFF"
             />
           </View>
@@ -179,7 +179,7 @@ export default function AvailabilityPrefsScreen() {
             <Switch
               value={prefs.available_for_private_lessons}
               onValueChange={v => setPrefs(p => ({ ...p, available_for_private_lessons: v }))}
-              trackColor={{ false: "#D1D5DB", true: "#1E3A8A" }}
+              trackColor={{ false: "#D1D5DB", true: colors.primary }}
               thumbColor="#FFF"
             />
           </View>
@@ -220,8 +220,8 @@ export default function AvailabilityPrefsScreen() {
                 style={[
                   styles.dayChip,
                   {
-                    backgroundColor: slot.active ? colors.primary : colors.muted,
-                    borderColor: slot.active ? colors.primary : colors.border,
+                    backgroundColor: slot.active ? "#1E3A8A" : colors.muted,
+                    borderColor: slot.active ? "#1E3A8A" : colors.border,
                   },
                 ]}
               >

@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { getBillingStatus, createCheckoutSession, type BillingStatus } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -81,6 +82,8 @@ const bStyles = StyleSheet.create({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function PaywallScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { logout } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -173,7 +176,7 @@ export default function PaywallScreen() {
       {/* ── HEADER ── */}
       <View style={styles.header}>
         <View style={styles.headerBadge}>
-          <Ionicons name="warning" size={14} color="#1E3A8A" />
+          <Ionicons name="warning" size={14} color={colors.primary} />
           <Text style={styles.headerBadgeText}>
             {status?.subscriptionStatus === "past_due" ? "PAYMENT PAST DUE" : "ACTION REQUIRED"}
           </Text>
@@ -197,7 +200,7 @@ export default function PaywallScreen() {
       >
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#1E3A8A" />
+            <ActivityIndicator size="large" color={"#1E3A8A"} />
             <Text style={styles.loadingText}>Loading billing status…</Text>
           </View>
         ) : (
@@ -220,7 +223,7 @@ export default function PaywallScreen() {
             {/* Billing Breakdown Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Ionicons name="receipt-outline" size={18} color="#1E3A8A" />
+                <Ionicons name="receipt-outline" size={18} color={"#1E3A8A"} />
                 <Text style={styles.cardTitle}>Billing Breakdown</Text>
               </View>
 
@@ -285,10 +288,10 @@ export default function PaywallScreen() {
           disabled={launching || loading}
         >
           {launching ? (
-            <ActivityIndicator size="small" color="#1E3A8A" />
+            <ActivityIndicator size="small" color={"#1E3A8A"} />
           ) : (
             <>
-              <Ionicons name="card-outline" size={20} color="#1E3A8A" />
+              <Ionicons name="card-outline" size={20} color={"#1E3A8A"} />
               <Text style={styles.ctaBtnText}>Activate System Access & Link Card</Text>
             </>
           )}
@@ -306,7 +309,7 @@ export default function PaywallScreen() {
             disabled={checking}
           >
             {checking ? (
-              <ActivityIndicator size="small" color="#1E3A8A" />
+              <ActivityIndicator size="small" color={"#1E3A8A"} />
             ) : (
               <Text style={styles.secondaryBtnText}>Refresh Status</Text>
             )}
@@ -326,12 +329,12 @@ export default function PaywallScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFC" },
 
   // Header
   header: {
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     paddingHorizontal: 24,
     paddingBottom: 24,
     paddingTop: 8,
@@ -340,14 +343,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     alignSelf: "flex-start",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
     marginBottom: 14,
   },
-  headerBadgeText: { color: "#1E3A8A", fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
+  headerBadgeText: { color: primary, fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
   headerTitle: { color: "#FFF", fontSize: 28, fontWeight: "900", lineHeight: 34, marginBottom: 8 },
   headerSub:   { color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 20 },
 
@@ -395,7 +398,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#E5E7EB",
   },
-  cardTitle: { fontSize: 15, fontWeight: "800", color: "#1E3A8A" },
+  cardTitle: { fontSize: 15, fontWeight: "800", color: primary },
   cardBody:  {},
   billingNote: {
     fontSize: 11,
@@ -450,14 +453,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 16,
     paddingVertical: 16,
     minHeight: 54,
     marginBottom: 8,
   },
   ctaBtnText: {
-    color: "#1E3A8A",
+    color: primary,
     fontSize: 15,
     fontWeight: "900",
     textAlign: "center",
@@ -477,6 +480,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   secondaryBtn:     { paddingHorizontal: 16, paddingVertical: 8 },
-  secondaryBtnText: { color: "#1E3A8A", fontSize: 13, fontWeight: "600" },
+  secondaryBtnText: { color: primary, fontSize: 13, fontWeight: "600" },
   secondaryDivider: { width: 1, height: 16, backgroundColor: "#E5E7EB" },
 });

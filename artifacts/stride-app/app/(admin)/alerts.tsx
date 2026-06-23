@@ -26,6 +26,7 @@ function SummaryCard({ activeAlerts, resolvedCount, maxPhase }: {
   maxPhase: number;
 }) {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const alarmColor = maxPhase > 0 ? (PHASE_COLOR[maxPhase] ?? "#10B981") : "#10B981";
 
   return (
@@ -70,6 +71,7 @@ function SummaryCard({ activeAlerts, resolvedCount, maxPhase }: {
 
 function AlertItem({ alert, onResolve }: { alert: SecurityAlert; onResolve: () => void }) {
   const colors     = useColors();
+  const styles     = make_styles(colors.primary, colors.secondary);
   const phaseColor = PHASE_COLOR[alert.phase] ?? "#9CA3AF";
   const minsAgo    = Math.floor((Date.now() - alert.triggeredAt) / 60000);
 
@@ -114,7 +116,7 @@ function AlertItem({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =
           onResolve();
         }}
       >
-        <Ionicons name="checkmark-circle" size={14} color="#1E3A8A" />
+        <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
         <Text style={styles.resolveBtnText}>Resolve</Text>
       </Pressable>
     </View>
@@ -125,6 +127,7 @@ function AlertItem({ alert, onResolve }: { alert: SecurityAlert; onResolve: () =
 
 function EscalationTimeline() {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const steps = [
     { phase: 1, label: "T+0",  title: "Immediate notification",     sub: "Alert sent to operator, administrator and member", color: "#F59E0B" },
     { phase: 2, label: "T+5",  title: "High priority",              sub: "Second urgent alert to all parties",               color: "#EF4444" },
@@ -156,8 +159,9 @@ function EscalationTimeline() {
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function AdminAlerts() {
-  const { activeAlerts, alerts, dismissAlert, maxPhase } = useSecurityEscalation();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
+  const { activeAlerts, alerts, dismissAlert, maxPhase } = useSecurityEscalation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -238,7 +242,7 @@ export default function AdminAlerts() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll:    { paddingHorizontal: 20, gap: 0 },
   header:    { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
@@ -290,12 +294,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  resolveBtnText: { color: "#1E3A8A", fontWeight: "800", fontSize: 11 },
+  resolveBtnText: { color: primary, fontWeight: "800", fontSize: 11 },
 
   allClear: {
     borderRadius: 18,

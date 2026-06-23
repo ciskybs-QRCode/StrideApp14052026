@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 import {
   type OrgAccessGrant, type SuperAdminOrg,
   getOrgAccessGrants, getSuperAdminOrgsV2,
@@ -119,6 +120,7 @@ const dp = StyleSheet.create({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function SAOrgDetailScreen() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string; name: string }>();

@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 import {
   type AccountantPaymentOrder,
   type ParsedObligation,
@@ -223,6 +224,7 @@ const oc = StyleSheet.create({
 type TabKey = "orders" | "parse";
 
 export default function AccountantPaymentsScreen() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 

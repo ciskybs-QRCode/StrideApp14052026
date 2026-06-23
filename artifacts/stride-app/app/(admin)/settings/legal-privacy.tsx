@@ -53,7 +53,7 @@ function todayStr(): string {
 
 function legalTypeInfo(type: LegalAdminDoc["type"], colors: any) {
   const base = LEGAL_TYPES.find(t => t.value === type) ?? LEGAL_TYPES[4];
-  return { ...base, color: colors.primary, bg: "rgba(30,58,138,0.1)" };
+  return { ...base, color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" };
 }
 
 function isValidUrl(url: string): boolean {
@@ -92,8 +92,8 @@ export default function LegalPrivacyPage() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const backTo = from === "members" ? "/(admin)/members-hub" : "/(admin)/settings";
-  const colors = useColors();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const { legalAdminDocs, addLegalDoc, updateLegalDoc, deleteLegalDoc } = useAppData();
 
   // ── Add form state ──
@@ -302,7 +302,7 @@ export default function LegalPrivacyPage() {
         {(["file", "link"] as SourceType[]).map(s => (
           <Pressable
             key={s}
-            style={[styles.sourceToggleBtn, sourceType === s && { backgroundColor: colors.primary }]}
+            style={[styles.sourceToggleBtn, sourceType === s && { backgroundColor: "#1E3A8A" }]}
             onPress={() => setSourceType(s)}
           >
             <Ionicons name={s === "file" ? "cloud-upload-outline" : "link-outline"} size={14} color={sourceType === s ? "#FFF" : colors.mutedForeground} />
@@ -316,12 +316,12 @@ export default function LegalPrivacyPage() {
       {sourceType === "file" ? (
         <View style={{ marginTop: 10, gap: 8 }}>
           {fileUri || fileName ? (
-            <View style={[styles.fileAttached, { backgroundColor: "#DBEAFE", borderColor: colors.primary }]}>
-              <View style={[styles.fileIconBox, { backgroundColor: colors.primary }]}>
+            <View style={[styles.fileAttached, { backgroundColor: "#DBEAFE", borderColor: "#1E3A8A" }]}>
+              <View style={[styles.fileIconBox, { backgroundColor: "#1E3A8A" }]}>
                 <Ionicons name="document" size={18} color="#FFF" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.fileAttachedName, { color: colors.primary }]} numberOfLines={1}>{fileName || "Document"}</Text>
+                <Text style={[styles.fileAttachedName, { color: "#1E3A8A" }]} numberOfLines={1}>{fileName || "Document"}</Text>
                 {fileSize ? <Text style={[styles.fileAttachedSize, { color: colors.mutedForeground }]}>{fileSize}</Text> : null}
               </View>
               <Pressable onPress={onClearFile}>
@@ -337,7 +337,7 @@ export default function LegalPrivacyPage() {
                   onPress={g.label === "Image" ? onPickImg : onPickDoc}
                 >
                   <View style={[styles.pickFormatIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                    <Ionicons name={g.icon} size={18} color={colors.primary} />
+                    <Ionicons name={g.icon} size={18} color={"#1E3A8A"} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.pickFormatLabel, { color: colors.foreground }]}>{g.label}</Text>
@@ -397,9 +397,9 @@ export default function LegalPrivacyPage() {
         {/* Stats — based on association docs only */}
         <View style={styles.statsRow}>
           {[
-            { label: "Documents", value: assocDocs.length, color: colors.primary, bg: "rgba(30,58,138,0.1)" },
-            { label: "Mandatory",  value: mandatoryCount,  color: colors.primary, bg: "rgba(30,58,138,0.1)" },
-            { label: "Priority",   value: priorityCount,   color: colors.primary, bg: "rgba(30,58,138,0.1)" },
+            { label: "Documents", value: assocDocs.length, color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+            { label: "Mandatory",  value: mandatoryCount,  color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
+            { label: "Priority",   value: priorityCount,   color: "#1E3A8A", bg: "rgba(30,58,138,0.1)" },
           ].map(s => (
             <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
               <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
@@ -439,26 +439,26 @@ export default function LegalPrivacyPage() {
                     </View>
                     {doc.highPriority && (
                       <View style={[styles.flagBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                        <Ionicons name="alert-circle" size={9} color={colors.primary} />
-                        <Text style={[styles.flagText, { color: colors.primary }]}>High Priority</Text>
+                        <Ionicons name="alert-circle" size={9} color={"#1E3A8A"} />
+                        <Text style={[styles.flagText, { color: "#1E3A8A" }]}>High Priority</Text>
                       </View>
                     )}
                     {doc.mandatorySignature && (
                       <View style={[styles.flagBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                        <Ionicons name="lock-closed" size={9} color={colors.primary} />
-                        <Text style={[styles.flagText, { color: colors.primary }]}>Mandatory</Text>
+                        <Ionicons name="lock-closed" size={9} color={"#1E3A8A"} />
+                        <Text style={[styles.flagText, { color: "#1E3A8A" }]}>Mandatory</Text>
                       </View>
                     )}
                     {hasFile && (
                       <View style={[styles.flagBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                        <Ionicons name="document" size={9} color={colors.primary} />
-                        <Text style={[styles.flagText, { color: colors.primary }]}>File</Text>
+                        <Ionicons name="document" size={9} color={"#1E3A8A"} />
+                        <Text style={[styles.flagText, { color: "#1E3A8A" }]}>File</Text>
                       </View>
                     )}
                     {hasLink && (
                       <View style={[styles.flagBadge, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                        <Ionicons name="link" size={9} color={colors.primary} />
-                        <Text style={[styles.flagText, { color: colors.primary }]}>{linkBrand(doc.linkUrl!).label}</Text>
+                        <Ionicons name="link" size={9} color={"#1E3A8A"} />
+                        <Text style={[styles.flagText, { color: "#1E3A8A" }]}>{linkBrand(doc.linkUrl!).label}</Text>
                       </View>
                     )}
                   </View>
@@ -478,7 +478,7 @@ export default function LegalPrivacyPage() {
 
         {mandatoryCount > 0 && (
           <View style={[styles.callout, { backgroundColor: "#EFF6FF" }]}>
-            <Ionicons name="lock-closed-outline" size={18} color="#1E3A8A" />
+            <Ionicons name="lock-closed-outline" size={18} color={"#1E3A8A"} />
             <Text style={[styles.calloutText, { color: "#1E3A8A" }]}>
               {mandatoryCount} mandatory document{mandatoryCount !== 1 ? "s" : ""} will block member access until signed.
             </Text>
@@ -588,7 +588,7 @@ export default function LegalPrivacyPage() {
 
         {/* ── CONSENT AUDIT LOG ── */}
         <Pressable
-          style={({ pressed }) => [styles.placeholderCard, { backgroundColor: colors.card, borderColor: "#1E3A8A", opacity: pressed ? 0.85 : 1, marginTop: 16 }]}
+          style={({ pressed }) => [styles.placeholderCard, { backgroundColor: colors.card, borderColor: colors.primary, opacity: pressed ? 0.85 : 1, marginTop: 16 }]}
           onPress={async () => {
             setAuditLoading(true);
             setShowAuditLog(true);
@@ -600,7 +600,7 @@ export default function LegalPrivacyPage() {
           }}
         >
           <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name="shield-checkmark-outline" size={22} color="#1E3A8A" />
+            <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.placeholderTitle, { color: colors.foreground }]}>Consent Audit Log</Text>
@@ -619,7 +619,7 @@ export default function LegalPrivacyPage() {
             {/* Header */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="shield-checkmark" size={20} color="#1E3A8A" />
+                <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.sheetTitle, { color: colors.foreground, marginBottom: 0 }]}>Signature Audit Log</Text>
@@ -645,7 +645,7 @@ export default function LegalPrivacyPage() {
                 {auditLog.map(row => (
                   <View key={row.id} style={{ backgroundColor: colors.background, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border, gap: 6 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                      <Ionicons name="person-circle-outline" size={16} color="#1E3A8A" />
+                      <Ionicons name="person-circle-outline" size={16} color={"#1E3A8A"} />
                       <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, flex: 1 }} numberOfLines={1}>
                         {row.user_email ?? `User ${row.user_id}`}
                       </Text>
@@ -717,11 +717,11 @@ export default function LegalPrivacyPage() {
               {LEGAL_TYPES.map(t => (
                 <Pressable
                   key={t.value}
-                  style={[styles.typeBtn, newType === t.value && { backgroundColor: "rgba(30,58,138,0.1)", borderColor: colors.primary }]}
+                  style={[styles.typeBtn, newType === t.value && { backgroundColor: "rgba(30,58,138,0.1)", borderColor: "#1E3A8A" }]}
                   onPress={() => setNewType(t.value)}
                 >
-                  <Ionicons name={t.icon} size={16} color={newType === t.value ? colors.primary : colors.mutedForeground} />
-                  <Text style={[styles.typeBtnText, { color: newType === t.value ? colors.primary : colors.mutedForeground }]}>{t.label}</Text>
+                  <Ionicons name={t.icon} size={16} color={newType === t.value ? "#1E3A8A" : colors.mutedForeground} />
+                  <Text style={[styles.typeBtnText, { color: newType === t.value ? "#1E3A8A" : colors.mutedForeground }]}>{t.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -772,11 +772,11 @@ export default function LegalPrivacyPage() {
 
             <View style={{ gap: 14, marginTop: 20 }}>
               {/* ── Consent Level Selection (AI-powered) ── */}
-              <View style={[{ borderRadius: 16, borderWidth: 1.5, borderColor: newHasOptions ? "#1E3A8A" : colors.border, backgroundColor: newHasOptions ? "#EFF6FF" : colors.card, padding: 14 }]}>
+              <View style={[{ borderRadius: 16, borderWidth: 1.5, borderColor: newHasOptions ? colors.primary : colors.border, backgroundColor: newHasOptions ? "#EFF6FF" : colors.card, padding: 14 }]}>
                 <View style={styles.toggleRow}>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                      <Ionicons name="list-outline" size={16} color="#1E3A8A" />
+                      <Ionicons name="list-outline" size={16} color={colors.primary} />
                       <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Consent Level Selection</Text>
                     </View>
                     <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>
@@ -787,7 +787,7 @@ export default function LegalPrivacyPage() {
                     value={newHasOptions}
                     onValueChange={v => { setNewHasOptions(v); setNewAnalyseExpl(""); }}
                     trackColor={{ false: colors.muted, true: "#DBEAFE" }}
-                    thumbColor={newHasOptions ? "#1E3A8A" : "#9CA3AF"}
+                    thumbColor={newHasOptions ? colors.primary : "#9CA3AF"}
                   />
                 </View>
 
@@ -824,14 +824,14 @@ export default function LegalPrivacyPage() {
                         disabled={newAnalysing}
                       >
                         {newAnalysing
-                          ? <><Ionicons name="hourglass-outline" size={16} color="#1E3A8A" /><Text style={{ color: "#1E3A8A", fontWeight: "700", fontSize: 13 }}>Analysing…</Text></>
-                          : <><Ionicons name="sparkles-outline" size={16} color="#FBBF24" /><Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Analyse Document with AI</Text></>
+                          ? <><Ionicons name="hourglass-outline" size={16} color={"#1E3A8A"} /><Text style={{ color: "#1E3A8A", fontWeight: "700", fontSize: 13 }}>Analysing…</Text></>
+                          : <><Ionicons name="sparkles-outline" size={16} color={"#FBBF24"} /><Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Analyse Document with AI</Text></>
                         }
                       </Pressable>
                     )}
                     {newAnalyseExpl ? (
                       <View style={{ backgroundColor: "#DBEAFE", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8 }}>
-                        <Ionicons name="information-circle-outline" size={15} color="#1E3A8A" style={{ marginTop: 1 }} />
+                        <Ionicons name="information-circle-outline" size={15} color={"#1E3A8A"} style={{ marginTop: 1 }} />
                         <Text style={{ fontSize: 12, color: "#1E3A8A", flex: 1, lineHeight: 17 }}>{newAnalyseExpl}</Text>
                       </View>
                     ) : null}
@@ -879,7 +879,7 @@ export default function LegalPrivacyPage() {
               <View style={styles.toggleRow}>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Ionicons name="lock-closed-outline" size={16} color="#1E3A8A" />
+                    <Ionicons name="lock-closed-outline" size={16} color={colors.primary} />
                     <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Mandatory Signature</Text>
                   </View>
                   <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Blocks app access until signed</Text>
@@ -887,15 +887,15 @@ export default function LegalPrivacyPage() {
                 <Switch
                   value={newMandatory}
                   onValueChange={setNewMandatory}
-                  trackColor={{ false: colors.muted, true: "#1E3A8A" }}
-                  thumbColor={newMandatory ? "#FBBF24" : "#9CA3AF"}
+                  trackColor={{ false: colors.muted, true: colors.primary }}
+                  thumbColor={newMandatory ? colors.secondary : "#9CA3AF"}
                 />
               </View>
             </View>
 
             {newMandatory && (
               <View style={[styles.callout, { backgroundColor: "#EFF6FF", marginTop: 12 }]}>
-                <Ionicons name="information-circle-outline" size={16} color="#1E3A8A" />
+                <Ionicons name="information-circle-outline" size={16} color={"#1E3A8A"} />
                 <Text style={[styles.calloutText, { color: "#1E3A8A" }]}>
                   All users will see a blocking screen until they sign this document.
                 </Text>
@@ -938,7 +938,7 @@ export default function LegalPrivacyPage() {
                     </Pressable>
                   </View>
 
-                  <Text style={[styles.detailTitle, { color: colors.primary }]}>{doc.title}</Text>
+                  <Text style={[styles.detailTitle, { color: "#1E3A8A" }]}>{doc.title}</Text>
                   {doc.description ? (
                     <Text style={[styles.detailDesc, { color: colors.mutedForeground }]}>{doc.description}</Text>
                   ) : null}
@@ -955,21 +955,21 @@ export default function LegalPrivacyPage() {
                     )}
                     {doc.mandatorySignature && (
                       <View style={[styles.flagBadge, { backgroundColor: "#EFF6FF" }]}>
-                        <Ionicons name="lock-closed" size={9} color="#1E3A8A" />
+                        <Ionicons name="lock-closed" size={9} color={"#1E3A8A"} />
                         <Text style={[styles.flagText, { color: "#1E3A8A" }]}>Mandatory Signature</Text>
                       </View>
                     )}
                   </View>
 
                   {(hasFile || hasLink) && (
-                    <View style={[styles.sourceInfoBox, { backgroundColor: hasLink ? brand!.bg : "#DBEAFE", borderColor: hasLink ? brand!.color : colors.primary }]}>
+                    <View style={[styles.sourceInfoBox, { backgroundColor: hasLink ? brand!.bg : "#DBEAFE", borderColor: hasLink ? brand!.color : "#1E3A8A" }]}>
                       <Ionicons
                         name={hasLink ? brand!.icon : "document"}
                         size={20}
-                        color={hasLink ? brand!.color : colors.primary}
+                        color={hasLink ? brand!.color : "#1E3A8A"}
                       />
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.sourceInfoLabel, { color: hasLink ? brand!.color : colors.primary }]}>
+                        <Text style={[styles.sourceInfoLabel, { color: hasLink ? brand!.color : "#1E3A8A" }]}>
                           {hasLink ? brand!.label : doc.fileName || "Uploaded File"}
                         </Text>
                         {hasLink && (
@@ -1011,8 +1011,8 @@ export default function LegalPrivacyPage() {
                       style={[styles.actionBtn, { backgroundColor: "#DBEAFE" }]}
                       onPress={() => handleOpenReplace(doc)}
                     >
-                      <Ionicons name="cloud-upload-outline" size={16} color={colors.primary} />
-                      <Text style={[styles.actionBtnText, { color: colors.primary }]}>Replace</Text>
+                      <Ionicons name="cloud-upload-outline" size={16} color={"#1E3A8A"} />
+                      <Text style={[styles.actionBtnText, { color: "#1E3A8A" }]}>Replace</Text>
                     </Pressable>
                     <Pressable
                       style={[styles.actionBtn, { backgroundColor: "#FEE2E2" }]}
@@ -1073,20 +1073,20 @@ export default function LegalPrivacyPage() {
                     </Pressable>
                   </View>
 
-                  <Text style={[styles.detailTitle, { color: colors.primary }]}>{doc.title}</Text>
+                  <Text style={[styles.detailTitle, { color: "#1E3A8A" }]}>{doc.title}</Text>
                   <Text style={[styles.viewerSubtitle, { color: colors.mutedForeground }]}>Added {doc.createdAt}</Text>
 
                   {doc.source === "stride_platform" ? (
                     <View style={{ gap: 12, marginTop: 16 }}>
-                      <View style={[styles.sourceInfoBox, { backgroundColor: "#EFF6FF", borderColor: colors.primary }]}>
-                        <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
+                      <View style={[styles.sourceInfoBox, { backgroundColor: "#EFF6FF", borderColor: "#1E3A8A" }]}>
+                        <Ionicons name="shield-checkmark-outline" size={22} color={"#1E3A8A"} />
                         <View style={{ flex: 1 }}>
-                          <Text style={[styles.sourceInfoLabel, { color: colors.primary }]}>Stride Platform Document</Text>
+                          <Text style={[styles.sourceInfoLabel, { color: "#1E3A8A" }]}>Stride Platform Document</Text>
                           <Text style={[styles.sourceInfoUrl, { color: colors.mutedForeground }]}>Official legal document · read-only</Text>
                         </View>
                       </View>
                       <Pressable
-                        style={[styles.openFullBtn, { backgroundColor: colors.primary }]}
+                        style={[styles.openFullBtn, { backgroundColor: "#1E3A8A" }]}
                         onPress={() => {
                           const raw = process.env.EXPO_PUBLIC_DOMAIN ?? "";
                           const domain = raw.startsWith("http") ? raw : `https://${raw}`;
@@ -1117,15 +1117,15 @@ export default function LegalPrivacyPage() {
                     </View>
                   ) : doc.fileUri || doc.fileName ? (
                     <View style={{ gap: 12, marginTop: 16 }}>
-                      <View style={[styles.sourceInfoBox, { backgroundColor: "#DBEAFE", borderColor: colors.primary }]}>
-                        <Ionicons name="document" size={22} color={colors.primary} />
+                      <View style={[styles.sourceInfoBox, { backgroundColor: "#DBEAFE", borderColor: "#1E3A8A" }]}>
+                        <Ionicons name="document" size={22} color={"#1E3A8A"} />
                         <View style={{ flex: 1 }}>
-                          <Text style={[styles.sourceInfoLabel, { color: colors.primary }]}>{doc.fileName || "Uploaded Document"}</Text>
+                          <Text style={[styles.sourceInfoLabel, { color: "#1E3A8A" }]}>{doc.fileName || "Uploaded Document"}</Text>
                           {doc.fileSize ? <Text style={[styles.sourceInfoUrl, { color: colors.mutedForeground }]}>{doc.fileSize}</Text> : null}
                         </View>
                       </View>
                       <Pressable
-                        style={[styles.openFullBtn, { backgroundColor: colors.primary }]}
+                        style={[styles.openFullBtn, { backgroundColor: "#1E3A8A" }]}
                         onPress={() => {
                           if (doc.fileUri) Linking.openURL(doc.fileUri);
                           else Alert.alert("Preview", "File preview is only available for documents with a stored URI.");
@@ -1142,7 +1142,7 @@ export default function LegalPrivacyPage() {
                         No file or link attached to this document.
                       </Text>
                       <Pressable
-                        style={[styles.attachBtn, { backgroundColor: colors.primary }]}
+                        style={[styles.attachBtn, { backgroundColor: "#1E3A8A" }]}
                         onPress={() => { setShowViewer(false); setTimeout(() => handleOpenReplace(doc), 200); }}
                       >
                         <Ionicons name="cloud-upload-outline" size={16} color="#FFF" />
@@ -1177,7 +1177,7 @@ export default function LegalPrivacyPage() {
             >
               <View style={styles.sheetHeader}>
                 <View>
-                  <Text style={[styles.sheetTitle, { color: colors.primary }]}>Replace Document</Text>
+                  <Text style={[styles.sheetTitle, { color: "#1E3A8A" }]}>Replace Document</Text>
                   <Text style={[styles.sheetSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>{replaceDoc.title}</Text>
                 </View>
                 <Pressable onPress={() => { setShowReplace(false); setTimeout(() => setShowDetail(replaceDoc), 200); }}>
@@ -1192,7 +1192,7 @@ export default function LegalPrivacyPage() {
                 </Text>
               </View>
 
-              <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>New Document Source</Text>
+              <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 12 }]}>New Document Source</Text>
               <FileSourcePicker
                 sourceType={replaceSourceType}
                 setSourceType={setReplaceSourceType}
@@ -1214,7 +1214,7 @@ export default function LegalPrivacyPage() {
                   <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+                  style={[styles.saveBtn, { backgroundColor: "#1E3A8A" }]}
                   onPress={() => handleSaveReplace(replaceDoc)}
                 >
                   <Ionicons name="cloud-upload-outline" size={16} color="#FFF" />

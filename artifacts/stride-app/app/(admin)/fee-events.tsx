@@ -24,8 +24,8 @@ import { useAppData } from "@/context/AppDataContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { request } from "@/lib/api";
 
-const NAVY  = "#1E3A8A";
-const GOLD  = "#FBBF24";
+const NAVY = "#1E3A8A";
+const GOLD = "#FBBF24";
 const GREEN = "#22c55e";
 const RED   = "#ef4444";
 

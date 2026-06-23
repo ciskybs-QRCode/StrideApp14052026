@@ -42,6 +42,7 @@ function fmtPrice(cents: number, currency?: string) {
 // ── Ticket Card (My Tickets tab) ──────────────────────────────────────────────
 function TicketCard({ ticket, onDownload }: { ticket: EventTicket; onDownload: (t: EventTicket) => void }) {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const statusColor = ticket.status === "used" ? "#6B7280" : ticket.status === "cancelled" ? "#EF4444" : "#059669";
 
   return (
@@ -92,7 +93,7 @@ function TicketCard({ ticket, onDownload }: { ticket: EventTicket; onDownload: (
               style={({ pressed }) => [styles.downloadBtn, { opacity: pressed ? 0.75 : 1 }]}
               onPress={() => onDownload(ticket)}
             >
-              <Ionicons name="download-outline" size={14} color="#1E3A8A" />
+              <Ionicons name="download-outline" size={14} color={"#1E3A8A"} />
               <Text style={styles.downloadBtnText}>Save PDF</Text>
             </Pressable>
           ) : null}
@@ -112,6 +113,7 @@ function PurchaseModal({
   onSuccess: () => void;
 }) {
   const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const router  = useRouter();
   const { addItem } = useCart();
   const [selectedDate, setSelectedDate]       = useState<EventDate | null>(null);
@@ -259,7 +261,7 @@ function PurchaseModal({
                     <Text style={[styles.typePrice, { color: sel ? "#1E3A8A" : colors.text }]}>
                       {fmtPrice(t.price_cents, event.currency)}
                     </Text>
-                    {sel && <Ionicons name="checkmark-circle" size={20} color="#1E3A8A" style={{ marginLeft: 8 }} />}
+                    {sel && <Ionicons name="checkmark-circle" size={20} color={"#1E3A8A"} style={{ marginLeft: 8 }} />}
                   </Pressable>
                 );
               })}
@@ -350,6 +352,7 @@ function PurchaseModal({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function ParentEventsScreen() {
   const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
   const { user } = useAuth();
 
@@ -389,8 +392,8 @@ export default function ParentEventsScreen() {
         body { font-family: -apple-system, Helvetica, Arial, sans-serif; background: #F8FAFC; margin: 0; padding: 24px; }
         .ticket { background: #fff; border-radius: 16px; max-width: 420px; margin: 0 auto;
                   box-shadow: 0 4px 24px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: #1E3A8A; padding: 28px 24px 20px; }
-        .org    { color: #FBBF24; font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 6px; }
+        .header { background: "#1E3A8A"; padding: 28px 24px 20px; }
+        .org    { color: "#FBBF24"; font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 6px; }
         .title  { color: #fff; font-size: 22px; font-weight: 900; margin: 0; }
         .body   { padding: 24px; }
         .row    { display: flex; align-items: center; margin-bottom: 10px; color: #374151; font-size: 13px; }
@@ -437,7 +440,7 @@ export default function ParentEventsScreen() {
   if (loading) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#1E3A8A" style={{ marginTop: 80 }} />
+        <ActivityIndicator size="large" color={"#1E3A8A"} style={{ marginTop: 80 }} />
       </View>
     );
   }
@@ -445,7 +448,7 @@ export default function ParentEventsScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: "#1E3A8A" }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: "${colors.primary}" }]}>
         <Text style={styles.headerEyebrow}>STRIDE</Text>
         <Text style={styles.headerTitle}>Events & Tickets</Text>
         <View style={styles.tabs}>
@@ -467,7 +470,7 @@ export default function ParentEventsScreen() {
       {tab === "browse" ? (
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} tintColor="#1E3A8A" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} tintColor={"#1E3A8A"} />}
           showsVerticalScrollIndicator={false}
         >
           {events.length === 0 ? (
@@ -523,7 +526,7 @@ export default function ParentEventsScreen() {
       ) : (
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} tintColor="#1E3A8A" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} tintColor={"#1E3A8A"} />}
           showsVerticalScrollIndicator={false}
         >
           {myTickets.length === 0 ? (
@@ -552,16 +555,16 @@ export default function ParentEventsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 0 },
-  headerEyebrow: { fontSize: 10, fontWeight: "800", color: "#FBBF24", letterSpacing: 2, marginBottom: 4 },
+  headerEyebrow: { fontSize: 10, fontWeight: "800", color: secondary, letterSpacing: 2, marginBottom: 4 },
   headerTitle: { fontSize: 26, fontWeight: "900", color: "#FFF", marginBottom: 16 },
   tabs: { flexDirection: "row", gap: 8, marginBottom: -1 },
   tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
   tabActive: { backgroundColor: "#F8FAFC" },
   tabText: { fontSize: 13, fontWeight: "700", color: "rgba(255,255,255,0.75)" },
-  tabTextActive: { color: "#1E3A8A" },
+  tabTextActive: { color: primary },
 
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyTitle: { fontSize: 18, fontWeight: "700" },
@@ -589,7 +592,7 @@ const styles = StyleSheet.create({
   ticketQtyLabel: { fontSize: 12 },
   ticketIdText: { fontSize: 11, fontFamily: "monospace" },
   downloadBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#EFF6FF", borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12, alignSelf: "flex-start" },
-  downloadBtnText: { fontSize: 12, fontWeight: "700", color: "#1E3A8A" },
+  downloadBtnText: { fontSize: 12, fontWeight: "700", color: primary },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "90%", paddingHorizontal: 20, paddingTop: 12 },
@@ -625,6 +628,6 @@ const styles = StyleSheet.create({
   summaryValue: { fontSize: 13, fontWeight: "600", color: "#374151" },
   stripeNote: { fontSize: 11, color: "#6B7280", marginTop: 6 },
 
-  purchaseBtn: { backgroundColor: "#1E3A8A", borderRadius: 14, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  purchaseBtn: { backgroundColor: primary, borderRadius: 14, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   purchaseBtnText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
 });

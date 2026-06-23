@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { useColors } from "@/hooks/useColors";
 
 interface SignaturePadProps {
   onHasSignatureChange: (has: boolean) => void;
@@ -18,9 +19,12 @@ interface SignaturePadProps {
 export function SignaturePad({
   onHasSignatureChange,
   onSave,
-  strokeColor = "#1E3A8A",
+  strokeColor,
   strokeWidth = 3,
 }: SignaturePadProps) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
+  const effectiveStrokeColor = strokeColor ?? "#1E3A8A";
   const [completedPaths, setCompletedPaths] = useState<string[]>([]);
   const currentPath = useRef("");
   const [drawTick, setDrawTick] = useState(0);
@@ -65,7 +69,7 @@ export function SignaturePad({
     const pathMarkup = completedPaths
       .map(
         d =>
-          `<path d="${d}" stroke="${strokeColor}" stroke-width="${strokeWidth}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+          `<path d="${d}" stroke="${effectiveStrokeColor}" stroke-width="${strokeWidth}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
       )
       .join("\n");
     onSave(
@@ -83,7 +87,7 @@ export function SignaturePad({
             <Path
               key={i}
               d={d}
-              stroke={strokeColor}
+              stroke={effectiveStrokeColor}
               strokeWidth={strokeWidth}
               fill="none"
               strokeLinecap="round"
@@ -94,7 +98,7 @@ export function SignaturePad({
             <Path
               key={`live-${drawTick}`}
               d={currentPath.current}
-              stroke={strokeColor}
+              stroke={effectiveStrokeColor}
               strokeWidth={strokeWidth}
               fill="none"
               strokeLinecap="round"
@@ -144,7 +148,7 @@ export function SignaturePad({
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   wrapper: { width: "100%" },
   canvas: {
     height: 170,
@@ -186,7 +190,7 @@ const styles = StyleSheet.create({
   clearText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#1E3A8A",
+    color: primary,
   },
   clearTextDisabled: {
     color: "#D1D5DB",
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     alignItems: "center",
     justifyContent: "center",
   },

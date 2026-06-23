@@ -61,8 +61,8 @@ export default function DocViewScreen() {
     <View style={[s.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title={doc.title} subtitle="Signed Document — Read Only" light onBack={() => router.back()}
         right={
-          <Pressable style={[s.dlBtn, { backgroundColor: colors.primary + "18" }]} onPress={handleDownload} hitSlop={8}>
-            <Ionicons name="download-outline" size={20} color={colors.primary} />
+          <Pressable style={[s.dlBtn, { backgroundColor: "#1E3A8A" + "18" }]} onPress={handleDownload} hitSlop={8}>
+            <Ionicons name="download-outline" size={20} color={"#1E3A8A"} />
           </Pressable>
         }
       />

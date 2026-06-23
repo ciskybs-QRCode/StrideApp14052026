@@ -177,6 +177,7 @@ export default function OperatorCalendar() {
   const { courses } = useAppData();
   const { user } = useAuth();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -444,7 +445,7 @@ export default function OperatorCalendar() {
         {/* ── Lessons: list vs grid ── */}
         {view === "list" ? (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>
               {DAYS[selectedDay]} — {todayLessons.length} {todayLessons.length === 1 ? "lesson" : "lessons"}
             </Text>
 
@@ -454,7 +455,7 @@ export default function OperatorCalendar() {
                   <Ionicons name="calendar-clear-outline" size={30} color="#D4AF37" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.noSessionTitle, { color: colors.primary }]}>No Sessions Today</Text>
+                  <Text style={[styles.noSessionTitle, { color: "#1E3A8A" }]}>No Sessions Today</Text>
                   <Text style={[styles.noSessionSub, { color: colors.mutedForeground }]}>
                     There are no scheduled classes for {DAYS[selectedDay]}.
                   </Text>
@@ -466,17 +467,17 @@ export default function OperatorCalendar() {
                   key={i}
                   style={[styles.lessonCard, { backgroundColor: colors.card, opacity: lesson.cancelled ? 0.5 : 1 }]}
                 >
-                  <View style={[styles.lessonBar, { backgroundColor: lesson.cancelled ? "#9CA3AF" : colors.secondary }]} />
+                  <View style={[styles.lessonBar, { backgroundColor: lesson.cancelled ? "#9CA3AF" : "#FBBF24" }]} />
                   <View style={styles.lessonContent}>
                     <View style={styles.lessonTopRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.lessonName, { color: colors.primary }]}>{lesson.course}</Text>
+                        <Text style={[styles.lessonName, { color: "#1E3A8A" }]}>{lesson.course}</Text>
                         {lesson.cancelled && <Text style={styles.cancelledBadge}>CANCELLED</Text>}
                       </View>
                       <View style={styles.lessonTopRight}>
                         <View style={[styles.studentsBadge, { backgroundColor: colors.muted }]}>
-                          <Ionicons name="people" size={12} color={colors.primary} />
-                          <Text style={[styles.studentsCount, { color: colors.primary }]}>{lesson.students}</Text>
+                          <Ionicons name="people" size={12} color={"#1E3A8A"} />
+                          <Text style={[styles.studentsCount, { color: "#1E3A8A" }]}>{lesson.students}</Text>
                         </View>
                         {!lesson.cancelled && (
                           <Pressable
@@ -505,7 +506,7 @@ export default function OperatorCalendar() {
         ) : view === "week" ? (
           /* ── GRID VIEW ── */
           <>
-            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Week at a Glance</Text>
+            <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Week at a Glance</Text>
             <View style={[styles.gridCard, { backgroundColor: colors.card }]}>
               {DAYS.map((day, idx) => {
                 const dayLessons = schedule[idx] ?? [];
@@ -519,13 +520,13 @@ export default function OperatorCalendar() {
                     onPress={() => { setSelectedDay(idx); setView("list"); }}
                     style={[
                       styles.gridCol,
-                      isSelected && { backgroundColor: `${colors.primary}12`, borderRadius: 12 },
+                      isSelected && { backgroundColor: `"#1E3A8A"12`, borderRadius: 12 },
                     ]}
                   >
                     {/* Day header */}
                     <View style={[
                       styles.gridDayHeader,
-                      { backgroundColor: isSelected ? colors.primary : colors.muted },
+                      { backgroundColor: isSelected ? "#1E3A8A" : colors.muted },
                     ]}>
                       <Text style={[
                         styles.gridDayLabel,
@@ -536,7 +537,7 @@ export default function OperatorCalendar() {
                       {hasLessons && (
                         <View style={[
                           styles.gridDot,
-                          { backgroundColor: isSelected ? colors.secondary : colors.primary },
+                          { backgroundColor: isSelected ? "#FBBF24" : "#1E3A8A" },
                         ]} />
                       )}
                     </View>
@@ -552,15 +553,15 @@ export default function OperatorCalendar() {
                               backgroundColor: lesson.cancelled
                                 ? "#F3F4F6"
                                 : isSelected
-                                ? `${colors.primary}20`
-                                : `${colors.primary}10`,
+                                ? `"#1E3A8A"20`
+                                : `"#1E3A8A"10`,
                             },
                           ]}
                         >
                           <Text
                             style={[
                               styles.gridChipTime,
-                              { color: lesson.cancelled ? "#9CA3AF" : colors.primary },
+                              { color: lesson.cancelled ? "#9CA3AF" : "#1E3A8A" },
                             ]}
                             numberOfLines={1}
                           >
@@ -569,7 +570,7 @@ export default function OperatorCalendar() {
                           <Text
                             style={[
                               styles.gridChipName,
-                              { color: lesson.cancelled ? "#9CA3AF" : colors.primary },
+                              { color: lesson.cancelled ? "#9CA3AF" : "#1E3A8A" },
                             ]}
                             numberOfLines={2}
                           >
@@ -578,8 +579,8 @@ export default function OperatorCalendar() {
                         </View>
                       ))}
                       {overflow > 0 && (
-                        <View style={[styles.gridOverflow, { backgroundColor: colors.secondary }]}>
-                          <Text style={[styles.gridOverflowText, { color: colors.primary }]}>+{overflow}</Text>
+                        <View style={[styles.gridOverflow, { backgroundColor: "#FBBF24" }]}>
+                          <Text style={[styles.gridOverflowText, { color: "#1E3A8A" }]}>+{overflow}</Text>
                         </View>
                       )}
                       {!hasLessons && (
@@ -602,16 +603,16 @@ export default function OperatorCalendar() {
                     onPress={() => setViewDate(new Date(yr, mo - 1, 1))}
                     style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}
                   >
-                    <Ionicons name="chevron-back" size={20} color={colors.primary} />
+                    <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
                   </Pressable>
-                  <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary }}>
+                  <Text style={{ fontSize: 17, fontWeight: "800", color: "#1E3A8A" }}>
                     {MONTH_NAMES[mo]} {yr}
                   </Text>
                   <Pressable
                     onPress={() => setViewDate(new Date(yr, mo + 1, 1))}
                     style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}
                   >
-                    <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+                    <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
                   </Pressable>
                 </View>
 
@@ -640,7 +641,7 @@ export default function OperatorCalendar() {
                         return (
                           <Pressable
                             key={di}
-                            style={[styles.monthCell, isToday && { backgroundColor: `${colors.primary}12`, borderRadius: 10 }]}
+                            style={[styles.monthCell, isToday && { backgroundColor: `"#1E3A8A"12`, borderRadius: 10 }]}
                             onPress={() => {
                               if (dayLessons.length > 0 || dayEvents.length > 0) {
                                 setDayDetail({ date, lessons: dayLessons });
@@ -650,7 +651,7 @@ export default function OperatorCalendar() {
                           >
                             <Text style={[
                               styles.monthDayNum,
-                              { color: isToday ? colors.primary : colors.foreground },
+                              { color: isToday ? "#1E3A8A" : colors.foreground },
                               isToday && { fontWeight: "800" },
                             ]}>
                               {date.getDate()}
@@ -710,10 +711,10 @@ export default function OperatorCalendar() {
               <Text style={[styles.weekDayLabel, { color: colors.mutedForeground }]}>{DAYS[i]}</Text>
               <View style={[styles.weekDayBar, {
                 height: day.length > 0 ? 40 + day.length * 15 : 8,
-                backgroundColor: day.length > 0 ? colors.primary : colors.muted,
+                backgroundColor: day.length > 0 ? "#1E3A8A" : colors.muted,
                 opacity: selectedDay === i ? 1 : 0.65,
               }]} />
-              <Text style={[styles.weekDayCount, { color: colors.primary }]}>{day.length}</Text>
+              <Text style={[styles.weekDayCount, { color: "#1E3A8A" }]}>{day.length}</Text>
             </View>
           ))}
         </View>
@@ -823,7 +824,7 @@ export default function OperatorCalendar() {
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.eventTitle, { color: colors.primary }]}>{ev.title}</Text>
+                <Text style={[styles.eventTitle, { color: "#1E3A8A" }]}>{ev.title}</Text>
                 <Text style={[styles.eventDate,  { color: colors.mutedForeground }]}>
                   {displayDate} · {ev.time}–{ev.endTime}
                 </Text>
@@ -915,9 +916,9 @@ export default function OperatorCalendar() {
                     <Pressable
                       key={s.id}
                       onPress={() => setWStyle(s.id)}
-                      style={[styles.chip, { backgroundColor: active ? colors.primary : colors.muted }]}
+                      style={[styles.chip, { backgroundColor: active ? "#1E3A8A" : colors.muted }]}
                     >
-                      <Ionicons name={s.icon} size={14} color={active ? colors.secondary : colors.mutedForeground} />
+                      <Ionicons name={s.icon} size={14} color={active ? "#FBBF24" : colors.mutedForeground} />
                       <Text style={[styles.chipText, { color: active ? "#FFF" : colors.mutedForeground }]}>
                         {s.label}
                       </Text>
@@ -972,7 +973,7 @@ export default function OperatorCalendar() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.subLabel}>End (Max +7 days)</Text>
                     <TextInput
-                      style={[styles.input, { borderColor: durationDays > 6 ? "#EF4444" : colors.primary, color: colors.foreground }]}
+                      style={[styles.input, { borderColor: durationDays > 6 ? "#EF4444" : "#1E3A8A", color: colors.foreground }]}
                       placeholder={isoToDisplay(todayIso())}
                       placeholderTextColor={colors.mutedForeground}
                       value={wEndDateDisplay}
@@ -997,9 +998,9 @@ export default function OperatorCalendar() {
                     </Text>
                   </View>
                 ) : durationDays >= 0 ? (
-                  <View style={[styles.durationPill, { backgroundColor: colors.secondary }]}>
-                    <Ionicons name="calendar-outline" size={13} color={colors.primary} />
-                    <Text style={[styles.durationPillText, { color: colors.primary }]}>
+                  <View style={[styles.durationPill, { backgroundColor: "#FBBF24" }]}>
+                    <Ionicons name="calendar-outline" size={13} color={"#1E3A8A"} />
+                    <Text style={[styles.durationPillText, { color: "#1E3A8A" }]}>
                       {durationDays + 1} {durationDays + 1 === 1 ? "day" : "days"}
                     </Text>
                   </View>
@@ -1040,9 +1041,9 @@ export default function OperatorCalendar() {
                     <Pressable
                       key={instr}
                       onPress={() => { setWInstructor(instr); setWCustomInstructor(false); setValidationMsg(""); }}
-                      style={[styles.chip, { backgroundColor: active ? colors.primary : colors.muted }]}
+                      style={[styles.chip, { backgroundColor: active ? "#1E3A8A" : colors.muted }]}
                     >
-                      <Ionicons name="person-outline" size={14} color={active ? colors.secondary : colors.mutedForeground} />
+                      <Ionicons name="person-outline" size={14} color={active ? "#FBBF24" : colors.mutedForeground} />
                       <Text style={[styles.chipText, { color: active ? "#FFF" : colors.mutedForeground }]}>{instr}</Text>
                     </Pressable>
                   );
@@ -1052,10 +1053,10 @@ export default function OperatorCalendar() {
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: wCustomInstructor ? colors.primary : "transparent",
+                      backgroundColor: wCustomInstructor ? "#1E3A8A" : "transparent",
                       borderWidth: 1.5,
                       borderStyle: "dashed",
-                      borderColor: colors.primary,
+                      borderColor: "#1E3A8A",
                     },
                   ]}
                 >
@@ -1065,7 +1066,7 @@ export default function OperatorCalendar() {
               </ScrollView>
               {wCustomInstructor && (
                 <TextInput
-                  style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
+                  style={[styles.input, { borderColor: "#1E3A8A", color: colors.foreground }]}
                   placeholder="Full name"
                   placeholderTextColor={colors.mutedForeground}
                   value={wNewInstructor}
@@ -1082,9 +1083,9 @@ export default function OperatorCalendar() {
                     <Pressable
                       key={room}
                       onPress={() => { setWLocation(room); setWCustomLocation(false); setValidationMsg(""); }}
-                      style={[styles.chip, { backgroundColor: active ? colors.primary : colors.muted }]}
+                      style={[styles.chip, { backgroundColor: active ? "#1E3A8A" : colors.muted }]}
                     >
-                      <Ionicons name="location-outline" size={14} color={active ? colors.secondary : colors.mutedForeground} />
+                      <Ionicons name="location-outline" size={14} color={active ? "#FBBF24" : colors.mutedForeground} />
                       <Text style={[styles.chipText, { color: active ? "#FFF" : colors.mutedForeground }]}>{room}</Text>
                     </Pressable>
                   );
@@ -1094,10 +1095,10 @@ export default function OperatorCalendar() {
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: wCustomLocation ? colors.primary : "transparent",
+                      backgroundColor: wCustomLocation ? "#1E3A8A" : "transparent",
                       borderWidth: 1.5,
                       borderStyle: "dashed",
-                      borderColor: colors.primary,
+                      borderColor: "#1E3A8A",
                     },
                   ]}
                 >
@@ -1107,7 +1108,7 @@ export default function OperatorCalendar() {
               </ScrollView>
               {wCustomLocation && (
                 <TextInput
-                  style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
+                  style={[styles.input, { borderColor: "#1E3A8A", color: colors.foreground }]}
                   placeholder="Venue or room name"
                   placeholderTextColor={colors.mutedForeground}
                   value={wNewLocation}
@@ -1147,7 +1148,7 @@ export default function OperatorCalendar() {
               <TextInput
                 style={[
                   styles.input,
-                  { borderColor: colors.primary, color: colors.foreground, minHeight: 64, textAlignVertical: "top" },
+                  { borderColor: "#1E3A8A", color: colors.foreground, minHeight: 64, textAlignVertical: "top" },
                 ]}
                 placeholder="What will participants learn or experience?"
                 placeholderTextColor={colors.mutedForeground}
@@ -1198,7 +1199,7 @@ export default function OperatorCalendar() {
 
               return (
                 <>
-                  <Text style={[styles.optionsTitle, { color: colors.primary }]}>
+                  <Text style={[styles.optionsTitle, { color: "#1E3A8A" }]}>
                     {dayDetail.date.getDate()} {MONTH_NAMES[dayDetail.date.getMonth()]} {dayDetail.date.getFullYear()}
                   </Text>
                   <Text style={[styles.optionsSubtitle, { color: colors.mutedForeground }]}>
@@ -1271,12 +1272,12 @@ export default function OperatorCalendar() {
 
                     {/* Multi-venue picker — if day has multiple distinct locations */}
                     {multiVenue && (
-                      <View style={{ marginTop: 14, padding: 12, borderRadius: 12, backgroundColor: `${colors.primary}08`, borderWidth: 1, borderColor: `${colors.primary}20` }}>
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary, marginBottom: 8 }}>Choose destination:</Text>
+                      <View style={{ marginTop: 14, padding: 12, borderRadius: 12, backgroundColor: `"#1E3A8A"08`, borderWidth: 1, borderColor: `"#1E3A8A"20` }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A", marginBottom: 8 }}>Choose destination:</Text>
                         {uniqueLocs.map((loc, li) => (
                           <Pressable
                             key={li}
-                            style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 9, borderBottomWidth: li < uniqueLocs.length - 1 ? 1 : 0, borderColor: `${colors.primary}15` }}
+                            style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 9, borderBottomWidth: li < uniqueLocs.length - 1 ? 1 : 0, borderColor: `"#1E3A8A"15` }}
                             onPress={() => openGps(loc)}
                           >
                             <Ionicons name="navigate-outline" size={16} color="#10B981" />
@@ -1330,7 +1331,7 @@ export default function OperatorCalendar() {
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 18, fontWeight: "800", color: colors.primary }}>{ev.title}</Text>
+                      <Text style={{ fontSize: 18, fontWeight: "800", color: "#1E3A8A" }}>{ev.title}</Text>
                       <Text style={{ fontSize: 12, color: accentColor, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 }}>{ev.type}</Text>
                     </View>
                     {/* Attendance badge (past events) */}
@@ -1351,17 +1352,17 @@ export default function OperatorCalendar() {
 
                   <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
                     {/* Info rows */}
-                    <View style={{ gap: 10, marginTop: 8, padding: 14, borderRadius: 14, backgroundColor: `${colors.primary}06`, borderWidth: 1, borderColor: `${colors.primary}15` }}>
+                    <View style={{ gap: 10, marginTop: 8, padding: 14, borderRadius: 14, backgroundColor: `"#1E3A8A"06`, borderWidth: 1, borderColor: `"#1E3A8A"15` }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                        <Ionicons name="calendar-outline" size={16} color={"#1E3A8A"} />
                         <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: "600" }}>{displayDate}</Text>
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        <Ionicons name="time-outline" size={16} color={colors.primary} />
+                        <Ionicons name="time-outline" size={16} color={"#1E3A8A"} />
                         <Text style={{ fontSize: 14, color: colors.foreground }}>{ev.time} – {ev.endTime}</Text>
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
-                        <Ionicons name="location-outline" size={16} color={colors.primary} style={{ marginTop: 2 }} />
+                        <Ionicons name="location-outline" size={16} color={"#1E3A8A"} style={{ marginTop: 2 }} />
                         <Text style={{ fontSize: 14, color: colors.foreground, flex: 1 }}>{ev.location}</Text>
                       </View>
                     </View>
@@ -1506,7 +1507,7 @@ export default function OperatorCalendar() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   root:              { flex: 1 },
   scroll:            { paddingHorizontal: 20 },
   headerRow:         { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
@@ -1602,5 +1603,5 @@ const styles = StyleSheet.create({
   optionsSubtitle:   { fontSize: 13, marginBottom: 20 },
   optionRow:         { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
   optionIcon:        { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  optionText:        { flex: 1, fontSize: 16, fontWeight: "600", color: "#1E3A8A" },
+  optionText:        { flex: 1, fontSize: 16, fontWeight: "600", color: primary },
 });

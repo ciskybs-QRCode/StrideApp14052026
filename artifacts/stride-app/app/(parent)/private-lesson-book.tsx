@@ -67,20 +67,20 @@ function StepBar({ current }: { current: Step }) {
               width: 28, height: 28, borderRadius: 14,
               alignItems: "center", justifyContent: "center",
               borderWidth: 2, marginBottom: 4,
-              backgroundColor: i < idx ? colors.primary : i === idx ? colors.secondary : "transparent",
-              borderColor: i <= idx ? colors.primary : colors.border,
+              backgroundColor: i < idx ? "#1E3A8A" : i === idx ? "#FBBF24" : "transparent",
+              borderColor: i <= idx ? "#1E3A8A" : colors.border,
             }}>
               {i < idx
                 ? <Ionicons name="checkmark" size={13} color="#FFF" />
-                : <Ionicons name={s.icon} size={12} color={i === idx ? colors.primary : colors.mutedForeground} />
+                : <Ionicons name={s.icon} size={12} color={i === idx ? "#1E3A8A" : colors.mutedForeground} />
               }
             </View>
-            <Text style={{ fontSize: 8, fontWeight: "700", color: i <= idx ? colors.primary : colors.mutedForeground, textAlign: "center" }}>
+            <Text style={{ fontSize: 8, fontWeight: "700", color: i <= idx ? "#1E3A8A" : colors.mutedForeground, textAlign: "center" }}>
               {s.label}
             </Text>
           </View>
           {i < STEPS.length - 1 && (
-            <View style={{ flex: 1, height: 2, marginTop: 13, backgroundColor: i < idx ? colors.primary : colors.border }} />
+            <View style={{ flex: 1, height: 2, marginTop: 13, backgroundColor: i < idx ? "#1E3A8A" : colors.border }} />
           )}
         </React.Fragment>
       ))}
@@ -183,22 +183,22 @@ export default function PrivateLessonBook() {
 
   if (success) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.primary }]}>
+      <View style={[styles.container, { backgroundColor: "#1E3A8A" }]}>
         <ScrollView contentContainerStyle={{
           flex: 1, alignItems: "center", justifyContent: "center", padding: 32,
           paddingTop: insets.top + 40,
         }}>
-          <View style={[styles.successIcon, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="checkmark-circle" size={56} color={colors.primary} />
+          <View style={[styles.successIcon, { backgroundColor: "#FBBF24" }]}>
+            <Ionicons name="checkmark-circle" size={56} color={"#1E3A8A"} />
           </View>
           <Text style={styles.successTitle}>Booking Requested!</Text>
           <Text style={styles.successSub}>
             Your payment is being processed. Once confirmed, your operator will be in touch to finalise the date and time.
           </Text>
-          <Pressable style={[styles.btn, { backgroundColor: colors.secondary, marginTop: 24 }]}
+          <Pressable style={[styles.btn, { backgroundColor: "#FBBF24", marginTop: 24 }]}
             onPress={() => router.replace("/(parent)/home")}>
-            <Ionicons name="home-outline" size={18} color={colors.primary} />
-            <Text style={[styles.btnText, { color: colors.primary }]}>Back to Home</Text>
+            <Ionicons name="home-outline" size={18} color={"#1E3A8A"} />
+            <Text style={[styles.btnText, { color: "#1E3A8A" }]}>Back to Home</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -210,7 +210,7 @@ export default function PrivateLessonBook() {
   if (loading) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={"#1E3A8A"} />
       </View>
     );
   }
@@ -241,7 +241,7 @@ export default function PrivateLessonBook() {
             {configs.length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="school-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Lessons Available</Text>
+                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Lessons Available</Text>
                 <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
                   Your association hasn't configured private lesson types yet. Contact your administrator.
                 </Text>
@@ -254,12 +254,12 @@ export default function PrivateLessonBook() {
                   onPress={() => pickDiscipline(cfg)}
                 >
                   <View style={[styles.iconCircle, { backgroundColor: "#DBEAFE" }]}>
-                    <Ionicons name="school" size={26} color={colors.primary} />
+                    <Ionicons name="school" size={26} color={"#1E3A8A"} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.optionTitle, { color: colors.foreground }]}>{cfg.discipline_name}</Text>
                     <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>
-                      {cfg.duration_minutes} min · <Text style={{ color: colors.primary, fontWeight: "800" }}>{cents(cfg.member_price_cents, cur)}</Text> per lesson
+                      {cfg.duration_minutes} min · <Text style={{ color: "#1E3A8A", fontWeight: "800" }}>{cents(cfg.member_price_cents, cur)}</Text> per lesson
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
@@ -274,13 +274,13 @@ export default function PrivateLessonBook() {
           <>
             {loadingOps ? (
               <View style={styles.center}>
-                <ActivityIndicator color={colors.primary} />
+                <ActivityIndicator color={"#1E3A8A"} />
                 <Text style={[styles.emptySub, { color: colors.mutedForeground, marginTop: 8 }]}>Loading operators…</Text>
               </View>
             ) : operators.length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="person-outline" size={44} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Operators Available</Text>
+                <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Operators Available</Text>
                 <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
                   No operator is currently available for {selConfig?.discipline_name}. Please try another discipline.
                 </Text>
@@ -292,8 +292,8 @@ export default function PrivateLessonBook() {
                   style={[styles.optionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                   onPress={() => pickOperator(op)}
                 >
-                  <View style={[styles.avatarCircle, { backgroundColor: colors.primary + "20" }]}>
-                    <Text style={{ fontSize: 18, fontWeight: "800", color: colors.primary }}>
+                  <View style={[styles.avatarCircle, { backgroundColor: "#1E3A8A" + "20" }]}>
+                    <Text style={{ fontSize: 18, fontWeight: "800", color: "#1E3A8A" }}>
                       {op.name.slice(0, 1).toUpperCase()}
                     </Text>
                   </View>
@@ -315,7 +315,7 @@ export default function PrivateLessonBook() {
         {/* ── STEP 3: Date & Time ────────────────────────────── */}
         {step === "datetime" && (
           <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 0 }]}>PREFERRED DATE</Text>
+            <Text style={[styles.sectionLabel, { color: "#1E3A8A", marginTop: 0 }]}>PREFERRED DATE</Text>
             <TextInput
               style={[styles.inputField, { borderColor: colors.border, color: colors.foreground }]}
               value={prefDate}
@@ -325,7 +325,7 @@ export default function PrivateLessonBook() {
               keyboardType={Platform.OS === "ios" ? "default" : "default"}
             />
 
-            <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 16 }]}>PREFERRED TIME</Text>
+            <Text style={[styles.sectionLabel, { color: "#1E3A8A", marginTop: 16 }]}>PREFERRED TIME</Text>
             <TextInput
               style={[styles.inputField, { borderColor: colors.border, color: colors.foreground }]}
               value={prefTime}
@@ -336,13 +336,13 @@ export default function PrivateLessonBook() {
             />
 
             <View style={[styles.infoRow, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE", marginTop: 14 }]}>
-              <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-              <Text style={{ fontSize: 12, color: colors.primary, flex: 1 }}>
+              <Ionicons name="information-circle-outline" size={16} color={"#1E3A8A"} />
+              <Text style={{ fontSize: 12, color: "#1E3A8A", flex: 1 }}>
                 Your operator will confirm the exact slot. You won&apos;t be charged until your request is matched.
               </Text>
             </View>
 
-            <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 16 }]}>NOTES (OPTIONAL)</Text>
+            <Text style={[styles.sectionLabel, { color: "#1E3A8A", marginTop: 16 }]}>NOTES (OPTIONAL)</Text>
             <TextInput
               style={[styles.inputField, { borderColor: colors.border, color: colors.foreground, minHeight: 70, textAlignVertical: "top" }]}
               value={notes}
@@ -352,7 +352,7 @@ export default function PrivateLessonBook() {
               multiline
             />
 
-            <Pressable style={[styles.btn, { backgroundColor: colors.primary, marginTop: 20 }]} onPress={goConfirm}>
+            <Pressable style={[styles.btn, { backgroundColor: "#1E3A8A", marginTop: 20 }]} onPress={goConfirm}>
               <Text style={[styles.btnText, { color: "#FFF" }]}>Continue to Review</Text>
               <Ionicons name="arrow-forward" size={16} color="#FFF" />
             </Pressable>
@@ -363,7 +363,7 @@ export default function PrivateLessonBook() {
         {step === "confirm" && selConfig && selOperator && (
           <>
             <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 0, marginBottom: 12 }]}>BOOKING SUMMARY</Text>
+              <Text style={[styles.sectionLabel, { color: "#1E3A8A", marginTop: 0, marginBottom: 12 }]}>BOOKING SUMMARY</Text>
               {[
                 ["Discipline",  selConfig.discipline_name],
                 ["Duration",    `${selConfig.duration_minutes} minutes`],
@@ -379,10 +379,10 @@ export default function PrivateLessonBook() {
               ))}
             </View>
 
-            <View style={[styles.priceBox, { backgroundColor: colors.primary + "08", borderColor: colors.primary + "30" }]}>
+            <View style={[styles.priceBox, { backgroundColor: "#1E3A8A" + "08", borderColor: "#1E3A8A" + "30" }]}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Total to pay</Text>
-                <Text style={[styles.priceValue, { color: colors.primary }]}>{cents(selConfig.member_price_cents, cur)}</Text>
+                <Text style={[styles.priceValue, { color: "#1E3A8A" }]}>{cents(selConfig.member_price_cents, cur)}</Text>
               </View>
               <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
                 Secure payment via Stripe · Your card is charged now.

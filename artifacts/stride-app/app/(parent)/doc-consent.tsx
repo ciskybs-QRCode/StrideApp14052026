@@ -179,8 +179,8 @@ export default function DocConsentScreen() {
               <Pressable
                 key={opt.key}
                 style={[s.optionCard, {
-                  backgroundColor: selected ? colors.primary : colors.card,
-                  borderColor: selected ? colors.primary : colors.border,
+                  backgroundColor: selected ? "#1E3A8A" : colors.card,
+                  borderColor: selected ? "#1E3A8A" : colors.border,
                 }]}
                 onPress={() => handleSelectOption(opt.key)}
               >

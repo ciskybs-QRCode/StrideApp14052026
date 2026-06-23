@@ -120,6 +120,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
   const { user, allRoles, refreshAllRoles } = useAuth();
   const { children, documents, legalAdminDocs, signedAdminDocIds } = useAppData();
   const colors  = useColors();
+  const s       = make_s(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
 
   const [provisioningOp, setProvisioningOp] = useState(false);
@@ -322,13 +323,13 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               onPress={() => nav("/(admin)/setup")}
             >
               <View style={s.featIconNavy}>
-                <Ionicons name="qr-code-outline" size={22} color="#FBBF24" />
+                <Ionicons name="qr-code-outline" size={22} color={"#FBBF24"} />
               </View>
               <View style={s.featText}>
                 <Text style={s.featTitleNavy} numberOfLines={1}>Setup & Member QR</Text>
                 <Text style={s.featDescNavy}  numberOfLines={1}>Branding, colours and invite code</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#FBBF24" />
+              <Ionicons name="chevron-forward" size={18} color={"#FBBF24"} />
             </Pressable>
 
             {/* Promo Codes */}
@@ -382,8 +383,8 @@ export default function UnifiedProfileView({ currentRole }: Props) {
             <Text style={[s.groupLabel, { color: colors.mutedForeground, marginTop: 10 }]}>
               PROFESSIONAL PROFILE
             </Text>
-            <View style={[s.infoBox, { backgroundColor: `${colors.primary}08`, borderColor: `${colors.primary}20`, borderWidth: 1, marginBottom: 10 }]}>
-              <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
+            <View style={[s.infoBox, { backgroundColor: `"#1E3A8A"08`, borderColor: `"#1E3A8A"20`, borderWidth: 1, marginBottom: 10 }]}>
+              <Ionicons name="information-circle-outline" size={14} color={"#1E3A8A"} />
               <Text style={[s.infoText, { color: colors.mutedForeground }]}>
                 As an Admin, you can provision additional roles on your own account — to teach classes or enroll dependents — without creating a separate account.
               </Text>
@@ -514,8 +515,8 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               >
                 <Ionicons name="people-outline" size={28} color={colors.mutedForeground} />
                 <Text style={[s.emptyTitle, { color: colors.mutedForeground }]}>No dependents added yet</Text>
-                <View style={[s.emptyBtn, { borderColor: colors.primary }]}>
-                  <Text style={[s.emptyBtnText, { color: colors.primary }]}>Manage Dependents</Text>
+                <View style={[s.emptyBtn, { borderColor: "#1E3A8A" }]}>
+                  <Text style={[s.emptyBtnText, { color: "#1E3A8A" }]}>Manage Dependents</Text>
                 </View>
               </Pressable>
             ) : (
@@ -566,10 +567,10 @@ export default function UnifiedProfileView({ currentRole }: Props) {
 
                 {children.length > 4 && (
                   <Pressable style={s.seeAllRow} onPress={() => nav("/(parent)/children")}>
-                    <Text style={[s.seeAllText, { color: colors.primary }]}>
+                    <Text style={[s.seeAllText, { color: "#1E3A8A" }]}>
                       See all {children.length} dependents
                     </Text>
-                    <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                    <Ionicons name="chevron-forward" size={14} color={"#1E3A8A"} />
                   </Pressable>
                 )}
               </>
@@ -599,7 +600,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
                 <Switch
                   value={noshowEnabled}
                   onValueChange={handleNoshowToggle}
-                  trackColor={{ false: "#EF4444", true: colors.primary }}
+                  trackColor={{ false: "#EF4444", true: "#1E3A8A" }}
                   thumbColor="#FFF"
                 />
               </View>
@@ -638,7 +639,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               />
               <Pressable
                 style={({ pressed }) => ({
-                  backgroundColor: colors.primary,
+                  backgroundColor: "#1E3A8A",
                   borderRadius: 12, paddingVertical: 13, alignItems: "center",
                   opacity: pressed ? 0.85 : 1,
                 })}
@@ -696,8 +697,8 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               )}
 
               <View style={[s.docCardFooter, { borderTopColor: colors.border }]}>
-                <Text style={[s.docCardAction, { color: colors.primary }]}>View all documents</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                <Text style={[s.docCardAction, { color: "#1E3A8A" }]}>View all documents</Text>
+                <Ionicons name="chevron-forward" size={14} color={"#1E3A8A"} />
               </View>
             </Pressable>
           </>
@@ -792,7 +793,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+const make_s = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll:    { paddingHorizontal: 20 },
 
@@ -817,7 +818,7 @@ const s = StyleSheet.create({
   avatarText:  { color: "#FFF", fontSize: 22, fontWeight: "700" },
   heroInfo:    { flex: 1, minWidth: 0 },
   heroName:    { color: "#FFF",                fontSize: 18, fontWeight: "700", marginBottom: 2 },
-  heroSchool:  { color: "#FBBF24",             fontSize: 13, fontWeight: "600" },
+  heroSchool:  { color: secondary,             fontSize: 13, fontWeight: "600" },
   heroMeta:    { color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 2 },
 
   // QR card
@@ -864,7 +865,7 @@ const s = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  featNavy:       { backgroundColor: "#1E3A8A" },
+  featNavy:       { backgroundColor: primary },
   featIconNavy:   { width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   featTitleNavy:  { color: "#FFF",                   fontSize: 15, fontWeight: "700", marginBottom: 2 },
   featDescNavy:   { color: "rgba(255,255,255,0.70)", fontSize: 12 },
@@ -927,7 +928,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  childAvatarText: { color: "#1E3A8A", fontSize: 16, fontWeight: "700" },
+  childAvatarText: { color: primary, fontSize: 16, fontWeight: "700" },
 
   // Consent dot on child row
   consentDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },

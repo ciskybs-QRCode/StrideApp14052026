@@ -156,7 +156,7 @@ export default function MemberRegistration() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Member Registration" onBack={() => router.push("/(admin)/setup" as never)} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={"#1E3A8A"} />
         </View>
       </View>
     );
@@ -194,8 +194,8 @@ export default function MemberRegistration() {
 
           <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
             <Pressable style={[styles.btn, { flex: 1, backgroundColor: "#DBEAFE" }]} onPress={handleCopyLink}>
-              <Ionicons name="copy-outline" size={16} color="#1E3A8A" />
-              <Text style={[styles.btnText, { color: "#1E3A8A" }]}>Copy</Text>
+              <Ionicons name="copy-outline" size={16} color={colors.primary} />
+              <Text style={[styles.btnText, { color: colors.primary }]}>Copy</Text>
             </Pressable>
             <Pressable style={[styles.btn, { flex: 1, backgroundColor: colors.primary }]} onPress={handleShareLink}>
               <Ionicons name="share-social-outline" size={16} color="#FFF" />
@@ -260,7 +260,7 @@ export default function MemberRegistration() {
               <Switch
                 value={!!(config[row.key as keyof RegistrationConfig])}
                 onValueChange={v => void save({ [row.key]: v })}
-                trackColor={{ true: colors.primary, false: colors.border }}
+                trackColor={{ true: "#1E3A8A", false: colors.border }}
                 thumbColor="#FFF"
               />
             </View>
@@ -276,7 +276,7 @@ export default function MemberRegistration() {
 
           {(config.customFields ?? []).map((f, i) => (
             <View key={f.id} style={[styles.fieldRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
-              <View style={[styles.fieldRowIndex, { backgroundColor: colors.primary }]}>
+              <View style={[styles.fieldRowIndex, { backgroundColor: "#1E3A8A" }]}>
                 <Text style={{ color: "#FFF", fontSize: 11, fontWeight: "800" }}>{i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -298,8 +298,8 @@ export default function MemberRegistration() {
           )}
 
           {addingField && (
-            <View style={[styles.addFieldBox, { borderColor: colors.primary, backgroundColor: "#F0F4FF" }]}>
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Field Label</Text>
+            <View style={[styles.addFieldBox, { borderColor: "#1E3A8A", backgroundColor: "#F0F4FF" }]}>
+              <Text style={[styles.fieldLabel, { color: "#1E3A8A" }]}>Field Label</Text>
               <TextInput
                 style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: "#FFF" }]}
                 value={newFieldLabel}
@@ -308,12 +308,12 @@ export default function MemberRegistration() {
                 placeholderTextColor={colors.mutedForeground}
                 autoFocus
               />
-              <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 10 }]}>Field Type</Text>
+              <Text style={[styles.fieldLabel, { color: "#1E3A8A", marginTop: 10 }]}>Field Type</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
                 {(Object.keys(FIELD_TYPE_LABELS) as FieldType[]).map(t => (
                   <Pressable key={t}
-                    style={[styles.typeChip, { borderColor: newFieldType === t ? colors.primary : colors.border,
-                      backgroundColor: newFieldType === t ? colors.primary : "#FFF" }]}
+                    style={[styles.typeChip, { borderColor: newFieldType === t ? "#1E3A8A" : colors.border,
+                      backgroundColor: newFieldType === t ? "#1E3A8A" : "#FFF" }]}
                     onPress={() => setNewFieldType(t)}>
                     <Text style={{ fontSize: 11, fontWeight: "700", color: newFieldType === t ? "#FFF" : colors.mutedForeground }}>
                       {FIELD_TYPE_LABELS[t]}
@@ -324,14 +324,14 @@ export default function MemberRegistration() {
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Required</Text>
                 <Switch value={newRequired} onValueChange={setNewRequired}
-                  trackColor={{ true: colors.primary, false: colors.border }} thumbColor="#FFF" />
+                  trackColor={{ true: "#1E3A8A", false: colors.border }} thumbColor="#FFF" />
               </View>
               <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
                 <Pressable style={[styles.btn, { flex: 1, backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: colors.border }]}
                   onPress={() => setAddingField(false)}>
                   <Text style={[styles.btnText, { color: colors.mutedForeground }]}>Cancel</Text>
                 </Pressable>
-                <Pressable style={[styles.btn, { flex: 1, backgroundColor: colors.primary }]} onPress={addField}>
+                <Pressable style={[styles.btn, { flex: 1, backgroundColor: "#1E3A8A" }]} onPress={addField}>
                   <Text style={[styles.btnText, { color: "#FFF" }]}>Add Field</Text>
                 </Pressable>
               </View>
@@ -340,10 +340,10 @@ export default function MemberRegistration() {
 
           {!addingField && (
             <Pressable
-              style={[styles.btn, { backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.primary, borderStyle: "dashed", marginTop: 10 }]}
+              style={[styles.btn, { backgroundColor: colors.background, borderWidth: 1.5, borderColor: "#1E3A8A", borderStyle: "dashed", marginTop: 10 }]}
               onPress={() => { setAddingField(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
-              <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
-              <Text style={[styles.btnText, { color: colors.primary }]}>Add Custom Field</Text>
+              <Ionicons name="add-circle-outline" size={18} color={"#1E3A8A"} />
+              <Text style={[styles.btnText, { color: "#1E3A8A" }]}>Add Custom Field</Text>
             </Pressable>
           )}
         </View>
@@ -363,7 +363,7 @@ export default function MemberRegistration() {
 
         {saving && (
           <View style={styles.savingRow}>
-            <ActivityIndicator size="small" color={colors.primary} />
+            <ActivityIndicator size="small" color={"#1E3A8A"} />
             <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Saving…</Text>
           </View>
         )}

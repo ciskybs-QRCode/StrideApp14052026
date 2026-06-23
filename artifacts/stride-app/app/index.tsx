@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ActivityIndicator, View } from "react-native";
 import { api } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 export default function Index() {
+  const colors = useColors();
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams<{ org?: string; brand?: string; primary?: string; secondary?: string }>();
@@ -98,8 +100,8 @@ export default function Index() {
   }, [user, isLoading, sysStatus, sysLoading, params.org]);
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1E3A8A" }}>
-      <ActivityIndicator color="#FBBF24" size="large" />
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.primary }}>
+      <ActivityIndicator color={colors.secondary} size="large" />
     </View>
   );
 }

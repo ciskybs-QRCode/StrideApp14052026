@@ -132,6 +132,7 @@ const b = StyleSheet.create({
 
 export default function SACommunications() {
   const colors  = useColors();
+  const s = make_s(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
 
@@ -301,7 +302,7 @@ export default function SACommunications() {
       {/* ── Intro banner ── */}
       <View style={[s.introBanner, { borderColor: "#E2E8F0" }]}>
         <View style={s.introIcon}>
-          <Ionicons name="megaphone" size={20} color="#1E3A8A" />
+          <Ionicons name="megaphone" size={20} color={colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={s.introTitle}>STRIDE → Admins</Text>
@@ -325,7 +326,7 @@ export default function SACommunications() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color="#1E3A8A" style={{ marginTop: 40 }} />
+          <ActivityIndicator color={"#1E3A8A"} style={{ marginTop: 40 }} />
         ) : messages.length === 0 ? (
           <View style={s.emptyState}>
             <Ionicons name="chatbubble-outline" size={48} color="#D1D5DB" />
@@ -375,10 +376,10 @@ export default function SACommunications() {
 
       {/* ── Compose FAB ── */}
       <Pressable
-        style={[s.fab, { backgroundColor: "#1E3A8A", bottom: insets.bottom + 20 }]}
+        style={[s.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 20 }]}
         onPress={openCompose}
       >
-        <Ionicons name="create-outline" size={22} color="#FBBF24" />
+        <Ionicons name="create-outline" size={22} color={colors.secondary} />
         <Text style={s.fabText}>Compose</Text>
       </Pressable>
 
@@ -478,7 +479,7 @@ export default function SACommunications() {
                   style={[s.orgPickerBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
                   onPress={() => setShowOrgPicker(true)}
                 >
-                  <Ionicons name="business-outline" size={16} color="#1E3A8A" />
+                  <Ionicons name="business-outline" size={16} color={"#1E3A8A"} />
                   <Text style={[s.orgPickerText, { color: selectedOrg ? "#111827" : "#9CA3AF" }]}>
                     {selectedOrg ? selectedOrg.name : "Select organisation…"}
                   </Text>
@@ -574,9 +575,9 @@ export default function SACommunications() {
                   style={[s.orgRow, { borderColor: colors.border, backgroundColor: targetOrgId === org.id ? "#EFF6FF" : colors.card }]}
                   onPress={() => { setTargetOrgId(org.id); setShowOrgPicker(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 >
-                  <Ionicons name="business-outline" size={16} color="#1E3A8A" />
+                  <Ionicons name="business-outline" size={16} color={"#1E3A8A"} />
                   <Text style={[s.orgRowText, { color: "#111827" }]}>{org.name}</Text>
-                  {targetOrgId === org.id && <Ionicons name="checkmark-circle" size={18} color="#1E3A8A" />}
+                  {targetOrgId === org.id && <Ionicons name="checkmark-circle" size={18} color={"#1E3A8A"} />}
                 </Pressable>
               ))}
             </ScrollView>
@@ -601,7 +602,7 @@ export default function SACommunications() {
             </View>
             {reportLoading ? (
               <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                <ActivityIndicator color="#1E3A8A" size="large" />
+                <ActivityIndicator color={"#1E3A8A"} size="large" />
                 <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 13 }}>Loading report…</Text>
               </View>
             ) : reportMsg ? (
@@ -663,7 +664,7 @@ export default function SACommunications() {
                     <View style={s.recipientChannels}>
                       {r.in_app_sent && <Ionicons name="notifications-outline" size={12} color={r.read_at ? "#059669" : "#9CA3AF"} />}
                       {r.push_sent   && <Ionicons name="phone-portrait-outline" size={12} color="#D97706" />}
-                      {r.email_sent  && <Ionicons name="mail-outline" size={12} color="#1E3A8A" />}
+                      {r.email_sent  && <Ionicons name="mail-outline" size={12} color={"#1E3A8A"} />}
                     </View>
                     {r.read_at && (
                       <Text style={{ fontSize: 10, color: "#059669" }}>
@@ -685,13 +686,13 @@ export default function SACommunications() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+const make_s = (primary: string, secondary: string) => StyleSheet.create({
   root:             { flex: 1 },
   scroll:           { paddingHorizontal: 16, paddingTop: 8 },
 
   introBanner:      { flexDirection: "row", alignItems: "flex-start", gap: 12, margin: 16, marginBottom: 4, backgroundColor: "#EFF6FF", borderWidth: 1, borderRadius: 14, padding: 14 },
   introIcon:        { width: 38, height: 38, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  introTitle:       { fontSize: 13, fontWeight: "800", color: "#1E3A8A", marginBottom: 2 },
+  introTitle:       { fontSize: 13, fontWeight: "800", color: primary, marginBottom: 2 },
   introSub:         { fontSize: 11, color: "#3B82F6", lineHeight: 16 },
 
   sectionHeader:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10, marginTop: 8 },
@@ -712,14 +713,14 @@ const s = StyleSheet.create({
   msgRecipients:    { fontSize: 11, flex: 1 },
 
   fab:              { position: "absolute", right: 20, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingVertical: 14, borderRadius: 28, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 },
-  fabText:          { color: "#FBBF24", fontWeight: "800", fontSize: 14 },
+  fabText:          { color: secondary, fontWeight: "800", fontSize: 14 },
 
   modalOverlay:     { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" },
 
   composeSheet:     { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "92%", flex: 1 },
   composeHeader:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 20, paddingBottom: 12 },
   composeTitle:     { fontSize: 16, fontWeight: "800", color: "#111827", flex: 1, textAlign: "center" },
-  sendBtn:          { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#1E3A8A", paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20 },
+  sendBtn:          { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: primary, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20 },
   sendBtnText:      { color: "#FFF", fontWeight: "700", fontSize: 13 },
 
   fieldLabel:       { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, color: "#6B7280", marginBottom: 8, marginTop: 16, paddingHorizontal: 16 },
@@ -733,7 +734,7 @@ const s = StyleSheet.create({
 
   targetRow:        { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
   targetPill:       { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5 },
-  targetPillActive: { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
+  targetPillActive: { backgroundColor: primary, borderColor: primary },
   targetPillInactive:{ backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" },
   targetPillText:   { fontSize: 12, fontWeight: "700" },
 

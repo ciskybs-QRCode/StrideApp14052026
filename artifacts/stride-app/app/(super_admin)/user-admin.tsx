@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import type { User } from "@/context/AuthContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ function roleLabel(role: string): string {
 // ── Admin Row ─────────────────────────────────────────────────────────────────
 
 function AdminRow({ rec, onEdit }: { rec: AdminRecord; onEdit: (rec: AdminRecord) => void }) {
+  const colors = useColors();
   const color = roleColor(rec.role);
   const bg    = roleBg(rec.role);
   return (
@@ -57,7 +59,7 @@ function AdminRow({ rec, onEdit }: { rec: AdminRecord; onEdit: (rec: AdminRecord
         <Text style={[ar.chipText, { color }]}>{roleLabel(rec.role).toUpperCase()}</Text>
       </View>
       <Pressable style={({ pressed }) => [ar.editBtn, { opacity: pressed ? 0.65 : 1 }]} onPress={() => onEdit(rec)} hitSlop={8}>
-        <Ionicons name="create-outline" size={17} color="#1E3A8A" />
+        <Ionicons name="create-outline" size={17} color={colors.primary} />
       </Pressable>
     </View>
   );
@@ -86,6 +88,9 @@ function ManageUserModal({ visible, target, currentUser, ownerEmail, onClose, on
   visible: boolean; target: AdminRecord | null; currentUser: User | null;
   ownerEmail: string; onClose: () => void; onSuccess: () => void;
 }) {
+  const colors = useColors();
+  const em = make_em(colors.primary, colors.secondary);
+  const mu = make_mu(colors.primary, colors.secondary);
   const [step,        setStep]        = useState<ManageStep>("view");
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [saving,      setSaving]      = useState(false);
@@ -229,6 +234,8 @@ function ManageUserModal({ visible, target, currentUser, ownerEmail, onClose, on
 // ── Add Super Admin Modal ─────────────────────────────────────────────────────
 
 function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean; onClose: () => void; onSuccess: () => void }) {
+  const colors = useColors();
+  const em = make_em(colors.primary, colors.secondary);
   const [email,  setEmail]  = useState("");
   const [name,   setName]   = useState("");
   const [saving, setSaving] = useState(false);
@@ -257,7 +264,7 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
             {result ? (
               <View style={{ alignItems: "center", padding: 32, gap: 12 }}>
                 <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name="shield-checkmark" size={36} color="#1E3A8A" />
+                  <Ionicons name="shield-checkmark" size={36} color={"#1E3A8A"} />
                 </View>
                 <Text style={{ fontSize: 20, fontWeight: "900", color: "#111827" }}>Super Admin Added</Text>
                 <Text style={{ fontSize: 14, color: "#6B7280", textAlign: "center" }}>{email} now has super_admin access.</Text>
@@ -274,7 +281,7 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
             ) : (
               <>
                 <View style={{ alignItems: "center", padding: 24, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" }}>
-                  <View style={em.headerIcon}><Ionicons name="shield-checkmark" size={28} color="#1E3A8A" /></View>
+                  <View style={em.headerIcon}><Ionicons name="shield-checkmark" size={28} color={"#1E3A8A"} /></View>
                   <Text style={em.title}>Add Super Admin</Text>
                   <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Promotes an existing user or creates a new super_admin account</Text>
                 </View>
@@ -284,7 +291,7 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
                 </View>
                 {!!error && <View style={[em.errorBox, { marginHorizontal: 24 }]}><Ionicons name="alert-circle-outline" size={14} color="#DC2626" /><Text style={em.errorText}>{error}</Text></View>}
                 <Pressable style={({ pressed }) => [em.ctaBtn, { opacity: pressed || saving ? 0.85 : 1 }]} onPress={() => void handleAdd()} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color="#1E3A8A" /> : <><Ionicons name="shield-checkmark" size={18} color="#1E3A8A" /><Text style={em.ctaText}>Grant Super Admin Access</Text></>}
+                  {saving ? <ActivityIndicator size="small" color={"#1E3A8A"} /> : <><Ionicons name="shield-checkmark" size={18} color={"#1E3A8A"} /><Text style={em.ctaText}>Grant Super Admin Access</Text></>}
                 </Pressable>
                 <Pressable style={({ pressed }) => [em.cancelBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={onClose}><Text style={em.cancelText}>Cancel</Text></Pressable>
               </>
@@ -300,6 +307,7 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
 
 export default function UserAdminScreen() {
   const { user } = useAuth();
+  const colors = useColors();
   const [admins,    setAdmins]    = useState<AdminRecord[]>([]);
   const [ownerEmail, setOwnerEmail] = useState(user?.email ?? "");
   const [loading,   setLoading]   = useState(true);
@@ -331,13 +339,13 @@ export default function UserAdminScreen() {
       />
 
       {loading ? (
-        <View style={styles.loadingBox}><ActivityIndicator size="large" color="#1E3A8A" /></View>
+        <View style={styles.loadingBox}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
       ) : (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor="#1E3A8A" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={"#1E3A8A"} />}
         >
           <View style={styles.card}>
             {admins.length === 0 ? (
@@ -373,7 +381,7 @@ const styles = StyleSheet.create({
   emptyText:  { fontSize: 14, color: "#6B7280" },
 });
 
-const em = StyleSheet.create({
+const make_em = (primary: string, secondary: string) => StyleSheet.create({
   overlay:      { flex: 1, justifyContent: "flex-end" },
   backdrop:     { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)" },
   sheet:        { backgroundColor: "#FFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12 },
@@ -384,14 +392,14 @@ const em = StyleSheet.create({
   errorBox:     { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, marginHorizontal: 24, marginTop: 8 },
   errorText:    { flex: 1, color: "#DC2626", fontSize: 12 },
   ctaBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 20, marginBottom: 8 },
-  ctaText:      { fontSize: 15, fontWeight: "900", color: "#1E3A8A" },
+  ctaText:      { fontSize: 15, fontWeight: "900", color: primary },
   cancelBtn:    { alignItems: "center", paddingVertical: 14, marginHorizontal: 24 },
   cancelText:   { fontSize: 15, color: "#6B7280" },
 });
 
 const inp = { backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 14, height: 52, fontSize: 15, color: "#111827" };
 
-const mu = StyleSheet.create({
+const make_mu = (primary: string, secondary: string) => StyleSheet.create({
   header:       { alignItems: "center", padding: 28, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6" },
   avatar:       { width: 60, height: 60, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 12 },
   name:         { fontSize: 18, fontWeight: "900", color: "#111827", marginBottom: 3 },
@@ -414,6 +422,6 @@ const mu = StyleSheet.create({
   btnRow:       { flexDirection: "row", gap: 10, paddingHorizontal: 20, marginTop: 20, marginBottom: 8 },
   secondaryBtn: { alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: "#F9FAFB", borderWidth: 1.5, borderColor: "#E5E7EB" },
   secondaryTxt: { fontSize: 14, fontWeight: "700", color: "#6B7280" },
-  primaryBtn:   { alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: "#1E3A8A" },
+  primaryBtn:   { alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: primary },
   primaryTxt:   { fontSize: 14, fontWeight: "900", color: "#FFF" },
 });

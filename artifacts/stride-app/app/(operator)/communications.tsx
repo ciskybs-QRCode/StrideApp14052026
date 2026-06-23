@@ -175,7 +175,7 @@ export default function OperatorCommunications() {
         onBack={() => router.navigate("/(operator)/workspace" as never)}
         right={
           <Pressable
-            style={[styles.composeBtn, { backgroundColor: colors.primary }]}
+            style={[styles.composeBtn, { backgroundColor: "#1E3A8A" }]}
             onPress={() => setShowCompose(true)}
             hitSlop={8}
           >
@@ -199,7 +199,7 @@ export default function OperatorCommunications() {
               Use Compose to broadcast announcements, scripts, videos, or files to members and staff.
             </Text>
             <Pressable
-              style={[styles.emptyActionBtn, { backgroundColor: colors.primary }]}
+              style={[styles.emptyActionBtn, { backgroundColor: "#1E3A8A" }]}
               onPress={() => setShowCompose(true)}
             >
               <Ionicons name="create-outline" size={18} color="#FFF" />
@@ -212,12 +212,12 @@ export default function OperatorCommunications() {
             {sent.map(s => (
               <View key={s.id} style={[styles.msgCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.msgIconWrap, {
-                  backgroundColor: s.urgent ? "#FEF2F2" : colors.primary + "18",
+                  backgroundColor: s.urgent ? "#FEF2F2" : "#1E3A8A" + "18",
                 }]}>
                   <Ionicons
                     name={s.urgent ? "alert-circle-outline" : "megaphone-outline"}
                     size={24}
-                    color={s.urgent ? "#EF4444" : colors.primary}
+                    color={s.urgent ? "#EF4444" : "#1E3A8A"}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -301,8 +301,8 @@ export default function OperatorCommunications() {
                   key={mode}
                   style={[
                     styles.recipientChip,
-                    { borderColor: recipientMode === mode ? colors.primary : "#D1D9F0" },
-                    recipientMode === mode && { backgroundColor: colors.primary },
+                    { borderColor: recipientMode === mode ? "#1E3A8A" : "#D1D9F0" },
+                    recipientMode === mode && { backgroundColor: "#1E3A8A" },
                   ]}
                   onPress={() => setRecipientMode(mode)}
                 >
@@ -375,7 +375,7 @@ export default function OperatorCommunications() {
 
             {/* Sent as org info */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EFF6FF", borderRadius: 10, padding: 10, marginTop: 14, borderWidth: 1, borderColor: "#BFDBFE" }}>
-              <Ionicons name="business-outline" size={14} color="#1E3A8A" />
+              <Ionicons name="business-outline" size={14} color={colors.primary} />
               <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>
                 Sent as: {orgName || "Your Organisation"} — recipients see your association name, not your personal name
               </Text>
@@ -392,7 +392,7 @@ export default function OperatorCommunications() {
                 <Text style={[styles.attachPickerText, { color: colors.foreground }]}>Photo / Video</Text>
               </Pressable>
               <Pressable style={[styles.attachPickerBtn, { backgroundColor: colors.card, borderColor: "#D1D9F0", opacity: uploading ? 0.6 : 1 }]} onPress={pickDocument} disabled={uploading}>
-                <Ionicons name="document-attach-outline" size={18} color="#FBBF24" />
+                <Ionicons name="document-attach-outline" size={18} color={colors.secondary} />
                 <Text style={[styles.attachPickerText, { color: colors.foreground }]}>File / Script</Text>
               </Pressable>
               <Pressable
@@ -426,7 +426,7 @@ export default function OperatorCommunications() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
                   style={({ pressed }) => ({
-                    backgroundColor: colors.primary,
+                    backgroundColor: "#1E3A8A",
                     borderRadius: 10,
                     paddingHorizontal: 14,
                     paddingVertical: 10,
@@ -440,7 +440,7 @@ export default function OperatorCommunications() {
 
             {uploading && (
               <View style={[styles.attachRow, { backgroundColor: colors.card, marginBottom: 6 }]}>
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={"#1E3A8A"} />
                 <Text style={[styles.attachName, { color: colors.mutedForeground }]}>Uploading...</Text>
               </View>
             )}

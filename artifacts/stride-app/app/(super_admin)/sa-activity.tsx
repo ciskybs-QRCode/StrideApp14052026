@@ -9,6 +9,7 @@ import {
   type PlatformMetrics, type PlatformEvent, type FinancialSummary, type FinancialOrgRecord,
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -47,8 +48,9 @@ const EVENT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 // ── Event Card ────────────────────────────────────────────────────────────────
 
 function EventCard({ event }: { event: PlatformEvent }) {
+  const colors = useColors();
   const icon  = EVENT_ICONS[event.event_type] ?? "radio-button-on-outline";
-  const color = event.event_type === "new_tenant_registered" ? "#1E3A8A"
+  const color = event.event_type === "new_tenant_registered" ? colors.primary
     : event.event_type === "trial_extended"         ? "#D97706"
     : event.event_type === "subscription_activated" ? "#059669"
     : "#DC2626";
@@ -77,6 +79,8 @@ const ev = StyleSheet.create({
 // ── Financial Row ─────────────────────────────────────────────────────────────
 
 function FinancialRow({ rec }: { rec: FinancialOrgRecord }) {
+  const colors = useColors();
+  const fr = make_fr(colors.primary, colors.secondary);
   const chip = subscriptionChip(rec.status);
   return (
     <View style={fr.row}>
@@ -87,17 +91,19 @@ function FinancialRow({ rec }: { rec: FinancialOrgRecord }) {
     </View>
   );
 }
-const fr = StyleSheet.create({
+const make_fr = (primary: string, secondary: string) => StyleSheet.create({
   row:     { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F3F4F6", gap: 8 },
   dot:     { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
   name:    { flex: 1, fontSize: 13, color: "#111827", fontWeight: "600" },
   members: { fontSize: 12, color: "#9CA3AF", marginRight: 4 },
-  mrr:     { fontSize: 13, fontWeight: "800", color: "#1E3A8A", minWidth: 64, textAlign: "right" },
+  mrr:     { fontSize: 13, fontWeight: "800", color: primary, minWidth: 64, textAlign: "right" },
 });
 
 // ── Recent Activity Screen ────────────────────────────────────────────────────
 
 export default function SAActivityScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const [metrics,   setMetrics]   = useState<PlatformMetrics | null>(null);
   const [financial, setFinancial] = useState<FinancialSummary | null>(null);
   const [loading,   setLoading]   = useState(true);
@@ -122,13 +128,13 @@ export default function SAActivityScreen() {
       <ScreenHeader title="Recent Activity" subtitle="Platform events & financials" />
 
       {loading ? (
-        <View style={styles.loadingBox}><ActivityIndicator size="large" color="#1E3A8A" /></View>
+        <View style={styles.loadingBox}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
       ) : (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor="#1E3A8A" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(true); }} tintColor={"#1E3A8A"} />}
         >
           {/* Financial Overview */}
           <Text style={styles.sectionLabel}>FINANCIAL OVERVIEW</Text>
@@ -155,7 +161,7 @@ export default function SAActivityScreen() {
                 onPress={() => setShowBreakdown(v => !v)}
               >
                 <Text style={styles.breakdownToggleText}>Per-org breakdown</Text>
-                <Ionicons name={showBreakdown ? "chevron-up" : "chevron-down"} size={14} color="#1E3A8A" />
+                <Ionicons name={showBreakdown ? "chevron-up" : "chevron-down"} size={14} color={"#1E3A8A"} />
               </Pressable>
               {showBreakdown && (
                 <View style={{ marginTop: 4 }}>
@@ -196,7 +202,7 @@ export default function SAActivityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container:        { flex: 1, backgroundColor: "#F8FAFC" },
   loadingBox:       { flex: 1, alignItems: "center", justifyContent: "center" },
   scroll:           { flex: 1 },
@@ -209,7 +215,7 @@ const styles = StyleSheet.create({
   finAmount:        { fontSize: 20, fontWeight: "900", color: "#111827" },
   finLabel:         { fontSize: 10, fontWeight: "700", letterSpacing: 0.8, color: "#9CA3AF" },
   breakdownToggle:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#F3F4F6" },
-  breakdownToggleText: { fontSize: 12, fontWeight: "700", color: "#1E3A8A" },
+  breakdownToggleText: { fontSize: 12, fontWeight: "700", color: primary },
   emptyBox:         { alignItems: "center", paddingVertical: 32, gap: 8 },
   emptyText:        { fontSize: 13, color: "#6B7280", textAlign: "center" },
   emptySubtext:     { fontSize: 12, color: "#9CA3AF", textAlign: "center" },

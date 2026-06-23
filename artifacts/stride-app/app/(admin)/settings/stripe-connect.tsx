@@ -34,6 +34,7 @@ type AccountStatus = {
 export default function StripeConnectScreen() {
   const router  = useRouter();
   const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
 
   const [status,      setStatus]      = useState<AccountStatus | null>(null);
@@ -165,7 +166,7 @@ export default function StripeConnectScreen() {
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <ActivityIndicator style={{ marginTop: 60 }} color={colors.primary} />
+          <ActivityIndicator style={{ marginTop: 60 }} color={"#1E3A8A"} />
         ) : (
           <>
             {/* ── STATUS CARD ── */}
@@ -209,7 +210,7 @@ export default function StripeConnectScreen() {
 
             {/* ── INFORMATION BOX ── */}
             <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="information-circle-outline" size={20} color="#1E3A8A" style={{ marginBottom: 6 }} />
+              <Ionicons name="information-circle-outline" size={20} color={"#1E3A8A"} style={{ marginBottom: 6 }} />
               <Text style={[styles.infoTitle, { color: colors.foreground }]}>How it works</Text>
               <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>
                 When you link your own Stripe account, every membership payment made by your families is processed
@@ -220,7 +221,7 @@ export default function StripeConnectScreen() {
                 style={styles.stripeLink}
                 onPress={() => void Linking.openURL("https://dashboard.stripe.com/apikeys")}
               >
-                <Ionicons name="open-outline" size={14} color="#1E3A8A" />
+                <Ionicons name="open-outline" size={14} color={"#1E3A8A"} />
                 <Text style={styles.stripeLinkText}>Get your API key from Stripe Dashboard</Text>
               </Pressable>
             </View>
@@ -275,9 +276,9 @@ export default function StripeConnectScreen() {
                   disabled={saving || !secretKey.trim()}
                 >
                   {saving
-                    ? <ActivityIndicator color="#1E3A8A" size="small" />
+                    ? <ActivityIndicator color={"#1E3A8A"} size="small" />
                     : <>
-                        <Ionicons name="link-outline" size={18} color="#1E3A8A" />
+                        <Ionicons name="link-outline" size={18} color={"#1E3A8A"} />
                         <Text style={styles.connectBtnText}>Connect Stripe Account</Text>
                       </>
                   }
@@ -301,7 +302,7 @@ export default function StripeConnectScreen() {
                 <View style={[styles.colourDot, { backgroundColor: primaryCol || "#1E3A8A" }]} />
                 <TextInput
                   style={[styles.input, { color: colors.foreground, flex: 1 }]}
-                  placeholder="#1E3A8A"
+                  placeholder={"#1E3A8A"}
                   placeholderTextColor={colors.mutedForeground}
                   value={primaryCol}
                   onChangeText={setPrimaryCol}
@@ -373,7 +374,7 @@ export default function StripeConnectScreen() {
                     </>
                   ) : (
                     <>
-                      <Ionicons name="image-outline" size={20} color="#1E3A8A" />
+                      <Ionicons name="image-outline" size={20} color={"#1E3A8A"} />
                       <Text style={[styles.logoUploadText, { color: "#1E3A8A" }]}>Choose from photo library</Text>
                     </>
                   )}
@@ -389,9 +390,9 @@ export default function StripeConnectScreen() {
                 disabled={brandSaving}
               >
                 {brandSaving
-                  ? <ActivityIndicator color="#1E3A8A" size="small" />
+                  ? <ActivityIndicator color={"#1E3A8A"} size="small" />
                   : <>
-                      <Ionicons name="color-palette-outline" size={18} color="#1E3A8A" />
+                      <Ionicons name="color-palette-outline" size={18} color={"#1E3A8A"} />
                       <Text style={styles.saveBtnText}>Save Branding</Text>
                     </>
                 }
@@ -406,7 +407,7 @@ export default function StripeConnectScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   header: {
     flexDirection:  "row",
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
   infoTitle: { fontSize: 14, fontWeight: "700", marginBottom: 6 },
   infoBody:  { fontSize: 13, lineHeight: 19, marginBottom: 12 },
   stripeLink: { flexDirection: "row", alignItems: "center", gap: 6 },
-  stripeLinkText: { fontSize: 13, color: "#1E3A8A", fontWeight: "600" },
+  stripeLinkText: { fontSize: 13, color: primary, fontWeight: "600" },
 
   // Sections
   section: {
@@ -482,7 +483,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom:   10,
   },
-  connectBtnText: { color: "#1E3A8A", fontSize: 15, fontWeight: "800" },
+  connectBtnText: { color: primary, fontSize: 15, fontWeight: "800" },
 
   saveBtn: {
     flexDirection:  "row",
@@ -494,7 +495,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     marginTop:      4,
   },
-  saveBtnText: { color: "#1E3A8A", fontSize: 15, fontWeight: "700" },
+  saveBtnText: { color: primary, fontSize: 15, fontWeight: "700" },
 
   dangerBtn: {
     flexDirection:  "row",

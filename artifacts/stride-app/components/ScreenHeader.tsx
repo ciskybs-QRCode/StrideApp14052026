@@ -58,11 +58,11 @@ export function ScreenHeader({
     router.back();
   };
 
-  const bg     = light ? "#FFFFFF" : colors.primary;
-  const fg     = light ? colors.primary : "#FFFFFF";
+  const bg     = light ? "#FFFFFF" : "#1E3A8A";
+  const fg     = light ? "#1E3A8A" : "#FFFFFF";
   const subFg  = light ? colors.mutedForeground : "rgba(255,255,255,0.65)";
-  // Back icon: always gold (#FBBF24) on dark bg, primary on light bg
-  const iconFg = light ? colors.primary : "#FBBF24";
+  // Back icon: always gold ("#FBBF24") on dark bg, primary on light bg
+  const iconFg = light ? "#1E3A8A" : "#FBBF24";
 
   // Safe paddingTop: respect the real inset + breathing room.
   // Minimum 50 on iOS (covers Dynamic Island & notch), 28 on Android.

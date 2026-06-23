@@ -34,6 +34,7 @@ interface PendingPayment {
 export default function PendingPaymentsScreen() {
   const router = useRouter();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [payments, setPayments] = useState<PendingPayment[]>([]);
@@ -167,7 +168,7 @@ export default function PendingPaymentsScreen() {
       >
         {loading && (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <ActivityIndicator size="large" color={"#1E3A8A"} />
             <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Loading pending payments...</Text>
           </View>
         )}
@@ -190,7 +191,7 @@ export default function PendingPaymentsScreen() {
                 <View style={[styles.statusBadge, { backgroundColor: `${status.color}15` }]}>
                   <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
                 </View>
-                <Text style={[styles.amount, { color: colors.primary }]}>
+                <Text style={[styles.amount, { color: "#1E3A8A" }]}>
                   {(p.amount_cents / 100).toFixed(2)} {p.currency?.toUpperCase() ?? "EUR"}
                 </Text>
               </View>
@@ -235,10 +236,10 @@ export default function PendingPaymentsScreen() {
                   disabled={isProcessing}
                 >
                   {isProcessing ? (
-                    <ActivityIndicator size="small" color="#1E3A8A" />
+                    <ActivityIndicator size="small" color={"#1E3A8A"} />
                   ) : (
                     <>
-                      <Ionicons name="cash-outline" size={16} color="#1E3A8A" />
+                      <Ionicons name="cash-outline" size={16} color={"#1E3A8A"} />
                       <Text style={styles.confirmBtnText}>Confirm Cash Received</Text>
                     </>
                   )}
@@ -286,7 +287,7 @@ export default function PendingPaymentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: 20, gap: 14 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, padding: 40 },
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
   itemsList: { marginTop: 4, gap: 2 },
   itemText: { fontSize: 12, lineHeight: 18 },
   confirmBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, paddingVertical: 12, marginTop: 8 },
-  confirmBtnText: { fontWeight: "800", fontSize: 14, color: "#1E3A8A" },
+  confirmBtnText: { fontWeight: "800", fontSize: 14, color: primary },
   infoBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 10, padding: 10, marginTop: 4 },
   infoText: { fontSize: 12, fontWeight: "600", flex: 1 },
 });

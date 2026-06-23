@@ -113,7 +113,7 @@ export default function OperatorContract() {
 
         {loading ? (
           <View style={styles.centeredLoader}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <ActivityIndicator size="large" color={"#1E3A8A"} />
             <Text style={[styles.loaderText, { color: colors.mutedForeground }]}>Loading contract…</Text>
           </View>
         ) : !contract ? (
@@ -148,7 +148,7 @@ export default function OperatorContract() {
             {/* Contract summary card */}
             <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {/* Header bar */}
-              <View style={[styles.summaryHeader, { backgroundColor: colors.primary }]}>
+              <View style={[styles.summaryHeader, { backgroundColor: "#1E3A8A" }]}>
                 <Ionicons name="document-text" size={20} color="#FFF" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.summaryTitle}>
@@ -177,7 +177,7 @@ export default function OperatorContract() {
                   <View style={styles.chipsRow}>
                     {contract.contractor_extra_chips.map((chip, i) => (
                       <View key={i} style={[styles.chip, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
-                        <Text style={[styles.chipText, { color: colors.primary }]}>{chip.label} {chip.rate}%</Text>
+                        <Text style={[styles.chipText, { color: "#1E3A8A" }]}>{chip.label} {chip.rate}%</Text>
                       </View>
                     ))}
                   </View>
@@ -198,16 +198,16 @@ export default function OperatorContract() {
 
             {/* Action buttons */}
             <Pressable onPress={handleViewPdf}
-              style={[styles.btn, { backgroundColor: colors.card, borderColor: colors.primary, borderWidth: 2 }]}>
+              style={[styles.btn, { backgroundColor: colors.card, borderColor: "#1E3A8A", borderWidth: 2 }]}>
               {printing
-                ? <ActivityIndicator size="small" color={colors.primary} />
-                : <Ionicons name="document-text-outline" size={18} color={colors.primary} />}
-              <Text style={[styles.btnText, { color: colors.primary }]}>View Full Contract PDF</Text>
+                ? <ActivityIndicator size="small" color={"#1E3A8A"} />
+                : <Ionicons name="document-text-outline" size={18} color={"#1E3A8A"} />}
+              <Text style={[styles.btnText, { color: "#1E3A8A" }]}>View Full Contract PDF</Text>
             </Pressable>
 
             {!contract.signed_at && (
               <Pressable onPress={handleSign}
-                style={[styles.btn, { backgroundColor: colors.primary }]}>
+                style={[styles.btn, { backgroundColor: "#1E3A8A" }]}>
                 {signing
                   ? <ActivityIndicator size="small" color="#FFF" />
                   : <Ionicons name="create-outline" size={18} color="#FFF" />}

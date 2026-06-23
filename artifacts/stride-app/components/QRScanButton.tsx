@@ -28,13 +28,13 @@ export function QRScanButton({
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
         style={({ pressed }) => [
           styles.compactBtn,
-          { backgroundColor: colors.primary, opacity: pressed ? 0.78 : 1 },
+          { backgroundColor: "#1E3A8A", opacity: pressed ? 0.78 : 1 },
         ]}
         accessibilityRole="button"
         accessibilityLabel={label}
       >
-        <Ionicons name="qr-code-outline" size={20} color={colors.secondary} />
-        <Text style={[styles.compactLabel, { color: colors.secondary }]}>{label}</Text>
+        <Ionicons name="qr-code-outline" size={20} color={"#FBBF24"} />
+        <Text style={[styles.compactLabel, { color: "#FBBF24" }]}>{label}</Text>
       </Pressable>
     );
   }
@@ -50,10 +50,10 @@ export function QRScanButton({
       accessibilityLabel={label}
     >
       <View style={[styles.iconWrap, { backgroundColor: "#EFF6FF" }]}>
-        <Ionicons name="qr-code-outline" size={26} color={colors.primary} />
+        <Ionicons name="qr-code-outline" size={26} color={"#1E3A8A"} />
       </View>
       <View style={styles.textWrap}>
-        <Text style={[styles.labelText, { color: colors.primary }]}>{label}</Text>
+        <Text style={[styles.labelText, { color: "#1E3A8A" }]}>{label}</Text>
         <Text style={[styles.sublabel, { color: colors.mutedForeground }]}>
           Tap to scan member QR code
         </Text>

@@ -163,7 +163,7 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Notification Preferences" onBack={onBack} />
         <View style={styles.centred}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={"#1E3A8A"} />
         </View>
       </View>
     );
@@ -194,7 +194,7 @@ export default function NotificationSettingsContent({ onBack }: { onBack?: () =>
             </Text>
           </View>
           {saving === "reminders" ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />
+            <ActivityIndicator size="small" color={"#1E3A8A"} style={{ marginLeft: 8 }} />
           ) : (
             <Switch
               value={lessonOn}

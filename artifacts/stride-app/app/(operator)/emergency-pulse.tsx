@@ -47,6 +47,7 @@ export default function EmergencyPulseDashboard() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router  = useRouter();
   const colors  = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
 
   const [pulse,     setPulse]     = useState<PulseStatus | null>(null);
@@ -284,11 +285,11 @@ export default function EmergencyPulseDashboard() {
   );
 }
 
-const S = StyleSheet.create({
+const make_S = (primary: string, secondary: string) => StyleSheet.create({
   root:    { flex: 1 },
   centred: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
   emptyText: { fontSize: 15, color: "#9CA3AF" },
-  backBtn: { backgroundColor: "#1E3A8A", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  backBtn: { backgroundColor: primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   backBtnText: { color: "#FFF", fontWeight: "700" },
 
   header:      { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#FFFFFF10" },

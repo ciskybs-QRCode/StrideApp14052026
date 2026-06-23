@@ -68,6 +68,7 @@ const LINK_COLORS = [
 
 export default function AdminMarketplaceScreen() {
   const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -101,7 +102,7 @@ export default function AdminMarketplaceScreen() {
   const [lName,  setLName]  = useState("");
   const [lUrl,   setLUrl]   = useState("");
   const [lIcon,  setLIcon]  = useState<React.ComponentProps<typeof Ionicons>["name"]>("bag-handle-outline");
-  const [lColor, setLColor] = useState("#1E3A8A");
+  const [lColor, setLColor] = useState(colors.primary);
 
   // ── Load ─────────────────────────────────────────────────────────────────
   const loadProducts = useCallback(async () => {
@@ -252,12 +253,12 @@ export default function AdminMarketplaceScreen() {
       {/* ── Tab switcher ──────────────────────────────────────────────────── */}
       <View style={[S.tabBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable style={[S.tabItem, tab === "products" && S.tabItemActive]} onPress={() => setTab("products")}>
-          <Ionicons name="storefront-outline" size={15} color={tab === "products" ? "#1E3A8A" : colors.mutedForeground} />
-          <Text style={[S.tabLabel, { color: tab === "products" ? "#1E3A8A" : colors.mutedForeground }]}>Products</Text>
+          <Ionicons name="storefront-outline" size={15} color={tab === "products" ? colors.primary : colors.mutedForeground} />
+          <Text style={[S.tabLabel, { color: tab === "products" ? colors.primary : colors.mutedForeground }]}>Products</Text>
         </Pressable>
         <Pressable style={[S.tabItem, tab === "shop" && S.tabItemActive]} onPress={() => setTab("shop")}>
-          <Ionicons name="bag-handle-outline" size={15} color={tab === "shop" ? "#1E3A8A" : colors.mutedForeground} />
-          <Text style={[S.tabLabel, { color: tab === "shop" ? "#1E3A8A" : colors.mutedForeground }]}>Shop Links</Text>
+          <Ionicons name="bag-handle-outline" size={15} color={tab === "shop" ? colors.primary : colors.mutedForeground} />
+          <Text style={[S.tabLabel, { color: tab === "shop" ? colors.primary : colors.mutedForeground }]}>Shop Links</Text>
           {shopLinks.length > 0 && (
             <View style={S.tabBadge}><Text style={S.tabBadgeText}>{shopLinks.length}</Text></View>
           )}
@@ -267,7 +268,7 @@ export default function AdminMarketplaceScreen() {
       {/* ── Products tab ──────────────────────────────────────────────────── */}
       {tab === "products" && (
         loading ? (
-          <View style={S.loader}><ActivityIndicator size="large" color="#1E3A8A" /></View>
+          <View style={S.loader}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
             <View style={[S.infoCard, { backgroundColor: "#FEF9E7" }]}>
@@ -281,7 +282,7 @@ export default function AdminMarketplaceScreen() {
               <>
                 <View style={S.sectionHeader}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Ionicons name="checkmark-circle" size={16} color="#1E3A8A" />
+                    <Ionicons name="checkmark-circle" size={16} color={"#1E3A8A"} />
                     <Text style={[S.sectionTitle, { color: colors.foreground }]}>Stride Verified Partners</Text>
                   </View>
                   <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Global products — read only</Text>
@@ -329,11 +330,11 @@ export default function AdminMarketplaceScreen() {
       {/* ── Shop Links tab ────────────────────────────────────────────────── */}
       {tab === "shop" && (
         linksLoading ? (
-          <View style={S.loader}><ActivityIndicator size="large" color="#1E3A8A" /></View>
+          <View style={S.loader}><ActivityIndicator size="large" color={"#1E3A8A"} /></View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
             <View style={[S.infoCard, { backgroundColor: "#EFF6FF" }]}>
-              <Ionicons name="bag-handle" size={20} color="#1E3A8A" />
+              <Ionicons name="bag-handle" size={20} color={"#1E3A8A"} />
               <Text style={[S.infoText, { color: "#1E3A8A" }]}>
                 <Text style={{ fontWeight: "800" }}>Shop Links</Text> — Add buttons that open your collections (or any URL) directly in the member{"'"}s browser. Members see these in the Marketplace under {"\""}Shop{"\""}.
               </Text>
@@ -377,7 +378,7 @@ export default function AdminMarketplaceScreen() {
         <View style={S.modalOverlay}>
           <View style={[S.modalCard, { backgroundColor: colors.card }]}>
             <View style={S.modalHeader}>
-              <Ionicons name="storefront" size={22} color="#1E3A8A" />
+              <Ionicons name="storefront" size={22} color={colors.primary} />
               <Text style={[S.modalTitle, { color: colors.foreground }]}>
                 {editTarget ? "Edit Product" : "New Product"}
               </Text>
@@ -468,7 +469,7 @@ export default function AdminMarketplaceScreen() {
         <View style={S.modalOverlay}>
           <View style={[S.modalCard, { backgroundColor: colors.card }]}>
             <View style={S.modalHeader}>
-              <Ionicons name="bag-handle" size={22} color="#1E3A8A" />
+              <Ionicons name="bag-handle" size={22} color={colors.primary} />
               <Text style={[S.modalTitle, { color: colors.foreground }]}>
                 {editLink ? "Edit Shop Link" : "New Shop Link"}
               </Text>
@@ -549,6 +550,7 @@ export default function AdminMarketplaceScreen() {
 // ── Helper components ─────────────────────────────────────────────────────────
 
 function FieldLabel({ label, colors }: { label: string; colors: ReturnType<typeof useColors> }) {
+  const S = make_S(colors.primary, colors.secondary);
   return <Text style={[S.fieldLabel, { color: colors.mutedForeground }]}>{label}</Text>;
 }
 
@@ -560,6 +562,7 @@ function ProductRow({ product, colors, readOnly = false, onEdit, onRemove, onTog
   onRemove?: () => void;
   onTogglePublish?: () => void;
 }) {
+  const S = make_S(colors.primary, colors.secondary);
   const meta = catMeta(product.category);
   const platformFee = Math.round(product.price_cents * Number(product.platform_fee_pct) / 100);
   const netAmount   = product.price_cents - platformFee;
@@ -572,7 +575,7 @@ function ProductRow({ product, colors, readOnly = false, onEdit, onRemove, onTog
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
           <Text style={[S.productTitle, { color: colors.foreground }]} numberOfLines={1}>{product.title}</Text>
-          {product.is_stride_verified && <Ionicons name="checkmark-circle" size={14} color="#1E3A8A" />}
+          {product.is_stride_verified && <Ionicons name="checkmark-circle" size={14} color={"#1E3A8A"} />}
           {!product.is_active && !readOnly && (
             <View style={{ backgroundColor: "#FEF3C7", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
               <Text style={{ fontSize: 10, fontWeight: "800", color: "#D97706" }}>DRAFT</Text>
@@ -617,6 +620,7 @@ function ShopLinkRow({ link, colors, onEdit, onRemove }: {
   onEdit: () => void;
   onRemove: () => void;
 }) {
+  const S = make_S(colors.primary, colors.secondary);
   const displayUrl = link.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
   return (
     <View style={[S.productRow, { backgroundColor: colors.card }]}>
@@ -640,16 +644,16 @@ function ShopLinkRow({ link, colors, onEdit, onRemove }: {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const S = StyleSheet.create({
+const make_S = (primary: string, secondary: string) => StyleSheet.create({
   root:   { flex: 1 },
   loader: { flex: 1, alignItems: "center", justifyContent: "center" },
 
   tabBar:      { flexDirection: "row", borderBottomWidth: 1 },
   tabItem:     { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12 },
-  tabItemActive: { borderBottomWidth: 2, borderBottomColor: "#1E3A8A" },
+  tabItemActive: { borderBottomWidth: 2, borderBottomColor: primary },
   tabLabel:    { fontSize: 13, fontWeight: "700" },
-  tabBadge:    { backgroundColor: "#FBBF24", borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
-  tabBadgeText:{ color: "#1E3A8A", fontSize: 10, fontWeight: "800" },
+  tabBadge:    { backgroundColor: secondary, borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
+  tabBadgeText:{ color: primary, fontSize: 10, fontWeight: "800" },
 
   infoCard:  { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: "#FDE68A" },
   infoText:  { flex: 1, fontSize: 12, color: "#92400E", lineHeight: 18 },
@@ -659,7 +663,7 @@ const S = StyleSheet.create({
   sectionTitle:  { fontSize: 14, fontWeight: "800" },
   sectionSub:    { fontSize: 11, marginTop: 2 },
 
-  addBtn:     { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#1E3A8A", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  addBtn:     { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
   addBtnText: { color: "#FFF", fontWeight: "700", fontSize: 12 },
 
   emptyCard: { alignItems: "center", gap: 10, borderRadius: 14, padding: 28 },
@@ -704,6 +708,6 @@ const S = StyleSheet.create({
 
   feePreview: { borderRadius: 10, padding: 10, marginBottom: 14 },
 
-  saveBtn:     { backgroundColor: "#1E3A8A", borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 4 },
+  saveBtn:     { backgroundColor: primary, borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 4 },
   saveBtnText: { color: "#FFF", fontWeight: "900", fontSize: 15 },
 });

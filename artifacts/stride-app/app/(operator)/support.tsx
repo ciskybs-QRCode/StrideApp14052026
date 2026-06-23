@@ -130,6 +130,7 @@ const FAQS = [
 
 export default function OperatorSupport() {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [org, setOrg] = useState<ApiOrg | null>(null);
@@ -306,14 +307,14 @@ export default function OperatorSupport() {
           {firstAidCert && (
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
               {firstAidCert.expiration_date ? (
-                <View style={{ flex: 1, backgroundColor: `${colors.primary}08`, borderRadius: 10, padding: 10 }}>
+                <View style={{ flex: 1, backgroundColor: `"#1E3A8A"08`, borderRadius: 10, padding: 10 }}>
                   <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase" }}>Expires</Text>
                   <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginTop: 2 }}>
                     {new Date(firstAidCert.expiration_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   </Text>
                 </View>
               ) : null}
-              <View style={{ flex: 1, backgroundColor: `${colors.primary}08`, borderRadius: 10, padding: 10 }}>
+              <View style={{ flex: 1, backgroundColor: `"#1E3A8A"08`, borderRadius: 10, padding: 10 }}>
                 <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase" }}>Uploaded</Text>
                 <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginTop: 2 }}>
                   {new Date(firstAidCert.uploaded_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
@@ -335,10 +336,10 @@ export default function OperatorSupport() {
             disabled={certAnalyzing}
           >
             {certAnalyzing ? (
-              <ActivityIndicator size="small" color="#FBBF24" />
+              <ActivityIndicator size="small" color={"#FBBF24"} />
             ) : (
               <>
-                <Ionicons name="cloud-upload-outline" size={18} color="#FBBF24" />
+                <Ionicons name="cloud-upload-outline" size={18} color={"#FBBF24"} />
                 <Text style={{ fontSize: 13, fontWeight: "700", color: "#FBBF24" }}>
                   {firstAidCert ? "Update Certificate" : "Upload Certificate"}
                 </Text>
@@ -359,7 +360,7 @@ export default function OperatorSupport() {
                 <Ionicons name={protocol.icon} size={28} color={protocol.color} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.protocolTitle, { color: colors.primary }]}>{protocol.title}</Text>
+                <Text style={[styles.protocolTitle, { color: "#1E3A8A" }]}>{protocol.title}</Text>
                 <Text style={[styles.protocolSub, { color: colors.mutedForeground }]}>{protocol.steps.length} steps</Text>
               </View>
               {completedProtocols.has(protocol.id) && (
@@ -375,7 +376,7 @@ export default function OperatorSupport() {
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>FAQs</Text>
         {FAQS.map((faq, i) => (
           <View key={i} style={[styles.faqCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.faqQ, { color: colors.primary }]}>{faq.q}</Text>
+            <Text style={[styles.faqQ, { color: "#1E3A8A" }]}>{faq.q}</Text>
             <Text style={[styles.faqA, { color: colors.mutedForeground }]}>{faq.a}</Text>
           </View>
         ))}
@@ -408,7 +409,7 @@ export default function OperatorSupport() {
                     <Ionicons name={wizardProtocol.icon} size={28} color={wizardProtocol.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.wizardTitle, { color: colors.primary }]}>{wizardProtocol.title}</Text>
+                    <Text style={[styles.wizardTitle, { color: "#1E3A8A" }]}>{wizardProtocol.title}</Text>
                     <Text style={[styles.wizardProgress, { color: colors.mutedForeground }]}>
                       Step {currentStep + 1} of {wizardProtocol.steps.length}
                     </Text>
@@ -476,7 +477,7 @@ export default function OperatorSupport() {
                     All {wizardProtocol.steps.length} steps for "{wizardProtocol.title}" have been logged to Supabase with your operator ID and timestamps.
                   </Text>
                 </View>
-                <Pressable style={[styles.doneBtn, { backgroundColor: colors.primary }]} onPress={closeWizard}>
+                <Pressable style={[styles.doneBtn, { backgroundColor: "#1E3A8A" }]} onPress={closeWizard}>
                   <Text style={styles.doneBtnText}>Close</Text>
                 </Pressable>
                 <Pressable
@@ -494,7 +495,7 @@ export default function OperatorSupport() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 20 },
@@ -518,8 +519,8 @@ const styles = StyleSheet.create({
   timeRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
   timeCell: { width: 54, borderWidth: 1.5, borderRadius: 10, paddingVertical: 10, textAlign: "center", fontSize: 14, fontWeight: "600" },
   reasonInput: { borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 14, minHeight: 76, textAlignVertical: "top", marginBottom: 14 },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 15, backgroundColor: "#FBBF24" },
-  submitBtnText: { color: "#1E3A8A", fontWeight: "800", fontSize: 15 },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 15, backgroundColor: secondary },
+  submitBtnText: { color: primary, fontWeight: "800", fontSize: 15 },
   emergencyCard: { borderRadius: 16, padding: 16, marginBottom: 24 },
   emergencyHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },
   emergencyTitle: { fontSize: 15, fontWeight: "700" },

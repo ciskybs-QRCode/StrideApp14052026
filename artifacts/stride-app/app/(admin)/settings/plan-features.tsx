@@ -11,6 +11,7 @@ import {
   type BillingPlan, type UpgradeTrialStatus,
 } from "@/lib/api";
 import { PLAN_DISPLAY, invalidatePlanFeaturesCache } from "@/hooks/usePlanFeatures";
+import { useColors } from "@/hooks/useColors";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
@@ -176,6 +177,7 @@ const b = StyleSheet.create({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function PlanFeaturesScreen() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 

@@ -162,11 +162,11 @@ export default function OperatorPromoCodesScreen() {
         onBack={() => router.navigate("/(operator)/settings")}
         right={
           <Pressable
-            style={[styles.createBtn, { backgroundColor: colors.secondary }]}
+            style={[styles.createBtn, { backgroundColor: "#FBBF24" }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCreate(true); }}
           >
-            <Ionicons name="add" size={18} color={colors.primary} />
-            <Text style={[styles.createBtnText, { color: colors.primary }]}>New Code</Text>
+            <Ionicons name="add" size={18} color={"#1E3A8A"} />
+            <Text style={[styles.createBtnText, { color: "#1E3A8A" }]}>New Code</Text>
           </Pressable>
         }
       />
@@ -177,15 +177,15 @@ export default function OperatorPromoCodesScreen() {
       >
         {promos.length === 0 ? (
           <View style={styles.emptyState}>
-            <View style={[styles.emptyIcon, { backgroundColor: `${colors.primary}15` }]}>
-              <Ionicons name="pricetag-outline" size={48} color={colors.primary} />
+            <View style={[styles.emptyIcon, { backgroundColor: `"#1E3A8A"15` }]}>
+              <Ionicons name="pricetag-outline" size={48} color={"#1E3A8A"} />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Promo Codes Yet</Text>
+            <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>No Promo Codes Yet</Text>
             <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
               Create targeted codes or gift a course entirely free to any Dependent Member.
             </Text>
             <Pressable
-              style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
+              style={[styles.emptyBtn, { backgroundColor: "#1E3A8A" }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCreate(true); }}
             >
               <Ionicons name="add" size={18} color="#FFF" />
@@ -204,11 +204,11 @@ export default function OperatorPromoCodesScreen() {
                   <Ionicons
                     name={promo.discountType === "gift" ? "gift-outline" : "pricetag-outline"}
                     size={20}
-                    color={promo.discountType === "gift" ? "#10B981" : colors.primary}
+                    color={promo.discountType === "gift" ? "#10B981" : "#1E3A8A"}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.promoCode, { color: colors.primary }]}>{promo.code}</Text>
+                  <Text style={[styles.promoCode, { color: "#1E3A8A" }]}>{promo.code}</Text>
                   <Text style={[styles.promoDiscount, { color: colors.mutedForeground }]}>
                     {formatDiscount(promo)}
                   </Text>
@@ -296,7 +296,7 @@ export default function OperatorPromoCodesScreen() {
                     {(["percent", "lessons"] as const).map(type => (
                       <Pressable
                         key={type}
-                        style={[styles.segment, { backgroundColor: discountType === type ? colors.primary : colors.muted, borderColor: colors.border }]}
+                        style={[styles.segment, { backgroundColor: discountType === type ? "#1E3A8A" : colors.muted, borderColor: colors.border }]}
                         onPress={() => { setDiscountType(type); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                       >
                         <Text style={[styles.segmentText, { color: discountType === type ? "#FFF" : colors.foreground }]}>
@@ -345,7 +345,7 @@ export default function OperatorPromoCodesScreen() {
                   key={s.id}
                   style={[
                     styles.memberRow,
-                    { backgroundColor: selectedMemberId === s.id ? `${colors.primary}18` : colors.muted, borderColor: selectedMemberId === s.id ? colors.primary : colors.border },
+                    { backgroundColor: selectedMemberId === s.id ? `"#1E3A8A"18` : colors.muted, borderColor: selectedMemberId === s.id ? "#1E3A8A" : colors.border },
                   ]}
                   onPress={() => {
                     setSelectedMemberId(s.id);
@@ -354,7 +354,7 @@ export default function OperatorPromoCodesScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
                 >
-                  <View style={[styles.memberAvatar, { backgroundColor: colors.primary }]}>
+                  <View style={[styles.memberAvatar, { backgroundColor: "#1E3A8A" }]}>
                     <Text style={styles.memberAvatarText}>{s.name.charAt(0)}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -364,7 +364,7 @@ export default function OperatorPromoCodesScreen() {
                     </Text>
                   </View>
                   {selectedMemberId === s.id && (
-                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={20} color={"#1E3A8A"} />
                   )}
                 </Pressable>
               ))}
@@ -378,20 +378,20 @@ export default function OperatorPromoCodesScreen() {
                     <Switch
                       value={scopeAll}
                       onValueChange={v => { setScopeAll(v); if (v) setSelectedCourses([]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                      trackColor={{ false: "#D1D5DB", true: colors.primary }}
+                      trackColor={{ false: "#D1D5DB", true: "#1E3A8A" }}
                       thumbColor="#FFF"
                     />
                   </View>
                   {!scopeAll && memberCourses.map(course => (
                     <Pressable
                       key={course}
-                      style={[styles.courseRow, { backgroundColor: selectedCourses.includes(course) ? `${colors.primary}18` : colors.muted, borderColor: selectedCourses.includes(course) ? colors.primary : colors.border }]}
+                      style={[styles.courseRow, { backgroundColor: selectedCourses.includes(course) ? `"#1E3A8A"18` : colors.muted, borderColor: selectedCourses.includes(course) ? "#1E3A8A" : colors.border }]}
                       onPress={() => { toggleCourse(course); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                     >
                       <Ionicons
                         name={selectedCourses.includes(course) ? "checkbox" : "square-outline"}
                         size={20}
-                        color={selectedCourses.includes(course) ? colors.primary : colors.mutedForeground}
+                        color={selectedCourses.includes(course) ? "#1E3A8A" : colors.mutedForeground}
                       />
                       <Text style={[styles.courseText, { color: colors.foreground }]}>{course}</Text>
                     </Pressable>
@@ -433,7 +433,7 @@ export default function OperatorPromoCodesScreen() {
           <View style={styles.modalOverlay}>
             <View style={[styles.detailCard, { backgroundColor: colors.background }]}>
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.primary }]}>{showDetail.code}</Text>
+                <Text style={[styles.modalTitle, { color: "#1E3A8A" }]}>{showDetail.code}</Text>
                 <Pressable onPress={() => setShowDetail(null)} hitSlop={10}>
                   <Ionicons name="close-circle" size={28} color="#9CA3AF" />
                 </Pressable>

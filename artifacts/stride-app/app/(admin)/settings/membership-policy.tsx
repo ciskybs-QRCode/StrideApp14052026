@@ -60,6 +60,7 @@ interface PolicyState {
 export default function MembershipPolicyScreen() {
   const router = useRouter();
   const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
 
   const [loading,  setLoading]  = useState(true);
@@ -150,7 +151,7 @@ export default function MembershipPolicyScreen() {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Membership Policy" onBack={() => router.back()} />
-        <View style={S.center}><ActivityIndicator color="#1E3A8A" /></View>
+        <View style={S.center}><ActivityIndicator color={"#1E3A8A"} /></View>
       </View>
     );
   }
@@ -181,14 +182,14 @@ export default function MembershipPolicyScreen() {
             <Switch
               value={isEnabled}
               onValueChange={v => setPolicy(p => ({ ...p, membership_enabled: v }))}
-              trackColor={{ true: "#1E3A8A" }}
+              trackColor={{ true: colors.primary }}
             />
           </View>
         </View>
 
         {!isEnabled && (
           <View style={[S.infoBox, { borderColor: "#BFDBFE", backgroundColor: "#EFF6FF" }]}>
-            <Ionicons name="information-circle-outline" size={18} color="#1E3A8A" />
+            <Ionicons name="information-circle-outline" size={18} color={"#1E3A8A"} />
             <Text style={S.infoText}>
               Membership is disabled. Members will not see any membership tab or fees.
             </Text>
@@ -454,7 +455,7 @@ export default function MembershipPolicyScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const make_S = (primary: string, secondary: string) => StyleSheet.create({
   root:    { flex: 1 },
   center:  { flex: 1, alignItems: "center", justifyContent: "center" },
   scroll:  { paddingHorizontal: 16, paddingTop: 8 },
@@ -479,12 +480,12 @@ const S = StyleSheet.create({
   check:    { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center" },
 
   infoBox:  { borderWidth: 1, borderRadius: 12, padding: 14, flexDirection: "row", gap: 10, marginTop: 8 },
-  infoText: { flex: 1, fontSize: 13, color: "#1E3A8A", lineHeight: 18 },
+  infoText: { flex: 1, fontSize: 13, color: primary, lineHeight: 18 },
 
   warnBox:  { borderWidth: 1, borderRadius: 12, padding: 14, flexDirection: "row", gap: 10, marginTop: 8 },
   warnText: { flex: 1, fontSize: 13, color: "#DC2626", lineHeight: 18 },
 
   footer:   { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 12 },
-  saveBtn:  { backgroundColor: "#1E3A8A", borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 15, gap: 10 },
+  saveBtn:  { backgroundColor: primary, borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 15, gap: 10 },
   saveBtnText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
 });

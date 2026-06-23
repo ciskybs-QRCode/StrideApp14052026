@@ -40,6 +40,8 @@ function itemMeta(item: CartItem): { icon: string; label: string; color: string 
 }
 
 function StatusBadge({ status }: { status: CartItemStatus }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   if (status === "ready") return null;
   const cfg = {
     pending_approval: { bg: "#FEF3C7", fg: "#92400E", icon: "time-outline" as const, label: "Awaiting Approval" },
@@ -55,8 +57,9 @@ function StatusBadge({ status }: { status: CartItemStatus }) {
 }
 
 export default function CartScreen() {
-  const router = useRouter();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
+  const router = useRouter();
   const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const { items, removeItem, clearCart, updateItemStatus, total, count } = useCart();
@@ -252,7 +255,7 @@ export default function CartScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable style={styles.backBtn} onPress={() => router.navigate("/(parent)/courses" as never)}>
-          <Ionicons name="chevron-back" size={24} color="#FBBF24" />
+          <Ionicons name="chevron-back" size={24} color={colors.secondary} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.primary }]}>Shopping Cart</Text>
         {count > 0 ? (
@@ -271,11 +274,11 @@ export default function CartScreen() {
           <View style={[styles.emptyIconCircle, { backgroundColor: colors.muted }]}>
             <Ionicons name="cart-outline" size={48} color={colors.mutedForeground} />
           </View>
-          <Text style={[styles.emptyTitle, { color: colors.primary }]}>Your cart is empty</Text>
+          <Text style={[styles.emptyTitle, { color: "#1E3A8A" }]}>Your cart is empty</Text>
           <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
             Browse available courses and tap "Enroll" to add them here.
           </Text>
-          <Pressable style={[styles.browseBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/(parent)/courses")}>
+          <Pressable style={[styles.browseBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => router.push("/(parent)/courses")}>
             <Ionicons name="musical-notes-outline" size={18} color="#FFF" />
             <Text style={styles.browseBtnText}>Browse Courses</Text>
           </Pressable>
@@ -303,7 +306,7 @@ export default function CartScreen() {
             <View key={item.id} style={[styles.itemCard, { backgroundColor: colors.card, opacity: item.status === "rejected" ? 0.7 : 1 }]}>
               <View style={styles.itemTop}>
                 <View style={[styles.itemTypeTag, {
-                  backgroundColor: item.packageType === "fixedBlock" ? colors.secondary : item.packageType === "monthlyBilling" ? "#EFF6FF" : colors.muted,
+                  backgroundColor: item.packageType === "fixedBlock" ? "#FBBF24" : item.packageType === "monthlyBilling" ? "#EFF6FF" : colors.muted,
                 }]}>
                   {(() => {
                     const m = itemMeta(item);
@@ -325,7 +328,7 @@ export default function CartScreen() {
                 </View>
               </View>
 
-              <Text style={[styles.itemName, { color: colors.primary }]}>{item.courseName}</Text>
+              <Text style={[styles.itemName, { color: "#1E3A8A" }]}>{item.courseName}</Text>
               <Text style={[styles.itemSchedule, { color: colors.mutedForeground }]}>
                 <Ionicons name="time-outline" size={13} /> {item.courseSchedule || "Schedule TBA"}
               </Text>
@@ -352,7 +355,7 @@ export default function CartScreen() {
                     <Text style={[styles.itemPrice, { color: "#10B981" }]}>{cur}{(item.price - disc).toFixed(2)}</Text>
                   </View>
                 ) : (
-                  <Text style={[styles.itemPrice, { color: colors.primary }]}>{cur}{item.price}</Text>
+                  <Text style={[styles.itemPrice, { color: "#1E3A8A" }]}>{cur}{item.price}</Text>
                 );
               })()}
               </View>
@@ -391,7 +394,7 @@ export default function CartScreen() {
                   onSubmitEditing={handleApplyPromo}
                 />
                 <Pressable
-                  style={[styles.promoApplyBtn, { backgroundColor: promoInput.trim() ? colors.primary : colors.muted }]}
+                  style={[styles.promoApplyBtn, { backgroundColor: promoInput.trim() ? "#1E3A8A" : colors.muted }]}
                   onPress={handleApplyPromo}
                   disabled={!promoInput.trim() || applyingPromo}
                 >
@@ -414,7 +417,7 @@ export default function CartScreen() {
           <View style={[styles.walletBlock, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.walletLeft}>
               <View style={[styles.walletIconBox, { backgroundColor: "#EFF6FF" }]}>
-                <Ionicons name="wallet-outline" size={22} color="#1E3A8A" />
+                <Ionicons name="wallet-outline" size={22} color={"#1E3A8A"} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.walletLabel, { color: colors.foreground }]}>Payment Method</Text>
@@ -429,7 +432,7 @@ export default function CartScreen() {
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(parent)/wallet" as never); }}
             >
               <Text style={styles.walletManageBtnText}>Manage</Text>
-              <Ionicons name="chevron-forward" size={13} color="#1E3A8A" />
+              <Ionicons name="chevron-forward" size={13} color={"#1E3A8A"} />
             </Pressable>
           </View>
 
@@ -460,7 +463,7 @@ export default function CartScreen() {
                   {promoDiscount > 0 && (
                     <Text style={{ fontSize: 12, color: colors.mutedForeground, textDecorationLine: "line-through" }}>{cur}{payableTotal.toFixed(2)}</Text>
                   )}
-                  <Text style={[styles.totalAmount, { color: promoDiscount > 0 ? "#10B981" : colors.primary }]}>
+                  <Text style={[styles.totalAmount, { color: promoDiscount > 0 ? "#10B981" : "#1E3A8A" }]}>
                     {cur}{discountedPayableTotal.toFixed(2)}
                   </Text>
                   {promoDiscount > 0 && (
@@ -477,11 +480,11 @@ export default function CartScreen() {
                 disabled={validating}
               >
                 {validating ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
+                  <ActivityIndicator size="small" color={"#1E3A8A"} />
                 ) : (
-                  <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+                  <Ionicons name="shield-checkmark-outline" size={16} color={"#1E3A8A"} />
                 )}
-                <Text style={[styles.validateBtnText, { color: colors.primary }]}>
+                <Text style={[styles.validateBtnText, { color: "#1E3A8A" }]}>
                   {validating ? "Validating…" : "Validate Items"}
                 </Text>
               </Pressable>
@@ -491,7 +494,7 @@ export default function CartScreen() {
               style={[
                 styles.proceedBtn,
                 {
-                  backgroundColor: hasPayable ? colors.primary : colors.border,
+                  backgroundColor: hasPayable ? "#1E3A8A" : colors.border,
                   marginTop: allPending ? 0 : 10,
                 },
               ]}
@@ -508,7 +511,7 @@ export default function CartScreen() {
 
       {/* Snack */}
       {snack !== null && (
-        <View style={[styles.snack, { backgroundColor: colors.primary, bottom: insets.bottom + 90 }]}>
+        <View style={[styles.snack, { backgroundColor: "#1E3A8A", bottom: insets.bottom + 90 }]}>
           <Text style={styles.snackText}>{snack}</Text>
         </View>
       )}
@@ -589,7 +592,7 @@ export default function CartScreen() {
                       </Pressable>
                     )}
                     {validatedReady.length > 0 && (
-                      <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: validatedFlagged.length > 0 ? 1 : 2 }]} onPress={handlePayReady}>
+                      <Pressable style={[styles.modalBtn, { backgroundColor: "#1E3A8A", flex: validatedFlagged.length > 0 ? 1 : 2 }]} onPress={handlePayReady}>
                         <Ionicons name="card-outline" size={15} color="#FFF" />
                         <Text style={styles.modalBtnText}>Pay {validatedReady.length > 0 ? `(${cur}${validatedReady.reduce((s, i) => s + i.price, 0)})` : ""}</Text>
                       </Pressable>
@@ -602,12 +605,12 @@ export default function CartScreen() {
                   <View style={[styles.successCircle, { backgroundColor: "#FEF3C7" }]}>
                     <Ionicons name="send" size={36} color="#F59E0B" />
                   </View>
-                  <Text style={[styles.successTitle, { color: colors.primary }]}>Requests Sent!</Text>
+                  <Text style={[styles.successTitle, { color: "#1E3A8A" }]}>Requests Sent!</Text>
                   <Text style={[styles.successDesc, { color: colors.mutedForeground }]}>
                     {validatedFlagged.length} request{validatedFlagged.length !== 1 ? "s" : ""} sent to the operator. You'll receive a notification once reviewed.
                   </Text>
                   {validatedReady.length > 0 && (
-                    <Text style={[styles.successDesc, { color: colors.primary, fontWeight: "600" }]}>
+                    <Text style={[styles.successDesc, { color: "#1E3A8A", fontWeight: "600" }]}>
                       {validatedReady.length} item{validatedReady.length !== 1 ? "s" : ""} ({cur}{validatedReady.reduce((s, i) => s + i.price, 0)}) ready for payment.
                     </Text>
                   )}
@@ -616,7 +619,7 @@ export default function CartScreen() {
                       <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Close</Text>
                     </Pressable>
                     {validatedReady.length > 0 && (
-                      <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 2 }]} onPress={handlePayReady}>
+                      <Pressable style={[styles.modalBtn, { backgroundColor: "#1E3A8A", flex: 2 }]} onPress={handlePayReady}>
                         <Ionicons name="card-outline" size={15} color="#FFF" />
                         <Text style={styles.modalBtnText}>Pay Ready Items</Text>
                       </Pressable>
@@ -633,7 +636,7 @@ export default function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1 },
   backBtn: { padding: 6, marginRight: 4 },
@@ -679,8 +682,8 @@ const styles = StyleSheet.create({
   walletCardRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   walletDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#10B981" },
   walletCardText: { fontSize: 12 },
-  walletManageBtn: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: "#FBBF24", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
-  walletManageBtnText: { fontSize: 12, fontWeight: "800", color: "#1E3A8A" },
+  walletManageBtn: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: secondary, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
+  walletManageBtnText: { fontSize: 12, fontWeight: "800", color: primary },
 
   checkoutSection: { borderRadius: 20, borderWidth: 1, padding: 20, marginTop: 8 },
   awaitingRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },

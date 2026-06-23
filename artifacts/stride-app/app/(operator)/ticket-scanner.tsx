@@ -25,6 +25,7 @@ type TicketInfo = EventTicket & {
 
 export default function TicketScannerScreen() {
   const colors  = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -86,7 +87,7 @@ export default function TicketScannerScreen() {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <View style={styles.permBox}>
-          <Ionicons name="camera-outline" size={52} color="#1E3A8A" />
+          <Ionicons name="camera-outline" size={52} color={"#1E3A8A"} />
           <Text style={[styles.permTitle, { color: colors.text }]}>Camera Access Required</Text>
           <Text style={[styles.permDesc, { color: colors.mutedForeground }]}>
             The ticket scanner needs camera access to read QR codes at the door.
@@ -255,7 +256,7 @@ export default function TicketScannerScreen() {
               style={({ pressed }) => [styles.scanAgainBtn, { opacity: pressed ? 0.8 : 1 }]}
               onPress={reset}
             >
-              <Ionicons name="qr-code-outline" size={16} color="#1E3A8A" />
+              <Ionicons name="qr-code-outline" size={16} color={"#1E3A8A"} />
               <Text style={styles.scanAgainText}>Scan Next Ticket</Text>
             </Pressable>
           )}
@@ -269,10 +270,10 @@ const CORNER_SIZE = 28;
 const CORNER_THICK = 4;
 const CORNER_COLOR = "#FBBF24";
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 20, paddingVertical: 14 },
-  headerEyebrow: { fontSize: 10, fontWeight: "800", color: "#FBBF24", letterSpacing: 2 },
+  headerEyebrow: { fontSize: 10, fontWeight: "800", color: secondary, letterSpacing: 2 },
   headerTitle: { fontSize: 22, fontWeight: "900", color: "#FFF", marginTop: 2 },
 
   cameraArea: { flex: 1, backgroundColor: "#000", position: "relative", overflow: "hidden" },
@@ -315,14 +316,14 @@ const styles = StyleSheet.create({
   },
   usedBannerText: { flex: 1, fontSize: 13, color: "#6B7280", fontWeight: "600", lineHeight: 18 },
   scanAgainBtn: {
-    borderRadius: 14, borderWidth: 1.5, borderColor: "#1E3A8A", paddingVertical: 14,
+    borderRadius: 14, borderWidth: 1.5, borderColor: primary, paddingVertical: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
   },
-  scanAgainText: { color: "#1E3A8A", fontSize: 15, fontWeight: "700" },
+  scanAgainText: { color: primary, fontSize: 15, fontWeight: "700" },
 
   permBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, padding: 40 },
   permTitle: { fontSize: 20, fontWeight: "800", textAlign: "center" },
   permDesc: { fontSize: 14, textAlign: "center", lineHeight: 20 },
-  permBtn: { backgroundColor: "#1E3A8A", borderRadius: 12, paddingVertical: 14, paddingHorizontal: 28, marginTop: 8 },
+  permBtn: { backgroundColor: primary, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 28, marginTop: 8 },
   permBtnText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
 });

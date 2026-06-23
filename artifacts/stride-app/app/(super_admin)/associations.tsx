@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { listAssociations, extendTrial, type AssociationRecord } from "@/lib/api";
+import { useColors } from "@/hooks/useColors";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -78,6 +79,8 @@ function AssociationCard({
   org: AssociationRecord;
   onExtend: (org: AssociationRecord) => void;
 }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const status = getTrialStatus(org.trial_ends_at);
   const flag = CURRENCY_FLAGS[org.currency ?? "EUR"] ?? "";
 
@@ -86,7 +89,7 @@ function AssociationCard({
       {/* Title row */}
       <View style={styles.orgTitleRow}>
         <View style={styles.orgIconBox}>
-          <Ionicons name="business-outline" size={20} color="#1E3A8A" />
+          <Ionicons name="business-outline" size={20} color={"#1E3A8A"} />
         </View>
         <View style={styles.orgTitleText}>
           <Text style={styles.orgName} numberOfLines={1}>{org.name}</Text>
@@ -149,9 +152,9 @@ function AssociationCard({
         style={({ pressed }) => [styles.extendBtn, { opacity: pressed ? 0.85 : 1 }]}
         onPress={() => onExtend(org)}
       >
-        <Ionicons name="calendar-outline" size={15} color="#1E3A8A" />
+        <Ionicons name="calendar-outline" size={15} color={"#1E3A8A"} />
         <Text style={styles.extendBtnText}>Extend Trial</Text>
-        <Ionicons name="chevron-forward" size={14} color="#1E3A8A" />
+        <Ionicons name="chevron-forward" size={14} color={"#1E3A8A"} />
       </Pressable>
     </View>
   );
@@ -170,6 +173,8 @@ function ExtendModal({
   onClose: () => void;
   onSuccess: (updated: AssociationRecord) => void;
 }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const [customMonths, setCustomMonths] = useState("");
   const [extending, setExtending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -235,7 +240,7 @@ function ExtendModal({
               {/* Header */}
               <View style={styles.modalHeader}>
                 <View style={styles.modalIconCircle}>
-                  <Ionicons name="calendar" size={26} color="#1E3A8A" />
+                  <Ionicons name="calendar" size={26} color={"#1E3A8A"} />
                 </View>
                 <Text style={styles.modalTitle}>Extend Trial</Text>
                 <Text style={styles.modalOrgName} numberOfLines={1}>
@@ -295,7 +300,7 @@ function ExtendModal({
                   disabled={extending}
                 >
                   {extending ? (
-                    <ActivityIndicator size="small" color="#1E3A8A" />
+                    <ActivityIndicator size="small" color={"#1E3A8A"} />
                   ) : (
                     <Text style={styles.customApplyText}>Apply</Text>
                   )}
@@ -323,6 +328,8 @@ function ExtendModal({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function AssociationsScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { logout } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -370,7 +377,7 @@ export default function AssociationsScreen() {
       <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
           {loading ? (
             <View style={styles.centeredState}>
-              <ActivityIndicator size="large" color="#1E3A8A" />
+              <ActivityIndicator size="large" color={"#1E3A8A"} />
               <Text style={styles.centeredText}>Loading associations…</Text>
             </View>
           ) : error ? (
@@ -459,12 +466,12 @@ export default function AssociationsScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFC" },
 
   // Header
   header: {
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
@@ -508,7 +515,7 @@ const styles = StyleSheet.create({
   },
   centeredState: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 80 },
   centeredText: { fontSize: 14, color: "#6B7280" },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: "#1E3A8A", borderRadius: 10 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: primary, borderRadius: 10 },
   retryText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
 
   emptyCard: {
@@ -572,20 +579,20 @@ const styles = StyleSheet.create({
 
   extendBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 6, backgroundColor: "#FBBF24",
+    gap: 6, backgroundColor: secondary,
     borderRadius: 12, paddingVertical: 11,
   },
-  extendBtnText: { color: "#1E3A8A", fontSize: 13, fontWeight: "800" },
+  extendBtnText: { color: primary, fontSize: 13, fontWeight: "800" },
 
   // Pilot card
   pilotCard: {
     borderRadius: 18, padding: 18, marginTop: 4, marginBottom: 20,
   },
-  pilotTitle: { color: "#FBBF24", fontSize: 12, fontWeight: "800", letterSpacing: 0.5, marginBottom: 14 },
+  pilotTitle: { color: secondary, fontSize: 12, fontWeight: "800", letterSpacing: 0.5, marginBottom: 14 },
   pilotRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 10 },
-  pilotDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FBBF24", marginTop: 5, flexShrink: 0 },
+  pilotDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: secondary, marginTop: 5, flexShrink: 0 },
   pilotRowText: { flex: 1 },
-  pilotRowLabel: { color: "#FBBF24", fontSize: 12, fontWeight: "700", marginBottom: 2 },
+  pilotRowLabel: { color: secondary, fontSize: 12, fontWeight: "700", marginBottom: 2 },
   pilotRowDesc: { color: "rgba(255,255,255,0.7)", fontSize: 11, lineHeight: 16 },
 
   // Extend modal
@@ -619,12 +626,12 @@ const styles = StyleSheet.create({
   },
   presetsRow: { flexDirection: "row", gap: 8, marginBottom: 20 },
   presetBtn: {
-    flex: 1, backgroundColor: "#FBBF24",
+    flex: 1, backgroundColor: secondary,
     borderRadius: 12, paddingVertical: 14,
     alignItems: "center", justifyContent: "center",
   },
-  presetBtnNum: { color: "#1E3A8A", fontSize: 18, fontWeight: "900" },
-  presetBtnUnit: { color: "#1E3A8A", fontSize: 10, fontWeight: "700" },
+  presetBtnNum: { color: primary, fontSize: 18, fontWeight: "900" },
+  presetBtnUnit: { color: primary, fontSize: 10, fontWeight: "700" },
 
   customRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
   customInputWrapper: {
@@ -635,7 +642,7 @@ const styles = StyleSheet.create({
   customInput: { flex: 1, fontSize: 16, color: "#111827" },
   customUnit: { fontSize: 13, color: "#9CA3AF" },
   customApplyBtn: {
-    backgroundColor: "#1E3A8A", borderRadius: 12,
+    backgroundColor: primary, borderRadius: 12,
     paddingHorizontal: 18, paddingVertical: 12,
     alignItems: "center", justifyContent: "center", minWidth: 72,
   },

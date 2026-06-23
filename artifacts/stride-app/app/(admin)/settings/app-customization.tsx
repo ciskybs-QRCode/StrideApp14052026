@@ -112,22 +112,22 @@ export default function AppCustomizationPage() {
           {logoFileName ? (
             <>
               <View style={[styles.logoThumb, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-                <Ionicons name="image" size={22} color={colors.primary} />
+                <Ionicons name="image" size={22} color={"#1E3A8A"} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.logoBtnTitle, { color: colors.primary }]}>Logo uploaded</Text>
+                <Text style={[styles.logoBtnTitle, { color: "#1E3A8A" }]}>Logo uploaded</Text>
                 <Text style={[styles.logoBtnSub, { color: colors.mutedForeground }]} numberOfLines={1}>{logoFileName}</Text>
               </View>
-              <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+              <Ionicons name="checkmark-circle" size={22} color={"#1E3A8A"} />
             </>
           ) : (
             <>
-              <Ionicons name="cloud-upload-outline" size={28} color={colors.primary} />
+              <Ionicons name="cloud-upload-outline" size={28} color={"#1E3A8A"} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.logoBtnTitle, { color: colors.primary }]}>Upload Logo</Text>
+                <Text style={[styles.logoBtnTitle, { color: "#1E3A8A" }]}>Upload Logo</Text>
                 <Text style={[styles.logoBtnSub, { color: colors.mutedForeground }]}>JPG, PNG — max 5 MB</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+              <Ionicons name="chevron-forward" size={18} color={"#1E3A8A"} />
             </>
           )}
         </Pressable>
@@ -148,7 +148,7 @@ export default function AppCustomizationPage() {
           {PRESET_COLORS.map((p, i) => (
             <Pressable
               key={i}
-              style={[styles.colorTile, { borderColor: selectedColorIdx === i ? colors.primary : "transparent" }]}
+              style={[styles.colorTile, { borderColor: selectedColorIdx === i ? "#1E3A8A" : "transparent" }]}
               onPress={() => { setSelectedColorIdx(i); setApplied(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             >
               <View style={styles.colorTileSwatch}>
@@ -156,8 +156,8 @@ export default function AppCustomizationPage() {
                 <View style={{ flex: 2, backgroundColor: p.secondary }} />
               </View>
               <View style={styles.colorTileFooter}>
-                <Text style={[styles.colorTileName, { color: selectedColorIdx === i ? colors.primary : colors.foreground }]} numberOfLines={1}>{p.name}</Text>
-                {selectedColorIdx === i && <Ionicons name="checkmark-circle" size={13} color={colors.primary} />}
+                <Text style={[styles.colorTileName, { color: selectedColorIdx === i ? "#1E3A8A" : colors.foreground }]} numberOfLines={1}>{p.name}</Text>
+                {selectedColorIdx === i && <Ionicons name="checkmark-circle" size={13} color={"#1E3A8A"} />}
               </View>
             </Pressable>
           ))}
@@ -169,11 +169,11 @@ export default function AppCustomizationPage() {
           {FONTS.map(font => (
             <Pressable
               key={font}
-              style={[styles.fontCard, { borderColor: selectedFont === font ? colors.primary : colors.border, backgroundColor: selectedFont === font ? colors.primary : colors.card }]}
+              style={[styles.fontCard, { borderColor: selectedFont === font ? "#1E3A8A" : colors.border, backgroundColor: selectedFont === font ? "#1E3A8A" : colors.card }]}
               onPress={() => { setSelectedFont(font); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             >
               <Text style={[styles.fontCardAa, { color: selectedFont === font ? "rgba(255,255,255,0.8)" : colors.mutedForeground }]}>Aa</Text>
-              <Text style={[styles.fontCardName, { color: selectedFont === font ? "#FFF" : colors.primary }]} numberOfLines={1}>{font}</Text>
+              <Text style={[styles.fontCardName, { color: selectedFont === font ? "#FFF" : "#1E3A8A" }]} numberOfLines={1}>{font}</Text>
             </Pressable>
           ))}
         </View>
@@ -184,13 +184,13 @@ export default function AppCustomizationPage() {
           {(["rounded", "square"] as const).map(style => (
             <Pressable
               key={style}
-              style={[styles.btnStyleOption, { borderColor: buttonStyle === style ? colors.primary : colors.border, backgroundColor: colors.card }]}
+              style={[styles.btnStyleOption, { borderColor: buttonStyle === style ? "#1E3A8A" : colors.border, backgroundColor: colors.card }]}
               onPress={() => setButtonStyle(style)}
             >
               <View style={[styles.btnPreview, { borderRadius: style === "rounded" ? 20 : 4, backgroundColor: preset.primary }]}>
                 <Text style={styles.btnPreviewText}>{style === "rounded" ? "Rounded" : "Square"}</Text>
               </View>
-              {buttonStyle === style && <Ionicons name="checkmark-circle" size={14} color={colors.primary} style={{ marginTop: 4 }} />}
+              {buttonStyle === style && <Ionicons name="checkmark-circle" size={14} color={"#1E3A8A"} style={{ marginTop: 4 }} />}
             </Pressable>
           ))}
         </View>

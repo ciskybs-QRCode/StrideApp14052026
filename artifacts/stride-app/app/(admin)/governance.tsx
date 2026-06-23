@@ -67,7 +67,7 @@ export default function GovernanceScreen() {
     return (
       <View style={[styles.restricted, { backgroundColor: colors.background }]}>
         <Ionicons name="lock-closed" size={48} color="#9CA3AF" />
-        <Text style={[styles.restrictedText, { color: colors.secondary }]}>
+        <Text style={[styles.restrictedText, { color: "#FBBF24" }]}>
           Access restricted to Super Administrators.
         </Text>
       </View>
@@ -91,7 +91,7 @@ export default function GovernanceScreen() {
         {/* Header Summary */}
         <View style={styles.header}>
           <View style={[styles.headerIconWrap, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
-            <Ionicons name="shield-checkmark" size={30} color="#1E3A8A" />
+            <Ionicons name="shield-checkmark" size={30} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>Platform Access</Text>
@@ -122,7 +122,7 @@ export default function GovernanceScreen() {
                 { backgroundColor: "rgba(30,58,138,0.1)" },
               ]}
             >
-              <Ionicons name="storefront" size={26} color="#1E3A8A" />
+              <Ionicons name="storefront" size={26} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.moduleName, { color: colors.text }]}>Marketplace Module</Text>
@@ -144,7 +144,7 @@ export default function GovernanceScreen() {
           </View>
           <View style={styles.switchWrap}>
             {toggling ? (
-              <ActivityIndicator size="small" color="#1E3A8A" />
+              <ActivityIndicator size="small" color={"#1E3A8A"} />
             ) : (
               <Switch
                 value={isOn}
@@ -179,7 +179,7 @@ export default function GovernanceScreen() {
         </Text>
 
         {eventsLoading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+          <ActivityIndicator color={"#1E3A8A"} style={{ marginTop: 20 }} />
         ) : events.length === 0 ? (
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
             No governance actions recorded yet.

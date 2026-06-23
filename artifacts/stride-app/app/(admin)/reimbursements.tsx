@@ -73,6 +73,7 @@ interface RequestFormProps {
 
 export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantName, claimantRole, receiptThresholdCents = 0, schoolName }: RequestFormProps) {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const [description, setDescription] = useState("");
   const [amountStr, setAmountStr] = useState("");
   const [receiptUri, setReceiptUri] = useState("");
@@ -199,8 +200,8 @@ export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantN
                   </>
                 ) : (
                   <>
-                    <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
-                    <Text style={[formStyles.uploadBtnText, { color: colors.primary }]}>Upload JPG / PDF</Text>
+                    <Ionicons name="cloud-upload-outline" size={20} color={"#1E3A8A"} />
+                    <Text style={[formStyles.uploadBtnText, { color: "#1E3A8A" }]}>Upload JPG / PDF</Text>
                   </>
                 )}
               </Pressable>
@@ -215,8 +216,8 @@ export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantN
                 onPress={handleSubmit}
                 disabled={!canSubmit || submitting}
               >
-                <Ionicons name={submitting ? "hourglass-outline" : "paper-plane-outline"} size={15} color={canSubmit ? "#FBBF24" : colors.mutedForeground} />
-                <Text style={[formStyles.submitText, { color: canSubmit ? "#FBBF24" : colors.mutedForeground }]}>
+                <Ionicons name={submitting ? "hourglass-outline" : "paper-plane-outline"} size={15} color={canSubmit ? colors.secondary : colors.mutedForeground} />
+                <Text style={[formStyles.submitText, { color: canSubmit ? colors.secondary : colors.mutedForeground }]}>
                   {submitting ? "Submitting..." : "Submit Request"}
                 </Text>
               </Pressable>
@@ -231,10 +232,11 @@ export function ReimbursementRequestForm({ visible, onClose, onSubmit, claimantN
 // ── Admin Reimbursements Screen ───────────────────────────────────────────────
 
 export default function AdminReimbursementsScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
 
   const [requests, setRequests] = useState<ReimbursementRequest[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -415,7 +417,7 @@ export default function AdminReimbursementsScreen() {
             style={[styles.addBtn, { backgroundColor: colors.primary }]}
             onPress={() => setShowForm(true)}
           >
-            <Ionicons name="add" size={18} color="#FBBF24" />
+            <Ionicons name="add" size={18} color={colors.secondary} />
             <Text style={styles.addBtnText}>Request</Text>
           </Pressable>
         </View>
@@ -464,7 +466,7 @@ export default function AdminReimbursementsScreen() {
                     )}
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 6 }}>
-                    <Text style={[styles.amount, { color: colors.primary }]}>
+                    <Text style={[styles.amount, { color: "#1E3A8A" }]}>
                       {formatAmount(req.amountCents, orgCurrency)}
                     </Text>
                     <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
@@ -521,7 +523,7 @@ export default function AdminReimbursementsScreen() {
         {/* ── History ── */}
         {history.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 8 }]}>History</Text>
+            <Text style={[styles.sectionTitle, { color: "#1E3A8A", marginTop: 8 }]}>History</Text>
             {history.map(req => {
               const meta = STATUS_META[req.status];
               return (
@@ -577,17 +579,17 @@ export default function AdminReimbursementsScreen() {
                 <Pressable
                   key={m}
                   style={{ flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: "center", borderWidth: 2,
-                    borderColor: payMethod === m ? colors.primary : colors.border,
-                    backgroundColor: payMethod === m ? colors.primary + "15" : colors.background }}
+                    borderColor: payMethod === m ? "#1E3A8A" : colors.border,
+                    backgroundColor: payMethod === m ? "#1E3A8A" + "15" : colors.background }}
                   onPress={() => { setPayMethod(m); Haptics.selectionAsync(); }}
                 >
                   <Ionicons
                     name={m === "cash" ? "cash-outline" : m === "iban" ? "business-outline" : "card-outline"}
                     size={18}
-                    color={payMethod === m ? colors.primary : colors.mutedForeground}
+                    color={payMethod === m ? "#1E3A8A" : colors.mutedForeground}
                   />
                   <Text style={{ fontSize: 11, fontWeight: "700", marginTop: 4,
-                    color: payMethod === m ? colors.primary : colors.mutedForeground }}>
+                    color: payMethod === m ? "#1E3A8A" : colors.mutedForeground }}>
                     {m === "cash" ? "Cash" : m === "iban" ? bankConfig.label : "Stripe"}
                   </Text>
                 </Pressable>
@@ -649,9 +651,9 @@ export default function AdminReimbursementsScreen() {
                     style={{ borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 13, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }}
                   />
                 </View>
-                <View style={{ backgroundColor: colors.primary + "10", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8, alignItems: "center" }}>
-                  <Ionicons name="information-circle-outline" size={15} color={colors.primary} />
-                  <Text style={{ flex: 1, fontSize: 11, color: colors.primary, lineHeight: 16 }}>
+                <View style={{ backgroundColor: "#1E3A8A" + "10", borderRadius: 10, padding: 10, flexDirection: "row", gap: 8, alignItems: "center" }}>
+                  <Ionicons name="information-circle-outline" size={15} color={"#1E3A8A"} />
+                  <Text style={{ flex: 1, fontSize: 11, color: "#1E3A8A", lineHeight: 16 }}>
                     {bankConfig.type === "iban" ? "SEPA transfer" : bankConfig.type === "bsb" ? "BSB transfer" : bankConfig.type === "sort_code" ? "Faster Payments" : "Wire transfer"} · {bankConfig.currencySymbol} {orgCurrency}. Member notified immediately.
                   </Text>
                 </View>
@@ -678,12 +680,12 @@ export default function AdminReimbursementsScreen() {
               </Pressable>
               <Pressable
                 style={{ flex: 2, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-                  borderRadius: 14, paddingVertical: 14, backgroundColor: colors.primary, opacity: paying ? 0.7 : 1 }}
+                  borderRadius: 14, paddingVertical: 14, backgroundColor: "#1E3A8A", opacity: paying ? 0.7 : 1 }}
                 onPress={handlePay}
                 disabled={paying}
               >
-                <Ionicons name={payMethod === "cash" ? "cash-outline" : "checkmark-circle-outline"} size={16} color="#FBBF24" />
-                <Text style={{ fontSize: 14, fontWeight: "800", color: "#FBBF24" }}>
+                <Ionicons name={payMethod === "cash" ? "cash-outline" : "checkmark-circle-outline"} size={16} color={colors.secondary} />
+                <Text style={{ fontSize: 14, fontWeight: "800", color: colors.secondary }}>
                   {paying ? "Processing…" : payMethod === "cash" ? "Mark as Cash Paid" : "Confirm Payment"}
                 </Text>
               </Pressable>
@@ -705,14 +707,14 @@ export default function AdminReimbursementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   titleRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 24, gap: 12 },
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 2 },
   pageSubtitle: { fontSize: 13 },
   addBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginTop: 4 },
-  addBtnText: { color: "#FBBF24", fontWeight: "800", fontSize: 13 },
+  addBtnText: { color: secondary, fontWeight: "800", fontSize: 13 },
   sectionTitle: { fontSize: 13, fontWeight: "700", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 },
   emptyCard: { borderRadius: 16, padding: 24, alignItems: "center", gap: 8, borderWidth: 1, marginBottom: 16 },
   emptyText: { fontSize: 13 },

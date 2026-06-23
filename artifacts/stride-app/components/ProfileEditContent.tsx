@@ -163,11 +163,11 @@ function SectionHeader({
   colors: ReturnType<typeof useColors>;
 }) {
   return (
-    <View style={[sectionHeaderStyles.row, { borderLeftColor: colors.primary }]}>
-      <View style={[sectionHeaderStyles.iconBox, { backgroundColor: `${colors.primary}18` }]}>
-        <Ionicons name={icon} size={16} color={colors.primary} />
+    <View style={[sectionHeaderStyles.row, { borderLeftColor: "#1E3A8A" }]}>
+      <View style={[sectionHeaderStyles.iconBox, { backgroundColor: `"#1E3A8A"18` }]}>
+        <Ionicons name={icon} size={16} color={"#1E3A8A"} />
       </View>
-      <Text style={[sectionHeaderStyles.text, { color: colors.primary }]}>{title}</Text>
+      <Text style={[sectionHeaderStyles.text, { color: "#1E3A8A" }]}>{title}</Text>
     </View>
   );
 }
@@ -260,6 +260,7 @@ const fieldStyles = StyleSheet.create({
 export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean }) {
   const { user, updateUser } = useAuth();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const { countryCode } = getDeviceLocale();
 
   const [form, setForm] = useState<ProfileExtra>(PROFILE_EMPTY);
@@ -521,8 +522,8 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
                   style={[
                     styles.genderPill,
                     {
-                      borderColor: active ? colors.primary : colors.border,
-                      backgroundColor: active ? colors.primary : colors.background,
+                      borderColor: active ? "#1E3A8A" : colors.border,
+                      backgroundColor: active ? "#1E3A8A" : colors.background,
                     },
                   ]}
                   onPress={() => {
@@ -574,8 +575,8 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
           disabled={locating}
         >
           {locating
-            ? <ActivityIndicator size="small" color={colors.primary} />
-            : <Ionicons name="locate-outline" size={14} color={colors.primary} />
+            ? <ActivityIndicator size="small" color={"#1E3A8A"} />
+            : <Ionicons name="locate-outline" size={14} color={"#1E3A8A"} />
           }
           <Text style={[styles.locateBtnText, { color: colors.primary }]}>
             {locating ? "Locating…" : "Use My Location"}
@@ -710,8 +711,8 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
                     style={[
                       styles.stateChip,
                       {
-                        borderColor: active ? colors.primary : colors.border,
-                        backgroundColor: active ? colors.primary : colors.background,
+                        borderColor: active ? "#1E3A8A" : colors.border,
+                        backgroundColor: active ? "#1E3A8A" : colors.background,
                       },
                     ]}
                   >
@@ -733,9 +734,9 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
           <SectionHeader icon="briefcase-outline" title="Business & Fiscal" colors={colors} />
 
           {/* Info banner */}
-          <View style={[styles.infoBanner, { backgroundColor: `${colors.primary}10`, borderLeftColor: colors.primary }]}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-            <Text style={[styles.infoText, { color: colors.primary }]}>
+          <View style={[styles.infoBanner, { backgroundColor: `"#1E3A8A"10`, borderLeftColor: "#1E3A8A" }]}>
+            <Ionicons name="information-circle-outline" size={16} color={"#1E3A8A"} />
+            <Text style={[styles.infoText, { color: "#1E3A8A" }]}>
               {"Business numbers are optional. Only fill in what applies to your organisation."}
             </Text>
           </View>
@@ -804,7 +805,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
       <Pressable
         style={[
           styles.saveBtn,
-          { backgroundColor: saved ? "#10B981" : colors.primary, opacity: saving ? 0.75 : 1 },
+          { backgroundColor: saved ? "#10B981" : "#1E3A8A", opacity: saving ? 0.75 : 1 },
         ]}
         onPress={handleSave}
         disabled={saving}
@@ -812,7 +813,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
         <Ionicons
           name={saved ? "checkmark-circle" : saving ? "hourglass-outline" : "save-outline"}
           size={20}
-          color="#FBBF24"
+          color={colors.secondary}
         />
         <Text style={styles.saveBtnText}>
           {saving ? "SAVING…" : saved ? "SAVED!" : "SAVE CHANGES"}
@@ -824,7 +825,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   card: {
     borderRadius: 18,
     padding: 16,
@@ -886,5 +887,5 @@ const styles = StyleSheet.create({
     gap: 10, borderRadius: 18, paddingVertical: 16,
     marginTop: 12, marginBottom: 16,
   },
-  saveBtnText: { color: "#FBBF24", fontWeight: "800", fontSize: 15, letterSpacing: 0.5 },
+  saveBtnText: { color: secondary, fontWeight: "800", fontSize: 15, letterSpacing: 0.5 },
 });

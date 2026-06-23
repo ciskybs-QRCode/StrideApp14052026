@@ -71,6 +71,7 @@ export default function SettingsIndex() {
   const { user } = useAuth();
   const { legalAdminDocs } = useAppData();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const { can } = usePlanFeatures();
 
@@ -226,8 +227,8 @@ export default function SettingsIndex() {
           icon="id-card-outline"
           title="Membership Policy"
           description="Mandatory membership, renewal period, expiry reminders and auto-suspend"
-          iconBg="#1E3A8A"
-          iconColor="#FBBF24"
+          iconBg={colors.primary}
+          iconColor={colors.secondary}
           onPress={() => navigate("membership-policy")}
         />
 
@@ -317,7 +318,7 @@ export default function SettingsIndex() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll:    { paddingHorizontal: 16 },
 
@@ -351,7 +352,7 @@ const styles = StyleSheet.create({
   avatarText:    { color: "#FFF", fontSize: 22, fontWeight: "700" },
   profileInfo:   { flex: 1, minWidth: 0 },
   profileName:   { color: "#FFF",                   fontSize: 18, fontWeight: "700", marginBottom: 2 },
-  profileSchool: { color: "#FBBF24",                fontSize: 13, fontWeight: "600" },
+  profileSchool: { color: secondary,                fontSize: 13, fontWeight: "600" },
   profileMeta:   { color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 2 },
 
   qrCard: {

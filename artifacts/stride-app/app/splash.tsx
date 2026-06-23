@@ -1,10 +1,13 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
+import { useColors } from "@/hooks/useColors";
 
 const { width, height } = Dimensions.get("window");
 
 export default function SplashScreen() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
@@ -47,7 +50,7 @@ export default function SplashScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -71,8 +74,8 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     borderWidth: 4,
     borderColor: "#E5E7EB",
-    borderTopColor: "#FBBF24",
-    borderRightColor: "#FBBF24",
+    borderTopColor: secondary,
+    borderRightColor: secondary,
     backgroundColor: "transparent",
     transform: [{ rotate: "-30deg" }],
   },
@@ -83,8 +86,8 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 4,
     borderColor: "#E5E7EB",
-    borderTopColor: "#1E3A8A",
-    borderLeftColor: "#1E3A8A",
+    borderTopColor: primary,
+    borderLeftColor: primary,
     backgroundColor: "transparent",
     transform: [{ rotate: "30deg" }],
   },
@@ -95,15 +98,15 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 4,
     borderColor: "#E5E7EB",
-    borderBottomColor: "#FBBF24",
-    borderRightColor: "#FBBF24",
+    borderBottomColor: secondary,
+    borderRightColor: secondary,
     backgroundColor: "transparent",
     transform: [{ rotate: "60deg" }],
   },
   title: {
     fontSize: 48,
     fontWeight: "800",
-    color: "#1E3A8A",
+    color: primary,
     fontStyle: "italic",
     letterSpacing: 2,
   },

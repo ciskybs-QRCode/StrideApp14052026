@@ -32,6 +32,7 @@ interface ScanResult {
 export default function AdminQRGate() {
   const router  = useRouter();
   const colors  = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const insets  = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -134,7 +135,7 @@ export default function AdminQRGate() {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="QR Gate" onBack={() => router.back()} />
-        <View style={S.center}><ActivityIndicator color="#1E3A8A" /></View>
+        <View style={S.center}><ActivityIndicator color={"#1E3A8A"} /></View>
       </View>
     );
   }
@@ -192,7 +193,7 @@ export default function AdminQRGate() {
               {scanState === "processing" ? "Processing…" : "Point at a Stride QR code"}
             </Text>
             {scanState === "processing" && (
-              <ActivityIndicator color="#FBBF24" style={{ marginTop: 16 }} />
+              <ActivityIndicator color={"#FBBF24"} style={{ marginTop: 16 }} />
             )}
           </View>
         </View>
@@ -236,7 +237,7 @@ export default function AdminQRGate() {
 
 const CORNER = 22;
 const THICKNESS = 3;
-const S = StyleSheet.create({
+const make_S = (primary: string, secondary: string) => StyleSheet.create({
   root:        { flex: 1, backgroundColor: "#000" },
   center:      { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, padding: 32 },
   header:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 10, backgroundColor: "rgba(0,0,0,0.7)" },
@@ -245,12 +246,12 @@ const S = StyleSheet.create({
 
   permTitle:   { fontSize: 18, fontWeight: "700", textAlign: "center", marginTop: 12 },
   permSub:     { fontSize: 14, textAlign: "center", lineHeight: 20 },
-  permBtn:     { backgroundColor: "#1E3A8A", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 13, marginTop: 16 },
+  permBtn:     { backgroundColor: primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 13, marginTop: 16 },
   permBtnText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
 
   overlay:     { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   finder:      { width: 240, height: 240, position: "relative" },
-  corner:      { position: "absolute", width: CORNER, height: CORNER, borderColor: "#FBBF24" },
+  corner:      { position: "absolute", width: CORNER, height: CORNER, borderColor: secondary },
   tl: { top: 0, left: 0, borderTopWidth: THICKNESS, borderLeftWidth: THICKNESS },
   tr: { top: 0, right: 0, borderTopWidth: THICKNESS, borderRightWidth: THICKNESS },
   bl: { bottom: 0, left: 0, borderBottomWidth: THICKNESS, borderLeftWidth: THICKNESS },

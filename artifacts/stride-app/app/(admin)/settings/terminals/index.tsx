@@ -42,10 +42,11 @@ function KioskRow({
   onRevoke: (item: KioskAccount) => void;
   colors: ReturnType<typeof useColors>;
 }) {
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <View style={[styles.kioskRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.kioskIconBox, { backgroundColor: "#EFF6FF" }]}>
-        <Ionicons name="tablet-landscape-outline" size={22} color="#1E3A8A" />
+        <Ionicons name="tablet-landscape-outline" size={22} color={"#1E3A8A"} />
       </View>
 
       <View style={styles.kioskInfo}>
@@ -86,11 +87,13 @@ function SuccessCard({
   password: string;
   onDone: () => void;
 }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   return (
     <View style={styles.successCard}>
       <View style={styles.successIconRow}>
         <View style={styles.successIconCircle}>
-          <Ionicons name="checkmark-circle" size={38} color="#1E3A8A" />
+          <Ionicons name="checkmark-circle" size={38} color={colors.primary} />
         </View>
       </View>
       <Text style={styles.successTitle}>Kiosk Provisioned!</Text>
@@ -122,8 +125,9 @@ function SuccessCard({
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function TerminalsScreen() {
-  const router = useRouter();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
+  const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [kiosks, setKiosks] = useState<KioskAccount[]>([]);
@@ -267,7 +271,7 @@ export default function TerminalsScreen() {
         <View style={[styles.pinCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.pinCardHeader}>
             <View style={styles.pinIconBox}>
-              <Ionicons name="keypad-outline" size={20} color="#1E3A8A" />
+              <Ionicons name="keypad-outline" size={20} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.pinCardTitle, { color: colors.foreground }]}>Kiosk Exit PIN</Text>
@@ -327,7 +331,7 @@ export default function TerminalsScreen() {
           onPress={openModal}
         >
           <View style={styles.provisionIconBox}>
-            <Ionicons name="add-circle" size={24} color="#1E3A8A" />
+            <Ionicons name="add-circle" size={24} color={colors.primary} />
           </View>
           <View style={styles.provisionText}>
             <Text style={styles.provisionTitle}>+ Provision New Kiosk</Text>
@@ -343,7 +347,7 @@ export default function TerminalsScreen() {
 
         {/* ── INFO BANNER ── */}
         <View style={[styles.infoBanner, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
-          <Ionicons name="information-circle-outline" size={16} color="#1E3A8A" />
+          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={styles.infoBannerText}>
             Revoking a terminal immediately invalidates its session and locks the device.
           </Text>
@@ -352,7 +356,7 @@ export default function TerminalsScreen() {
         {/* ── LIST ── */}
         {loading ? (
           <View style={styles.centeredState}>
-            <ActivityIndicator size="large" color="#1E3A8A" />
+            <ActivityIndicator size="large" color={"#1E3A8A"} />
             <Text style={[styles.stateText, { color: colors.mutedForeground }]}>Loading terminals…</Text>
           </View>
         ) : fetchError ? (
@@ -373,7 +377,7 @@ export default function TerminalsScreen() {
         ) : kiosks.length === 0 ? (
           <View style={styles.centeredState}>
             <View style={[styles.emptyIconCircle, { backgroundColor: "#EFF6FF" }]}>
-              <Ionicons name="tablet-landscape-outline" size={32} color="#1E3A8A" />
+              <Ionicons name="tablet-landscape-outline" size={32} color={"#1E3A8A"} />
             </View>
             <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No terminals yet</Text>
             <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
@@ -439,7 +443,7 @@ export default function TerminalsScreen() {
                 <View style={styles.modalContent}>
                   <View style={styles.modalHeader}>
                     <View style={styles.modalIconCircle}>
-                      <Ionicons name="tablet-landscape" size={26} color="#1E3A8A" />
+                      <Ionicons name="tablet-landscape" size={26} color={"#1E3A8A"} />
                     </View>
                     <Text style={[styles.modalTitle, { color: colors.foreground }]}>
                       Provision New Kiosk
@@ -517,10 +521,10 @@ export default function TerminalsScreen() {
                     disabled={provisioning}
                   >
                     {provisioning ? (
-                      <ActivityIndicator size="small" color="#1E3A8A" />
+                      <ActivityIndicator size="small" color={"#1E3A8A"} />
                     ) : (
                       <>
-                        <Ionicons name="flash" size={17} color="#1E3A8A" />
+                        <Ionicons name="flash" size={17} color={"#1E3A8A"} />
                         <Text style={styles.generateBtnText}>Generate Kiosk Account</Text>
                       </>
                     )}
@@ -541,7 +545,7 @@ export default function TerminalsScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
 
   // Header
@@ -557,7 +561,7 @@ const styles = StyleSheet.create({
   headerSub: { color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 2 },
   headerRight: {},
   kioskCountBadge: {
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 12,
     minWidth: 28,
     height: 28,
@@ -565,7 +569,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 8,
   },
-  kioskCountText: { color: "#1E3A8A", fontSize: 13, fontWeight: "800" },
+  kioskCountText: { color: primary, fontSize: 13, fontWeight: "800" },
 
   // Scroll
   scroll: { paddingHorizontal: 20, paddingTop: 20 },
@@ -577,11 +581,11 @@ const styles = StyleSheet.create({
     gap: 14,
     backgroundColor: "#FFFBEB",
     borderWidth: 2,
-    borderColor: "#FBBF24",
+    borderColor: secondary,
     borderRadius: 18,
     padding: 18,
     marginBottom: 24,
-    shadowColor: "#FBBF24",
+    shadowColor: secondary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
     shadowRadius: 10,
@@ -615,7 +619,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-  infoBannerText: { flex: 1, color: "#1E3A8A", fontSize: 12, lineHeight: 18 },
+  infoBannerText: { flex: 1, color: primary, fontSize: 12, lineHeight: 18 },
 
   // Kiosk row
   kioskRow: {
@@ -766,17 +770,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#FBBF24",
+    backgroundColor: secondary,
     borderRadius: 16,
     paddingVertical: 16,
     marginTop: 20,
-    shadowColor: "#FBBF24",
+    shadowColor: secondary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  generateBtnText: { color: "#1E3A8A", fontSize: 16, fontWeight: "800" },
+  generateBtnText: { color: primary, fontSize: 16, fontWeight: "800" },
 
   cancelLink: { alignItems: "center", paddingVertical: 16 },
   cancelLinkText: { fontSize: 14 },
@@ -789,7 +793,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF6FF",
     alignItems: "center", justifyContent: "center",
   },
-  successTitle: { fontSize: 22, fontWeight: "800", color: "#1E3A8A", marginBottom: 6 },
+  successTitle: { fontSize: 22, fontWeight: "800", color: primary, marginBottom: 6 },
   successSub: {
     fontSize: 13, color: "#6B7280", textAlign: "center",
     lineHeight: 19, paddingHorizontal: 16, marginBottom: 20,
@@ -798,7 +802,7 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "#FFFBEB",
     borderWidth: 2,
-    borderColor: "#FBBF24",
+    borderColor: secondary,
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 20,
@@ -808,10 +812,10 @@ const styles = StyleSheet.create({
     fontSize: 10, fontWeight: "800", letterSpacing: 1.2,
     color: "#92400E", marginBottom: 4,
   },
-  credValue: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },
+  credValue: { fontSize: 14, fontWeight: "700", color: primary },
   doneBtn: {
     width: "100%",
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",

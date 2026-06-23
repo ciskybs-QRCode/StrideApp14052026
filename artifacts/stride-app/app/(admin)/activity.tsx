@@ -383,7 +383,7 @@ function AgePicker({
           paddingHorizontal: 14, paddingVertical: 10,
           backgroundColor: colors.card, borderRadius: 10,
           borderWidth: 1, borderColor: colors.border, minWidth: 80 }}>
-        <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary, flex: 1, textAlign: "center" }}>
+        <Text style={{ fontSize: 20, fontWeight: "800", color: "#1E3A8A", flex: 1, textAlign: "center" }}>
           {value}
         </Text>
         <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
@@ -403,9 +403,9 @@ function AgePicker({
                   <Pressable key={age}
                     onPress={() => { onChange(age); Haptics.selectionAsync(); setOpen(false); }}
                     style={{ height: 44, alignItems: "center", justifyContent: "center",
-                      backgroundColor: sel ? `${colors.primary}18` : "transparent" }}>
+                      backgroundColor: sel ? `"#1E3A8A"18` : "transparent" }}>
                     <Text style={{ fontSize: sel ? 18 : 15, fontWeight: sel ? "800" : "400",
-                      color: sel ? colors.primary : colors.foreground }}>
+                      color: sel ? "#1E3A8A" : colors.foreground }}>
                       {age}
                     </Text>
                   </Pressable>
@@ -423,6 +423,7 @@ function AgePicker({
 
 export default function ActivityScreen() {
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { alerts, activeAlert, cascadeCountdown, respondToSub, rescheduleLesson, dismissAlert, clearAll } = useSubstitution();
@@ -1180,7 +1181,7 @@ export default function ActivityScreen() {
   const renderPill = (label: string, value: string, current: string, onPress: () => void, cfg?: { color: string; bg: string }) => {
     const active = value === current;
     return (
-      <Pressable key={value} onPress={onPress} style={[styles.pill, active && { backgroundColor: cfg?.color ?? colors.primary }]}>
+      <Pressable key={value} onPress={onPress} style={[styles.pill, active && { backgroundColor: cfg?.color ?? "#1E3A8A" }]}>
         <Text style={[styles.pillText, { color: active ? "#FFF" : colors.mutedForeground }]}>{label}</Text>
       </Pressable>
     );
@@ -1208,8 +1209,8 @@ export default function ActivityScreen() {
     <View style={styles.pickerWrap}>
       {options.map(o => {
         const active = value === o.value;
-        const c = o.color ?? (cfg as Record<string,{color:string;bg:string;label:string}>)?.[o.value]?.color ?? colors.primary;
-        const bg = o.bg ?? (cfg as Record<string,{color:string;bg:string;label:string}>)?.[o.value]?.bg ?? `${colors.primary}15`;
+        const c = o.color ?? (cfg as Record<string,{color:string;bg:string;label:string}>)?.[o.value]?.color ?? "#1E3A8A";
+        const bg = o.bg ?? (cfg as Record<string,{color:string;bg:string;label:string}>)?.[o.value]?.bg ?? `"#1E3A8A"15`;
         return (
           <Pressable key={o.value} onPress={() => onSelect(o.value)}
             style={[styles.pickerChip, active && { backgroundColor: bg, borderColor: c, borderWidth: 1.5 }]}>
@@ -1317,8 +1318,8 @@ export default function ActivityScreen() {
               onPress={e => { e.stopPropagation(); setShowInviteTracker(item.id); Haptics.selectionAsync(); }}
               style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}
             >
-              <Ionicons name="mail-outline" size={13} color={colors.primary} />
-              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "700" }}>
+              <Ionicons name="mail-outline" size={13} color={"#1E3A8A"} />
+              <Text style={{ fontSize: 11, color: "#1E3A8A", fontWeight: "700" }}>
                 {total} invited
               </Text>
               {accepted > 0 && <Text style={{ fontSize: 11, color: "#10B981", fontWeight: "600" }}>✓ {accepted}</Text>}
@@ -1376,7 +1377,7 @@ export default function ActivityScreen() {
             <View style={[styles.tabSwitcher, { backgroundColor: colors.card }]}>
               {(["courses","admin"] as const).map(t => (
                 <Pressable key={t} onPress={() => setTab(t)}
-                  style={[styles.tabSwitchBtn, t === tab && { backgroundColor: colors.primary }]}>
+                  style={[styles.tabSwitchBtn, t === tab && { backgroundColor: "#1E3A8A" }]}>
                   <Text style={[styles.tabSwitchText, { color: t === tab ? "#FFF" : colors.mutedForeground }]}>
                     {t === "courses" ? "Courses" : "Admin"}
                   </Text>
@@ -1476,7 +1477,7 @@ export default function ActivityScreen() {
             <View style={[styles.tabSwitcher, { backgroundColor: colors.card }]}>
               {(["courses","admin"] as const).map(t => (
                 <Pressable key={t} onPress={() => setTab(t)}
-                  style={[styles.tabSwitchBtn, t === tab && { backgroundColor: colors.primary }]}>
+                  style={[styles.tabSwitchBtn, t === tab && { backgroundColor: "#1E3A8A" }]}>
                   <Text style={[styles.tabSwitchText, { color: t === tab ? "#FFF" : colors.mutedForeground }]}>
                     {t === "courses" ? "Courses" : "Admin"}
                   </Text>
@@ -1606,7 +1607,7 @@ export default function ActivityScreen() {
             {/* Admin action buttons */}
             {focusedAlert && !focusedAlert.resolved && (
               <View style={styles.saActionRow}>
-                <Pressable style={[styles.saActionBtn, { backgroundColor: colors.primary }]} onPress={() => { setShowAlertDetail(false); setShowReschedule(true); }}>
+                <Pressable style={[styles.saActionBtn, { backgroundColor: "#1E3A8A" }]} onPress={() => { setShowAlertDetail(false); setShowReschedule(true); }}>
                   <Ionicons name="calendar" size={16} color="#FFF" />
                   <Text style={styles.saActionBtnText}>Smart Reschedule</Text>
                 </Pressable>
@@ -1657,13 +1658,13 @@ export default function ActivityScreen() {
             {(["shift", "cancel", "makeup"] as const).map(kind => (
               <Pressable
                 key={kind}
-                style={[styles.rsOption, rescheduleKind === kind && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[styles.rsOption, rescheduleKind === kind && { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" }]}
                 onPress={() => setRescheduleKind(kind)}
               >
                 <Ionicons
                   name={kind === "shift" ? "time-outline" : kind === "cancel" ? "close-circle-outline" : "calendar-outline"}
                   size={20}
-                  color={rescheduleKind === kind ? "#FFF" : colors.primary}
+                  color={rescheduleKind === kind ? "#FFF" : "#1E3A8A"}
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.rsOptionTitle, rescheduleKind === kind && { color: "#FFF" }]}>
@@ -1673,17 +1674,17 @@ export default function ActivityScreen() {
                     {kind === "shift" ? "Move the start time by X minutes" : kind === "cancel" ? "Cancel and notify all enrolled" : "Schedule a replacement lesson date"}
                   </Text>
                 </View>
-                <Ionicons name={rescheduleKind === kind ? "radio-button-on" : "radio-button-off"} size={18} color={rescheduleKind === kind ? "#FFF" : colors.primary} />
+                <Ionicons name={rescheduleKind === kind ? "radio-button-on" : "radio-button-off"} size={18} color={rescheduleKind === kind ? "#FFF" : "#1E3A8A"} />
               </Pressable>
             ))}
 
             {/* Shift options */}
             {rescheduleKind === "shift" && (
               <View style={styles.rsInputRow}>
-                <Text style={[styles.rsInputLabel, { color: colors.primary }]}>Shift by (minutes)</Text>
+                <Text style={[styles.rsInputLabel, { color: "#1E3A8A" }]}>Shift by (minutes)</Text>
                 <View style={styles.rsShiftBtns}>
                   {["15", "30", "45", "60", "90"].map(v => (
-                    <Pressable key={v} style={[styles.rsShiftChip, shiftMinutes === v && { backgroundColor: colors.primary }]} onPress={() => setShiftMinutes(v)}>
+                    <Pressable key={v} style={[styles.rsShiftChip, shiftMinutes === v && { backgroundColor: "#1E3A8A" }]} onPress={() => setShiftMinutes(v)}>
                       <Text style={[styles.rsShiftChipText, shiftMinutes === v && { color: "#FFF" }]}>{v}m</Text>
                     </Pressable>
                   ))}
@@ -1702,7 +1703,7 @@ export default function ActivityScreen() {
             {/* Makeup options */}
             {rescheduleKind === "makeup" && (
               <View style={styles.rsInputRow}>
-                <Text style={[styles.rsInputLabel, { color: colors.primary }]}>Make-Up Date</Text>
+                <Text style={[styles.rsInputLabel, { color: "#1E3A8A" }]}>Make-Up Date</Text>
                 <TextInput
                   style={[styles.rsTextInput, { borderColor: colors.border, color: colors.foreground }]}
                   value={makeupDate}
@@ -1710,7 +1711,7 @@ export default function ActivityScreen() {
                   placeholder="DD/MM/YYYY"
                   placeholderTextColor={colors.mutedForeground}
                 />
-                <Text style={[styles.rsInputLabel, { color: colors.primary, marginTop: 8 }]}>Make-Up Time</Text>
+                <Text style={[styles.rsInputLabel, { color: "#1E3A8A", marginTop: 8 }]}>Make-Up Time</Text>
                 <TextInput
                   style={[styles.rsTextInput, { borderColor: colors.border, color: colors.foreground }]}
                   value={makeupTime}
@@ -1753,11 +1754,11 @@ export default function ActivityScreen() {
             <View style={styles.modalHeaderRight}>
               {editingActivity && (
                 <Pressable onPress={() => deleteActivity(editingActivity.id)} style={styles.deleteBtn}>
-                  <Ionicons name="trash-outline" size={20} color="#FBBF24" />
+                  <Ionicons name="trash-outline" size={20} color={"#FBBF24"} />
                 </Pressable>
               )}
-              <Pressable onPress={saveActivity} style={[styles.saveBtn, { backgroundColor: "#FBBF24" }]}>
-                <Text style={[styles.saveBtnText, { color: "#1E3A8A" }]}>Save</Text>
+              <Pressable onPress={saveActivity} style={[styles.saveBtn, { backgroundColor: colors.secondary }]}>
+                <Text style={[styles.saveBtnText, { color: colors.primary }]}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -1797,8 +1798,8 @@ export default function ActivityScreen() {
                 const active = draft.type === "custom" && draft.customTypeName === ct;
                 return (
                   <Pressable key={ct} onPress={() => { setDraft(d => ({ ...d, type: "custom", customTypeName: ct })); Haptics.selectionAsync(); }}
-                    style={[styles.pickerChip, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
-                    <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{ct}</Text>
+                    style={[styles.pickerChip, active && { backgroundColor: `"#1E3A8A"15`, borderColor: "#1E3A8A", borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>{ct}</Text>
                   </Pressable>
                 );
               })}
@@ -1806,7 +1807,7 @@ export default function ActivityScreen() {
               {showCustomTypeInput ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
                   <TextInput
-                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                    style={{ flex: 1, borderWidth: 1, borderColor: "#1E3A8A", borderRadius: 20,
                       paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
                       backgroundColor: colors.card }}
                     placeholder="e.g. Practise, Session..."
@@ -1817,7 +1818,7 @@ export default function ActivityScreen() {
                     onSubmitEditing={() => void addCustomType(newCustomTypeInput)}
                   />
                   <Pressable onPress={() => void addCustomType(newCustomTypeInput)} style={{ padding: 4 }}>
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={24} color={"#1E3A8A"} />
                   </Pressable>
                   <Pressable onPress={() => { setShowCustomTypeInput(false); setNewCustomTypeInput(""); }} style={{ padding: 4 }}>
                     <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
@@ -1826,10 +1827,10 @@ export default function ActivityScreen() {
               ) : (
                 <Pressable onPress={() => setShowCustomTypeInput(true)}
                   style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
-                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: "#1E3A8A",
                     flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="add" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Other...</Text>
+                  <Ionicons name="add" size={14} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>Other...</Text>
                 </Pressable>
               )}
             </View>
@@ -1842,9 +1843,9 @@ export default function ActivityScreen() {
                 return (
                   <Pressable key={disc} onPress={() => toggleDraftDiscipline(disc)}
                     style={{ borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
-                      backgroundColor: active ? `${colors.primary}15` : colors.muted,
-                      borderWidth: active ? 1.5 : 1, borderColor: active ? colors.primary : colors.border }}>
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: active ? colors.primary : colors.mutedForeground }}>
+                      backgroundColor: active ? `"#1E3A8A"15` : colors.muted,
+                      borderWidth: active ? 1.5 : 1, borderColor: active ? "#1E3A8A" : colors.border }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: active ? "#1E3A8A" : colors.mutedForeground }}>
                       {disc}
                     </Text>
                   </Pressable>
@@ -1853,7 +1854,7 @@ export default function ActivityScreen() {
               {showDisciplineInput ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
                   <TextInput
-                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                    style={{ flex: 1, borderWidth: 1, borderColor: "#1E3A8A", borderRadius: 20,
                       paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
                       backgroundColor: colors.card }}
                     placeholder="New discipline..."
@@ -1864,7 +1865,7 @@ export default function ActivityScreen() {
                     onSubmitEditing={() => void addDiscipline(newDisciplineInput)}
                   />
                   <Pressable onPress={() => void addDiscipline(newDisciplineInput)} style={{ padding: 4 }}>
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={24} color={"#1E3A8A"} />
                   </Pressable>
                   <Pressable onPress={() => { setShowDisciplineInput(false); setNewDisciplineInput(""); }} style={{ padding: 4 }}>
                     <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
@@ -1873,10 +1874,10 @@ export default function ActivityScreen() {
               ) : (
                 <Pressable onPress={() => setShowDisciplineInput(true)}
                   style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
-                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: "#1E3A8A",
                     flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="add" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Add discipline</Text>
+                  <Ionicons name="add" size={14} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>Add discipline</Text>
                 </Pressable>
               )}
             </View>
@@ -1893,8 +1894,8 @@ export default function ActivityScreen() {
                 const active = draft.level === o.value;
                 return (
                   <Pressable key={o.value} onPress={() => { setDraft(d => ({ ...d, level: o.value })); Haptics.selectionAsync(); }}
-                    style={[styles.pickerChip, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
-                    <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{o.label}</Text>
+                    style={[styles.pickerChip, active && { backgroundColor: `"#1E3A8A"15`, borderColor: "#1E3A8A", borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>{o.label}</Text>
                   </Pressable>
                 );
               })}
@@ -1918,7 +1919,7 @@ export default function ActivityScreen() {
               {showTagInput ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1 }}>
                   <TextInput
-                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                    style={{ flex: 1, borderWidth: 1, borderColor: "#1E3A8A", borderRadius: 20,
                       paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
                       backgroundColor: colors.card }}
                     placeholder="New tag..."
@@ -1929,7 +1930,7 @@ export default function ActivityScreen() {
                     onSubmitEditing={() => void addExtraTag(newTagInput)}
                   />
                   <Pressable onPress={() => void addExtraTag(newTagInput)} style={{ padding: 4 }}>
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={24} color={"#1E3A8A"} />
                   </Pressable>
                   <Pressable onPress={() => setShowTagInput(false)} style={{ padding: 4 }}>
                     <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
@@ -1938,10 +1939,10 @@ export default function ActivityScreen() {
               ) : (
                 <Pressable onPress={() => setShowTagInput(true)}
                   style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
-                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: "#1E3A8A",
                     flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="add" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>Extra tag</Text>
+                  <Ionicons name="add" size={14} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>Extra tag</Text>
                 </Pressable>
               )}
             </View>
@@ -1957,8 +1958,8 @@ export default function ActivityScreen() {
                 const active = draft.ageGroup === o.value;
                 return (
                   <Pressable key={o.value} onPress={() => { setDraft(d => ({ ...d, ageGroup: o.value })); Haptics.selectionAsync(); }}
-                    style={[styles.pickerChip, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
-                    <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{o.label}</Text>
+                    style={[styles.pickerChip, active && { backgroundColor: `"#1E3A8A"15`, borderColor: "#1E3A8A", borderWidth: 1.5 }]}>
+                    <Text style={[styles.pickerChipText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>{o.label}</Text>
                   </Pressable>
                 );
               })}
@@ -1995,8 +1996,8 @@ export default function ActivityScreen() {
                   </View>
                 </View>
                 {/* summary strip */}
-                <View style={{ backgroundColor: `${colors.primary}10`, paddingVertical: 8, alignItems: "center" }}>
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>
+                <View style={{ backgroundColor: `"#1E3A8A"10`, paddingVertical: 8, alignItems: "center" }}>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" }}>
                     {draft.ageMin} – {draft.ageMax} yrs
                   </Text>
                 </View>
@@ -2004,9 +2005,9 @@ export default function ActivityScreen() {
             )}
             {draft.ageGroup === "18plus" && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#DBEAFE",
-                borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.primary }}>
-                <Ionicons name="person-outline" size={18} color={colors.primary} />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>Adults only — 18 and over</Text>
+                borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#1E3A8A" }}>
+                <Ionicons name="person-outline" size={18} color={"#1E3A8A"} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" }}>Adults only — 18 and over</Text>
               </View>
             )}
 
@@ -2017,16 +2018,16 @@ export default function ActivityScreen() {
                 const active = draft.campusId === c.id;
                 return (
                   <Pressable key={c.id} onPress={() => { setDraft(d => ({ ...d, campusId: c.id, campusName: c.name })); Haptics.selectionAsync(); }}
-                    style={[styles.pickerChip, { minWidth: 80 }, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
-                    <Ionicons name="business-outline" size={13} color={active ? colors.primary : colors.mutedForeground} />
-                    <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{c.name}</Text>
+                    style={[styles.pickerChip, { minWidth: 80 }, active && { backgroundColor: `"#1E3A8A"15`, borderColor: "#1E3A8A", borderWidth: 1.5 }]}>
+                    <Ionicons name="business-outline" size={13} color={active ? "#1E3A8A" : colors.mutedForeground} />
+                    <Text style={[styles.pickerChipText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>{c.name}</Text>
                   </Pressable>
                 );
               })}
               {showVenueInput ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
                   <TextInput
-                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                    style={{ flex: 1, borderWidth: 1, borderColor: "#1E3A8A", borderRadius: 20,
                       paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
                       backgroundColor: colors.card }}
                     placeholder="New venue..."
@@ -2037,7 +2038,7 @@ export default function ActivityScreen() {
                     onSubmitEditing={() => void addVenue(newVenueInput)}
                   />
                   <Pressable onPress={() => void addVenue(newVenueInput)} style={{ padding: 4 }}>
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={24} color={"#1E3A8A"} />
                   </Pressable>
                   <Pressable onPress={() => { setShowVenueInput(false); setNewVenueInput(""); }} style={{ padding: 4 }}>
                     <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
@@ -2046,10 +2047,10 @@ export default function ActivityScreen() {
               ) : (
                 <Pressable onPress={() => setShowVenueInput(true)}
                   style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
-                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: "#1E3A8A",
                     flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="add" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>+ Venue</Text>
+                  <Ionicons name="add" size={14} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>+ Venue</Text>
                 </Pressable>
               )}
             </View>
@@ -2061,17 +2062,17 @@ export default function ActivityScreen() {
                   <Pressable key={r}
                     onPress={() => { setDraft(d => ({ ...d, room: active ? "" : r })); Haptics.selectionAsync(); }}
                     style={{ borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
-                      backgroundColor: active ? `${colors.primary}15` : colors.muted,
-                      borderWidth: active ? 1.5 : 1, borderColor: active ? colors.primary : colors.border }}>
+                      backgroundColor: active ? `"#1E3A8A"15` : colors.muted,
+                      borderWidth: active ? 1.5 : 1, borderColor: active ? "#1E3A8A" : colors.border }}>
                     <Text style={{ fontSize: 12, fontWeight: "700",
-                      color: active ? colors.primary : colors.mutedForeground }}>{r}</Text>
+                      color: active ? "#1E3A8A" : colors.mutedForeground }}>{r}</Text>
                   </Pressable>
                 );
               })}
               {showRoomInput ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minWidth: 180 }}>
                   <TextInput
-                    style={{ flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: 20,
+                    style={{ flex: 1, borderWidth: 1, borderColor: "#1E3A8A", borderRadius: 20,
                       paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, color: colors.foreground,
                       backgroundColor: colors.card }}
                     placeholder="e.g. Studio A, Main Hall..."
@@ -2082,7 +2083,7 @@ export default function ActivityScreen() {
                     onSubmitEditing={() => void addRoom(newRoomInput)}
                   />
                   <Pressable onPress={() => void addRoom(newRoomInput)} style={{ padding: 4 }}>
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={24} color={"#1E3A8A"} />
                   </Pressable>
                   <Pressable onPress={() => { setShowRoomInput(false); setNewRoomInput(""); }} style={{ padding: 4 }}>
                     <Ionicons name="close-circle" size={24} color={colors.mutedForeground} />
@@ -2091,10 +2092,10 @@ export default function ActivityScreen() {
               ) : (
                 <Pressable onPress={() => setShowRoomInput(true)}
                   style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
-                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: colors.primary,
+                    borderWidth: 1, borderStyle: "dashed" as const, borderColor: "#1E3A8A",
                     flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="add" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>+ Room/Studio</Text>
+                  <Ionicons name="add" size={14} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#1E3A8A" }}>+ Room/Studio</Text>
                 </Pressable>
               )}
             </View>
@@ -2132,23 +2133,23 @@ export default function ActivityScreen() {
                       <Pressable key={t.id}
                         onPress={() => { setDraft(d => ({ ...d, teacherId: t.id, teacherName: t.name })); Haptics.selectionAsync(); }}
                         style={{ alignItems: "center", gap: 4, padding: 8, borderRadius: 12,
-                          backgroundColor: active ? `${colors.primary}15` : colors.card,
-                          borderWidth: active ? 1.5 : 1, borderColor: active ? colors.primary : colors.border,
+                          backgroundColor: active ? `"#1E3A8A"15` : colors.card,
+                          borderWidth: active ? 1.5 : 1, borderColor: active ? "#1E3A8A" : colors.border,
                           minWidth: 85, maxWidth: 110 }}>
                         <View style={{ width: 38, height: 38, borderRadius: 19,
-                          backgroundColor: active ? colors.primary : colors.muted,
+                          backgroundColor: active ? "#1E3A8A" : colors.muted,
                           alignItems: "center", justifyContent: "center" }}>
                           <Text style={{ fontSize: 13, fontWeight: "800", color: active ? "#FFF" : colors.mutedForeground }}>{initials}</Text>
                         </View>
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: active ? colors.primary : colors.foreground, textAlign: "center" }}
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: active ? "#1E3A8A" : colors.foreground, textAlign: "center" }}
                           numberOfLines={2}>{t.name}</Text>
                         {t.disciplines && t.disciplines.length > 0 && (
                           <View style={{ gap: 2, width: "100%" }}>
                             {t.disciplines.slice(0, 2).map((d, di) => (
-                              <View key={di} style={{ backgroundColor: active ? `${colors.primary}22` : colors.background,
+                              <View key={di} style={{ backgroundColor: active ? `"#1E3A8A"22` : colors.background,
                                 borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
                                 <Text style={{ fontSize: 9, fontWeight: "700",
-                                  color: active ? colors.primary : colors.mutedForeground, textAlign: "center" }}
+                                  color: active ? "#1E3A8A" : colors.mutedForeground, textAlign: "center" }}
                                   numberOfLines={1}>
                                   {d.name}{d.rateType === "hourly" ? ` €${(d.rateCents / 100).toFixed(0)}/h` : " (vol.)"}
                                 </Text>
@@ -2176,7 +2177,7 @@ export default function ActivityScreen() {
                 <Pressable key={mode} onPress={() => { setDurationMode(mode); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                   style={[{ flex: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center" },
                     durationMode === mode && { backgroundColor: colors.card }]}>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: durationMode === mode ? colors.primary : colors.mutedForeground }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: durationMode === mode ? "#1E3A8A" : colors.mutedForeground }}>
                     {mode === "preset" ? "Standard preset" : "Custom"}
                   </Text>
                 </Pressable>
@@ -2188,8 +2189,8 @@ export default function ActivityScreen() {
                   const active = draft.duration === m && durationMode === "preset";
                   return (
                     <Pressable key={m} onPress={() => { setDraft(d => ({ ...d, duration: m })); Haptics.selectionAsync(); }}
-                      style={[styles.pickerChip, active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 }]}>
-                      <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{fmtDuration(m)}</Text>
+                      style={[styles.pickerChip, active && { backgroundColor: `"#1E3A8A"15`, borderColor: "#1E3A8A", borderWidth: 1.5 }]}>
+                      <Text style={[styles.pickerChipText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>{fmtDuration(m)}</Text>
                     </Pressable>
                   );
                 })}
@@ -2241,7 +2242,7 @@ export default function ActivityScreen() {
                 {/* Total */}
                 <View style={{ alignItems: "center", marginTop: 14 }}>
                   <Text style={{ fontSize: 11, color: colors.mutedForeground, textTransform: "uppercase", fontWeight: "700", marginBottom: 2 }}>Total</Text>
-                  <Text style={{ fontSize: 22, fontWeight: "800", color: colors.primary }}>
+                  <Text style={{ fontSize: 22, fontWeight: "800", color: "#1E3A8A" }}>
                     {(draft.customDurationH ?? 0) === 0 && (draft.customDurationM ?? 0) === 0 ? "--" : fmtDuration((draft.customDurationH ?? 0) * 60 + (draft.customDurationM ?? 0))}
                   </Text>
                 </View>
@@ -2258,7 +2259,7 @@ export default function ActivityScreen() {
                     const dayKeys = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
                     return (
                       <Pressable key={lbl} onPress={() => updateSlot(i, "day", dayKeys[di])}
-                        style={[styles.dayPill, slot.day === dayKeys[di] && { backgroundColor: colors.primary }]}>
+                        style={[styles.dayPill, slot.day === dayKeys[di] && { backgroundColor: "#1E3A8A" }]}>
                         <Text style={[styles.dayPillText, { color: slot.day === dayKeys[di] ? "#FFF" : colors.mutedForeground }]}>{lbl}</Text>
                       </Pressable>
                     );
@@ -2269,7 +2270,7 @@ export default function ActivityScreen() {
                   <Pressable
                     onPress={() => { setActiveTimePickerSlot(activeTimePickerSlot === i ? null : i); Haptics.selectionAsync(); }}
                     style={[styles.timeInput, { backgroundColor: colors.background,
-                      borderColor: activeTimePickerSlot === i ? colors.primary : colors.border }]}
+                      borderColor: activeTimePickerSlot === i ? "#1E3A8A" : colors.border }]}
                   >
                     <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
                     <Text style={[styles.timeText, { color: slot.startTime ? colors.foreground : colors.mutedForeground }]}>
@@ -2291,7 +2292,7 @@ export default function ActivityScreen() {
                           <Pressable key={t}
                             onPress={() => { updateSlot(i, "startTime", t); setActiveTimePickerSlot(null); Haptics.selectionAsync(); }}
                             style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 9,
-                              backgroundColor: active ? colors.primary : colors.muted,
+                              backgroundColor: active ? "#1E3A8A" : colors.muted,
                               borderWidth: active ? 0 : 1, borderColor: colors.border }}>
                             <Text style={{ fontSize: 12, fontWeight: "700",
                               color: active ? "#FFF" : colors.mutedForeground }}>{t}</Text>
@@ -2360,7 +2361,7 @@ export default function ActivityScreen() {
                 </View>
                 <Switch value={draft.enrollment.waitlistEnabled}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, waitlistEnabled: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
+                  trackColor={{ false: "#CBD5E1", true: "${colors.secondary}" }} thumbColor={colors.primary} />
               </View>
               <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
               {/* Members only */}
@@ -2371,7 +2372,7 @@ export default function ActivityScreen() {
                 </View>
                 <Switch value={draft.enrollment.memberOnly}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, memberOnly: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
+                  trackColor={{ false: "#CBD5E1", true: "${colors.secondary}" }} thumbColor={colors.primary} />
               </View>
               <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
               {/* Require approval */}
@@ -2382,7 +2383,7 @@ export default function ActivityScreen() {
                 </View>
                 <Switch value={draft.enrollment.requireApproval}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, requireApproval: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
+                  trackColor={{ false: "#CBD5E1", true: "${colors.secondary}" }} thumbColor={colors.primary} />
               </View>
             </View>
 
@@ -2408,12 +2409,12 @@ export default function ActivityScreen() {
                       <Ionicons name="close-circle" size={16} color="#EF4444" />
                     </Pressable>
                   ) : null}
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.enrolmentOpenDate ? "#1E3A8A" : colors.mutedForeground }}>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.enrolmentOpenDate ? "${colors.primary}" : colors.mutedForeground }}>
                     {draft.enrollment.enrolmentOpenDate
                       ? (() => { const [y,mo,d] = draft.enrollment.enrolmentOpenDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}`; })()
                       : "Now"}
                   </Text>
-                  <Ionicons name="calendar-outline" size={16} color="#1E3A8A" />
+                  <Ionicons name="calendar-outline" size={16} color={colors.primary} />
                 </View>
               </Pressable>
               <View style={[styles.enrollDivider, { backgroundColor: colors.border }]} />
@@ -2436,12 +2437,12 @@ export default function ActivityScreen() {
                       <Ionicons name="close-circle" size={16} color="#EF4444" />
                     </Pressable>
                   ) : null}
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.enrolmentCloseDate ? "#1E3A8A" : colors.mutedForeground }}>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: draft.enrollment.enrolmentCloseDate ? "${colors.primary}" : colors.mutedForeground }}>
                     {draft.enrollment.enrolmentCloseDate
                       ? (() => { const [y,mo,d] = draft.enrollment.enrolmentCloseDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}`; })()
                       : "No deadline"}
                   </Text>
-                  <Ionicons name="calendar-outline" size={16} color="#1E3A8A" />
+                  <Ionicons name="calendar-outline" size={16} color={colors.primary} />
                 </View>
               </Pressable>
             </View>
@@ -2478,7 +2479,7 @@ export default function ActivityScreen() {
                 </View>
                 <Switch value={draft.enrollment.trialEnabled}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, trialEnabled: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
+                  trackColor={{ false: "#CBD5E1", true: "${colors.secondary}" }} thumbColor={colors.primary} />
               </View>
               {draft.enrollment.trialEnabled && (
                 <View style={styles.enrollPriceRow}>
@@ -2502,7 +2503,7 @@ export default function ActivityScreen() {
                 </View>
                 <Switch value={draft.enrollment.dropIn}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, dropIn: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
+                  trackColor={{ false: "#CBD5E1", true: "${colors.secondary}" }} thumbColor={colors.primary} />
               </View>
               {draft.enrollment.dropIn && (
                 <View style={styles.enrollPriceRow}>
@@ -2526,7 +2527,7 @@ export default function ActivityScreen() {
                 </View>
                 <Switch value={draft.enrollment.fixedBlock}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, fixedBlock: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
+                  trackColor={{ false: "#CBD5E1", true: "${colors.secondary}" }} thumbColor={colors.primary} />
               </View>
               {draft.enrollment.fixedBlock && (
                 <View style={styles.enrollPriceRow}>
@@ -2557,7 +2558,7 @@ export default function ActivityScreen() {
                 </View>
                 <Switch value={draft.enrollment.monthly}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthly: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
+                  trackColor={{ false: "#CBD5E1", true: "${colors.secondary}" }} thumbColor={colors.primary} />
               </View>
               {draft.enrollment.monthly && (
                 <>
@@ -2588,7 +2589,7 @@ export default function ActivityScreen() {
                           ? (() => { const [y,mo,d] = draft.enrollment.monthlyEndDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}, ${y}`; })()
                           : "Select"}
                       </Text>
-                      <Ionicons name="calendar-outline" size={15} color="#1E3A8A" />
+                      <Ionicons name="calendar-outline" size={15} color={"#1E3A8A"} />
                     </View>
                   </Pressable>
                   <Pressable style={[styles.enrollRow, { paddingVertical: 12 }]}
@@ -2617,7 +2618,7 @@ export default function ActivityScreen() {
                 </View>
                 <Switch value={draft.enrollment.annual}
                   onValueChange={v => setDraft(d => ({ ...d, enrollment: { ...d.enrollment, annual: v } }))}
-                  trackColor={{ false: "#CBD5E1", true: "#FBBF24" }} thumbColor="#1E3A8A" />
+                  trackColor={{ false: "#CBD5E1", true: "${colors.secondary}" }} thumbColor={colors.primary} />
               </View>
               {draft.enrollment.annual && (
                 <>
@@ -2648,7 +2649,7 @@ export default function ActivityScreen() {
                           ? (() => { const [y,mo,d] = draft.enrollment.annualEndDate.split("-").map(Number); return `${MONTH_NAMES[mo-1].slice(0,3)} ${d}, ${y}`; })()
                           : "Select"}
                       </Text>
-                      <Ionicons name="calendar-outline" size={15} color="#1E3A8A" />
+                      <Ionicons name="calendar-outline" size={15} color={"#1E3A8A"} />
                     </View>
                   </Pressable>
                   <Pressable style={[styles.enrollRow, { paddingVertical: 12 }]}
@@ -2739,11 +2740,11 @@ export default function ActivityScreen() {
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <Pressable onPress={() => { if (enrolOpenCalMonth === 0) { setEnrolOpenCalMonth(11); setEnrolOpenCalYear(y => y - 1); } else setEnrolOpenCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
                     </Pressable>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[enrolOpenCalMonth]} {enrolOpenCalYear}</Text>
                     <Pressable onPress={() => { if (enrolOpenCalMonth === 11) { setEnrolOpenCalMonth(0); setEnrolOpenCalYear(y => y + 1); } else setEnrolOpenCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
                     </Pressable>
                   </View>
                   <View style={{ flexDirection: "row", marginBottom: 6 }}>
@@ -2786,11 +2787,11 @@ export default function ActivityScreen() {
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <Pressable onPress={() => { if (enrolCloseCalMonth === 0) { setEnrolCloseCalMonth(11); setEnrolCloseCalYear(y => y - 1); } else setEnrolCloseCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
                     </Pressable>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[enrolCloseCalMonth]} {enrolCloseCalYear}</Text>
                     <Pressable onPress={() => { if (enrolCloseCalMonth === 11) { setEnrolCloseCalMonth(0); setEnrolCloseCalYear(y => y + 1); } else setEnrolCloseCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
                     </Pressable>
                   </View>
                   <View style={{ flexDirection: "row", marginBottom: 6 }}>
@@ -2833,11 +2834,11 @@ export default function ActivityScreen() {
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <Pressable onPress={() => { if (monthlyEndCalMonth === 0) { setMonthlyEndCalMonth(11); setMonthlyEndCalYear(y => y - 1); } else setMonthlyEndCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
                     </Pressable>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[monthlyEndCalMonth]} {monthlyEndCalYear}</Text>
                     <Pressable onPress={() => { if (monthlyEndCalMonth === 11) { setMonthlyEndCalMonth(0); setMonthlyEndCalYear(y => y + 1); } else setMonthlyEndCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
                     </Pressable>
                   </View>
                   <View style={{ flexDirection: "row", marginBottom: 6 }}>
@@ -2912,11 +2913,11 @@ export default function ActivityScreen() {
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <Pressable onPress={() => { if (annualEndCalMonth === 0) { setAnnualEndCalMonth(11); setAnnualEndCalYear(y => y - 1); } else setAnnualEndCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
                     </Pressable>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[annualEndCalMonth]} {annualEndCalYear}</Text>
                     <Pressable onPress={() => { if (annualEndCalMonth === 11) { setAnnualEndCalMonth(0); setAnnualEndCalYear(y => y + 1); } else setAnnualEndCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
                     </Pressable>
                   </View>
                   <View style={{ flexDirection: "row", marginBottom: 6 }}>
@@ -3057,8 +3058,8 @@ export default function ActivityScreen() {
                   <View key={wi} style={{ flexDirection: "row", marginBottom: 3,
                     borderRadius: 10, overflow: "hidden",
                     borderWidth: (isWkActive || isWkOff) ? 1.5 : 0,
-                    borderColor: isWkActive ? colors.primary : isWkOff ? "#EF4444" : "transparent",
-                    backgroundColor: isWkActive ? `${colors.primary}12` : isWkOff ? "rgba(239,68,68,0.08)" : "transparent" }}>
+                    borderColor: isWkActive ? "#1E3A8A" : isWkOff ? "#EF4444" : "transparent",
+                    backgroundColor: isWkActive ? `"#1E3A8A"12` : isWkOff ? "rgba(239,68,68,0.08)" : "transparent" }}>
                     {/* Week-level tap zone — narrow left strip */}
                     <Pressable
                       onPress={() => toggleWeek(week.weekStart)}
@@ -3066,7 +3067,7 @@ export default function ActivityScreen() {
                     >
                       <View style={{
                         width: 14, height: 14, borderRadius: 4,
-                        backgroundColor: isWkActive ? colors.primary : isWkOff ? "#EF4444" : colors.muted,
+                        backgroundColor: isWkActive ? "#1E3A8A" : isWkOff ? "#EF4444" : colors.muted,
                         borderWidth: (!isWkActive && !isWkOff) ? 1 : 0,
                         borderColor: colors.border,
                       }} />
@@ -3085,7 +3086,7 @@ export default function ActivityScreen() {
                           style={{
                             flex: 1, height: 38, alignItems: "center", justifyContent: "center",
                             borderRadius: 8, margin: 1,
-                            backgroundColor: dayOver === "active" ? `${colors.primary}25`
+                            backgroundColor: dayOver === "active" ? `"#1E3A8A"25`
                               : dayOver === "off" ? "rgba(239,68,68,0.2)"
                               : "transparent",
                           }}
@@ -3093,7 +3094,7 @@ export default function ActivityScreen() {
                           <Text style={{
                             fontSize: 13,
                             fontWeight: (isActiv || isOffDay || dayOver) ? "800" : "400",
-                            color: isActiv  ? colors.primary
+                            color: isActiv  ? "#1E3A8A"
                               : isOffDay ? "#EF4444"
                               : colors.foreground,
                           }}>
@@ -3112,9 +3113,9 @@ export default function ActivityScreen() {
               <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                 {activeWeeks.size > 0 && (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6,
-                    backgroundColor: `${colors.primary}12`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
-                    <Ionicons name="checkmark-circle" size={13} color={colors.primary} />
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>
+                    backgroundColor: `"#1E3A8A"12`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                    <Ionicons name="checkmark-circle" size={13} color={"#1E3A8A"} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" }}>
                       {activeWeeks.size} active week{activeWeeks.size !== 1 ? "s" : ""}
                     </Text>
                   </View>
@@ -3202,7 +3203,7 @@ export default function ActivityScreen() {
             <Pressable onPress={() => { setShowCreateChoice(false); setShowYoY(true); }}
               style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: `${colors.primary}10`,
                 borderRadius: 16, padding: 16, marginBottom: 4,
-                borderWidth: 1.5, borderColor: `${colors.primary}40` }}>
+                borderWidth: 1.5, borderColor: `"#1E3A8A"40` }}>
               <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: colors.primary,
                 alignItems: "center", justifyContent: "center" }}>
                 <Ionicons name="copy-outline" size={22} color="#FFF" />
@@ -3316,11 +3317,11 @@ export default function ActivityScreen() {
             <View style={styles.modalHeaderRight}>
               {editingAdminItem && (
                 <Pressable onPress={() => deleteAdminItem(editingAdminItem.id)} style={styles.deleteBtn}>
-                  <Ionicons name="trash-outline" size={20} color="#FBBF24" />
+                  <Ionicons name="trash-outline" size={20} color={"#FBBF24"} />
                 </Pressable>
               )}
-              <Pressable onPress={saveAdminItem} style={[styles.saveBtn, { backgroundColor: "#FBBF24" }]}>
-                <Text style={[styles.saveBtnText, { color: "#1E3A8A" }]}>Save</Text>
+              <Pressable onPress={saveAdminItem} style={[styles.saveBtn, { backgroundColor: "${colors.secondary}" }]}>
+                <Text style={[styles.saveBtnText, { color: "${colors.primary}" }]}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -3375,7 +3376,7 @@ export default function ActivityScreen() {
                   {showAdminTypeInput ? (
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1, minWidth: 200 }}>
                       <TextInput
-                        style={[styles.smallInput, { flex: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                        style={[styles.smallInput, { flex: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: "#1E3A8A" }]}
                         placeholder="Custom type name…"
                         placeholderTextColor={colors.mutedForeground}
                         value={newAdminTypeInput}
@@ -3407,7 +3408,7 @@ export default function ActivityScreen() {
                           setShowAdminTypeInput(false);
                           Haptics.selectionAsync();
                         }}
-                        style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
+                        style={{ backgroundColor: "#1E3A8A", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
                         <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13 }}>Add</Text>
                       </Pressable>
                       <Pressable onPress={() => { setShowAdminTypeInput(false); setNewAdminTypeInput(""); }}>
@@ -3526,10 +3527,10 @@ export default function ActivityScreen() {
                         }}
                         style={[
                           styles.pickerChip,
-                          active && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary, borderWidth: 1.5 },
+                          active && { backgroundColor: `"#1E3A8A"15`, borderColor: "#1E3A8A", borderWidth: 1.5 },
                         ]}
                       >
-                        <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                        <Text style={[styles.pickerChipText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>
                           {day}
                         </Text>
                       </Pressable>
@@ -3544,10 +3545,10 @@ export default function ActivityScreen() {
                 <Pressable
                   onPress={() => { setShowSecHoursCalendar(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
                   style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5,
-                    borderColor: (secHoursActiveWeeks.size > 0 || secHoursOffWeeks.size > 0) ? colors.primary : colors.border,
+                    borderColor: (secHoursActiveWeeks.size > 0 || secHoursOffWeeks.size > 0) ? "#1E3A8A" : colors.border,
                     padding: 14, flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}
                 >
-                  <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+                  <Ionicons name="calendar-outline" size={20} color={"#1E3A8A"} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>
                       Select Active &amp; Off Weeks
@@ -3567,9 +3568,9 @@ export default function ActivityScreen() {
                     <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
                       {secHoursActiveWeeks.size > 0 && (
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 6,
-                          backgroundColor: `${colors.primary}12`, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-                          <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
-                          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>
+                          backgroundColor: `"#1E3A8A"12`, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                          <Ionicons name="checkmark-circle" size={14} color={"#1E3A8A"} />
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: "#1E3A8A" }}>
                             {secHoursActiveWeeks.size} active week{secHoursActiveWeeks.size > 1 ? "s" : ""}
                           </Text>
                         </View>
@@ -3621,9 +3622,9 @@ export default function ActivityScreen() {
                       onPress={() => { setAdminInviteScope(active ? undefined : v); Haptics.selectionAsync(); }}
                       style={[
                         styles.pickerChip,
-                        active && { backgroundColor: `${colors.primary}18`, borderColor: colors.primary, borderWidth: 1.5 },
+                        active && { backgroundColor: `"#1E3A8A"18`, borderColor: "#1E3A8A", borderWidth: 1.5 },
                       ]}>
-                      <Text style={[styles.pickerChipText, { color: active ? colors.primary : colors.mutedForeground }]}>{label}</Text>
+                      <Text style={[styles.pickerChipText, { color: active ? "#1E3A8A" : colors.mutedForeground }]}>{label}</Text>
                     </Pressable>
                   );
                 })}
@@ -3632,7 +3633,7 @@ export default function ActivityScreen() {
               {/* Manual names */}
               {adminInviteScope === "manual" && (
                 <TextInput
-                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#1E3A8A" }]}
                   placeholder="Names or contacts, comma-separated…"
                   placeholderTextColor={colors.mutedForeground}
                   value={adminDraft.inviteManualNames ?? ""}
@@ -3643,7 +3644,7 @@ export default function ActivityScreen() {
               {/* By course */}
               {adminInviteScope === "by_course" && (
                 <TextInput
-                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#1E3A8A" }]}
                   placeholder="Course name…"
                   placeholderTextColor={colors.mutedForeground}
                   value={adminDraft.inviteCourseName ?? ""}
@@ -3654,7 +3655,7 @@ export default function ActivityScreen() {
               {/* By venue */}
               {adminInviteScope === "by_venue" && (
                 <TextInput
-                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.primary }]}
+                  style={[styles.smallInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: "#1E3A8A" }]}
                   placeholder="Venue / studio name…"
                   placeholderTextColor={colors.mutedForeground}
                   value={adminDraft.inviteVenueName ?? ""}
@@ -3705,10 +3706,10 @@ export default function ActivityScreen() {
 
               {/* Info chip when scope selected */}
               {adminInviteScope && (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: `${colors.primary}10`,
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: `"#1E3A8A"10`,
                   borderRadius: 10, padding: 10 }}>
-                  <Ionicons name="send-outline" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 12, color: colors.primary, flex: 1 }}>
+                  <Ionicons name="send-outline" size={14} color={"#1E3A8A"} />
+                  <Text style={{ fontSize: 12, color: "#1E3A8A", flex: 1 }}>
                     Invites will be sent when you save. Recipients can Accept or Decline, and you will see the tracking here.
                   </Text>
                 </View>
@@ -3815,7 +3816,7 @@ export default function ActivityScreen() {
                             style={{
                               flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center",
                               borderRadius: 10, margin: 1,
-                              backgroundColor: selected ? colors.primary : isToday ? `${colors.primary}18` : "transparent",
+                              backgroundColor: selected ? "#1E3A8A" : isToday ? `"#1E3A8A"18` : "transparent",
                             }}
                             onPress={() => {
                               Haptics.selectionAsync();
@@ -3829,7 +3830,7 @@ export default function ActivityScreen() {
                           >
                             <Text style={{
                               fontSize: 14, fontWeight: selected || isToday ? "700" : "400",
-                              color: selected ? "#FFF" : isToday ? colors.primary : colors.foreground,
+                              color: selected ? "#FFF" : isToday ? "#1E3A8A" : colors.foreground,
                             }}>
                               {date.getDate()}
                             </Text>
@@ -3879,11 +3880,11 @@ export default function ActivityScreen() {
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <Pressable onPress={() => { if (monthlyEndCalMonth === 0) { setMonthlyEndCalMonth(11); setMonthlyEndCalYear(y => y - 1); } else setMonthlyEndCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
                     </Pressable>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[monthlyEndCalMonth]} {monthlyEndCalYear}</Text>
                     <Pressable onPress={() => { if (monthlyEndCalMonth === 11) { setMonthlyEndCalMonth(0); setMonthlyEndCalYear(y => y + 1); } else setMonthlyEndCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
                     </Pressable>
                   </View>
                   <View style={{ flexDirection: "row", marginBottom: 6 }}>
@@ -3935,11 +3936,11 @@ export default function ActivityScreen() {
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <Pressable onPress={() => { if (enrolOpenCalMonth === 0) { setEnrolOpenCalMonth(11); setEnrolOpenCalYear(y => y - 1); } else setEnrolOpenCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
                     </Pressable>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[enrolOpenCalMonth]} {enrolOpenCalYear}</Text>
                     <Pressable onPress={() => { if (enrolOpenCalMonth === 11) { setEnrolOpenCalMonth(0); setEnrolOpenCalYear(y => y + 1); } else setEnrolOpenCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
                     </Pressable>
                   </View>
                   <View style={{ flexDirection: "row", marginBottom: 6 }}>
@@ -3983,11 +3984,11 @@ export default function ActivityScreen() {
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <Pressable onPress={() => { if (enrolCloseCalMonth === 0) { setEnrolCloseCalMonth(11); setEnrolCloseCalYear(y => y - 1); } else setEnrolCloseCalMonth(m => m - 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-back" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-back" size={20} color={"#1E3A8A"} />
                     </Pressable>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E3A8A" }}>{MONTH_NAMES[enrolCloseCalMonth]} {enrolCloseCalYear}</Text>
                     <Pressable onPress={() => { if (enrolCloseCalMonth === 11) { setEnrolCloseCalMonth(0); setEnrolCloseCalYear(y => y + 1); } else setEnrolCloseCalMonth(m => m + 1); }} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
-                      <Ionicons name="chevron-forward" size={20} color="#1E3A8A" />
+                      <Ionicons name="chevron-forward" size={20} color={"#1E3A8A"} />
                     </Pressable>
                   </View>
                   <View style={{ flexDirection: "row", marginBottom: 6 }}>
@@ -4095,13 +4096,13 @@ export default function ActivityScreen() {
                             style={{
                               height: 44, alignItems: "center", justifyContent: "center",
                               marginHorizontal: 4, borderRadius: 10,
-                              backgroundColor: adminTimeHour === h ? `${colors.primary}20` : "transparent",
+                              backgroundColor: adminTimeHour === h ? `"#1E3A8A"20` : "transparent",
                             }}
                           >
                             <Text style={{
                               fontSize: adminTimeHour === h ? 20 : 16,
                               fontWeight: adminTimeHour === h ? "800" : "400",
-                              color: adminTimeHour === h ? colors.primary : colors.foreground,
+                              color: adminTimeHour === h ? "#1E3A8A" : colors.foreground,
                             }}>
                               {String(h).padStart(2, "0")}
                             </Text>
@@ -4126,13 +4127,13 @@ export default function ActivityScreen() {
                             style={{
                               height: 44, alignItems: "center", justifyContent: "center",
                               marginHorizontal: 4, borderRadius: 10,
-                              backgroundColor: adminTimeMinute === m ? `${colors.primary}20` : "transparent",
+                              backgroundColor: adminTimeMinute === m ? `"#1E3A8A"20` : "transparent",
                             }}
                           >
                             <Text style={{
                               fontSize: adminTimeMinute === m ? 20 : 16,
                               fontWeight: adminTimeMinute === m ? "800" : "400",
-                              color: adminTimeMinute === m ? colors.primary : colors.foreground,
+                              color: adminTimeMinute === m ? "#1E3A8A" : colors.foreground,
                             }}>
                               {String(m).padStart(2, "0")}
                             </Text>
@@ -4273,15 +4274,15 @@ export default function ActivityScreen() {
                           }}
                           style={{ flexDirection: "row", marginBottom: 4, borderRadius: 10,
                             borderWidth: (isActive || isOff) ? 1.5 : 0,
-                            borderColor: isActive ? colors.primary : isOff ? "#EF4444" : "transparent",
-                            backgroundColor: isActive ? `${colors.primary}15` : isOff ? "rgba(239,68,68,0.1)" : "transparent" }}
+                            borderColor: isActive ? "#1E3A8A" : isOff ? "#EF4444" : "transparent",
+                            backgroundColor: isActive ? `"#1E3A8A"15` : isOff ? "rgba(239,68,68,0.1)" : "transparent" }}
                         >
                           {week.days.map((day, di) => (
                             <View key={di} style={{ flex: 1, height: 38, alignItems: "center", justifyContent: "center" }}>
                               {day ? (
                                 <Text style={{ fontSize: 14,
                                   fontWeight: (isActive || isOff) ? "800" : "500",
-                                  color: isActive ? colors.primary : isOff ? "#EF4444" : colors.foreground }}>
+                                  color: isActive ? "#1E3A8A" : isOff ? "#EF4444" : colors.foreground }}>
                                   {day.getDate()}
                                 </Text>
                               ) : null}
@@ -4372,7 +4373,7 @@ export default function ActivityScreen() {
               >
                 {/* Header */}
                 <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                  <Ionicons name="mail-outline" size={20} color={colors.primary} />
+                  <Ionicons name="mail-outline" size={20} color={"#1E3A8A"} />
                   <View style={{ flex: 1, marginLeft: 10 }}>
                     <Text style={{ fontSize: 16, fontWeight: "800", color: colors.foreground }}>
                       {trackerItem?.title ?? "Meeting"}
@@ -4487,7 +4488,7 @@ export default function ActivityScreen() {
                   </Pressable>
                   <Pressable
                     onPress={() => setShowInviteTracker(null)}
-                    style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 13, alignItems: "center" }}>
+                    style={{ flex: 1, backgroundColor: "#1E3A8A", borderRadius: 12, paddingVertical: 13, alignItems: "center" }}>
                     <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Close</Text>
                   </Pressable>
                 </View>
@@ -4504,7 +4505,7 @@ export default function ActivityScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 12, flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   pageTitle: { fontSize: 28, fontWeight: "800" },
@@ -4556,7 +4557,7 @@ const styles = StyleSheet.create({
   adminSectionCount: { fontSize: 12, fontWeight: "600" },
 
   // FAB
-  fab: { position: "absolute", right: 20, width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: "#1E3A8A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
+  fab: { position: "absolute", right: 20, width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
 
   // Modal
   modalContainer: { flex: 1 },
@@ -4617,14 +4618,14 @@ const styles = StyleSheet.create({
   saOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 20 },
   saCard: { backgroundColor: "#FFF", borderRadius: 24, padding: 22, width: "100%", maxHeight: "85%" },
   saCardHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 14 },
-  saCardTitle: { fontSize: 18, fontWeight: "800", color: "#1E3A8A" },
+  saCardTitle: { fontSize: 18, fontWeight: "800", color: primary },
   saCardSub: { fontSize: 13, color: "#6B7BA4", marginTop: 3 },
   saInfoRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, padding: 12, marginBottom: 12 },
   saInfoText: { fontSize: 13, fontWeight: "600", flex: 1 },
   saSubRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#F8FAFF", borderRadius: 14, padding: 12, marginBottom: 8 },
   saSubNum: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   saSubNumText: { color: "#FFF", fontWeight: "800", fontSize: 13 },
-  saSubName: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },
+  saSubName: { fontSize: 14, fontWeight: "700", color: primary },
   saSubStatus: { fontSize: 12, fontWeight: "600", marginTop: 2 },
   saSubBtn: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   saSubBtnText: { color: "#FFF", fontWeight: "700", fontSize: 12 },
@@ -4638,12 +4639,12 @@ const styles = StyleSheet.create({
 
   // Rescheduling modal
   rsOption: { flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 12, borderWidth: 1.5, borderColor: "#D1D9F0", padding: 14, marginBottom: 10 },
-  rsOptionTitle: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },
+  rsOptionTitle: { fontSize: 14, fontWeight: "700", color: primary },
   rsOptionSub: { fontSize: 12, color: "#6B7BA4", marginTop: 2 },
   rsInputRow: { marginTop: 10, marginBottom: 4 },
   rsInputLabel: { fontSize: 13, fontWeight: "600", marginBottom: 8 },
   rsShiftBtns: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 8 },
   rsShiftChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#D1D9F0" },
-  rsShiftChipText: { fontSize: 13, fontWeight: "600", color: "#1E3A8A" },
+  rsShiftChipText: { fontSize: 13, fontWeight: "600", color: primary },
   rsTextInput: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontWeight: "600" },
 });

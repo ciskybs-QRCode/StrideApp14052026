@@ -97,7 +97,7 @@ export default function OperatorSettingsScreen() {
               {user?.email ? (
                 <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
               ) : null}
-              <View style={[styles.roleBadge, { backgroundColor: "#FBBF24" }]}>
+              <View style={[styles.roleBadge, { backgroundColor: colors.secondary }]}>
                 <Ionicons name={meta.icon as never} size={12} color={colors.primary} />
                 <Text style={[styles.roleBadgeText, { color: colors.primary }]}>{meta.label}</Text>
               </View>
@@ -110,8 +110,8 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1, marginTop: 16 }]}
           onPress={() => { tap(); router.navigate("/(operator)/account" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
-            <Ionicons name="person-circle-outline" size={26} color="#1E3A8A" />
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
+            <Ionicons name="person-circle-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>Account</Text>
@@ -127,8 +127,8 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { tap(); router.navigate("/(operator)/contract" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
-            <Ionicons name="document-text-outline" size={26} color="#1E3A8A" />
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
+            <Ionicons name="document-text-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>My Contract</Text>
@@ -144,8 +144,8 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { tap(); router.navigate("/join-org" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
-            <Ionicons name="person-add-outline" size={26} color="#1E3A8A" />
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
+            <Ionicons name="person-add-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>Join an Association</Text>
@@ -161,7 +161,7 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { tap(); router.navigate("/(operator)/resign" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
             <Ionicons name="exit-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -178,8 +178,8 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { tap(); router.navigate("/(operator)/workspace" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#FBBF2415" }]}>
-            <Ionicons name="grid-outline" size={26} color="#1E3A8A" />
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.secondary + "15") }]}>
+            <Ionicons name="grid-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>My Workspace</Text>
@@ -212,8 +212,8 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { tap(); router.push("/(parent)/doc-consent" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#1E3A8A12" }]}>
-            <Ionicons name="camera-outline" size={26} color="#1E3A8A" />
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
+            <Ionicons name="camera-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>Media Release</Text>

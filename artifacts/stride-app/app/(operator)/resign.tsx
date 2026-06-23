@@ -107,7 +107,7 @@ export default function ResignScreen() {
         <ScreenHeader title="End of Contract" onBack={() => router.back()} />
         <View style={styles.doneCenter}>
           <View style={[styles.doneIcon, { backgroundColor: colors.muted }]}>
-            <Ionicons name="checkmark-circle-outline" size={52} color={colors.primary} />
+            <Ionicons name="checkmark-circle-outline" size={52} color={"#1E3A8A"} />
           </View>
           <Text style={[styles.doneTitle, { color: colors.foreground }]}>Request Submitted</Text>
           <Text style={[styles.doneSub, { color: colors.mutedForeground }]}>
@@ -117,7 +117,7 @@ export default function ResignScreen() {
             You will be notified if no replacement is found.
           </Text>
           <Pressable
-            style={[styles.doneBtn, { backgroundColor: colors.primary }]}
+            style={[styles.doneBtn, { backgroundColor: "#1E3A8A" }]}
             onPress={() => router.back()}
           >
             <Text style={styles.doneBtnText}>Close</Text>
@@ -151,7 +151,7 @@ export default function ResignScreen() {
               styles.optionCard,
               {
                 backgroundColor: colors.card,
-                borderColor: selected === opt.key ? colors.primary : colors.border,
+                borderColor: selected === opt.key ? "#1E3A8A" : colors.border,
                 borderWidth: selected === opt.key ? 2 : 1,
               },
             ]}
@@ -169,7 +169,7 @@ export default function ResignScreen() {
             <Ionicons
               name={selected === opt.key ? "radio-button-on" : "radio-button-off"}
               size={20}
-              color={selected === opt.key ? colors.primary : colors.mutedForeground}
+              color={selected === opt.key ? "#1E3A8A" : colors.mutedForeground}
             />
           </Pressable>
         ))}
@@ -183,7 +183,7 @@ export default function ResignScreen() {
 
         {selected && (
           <Pressable
-            style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.7 : 1 }]}
+            style={[styles.submitBtn, { backgroundColor: "#1E3A8A", opacity: submitting ? 0.7 : 1 }]}
             onPress={handleSubmit}
             disabled={submitting}
           >

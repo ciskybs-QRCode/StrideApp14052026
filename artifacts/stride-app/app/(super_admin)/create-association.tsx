@@ -17,8 +17,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { createMyOrg } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 
 export default function CreateAssociation() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
   const { refreshAllRoles } = useAuth();
@@ -69,7 +72,7 @@ export default function CreateAssociation() {
         >
           {/* Explanation banner */}
           <View style={styles.infoBanner}>
-            <Ionicons name="information-circle-outline" size={22} color="#1E3A8A" />
+            <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
             <Text style={styles.infoText}>
               Create your own association here. As its admin you can invite members, manage courses, and configure everything — completely separate from the platform.
             </Text>
@@ -123,7 +126,7 @@ export default function CreateAssociation() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFC" },
   content:   { paddingHorizontal: 20, paddingTop: 24 },
 
@@ -138,7 +141,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#BFDBFE",
   },
-  infoText: { flex: 1, fontSize: 13, color: "#1E3A8A", lineHeight: 20 },
+  infoText: { flex: 1, fontSize: 13, color: primary, lineHeight: 20 },
 
   label: { fontSize: 12, fontWeight: "700", color: "#374151", marginBottom: 6, letterSpacing: 0.4 },
   input: {
@@ -159,7 +162,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#1E3A8A",
+    backgroundColor: primary,
     borderRadius: 14,
     paddingVertical: 16,
     marginTop: 8,

@@ -17,9 +17,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useAppData } from "@/context/AppDataContext";
 import { api } from "@/lib/api";
-import colors from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
+import defaultColors from "@/constants/colors";
 
-const C = colors.light;
+const C = defaultColors.light;
 
 const ALL_DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
 type WeekDay = typeof ALL_DAYS[number];
@@ -53,6 +54,8 @@ function formatDate(iso: string): string {
 }
 
 function StatusBadge({ entry }: { entry: GuardianEntry }) {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const expired = isExpired(entry);
   if (!entry.is_active)
     return <View style={[styles.badge, { backgroundColor: "#F3F4F6" }]}><Text style={[styles.badgeText, { color: "#9CA3AF" }]}>Inactive</Text></View>;
@@ -62,6 +65,8 @@ function StatusBadge({ entry }: { entry: GuardianEntry }) {
 }
 
 export default function GuardianCircle() {
+  const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const router = useRouter();
   const { children } = useAppData();
 
@@ -360,7 +365,7 @@ export default function GuardianCircle() {
                 <Switch
                   value={isSingleUse}
                   onValueChange={setIsSingleUse}
-                  trackColor={{ true: "#1E3A8A" }}
+                  trackColor={{ true: colors.primary }}
                   thumbColor="#FFF"
                 />
               </View>
@@ -376,7 +381,7 @@ export default function GuardianCircle() {
                 <Switch
                   value={hasWindow}
                   onValueChange={v => { setHasWindow(v); if (v && pickupDays.length === 0) setPickupDays(["MON", "TUE", "WED", "THU", "FRI"]); }}
-                  trackColor={{ true: "#FBBF24" }}
+                  trackColor={{ true: colors.secondary }}
                   thumbColor="#FFF"
                 />
               </View>
@@ -471,6 +476,8 @@ function GuardianCard({
   deactivating: string | null;
   onDeactivate: (e: GuardianEntry) => void;
 }) {
+  const colors    = useColors();
+  const styles    = make_styles("#1E3A8A", "#FBBF24");
   const expired   = isExpired(entry);
   const isLoading = deactivating === entry.id;
   const isUsed    = entry.is_single_use && !!entry.used_at;
@@ -510,7 +517,7 @@ function GuardianCard({
           )}
           {hasWindow && (
             <View style={[styles.iqrBadge, { backgroundColor: "#EFF6FF" }]}>
-              <Ionicons name="time-outline" size={11} color="#1E3A8A" />
+              <Ionicons name="time-outline" size={11} color={"#1E3A8A"} />
               <Text style={[styles.iqrBadgeText, { color: "#1E3A8A" }]}>
                 {entry.pickup_window_start}–{entry.pickup_window_end}
                 {entry.pickup_days && entry.pickup_days.length > 0 && (
@@ -559,7 +566,7 @@ function GuardianCard({
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   root:      { flex: 1, backgroundColor: C.background },
   container: { flex: 1 },
   content:   { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
@@ -631,7 +638,7 @@ const styles = StyleSheet.create({
   windowBox:   { backgroundColor: "#F8FAFC", borderRadius: 12, padding: 14, marginTop: 10, borderWidth: 1, borderColor: C.border },
   dayChips:    { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 4 },
   dayChip:     { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: C.muted, borderWidth: 1, borderColor: C.border },
-  dayChipActive:     { backgroundColor: "#1E3A8A", borderColor: "#1E3A8A" },
+  dayChipActive:     { backgroundColor: primary, borderColor: primary },
   dayChipText:       { fontSize: 12, fontWeight: "700", color: "#374151" },
   dayChipTextActive: { color: "#FFF" },
   timeRow:     { flexDirection: "row", alignItems: "flex-end", gap: 8 },

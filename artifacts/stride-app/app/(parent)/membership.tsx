@@ -33,6 +33,7 @@ function fmtAmt(cents: number, currency: string): string {
 export default function MembershipScreen() {
   const router   = useRouter();
   const colors   = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const insets   = useSafeAreaInsets();
   const { user } = useAuth();
   const { children: dependants } = useAppData();
@@ -154,7 +155,7 @@ export default function MembershipScreen() {
       <View style={[S.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Membership" onBack={() => router.back()} />
         <View style={S.centerBox}>
-          <ActivityIndicator size="large" color="#1E3A8A" />
+          <ActivityIndicator size="large" color={"#1E3A8A"} />
           <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading plans…</Text>
         </View>
       </View>
@@ -215,9 +216,9 @@ export default function MembershipScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}
-        <View style={[S.hero, { backgroundColor: "#1E3A8A" }]}>
+        <View style={[S.hero, { backgroundColor: colors.primary }]}>
           <View style={S.heroIconWrap}>
-            <Ionicons name="id-card" size={30} color="#FBBF24" />
+            <Ionicons name="id-card" size={30} color={colors.secondary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={S.heroTitle}>Association Membership</Text>
@@ -315,7 +316,7 @@ export default function MembershipScreen() {
                 <View style={S.memberRow}>
                   <View style={S.memberLeft}>
                     <View style={[S.avatar, { backgroundColor: "rgba(30,58,138,0.12)" }]}>
-                      <Ionicons name="person" size={17} color="#1E3A8A" />
+                      <Ionicons name="person" size={17} color={"#1E3A8A"} />
                     </View>
                     <View>
                       <Text style={[S.memberName, { color: colors.foreground }]}>
@@ -343,7 +344,7 @@ export default function MembershipScreen() {
                 >
                   <View style={S.memberLeft}>
                     <View style={[S.avatar, { backgroundColor: "rgba(251,191,36,0.15)" }]}>
-                      <Ionicons name="people" size={17} color="#FBBF24" />
+                      <Ionicons name="people" size={17} color={"#FBBF24"} />
                     </View>
                     <View>
                       <Text style={[S.memberName, { color: colors.foreground }]}>{dep.name}</Text>
@@ -399,7 +400,7 @@ export default function MembershipScreen() {
   );
 }
 
-const S = StyleSheet.create({
+const make_S = (primary: string, secondary: string) => StyleSheet.create({
   root:      { flex: 1 },
   centerBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, padding: 32 },
   loaderText: { fontSize: 14, fontWeight: "500" },
@@ -416,11 +417,11 @@ const S = StyleSheet.create({
 
   toggleRow:  { flexDirection: "row", borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden", marginBottom: 16 },
   toggleBtn:  { flex: 1, alignItems: "center", paddingVertical: 14, paddingHorizontal: 8, gap: 3 },
-  toggleBtnActive: { backgroundColor: "#1E3A8A" },
+  toggleBtnActive: { backgroundColor: primary },
   toggleBtnTitle:  { fontSize: 14, fontWeight: "700", color: "#6B7280" },
   toggleBtnPrice:  { fontSize: 12, color: "#6B7280" },
-  saveBadge:  { backgroundColor: "#FBBF24", borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2 },
-  saveText:   { fontSize: 10, fontWeight: "800", color: "#1E3A8A" },
+  saveBadge:  { backgroundColor: secondary, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2 },
+  saveText:   { fontSize: 10, fontWeight: "800", color: primary },
 
   priceCard:  { borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, padding: 18, alignItems: "center", marginBottom: 4 },
   priceLbl:   { fontSize: 13, marginBottom: 6 },
@@ -441,6 +442,6 @@ const S = StyleSheet.create({
   totalLbl:    { fontSize: 14, fontWeight: "600" },
   totalVal:    { fontSize: 18, fontWeight: "800" },
 
-  cta:         { backgroundColor: "#1E3A8A", borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 15, gap: 10 },
+  cta:         { backgroundColor: primary, borderRadius: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 15, gap: 10 },
   ctaText:     { fontSize: 16, fontWeight: "800", color: "#FFF" },
 });

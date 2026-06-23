@@ -23,6 +23,7 @@ import { useBranding } from "@/context/BrandingContext";
 import { api, setToken } from "@/lib/api";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { TERMS_OF_SERVICE, PRIVACY_POLICY, DATA_PROCESSING_AGREEMENT } from "@/lib/legal-texts";
+import { useColors } from "@/hooks/useColors";
 
 // ── Brand ─────────────────────────────────────────────────────────────────────
 const NAVY = "#1E3A8A";
@@ -116,6 +117,7 @@ const STEP_LABELS = ["Account Credentials", "Personal Profile", "Organisation De
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Pioneer() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, updateUser, refreshAllRoles } = useAuth();

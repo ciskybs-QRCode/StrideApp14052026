@@ -14,6 +14,7 @@ import {
   type PlatformStripeStatus, type OrgBillingRow, type AssociationRecord,
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useColors } from "@/hooks/useColors";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
@@ -161,6 +162,7 @@ function StripeKeyCard({
 // ── Automation Flow Card ──────────────────────────────────────────────────────
 
 function AutomationFlowCard() {
+  const colors = useColors();
   const steps = [
     {
       icon: "key-outline" as const,

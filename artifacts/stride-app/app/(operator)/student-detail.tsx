@@ -23,6 +23,7 @@ export default function StudentDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { students, courses, addStars, updateStudentPresence } = useAppData();
   const colors = useColors();
+  const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [apiStudent, setApiStudent] = useState<ApiStudent | null>(null);
@@ -59,7 +60,7 @@ export default function StudentDetail() {
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
         <Ionicons name="person-outline" size={48} color={colors.mutedForeground} />
         <Text style={[styles.notFoundText, { color: colors.mutedForeground }]}>Member not found</Text>
-        <Pressable style={[styles.backFallback, { backgroundColor: colors.primary }]} onPress={() => router.navigate("/(operator)/students" as never)}>
+        <Pressable style={[styles.backFallback, { backgroundColor: "#1E3A8A" }]} onPress={() => router.navigate("/(operator)/students" as never)}>
           <Text style={styles.backFallbackText}>Go Back</Text>
         </Pressable>
       </View>
@@ -100,7 +101,7 @@ export default function StudentDetail() {
           <Text style={styles.heroSub}>{student.age} years old</Text>
           <View style={styles.heroMeta}>
             <View style={styles.heroMetaItem}>
-              <Ionicons name="star" size={15} color="#FBBF24" />
+              <Ionicons name="star" size={15} color={colors.secondary} />
               <Text style={styles.heroMetaStars}>{student.stars} Stars</Text>
             </View>
             <View style={[styles.presenceBadge, { backgroundColor: student.checkedIn ? "#10B981" : "#EF4444" }]}>
@@ -186,7 +187,7 @@ export default function StudentDetail() {
           const cfg = mediaCfg[student.mediaConsent] ?? mediaCfg.none;
           return (
             <>
-              <Text style={[styles.sectionTitle, { color: colors.primary }]}>Media Release</Text>
+              <Text style={[styles.sectionTitle, { color: "#1E3A8A" }]}>Media Release</Text>
               <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
                 <View style={styles.infoRow}>
                   <View style={[styles.infoIcon, { backgroundColor: cfg.bg }]}>
@@ -235,8 +236,8 @@ export default function StudentDetail() {
               <Text style={[styles.contactBtnText, { color: "#25D366" }]}>WhatsApp</Text>
             </Pressable>
             <Pressable style={[styles.contactBtn, { backgroundColor: "#EEF2FF" }]} onPress={() => Linking.openURL(`sms:${parentPhone}`)}>
-              <Ionicons name="chatbubble" size={17} color={colors.primary} />
-              <Text style={[styles.contactBtnText, { color: colors.primary }]}>SMS</Text>
+              <Ionicons name="chatbubble" size={17} color={"#1E3A8A"} />
+              <Text style={[styles.contactBtnText, { color: "#1E3A8A" }]}>SMS</Text>
             </Pressable>
           </View>
         ) : null}
@@ -249,10 +250,10 @@ export default function StudentDetail() {
               style={[styles.infoRow, i < displayCourses.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
             >
               <View style={[styles.infoIcon, { backgroundColor: "#EEF2FF" }]}>
-                <Ionicons name="musical-notes" size={18} color={colors.primary} />
+                <Ionicons name="musical-notes" size={18} color={"#1E3A8A"} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={[styles.infoValue, { color: colors.primary }]}>{course}</Text>
+                <Text style={[styles.infoValue, { color: "#1E3A8A" }]}>{course}</Text>
               </View>
             </View>
           )) : (
@@ -288,7 +289,7 @@ export default function StudentDetail() {
   );
 }
 
-const styles = StyleSheet.create({
+const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
   notFoundText: { fontSize: 16, marginTop: 12, marginBottom: 24 },
@@ -301,7 +302,7 @@ const styles = StyleSheet.create({
   heroSub: { fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 14 },
   heroMeta: { flexDirection: "row", alignItems: "center", gap: 12 },
   heroMetaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  heroMetaStars: { fontSize: 14, fontWeight: "700", color: "#FBBF24" },
+  heroMetaStars: { fontSize: 14, fontWeight: "700", color: secondary },
   presenceBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
   presenceBadgeText: { fontSize: 12, fontWeight: "700", color: "#FFF" },
   actionsRow: { flexDirection: "row", gap: 12, marginBottom: 24 },

@@ -18,6 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useBillingStatus } from "@/hooks/useBillingStatus";
 import { createCheckoutSession, getBillingPlan, type BillingPlan } from "@/lib/api";
 import { BILLING_TIERS } from "@/lib/billingEngine";
+import { useColors } from "@/hooks/useColors";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
@@ -73,6 +74,7 @@ function QRRow({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function SubscriptionBillingScreen() {
+  const colors = useColors();
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
   const { user } = useAuth();

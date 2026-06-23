@@ -60,6 +60,7 @@ function formatPrice(cents: number, currency: string) {
 
 export default function MarketplaceScreen() {
   const colors = useColors();
+  const S = make_S(colors.primary, colors.secondary);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -141,7 +142,7 @@ export default function MarketplaceScreen() {
   if (loading) {
     return (
       <View style={[S.loader, { backgroundColor: colors.background, paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28) }]}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
+        <ActivityIndicator size="large" color={"#1E3A8A"} />
         <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading marketplace…</Text>
       </View>
     );
@@ -164,7 +165,7 @@ export default function MarketplaceScreen() {
             <Text style={S.heroSub}>Gear, shop links, insurance — all Stride-vetted and one-tap checkout.</Text>
           </View>
           <View style={S.heroIcon}>
-            <Ionicons name="shield-checkmark" size={44} color="#1E3A8A" />
+            <Ionicons name="shield-checkmark" size={44} color={colors.primary} />
           </View>
         </View>
 
@@ -173,7 +174,7 @@ export default function MarketplaceScreen() {
           <View style={S.section}>
             <View style={S.sectionHeader}>
               <View style={S.shopBadgeRow}>
-                <Ionicons name="bag-handle" size={16} color="#1E3A8A" />
+                <Ionicons name="bag-handle" size={16} color={"#1E3A8A"} />
                 <Text style={S.shopBadgeText}>SHOP</Text>
               </View>
               <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Tap to open in browser</Text>
@@ -333,6 +334,7 @@ function VerifiedCard({ product, colors, onPress }: {
   colors: ReturnType<typeof useColors>;
   onPress: () => void;
 }) {
+  const S = make_S(colors.primary, colors.secondary);
   const meta = catMeta(product.category);
   return (
     <Pressable
@@ -355,7 +357,7 @@ function VerifiedCard({ product, colors, onPress }: {
           <Text style={S.verifiedCardPrice}>{formatPrice(product.price_cents, product.currency)}</Text>
           <View style={S.verifiedCardCta}>
             <Text style={S.verifiedCardCtaText}>Explore</Text>
-            <Ionicons name="chevron-forward" size={13} color="#1E3A8A" />
+            <Ionicons name="chevron-forward" size={13} color={"#1E3A8A"} />
           </View>
         </View>
       </View>
@@ -368,6 +370,7 @@ function ProductGridCard({ product, colors, onPress }: {
   colors: ReturnType<typeof useColors>;
   onPress: () => void;
 }) {
+  const S = make_S(colors.primary, colors.secondary);
   const meta = catMeta(product.category);
   return (
     <Pressable
@@ -391,12 +394,12 @@ function ProductGridCard({ product, colors, onPress }: {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const S = StyleSheet.create({
+const make_S = (primary: string, secondary: string) => StyleSheet.create({
   root:      { flex: 1 },
   loader:    { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
   loaderText:{ fontSize: 14, fontWeight: "500" },
 
-  hero:     { backgroundColor: "#1E3A8A", flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingBottom: 24, paddingTop: 4, gap: 12 },
+  hero:     { backgroundColor: primary, flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingBottom: 24, paddingTop: 4, gap: 12 },
   heroLeft: { flex: 1 },
   heroTitle:{ color: "#FFF", fontSize: 17, fontWeight: "900", lineHeight: 24, marginBottom: 6 },
   heroSub:   { color: "rgba(255,255,255,0.65)", fontSize: 12, lineHeight: 18 },
@@ -409,7 +412,7 @@ const S = StyleSheet.create({
 
   // Association Shop
   shopBadgeRow:  { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 },
-  shopBadgeText: { color: "#1E3A8A", fontWeight: "900", fontSize: 12, letterSpacing: 0.8 },
+  shopBadgeText: { color: primary, fontWeight: "900", fontSize: 12, letterSpacing: 0.8 },
   shopLinkBtn:   { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 },
   shopLinkIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   shopLinkName:  { flex: 1, color: "#FFF", fontWeight: "800", fontSize: 15 },
@@ -426,9 +429,9 @@ const S = StyleSheet.create({
   verifiedCardTitle:  { flex: 1, fontSize: 14, fontWeight: "800", color: "#111827" },
   verifiedCardSub:    { fontSize: 12, color: "#6B7280", marginBottom: 10, lineHeight: 17 },
   verifiedCardBottom: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  verifiedCardPrice:  { fontSize: 16, fontWeight: "900", color: "#1E3A8A" },
+  verifiedCardPrice:  { fontSize: 16, fontWeight: "900", color: primary },
   verifiedCardCta:    { flexDirection: "row", alignItems: "center", gap: 2 },
-  verifiedCardCtaText:{ fontSize: 13, fontWeight: "700", color: "#1E3A8A" },
+  verifiedCardCtaText:{ fontSize: 13, fontWeight: "700", color: primary },
 
   grid:          { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   gridCard:      { width: "47%", borderRadius: 16, padding: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
@@ -436,8 +439,8 @@ const S = StyleSheet.create({
   gridCardTitle: { fontSize: 13, fontWeight: "700", marginBottom: 8, lineHeight: 18 },
   gridCatBadge:  { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: "flex-start", marginBottom: 8 },
   gridCatBadgeText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
-  gridCardPrice: { fontSize: 15, fontWeight: "900", color: "#1E3A8A", marginBottom: 10 },
-  gridCardBtn:   { backgroundColor: "#1E3A8A", borderRadius: 10, paddingVertical: 9, alignItems: "center" },
+  gridCardPrice: { fontSize: 15, fontWeight: "900", color: primary, marginBottom: 10 },
+  gridCardBtn:   { backgroundColor: primary, borderRadius: 10, paddingVertical: 9, alignItems: "center" },
   gridCardBtnText: { color: "#FFF", fontWeight: "800", fontSize: 12 },
 
   emptyCard: { alignItems: "center", gap: 10, borderRadius: 20, padding: 40 },
@@ -461,6 +464,6 @@ const S = StyleSheet.create({
   priceValue:   { fontSize: 18, fontWeight: "900" },
   priceDivider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 8 },
 
-  buyBtn:     { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#1E3A8A", borderRadius: 16, paddingVertical: 16, marginBottom: 4 },
+  buyBtn:     { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: primary, borderRadius: 16, paddingVertical: 16, marginBottom: 4 },
   buyBtnText: { color: "#FFF", fontWeight: "900", fontSize: 16 },
 });
