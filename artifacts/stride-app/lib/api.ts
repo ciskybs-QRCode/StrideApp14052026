@@ -1374,11 +1374,13 @@ export const api = {
     request<OrgCommSettings>("GET", "/org/communication-settings"),
 
   saveCommSettings: (data: {
-    resend_api_key?:     string;
-    resend_from_email?:  string;
-    twilio_account_sid?: string;
-    twilio_auth_token?:  string;
-    twilio_from_number?: string;
+    resend_api_key?:       string;
+    resend_from_email?:    string;
+    twilio_account_sid?:   string;
+    twilio_auth_token?:    string;
+    twilio_from_number?:   string;
+    whatsapp_enabled?:     boolean;
+    whatsapp_from_number?: string;
   }) => request<{ ok: boolean }>("PUT", "/org/communication-settings", data),
 
   testEmail: () =>
@@ -1386,6 +1388,10 @@ export const api = {
 
   testSms: () =>
     request<{ ok: boolean; message: string }>("POST", "/org/communication-settings/test-sms", {}),
+  testWhatsApp: () =>
+    request<{ ok: boolean; message: string }>("POST", "/org/communication-settings/test-whatsapp", {}),
+  sendWhatsAppBroadcast: (data: { body: string; recipient_mode?: string; recipient_data?: Record<string, unknown> }) =>
+    request<{ sent: number; failed: number; no_phone: number }>("POST", "/messages/whatsapp-broadcast", data),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -3712,10 +3718,13 @@ export function markFeeEventPaid(id: number): Promise<{ ok: boolean }> {
 // ── Communication Settings ────────────────────────────────────────────────────
 
 export interface OrgCommSettings {
-  resend_configured:  boolean;
-  resend_from_email:  string | null;
-  twilio_configured:  boolean;
-  twilio_from_number: string | null;
+  resend_configured:     boolean;
+  resend_from_email:     string | null;
+  twilio_configured:     boolean;
+  twilio_from_number:    string | null;
+  whatsapp_enabled:      boolean;
+  whatsapp_configured:   boolean;
+  whatsapp_from_number:  string | null;
 }
 
 export function getCommSettings(): Promise<OrgCommSettings> {
@@ -3723,11 +3732,13 @@ export function getCommSettings(): Promise<OrgCommSettings> {
 }
 
 export function saveCommSettings(data: {
-  resend_api_key?:     string;
-  resend_from_email?:  string;
-  twilio_account_sid?: string;
-  twilio_auth_token?:  string;
-  twilio_from_number?: string;
+  resend_api_key?:       string;
+  resend_from_email?:    string;
+  twilio_account_sid?:   string;
+  twilio_auth_token?:    string;
+  twilio_from_number?:   string;
+  whatsapp_enabled?:     boolean;
+  whatsapp_from_number?: string;
 }): Promise<{ ok: boolean }> {
   return request("PUT", "/org/communication-settings", data);
 }
@@ -3738,6 +3749,18 @@ export function testEmail(): Promise<{ ok: boolean; message: string }> {
 
 export function testSms(): Promise<{ ok: boolean; message: string }> {
   return request("POST", "/org/communication-settings/test-sms", {});
+}
+
+export function testWhatsApp(): Promise<{ ok: boolean; message: string }> {
+  return request("POST", "/org/communication-settings/test-whatsapp", {});
+}
+
+export function sendWhatsAppBroadcast(data: {
+  body:            string;
+  recipient_mode?: string;
+  recipient_data?: Record<string, unknown>;
+}): Promise<{ sent: number; failed: number; no_phone: number }> {
+  return request("POST", "/messages/whatsapp-broadcast", data);
 }
 
 // ── Support Tickets ────────────────────────────────────────────────────────────

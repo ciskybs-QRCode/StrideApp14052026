@@ -70,10 +70,13 @@ export default function OperatorCommunications() {
   const [linkInputVisible, setLinkInputVisible] = useState(false);
   const [linkInputValue,   setLinkInputValue]   = useState("");
   const [sent,             setSent]             = useState<SentEntry[]>([]);
-  const [orgName,          setOrgName]          = useState("");
+  const [orgName,   setOrgName]   = useState("");
+  const [waEnabled, setWaEnabled] = useState(false);
+  const [sendViaWa, setSendViaWa] = useState(false);
 
   useEffect(() => {
     api.getOrg().then(o => setOrgName(o.name ?? "")).catch(() => {});
+    api.getCommSettings().then(d => setWaEnabled(d.whatsapp_enabled ?? false)).catch(() => {});
   }, []);
 
   const recipientLabel = (mode: RecipientMode, course: string) => {
@@ -121,7 +124,7 @@ export default function OperatorCommunications() {
 
   const resetForm = () => {
     setTitle(""); setBody(""); setRecipientMode("all"); setCourseName("");
-    setAttachments([]); setIsUrgent(false);
+    setAttachments([]); setIsUrgent(false); setSendViaWa(false);
   };
 
   const handleSend = async () => {
@@ -140,6 +143,14 @@ export default function OperatorCommunications() {
         attachments,
         urgent:         isUrgent,
       });
+
+      if (sendViaWa && waEnabled) {
+        await api.sendWhatsAppBroadcast({
+          body,
+          recipient_mode: recipientMode,
+          recipient_data: recipientMode === "course" ? { courseName } : {},
+        }).catch(() => {});
+      }
 
       const label = recipientLabel(recipientMode, courseName);
       setSent(prev => [{
@@ -348,6 +359,24 @@ export default function OperatorCommunications() {
               </Text>
               <View style={[styles.urgentIndicator, { backgroundColor: isUrgent ? "#EF4444" : colors.mutedForeground + "44" }]} />
             </Pressable>
+
+            {/* WhatsApp Channel — shown only when org has WA enabled */}
+            {waEnabled && (
+              <Pressable
+                style={[styles.urgentRow, { backgroundColor: sendViaWa ? "#F0FDF4" : colors.card, borderColor: sendViaWa ? "#86EFAC" : "transparent", marginTop: 10 }]}
+                onPress={() => setSendViaWa(p => !p)}
+              >
+                <Ionicons
+                  name="logo-whatsapp"
+                  size={20}
+                  color={sendViaWa ? "#16A34A" : colors.mutedForeground}
+                />
+                <Text style={[styles.urgentLabel, { color: sendViaWa ? "#16A34A" : colors.foreground }]}>
+                  Also send via WhatsApp
+                </Text>
+                <View style={[styles.urgentIndicator, { backgroundColor: sendViaWa ? "#16A34A" : colors.mutedForeground + "44" }]} />
+              </Pressable>
+            )}
 
             {/* Subject */}
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 18 }]}>SUBJECT</Text>

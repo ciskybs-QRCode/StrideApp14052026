@@ -9,6 +9,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -139,14 +140,21 @@ export default function CommunicationSettingsPage() {
   const [twilioSid,     setTwilioSid]     = useState("");
   const [twilioToken,   setTwilioToken]   = useState("");
   const [twilioFrom,    setTwilioFrom]    = useState("");
+  const [testingWa,    setTestingWa]    = useState(false);
+  const [waConfigured, setWaConfigured] = useState(false);
+  const [waEnabled,    setWaEnabled]    = useState(false);
+  const [waFrom,       setWaFrom]       = useState("");
 
   useEffect(() => {
     api.getCommSettings()
       .then(d => {
         setResendConfigured(d.resend_configured);
         setTwilioConfigured(d.twilio_configured);
-        if (d.resend_from_email)  setResendFrom(d.resend_from_email);
-        if (d.twilio_from_number) setTwilioFrom(d.twilio_from_number);
+        if (d.resend_from_email)    setResendFrom(d.resend_from_email);
+        if (d.twilio_from_number)   setTwilioFrom(d.twilio_from_number);
+        setWaConfigured(d.whatsapp_configured ?? false);
+        setWaEnabled(d.whatsapp_enabled ?? false);
+        if (d.whatsapp_from_number) setWaFrom(d.whatsapp_from_number);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -157,17 +165,22 @@ export default function CommunicationSettingsPage() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await api.saveCommSettings({
-        resend_api_key:     resendKey    || undefined,
-        resend_from_email:  resendFrom   || undefined,
-        twilio_account_sid: twilioSid    || undefined,
-        twilio_auth_token:  twilioToken  || undefined,
-        twilio_from_number: twilioFrom   || undefined,
+        resend_api_key:       resendKey    || undefined,
+        resend_from_email:    resendFrom   || undefined,
+        twilio_account_sid:   twilioSid    || undefined,
+        twilio_auth_token:    twilioToken  || undefined,
+        twilio_from_number:   twilioFrom   || undefined,
+        whatsapp_enabled:     waEnabled,
+        whatsapp_from_number: waFrom       || undefined,
       });
       const d = await api.getCommSettings();
       setResendConfigured(d.resend_configured);
       setTwilioConfigured(d.twilio_configured);
-      if (d.resend_from_email)  setResendFrom(d.resend_from_email);
-      if (d.twilio_from_number) setTwilioFrom(d.twilio_from_number);
+      if (d.resend_from_email)    setResendFrom(d.resend_from_email);
+      if (d.twilio_from_number)   setTwilioFrom(d.twilio_from_number);
+      setWaConfigured(d.whatsapp_configured ?? false);
+      setWaEnabled(d.whatsapp_enabled ?? false);
+      if (d.whatsapp_from_number) setWaFrom(d.whatsapp_from_number);
       setResendKey(""); setTwilioSid(""); setTwilioToken("");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Saved", "Your communication credentials have been saved.");
@@ -199,6 +212,18 @@ export default function CommunicationSettingsPage() {
       Alert.alert("Error", e?.message ?? "Test failed");
     } finally {
       setTestingSms(false);
+    }
+  };
+
+  const handleTestWa = async () => {
+    setTestingWa(true);
+    try {
+      const r = await api.testWhatsApp();
+      Alert.alert(r.ok ? "✅ Success" : "⚠️ Failed", r.message);
+    } catch (e: any) {
+      Alert.alert("Error", e?.message ?? "WhatsApp test failed");
+    } finally {
+      setTestingWa(false);
     }
   };
 
@@ -338,6 +363,78 @@ export default function CommunicationSettingsPage() {
                 {testingSms
                   ? <ActivityIndicator color="#16A34A" size="small" />
                   : <><Ionicons name="send-outline" size={14} color="#16A34A" /><Text style={s.testBtnText}>Send Test SMS to My Phone</Text></>
+                }
+              </Pressable>
+            )}
+          </ServiceCard>
+
+          {/* ── WhatsApp Broadcasts — Optional ── */}
+          <ServiceCard
+            icon="logo-whatsapp"
+            title="WhatsApp Broadcasts — Optional"
+            subtitle="Send announcements directly to members' WhatsApp. Requires a Twilio WhatsApp-approved sender number. Members without WhatsApp always receive the full in-app notification regardless."
+            configured={waConfigured}
+            linkUrl="https://www.twilio.com/en-us/whatsapp"
+            linkLabel="Activate WhatsApp on Twilio → twilio.com/whatsapp"
+          >
+            {/* Steps */}
+            <View style={s.steps}>
+              {[
+                "Open your Twilio Console → Messaging → Senders → WhatsApp Senders",
+                "Click 'Add WhatsApp Sender' and connect a Twilio number (or use the sandbox for testing first)",
+                "Enter your WhatsApp-approved number below — it can be the same number as SMS if WA-enabled",
+                "Toggle WhatsApp ON, save, then tap the test button to send a WhatsApp to your admin phone",
+              ].map((step, i) => (
+                <View key={i} style={s.stepRow}>
+                  <View style={s.stepNum}><Text style={s.stepNumText}>{i + 1}</Text></View>
+                  <Text style={s.stepText}>{step}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Privacy notice */}
+            <View style={s.noticeBox}>
+              <Ionicons name="information-circle-outline" size={13} color="#1E40AF" />
+              <Text style={s.noticeText}>
+                WhatsApp is an extra channel — never a replacement. Members who don't have WhatsApp or haven't provided a phone number still receive every notification inside the app.
+              </Text>
+            </View>
+
+            {/* Enable toggle */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: waEnabled ? "#F0FDF4" : "#F9FAFB", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: waEnabled ? "#86EFAC" : "#E5E7EB" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Ionicons name="logo-whatsapp" size={18} color={waEnabled ? "#16A34A" : "#6B7280"} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: waEnabled ? "#16A34A" : "#374151" }}>
+                  {waEnabled ? "WhatsApp Channel Enabled" : "Enable WhatsApp Channel"}
+                </Text>
+              </View>
+              <Switch
+                value={waEnabled}
+                onValueChange={setWaEnabled}
+                trackColor={{ false: "#E5E7EB", true: "#86EFAC" }}
+                thumbColor={waEnabled ? "#16A34A" : "#9CA3AF"}
+              />
+            </View>
+
+            {waEnabled && (
+              <Field
+                label="WhatsApp-Approved Sender Number *"
+                value={waFrom}
+                onChangeText={setWaFrom}
+                placeholder="+15551234567"
+                hint="Your Twilio number approved for WhatsApp, in E.164 format. Uses the same Twilio account SID and auth token you saved above."
+              />
+            )}
+
+            {waConfigured && (
+              <Pressable
+                style={[s.testBtn, testingWa && s.btnDisabled]}
+                onPress={handleTestWa}
+                disabled={testingWa}
+              >
+                {testingWa
+                  ? <ActivityIndicator color="#16A34A" size="small" />
+                  : <><Ionicons name="logo-whatsapp" size={14} color="#16A34A" /><Text style={s.testBtnText}>Send Test WhatsApp to My Phone</Text></>
                 }
               </Pressable>
             )}

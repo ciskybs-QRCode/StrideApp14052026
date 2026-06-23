@@ -1,15 +1,12 @@
 /**
  * Per-org Communication Settings
  *
- * Allows each organisation to store their own Resend (email) and Twilio (SMS)
- * credentials. Credentials are stored server-side in the pool DB and are never
- * returned to the client in plain text (only a boolean "configured" flag).
- *
  * Routes:
- *   GET  /org/communication-settings        — get masked config status
- *   PUT  /org/communication-settings        — upsert credentials
- *   POST /org/communication-settings/test-email — send test email to caller
- *   POST /org/communication-settings/test-sms   — send test SMS to caller
+ *   GET  /org/communication-settings               — masked config status
+ *   PUT  /org/communication-settings               — upsert credentials
+ *   POST /org/communication-settings/test-email    — test email to caller
+ *   POST /org/communication-settings/test-sms      — test SMS to caller
+ *   POST /org/communication-settings/test-whatsapp — test WhatsApp to caller
  */
 
 import { Router } from "express";
@@ -28,14 +25,17 @@ const router = Router();
 // ── Helper: fetch org creds ────────────────────────────────────────────────
 async function getOrgCreds(orgId: number) {
   const { rows } = await pool.query<{
-    resend_api_key:     string | null;
-    resend_from_email:  string | null;
-    twilio_account_sid: string | null;
-    twilio_auth_token:  string | null;
-    twilio_from_number: string | null;
+    resend_api_key:        string | null;
+    resend_from_email:     string | null;
+    twilio_account_sid:    string | null;
+    twilio_auth_token:     string | null;
+    twilio_from_number:    string | null;
+    whatsapp_enabled:      boolean;
+    whatsapp_from_number:  string | null;
   }>(
     `SELECT resend_api_key, resend_from_email,
-            twilio_account_sid, twilio_auth_token, twilio_from_number
+            twilio_account_sid, twilio_auth_token, twilio_from_number,
+            whatsapp_enabled, whatsapp_from_number
      FROM org_communication_settings
      WHERE organization_id = $1`,
     [orgId],
@@ -50,10 +50,13 @@ router.get("/org/communication-settings", requireAuth, async (req, res) => {
 
   const creds = await getOrgCreds(orgId);
   res.json({
-    resend_configured:   !!(creds?.resend_api_key),
-    resend_from_email:   creds?.resend_from_email ?? null,
-    twilio_configured:   !!(creds?.twilio_account_sid && creds?.twilio_auth_token && creds?.twilio_from_number),
-    twilio_from_number:  creds?.twilio_from_number ?? null,
+    resend_configured:    !!(creds?.resend_api_key),
+    resend_from_email:    creds?.resend_from_email   ?? null,
+    twilio_configured:    !!(creds?.twilio_account_sid && creds?.twilio_auth_token && creds?.twilio_from_number),
+    twilio_from_number:   creds?.twilio_from_number  ?? null,
+    whatsapp_enabled:     creds?.whatsapp_enabled     ?? false,
+    whatsapp_configured:  !!(creds?.whatsapp_enabled && creds?.whatsapp_from_number && creds?.twilio_account_sid),
+    whatsapp_from_number: creds?.whatsapp_from_number ?? null,
   });
 });
 
@@ -62,26 +65,35 @@ router.put("/org/communication-settings", requireAuth, async (req, res) => {
   const orgId = req.user!.orgId;
   if (!orgId) { res.status(400).json({ error: "No organisation" }); return; }
 
-  const { resend_api_key, resend_from_email, twilio_account_sid, twilio_auth_token, twilio_from_number } = req.body as {
-    resend_api_key?:     string;
-    resend_from_email?:  string;
-    twilio_account_sid?: string;
-    twilio_auth_token?:  string;
-    twilio_from_number?: string;
+  const {
+    resend_api_key, resend_from_email,
+    twilio_account_sid, twilio_auth_token, twilio_from_number,
+    whatsapp_enabled, whatsapp_from_number,
+  } = req.body as {
+    resend_api_key?:       string;
+    resend_from_email?:    string;
+    twilio_account_sid?:   string;
+    twilio_auth_token?:    string;
+    twilio_from_number?:   string;
+    whatsapp_enabled?:     boolean;
+    whatsapp_from_number?: string;
   };
 
   await pool.query(
     `INSERT INTO org_communication_settings
        (organization_id, resend_api_key, resend_from_email,
-        twilio_account_sid, twilio_auth_token, twilio_from_number, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        twilio_account_sid, twilio_auth_token, twilio_from_number,
+        whatsapp_enabled, whatsapp_from_number, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
      ON CONFLICT (organization_id) DO UPDATE SET
-       resend_api_key     = COALESCE(NULLIF($2, ''), org_communication_settings.resend_api_key),
-       resend_from_email  = COALESCE(NULLIF($3, ''), org_communication_settings.resend_from_email),
-       twilio_account_sid = COALESCE(NULLIF($4, ''), org_communication_settings.twilio_account_sid),
-       twilio_auth_token  = COALESCE(NULLIF($5, ''), org_communication_settings.twilio_auth_token),
-       twilio_from_number = COALESCE(NULLIF($6, ''), org_communication_settings.twilio_from_number),
-       updated_at         = NOW()`,
+       resend_api_key        = COALESCE(NULLIF($2,''), org_communication_settings.resend_api_key),
+       resend_from_email     = COALESCE(NULLIF($3,''), org_communication_settings.resend_from_email),
+       twilio_account_sid    = COALESCE(NULLIF($4,''), org_communication_settings.twilio_account_sid),
+       twilio_auth_token     = COALESCE(NULLIF($5,''), org_communication_settings.twilio_auth_token),
+       twilio_from_number    = COALESCE(NULLIF($6,''), org_communication_settings.twilio_from_number),
+       whatsapp_enabled      = COALESCE($7, org_communication_settings.whatsapp_enabled),
+       whatsapp_from_number  = COALESCE(NULLIF($8,''), org_communication_settings.whatsapp_from_number),
+       updated_at            = NOW()`,
     [
       orgId,
       resend_api_key     ?? null,
@@ -89,6 +101,8 @@ router.put("/org/communication-settings", requireAuth, async (req, res) => {
       twilio_account_sid ?? null,
       twilio_auth_token  ?? null,
       twilio_from_number ?? null,
+      whatsapp_enabled   ?? null,
+      whatsapp_from_number ?? null,
     ],
   );
 
@@ -166,7 +180,7 @@ router.post("/org/communication-settings/test-sms", requireAuth, async (req, res
     return;
   }
 
-  const creds = await getOrgCreds(orgId);
+  const creds      = await getOrgCreds(orgId);
   const accountSid = creds?.twilio_account_sid ?? process.env["TWILIO_ACCOUNT_SID"] ?? null;
   const authToken  = creds?.twilio_auth_token  ?? process.env["TWILIO_AUTH_TOKEN"]  ?? null;
   const from       = creds?.twilio_from_number ?? process.env["TWILIO_FROM_NUMBER"] ?? null;
@@ -193,6 +207,58 @@ router.post("/org/communication-settings/test-sms", requireAuth, async (req, res
     const msg = err instanceof Error ? err.message : String(err);
     req.log.error({ err, orgId }, "comm-settings test-sms failed");
     res.status(422).json({ ok: false, message: `Twilio error: ${msg}` });
+  }
+});
+
+// ── POST /org/communication-settings/test-whatsapp ────────────────────────
+router.post("/org/communication-settings/test-whatsapp", requireAuth, async (req, res) => {
+  const orgId  = req.user!.orgId;
+  const userId = req.user!.id;
+  if (!orgId) { res.status(400).json({ error: "No organisation" }); return; }
+
+  const { rows: phoneRows } = await pool.query<{ phone: string | null }>(
+    `SELECT phone FROM users WHERE id = $1`,
+    [userId],
+  ).catch(() => ({ rows: [{ phone: null }] as { phone: string | null }[] }));
+  const phone = phoneRows[0]?.phone ?? null;
+
+  if (!phone) {
+    res.status(422).json({ ok: false, message: "No phone number on your admin profile. Add your phone number in Admin → Profile to receive the test message." });
+    return;
+  }
+
+  const creds      = await getOrgCreds(orgId);
+  const accountSid = creds?.twilio_account_sid   ?? process.env["TWILIO_ACCOUNT_SID"] ?? null;
+  const authToken  = creds?.twilio_auth_token    ?? process.env["TWILIO_AUTH_TOKEN"]  ?? null;
+  const fromNum    = creds?.whatsapp_from_number ?? process.env["TWILIO_FROM_NUMBER"] ?? null;
+  const waEnabled  = creds?.whatsapp_enabled ?? false;
+
+  if (!waEnabled) {
+    res.status(422).json({ ok: false, message: "WhatsApp channel is not enabled. Toggle it on and save first." });
+    return;
+  }
+  if (!accountSid || !authToken || !fromNum) {
+    res.status(422).json({ ok: false, message: "Twilio credentials not configured. Save your Twilio credentials and WhatsApp sender number first." });
+    return;
+  }
+
+  try {
+    const { default: twilio } = await import("twilio");
+    const client = twilio(accountSid, authToken);
+    await client.messages.create({
+      body: `✅ Stride WhatsApp Test — Your organisation's WhatsApp broadcast channel is working correctly. Members who have opted in will receive broadcast messages via WhatsApp.`,
+      from: `whatsapp:${fromNum}`,
+      to:   `whatsapp:${phone}`,
+    });
+    await pool.query(
+      `UPDATE org_communication_settings SET test_whatsapp_sent_at = NOW() WHERE organization_id = $1`,
+      [orgId],
+    ).catch(() => {});
+    res.json({ ok: true, message: `Test WhatsApp message sent to ${phone}` });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    req.log.error({ err, orgId }, "comm-settings test-whatsapp failed");
+    res.status(422).json({ ok: false, message: `Twilio WhatsApp error: ${msg}. Make sure your Twilio number is approved for WhatsApp.` });
   }
 });
 

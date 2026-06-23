@@ -1617,6 +1617,14 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS org_comm_settings_org_idx ON org_communication_settings(organization_id);
   `).catch(() => {});
 
+  // ── WhatsApp columns on org_communication_settings ───────────────────────
+  await pool.query(`
+    ALTER TABLE org_communication_settings
+      ADD COLUMN IF NOT EXISTS whatsapp_enabled      BOOLEAN     NOT NULL DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS whatsapp_from_number  TEXT,
+      ADD COLUMN IF NOT EXISTS test_whatsapp_sent_at TIMESTAMPTZ;
+  `).catch(() => {});
+
   // ── Schema migrations ──────────────────────────────────────────────────────
   // Re-point enrollments.child_id FK to members table (original pointed to
   // the empty `children` table which blocked all enrollment inserts).

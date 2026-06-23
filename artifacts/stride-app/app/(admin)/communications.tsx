@@ -225,6 +225,7 @@ export default function AdminCommunications() {
       if (s.role_assignment_email_body)    setRoleEmailBody(s.role_assignment_email_body);
     }).catch(() => {});
     api.getOrg().then(o => setOrgName(o.name ?? "")).catch(() => {});
+    api.getCommSettings().then(d => setWaEnabled(d.whatsapp_enabled ?? false)).catch(() => {});
   }, []);
 
   const saveRoleEmailTemplate = async () => {
@@ -272,6 +273,8 @@ export default function AdminCommunications() {
   const [sending, setSending] = useState(false);
   const [linkInputVisible, setLinkInputVisible] = useState(false);
   const [linkInputValue,   setLinkInputValue]   = useState("");
+  const [waEnabled,  setWaEnabled]  = useState(false);
+  const [sendViaWa,  setSendViaWa]  = useState(false);
 
   // Recipient picker modal
   const [showRecipientPicker, setShowRecipientPicker] = useState(false);
@@ -285,7 +288,7 @@ export default function AdminCommunications() {
   const resetCompose = () => {
     setTitle(""); setMessage(""); setRecipientSel({ mode: "all" });
     setIsUrgent(false); setSignatureRequired(false); setAttachments([]);
-    setShowTemplates(false);
+    setShowTemplates(false); setSendViaWa(false);
   };
 
   const applyTemplate = (tpl: typeof QUICK_TEMPLATES[0]) => {
@@ -392,6 +395,15 @@ export default function AdminCommunications() {
         urgent:             isUrgent,
         signature_required: signatureRequired,
       });
+
+      if (sendViaWa && waEnabled) {
+        await api.sendWhatsAppBroadcast({
+          body:           message,
+          recipient_mode: recipientSel.mode,
+          recipient_data: recipientSel as unknown as Record<string, unknown>,
+        }).catch(() => {});
+      }
+
       const count = getRecipientCount(recipientSel, userCounts);
       const newMsg: SentMessage = {
         id: Date.now().toString(),
@@ -1043,6 +1055,18 @@ export default function AdminCommunications() {
               </View>
               <Switch value={signatureRequired} onValueChange={setSignatureRequired} trackColor={{ false: "#E5E7EB", true: colors.primary }} thumbColor={signatureRequired ? colors.secondary : "#9CA3AF"} />
             </View>
+            {waEnabled && (
+              <View style={[styles.toggleRow, { borderColor: "#86EFAC", marginTop: 8, backgroundColor: sendViaWa ? "#F0FDF4" : undefined }]}>
+                <View style={styles.toggleLeft}>
+                  <Ionicons name="logo-whatsapp" size={18} color="#16A34A" />
+                  <View>
+                    <Text style={[styles.toggleLabel, { color: colors.foreground }]}>Also send via WhatsApp</Text>
+                    <Text style={[styles.toggleDesc, { color: colors.mutedForeground }]}>Members with a phone number receive it on WhatsApp too</Text>
+                  </View>
+                </View>
+                <Switch value={sendViaWa} onValueChange={setSendViaWa} trackColor={{ false: "#E5E7EB", true: "#86EFAC" }} thumbColor={sendViaWa ? "#16A34A" : "#9CA3AF"} />
+              </View>
+            )}
 
             {/* Attachments */}
             <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 16 }]}>Attachments</Text>

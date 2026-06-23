@@ -679,4 +679,84 @@ router.post("/messages/:id/reply", requireAuth, async (req, res) => {
   res.status(201).json(ins.rows[0]);
 });
 
+// ── POST /messages/whatsapp-broadcast ─────────────────────────────────────
+// Sends a WhatsApp message to all recipients who have a phone number on file.
+// Runs in parallel; partial success is allowed (returns { sent, failed, no_phone }).
+
+router.post("/messages/whatsapp-broadcast", requireAuth, requireRole("admin", "operator"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const body = req.body as {
+    body:            string;
+    recipient_mode?: string;
+    recipient_data?: Record<string, unknown>;
+  };
+
+  if (!body.body?.trim()) { res.status(400).json({ error: "body is required" }); return; }
+
+  const orgId = user.orgId ?? 0;
+
+  const { rows: credRows } = await pool.query<{
+    twilio_account_sid:   string | null;
+    twilio_auth_token:    string | null;
+    whatsapp_enabled:     boolean;
+    whatsapp_from_number: string | null;
+  }>(
+    `SELECT twilio_account_sid, twilio_auth_token, whatsapp_enabled, whatsapp_from_number
+     FROM org_communication_settings WHERE organization_id = $1`,
+    [orgId],
+  );
+  const creds = credRows[0];
+
+  const accountSid = creds?.twilio_account_sid   ?? process.env["TWILIO_ACCOUNT_SID"] ?? null;
+  const authToken  = creds?.twilio_auth_token    ?? process.env["TWILIO_AUTH_TOKEN"]  ?? null;
+  const fromNum    = creds?.whatsapp_from_number ?? process.env["TWILIO_FROM_NUMBER"] ?? null;
+  const waEnabled  = creds?.whatsapp_enabled ?? false;
+
+  if (!waEnabled) {
+    res.status(422).json({ error: "WhatsApp channel is not enabled for this organisation." });
+    return;
+  }
+  if (!accountSid || !authToken || !fromNum) {
+    res.status(422).json({ error: "WhatsApp credentials not configured. Enable and configure WhatsApp in Communication Settings first." });
+    return;
+  }
+
+  const recipientIds = await resolveRecipients(orgId, body.recipient_mode ?? "all", body.recipient_data ?? {});
+  if (!recipientIds.length) { res.json({ sent: 0, failed: 0, no_phone: 0 }); return; }
+
+  const { data: phoneUsers } = await supabase
+    .from("users")
+    .select("id, phone")
+    .in("id", recipientIds);
+
+  const withPhone    = ((phoneUsers ?? []) as { id: number; phone: string | null }[]).filter(u => u.phone);
+  const noPhoneCount = recipientIds.length - withPhone.length;
+
+  if (!withPhone.length) { res.json({ sent: 0, failed: 0, no_phone: noPhoneCount }); return; }
+
+  const { default: twilio } = await import("twilio");
+  const client = twilio(accountSid, authToken);
+  const from   = `whatsapp:${fromNum}`;
+
+  let sent = 0;
+  let failed = 0;
+
+  await Promise.allSettled(
+    withPhone.map(async u => {
+      const cleaned = u.phone!.replace(/\s/g, "");
+      const to = cleaned.startsWith("whatsapp:") ? cleaned : `whatsapp:${cleaned}`;
+      try {
+        await client.messages.create({ body: body.body, from, to });
+        sent++;
+      } catch {
+        failed++;
+      }
+    }),
+  );
+
+  req.log.info({ orgId, sent, failed, no_phone: noPhoneCount }, "whatsapp broadcast sent");
+  res.json({ sent, failed, no_phone: noPhoneCount });
+});
+
 export default router;
+
