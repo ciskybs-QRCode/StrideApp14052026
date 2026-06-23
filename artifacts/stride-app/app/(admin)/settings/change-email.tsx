@@ -107,7 +107,7 @@ export default function ChangeEmailPage() {
       <ScreenHeader
         title="Change Email"
         subtitle="Update your email address"
-        onBack={() => router.push("/(admin)/settings/account" as never)}
+        onBack={() => router.push("/(admin)/settings" as never)}
       />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}

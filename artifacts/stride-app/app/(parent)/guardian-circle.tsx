@@ -477,7 +477,7 @@ function GuardianCard({
   onDeactivate: (e: GuardianEntry) => void;
 }) {
   const colors    = useColors();
-  const styles    = make_styles("#1E3A8A", "#FBBF24");
+  const styles    = make_styles(colors.primary, colors.secondary);
   const expired   = isExpired(entry);
   const isLoading = deactivating === entry.id;
   const isUsed    = entry.is_single_use && !!entry.used_at;
