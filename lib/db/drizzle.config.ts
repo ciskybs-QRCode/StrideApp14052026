@@ -11,4 +11,8 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.SUPABASE_DB_URL,
   },
+  // Only manage the tables explicitly defined in this Drizzle schema.
+  // All other tables (created via ensureTables() in pg.ts) are managed
+  // separately and must NOT be touched by Drizzle migrations.
+  tablesFilter: ["blacklist", "reimbursements", "admin_settings", "disciplines"],
 });
