@@ -8,15 +8,19 @@
 import { supabase } from "./supabase.js";
 import { pool }     from "./pg.js";
 import { logger }   from "./logger.js";
+import { buildReportEmail } from "../routes/sa-feature-analytics.js";
 
 const INITIAL_DELAY_MS = 90_000; // 90 s after boot to avoid startup noise
 
 export function startReportScheduler(): void {
   setTimeout(() => {
     void scheduleNextRun();
+    void checkMonthlyAnalyticsReport();
+    // Check monthly analytics once a day
+    setInterval(() => { void checkMonthlyAnalyticsReport(); }, 24 * 60 * 60_000);
   }, INITIAL_DELAY_MS);
 
-  logger.info("Report scheduler started (weekly Monday 08:00 UTC)");
+  logger.info("Report scheduler started (weekly Monday 08:00 UTC + monthly analytics)");
 }
 
 function msUntilNextMonday8am(): number {
@@ -205,4 +209,126 @@ async function sendOrgReport(orgId: number, orgName: string, since: string): Pro
   }
 
   logger.info({ orgId, orgName, memberCount, newMembers, revCents, attendance }, "report-scheduler: weekly report sent");
+}
+
+// ── Monthly Feature Analytics Report (Super Admin) ────────────────────────────
+// Sends on the 1st–3rd of each month. In-memory guard prevents double-sending.
+let lastAnalyticsMonth = "";
+
+async function checkMonthlyAnalyticsReport(): Promise<void> {
+  const now = new Date();
+  const monthKey   = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+  const dayOfMonth = now.getUTCDate();
+
+  // Only fire on the 1st–3rd; skip if already sent this month
+  if (dayOfMonth > 3 || lastAnalyticsMonth === monthKey) return;
+  lastAnalyticsMonth = monthKey;
+
+  try {
+    await sendMonthlyAnalyticsReport(monthKey);
+  } catch (err) {
+    logger.error({ err }, "report-scheduler: monthly analytics report failed");
+  }
+}
+
+async function sendMonthlyAnalyticsReport(monthKey: string): Promise<void> {
+  const key  = process.env["RESEND_API_KEY"];
+  if (!key) return; // silently skip — email not configured
+
+  const from = process.env["RESEND_FROM_EMAIL"] ?? "Stride <no-reply@stride.app>";
+
+  // Period: last full month
+  const [year, month] = monthKey.split("-").map(Number) as [number, number];
+  const start = new Date(Date.UTC(year, month - 2, 1)); // first of previous month
+  const end   = new Date(Date.UTC(year, month - 1, 1)); // first of current month
+  const label = start.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+
+  // Total orgs
+  const { count: totalOrgs } = await supabase
+    .from("organizations")
+    .select("id", { count: "exact", head: true })
+    .then(r => ({ count: r.count ?? 1 }), () => ({ count: 1 }));
+
+  const safeTotal = Math.max(totalOrgs, 1);
+
+  // Re-run the same queries directly via pool
+  const features = await buildPlatformFeatureSummary(start, end, safeTotal);
+
+  const html    = buildReportEmail(label, safeTotal, features);
+  const subject = `📊 Stride Platform Feature Report — ${label}`;
+
+  // Find all super_admin emails
+  const { data: superAdmins } = await supabase
+    .from("users")
+    .select("email, name")
+    .eq("role", "super_admin")
+    .then(r => r, () => ({ data: [] as Array<{ email: string; name: string }> }));
+
+  if (!superAdmins?.length) return;
+
+  for (const sa of superAdmins as Array<{ email: string; name: string }>) {
+    try {
+      await fetch("https://api.resend.com/emails", {
+        method:  "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body:    JSON.stringify({ from, to: sa.email, subject, html }),
+      });
+    } catch (err) {
+      logger.warn({ err, email: sa.email }, "report-scheduler: monthly analytics email failed");
+    }
+  }
+
+  logger.info({ label, totalOrgs: safeTotal, recipients: superAdmins.length }, "monthly analytics report sent");
+}
+
+// Lightweight version of the feature queries (mirrors sa-feature-analytics.ts)
+async function countDistinctOrgs(
+  table: string, orgCol: string, timeCol: string, start: Date, end: Date,
+): Promise<number> {
+  try {
+    const { rows } = await pool.query<{ cnt: string }>(
+      `SELECT COUNT(DISTINCT ${orgCol})::int AS cnt FROM ${table} WHERE ${timeCol} >= $1 AND ${timeCol} < $2`,
+      [start, end],
+    );
+    return Number(rows[0]?.cnt ?? 0);
+  } catch { return 0; }
+}
+
+async function buildPlatformFeatureSummary(
+  start: Date, end: Date, total: number,
+): Promise<{ name: string; role_category: string; orgs_active: number; pct: number }[]> {
+  const queries: [string, string, string, string][] = [
+    ["Course Scheduling",   "admin",    "calendar_events",     "organization_id"],
+    ["Event Ticketing",     "admin",    "events",              "org_id"],
+    ["Staff Contracts",     "admin",    "employment_contracts", "organization_id"],
+    ["Marketplace",         "admin",    "marketplace_products", "organization_id"],
+    ["QR Attendance",       "operator", "child_activity_log",  "organization_id"],
+    ["Smart Pick-Up",       "operator", "authorized_pickups",  "organization_id"],
+    ["Rescue Cascade",      "operator", "rescue_cascades",     "org_id"],
+    ["Payments & Wallet",   "member",   "checkout_sessions",   "organization_id"],
+    ["Marketplace Purchases","member",  "marketplace_purchases","org_id"],
+  ];
+
+  // Emergency pulse uses triggered_at
+  const epCount = await (async () => {
+    try {
+      const { rows } = await pool.query<{ cnt: string }>(
+        `SELECT COUNT(DISTINCT organization_id)::int AS cnt FROM emergency_pulses WHERE triggered_at >= $1 AND triggered_at < $2`,
+        [start, end],
+      );
+      return Number(rows[0]?.cnt ?? 0);
+    } catch { return 0; }
+  })();
+
+  const results = await Promise.all(
+    queries.map(async ([name, role_category, table, orgCol]) => {
+      const orgs_active = await countDistinctOrgs(table, orgCol, "created_at", start, end);
+      return { name, role_category, orgs_active, pct: Math.round((orgs_active / total) * 100) };
+    }),
+  );
+
+  return [
+    ...results,
+    { name: "Emergency Pulse", role_category: "admin", orgs_active: epCount, pct: Math.round((epCount / total) * 100) },
+  ];
 }

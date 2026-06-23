@@ -3765,6 +3765,32 @@ export function whatsappGuide(data: {
   return request("POST", "/org/communication-settings/whatsapp-guide", data);
 }
 
+// ── Super-Admin Feature Analytics ─────────────────────────────────────────────
+
+export interface FeatureAnalyticsItem {
+  id:            string;
+  name:          string;
+  description:   string;
+  role_category: "admin" | "operator" | "member";
+  icon:          string;
+  orgs_active:   number;
+  pct:           number;
+}
+
+export interface FeatureAnalyticsReport {
+  period:     { label: string; start: string; end: string };
+  total_orgs: number;
+  features:   FeatureAnalyticsItem[];
+}
+
+export function getFeatureAnalytics(period: "month" | "last_month" | "quarter" = "month"): Promise<FeatureAnalyticsReport> {
+  return request("GET", `/sa/feature-analytics?period=${period}`);
+}
+
+export function sendFeatureAnalyticsReport(): Promise<{ ok: boolean; message: string }> {
+  return request("POST", "/sa/feature-analytics/send-report", {});
+}
+
 export function sendWhatsAppBroadcast(data: {
   body:            string;
   recipient_mode?: string;

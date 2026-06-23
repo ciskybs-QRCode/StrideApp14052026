@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -172,6 +173,32 @@ export default function GovernanceScreen() {
             {": Module invisible to all users. All API routes return 404. Database and product data are preserved."}
           </Text>
         </View>
+
+        {/* Feature Analytics Link */}
+        <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 32 }]}>
+          Analytics
+        </Text>
+        <Pressable
+          style={[styles.moduleCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}
+          onPress={() => router.push("/(admin)/sa-feature-analytics")}
+        >
+          <View style={styles.moduleLeft}>
+            <View style={[styles.moduleIcon, { backgroundColor: "rgba(251,191,36,0.12)" }]}>
+              <Ionicons name="bar-chart" size={26} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.moduleName, { color: colors.text }]}>Feature Usage Analytics</Text>
+              <Text style={[styles.moduleDesc, { color: colors.mutedForeground }]}>
+                % of organisations using each feature by role. Monthly email report included.
+              </Text>
+              <View style={[styles.statusBadge, { backgroundColor: "rgba(251,191,36,0.10)" }]}>
+                <View style={[styles.statusDot, { backgroundColor: "#D97706" }]} />
+                <Text style={[styles.statusText, { color: "#D97706" }]}>Admin · Operator · Member breakdown</Text>
+              </View>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+        </Pressable>
 
         {/* Activity Log */}
         <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 32 }]}>
