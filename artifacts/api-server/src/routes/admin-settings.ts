@@ -167,7 +167,7 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "membership_donation_mode",
   ];
 
-  const setClauses: string[] = ["updated_at = NOW()"];
+  const setClauses: string[] = [];
   const values: unknown[]    = [orgId];
 
   for (const key of allowed) {
@@ -175,6 +175,15 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
       values.push(body[key]);
       setClauses.push(`${key} = $${values.length}`);
     }
+  }
+
+  if (setClauses.length === 0) {
+    // Nothing to update — return current row
+    const { rows: existing } = await pool.query(
+      `SELECT * FROM admin_settings WHERE organization_id = $1`, [orgId]
+    );
+    res.json(existing[0] ?? { organization_id: orgId });
+    return;
   }
 
   try {
@@ -239,7 +248,7 @@ router.put("/registration-config", requireAuth, requireRole("admin"), async (req
       `INSERT INTO admin_settings (organization_id, registration_config)
        VALUES ($1, $2::jsonb)
        ON CONFLICT (organization_id) DO UPDATE
-         SET registration_config = $2::jsonb, updated_at = NOW()`,
+         SET registration_config = $2::jsonb`,
       [orgId, JSON.stringify(config)],
     );
     res.json({ ok: true });

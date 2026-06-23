@@ -10,8 +10,8 @@ router.get("/lessons", requireAuth, requireRole("admin", "operator"), async (req
   const { date } = req.query as { date?: string };
   let query = supabase
     .from("course_sessions")
-    .select("*, course:courses(id,name,discipline,venue_id,venue:venues(id,name))")
-    .eq("organization_id", user.orgId)
+    .select("*, course:courses!inner(id,name,discipline,venue_id,organization_id,venue:venues(id,name))")
+    .eq("course.organization_id", user.orgId)
     .order("start_time");
   if (date) {
     const start = `${date}T00:00:00`;

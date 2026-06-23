@@ -1773,5 +1773,25 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS dmt_participant_idx ON direct_message_threads (participant_1, participant_2);
   `).catch(() => {});
 
+  // ── admin_settings — branding columns ───────────────────────────────────────
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS brand_primary_color   TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS brand_secondary_color TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS brand_logo_url        TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS brand_app_name        TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS min_first_aid_operators INTEGER NOT NULL DEFAULT 1`).catch(() => {});
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS org_contact_email      TEXT`).catch(() => {});
+
+  // ── operator_profile_rates — per-discipline hourly rates for operators ───────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS operator_profile_rates (
+      id                    SERIAL PRIMARY KEY,
+      operator_profile_id   INTEGER NOT NULL REFERENCES operator_profiles(id) ON DELETE CASCADE,
+      discipline_id         INTEGER NOT NULL,
+      hourly_rate_cents     INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(operator_profile_id, discipline_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_opr_profile ON operator_profile_rates(operator_profile_id);
+  `).catch(() => {});
+
   initialized = true;
 }
