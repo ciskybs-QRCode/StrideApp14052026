@@ -13,6 +13,7 @@ import { BrandingLogoOverlay } from "@/components/BrandingLogoOverlay";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 import { BILLING_TIERS } from "@/lib/billingEngine";
+import { useT } from "@/context/TranslationContext";
 
 const DOCS_REMINDER_KEY = "stride_docs_reminder_dismissed_v1";
 const FALLBACK_DOC_IDS  = ["ld1", "ld2", "ld3", "ld4"];
@@ -273,6 +274,7 @@ function SettingsTabIcon({ color, size }: { color: string; size: number }) {
 
 export default function AdminTabLayout() {
   const colors  = useColors();
+  const t       = useT();
   const isIOS   = Platform.OS === "ios";
   const isWeb   = Platform.OS === "web";
   const { isSuspended } = useBillingStatus();
@@ -305,12 +307,12 @@ export default function AdminTabLayout() {
       }}
     >
       {/* ── 6 visible tabs ── */}
-      <Tabs.Screen name="stats"           options={{ title: "Home",       tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
-      <Tabs.Screen name="operations-hub" options={{ title: "Operations", tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline"             size={size} color={color} /> }} />
-      <Tabs.Screen name="members-hub"    options={{ title: "Members",    tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"    size={size} color={color} /> }} />
-      <Tabs.Screen name="finance-hub"    options={{ title: "Finance",    tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline"           size={size} color={color} /> }} />
-      <Tabs.Screen name="messages"       options={{ title: "Messages",   tabBarIcon: ({ color, size }) => <Ionicons name="mail"                     size={size} color={color} /> }} />
-      <Tabs.Screen name="settings"       options={{ title: "Settings",   tabBarIcon: ({ color, size }) => <SettingsTabIcon color={color} size={size} /> }} />
+      <Tabs.Screen name="stats"           options={{ title: t("tab.home",       "Home"),       tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
+      <Tabs.Screen name="operations-hub" options={{ title: t("tab.operations", "Operations"), tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline"             size={size} color={color} /> }} />
+      <Tabs.Screen name="members-hub"    options={{ title: t("tab.members",    "Members"),    tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"    size={size} color={color} /> }} />
+      <Tabs.Screen name="finance-hub"    options={{ title: t("tab.finance",    "Finance"),    tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline"           size={size} color={color} /> }} />
+      <Tabs.Screen name="messages"       options={{ title: t("tab.messages",   "Messages"),   tabBarIcon: ({ color, size }) => <Ionicons name="mail"                     size={size} color={color} /> }} />
+      <Tabs.Screen name="settings"       options={{ title: t("tab.settings",   "Settings"),   tabBarIcon: ({ color, size }) => <SettingsTabIcon color={color} size={size} /> }} />
 
       {/* ── Hidden deep-link screens (reached from hub pages) ── */}
       <Tabs.Screen name="users"          options={{ href: null }} />

@@ -20,11 +20,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth, UserRole } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useT } from "@/context/TranslationContext";
 
 const LOGO = require("@/assets/images/stride-logo.png");
 
 export default function LoginScreen() {
   const colors = useColors();
+  const t = useT();
   const styles = make_styles(colors.primary, colors.secondary);
   const { login, user } = useAuth();
   const router = useRouter();
@@ -106,10 +108,10 @@ export default function LoginScreen() {
 
           {/* Sign In Form */}
           <Animated.View style={[styles.formCard, { transform: [{ translateX: shakeAnim }] }]}>
-            <Text style={styles.formTitle}>Sign In</Text>
+            <Text style={styles.formTitle}>{t("auth.login.button", "Sign In")}</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t("auth.login.email", "Email")}</Text>
               <View style={styles.inputWrapper}>
                 <Ionicons name="mail-outline" size={18} color="#6B7BA4" style={styles.inputIcon} />
                 <TextInput
@@ -126,7 +128,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t("auth.login.password", "Password")}</Text>
               <View style={styles.inputWrapper}>
                 <Ionicons name="lock-closed-outline" size={18} color="#6B7BA4" style={styles.inputIcon} />
                 <TextInput
@@ -156,19 +158,22 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.loginBtnText}>SIGN IN</Text>}
+              {loading
+                ? <ActivityIndicator color="#FFFFFF" />
+                : <Text style={styles.loginBtnText}>{t("auth.login.button", "Sign In").toUpperCase()}</Text>
+              }
             </Pressable>
 
             <Pressable
               onPress={() => router.push("/forgot-password" as never)}
               style={styles.forgotLink}
             >
-              <Text style={styles.forgotLinkText}>Forgot Password?</Text>
+              <Text style={styles.forgotLinkText}>{t("auth.login.forgot", "Forgot Password?")}</Text>
             </Pressable>
 
             <View style={styles.registerDivider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerLabel}>NEW HERE?</Text>
+              <Text style={styles.dividerLabel}>{t("auth.login.no_account", "New here?").toUpperCase()}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -177,7 +182,7 @@ export default function LoginScreen() {
               style={styles.registerBtn}
             >
               <Ionicons name="person-add-outline" size={16} color={colors.primary} />
-              <Text style={styles.registerBtnText}>Create an account</Text>
+              <Text style={styles.registerBtnText}>{t("auth.login.join", "Create an account")}</Text>
               <Ionicons name="chevron-forward" size={14} color="#6B7BA4" />
             </Pressable>
           </Animated.View>

@@ -11,6 +11,7 @@ import { useRealtime, type BookingNotification } from "@/context/RealtimeContext
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { NotificationsProvider } from "@/context/NotificationsContext";
+import { useT } from "@/context/TranslationContext";
 
 // ── Booking notification banner ───────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ function BookingBanner({ notif, onView, onDismiss }: {
 
 export default function OperatorTabLayout() {
   const colors = useColors();
+  const t      = useT();
   const router = useRouter();
   const { bookingNotifications, dismissBookingNotification } = useRealtime();
   const { unreadCount } = usePrivateLessons();
@@ -128,16 +130,16 @@ export default function OperatorTabLayout() {
         <Tabs.Screen
           name="dashboard"
           options={{
-            title: "Home",
+            title: t("tab.home", "Home"),
             tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
             tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
             tabBarBadgeStyle: { backgroundColor: colors.secondary, color: colors.primary, fontSize: 10, fontWeight: "800" },
           }}
         />
-        <Tabs.Screen name="calendar"        options={{ title: "Calendar",  tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"  size={size} color={color} /> }} />
-        <Tabs.Screen name="students"        options={{ title: "Members",   tabBarIcon: ({ color, size }) => <Ionicons name="people-outline"     size={size} color={color} /> }} />
-        <Tabs.Screen name="messages"        options={{ title: "Messages",  tabBarIcon: ({ color, size }) => <Ionicons name="mail"               size={size} color={color} /> }} />
-        <Tabs.Screen name="settings"        options={{ title: "Settings",  tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline"   size={size} color={color} /> }} />
+        <Tabs.Screen name="calendar"        options={{ title: t("tab.calendar", "Calendar"),  tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline"  size={size} color={color} /> }} />
+        <Tabs.Screen name="students"        options={{ title: t("tab.members",  "Members"),   tabBarIcon: ({ color, size }) => <Ionicons name="people-outline"     size={size} color={color} /> }} />
+        <Tabs.Screen name="messages"        options={{ title: t("tab.messages", "Messages"),  tabBarIcon: ({ color, size }) => <Ionicons name="mail"               size={size} color={color} /> }} />
+        <Tabs.Screen name="settings"        options={{ title: t("tab.settings", "Settings"),  tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline"   size={size} color={color} /> }} />
         <Tabs.Screen name="courses"         options={{ href: null }} />
         <Tabs.Screen name="sessions"        options={{ href: null }} />
         <Tabs.Screen name="emergency-pulse" options={{ href: null }} />

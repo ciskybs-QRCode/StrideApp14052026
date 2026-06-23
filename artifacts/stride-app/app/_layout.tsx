@@ -31,6 +31,7 @@ import { FeaturesProvider } from "@/context/FeaturesContext";
 import { TerminologyProvider } from "@/context/TerminologyContext";
 import { UnreadProvider } from "@/context/UnreadContext";
 import { EmergencyNotificationProvider } from "@/context/EmergencyNotificationContext";
+import { TranslationProvider } from "@/context/TranslationContext";
 
 // ── Safe localStorage polyfill ───────────────────────────────────────────────
 // Inside sandboxed iframes (e.g. Replit canvas preview) the browser blocks
@@ -132,6 +133,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <BrandingProvider>
+          <TranslationProvider>
           <TerminologyProvider>
           <OfflineSyncProvider>
             <AuthProvider>
@@ -164,6 +166,7 @@ export default function RootLayout() {
             </AuthProvider>
           </OfflineSyncProvider>
           </TerminologyProvider>
+          </TranslationProvider>
           </BrandingProvider>
         </QueryClientProvider>
       </ErrorBoundary>

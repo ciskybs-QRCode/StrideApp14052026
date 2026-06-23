@@ -74,6 +74,7 @@ import calendarExportRouter from "./calendar-export.js";
 import directMessagesRouter from "./direct-messages.js";
 import supportRouter from "./support.js";
 import saFeatureAnalyticsRouter from "./sa-feature-analytics.js";
+import translationsRouter from "./translations.js";
 
 const router: IRouter = Router();
 
@@ -152,5 +153,6 @@ router.use(calendarExportRouter);
 router.use(directMessagesRouter);
 router.use(supportRouter);
 router.use(saFeatureAnalyticsRouter);
+router.use(translationsRouter);
 
 export default router;

@@ -25,13 +25,14 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { useTerminology } from "@/context/TerminologyContext";
 import { useUnread } from "@/context/UnreadContext";
 import { NotificationsProvider } from "@/context/NotificationsContext";
+import { useT } from "@/context/TranslationContext";
 
-function DocsTabIcon({ color, size }: { color: string; size: number }) {
+function AccountTabIcon({ color, size }: { color: string; size: number }) {
   const colors = useColors();
   const { hasUnreadDocs } = useUnread();
   return (
     <View style={{ position: "relative" }}>
-      <Ionicons name="settings-sharp" size={size} color={color} />
+      <Ionicons name="person-circle-outline" size={size} color={color} />
       {hasUnreadDocs && (
         <View style={{
           position: "absolute", top: -3, right: -6,
@@ -67,6 +68,7 @@ const OPTION_KEYS = ["OPTION_A", "OPTION_B", "OPTION_C"] as const;
 
 export default function ParentTabLayout() {
   const colors    = useColors();
+  const t         = useT();
   const styles = make_styles(colors.primary, colors.secondary);
   const insets    = useSafeAreaInsets();
   const isIOS     = Platform.OS === "ios";
@@ -187,31 +189,37 @@ export default function ParentTabLayout() {
           tabBarLabelStyle: { fontSize: 9, fontWeight: "600" },
         }}
       >
-        <Tabs.Screen name="home"      options={{ title: "Home",    tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
-        <Tabs.Screen name="children"  options={{ title: "Members", tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"   size={size} color={color} /> }} />
-        <Tabs.Screen name="courses"   options={{ title: "Courses", tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes"           size={size} color={color} /> }} />
+        <Tabs.Screen name="home"      options={{ title: t("tab.home",    "Home"),    tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
+        <Tabs.Screen name="children"  options={{ title: t("tab.members", "Members"), tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"   size={size} color={color} /> }} />
+        <Tabs.Screen name="courses"   options={{ title: t("tab.courses", "Courses"), tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes"           size={size} color={color} /> }} />
         <Tabs.Screen
           name="messages"
           options={{
-            title: "Messages",
+            title: t("tab.messages", "Messages"),
             tabBarIcon: ({ color, size }) => <Ionicons name="mail" size={size} color={color} />,
           }}
         />
         <Tabs.Screen name="wallet"      options={{ href: null }} />
         <Tabs.Screen name="marketplace" options={{ href: null }} />
-        <Tabs.Screen name="cart"      options={{ title: "Cart",    tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }} />
+        <Tabs.Screen
+          name="cart"
+          options={cartBadgeCount > 0
+            ? { title: t("tab.cart", "Cart"), tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} count={cartBadgeCount} /> }
+            : { href: null }
+          }
+        />
         {membershipEnabled && (
           <Tabs.Screen
             name="membership"
             options={{
-              title: "Membership",
+              title: t("tab.membership", "Membership"),
               tabBarIcon: ({ color, size }) => <Ionicons name="id-card" size={size} color={color} />,
             }}
           />
         )}
         <Tabs.Screen name="profile"                options={{ href: null }} />
         <Tabs.Screen name="notification-settings"  options={{ href: null }} />
-        <Tabs.Screen name="documents" options={{ title: "Settings",tabBarIcon: ({ color, size }) => <DocsTabIcon color={color} size={size} /> }} />
+        <Tabs.Screen name="documents" options={{ title: t("tab.account", "Account"), tabBarIcon: ({ color, size }) => <AccountTabIcon color={color} size={size} /> }} />
         <Tabs.Screen name="checkout"    options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />
         <Tabs.Screen name="alerts"          options={{ href: null }} />
